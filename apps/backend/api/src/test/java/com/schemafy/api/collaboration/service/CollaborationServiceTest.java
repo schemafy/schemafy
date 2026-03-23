@@ -13,6 +13,7 @@ import com.schemafy.api.collaboration.dto.BroadcastMessage;
 import com.schemafy.api.collaboration.dto.CursorPosition;
 import com.schemafy.api.collaboration.dto.event.CollaborationOutboundFactory;
 import com.schemafy.api.collaboration.dto.event.CursorEvent;
+import com.schemafy.core.common.json.JsonCodec;
 
 import reactor.test.StepVerifier;
 
@@ -36,10 +37,11 @@ class CollaborationServiceTest {
   @BeforeEach
   void setUp() {
     objectMapper = new ObjectMapper().findAndRegisterModules();
+    JsonCodec jsonCodec = new JsonCodec(objectMapper);
     CollaborationPayloadSerializer serializer = new CollaborationPayloadSerializer(
-        objectMapper);
+        jsonCodec);
     collaborationService = new CollaborationService(sessionRegistry,
-        eventPublisher, serializer, objectMapper, java.util.List.of());
+        eventPublisher, serializer, jsonCodec, java.util.List.of());
   }
 
   @Test
@@ -65,7 +67,8 @@ class CollaborationServiceTest {
         .isEqualTo("session-1");
     assertThat(captor.getValue().message())
         .contains("\"type\":\"CURSOR\"");
-    assertThat(captor.getValue().message()).doesNotContain("sessionId");
+    assertThat(captor.getValue().message())
+        .contains("\"sessionId\":\"session-1\"");
   }
 
   @Test
@@ -84,7 +87,8 @@ class CollaborationServiceTest {
     verify(sessionRegistry).broadcast(captor.capture());
     assertThat(captor.getValue().excludeSessionId()).isNull();
     assertThat(captor.getValue().message()).contains("\"type\":\"CHAT\"");
-    assertThat(captor.getValue().message()).doesNotContain("sessionId");
+    assertThat(captor.getValue().message())
+        .contains("\"sessionId\":\"session-1\"");
   }
 
   @Test

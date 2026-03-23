@@ -76,10 +76,10 @@ export const useRelationships = (relationshipConfig: RelationshipConfig) => {
       const currentExtra = parseRelationshipExtra(snapshot.relationship.extra);
       changeRelationshipExtra({
         relationshipId,
-        data: { extra: JSON.stringify(updater(currentExtra)) },
+        data: { extra: updater(currentExtra) },
       });
     },
-    [changeRelationshipExtra],
+    [changeRelationshipExtra, snapshotsRef],
   );
 
   const updateRelationshipControlPoint = useCallback(
@@ -168,10 +168,10 @@ export const useRelationships = (relationshipConfig: RelationshipConfig) => {
           kind,
           cardinality: typeConfig.cardinality,
         },
-        extra: JSON.stringify(extra),
+        extra,
       });
     },
-    [createRelationshipWithExtra],
+    [createRelationshipWithExtra, relationshipConfigRef],
   );
 
   const onConnect = useCallback(
@@ -190,7 +190,7 @@ export const useRelationships = (relationshipConfig: RelationshipConfig) => {
 
       createRelationshipFromValidation(validation, params);
     },
-    [createRelationshipFromValidation],
+    [createRelationshipFromValidation, snapshotsRef],
   );
 
   const onRelationshipsChange = useCallback(
@@ -259,7 +259,7 @@ export const useRelationships = (relationshipConfig: RelationshipConfig) => {
         });
       }
     },
-    [createRelationshipFromValidation, deleteRelationshipMutation, updateExtra],
+    [createRelationshipFromValidation, deleteRelationshipMutation, snapshotsRef, updateExtra],
   );
 
   const onReconnectEnd = useCallback(
@@ -315,7 +315,7 @@ export const useRelationships = (relationshipConfig: RelationshipConfig) => {
         });
       }
     },
-    [changeRelationshipCardinality, changeRelationshipKind],
+    [changeRelationshipCardinality, changeRelationshipKind, snapshotsRef],
   );
 
   const deleteRelationship = useCallback(

@@ -29,7 +29,7 @@ import reactor.test.StepVerifier;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-@DisplayName("Project invitation usecase integration")
+@DisplayName("프로젝트 초대 유스케이스 통합 테스트")
 class ProjectInvitationUseCaseIntegrationTest extends ProjectDomainIntegrationSupport {
 
   @Autowired
@@ -48,7 +48,7 @@ class ProjectInvitationUseCaseIntegrationTest extends ProjectDomainIntegrationSu
   private RejectProjectInvitationUseCase rejectProjectInvitationUseCase;
 
   @Test
-  @DisplayName("createProjectInvitation is visible in target and my invitation lists")
+  @DisplayName("프로젝트 초대 생성 후 대상 목록과 내 초대 목록에서 모두 조회된다")
   void createProjectInvitation_listsForAdminAndInvitee() {
     User admin = signUpUser("admin-pi@test.com", "Admin");
     User invitee = signUpUser("invitee-pi@test.com", "Invitee");
@@ -78,7 +78,7 @@ class ProjectInvitationUseCaseIntegrationTest extends ProjectDomainIntegrationSu
   }
 
   @Test
-  @DisplayName("createProjectInvitation rejects users who are already project members")
+  @DisplayName("프로젝트 초대 생성 시 이미 프로젝트 멤버인 사용자는 거부한다")
   void createProjectInvitation_rejectsDuplicateMembership() {
     User admin = signUpUser("admin-pi-dup@test.com", "Admin");
     User invitee = signUpUser("invitee-pi-dup@test.com", "Invitee");
@@ -98,7 +98,31 @@ class ProjectInvitationUseCaseIntegrationTest extends ProjectDomainIntegrationSu
   }
 
   @Test
-  @DisplayName("acceptProjectInvitation restores soft-deleted membership and cancels siblings")
+  @DisplayName("프로젝트 초대 생성 시 대문자 중복 이메일도 같은 초대로 처리한다")
+  void createProjectInvitation_duplicatePending_caseInsensitive() {
+    User admin = signUpUser("admin-pi-case@test.com", "Admin");
+    User invitee = signUpUser("invitee-pi-case@test.com", "Invitee");
+    var workspace = saveWorkspace("Case Project WS", "Description");
+    saveWorkspaceMember(workspace, admin, WorkspaceRole.ADMIN);
+    saveWorkspaceMember(workspace, invitee, WorkspaceRole.MEMBER);
+    var project = saveProject(workspace, "Case Project");
+    saveProjectMember(project, admin, ProjectRole.ADMIN);
+
+    createProjectInvitationUseCase.createProjectInvitation(
+        new CreateProjectInvitationCommand(project.getId(), invitee.email(),
+            ProjectRole.EDITOR, admin.id()))
+        .block();
+
+    StepVerifier.create(createProjectInvitationUseCase.createProjectInvitation(
+        new CreateProjectInvitationCommand(project.getId(), "INVITEE-PI-CASE@TEST.COM",
+            ProjectRole.EDITOR, admin.id())))
+        .expectErrorMatches(DomainException.hasErrorCode(
+            ProjectErrorCode.INVITATION_ALREADY_EXISTS))
+        .verify();
+  }
+
+  @Test
+  @DisplayName("프로젝트 초대 수락 시 soft delete 된 멤버십을 복원하고 형제 초대를 취소한다")
   void acceptProjectInvitation_restoresMembership() {
     User admin = signUpUser("admin-pi-restore@test.com", "Admin");
     User invitee = signUpUser("invitee-pi-restore@test.com", "Invitee");
@@ -128,7 +152,7 @@ class ProjectInvitationUseCaseIntegrationTest extends ProjectDomainIntegrationSu
   }
 
   @Test
-  @DisplayName("rejectProjectInvitation marks invitation as rejected")
+  @DisplayName("프로젝트 초대 거절 시 초대 상태를 rejected로 바꾼다")
   void rejectProjectInvitation_marksResolved() {
     User admin = signUpUser("admin-pi-reject@test.com", "Admin");
     User invitee = signUpUser("invitee-pi-reject@test.com", "Invitee");

@@ -33,10 +33,17 @@ class UpdateProjectMemberRoleService implements UpdateProjectMemberRoleUseCase {
           ProjectMember requester = tuple.getT1();
           ProjectMember target = tuple.getT2();
 
-          projectAccessHelper.validateRoleChangePermission(requester, target,
-              command.role());
-          target.updateRole(command.role());
-          return projectMemberPort.save(target);
+          projectAccessHelper.validateRoleChangePermission(requester, target, command.role());
+          Mono<Void> workspaceAdminGuard = target.isAdmin() && !command.role().isAdmin()
+              ? projectAccessHelper.validateWorkspaceAdminGuard(command.projectId(), target)
+              : Mono.empty();
+
+          return workspaceAdminGuard
+              .then(Mono.fromSupplier(() -> {
+                target.updateRole(command.role());
+                return target;
+              }))
+              .flatMap(projectMemberPort::save);
         })
         .as(transactionalOperator::transactional);
   }

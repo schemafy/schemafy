@@ -105,10 +105,10 @@ export const useTables = () => {
           charset: '',
           collation: '',
         },
-        extra: JSON.stringify({ position }),
+        extra: { position },
       });
     },
-    [createTableWithExtra, selectedSchemaId],
+    [createTableWithExtra, selectedSchemaId, snapshotsRef],
   );
 
   const onNodeDragStop = useCallback(
@@ -121,14 +121,14 @@ export const useTables = () => {
       changeTableExtra({
         tableId: node.id,
         data: {
-          extra: JSON.stringify({
+          extra: {
             ...currentExtra,
             position: node.position,
-          }),
+          },
         },
       });
     },
-    [changeTableExtra],
+    [changeTableExtra, snapshotsRef],
   );
 
   const onTablesChange = useCallback((changes: NodeChange[]) => {

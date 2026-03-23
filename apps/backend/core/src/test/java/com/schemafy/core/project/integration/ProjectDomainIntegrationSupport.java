@@ -1,6 +1,7 @@
 package com.schemafy.core.project.integration;
 
 import java.time.Instant;
+import java.util.List;
 import java.util.UUID;
 
 import org.springframework.beans.factory.annotation.Autowired;
@@ -11,12 +12,17 @@ import org.springframework.test.context.ActiveProfiles;
 import org.junit.jupiter.api.BeforeEach;
 
 import com.schemafy.core.DomainTestApplication;
-import com.schemafy.core.project.adapter.out.persistence.DomainInvitationRepository;
-import com.schemafy.core.project.adapter.out.persistence.DomainProjectMemberRepository;
-import com.schemafy.core.project.adapter.out.persistence.DomainProjectRepository;
-import com.schemafy.core.project.adapter.out.persistence.DomainShareLinkRepository;
-import com.schemafy.core.project.adapter.out.persistence.DomainWorkspaceMemberRepository;
-import com.schemafy.core.project.adapter.out.persistence.DomainWorkspaceRepository;
+import com.schemafy.core.erd.schema.application.port.in.CreateSchemaCommand;
+import com.schemafy.core.erd.schema.application.port.in.CreateSchemaResult;
+import com.schemafy.core.erd.schema.application.port.in.CreateSchemaUseCase;
+import com.schemafy.core.erd.schema.application.port.out.GetSchemasByProjectIdPort;
+import com.schemafy.core.erd.schema.domain.Schema;
+import com.schemafy.core.project.adapter.out.persistence.InvitationRepository;
+import com.schemafy.core.project.adapter.out.persistence.ProjectMemberRepository;
+import com.schemafy.core.project.adapter.out.persistence.ProjectRepository;
+import com.schemafy.core.project.adapter.out.persistence.ShareLinkRepository;
+import com.schemafy.core.project.adapter.out.persistence.WorkspaceMemberRepository;
+import com.schemafy.core.project.adapter.out.persistence.WorkspaceRepository;
 import com.schemafy.core.project.domain.Invitation;
 import com.schemafy.core.project.domain.Project;
 import com.schemafy.core.project.domain.ProjectMember;
@@ -43,26 +49,33 @@ abstract class ProjectDomainIntegrationSupport {
   protected SignUpUserUseCase signUpUserUseCase;
 
   @Autowired
-  protected DomainWorkspaceRepository workspaceRepository;
+  protected WorkspaceRepository workspaceRepository;
 
   @Autowired
-  protected DomainWorkspaceMemberRepository workspaceMemberRepository;
+  protected WorkspaceMemberRepository workspaceMemberRepository;
 
   @Autowired
-  protected DomainProjectRepository projectRepository;
+  protected ProjectRepository projectRepository;
 
   @Autowired
-  protected DomainProjectMemberRepository projectMemberRepository;
+  protected ProjectMemberRepository projectMemberRepository;
 
   @Autowired
-  protected DomainInvitationRepository invitationRepository;
+  protected InvitationRepository invitationRepository;
 
   @Autowired
-  protected DomainShareLinkRepository shareLinkRepository;
+  protected ShareLinkRepository shareLinkRepository;
+
+  @Autowired
+  protected CreateSchemaUseCase createSchemaUseCase;
+
+  @Autowired
+  protected GetSchemasByProjectIdPort getSchemasByProjectIdPort;
 
   @BeforeEach
   void cleanProjectDomainTables() {
     Mono.when(
+        deleteAll("db_schemas"),
         deleteAll("share_links"),
         deleteAll("invitations"),
         deleteAll("project_members"),
@@ -164,6 +177,23 @@ abstract class ProjectDomainIntegrationSupport {
         project.getId(),
         UUID.randomUUID().toString().replace("-", ""),
         expiresAt)).block();
+  }
+
+  protected CreateSchemaResult createSchema(Project project, String name) {
+    return createSchemaUseCase.createSchema(new CreateSchemaCommand(
+        project.getId(),
+        "MySQL",
+        name,
+        "utf8mb4",
+        "utf8mb4_general_ci"))
+        .block()
+        .result();
+  }
+
+  protected List<Schema> findSchemasByProjectId(String projectId) {
+    return getSchemasByProjectIdPort.findSchemasByProjectId(projectId)
+        .collectList()
+        .block();
   }
 
   protected void softDeleteWorkspaceMember(String memberId) {

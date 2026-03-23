@@ -26,13 +26,13 @@ class ProjectPersistenceAdapterTest {
   private ProjectPersistenceAdapter sut;
 
   @Autowired
-  private DomainProjectRepository projectRepository;
+  private ProjectRepository projectRepository;
 
   @Autowired
-  private DomainProjectMemberRepository projectMemberRepository;
+  private ProjectMemberRepository projectMemberRepository;
 
   @Autowired
-  private DomainWorkspaceRepository workspaceRepository;
+  private WorkspaceRepository workspaceRepository;
 
   @BeforeEach
   void setUp() {

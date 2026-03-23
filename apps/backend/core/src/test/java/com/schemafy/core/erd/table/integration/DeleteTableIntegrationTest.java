@@ -38,6 +38,7 @@ import com.schemafy.core.erd.relationship.domain.type.Cardinality;
 import com.schemafy.core.erd.relationship.domain.type.RelationshipKind;
 import com.schemafy.core.erd.schema.application.port.in.CreateSchemaCommand;
 import com.schemafy.core.erd.schema.application.port.in.CreateSchemaUseCase;
+import com.schemafy.core.erd.support.ErdProjectIntegrationSupport;
 import com.schemafy.core.erd.table.application.port.in.CreateTableCommand;
 import com.schemafy.core.erd.table.application.port.in.CreateTableUseCase;
 import com.schemafy.core.erd.table.application.port.in.DeleteTableCommand;
@@ -53,7 +54,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 @SpringBootTest
 @ActiveProfiles("test")
 @DisplayName("Table Cascade 삭제 통합 테스트")
-class DeleteTableIntegrationTest {
+class DeleteTableIntegrationTest extends ErdProjectIntegrationSupport {
 
   @Autowired
   CreateSchemaUseCase createSchemaUseCase;
@@ -91,8 +92,6 @@ class DeleteTableIntegrationTest {
   @Autowired
   GetRelationshipsByTableIdUseCase getRelationshipsByTableIdUseCase;
 
-  private static final String PROJECT_ID = "01ARZ3NDEKTSV4RRFFQ69GPROJ";
-
   @Nested
   @DisplayName("deleteTable 메서드는")
   class DeleteTable {
@@ -109,8 +108,9 @@ class DeleteTableIntegrationTest {
 
       @BeforeEach
       void setUp() {
+        String projectId = createActiveProjectId("delete_table_all_related");
         var createSchemaCommand = new CreateSchemaCommand(
-            PROJECT_ID, "MySQL", "table_cascade_delete_test_schema",
+            projectId, "MySQL", "table_cascade_delete_test_schema",
             "utf8mb4", "utf8mb4_general_ci");
         var schemaResult = createSchemaUseCase.createSchema(createSchemaCommand).block().result();
         schemaId = schemaResult.id();
@@ -298,8 +298,9 @@ class DeleteTableIntegrationTest {
 
   private String createSchema(String prefix) {
     String uniqueSuffix = UUID.randomUUID().toString().substring(0, 8);
+    String projectId = createActiveProjectId(prefix);
     var createSchemaCommand = new CreateSchemaCommand(
-        PROJECT_ID, "MySQL", prefix + "_" + uniqueSuffix,
+        projectId, "MySQL", prefix + "_" + uniqueSuffix,
         "utf8mb4", "utf8mb4_general_ci");
     var schemaResult = createSchemaUseCase.createSchema(createSchemaCommand).block().result();
     return schemaResult.id();

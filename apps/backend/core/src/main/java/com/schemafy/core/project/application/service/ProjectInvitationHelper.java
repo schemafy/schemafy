@@ -18,6 +18,7 @@ import com.schemafy.core.project.domain.ProjectRole;
 import com.schemafy.core.project.domain.exception.ProjectErrorCode;
 import com.schemafy.core.ulid.application.port.out.UlidGeneratorPort;
 import com.schemafy.core.user.application.port.out.FindUserByEmailPort;
+import com.schemafy.core.user.domain.Email;
 import com.schemafy.core.user.domain.exception.UserErrorCode;
 
 import lombok.RequiredArgsConstructor;
@@ -62,16 +63,16 @@ class ProjectInvitationHelper {
         });
   }
 
-  Mono<Void> checkDuplicatePendingInvitation(String projectId, String email) {
+  Mono<Void> checkDuplicatePendingInvitation(String projectId, Email email) {
     return invitationPort.countByTargetAndEmailAndStatus(
         InvitationType.PROJECT.name(),
         projectId,
-        email,
+        email.address(),
         InvitationStatus.PENDING.name())
         .flatMap(count -> {
           if (count > 0) {
             log.warn("Duplicate pending invitation: project={}, email={}",
-                projectId, email);
+                projectId, email.address());
             return Mono.error(new DomainException(
                 ProjectErrorCode.INVITATION_ALREADY_EXISTS));
           }
@@ -91,8 +92,8 @@ class ProjectInvitationHelper {
         });
   }
 
-  Mono<Void> checkNotAlreadyProjectMemberByEmail(String projectId, String email) {
-    return findUserByEmailPort.findUserByEmail(email.toLowerCase())
+  Mono<Void> checkNotAlreadyProjectMemberByEmail(String projectId, Email email) {
+    return findUserByEmailPort.findUserByEmail(email.address())
         .switchIfEmpty(Mono.error(new DomainException(UserErrorCode.NOT_FOUND)))
         .flatMap(user -> projectMemberPort
             .existsByProjectIdAndUserIdAndNotDeleted(projectId, user.id())

@@ -17,7 +17,7 @@ export const DashboardHeader = () => {
   return (
     <div className="flex items-center justify-end gap-5 w-full">
       <div className="flex items-center gap-9 ml-8">
-        <Button variant={'none'} size={'none'}>
+        <Button to="/workspace" variant={'none'} size={'none'}>
           Projects
         </Button>
         <Button variant={'none'} size={'none'}>
@@ -27,7 +27,7 @@ export const DashboardHeader = () => {
       </div>
       <div className="flex items-center gap-4">
         <div className="flex gap-2">
-          <Button round to="/projects">
+          <Button round to="/workspace">
             New Project
           </Button>
           <Button variant={'secondary'} round onClick={handleLogout}>

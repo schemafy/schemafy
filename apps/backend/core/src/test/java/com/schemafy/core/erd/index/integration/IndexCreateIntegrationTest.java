@@ -41,6 +41,7 @@ import com.schemafy.core.erd.index.domain.type.IndexType;
 import com.schemafy.core.erd.index.domain.type.SortDirection;
 import com.schemafy.core.erd.schema.application.port.in.CreateSchemaCommand;
 import com.schemafy.core.erd.schema.application.port.in.CreateSchemaUseCase;
+import com.schemafy.core.erd.support.ErdProjectIntegrationSupport;
 import com.schemafy.core.erd.table.application.port.in.CreateTableCommand;
 import com.schemafy.core.erd.table.application.port.in.CreateTableUseCase;
 
@@ -51,7 +52,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 @SpringBootTest
 @ActiveProfiles("test")
 @DisplayName("Index 생성 및 관리 통합 테스트")
-class IndexCreateIntegrationTest {
+class IndexCreateIntegrationTest extends ErdProjectIntegrationSupport {
 
   @Autowired
   CreateSchemaUseCase createSchemaUseCase;
@@ -92,8 +93,6 @@ class IndexCreateIntegrationTest {
   @Autowired
   DeleteIndexUseCase deleteIndexUseCase;
 
-  private static final String PROJECT_ID = "01ARZ3NDEKTSV4RRFFQ69GPROJ";
-
   private String schemaId;
   private String tableId;
   private String columnId1;
@@ -104,9 +103,10 @@ class IndexCreateIntegrationTest {
   void setUp(TestInfo testInfo) {
     String uniqueSuffix = UUID.randomUUID().toString().substring(0, 8);
     String schemaName = "index_create_" + uniqueSuffix;
+    String projectId = createActiveProjectId("index_create");
 
     var createSchemaCommand = new CreateSchemaCommand(
-        PROJECT_ID, "MySQL", schemaName,
+        projectId, "MySQL", schemaName,
         "utf8mb4", "utf8mb4_general_ci");
     var schemaResult = createSchemaUseCase.createSchema(createSchemaCommand).block().result();
     schemaId = schemaResult.id();

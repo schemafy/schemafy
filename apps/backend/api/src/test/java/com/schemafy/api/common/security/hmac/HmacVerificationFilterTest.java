@@ -22,6 +22,7 @@ import com.schemafy.api.common.exception.ProblemDetailFactory;
 import com.schemafy.api.common.exception.ProblemProperties;
 import com.schemafy.api.common.security.hmac.HmacProperties.EnforcementMode;
 import com.schemafy.api.common.security.jwt.WebExchangeErrorWriter;
+import com.schemafy.core.common.json.JsonCodec;
 
 import reactor.core.publisher.Mono;
 import reactor.test.StepVerifier;
@@ -56,7 +57,8 @@ class HmacVerificationFilterTest {
     hmacProperties.setEnabled(true);
     hmacProperties.setEnforcementMode(EnforcementMode.ENFORCE);
 
-    errorWriter = new WebExchangeErrorWriter(new ObjectMapper(),
+    errorWriter = new WebExchangeErrorWriter(
+        new JsonCodec(new ObjectMapper()),
         new ProblemDetailFactory(new ProblemProperties()));
     filter = new HmacVerificationFilter(hmacProperties, nonceCache,
         errorWriter);

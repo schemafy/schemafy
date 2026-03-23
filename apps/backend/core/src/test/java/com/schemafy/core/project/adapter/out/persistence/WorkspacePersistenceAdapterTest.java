@@ -25,10 +25,10 @@ class WorkspacePersistenceAdapterTest {
   private WorkspacePersistenceAdapter sut;
 
   @Autowired
-  private DomainWorkspaceRepository workspaceRepository;
+  private WorkspaceRepository workspaceRepository;
 
   @Autowired
-  private DomainWorkspaceMemberRepository workspaceMemberRepository;
+  private WorkspaceMemberRepository workspaceMemberRepository;
 
   @BeforeEach
   void setUp() {

@@ -5,7 +5,7 @@ import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { signIn } from '@/features/auth/api';
 import { authStore } from '@/store/auth.store';
-import { gitHubLogin } from '@/features/auth/lib/oauth.ts';
+import { gitHubLogin } from '@/features/auth/lib/oauth';
 
 const formFields = [
   {

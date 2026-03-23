@@ -8,10 +8,12 @@ import com.schemafy.core.common.exception.DomainException;
 import com.schemafy.core.erd.schema.application.port.in.CreateSchemaCommand;
 import com.schemafy.core.erd.schema.application.port.in.CreateSchemaResult;
 import com.schemafy.core.erd.schema.application.port.in.CreateSchemaUseCase;
+import com.schemafy.core.erd.schema.application.port.out.ActiveProjectExistsPort;
 import com.schemafy.core.erd.schema.application.port.out.CreateSchemaPort;
 import com.schemafy.core.erd.schema.application.port.out.SchemaExistsPort;
 import com.schemafy.core.erd.schema.domain.Schema;
 import com.schemafy.core.erd.schema.domain.exception.SchemaErrorCode;
+import com.schemafy.core.project.domain.exception.ProjectErrorCode;
 import com.schemafy.core.ulid.application.port.out.UlidGeneratorPort;
 
 import lombok.RequiredArgsConstructor;
@@ -21,6 +23,7 @@ import reactor.core.publisher.Mono;
 @RequiredArgsConstructor
 class CreateSchemaService implements CreateSchemaUseCase {
 
+  private final ActiveProjectExistsPort activeProjectExistsPort;
   private final UlidGeneratorPort ulidGeneratorPort;
   private final CreateSchemaPort createSchemaPort;
   private final SchemaExistsPort schemaExistsPort;
@@ -28,33 +31,41 @@ class CreateSchemaService implements CreateSchemaUseCase {
 
   @Override
   public Mono<MutationResult<CreateSchemaResult>> createSchema(CreateSchemaCommand command) {
-    return schemaExistsPort
-        .existsActiveByProjectIdAndName(command.projectId(), command.name())
-        .flatMap(exists -> {
-          if (exists) {
-            return Mono.error(new DomainException(SchemaErrorCode.NAME_DUPLICATE,
-                "Schema name '%s' already exists in project".formatted(command.name())));
+    return activeProjectExistsPort.existsActiveProjectById(command.projectId())
+        .flatMap(projectExists -> {
+          if (!projectExists) {
+            return Mono.error(new DomainException(ProjectErrorCode.NOT_FOUND,
+                "Project not found: " + command.projectId()));
           }
 
-          return Mono.fromCallable(ulidGeneratorPort::generate)
-              .flatMap(id -> {
-                Schema schema = new Schema(
-                    id,
-                    command.projectId(),
-                    command.dbVendorName(),
-                    command.name(),
-                    command.charset(),
-                    command.collation());
+          return schemaExistsPort
+              .existsActiveByProjectIdAndName(command.projectId(), command.name())
+              .flatMap(exists -> {
+                if (exists) {
+                  return Mono.error(new DomainException(SchemaErrorCode.NAME_DUPLICATE,
+                      "Schema name '%s' already exists in project".formatted(command.name())));
+                }
 
-                return createSchemaPort.createSchema(schema)
-                    .map(savedSchema -> new CreateSchemaResult(
-                        savedSchema.id(),
-                        savedSchema.projectId(),
-                        savedSchema.dbVendorName(),
-                        savedSchema.name(),
-                        savedSchema.charset(),
-                        savedSchema.collation()))
-                    .map(MutationResult::empty);
+                return Mono.fromCallable(ulidGeneratorPort::generate)
+                    .flatMap(id -> {
+                      Schema schema = new Schema(
+                          id,
+                          command.projectId(),
+                          command.dbVendorName(),
+                          command.name(),
+                          command.charset(),
+                          command.collation());
+
+                      return createSchemaPort.createSchema(schema)
+                          .map(savedSchema -> new CreateSchemaResult(
+                              savedSchema.id(),
+                              savedSchema.projectId(),
+                              savedSchema.dbVendorName(),
+                              savedSchema.name(),
+                              savedSchema.charset(),
+                              savedSchema.collation()))
+                          .map(MutationResult::empty);
+                    });
               });
         })
         .as(transactionalOperator::transactional);

@@ -3,6 +3,7 @@ import type {
   TableSnapshotResponse,
   RelationshipSnapshotResponse,
   ConstraintSnapshotResponse,
+  RelationshipResponse,
 } from '../api';
 import {
   RELATIONSHIP_TYPES,
@@ -85,16 +86,8 @@ export const findRelationshipById = (
 };
 
 export const parseRelationshipExtra = (
-  extraString: string | null,
-): RelationshipExtra => {
-  if (!extraString) return {};
-
-  try {
-    return JSON.parse(extraString) as RelationshipExtra;
-  } catch {
-    return {};
-  }
-};
+  extra: RelationshipResponse['extra'],
+): RelationshipExtra => (extra ?? {}) as RelationshipExtra;
 
 interface ValidateConnectionParams {
   snapshots: Record<string, TableSnapshotResponse>;

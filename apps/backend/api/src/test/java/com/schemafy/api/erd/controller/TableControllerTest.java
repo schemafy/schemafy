@@ -16,6 +16,7 @@ import org.junit.jupiter.api.Test;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.schemafy.api.common.constant.ApiPath;
+import com.schemafy.api.common.exception.CommonErrorCode;
 import com.schemafy.api.common.security.WithMockCustomUser;
 import com.schemafy.api.erd.controller.dto.request.ChangeTableNameRequest;
 import com.schemafy.api.erd.controller.dto.request.CreateTableRequest;
@@ -131,6 +132,73 @@ class TableControllerTest {
   }
 
   @Test
+  @DisplayName("테이블 생성 API는 extra 객체를 허용한다")
+  void createTableAcceptsObjectValue() {
+    String schemaId = "06D6W1GAHD51T5NJPK29Q6BCR8";
+    String tableId = "06D6W2BAHD51T5NJPK29Q6BCR9";
+
+    CreateTableResult result = new CreateTableResult(
+        tableId,
+        "users",
+        "utf8mb4",
+        "utf8mb4_general_ci",
+        "{\"position\":{\"x\":12,\"y\":24},\"color\":\"#22c55e\"}");
+
+    given(createTableUseCase.createTable(any(CreateTableCommand.class)))
+        .willReturn(Mono.just(MutationResult.of(result, tableId)));
+
+    webTestClient.post()
+        .uri(API_BASE_PATH + "/tables")
+        .contentType(MediaType.APPLICATION_JSON)
+        .bodyValue("""
+            {
+              "schemaId": "06D6W1GAHD51T5NJPK29Q6BCR8",
+              "name": "users",
+              "charset": "utf8mb4",
+              "collation": "utf8mb4_general_ci",
+              "extra": {"position":{"x":12,"y":24},"color":"#22c55e"}
+            }
+            """)
+        .header("Accept", "application/json")
+        .exchange()
+        .expectStatus().isOk()
+        .expectBody()
+        .jsonPath("$.data.id").isEqualTo(tableId);
+
+    then(createTableUseCase).should().createTable(new CreateTableCommand(
+        schemaId,
+        "users",
+        "utf8mb4",
+        "utf8mb4_general_ci",
+        "{\"position\":{\"x\":12,\"y\":24},\"color\":\"#22c55e\"}"));
+  }
+
+  @Test
+  @DisplayName("테이블 생성 API는 잘못된 extra JSON 문자열이면 400을 반환한다")
+  void createTableRejectsInvalidExtraJsonString() {
+    webTestClient.post()
+        .uri(API_BASE_PATH + "/tables")
+        .contentType(MediaType.APPLICATION_JSON)
+        .bodyValue("""
+            {
+              "schemaId": "06D6W1GAHD51T5NJPK29Q6BCR8",
+              "name": "users",
+              "charset": "utf8mb4",
+              "collation": "utf8mb4_general_ci",
+              "extra": "{invalid"
+            }
+            """)
+        .header("Accept", "application/json")
+        .exchange()
+        .expectStatus().isBadRequest()
+        .expectBody()
+        .jsonPath("$.status").isEqualTo(400)
+        .jsonPath("$.reason").isEqualTo(CommonErrorCode.INVALID_PARAMETER.code());
+
+    then(createTableUseCase).shouldHaveNoInteractions();
+  }
+
+  @Test
   @DisplayName("테이블 조회 API 문서화")
   void getTable() {
     String tableId = "06D6W2BAHD51T5NJPK29Q6BCR9";
@@ -154,7 +222,8 @@ class TableControllerTest {
         .expectStatus().isOk()
         .expectBody()
         .jsonPath("$.id").isEqualTo(tableId)
-        .jsonPath("$.extra").isEqualTo("{\"position\":{\"x\":10,\"y\":20}}")
+        .jsonPath("$.extra.position.x").isEqualTo(10)
+        .jsonPath("$.extra.position.y").isEqualTo(20)
         .consumeWith(document("table-get",
             TableApiSnippets.getTablePathParameters(),
             TableApiSnippets.getTableRequestHeaders(),
@@ -180,7 +249,7 @@ class TableControllerTest {
                 "name": "users",
                 "charset": "utf8mb4",
                 "collation": "utf8mb4_general_ci",
-                "extra": "{\\"position\\":{\\"x\\":30,\\"y\\":40}}"
+                "extra": {"position":{"x":30,"y":40}}
               },
               "columns": [
                 {
@@ -269,7 +338,8 @@ class TableControllerTest {
         .expectStatus().isOk()
         .expectBody()
         .jsonPath("$.table.id").isEqualTo(tableId)
-        .jsonPath("$.table.extra").isEqualTo("{\"position\":{\"x\":30,\"y\":40}}")
+        .jsonPath("$.table.extra.position.x").isEqualTo(30)
+        .jsonPath("$.table.extra.position.y").isEqualTo(40)
         .jsonPath("$.columns[0].id").isEqualTo(columnId)
         .jsonPath("$.constraints[0].constraint.id").isEqualTo(constraintId)
         .jsonPath("$.relationships[0].relationship.id").isEqualTo(relationshipId)
@@ -513,6 +583,27 @@ class TableControllerTest {
     then(changeTableExtraUseCase).should()
         .changeTableExtra(new ChangeTableExtraCommand(tableId,
             "{\"position\":{\"x\":24,\"y\":48},\"color\":\"#22c55e\"}"));
+  }
+
+  @Test
+  @DisplayName("테이블 추가정보 변경 API는 잘못된 extra JSON 문자열이면 400을 반환한다")
+  void changeTableExtraRejectsInvalidJsonString() {
+    String tableId = "06D6W2BAHD51T5NJPK29Q6BCR9";
+
+    webTestClient.patch()
+        .uri(API_BASE_PATH + "/tables/{tableId}/extra", tableId)
+        .contentType(MediaType.APPLICATION_JSON)
+        .bodyValue("""
+            {"extra":"{invalid"}
+            """)
+        .header("Accept", "application/json")
+        .exchange()
+        .expectStatus().isBadRequest()
+        .expectBody()
+        .jsonPath("$.status").isEqualTo(400)
+        .jsonPath("$.reason").isEqualTo(CommonErrorCode.INVALID_PARAMETER.code());
+
+    then(changeTableExtraUseCase).shouldHaveNoInteractions();
   }
 
   @Test

@@ -2,11 +2,9 @@ package com.schemafy.api.collaboration.service;
 
 import org.springframework.stereotype.Component;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.schemafy.api.collaboration.dto.event.CollaborationOutbound;
 import com.schemafy.api.common.config.ConditionalOnRedisEnabled;
+import com.schemafy.core.common.json.JsonCodec;
 
 import lombok.RequiredArgsConstructor;
 import reactor.core.publisher.Mono;
@@ -16,27 +14,13 @@ import reactor.core.publisher.Mono;
 @ConditionalOnRedisEnabled
 public class CollaborationPayloadSerializer {
 
-  private static final String SESSION_ID_FIELD = "sessionId";
-
-  private final ObjectMapper objectMapper;
+  private final JsonCodec jsonCodec;
 
   public Mono<String> serialize(CollaborationOutbound event) {
-    return Mono.fromCallable(() -> objectMapper.writeValueAsString(event))
-        .onErrorMap(JsonProcessingException.class,
-            e -> new RuntimeException(
-                "[CollaborationPayloadSerializer] failed to serialize JSON",
+    return Mono.fromCallable(() -> jsonCodec.serialize(event))
+        .onErrorMap(IllegalArgumentException.class,
+            e -> new RuntimeException("[CollaborationPayloadSerializer] failed to serialize JSON",
                 e));
-  }
-
-  public Mono<String> serializeForBroadcast(CollaborationOutbound event) {
-    return Mono.fromCallable(() -> {
-      ObjectNode payload = objectMapper.valueToTree(event);
-      payload.remove(SESSION_ID_FIELD);
-      return objectMapper.writeValueAsString(payload);
-    }).onErrorMap(JsonProcessingException.class,
-        e -> new RuntimeException(
-            "[CollaborationPayloadSerializer] failed to serialize broadcast JSON",
-            e));
   }
 
 }

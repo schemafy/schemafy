@@ -8,6 +8,7 @@ import com.schemafy.core.project.application.port.in.CreateWorkspaceInvitationUs
 import com.schemafy.core.project.application.port.out.InvitationPort;
 import com.schemafy.core.project.domain.Invitation;
 import com.schemafy.core.ulid.application.port.out.UlidGeneratorPort;
+import com.schemafy.core.user.domain.Email;
 
 import lombok.RequiredArgsConstructor;
 import reactor.core.publisher.Mono;
@@ -25,24 +26,24 @@ class CreateWorkspaceInvitationService
   @Override
   public Mono<Invitation> createWorkspaceInvitation(
       CreateWorkspaceInvitationCommand command) {
-    return workspaceInvitationHelper.validateAdmin(command.workspaceId(),
-        command.requesterId())
-        .then(workspaceInvitationHelper.findWorkspaceOrThrow(
-            command.workspaceId()))
-        .flatMap(workspace -> workspaceInvitationHelper
-            .checkNotAlreadyMemberByEmail(command.workspaceId(),
-                command.email())
-            .then(workspaceInvitationHelper.checkDuplicatePendingInvitation(
-                command.workspaceId(), command.email()))
-            .thenReturn(workspace))
-        .flatMap(workspace -> Mono.fromCallable(ulidGeneratorPort::generate)
-            .flatMap(id -> invitationPort.save(
-                Invitation.createWorkspaceInvitation(
-                    id,
-                    command.workspaceId(),
-                    command.email(),
-                    command.role(),
-                    command.requesterId()))))
+    return Mono.fromSupplier(() -> Email.from(command.email()))
+        .flatMap(email -> workspaceInvitationHelper.validateAdmin(
+            command.workspaceId(), command.requesterId())
+            .then(workspaceInvitationHelper.findWorkspaceOrThrow(
+                command.workspaceId()))
+            .flatMap(workspace -> workspaceInvitationHelper
+                .checkNotAlreadyMemberByEmail(command.workspaceId(), email)
+                .then(workspaceInvitationHelper.checkDuplicatePendingInvitation(
+                    command.workspaceId(), email))
+                .thenReturn(workspace))
+            .flatMap(workspace -> Mono.fromCallable(ulidGeneratorPort::generate)
+                .flatMap(id -> invitationPort.save(
+                    Invitation.createWorkspaceInvitation(
+                        id,
+                        command.workspaceId(),
+                        email.address(),
+                        command.role(),
+                        command.requesterId())))))
         .as(transactionalOperator::transactional);
   }
 

@@ -1,16 +1,20 @@
 import { observer } from 'mobx-react-lite';
 import {
-  Toolbar,
-  RelationshipEditor,
   FloatingButtons,
-  SchemaSelector,
-  TempMemoPreview,
-  useCanvasController,
-  SelectedSchemaProvider,
   ReactFlowCanvas,
+  RelationshipEditor,
+  SchemaSelector,
+  SelectedSchemaProvider,
+  TempMemoPreview,
+  Toolbar,
+  useCanvasController,
 } from '@/features/drawing';
 import { MemoProvider } from '@/features/memo/context';
-import { ChatOverlay, ChatInput } from '@/components/Collaboration';
+import {
+  RemoteCursors,
+  ChatInput,
+  ChatOverlay,
+} from '@/features/collaboration/components';
 
 const CanvasContent = observer(() => {
   const {
@@ -109,6 +113,7 @@ const CanvasContent = observer(() => {
         </div>
       </div>
       <ChatOverlay />
+      <RemoteCursors />
     </>
   );
 });

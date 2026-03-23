@@ -15,8 +15,8 @@ import reactor.core.publisher.Mono;
 public class WorkspacePersistenceAdapter
     implements WorkspacePort, WorkspaceMemberPort {
 
-  private final DomainWorkspaceRepository workspaceRepository;
-  private final DomainWorkspaceMemberRepository workspaceMemberRepository;
+  private final WorkspaceRepository workspaceRepository;
+  private final WorkspaceMemberRepository workspaceMemberRepository;
 
   @Override
   public Mono<Workspace> save(Workspace workspace) {
