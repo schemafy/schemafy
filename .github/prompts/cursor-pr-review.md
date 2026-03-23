@@ -17,7 +17,7 @@ Execution context:
 Review scope rules:
 
 - Include only code/config file extensions:
-  - `.ts`, `.tsx`, `.js`, `.jsx`, `.java`, `.gradle`, `.sql`, `.yml`, `.yaml`
+    - `.ts`, `.tsx`, `.js`, `.jsx`, `.java`, `.gradle`, `.sql`, `.yml`, `.yaml`
 - Exclude:
     - `package-lock.json`
     - `*.md`
@@ -41,33 +41,35 @@ Suggested command flow:
 4. For each issue, confirm target line exists in changed lines of the current diff.
 5. Output line comments as JSON to stdout (see output format below). Do NOT call any GitHub API to post comments.
 
-CRITICAL: You MUST end your final output with EXACTLY the block below. This is machine-parsed by a shell script. Any deviation — extra text, indentation, code fences, or natural-language summary instead of this block — will cause a parse failure.
+Required output format to stdout (final lines):
 
-REQUIRED OUTPUT BLOCK (copy exactly, do not paraphrase or reformat):
+- `PR_OVERALL_COMMENT_BEGIN`
+- (한국어 마크다운으로 PR 전반 코멘트)
+    - 기본 포함:
+        - `### 요약`
+        - `### 주요 변경점`
+    - 선택 포함(개선 사항이 있을 때만):
+        - `### 개선 사항`
+    - High/Medium 이슈가 없으면 `LGTM` 문구를 반드시 포함
+- `PR_OVERALL_COMMENT_END`
+- `LINE_COMMENTS_BEGIN`
+- JSON array of line comment objects, one per line. Each object:
+    - `path`: relative file path
+    - `line`: line number in the diff
+    - `side`: `"RIGHT"`
+    - `body`: Korean comment text including `<!-- cursor-pr-review:v1 -->` marker
+- If no issues found, output an empty array `[]`.
+- `LINE_COMMENTS_END`
+- `요약: High=<number>, Medium=<number>, Comments=<number>`
+- `완료: cursor-pr-review:v1`
 
-PR_OVERALL_COMMENT_BEGIN
-### 요약
-(한 문단 요약)
+Formatting requirements (strict):
 
-### 주요 변경점
-(변경점 bullet list)
-
-### 개선 사항
-(개선 사항이 없으면 이 섹션 전체를 생략)
-PR_OVERALL_COMMENT_END
-LINE_COMMENTS_BEGIN
-[{"path":"<file>","line":<number>,"side":"RIGHT","body":"<Korean comment>\n<!-- cursor-pr-review:v1 -->"}]
-LINE_COMMENTS_END
-요약: High=<number>, Medium=<number>, Comments=<number>
-완료: cursor-pr-review:v1
-
-Rules for the output block:
-- The marker lines (`PR_OVERALL_COMMENT_BEGIN`, `PR_OVERALL_COMMENT_END`, `LINE_COMMENTS_BEGIN`, `LINE_COMMENTS_END`) MUST appear as standalone lines with NO leading/trailing spaces or characters.
-- Do NOT wrap this block in markdown code fences (no ` ``` `).
-- Do NOT write a conversational summary before or after this block. The block IS your final output.
-- All text inside `PR_OVERALL_COMMENT_BEGIN` ~ `PR_OVERALL_COMMENT_END` and all `body` fields in LINE_COMMENTS MUST be written in Korean.
-- If no High/Medium issues found: include `LGTM` in the 요약 section and output `[]` for LINE_COMMENTS.
-- LINE_COMMENTS must be a valid JSON array. For no issues, output exactly `[]` on a single line.
+- Emit marker lines exactly as plain text (no indentation, no extra characters):
+    - `PR_OVERALL_COMMENT_BEGIN`, `PR_OVERALL_COMMENT_END`
+    - `LINE_COMMENTS_BEGIN`, `LINE_COMMENTS_END`
+- Do not wrap the final output section in markdown code fences.
+- For `LINE_COMMENTS` section, output a valid JSON array only (for no issues, exactly `[]`).
 
 Quality bar:
 
