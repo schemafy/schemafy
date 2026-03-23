@@ -141,7 +141,7 @@ jobs:
 
           SELECTED_MODEL="${CURSOR_MODEL:-auto}"
           echo "selected_model=${SELECTED_MODEL}" >> "$GITHUB_OUTPUT"
-          
+
           # Resolve PR metadata early so downstream steps can still publish
           # failure summaries even when this step exits early.
           if [ -n "${PR_NUMBER:-}" ]; then
@@ -155,6 +155,7 @@ jobs:
               PR_BODY="$(echo "$pr_meta_json" | jq -r '.body // ""')"
             fi
           fi
+          
           if [ -n "${PR_HEAD_SHA:-}" ]; then
             echo "pr_head_sha=${PR_HEAD_SHA}" >> "$GITHUB_OUTPUT"
           fi
@@ -165,6 +166,12 @@ jobs:
             exit 97
           fi
           
+          if [ -z "${PR_NUMBER:-}" ]; then
+            echo "ERROR: PR_NUMBER is missing. For workflow_dispatch, provide inputs.pr_number." | tee cursor-review-output.txt
+            echo "cursor_exit_code=98" >> "$GITHUB_OUTPUT"
+            exit 98
+          fi
+          
           pr_meta_json="$(gh api "repos/${GITHUB_REPOSITORY}/pulls/${PR_NUMBER}")"
           PR_URL="$(echo "$pr_meta_json" | jq -r '.html_url')"
           PR_HEAD_SHA="$(echo "$pr_meta_json" | jq -r '.head.sha')"
@@ -172,12 +179,6 @@ jobs:
           PR_HEAD_REF="$(echo "$pr_meta_json" | jq -r '.head.ref')"
           PR_TITLE="$(echo "$pr_meta_json" | jq -r '.title // ""')"
           PR_BODY="$(echo "$pr_meta_json" | jq -r '.body // ""')"
-
-          if [ -z "${PR_NUMBER:-}" ]; then
-            echo "ERROR: PR_NUMBER is missing. For workflow_dispatch, provide inputs.pr_number." | tee cursor-review-output.txt
-            echo "cursor_exit_code=98" >> "$GITHUB_OUTPUT"
-            exit 98
-          fi
 
           commit_messages="$(
             gh api "repos/${GITHUB_REPOSITORY}/pulls/${PR_NUMBER}/commits?per_page=100" --paginate \
