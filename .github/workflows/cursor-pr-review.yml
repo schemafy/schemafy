@@ -237,6 +237,27 @@ jobs:
             echo "Related Issues Context:"
             cat cursor-related-issues.md
             echo
+            echo "## 최근 머지된 PR 히스토리 컨텍스트"
+            context_dir="trusted-base/.github/pr-contexts"
+            if [ -d "${context_dir}" ]; then
+              context_files="$(ls -v "${context_dir}"/pr-*.md 2>/dev/null | tail -n 5)"
+              if [ -n "${context_files:-}" ]; then
+                echo "(최근 최대 5개 PR 컨텍스트 포함)"
+                echo
+                while IFS= read -r cf; do
+                  [ -z "$cf" ] && continue
+                  cat "${cf}"
+                  echo
+                  echo "---"
+                  echo
+                done <<< "${context_files}"
+              else
+                echo "(이전 PR 컨텍스트 없음)"
+              fi
+            else
+              echo "(컨텍스트 없음: .github/pr-contexts 디렉토리가 존재하지 않음)"
+            fi
+            echo
             cat trusted-base/.github/prompts/cursor-pr-review.md
           } > cursor-runtime-prompt.md
 
