@@ -23,35 +23,35 @@ class UserPersistenceAdapter implements
     FindUserByIdPort,
     FindUsersByIdsPort {
 
-  private final DomainUserRepository domainUserRepository;
+  private final UserRepository userRepository;
   private final UserMapper userMapper;
 
   @Override
   public Mono<Boolean> existsUserByEmail(String email) {
-    return domainUserRepository.existsByEmail(email);
+    return userRepository.existsByEmail(email);
   }
 
   @Override
   public Mono<User> createUser(User user) {
-    return domainUserRepository.save(userMapper.toEntity(user))
+    return userRepository.save(userMapper.toEntity(user))
         .map(userMapper::toDomain);
   }
 
   @Override
   public Mono<User> findUserByEmail(String email) {
-    return domainUserRepository.findByEmail(email)
+    return userRepository.findByEmail(email)
         .map(userMapper::toDomain);
   }
 
   @Override
   public Mono<User> findUserById(String userId) {
-    return domainUserRepository.findById(userId)
+    return userRepository.findById(userId)
         .map(userMapper::toDomain);
   }
 
   @Override
   public Flux<User> findUsersByIds(Set<String> userIds) {
-    return domainUserRepository.findAllById(userIds)
+    return userRepository.findAllById(userIds)
         .map(userMapper::toDomain);
   }
 

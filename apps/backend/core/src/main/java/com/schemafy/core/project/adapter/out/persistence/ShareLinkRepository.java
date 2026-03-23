@@ -8,7 +8,7 @@ import com.schemafy.core.project.domain.ShareLink;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
-public interface DomainShareLinkRepository
+public interface ShareLinkRepository
     extends ReactiveCrudRepository<ShareLink, String> {
 
   @Query("SELECT * FROM share_links WHERE code = :code AND deleted_at IS NULL")

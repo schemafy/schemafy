@@ -16,8 +16,8 @@ import reactor.core.publisher.Mono;
 public class ProjectPersistenceAdapter
     implements ProjectPort, ProjectMemberPort, ActiveProjectExistsPort {
 
-  private final DomainProjectRepository projectRepository;
-  private final DomainProjectMemberRepository projectMemberRepository;
+  private final ProjectRepository projectRepository;
+  private final ProjectMemberRepository projectMemberRepository;
 
   @Override
   public Mono<Project> save(Project project) {
