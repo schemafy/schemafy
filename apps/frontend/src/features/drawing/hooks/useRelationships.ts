@@ -1,4 +1,4 @@
-import { useState, useRef, useMemo } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import type { Connection, Edge, EdgeChange } from '@xyflow/react';
 import { toast } from 'sonner';
 import { useSelectedSchema } from '../contexts';
@@ -19,22 +19,42 @@ import {
 } from '../utils/relationshipHelpers';
 import type { RelationshipConfig, RelationshipExtra, Point } from '../types';
 import { RELATIONSHIP_TYPES } from '../types';
+import { useLatest } from './useLatest';
+
+const attachControlPointHandler = (
+  edge: Edge,
+  onControlPointDragEnd: (
+    relationshipId: string,
+    controlPoint1: Point,
+    controlPoint2?: Point,
+  ) => void,
+) =>
+  ({
+    ...edge,
+    data: {
+      ...edge.data,
+      onControlPointDragEnd,
+    },
+  }) as Edge;
 
 export const useRelationships = (relationshipConfig: RelationshipConfig) => {
   const { selectedSchemaId } = useSelectedSchema();
   const { data: snapshotsData } = useSchemaSnapshots(selectedSchemaId);
+  const snapshotsRef = useLatest(snapshotsData);
+  const relationshipConfigRef = useLatest(relationshipConfig);
 
-  const createRelationshipWithExtraMutation =
+  const { mutate: createRelationshipWithExtra } =
     useCreateRelationshipWithExtra(selectedSchemaId);
-  const changeRelationshipNameMutation =
+  const { mutate: changeRelationshipName } =
     useChangeRelationshipName(selectedSchemaId);
-  const changeRelationshipExtraMutation =
+  const { mutate: changeRelationshipExtra } =
     useChangeRelationshipExtra(selectedSchemaId);
-  const changeRelationshipKindMutation =
+  const { mutate: changeRelationshipKind } =
     useChangeRelationshipKind(selectedSchemaId);
-  const changeRelationshipCardinalityMutation =
+  const { mutate: changeRelationshipCardinality } =
     useChangeRelationshipCardinality(selectedSchemaId);
-  const deleteRelationshipMutation = useDeleteRelationship(selectedSchemaId);
+  const { mutate: deleteRelationshipMutation } =
+    useDeleteRelationship(selectedSchemaId);
 
   const [selectedRelationship, setSelectedRelationship] = useState<
     string | null
@@ -42,224 +62,279 @@ export const useRelationships = (relationshipConfig: RelationshipConfig) => {
   const relationshipReconnectSuccessful = useRef(true);
   const justFinishedControlPointDrag = useRef(false);
 
-  const updateExtra = (
-    relationshipId: string,
-    updater: (extra: RelationshipExtra) => RelationshipExtra,
-  ) => {
-    const snapshot = findRelationshipById(snapshotsData, relationshipId);
-    if (!snapshot) return;
+  const updateExtra = useCallback(
+    (
+      relationshipId: string,
+      updater: (extra: RelationshipExtra) => RelationshipExtra,
+    ) => {
+      const snapshot = findRelationshipById(
+        snapshotsRef.current,
+        relationshipId,
+      );
+      if (!snapshot) return;
 
-    const currentExtra = parseRelationshipExtra(snapshot.relationship.extra);
-    changeRelationshipExtraMutation.mutate({
-      relationshipId,
-      data: { extra: JSON.stringify(updater(currentExtra)) },
-    });
-  };
-
-  const updateRelationshipControlPoint = (
-    relationshipId: string,
-    controlPoint1: Point,
-    controlPoint2?: Point,
-  ) => {
-    justFinishedControlPointDrag.current = true;
-    requestAnimationFrame(() => {
-      justFinishedControlPointDrag.current = false;
-    });
-
-    updateExtra(relationshipId, (extra: RelationshipExtra) => ({
-      ...extra,
-      controlPoint1,
-      ...(controlPoint2 && { controlPoint2 }),
-    }));
-  };
-
-  const controlPointCallbackRef = useRef(updateRelationshipControlPoint);
-  controlPointCallbackRef.current = updateRelationshipControlPoint;
-
-  const relationships = useMemo(() => {
-    const edges = convertSnapshotsToEdges(snapshotsData);
-    return edges.map((edge) => ({
-      ...edge,
-      data: {
-        ...edge.data,
-        onControlPointDragEnd: (
-          ...args: Parameters<typeof updateRelationshipControlPoint>
-        ) => controlPointCallbackRef.current(...args),
-      },
-    }));
-  }, [snapshotsData]);
-
-  const createRelationshipFromValidation = (
-    validation: {
-      fkTableId: string;
-      pkTableId: string;
+      const currentExtra = parseRelationshipExtra(snapshot.relationship.extra);
+      changeRelationshipExtra({
+        relationshipId,
+        data: { extra: JSON.stringify(updater(currentExtra)) },
+      });
     },
-    connection: Connection,
-  ) => {
-    const typeConfig = RELATIONSHIP_TYPES[relationshipConfig.type];
-    const kind = relationshipConfig.isNonIdentifying
-      ? 'NON_IDENTIFYING'
-      : 'IDENTIFYING';
+    [changeRelationshipExtra],
+  );
 
-    const isSameDirection = connection.source === validation.fkTableId;
-    const extra: RelationshipExtra = {
-      fkHandle:
-        (isSameDirection ? connection.sourceHandle : connection.targetHandle) ??
-        undefined,
-      pkHandle:
-        (isSameDirection ? connection.targetHandle : connection.sourceHandle) ??
-        undefined,
-    };
-
-    createRelationshipWithExtraMutation.mutate({
-      request: {
-        fkTableId: validation.fkTableId,
-        pkTableId: validation.pkTableId,
-        kind,
-        cardinality: typeConfig.cardinality,
-      },
-      extra: JSON.stringify(extra),
-    });
-  };
-
-  const onConnect = (params: Connection) => {
-    const validation = validateConnection({
-      snapshots: snapshotsData,
-      connection: params,
-    });
-
-    if (!validation.isValid) {
-      if (validation.error) {
-        toast.error(validation.error);
-      }
-      return;
-    }
-
-    createRelationshipFromValidation(validation, params);
-  };
-
-  const onRelationshipsChange = (changes: EdgeChange[]) => {
-    changes
-      .filter((change) => change.type === 'remove')
-      .forEach((change) => {
-        deleteRelationshipMutation.mutate(change.id);
+  const updateRelationshipControlPoint = useCallback(
+    (relationshipId: string, controlPoint1: Point, controlPoint2?: Point) => {
+      justFinishedControlPointDrag.current = true;
+      requestAnimationFrame(() => {
+        justFinishedControlPointDrag.current = false;
       });
-  };
 
-  const onRelationshipClick = (event: React.MouseEvent, relationship: Edge) => {
-    if (justFinishedControlPointDrag.current) return;
-    event.stopPropagation();
-    setSelectedRelationship(relationship.id);
-  };
-
-  const onReconnectStart = () => {
-    relationshipReconnectSuccessful.current = false;
-  };
-
-  const onReconnect = (oldRelationship: Edge, newConnection: Connection) => {
-    const validation = validateConnection({
-      snapshots: snapshotsData,
-      connection: newConnection,
-    });
-
-    if (!validation.isValid) {
-      if (validation.error) {
-        toast.error(validation.error);
-      }
-      return;
-    }
-
-    relationshipReconnectSuccessful.current = true;
-
-    const isSameTablePair =
-      oldRelationship.source === validation.fkTableId &&
-      oldRelationship.target === validation.pkTableId;
-
-    if (isSameTablePair) {
-      const isSameDirection = newConnection.source === validation.fkTableId;
-
-      updateExtra(oldRelationship.id, (extra) => ({
+      updateExtra(relationshipId, (extra: RelationshipExtra) => ({
         ...extra,
-        fkHandle:
-          (isSameDirection
-            ? newConnection.sourceHandle
-            : newConnection.targetHandle) ?? undefined,
-        pkHandle:
-          (isSameDirection
-            ? newConnection.targetHandle
-            : newConnection.sourceHandle) ?? undefined,
+        controlPoint1,
+        ...(controlPoint2 && { controlPoint2 }),
       }));
-    } else {
-      deleteRelationshipMutation.mutate(oldRelationship.id, {
-        onSuccess: () => {
-          createRelationshipFromValidation(validation, newConnection);
-        },
-      });
-    }
-  };
+    },
+    [updateExtra],
+  );
 
-  const onReconnectEnd = (_: MouseEvent | TouchEvent, relationship: Edge) => {
-    if (!relationshipReconnectSuccessful.current) {
-      deleteRelationshipMutation.mutate(relationship.id);
-    }
-    relationshipReconnectSuccessful.current = true;
-  };
+  const [relationships, setRelationships] = useState<Edge[]>(() =>
+    convertSnapshotsToEdges(snapshotsData).map((edge) =>
+      attachControlPointHandler(edge, updateRelationshipControlPoint),
+    ),
+  );
 
-  const updateRelationshipConfig = (
-    relationshipId: string,
-    config: RelationshipConfig,
-  ) => {
-    const relationshipSnapshot = findRelationshipById(
-      snapshotsData,
-      relationshipId,
-    );
+  useEffect(() => {
+    setRelationships((previousRelationships) => {
+      const previousEdgesById = new Map(
+        previousRelationships.map((relationship) => [
+          relationship.id,
+          relationship,
+        ]),
+      );
 
-    if (!relationshipSnapshot) {
-      toast.error('Relationship not found');
-      return;
-    }
+      const nextRelationships = convertSnapshotsToEdges(snapshotsData).map(
+        (edge) => {
+          const nextEdge = attachControlPointHandler(
+            edge,
+            updateRelationshipControlPoint,
+          );
+          const previousEdge = previousEdgesById.get(edge.id);
 
-    const { relationship } = relationshipSnapshot;
-    const typeConfig = RELATIONSHIP_TYPES[config.type];
-    const newKind = config.isNonIdentifying ? 'NON_IDENTIFYING' : 'IDENTIFYING';
+          if (previousEdge && hasSameEdgeContent(previousEdge, nextEdge)) {
+            return previousEdge;
+          }
 
-    const needsKindUpdate = relationship.kind !== newKind;
-    const needsCardinalityUpdate =
-      relationship.cardinality !== typeConfig.cardinality;
-
-    if (needsKindUpdate) {
-      changeRelationshipKindMutation.mutate(
-        { relationshipId, data: { kind: newKind } },
-        {
-          onSuccess: () => {
-            if (needsCardinalityUpdate) {
-              changeRelationshipCardinalityMutation.mutate({
-                relationshipId,
-                data: { cardinality: typeConfig.cardinality },
-              });
-            }
-          },
+          return nextEdge;
         },
       );
-    } else if (needsCardinalityUpdate) {
-      changeRelationshipCardinalityMutation.mutate({
-        relationshipId,
-        data: { cardinality: typeConfig.cardinality },
-      });
-    }
-  };
 
-  const deleteRelationship = (relationshipId: string) => {
-    deleteRelationshipMutation.mutate(relationshipId);
-    setSelectedRelationship(null);
-  };
-
-  const updateRelationshipName = (relationshipId: string, newName: string) => {
-    changeRelationshipNameMutation.mutate({
-      relationshipId,
-      data: { newName },
+      return isSameEdgeList(previousRelationships, nextRelationships)
+        ? previousRelationships
+        : nextRelationships;
     });
-  };
+  }, [snapshotsData, updateRelationshipControlPoint]);
+
+  const createRelationshipFromValidation = useCallback(
+    (
+      validation: {
+        fkTableId: string;
+        pkTableId: string;
+      },
+      connection: Connection,
+    ) => {
+      const currentRelationshipConfig = relationshipConfigRef.current;
+      const typeConfig = RELATIONSHIP_TYPES[currentRelationshipConfig.type];
+      const kind = currentRelationshipConfig.isNonIdentifying
+        ? 'NON_IDENTIFYING'
+        : 'IDENTIFYING';
+
+      const isSameDirection = connection.source === validation.fkTableId;
+      const extra: RelationshipExtra = {
+        fkHandle:
+          (isSameDirection
+            ? connection.sourceHandle
+            : connection.targetHandle) ?? undefined,
+        pkHandle:
+          (isSameDirection
+            ? connection.targetHandle
+            : connection.sourceHandle) ?? undefined,
+      };
+
+      createRelationshipWithExtra({
+        request: {
+          fkTableId: validation.fkTableId,
+          pkTableId: validation.pkTableId,
+          kind,
+          cardinality: typeConfig.cardinality,
+        },
+        extra: JSON.stringify(extra),
+      });
+    },
+    [createRelationshipWithExtra],
+  );
+
+  const onConnect = useCallback(
+    (params: Connection) => {
+      const validation = validateConnection({
+        snapshots: snapshotsRef.current,
+        connection: params,
+      });
+
+      if (!validation.isValid) {
+        if (validation.error) {
+          toast.error(validation.error);
+        }
+        return;
+      }
+
+      createRelationshipFromValidation(validation, params);
+    },
+    [createRelationshipFromValidation],
+  );
+
+  const onRelationshipsChange = useCallback(
+    (changes: EdgeChange[]) => {
+      changes
+        .filter((change) => change.type === 'remove')
+        .forEach((change) => {
+          deleteRelationshipMutation(change.id);
+        });
+    },
+    [deleteRelationshipMutation],
+  );
+
+  const onRelationshipClick = useCallback(
+    (event: React.MouseEvent, relationship: Edge) => {
+      if (justFinishedControlPointDrag.current) return;
+      event.stopPropagation();
+      setSelectedRelationship(relationship.id);
+    },
+    [],
+  );
+
+  const onReconnectStart = useCallback(() => {
+    relationshipReconnectSuccessful.current = false;
+  }, []);
+
+  const onReconnect = useCallback(
+    (oldRelationship: Edge, newConnection: Connection) => {
+      const validation = validateConnection({
+        snapshots: snapshotsRef.current,
+        connection: newConnection,
+      });
+
+      if (!validation.isValid) {
+        if (validation.error) {
+          toast.error(validation.error);
+        }
+        return;
+      }
+
+      relationshipReconnectSuccessful.current = true;
+
+      const isSameTablePair =
+        oldRelationship.source === validation.fkTableId &&
+        oldRelationship.target === validation.pkTableId;
+
+      if (isSameTablePair) {
+        const isSameDirection = newConnection.source === validation.fkTableId;
+
+        updateExtra(oldRelationship.id, (extra) => ({
+          ...extra,
+          fkHandle:
+            (isSameDirection
+              ? newConnection.sourceHandle
+              : newConnection.targetHandle) ?? undefined,
+          pkHandle:
+            (isSameDirection
+              ? newConnection.targetHandle
+              : newConnection.sourceHandle) ?? undefined,
+        }));
+      } else {
+        deleteRelationshipMutation(oldRelationship.id, {
+          onSuccess: () => {
+            createRelationshipFromValidation(validation, newConnection);
+          },
+        });
+      }
+    },
+    [createRelationshipFromValidation, deleteRelationshipMutation, updateExtra],
+  );
+
+  const onReconnectEnd = useCallback(
+    (_: MouseEvent | TouchEvent, relationship: Edge) => {
+      if (!relationshipReconnectSuccessful.current) {
+        deleteRelationshipMutation(relationship.id);
+      }
+      relationshipReconnectSuccessful.current = true;
+    },
+    [deleteRelationshipMutation],
+  );
+
+  const updateRelationshipConfig = useCallback(
+    (relationshipId: string, config: RelationshipConfig) => {
+      const relationshipSnapshot = findRelationshipById(
+        snapshotsRef.current,
+        relationshipId,
+      );
+
+      if (!relationshipSnapshot) {
+        toast.error('Relationship not found');
+        return;
+      }
+
+      const { relationship } = relationshipSnapshot;
+      const typeConfig = RELATIONSHIP_TYPES[config.type];
+      const newKind = config.isNonIdentifying
+        ? 'NON_IDENTIFYING'
+        : 'IDENTIFYING';
+
+      const needsKindUpdate = relationship.kind !== newKind;
+      const needsCardinalityUpdate =
+        relationship.cardinality !== typeConfig.cardinality;
+
+      if (needsKindUpdate) {
+        changeRelationshipKind(
+          { relationshipId, data: { kind: newKind } },
+          {
+            onSuccess: () => {
+              if (needsCardinalityUpdate) {
+                changeRelationshipCardinality({
+                  relationshipId,
+                  data: { cardinality: typeConfig.cardinality },
+                });
+              }
+            },
+          },
+        );
+      } else if (needsCardinalityUpdate) {
+        changeRelationshipCardinality({
+          relationshipId,
+          data: { cardinality: typeConfig.cardinality },
+        });
+      }
+    },
+    [changeRelationshipCardinality, changeRelationshipKind],
+  );
+
+  const deleteRelationship = useCallback(
+    (relationshipId: string) => {
+      deleteRelationshipMutation(relationshipId);
+      setSelectedRelationship(null);
+    },
+    [deleteRelationshipMutation],
+  );
+
+  const updateRelationshipName = useCallback(
+    (relationshipId: string, newName: string) => {
+      changeRelationshipName({
+        relationshipId,
+        data: { newName },
+      });
+    },
+    [changeRelationshipName],
+  );
 
   return {
     relationships,
@@ -275,4 +350,39 @@ export const useRelationships = (relationshipConfig: RelationshipConfig) => {
     updateRelationshipName,
     setSelectedRelationship,
   };
+};
+
+const isSameEdgeList = (prev: Edge[], next: Edge[]) =>
+  prev.length === next.length &&
+  prev.every((edge, index) => edge === next[index]);
+
+const hasSameEdgeContent = (previousEdge: Edge, nextEdge: Edge) =>
+  previousEdge.source === nextEdge.source &&
+  previousEdge.target === nextEdge.target &&
+  previousEdge.sourceHandle === nextEdge.sourceHandle &&
+  previousEdge.targetHandle === nextEdge.targetHandle &&
+  previousEdge.label === nextEdge.label &&
+  previousEdge.type === nextEdge.type &&
+  JSON.stringify(previousEdge.style ?? null) ===
+    JSON.stringify(nextEdge.style ?? null) &&
+  JSON.stringify(previousEdge.markerStart ?? null) ===
+    JSON.stringify(nextEdge.markerStart ?? null) &&
+  JSON.stringify(previousEdge.markerEnd ?? null) ===
+    JSON.stringify(nextEdge.markerEnd ?? null) &&
+  JSON.stringify(previousEdge.labelStyle ?? null) ===
+    JSON.stringify(nextEdge.labelStyle ?? null) &&
+  JSON.stringify(stripEdgeCallback(previousEdge.data)) ===
+    JSON.stringify(stripEdgeCallback(nextEdge.data));
+
+const stripEdgeCallback = (
+  data: Edge['data'] | undefined,
+): Record<string, unknown> | null => {
+  if (!data) return null;
+
+  const { onControlPointDragEnd: _ignored, ...rest } = data as Record<
+    string,
+    unknown
+  >;
+
+  return rest;
 };

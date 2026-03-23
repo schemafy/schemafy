@@ -3,6 +3,7 @@ import {
   useCallback,
   useContext,
   useEffect,
+  useMemo,
   useState,
 } from 'react';
 import { applyNodeChanges, type Node, type NodeChange } from '@xyflow/react';
@@ -38,7 +39,7 @@ export const useMemoStore = () => {
       });
   }, []);
 
-  const createMemo = async (
+  const createMemo = useCallback(async (
     position: { x: number; y: number },
     content: string,
   ) => {
@@ -50,7 +51,7 @@ export const useMemoStore = () => {
       });
       setStoredMemos((prev) => [memo, ...prev]);
     } catch {}
-  };
+  }, [selectedSchemaId]);
 
   const updateMemo = useCallback(async (id: string, positions: string) => {
     try {
@@ -89,7 +90,7 @@ export const useMemoStore = () => {
     [updateMemo, deleteMemo],
   );
 
-  const createComment = async (memoId: string, body: string) => {
+  const createComment = useCallback(async (memoId: string, body: string) => {
     try {
       const comment = await memoApi.createMemoComment(memoId, { body });
       setStoredMemos((prev) =>
@@ -98,9 +99,9 @@ export const useMemoStore = () => {
         ),
       );
     } catch {}
-  };
+  }, []);
 
-  const updateComment = async (
+  const updateComment = useCallback(async (
     memoId: string,
     commentId: string,
     body: string,
@@ -122,9 +123,9 @@ export const useMemoStore = () => {
         ),
       );
     } catch {}
-  };
+  }, []);
 
-  const deleteComment = async (memoId: string, commentId: string) => {
+  const deleteComment = useCallback(async (memoId: string, commentId: string) => {
     try {
       await memoApi.deleteMemoComment(memoId, commentId);
       setStoredMemos((prev) => {
@@ -136,18 +137,30 @@ export const useMemoStore = () => {
         return updated.filter((m) => m.id !== memoId || m.comments.length > 0);
       });
     } catch {}
-  };
+  }, []);
 
-  return {
-    memos,
-    onMemosChange,
-    createMemo,
-    updateMemo,
-    deleteMemo,
-    createComment,
-    updateComment,
-    deleteComment,
-  };
+  return useMemo(
+    () => ({
+      memos,
+      onMemosChange,
+      createMemo,
+      updateMemo,
+      deleteMemo,
+      createComment,
+      updateComment,
+      deleteComment,
+    }),
+    [
+      memos,
+      onMemosChange,
+      createMemo,
+      updateMemo,
+      deleteMemo,
+      createComment,
+      updateComment,
+      deleteComment,
+    ],
+  );
 };
 
 export type MemoStoreValue = ReturnType<typeof useMemoStore>;
