@@ -5,8 +5,8 @@ import java.util.UUID;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.r2dbc.core.DatabaseClient;
 
-import com.schemafy.core.project.adapter.out.persistence.DomainProjectRepository;
-import com.schemafy.core.project.adapter.out.persistence.DomainWorkspaceRepository;
+import com.schemafy.core.project.adapter.out.persistence.ProjectRepository;
+import com.schemafy.core.project.adapter.out.persistence.WorkspaceRepository;
 import com.schemafy.core.project.domain.Project;
 import com.schemafy.core.project.domain.Workspace;
 import com.schemafy.core.ulid.application.service.UlidGenerator;
@@ -14,10 +14,10 @@ import com.schemafy.core.ulid.application.service.UlidGenerator;
 public abstract class ErdProjectIntegrationSupport {
 
   @Autowired
-  protected DomainWorkspaceRepository workspaceRepository;
+  protected WorkspaceRepository workspaceRepository;
 
   @Autowired
-  protected DomainProjectRepository projectRepository;
+  protected ProjectRepository projectRepository;
 
   @Autowired
   protected DatabaseClient databaseClient;
