@@ -6,6 +6,7 @@ import org.springframework.transaction.reactive.TransactionalOperator;
 import com.schemafy.core.project.application.port.in.UpdateWorkspaceMemberRoleCommand;
 import com.schemafy.core.project.application.port.in.UpdateWorkspaceMemberRoleUseCase;
 import com.schemafy.core.project.domain.WorkspaceMember;
+import com.schemafy.core.project.domain.WorkspaceRole;
 
 import lombok.RequiredArgsConstructor;
 import reactor.core.publisher.Mono;
@@ -30,13 +31,29 @@ class UpdateWorkspaceMemberRoleService
             command.workspaceId(),
             targetMember,
             member -> member.updateRole(command.role())))
-        .flatMap(savedMember -> projectMembershipPropagationHelper
-            .updateRoleInAllProjects(
-                command.workspaceId(),
-                command.targetUserId(),
-                command.role())
+        .flatMap(savedMember -> applyWorkspaceRoleToProjectMemberships(
+            command.workspaceId(),
+            command.targetUserId(),
+            command.role())
             .thenReturn(savedMember))
         .as(transactionalOperator::transactional);
+  }
+
+  private Mono<Void> applyWorkspaceRoleToProjectMemberships(
+      String workspaceId,
+      String userId,
+      WorkspaceRole workspaceRole) {
+    if (workspaceRole.isAdmin()) {
+      return projectMembershipPropagationHelper.syncProjectMembershipsForWorkspaceRole(
+          workspaceId,
+          userId,
+          workspaceRole);
+    }
+
+    return projectMembershipPropagationHelper.updateActiveProjectMembershipRoles(
+        workspaceId,
+        userId,
+        workspaceRole);
   }
 
 }

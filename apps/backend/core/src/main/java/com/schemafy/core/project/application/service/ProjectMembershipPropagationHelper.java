@@ -62,10 +62,11 @@ class ProjectMembershipPropagationHelper {
         .then();
   }
 
-  Mono<Void> updateRoleInAllProjects(
+  Mono<Void> updateActiveProjectMembershipRoles(
       String workspaceId,
       String userId,
       WorkspaceRole workspaceRole) {
+    // 현재 활성 상태인 프로젝트 멤버십의 역할만 변경한다.
     ProjectRole projectRole = workspaceRole.toProjectRole();
     return projectMemberPort
         .findByWorkspaceIdAndUserId(workspaceId, userId)
@@ -98,10 +99,11 @@ class ProjectMembershipPropagationHelper {
         .then();
   }
 
-  Mono<Void> propagateToExistingProjects(
+  Mono<Void> syncProjectMembershipsForWorkspaceRole(
       String workspaceId,
       String userId,
       WorkspaceRole workspaceRole) {
+    // 워크스페이스의 모든 프로젝트를 순회하며 멤버십을 승격, 복원, 생성해 상태를 맞춘다.
     ProjectRole projectRole = workspaceRole.toProjectRole();
 
     return projectPort.findByWorkspaceIdAndNotDeleted(workspaceId)
@@ -109,6 +111,11 @@ class ProjectMembershipPropagationHelper {
             .findLatestByProjectIdAndUserId(project.getId(), userId)
             .flatMap(existing -> {
               if (!existing.isDeleted()) {
+                if (workspaceRole.isAdmin()
+                    && existing.getRoleAsEnum() != projectRole) {
+                  existing.updateRole(projectRole);
+                  return projectMemberPort.save(existing);
+                }
                 return Mono.just(existing);
               }
               existing.restore();
