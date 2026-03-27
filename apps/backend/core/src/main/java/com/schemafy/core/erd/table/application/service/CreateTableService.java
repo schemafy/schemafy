@@ -1,10 +1,13 @@
 package com.schemafy.core.erd.table.application.service;
 
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.reactive.TransactionalOperator;
 
 import com.schemafy.core.common.MutationResult;
 import com.schemafy.core.common.exception.DomainException;
+import com.schemafy.core.erd.operation.application.service.ErdMutationCoordinator;
+import com.schemafy.core.erd.operation.domain.ErdOperationType;
 import com.schemafy.core.erd.schema.application.port.out.GetSchemaByIdPort;
 import com.schemafy.core.erd.schema.domain.exception.SchemaErrorCode;
 import com.schemafy.core.erd.table.application.port.in.CreateTableCommand;
@@ -28,10 +31,17 @@ public class CreateTableService implements CreateTableUseCase {
   private final TableExistsPort tableExistsPort;
   private final GetSchemaByIdPort getSchemaByIdPort;
   private final TransactionalOperator transactionalOperator;
+  private ErdMutationCoordinator erdMutationCoordinator = ErdMutationCoordinator.noop();
+
+  @Autowired
+  void setErdMutationCoordinator(ErdMutationCoordinator erdMutationCoordinator) {
+    this.erdMutationCoordinator = erdMutationCoordinator;
+  }
 
   @Override
   public Mono<MutationResult<CreateTableResult>> createTable(CreateTableCommand command) {
-    return tableExistsPort.existsBySchemaIdAndName(command.schemaId(), command.name())
+    return erdMutationCoordinator.coordinate(ErdOperationType.CREATE_TABLE, command,
+        () -> tableExistsPort.existsBySchemaIdAndName(command.schemaId(), command.name())
         .flatMap(exists -> {
           if (exists) {
             return Mono.error(new DomainException(TableErrorCode.NAME_DUPLICATE,
@@ -66,7 +76,7 @@ public class CreateTableService implements CreateTableUseCase {
                             savedTable.extra()))
                         .map(result -> MutationResult.of(result, id));
                   }));
-        })
+        }))
         .as(transactionalOperator::transactional);
   }
 

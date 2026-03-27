@@ -1,9 +1,12 @@
 package com.schemafy.core.erd.index.application.service;
 
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import com.schemafy.core.common.MutationResult;
 import com.schemafy.core.common.exception.DomainException;
+import com.schemafy.core.erd.operation.application.service.ErdMutationCoordinator;
+import com.schemafy.core.erd.operation.domain.ErdOperationType;
 import com.schemafy.core.erd.index.application.port.in.ChangeIndexNameCommand;
 import com.schemafy.core.erd.index.application.port.in.ChangeIndexNameUseCase;
 import com.schemafy.core.erd.index.application.port.out.ChangeIndexNamePort;
@@ -22,10 +25,16 @@ public class ChangeIndexNameService implements ChangeIndexNameUseCase {
   private final ChangeIndexNamePort changeIndexNamePort;
   private final IndexExistsPort indexExistsPort;
   private final GetIndexByIdPort getIndexByIdPort;
+  private ErdMutationCoordinator erdMutationCoordinator = ErdMutationCoordinator.noop();
+
+  @Autowired
+  void setErdMutationCoordinator(ErdMutationCoordinator erdMutationCoordinator) {
+    this.erdMutationCoordinator = erdMutationCoordinator;
+  }
 
   @Override
   public Mono<MutationResult<Void>> changeIndexName(ChangeIndexNameCommand command) {
-    return Mono.defer(() -> {
+    return erdMutationCoordinator.coordinate(ErdOperationType.CHANGE_INDEX_NAME, command, () -> Mono.defer(() -> {
       String normalizedName = normalizeName(command.newName());
       IndexValidator.validateName(normalizedName);
       return getIndexByIdPort.findIndexById(command.indexId())
@@ -44,7 +53,7 @@ public class ChangeIndexNameService implements ChangeIndexNameUseCase {
                     .changeIndexName(index.id(), normalizedName)
                     .thenReturn(MutationResult.<Void>of(null, index.tableId()));
               }));
-    });
+    }));
   }
 
   private static String normalizeName(String name) {

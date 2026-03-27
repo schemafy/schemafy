@@ -5,6 +5,7 @@ import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
 
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.reactive.TransactionalOperator;
 
@@ -15,6 +16,8 @@ import com.schemafy.core.erd.column.application.port.in.DeleteColumnUseCase;
 import com.schemafy.core.erd.column.application.port.out.DeleteColumnPort;
 import com.schemafy.core.erd.column.application.port.out.GetColumnByIdPort;
 import com.schemafy.core.erd.column.domain.exception.ColumnErrorCode;
+import com.schemafy.core.erd.operation.application.service.ErdMutationCoordinator;
+import com.schemafy.core.erd.operation.domain.ErdOperationType;
 import com.schemafy.core.erd.constraint.application.port.out.DeleteConstraintColumnsByColumnIdPort;
 import com.schemafy.core.erd.constraint.application.port.out.DeleteConstraintPort;
 import com.schemafy.core.erd.constraint.application.port.out.GetConstraintByIdPort;
@@ -70,16 +73,23 @@ public class DeleteColumnService implements DeleteColumnUseCase {
   private final DeleteRelationshipPort deleteRelationshipPort;
   private final GetRelationshipByIdPort getRelationshipByIdPort;
   private final GetRelationshipsByPkTableIdPort getRelationshipsByPkTableIdPort;
+  private ErdMutationCoordinator erdMutationCoordinator = ErdMutationCoordinator.noop();
+
+  @Autowired
+  void setErdMutationCoordinator(ErdMutationCoordinator erdMutationCoordinator) {
+    this.erdMutationCoordinator = erdMutationCoordinator;
+  }
 
   @Override
   public Mono<MutationResult<Void>> deleteColumn(DeleteColumnCommand command) {
     Set<String> affectedTableIds = ConcurrentHashMap.newKeySet();
-    return rejectIfForeignKeyColumn(command.columnId())
+    return erdMutationCoordinator.coordinate(ErdOperationType.DELETE_COLUMN, command,
+        () -> rejectIfForeignKeyColumn(command.columnId())
         .then(Mono.defer(() -> deleteColumnInternal(
             command.columnId(),
             ConcurrentHashMap.newKeySet(),
             affectedTableIds)))
-        .then(Mono.fromCallable(() -> MutationResult.<Void>of(null, affectedTableIds)))
+        .then(Mono.fromCallable(() -> MutationResult.<Void>of(null, affectedTableIds))))
         .as(transactionalOperator::transactional);
   }
 

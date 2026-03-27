@@ -5,6 +5,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.reactive.TransactionalOperator;
 
@@ -22,6 +23,8 @@ import com.schemafy.core.erd.relationship.domain.Relationship;
 import com.schemafy.core.erd.relationship.domain.RelationshipColumn;
 import com.schemafy.core.erd.relationship.domain.exception.RelationshipErrorCode;
 import com.schemafy.core.erd.relationship.domain.validator.RelationshipValidator;
+import com.schemafy.core.erd.operation.application.service.ErdMutationCoordinator;
+import com.schemafy.core.erd.operation.domain.ErdOperationType;
 import com.schemafy.core.erd.table.application.port.out.GetTableByIdPort;
 import com.schemafy.core.erd.table.domain.Table;
 import com.schemafy.core.ulid.application.port.out.UlidGeneratorPort;
@@ -33,18 +36,25 @@ import reactor.core.publisher.Mono;
 @RequiredArgsConstructor
 public class AddRelationshipColumnService implements AddRelationshipColumnUseCase {
 
+  private final TransactionalOperator transactionalOperator;
   private final UlidGeneratorPort ulidGeneratorPort;
   private final CreateRelationshipColumnPort createRelationshipColumnPort;
   private final GetRelationshipByIdPort getRelationshipByIdPort;
   private final GetRelationshipColumnsByRelationshipIdPort getRelationshipColumnsByRelationshipIdPort;
   private final GetTableByIdPort getTableByIdPort;
   private final GetColumnsByTableIdPort getColumnsByTableIdPort;
-  private final TransactionalOperator transactionalOperator;
+  private ErdMutationCoordinator erdMutationCoordinator = ErdMutationCoordinator.noop();
+
+  @Autowired
+  void setErdMutationCoordinator(ErdMutationCoordinator erdMutationCoordinator) {
+    this.erdMutationCoordinator = erdMutationCoordinator;
+  }
 
   @Override
   public Mono<MutationResult<AddRelationshipColumnResult>> addRelationshipColumn(
       AddRelationshipColumnCommand command) {
-    return getRelationshipByIdPort.findRelationshipById(command.relationshipId())
+    return erdMutationCoordinator.coordinate(ErdOperationType.ADD_RELATIONSHIP_COLUMN, command,
+        () -> getRelationshipByIdPort.findRelationshipById(command.relationshipId())
         .switchIfEmpty(Mono.error(new DomainException(RelationshipErrorCode.NOT_FOUND, "Relationship not found")))
         .flatMap(relationship -> {
           Set<String> affectedTableIds = new HashSet<>();
@@ -56,8 +66,8 @@ public class AddRelationshipColumnService implements AddRelationshipColumnUseCas
                   tables.fkTable(),
                   tables.pkTable(),
                   command))
-              .map(result -> MutationResult.of(result, affectedTableIds));
-        })
+	              .map(result -> MutationResult.of(result, affectedTableIds));
+	        }))
         .as(transactionalOperator::transactional);
   }
 

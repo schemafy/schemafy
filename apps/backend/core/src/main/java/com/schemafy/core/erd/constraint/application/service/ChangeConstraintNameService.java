@@ -1,9 +1,12 @@
 package com.schemafy.core.erd.constraint.application.service;
 
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import com.schemafy.core.common.MutationResult;
 import com.schemafy.core.common.exception.DomainException;
+import com.schemafy.core.erd.operation.application.service.ErdMutationCoordinator;
+import com.schemafy.core.erd.operation.domain.ErdOperationType;
 import com.schemafy.core.erd.constraint.application.port.in.ChangeConstraintNameCommand;
 import com.schemafy.core.erd.constraint.application.port.in.ChangeConstraintNameUseCase;
 import com.schemafy.core.erd.constraint.application.port.out.ChangeConstraintNamePort;
@@ -25,10 +28,17 @@ public class ChangeConstraintNameService implements ChangeConstraintNameUseCase 
   private final ConstraintExistsPort constraintExistsPort;
   private final GetConstraintByIdPort getConstraintByIdPort;
   private final GetTableByIdPort getTableByIdPort;
+  private ErdMutationCoordinator erdMutationCoordinator = ErdMutationCoordinator.noop();
+
+  @Autowired
+  void setErdMutationCoordinator(ErdMutationCoordinator erdMutationCoordinator) {
+    this.erdMutationCoordinator = erdMutationCoordinator;
+  }
 
   @Override
   public Mono<MutationResult<Void>> changeConstraintName(ChangeConstraintNameCommand command) {
-    return Mono.defer(() -> {
+    return erdMutationCoordinator.coordinate(ErdOperationType.CHANGE_CONSTRAINT_NAME, command,
+        () -> Mono.defer(() -> {
       String normalizedName = normalizeName(command.newName());
       ConstraintValidator.validateName(normalizedName);
       return getConstraintByIdPort.findConstraintById(command.constraintId())
@@ -48,7 +58,7 @@ public class ChangeConstraintNameService implements ChangeConstraintNameUseCase 
                         .changeConstraintName(constraint.id(), normalizedName)
                         .thenReturn(MutationResult.<Void>of(null, constraint.tableId()));
                   })));
-    });
+        }));
   }
 
   private static String normalizeName(String name) {

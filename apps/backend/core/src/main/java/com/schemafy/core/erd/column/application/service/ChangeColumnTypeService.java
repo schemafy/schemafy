@@ -5,6 +5,7 @@ import java.util.List;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.reactive.TransactionalOperator;
 
@@ -20,6 +21,8 @@ import com.schemafy.core.erd.column.domain.Column;
 import com.schemafy.core.erd.column.domain.ColumnTypeArguments;
 import com.schemafy.core.erd.column.domain.exception.ColumnErrorCode;
 import com.schemafy.core.erd.column.domain.validator.ColumnValidator;
+import com.schemafy.core.erd.operation.application.service.ErdMutationCoordinator;
+import com.schemafy.core.erd.operation.domain.ErdOperationType;
 import com.schemafy.core.erd.constraint.application.port.out.GetConstraintByIdPort;
 import com.schemafy.core.erd.constraint.application.port.out.GetConstraintColumnsByColumnIdPort;
 import com.schemafy.core.erd.constraint.domain.type.ConstraintKind;
@@ -45,6 +48,12 @@ public class ChangeColumnTypeService implements ChangeColumnTypeUseCase {
   private final GetRelationshipColumnsByColumnIdPort getRelationshipColumnsByColumnIdPort;
   private final GetRelationshipsByPkTableIdPort getRelationshipsByPkTableIdPort;
   private final GetRelationshipColumnsByRelationshipIdPort getRelationshipColumnsByRelationshipIdPort;
+  private ErdMutationCoordinator erdMutationCoordinator = ErdMutationCoordinator.noop();
+
+  @Autowired
+  void setErdMutationCoordinator(ErdMutationCoordinator erdMutationCoordinator) {
+    this.erdMutationCoordinator = erdMutationCoordinator;
+  }
 
   @Override
   public Mono<MutationResult<Void>> changeColumnType(ChangeColumnTypeCommand command) {
@@ -55,7 +64,8 @@ public class ChangeColumnTypeService implements ChangeColumnTypeUseCase {
         command.values());
     Set<String> affectedTableIds = ConcurrentHashMap.newKeySet();
 
-    return rejectIfForeignKeyColumn(command.columnId())
+    return erdMutationCoordinator.coordinate(ErdOperationType.CHANGE_COLUMN_TYPE, command,
+        () -> rejectIfForeignKeyColumn(command.columnId())
         .then(getColumnByIdPort.findColumnById(command.columnId()))
         .switchIfEmpty(Mono.error(new DomainException(ColumnErrorCode.NOT_FOUND, "Column not found")))
         .flatMap(column -> {
@@ -69,7 +79,7 @@ public class ChangeColumnTypeService implements ChangeColumnTypeUseCase {
                   typeArguments,
                   affectedTableIds));
         })
-        .then(Mono.fromCallable(() -> MutationResult.<Void>of(null, affectedTableIds)))
+        .then(Mono.fromCallable(() -> MutationResult.<Void>of(null, affectedTableIds))))
         .as(transactionalOperator::transactional);
   }
 

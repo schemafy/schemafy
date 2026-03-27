@@ -2,6 +2,7 @@ package com.schemafy.core.erd.column.application.service;
 
 import java.util.List;
 
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.reactive.TransactionalOperator;
 
@@ -15,6 +16,8 @@ import com.schemafy.core.erd.column.application.port.out.GetColumnsByTableIdPort
 import com.schemafy.core.erd.column.domain.Column;
 import com.schemafy.core.erd.column.domain.exception.ColumnErrorCode;
 import com.schemafy.core.erd.column.domain.validator.ColumnValidator;
+import com.schemafy.core.erd.operation.application.service.ErdMutationCoordinator;
+import com.schemafy.core.erd.operation.domain.ErdOperationType;
 import com.schemafy.core.erd.schema.application.port.out.GetSchemaByIdPort;
 import com.schemafy.core.erd.schema.domain.Schema;
 import com.schemafy.core.erd.schema.domain.exception.SchemaErrorCode;
@@ -36,14 +39,21 @@ public class ChangeColumnNameService implements ChangeColumnNameUseCase {
   private final GetTableByIdPort getTableByIdPort;
   private final GetSchemaByIdPort getSchemaByIdPort;
   private final TransactionalOperator transactionalOperator;
+  private ErdMutationCoordinator erdMutationCoordinator = ErdMutationCoordinator.noop();
+
+  @Autowired
+  void setErdMutationCoordinator(ErdMutationCoordinator erdMutationCoordinator) {
+    this.erdMutationCoordinator = erdMutationCoordinator;
+  }
 
   @Override
   public Mono<MutationResult<Void>> changeColumnName(ChangeColumnNameCommand command) {
-    return getColumnByIdPort.findColumnById(command.columnId())
+    return erdMutationCoordinator.coordinate(ErdOperationType.CHANGE_COLUMN_NAME, command,
+        () -> getColumnByIdPort.findColumnById(command.columnId())
         .switchIfEmpty(Mono.error(new DomainException(ColumnErrorCode.NOT_FOUND, "Column not found")))
         .flatMap(column -> fetchTableSchemaAndColumns(column)
             .flatMap(tuple -> applyChange(column, tuple, command.newName()))
-            .thenReturn(MutationResult.<Void>of(null, column.tableId())))
+            .thenReturn(MutationResult.<Void>of(null, column.tableId()))))
         .as(transactionalOperator::transactional);
   }
 

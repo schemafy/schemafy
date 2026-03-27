@@ -5,6 +5,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.reactive.TransactionalOperator;
 
@@ -12,6 +13,9 @@ import com.schemafy.core.common.MutationResult;
 import com.schemafy.core.common.exception.DomainException;
 import com.schemafy.core.erd.column.application.port.in.DeleteColumnCommand;
 import com.schemafy.core.erd.column.application.port.in.DeleteColumnUseCase;
+import com.schemafy.core.erd.operation.ErdOperationContexts;
+import com.schemafy.core.erd.operation.application.service.ErdMutationCoordinator;
+import com.schemafy.core.erd.operation.domain.ErdOperationType;
 import com.schemafy.core.erd.relationship.application.port.in.RemoveRelationshipColumnCommand;
 import com.schemafy.core.erd.relationship.application.port.in.RemoveRelationshipColumnUseCase;
 import com.schemafy.core.erd.relationship.application.port.out.ChangeRelationshipColumnPositionPort;
@@ -30,18 +34,25 @@ import reactor.core.publisher.Mono;
 @RequiredArgsConstructor
 public class RemoveRelationshipColumnService implements RemoveRelationshipColumnUseCase {
 
+  private final TransactionalOperator transactionalOperator;
   private final DeleteRelationshipColumnPort deleteRelationshipColumnPort;
   private final DeleteRelationshipPort deleteRelationshipPort;
-  private final TransactionalOperator transactionalOperator;
   private final ChangeRelationshipColumnPositionPort changeRelationshipColumnPositionPort;
   private final GetRelationshipByIdPort getRelationshipByIdPort;
   private final GetRelationshipColumnByIdPort getRelationshipColumnByIdPort;
   private final GetRelationshipColumnsByRelationshipIdPort getRelationshipColumnsByRelationshipIdPort;
   private final DeleteColumnUseCase deleteColumnUseCase;
+  private ErdMutationCoordinator erdMutationCoordinator = ErdMutationCoordinator.noop();
+
+  @Autowired
+  void setErdMutationCoordinator(ErdMutationCoordinator erdMutationCoordinator) {
+    this.erdMutationCoordinator = erdMutationCoordinator;
+  }
 
   @Override
   public Mono<MutationResult<Void>> removeRelationshipColumn(RemoveRelationshipColumnCommand command) {
-    return getRelationshipColumnByIdPort
+    return erdMutationCoordinator.coordinate(ErdOperationType.REMOVE_RELATIONSHIP_COLUMN, command,
+        () -> getRelationshipColumnByIdPort
         .findRelationshipColumnById(command.relationshipColumnId())
         .switchIfEmpty(Mono.error(new DomainException(RelationshipErrorCode.COLUMN_NOT_FOUND,
             "Relationship column not found")))
@@ -56,10 +67,12 @@ public class RemoveRelationshipColumnService implements RemoveRelationshipColumn
               return deleteRelationshipColumnPort
                   .deleteRelationshipColumn(relationshipColumn.id())
                   .then(handleRemainingColumns(relationship.id()))
-                  .then(deleteColumnUseCase.deleteColumn(new DeleteColumnCommand(fkColumnId)))
+                  .then(deleteColumnUseCase.deleteColumn(new DeleteColumnCommand(fkColumnId))
+                      .contextWrite(ErdOperationContexts.suppressNestedMutation()))
                   .doOnNext(result -> affectedTableIds.addAll(result.affectedTableIds()))
                   .then(Mono.fromCallable(() -> MutationResult.<Void>of(null, affectedTableIds)));
-            }))
+	            }))
+	        )
         .as(transactionalOperator::transactional);
   }
 

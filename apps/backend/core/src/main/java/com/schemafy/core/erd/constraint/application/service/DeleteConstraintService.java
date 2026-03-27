@@ -4,6 +4,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.reactive.TransactionalOperator;
 
@@ -18,6 +19,8 @@ import com.schemafy.core.erd.constraint.application.port.out.GetConstraintColumn
 import com.schemafy.core.erd.constraint.domain.ConstraintColumn;
 import com.schemafy.core.erd.constraint.domain.exception.ConstraintErrorCode;
 import com.schemafy.core.erd.constraint.domain.type.ConstraintKind;
+import com.schemafy.core.erd.operation.application.service.ErdMutationCoordinator;
+import com.schemafy.core.erd.operation.domain.ErdOperationType;
 
 import lombok.RequiredArgsConstructor;
 import reactor.core.publisher.Flux;
@@ -33,11 +36,18 @@ public class DeleteConstraintService implements DeleteConstraintUseCase {
   private final GetConstraintByIdPort getConstraintByIdPort;
   private final GetConstraintColumnsByConstraintIdPort getConstraintColumnsByConstraintIdPort;
   private final PkCascadeHelper pkCascadeHelper;
+  private ErdMutationCoordinator erdMutationCoordinator = ErdMutationCoordinator.noop();
+
+  @Autowired
+  void setErdMutationCoordinator(ErdMutationCoordinator erdMutationCoordinator) {
+    this.erdMutationCoordinator = erdMutationCoordinator;
+  }
 
   @Override
   public Mono<MutationResult<Void>> deleteConstraint(DeleteConstraintCommand command) {
     String constraintId = command.constraintId();
-    return getConstraintByIdPort.findConstraintById(constraintId)
+    return erdMutationCoordinator.coordinate(ErdOperationType.DELETE_CONSTRAINT, command,
+        () -> getConstraintByIdPort.findConstraintById(constraintId)
         .switchIfEmpty(Mono.error(new DomainException(ConstraintErrorCode.NOT_FOUND, "Constraint not found")))
         .flatMap(constraint -> {
           Set<String> affectedTableIds = new HashSet<>();
@@ -54,7 +64,7 @@ public class DeleteConstraintService implements DeleteConstraintUseCase {
           return deleteConstraintColumnsPort.deleteByConstraintId(constraintId)
               .then(deleteConstraintPort.deleteConstraint(constraintId))
               .then(Mono.fromCallable(() -> MutationResult.<Void>of(null, affectedTableIds)));
-        })
+        }))
         .as(transactionalOperator::transactional);
   }
 

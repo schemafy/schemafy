@@ -14,6 +14,7 @@ import com.schemafy.core.erd.column.application.port.out.CreateColumnPort;
 import com.schemafy.core.erd.column.application.port.out.GetColumnByIdPort;
 import com.schemafy.core.erd.column.application.port.out.GetColumnsByTableIdPort;
 import com.schemafy.core.erd.column.domain.Column;
+import com.schemafy.core.erd.operation.ErdOperationContexts;
 import com.schemafy.core.erd.constraint.application.port.out.ConstraintExistsPort;
 import com.schemafy.core.erd.constraint.application.port.out.CreateConstraintColumnPort;
 import com.schemafy.core.erd.constraint.application.port.out.CreateConstraintPort;
@@ -278,6 +279,7 @@ public class PkCascadeHelper {
           Mono<Void> deleteFkColumns = Flux.fromIterable(fkColumnIds)
               .concatMap(fkColumnId -> deleteColumnUseCase.deleteColumn(
                   new DeleteColumnCommand(fkColumnId))
+                  .contextWrite(ErdOperationContexts.suppressNestedMutation())
                   .doOnNext(result -> affectedTableIds.addAll(result.affectedTableIds()))
                   .then())
               .then();

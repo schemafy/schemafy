@@ -4,6 +4,7 @@ import java.util.List;
 import java.util.Optional;
 import java.util.OptionalInt;
 
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.reactive.TransactionalOperator;
 
@@ -19,6 +20,8 @@ import com.schemafy.core.erd.relationship.application.port.out.GetRelationshipsB
 import com.schemafy.core.erd.relationship.application.port.out.RelationshipExistsPort;
 import com.schemafy.core.erd.relationship.domain.Relationship;
 import com.schemafy.core.erd.relationship.domain.validator.RelationshipValidator;
+import com.schemafy.core.erd.operation.application.service.ErdMutationCoordinator;
+import com.schemafy.core.erd.operation.domain.ErdOperationType;
 import com.schemafy.core.erd.table.application.port.in.ChangeTableNameCommand;
 import com.schemafy.core.erd.table.application.port.in.ChangeTableNameUseCase;
 import com.schemafy.core.erd.table.application.port.out.ChangeTableNamePort;
@@ -45,10 +48,17 @@ public class ChangeTableNameService implements ChangeTableNameUseCase {
   private final GetRelationshipsByTableIdPort getRelationshipsByTableIdPort;
   private final ChangeRelationshipNamePort changeRelationshipNamePort;
   private final RelationshipExistsPort relationshipExistsPort;
+  private ErdMutationCoordinator erdMutationCoordinator = ErdMutationCoordinator.noop();
+
+  @Autowired
+  void setErdMutationCoordinator(ErdMutationCoordinator erdMutationCoordinator) {
+    this.erdMutationCoordinator = erdMutationCoordinator;
+  }
 
   @Override
   public Mono<MutationResult<Void>> changeTableName(ChangeTableNameCommand command) {
-    return getTableByIdPort.findTableById(command.tableId())
+    return erdMutationCoordinator.coordinate(ErdOperationType.CHANGE_TABLE_NAME, command,
+        () -> getTableByIdPort.findTableById(command.tableId())
         .switchIfEmpty(Mono.error(
             new DomainException(TableErrorCode.NOT_FOUND, "Table not found: " + command.tableId())))
         .flatMap(table -> tableExistsPort.existsBySchemaIdAndName(table.schemaId(), command.newName())
@@ -64,7 +74,7 @@ public class ChangeTableNameService implements ChangeTableNameUseCase {
                   .then(renamePkConstraint(table.schemaId(), command.tableId(), command.newName()))
                   .then(renameAutoRelationshipNames(table, command.newName()))
                   .thenReturn(MutationResult.<Void>of(null, table.id()));
-            }))
+            })))
         .as(transactionalOperator::transactional);
   }
 
