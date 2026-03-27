@@ -263,36 +263,20 @@ class ProjectUseCaseIntegrationTest extends ProjectDomainIntegrationSupport {
   }
 
   @Test
-  @DisplayName("공유받은 프로젝트 조회시 공유 받은 프로젝트만 포함하고 활성 워크스페이스 및 삭제된 행은 제외한다")
-  void getMySharedProjects_filtersBySharedMembershipRules() {
+  @DisplayName("워크스페이스 멤버가 아니고 프로젝트 멤버인 경우 shared 프로젝트로 조회된다")
+  void getMySharedProjects_includesProjectOnlyMembership() {
     User requester = signUpUser("shared-requester@test.com", "Requester");
     User owner = signUpUser("shared-owner@test.com", "Owner");
 
-    Workspace sharedWorkspace = saveWorkspace("Shared WS", "Description");
-    saveWorkspaceMember(sharedWorkspace, owner, WorkspaceRole.ADMIN);
-    var sharedProject = saveProject(sharedWorkspace, "Shared Project");
+    Workspace workspace = saveWorkspace("Shared WS", "Description");
+    saveWorkspaceMember(workspace, owner, WorkspaceRole.ADMIN);
+    var sharedProject = saveProject(workspace, "Shared Project");
     saveProjectMember(sharedProject, owner, ProjectRole.ADMIN);
     saveProjectMember(sharedProject, requester, ProjectRole.VIEWER);
 
-    var secondSharedProject = saveProject(sharedWorkspace, "Second Shared Project");
+    var secondSharedProject = saveProject(workspace, "Second Shared Project");
     saveProjectMember(secondSharedProject, owner, ProjectRole.ADMIN);
     saveProjectMember(secondSharedProject, requester, ProjectRole.EDITOR);
-
-    Workspace activeWorkspace = saveWorkspace("Active WS", "Description");
-    saveWorkspaceMember(activeWorkspace, owner, WorkspaceRole.ADMIN);
-    saveWorkspaceMember(activeWorkspace, requester, WorkspaceRole.MEMBER);
-    var activeWorkspaceProject = saveProject(activeWorkspace, "Active Workspace Project");
-    saveProjectMember(activeWorkspaceProject, owner, ProjectRole.ADMIN);
-    saveProjectMember(activeWorkspaceProject, requester, ProjectRole.VIEWER);
-
-    Workspace deletedMembershipWorkspace = saveWorkspace("Deleted PM WS", "Description");
-    saveWorkspaceMember(deletedMembershipWorkspace, owner, WorkspaceRole.ADMIN);
-    var deletedMembershipProject = saveProject(deletedMembershipWorkspace,
-        "Deleted Membership Project");
-    saveProjectMember(deletedMembershipProject, owner, ProjectRole.ADMIN);
-    ProjectMember deletedProjectMember = saveProjectMember(deletedMembershipProject, requester,
-        ProjectRole.VIEWER);
-    softDeleteProjectMember(deletedProjectMember.getId());
 
     var result = getMySharedProjectsUseCase.getMySharedProjects(
         new GetMySharedProjectsQuery(requester.id(), 0, 10)).block();
@@ -301,6 +285,135 @@ class ProjectUseCaseIntegrationTest extends ProjectDomainIntegrationSupport {
     assertThat(result.content().get(0).project().getId()).isEqualTo(secondSharedProject.getId());
     assertThat(result.content().get(0).role()).isEqualTo(ProjectRole.EDITOR);
     assertThat(result.content().get(1).project().getId()).isEqualTo(sharedProject.getId());
+    assertThat(result.content().get(1).role()).isEqualTo(ProjectRole.VIEWER);
+    assertThat(result.totalElements()).isEqualTo(2);
+  }
+
+  @Test
+  @DisplayName("해당 워크스페이스의 active MEMBER면 shared 프로젝트에서 제외된다")
+  void getMySharedProjects_excludesWorkspaceMember() {
+    User requester = signUpUser("shared-member-requester@test.com", "Requester");
+    User owner = signUpUser("shared-member-owner@test.com", "Owner");
+
+    Workspace workspace = saveWorkspace("Shared Member WS", "Description");
+    saveWorkspaceMember(workspace, owner, WorkspaceRole.ADMIN);
+    saveWorkspaceMember(workspace, requester, WorkspaceRole.MEMBER);
+    var project = saveProject(workspace, "Shared Member Project");
+    saveProjectMember(project, owner, ProjectRole.ADMIN);
+    saveProjectMember(project, requester, ProjectRole.VIEWER);
+
+    var result = getMySharedProjectsUseCase.getMySharedProjects(
+        new GetMySharedProjectsQuery(requester.id(), 0, 10)).block();
+
+    assertThat(result.content()).isEmpty();
+    assertThat(result.totalElements()).isZero();
+  }
+
+  @Test
+  @DisplayName("해당 워크스페이스의 active ADMIN이어도 shared 프로젝트에서 제외된다")
+  void getMySharedProjects_excludesWorkspaceAdmin() {
+    User requester = signUpUser("shared-admin-requester@test.com", "Requester");
+    User owner = signUpUser("shared-admin-owner@test.com", "Owner");
+
+    Workspace workspace = saveWorkspace("Shared Admin WS", "Description");
+    saveWorkspaceMember(workspace, owner, WorkspaceRole.ADMIN);
+    saveWorkspaceMember(workspace, requester, WorkspaceRole.ADMIN);
+    var project = saveProject(workspace, "Shared Admin Project");
+    saveProjectMember(project, owner, ProjectRole.ADMIN);
+    saveProjectMember(project, requester, ProjectRole.ADMIN);
+
+    var result = getMySharedProjectsUseCase.getMySharedProjects(
+        new GetMySharedProjectsQuery(requester.id(), 0, 10)).block();
+
+    assertThat(result.content()).isEmpty();
+    assertThat(result.totalElements()).isZero();
+  }
+
+  @Test
+  @DisplayName("삭제된 프로젝트는 shared 프로젝트에서 제외된다")
+  void getMySharedProjects_excludesDeletedProject() {
+    User requester = signUpUser("shared-deleted-project-requester@test.com", "Requester");
+    User owner = signUpUser("shared-deleted-project-owner@test.com", "Owner");
+
+    Workspace workspace = saveWorkspace("Deleted Shared Project WS", "Description");
+    saveWorkspaceMember(workspace, owner, WorkspaceRole.ADMIN);
+    var activeProject = saveProject(workspace, "Active Shared Project");
+    saveProjectMember(activeProject, owner, ProjectRole.ADMIN);
+    saveProjectMember(activeProject, requester, ProjectRole.VIEWER);
+
+    var deletedProject = saveProject(workspace, "Deleted Shared Project");
+    saveProjectMember(deletedProject, owner, ProjectRole.ADMIN);
+    saveProjectMember(deletedProject, requester, ProjectRole.EDITOR);
+    softDeleteProject(deletedProject.getId());
+
+    var result = getMySharedProjectsUseCase.getMySharedProjects(
+        new GetMySharedProjectsQuery(requester.id(), 0, 10)).block();
+
+    assertThat(result.content()).hasSize(1);
+    assertThat(result.content().getFirst().project().getId()).isEqualTo(activeProject.getId());
+    assertThat(result.content().getFirst().role()).isEqualTo(ProjectRole.VIEWER);
+    assertThat(result.totalElements()).isEqualTo(1);
+  }
+
+  @Test
+  @DisplayName("삭제된 프로젝트 멤버십은 shared 프로젝트에서 제외된다")
+  void getMySharedProjects_excludesDeletedProjectMembership() {
+    User requester = signUpUser("shared-deleted-member-requester@test.com", "Requester");
+    User owner = signUpUser("shared-deleted-member-owner@test.com", "Owner");
+
+    Workspace workspace = saveWorkspace("Deleted Shared Membership WS", "Description");
+    saveWorkspaceMember(workspace, owner, WorkspaceRole.ADMIN);
+    var activeProject = saveProject(workspace, "Active Shared Membership Project");
+    saveProjectMember(activeProject, owner, ProjectRole.ADMIN);
+    saveProjectMember(activeProject, requester, ProjectRole.VIEWER);
+
+    var deletedMembershipProject = saveProject(workspace, "Deleted Shared Membership Project");
+    saveProjectMember(deletedMembershipProject, owner, ProjectRole.ADMIN);
+    ProjectMember deletedProjectMember = saveProjectMember(
+        deletedMembershipProject, requester, ProjectRole.EDITOR);
+    softDeleteProjectMember(deletedProjectMember.getId());
+
+    var result = getMySharedProjectsUseCase.getMySharedProjects(
+        new GetMySharedProjectsQuery(requester.id(), 0, 10)).block();
+
+    assertThat(result.content()).hasSize(1);
+    assertThat(result.content().getFirst().project().getId()).isEqualTo(activeProject.getId());
+    assertThat(result.content().getFirst().role()).isEqualTo(ProjectRole.VIEWER);
+    assertThat(result.totalElements()).isEqualTo(1);
+  }
+
+  @Test
+  @DisplayName("다른 워크스페이스에 속해 있어도 별도 워크스페이스의 shared 프로젝트는 role과 정렬을 유지한 채 조회된다")
+  void getMySharedProjects_keepsOtherWorkspaceSharedProjects() {
+    User requester = signUpUser("shared-cross-workspace-requester@test.com", "Requester");
+    User owner = signUpUser("shared-cross-workspace-owner@test.com", "Owner");
+
+    Workspace activeWorkspace = saveWorkspace("Active Workspace", "Description");
+    saveWorkspaceMember(activeWorkspace, owner, WorkspaceRole.ADMIN);
+    saveWorkspaceMember(activeWorkspace, requester, WorkspaceRole.MEMBER);
+    var activeWorkspaceProject = saveProject(activeWorkspace, "Active Workspace Project");
+    saveProjectMember(activeWorkspaceProject, owner, ProjectRole.ADMIN);
+    saveProjectMember(activeWorkspaceProject, requester, ProjectRole.VIEWER);
+
+    Workspace firstSharedWorkspace = saveWorkspace("First Shared Workspace", "Description");
+    saveWorkspaceMember(firstSharedWorkspace, owner, WorkspaceRole.ADMIN);
+    var olderSharedProject = saveProject(firstSharedWorkspace, "Older Shared Project");
+    saveProjectMember(olderSharedProject, owner, ProjectRole.ADMIN);
+    saveProjectMember(olderSharedProject, requester, ProjectRole.VIEWER);
+
+    Workspace secondSharedWorkspace = saveWorkspace("Second Shared Workspace", "Description");
+    saveWorkspaceMember(secondSharedWorkspace, owner, WorkspaceRole.ADMIN);
+    var newerSharedProject = saveProject(secondSharedWorkspace, "Newer Shared Project");
+    saveProjectMember(newerSharedProject, owner, ProjectRole.ADMIN);
+    saveProjectMember(newerSharedProject, requester, ProjectRole.EDITOR);
+
+    var result = getMySharedProjectsUseCase.getMySharedProjects(
+        new GetMySharedProjectsQuery(requester.id(), 0, 10)).block();
+
+    assertThat(result.content()).hasSize(2);
+    assertThat(result.content().get(0).project().getId()).isEqualTo(newerSharedProject.getId());
+    assertThat(result.content().get(0).role()).isEqualTo(ProjectRole.EDITOR);
+    assertThat(result.content().get(1).project().getId()).isEqualTo(olderSharedProject.getId());
     assertThat(result.content().get(1).role()).isEqualTo(ProjectRole.VIEWER);
     assertThat(result.totalElements()).isEqualTo(2);
   }
