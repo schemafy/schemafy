@@ -59,7 +59,7 @@ class AddWorkspaceMemberService implements AddWorkspaceMemberUseCase {
                         .save(WorkspaceMember.create(id, command.workspaceId(),
                             targetUser.id(), command.role()))))))
             .flatMap(savedMember -> projectMembershipPropagationHelper
-                .propagateToExistingProjects(
+                .syncProjectMembershipsForWorkspaceRole(
                     command.workspaceId(),
                     savedMember.getUserId(),
                     savedMember.getRoleAsEnum())

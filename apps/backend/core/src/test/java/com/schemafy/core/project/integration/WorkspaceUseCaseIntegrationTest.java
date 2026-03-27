@@ -155,6 +155,38 @@ class WorkspaceUseCaseIntegrationTest extends ProjectDomainIntegrationSupport {
   }
 
   @Test
+  @DisplayName("워크스페이스 ADMIN으로 합류하면 기존 참여 프로젝트는 ADMIN으로 승격하고 미참여 프로젝트는 ADMIN으로 추가한다")
+  void addWorkspaceMember_promotesJoinedProjectsAndCreatesMissingProjectsForWorkspaceAdmin() {
+    User admin = signUpUser("admin-add-admin@test.com", "Admin");
+    User target = signUpUser("target-add-admin@test.com", "Target");
+    Workspace workspace = saveWorkspace("Admin Join WS", "Description");
+    saveWorkspaceMember(workspace, admin, WorkspaceRole.ADMIN);
+    var joinedProject = saveProject(workspace, "Joined Project");
+    var missingProject = saveProject(workspace, "Missing Project");
+    ProjectMember existingProjectMember = saveProjectMember(joinedProject, target,
+        ProjectRole.VIEWER);
+
+    WorkspaceMember addedMember = addWorkspaceMemberUseCase.addWorkspaceMember(
+        new AddWorkspaceMemberCommand(workspace.getId(), target.email(), WorkspaceRole.ADMIN,
+            admin.id()))
+        .block();
+
+    ProjectMember upgradedProjectMember = projectMemberRepository
+        .findByProjectIdAndUserIdAndNotDeleted(joinedProject.getId(), target.id())
+        .block();
+    ProjectMember createdProjectMember = projectMemberRepository
+        .findByProjectIdAndUserIdAndNotDeleted(missingProject.getId(), target.id())
+        .block();
+
+    assertThat(addedMember).isNotNull();
+    assertThat(addedMember.getRoleAsEnum()).isEqualTo(WorkspaceRole.ADMIN);
+    assertThat(upgradedProjectMember.getId()).isEqualTo(existingProjectMember.getId());
+    assertThat(upgradedProjectMember.getRoleAsEnum()).isEqualTo(ProjectRole.ADMIN);
+    assertThat(createdProjectMember).isNotNull();
+    assertThat(createdProjectMember.getRoleAsEnum()).isEqualTo(ProjectRole.ADMIN);
+  }
+
+  @Test
   @DisplayName("워크스페이스 멤버 추가 시 대문자 이메일 입력을 정규화한다")
   void addWorkspaceMember_normalizesUppercaseEmail() {
     User admin = signUpUser("admin-upper@test.com", "Admin");
@@ -197,8 +229,49 @@ class WorkspaceUseCaseIntegrationTest extends ProjectDomainIntegrationSupport {
   }
 
   @Test
-  @DisplayName("프로젝트 관리자여도 워크스페이스에서는 관리자 등급을 내릴 수 있다")
-  void updateWorkspaceMemberRole_allowsProjectAdminTarget() {
+  @DisplayName("워크스페이스 멤버를 ADMIN으로 승격하면 활성, 삭제, 누락 프로젝트 멤버십을 모두 ADMIN으로 맞춘다")
+  void updateWorkspaceMemberRole_promotesAndRestoresProjectMembershipsForAdmin() {
+    User requester = signUpUser("requester-workspace-promote@test.com", "Requester");
+    User target = signUpUser("target-workspace-promote@test.com", "Target");
+    Workspace workspace = saveWorkspace("Workspace Promote WS", "Description");
+    saveWorkspaceMember(workspace, requester, WorkspaceRole.ADMIN);
+    WorkspaceMember targetWorkspaceMember = saveWorkspaceMember(workspace, target,
+        WorkspaceRole.MEMBER);
+    var activeProject = saveProject(workspace, "Workspace Promote Active Project");
+    var deletedProject = saveProject(workspace, "Workspace Promote Deleted Project");
+    var missingProject = saveProject(workspace, "Workspace Promote Missing Project");
+    ProjectMember activeProjectMember = saveProjectMember(activeProject, target, ProjectRole.VIEWER);
+    ProjectMember deletedProjectMember = saveProjectMember(deletedProject, target,
+        ProjectRole.VIEWER);
+    softDeleteProjectMember(deletedProjectMember.getId());
+
+    WorkspaceMember updatedMember = updateWorkspaceMemberRoleUseCase.updateWorkspaceMemberRole(
+        new UpdateWorkspaceMemberRoleCommand(workspace.getId(), target.id(), WorkspaceRole.ADMIN,
+            requester.id()))
+        .block();
+
+    ProjectMember promotedProjectMember = projectMemberRepository.findById(activeProjectMember.getId())
+        .block();
+    ProjectMember restoredProjectMember = projectMemberRepository.findById(deletedProjectMember.getId())
+        .block();
+    ProjectMember createdProjectMember = projectMemberRepository
+        .findByProjectIdAndUserIdAndNotDeleted(missingProject.getId(), target.id())
+        .block();
+
+    assertThat(updatedMember.getId()).isEqualTo(targetWorkspaceMember.getId());
+    assertThat(updatedMember.getRoleAsEnum()).isEqualTo(WorkspaceRole.ADMIN);
+    assertThat(promotedProjectMember).isNotNull();
+    assertThat(promotedProjectMember.getRoleAsEnum()).isEqualTo(ProjectRole.ADMIN);
+    assertThat(restoredProjectMember).isNotNull();
+    assertThat(restoredProjectMember.isDeleted()).isFalse();
+    assertThat(restoredProjectMember.getRoleAsEnum()).isEqualTo(ProjectRole.ADMIN);
+    assertThat(createdProjectMember).isNotNull();
+    assertThat(createdProjectMember.getRoleAsEnum()).isEqualTo(ProjectRole.ADMIN);
+  }
+
+  @Test
+  @DisplayName("워크스페이스 ADMIN이자 프로젝트 ADMIN인 대상자를 워크스페이스 MEMBER로 강등하면 프로젝트 역할도 VIEWER로 내려간다")
+  void updateWorkspaceMemberRole_demotesWorkspaceAndProjectAdminToViewer() {
     User requester = signUpUser("requester-workspace-demote@test.com", "Requester");
     User target = signUpUser("target-workspace-demote@test.com", "Target");
     Workspace workspace = saveWorkspace("Workspace Demote WS", "Description");
@@ -206,15 +279,19 @@ class WorkspaceUseCaseIntegrationTest extends ProjectDomainIntegrationSupport {
     WorkspaceMember targetWorkspaceMember = saveWorkspaceMember(workspace, target,
         WorkspaceRole.ADMIN);
     var project = saveProject(workspace, "Workspace Demote Project");
-    saveProjectMember(project, target, ProjectRole.ADMIN);
+    ProjectMember targetProjectMember = saveProjectMember(project, target, ProjectRole.ADMIN);
 
     WorkspaceMember updatedMember = updateWorkspaceMemberRoleUseCase.updateWorkspaceMemberRole(
         new UpdateWorkspaceMemberRoleCommand(workspace.getId(), target.id(), WorkspaceRole.MEMBER,
             requester.id()))
         .block();
 
+    ProjectMember updatedProjectMember = projectMemberRepository.findById(targetProjectMember.getId())
+        .block();
+
     assertThat(updatedMember.getId()).isEqualTo(targetWorkspaceMember.getId());
     assertThat(updatedMember.getRoleAsEnum()).isEqualTo(WorkspaceRole.MEMBER);
+    assertThat(updatedProjectMember.getRoleAsEnum()).isEqualTo(ProjectRole.VIEWER);
   }
 
   @Test
