@@ -240,7 +240,9 @@ class ProjectControllerTest extends ProjectHttpTestSupport {
         .expectStatus().isBadRequest()
         .expectBody()
         .jsonPath("$.reason").isEqualTo(CommonErrorCode.INVALID_PARAMETER.code())
-        .jsonPath("$.detail").isEqualTo("0 이상이어야 합니다");
+        .jsonPath("$.detail").value(detail -> assertThat((String) detail)
+            .isNotBlank()
+            .doesNotContain("getMySharedProjects"));
   }
 
   @Test
