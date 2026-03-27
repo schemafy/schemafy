@@ -1,5 +1,8 @@
 package com.schemafy.api.common.exception;
 
+import java.util.stream.Collectors;
+
+import jakarta.validation.ConstraintViolation;
 import jakarta.validation.ConstraintViolationException;
 
 import org.springframework.beans.factory.ObjectProvider;
@@ -67,7 +70,11 @@ public class GlobalExceptionHandler {
       ConstraintViolationException e, ServerWebExchange exchange) {
     DomainErrorCode errorCode = CommonErrorCode.INVALID_PARAMETER;
     log.warn("[ConstraintViolationException] {}", e.getMessage());
-    return buildResponse(exchange, errorCode, e.getMessage());
+    return buildResponse(exchange, errorCode,
+        e.getConstraintViolations().stream()
+            .map(ConstraintViolation::getMessage)
+            .distinct()
+            .collect(Collectors.joining(", ")));
   }
 
   @ExceptionHandler(Exception.class)
