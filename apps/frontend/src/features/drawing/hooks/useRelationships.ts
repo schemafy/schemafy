@@ -20,6 +20,7 @@ import {
 import type { RelationshipConfig, RelationshipExtra, Point } from '../types';
 import { RELATIONSHIP_TYPES } from '../types';
 import { useLatest } from './useLatest';
+import type { RelationshipSnapshotResponse, TableSnapshotResponse } from '../api';
 
 const attachControlPointHandler = (
   edge: Edge,
@@ -37,11 +38,32 @@ const attachControlPointHandler = (
     },
   }) as Edge;
 
+const collectRelationshipSnapshots = (
+  snapshots: Record<string, TableSnapshotResponse>,
+) => {
+  const relationshipSnapshots = new Map<string, RelationshipSnapshotResponse>();
+
+  Object.values(snapshots).forEach((snapshot) => {
+    snapshot.relationships.forEach((relationshipSnapshot) => {
+      relationshipSnapshots.set(
+        relationshipSnapshot.relationship.id,
+        relationshipSnapshot,
+      );
+    });
+  });
+
+  return relationshipSnapshots;
+};
+
 export const useRelationships = (relationshipConfig: RelationshipConfig) => {
   const { selectedSchemaId } = useSelectedSchema();
   const { data: snapshotsData } = useSchemaSnapshots(selectedSchemaId);
   const snapshotsRef = useLatest(snapshotsData);
   const relationshipConfigRef = useLatest(relationshipConfig);
+  const previousSnapshotsRef = useRef<Record<string, TableSnapshotResponse> | null>(
+    null,
+  );
+  const previousSchemaIdRef = useRef(selectedSchemaId);
 
   const { mutate: createRelationshipWithExtra } =
     useCreateRelationshipWithExtra(selectedSchemaId);
@@ -104,11 +126,60 @@ export const useRelationships = (relationshipConfig: RelationshipConfig) => {
   );
 
   useEffect(() => {
-    setRelationships(
-      convertSnapshotsToEdges(snapshotsData).map((edge) =>
-        attachControlPointHandler(edge, updateRelationshipControlPoint),
-      ),
-    );
+    const previousSnapshots = previousSnapshotsRef.current;
+    const schemaChanged = previousSchemaIdRef.current !== selectedSchemaId;
+
+    previousSnapshotsRef.current = snapshotsData;
+    previousSchemaIdRef.current = selectedSchemaId;
+
+    setRelationships((previousRelationships) => {
+      if (!previousSnapshots || schemaChanged) {
+        return convertSnapshotsToEdges(snapshotsData).map((edge) =>
+          attachControlPointHandler(edge, updateRelationshipControlPoint),
+        );
+      }
+
+      const previousEdgesById = new Map(
+        previousRelationships.map((relationship) => [
+          relationship.id,
+          relationship,
+        ]),
+      );
+      const previousRelationshipSnapshots =
+        collectRelationshipSnapshots(previousSnapshots);
+      const nextRelationshipSnapshots = collectRelationshipSnapshots(snapshotsData);
+
+      nextRelationshipSnapshots.forEach((relationshipSnapshot, relationshipId) => {
+        const previousRelationshipSnapshot =
+          previousRelationshipSnapshots.get(relationshipId);
+
+        if (
+          !previousRelationshipSnapshot ||
+          previousRelationshipSnapshot !== relationshipSnapshot
+        ) {
+          const nextEdge = convertSnapshotsToEdges({
+            [relationshipSnapshot.relationship.fkTableId]:
+              snapshotsData[relationshipSnapshot.relationship.fkTableId],
+            [relationshipSnapshot.relationship.pkTableId]:
+              snapshotsData[relationshipSnapshot.relationship.pkTableId],
+          }).find((edge) => edge.id === relationshipId);
+
+          if (nextEdge) {
+            previousEdgesById.set(
+              relationshipId,
+              attachControlPointHandler(
+                nextEdge,
+                updateRelationshipControlPoint,
+              ),
+            );
+          }
+        }
+      });
+
+      return Array.from(nextRelationshipSnapshots.keys()).map(
+        (relationshipId) => previousEdgesById.get(relationshipId)!,
+      );
+    });
   }, [snapshotsData, updateRelationshipControlPoint]);
 
   useEffect(() => {

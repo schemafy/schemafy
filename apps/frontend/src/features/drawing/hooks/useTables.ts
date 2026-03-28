@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { type Node } from '@xyflow/react';
 import type { TableData, Point } from '../types';
 import {
@@ -29,6 +29,10 @@ export const useTables = () => {
   const { data: snapshotsData } = useSchemaSnapshots(selectedSchemaId);
 
   const snapshotsRef = useLatest(snapshotsData);
+  const previousSnapshotsRef = useRef<Record<string, TableSnapshotResponse> | null>(
+    null,
+  );
+  const previousSchemaIdRef = useRef(selectedSchemaId);
   const { mutate: createTableWithExtra } =
     useCreateTableWithExtra(selectedSchemaId);
   const { mutate: changeTableExtra } = useChangeTableExtra(selectedSchemaId);
@@ -39,7 +43,37 @@ export const useTables = () => {
   );
 
   useEffect(() => {
-    setTables(buildTableNodes(snapshotsData, selectedSchemaId));
+    const previousSnapshots = previousSnapshotsRef.current;
+    const schemaChanged = previousSchemaIdRef.current !== selectedSchemaId;
+
+    previousSnapshotsRef.current = snapshotsData;
+    previousSchemaIdRef.current = selectedSchemaId;
+
+    setTables((previousTables) => {
+      if (!previousSnapshots || schemaChanged) {
+        return buildTableNodes(snapshotsData, selectedSchemaId);
+      }
+
+      const previousNodesById = new Map(
+        previousTables.map((table) => [table.id, table]),
+      );
+
+      Object.values(snapshotsData).forEach((snapshot) => {
+        const tableId = snapshot.table.id;
+        const previousSnapshot = previousSnapshots[tableId];
+
+        if (!previousSnapshot || previousSnapshot !== snapshot) {
+          previousNodesById.set(
+            tableId,
+            transformSnapshotToNode(snapshot, selectedSchemaId),
+          );
+        }
+      });
+
+      return Object.values(snapshotsData).map(
+        (snapshot) => previousNodesById.get(snapshot.table.id)!,
+      );
+    });
   }, [selectedSchemaId, snapshotsData]);
 
   const addTable = useCallback(
