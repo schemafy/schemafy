@@ -9,15 +9,4 @@ public record SchemaCollaborationState(
     Instant createdAt,
     Instant updatedAt,
     Long version) {
-
-  public SchemaCollaborationState incremented() {
-    return new SchemaCollaborationState(
-        schemaId,
-        projectId,
-        currentRevision + 1,
-        createdAt,
-        updatedAt,
-        version);
-  }
-
 }

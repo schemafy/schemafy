@@ -17,12 +17,15 @@ import com.schemafy.core.erd.constraint.application.port.in.CreateConstraintColu
 import com.schemafy.core.erd.constraint.application.port.in.CreateConstraintCommand;
 import com.schemafy.core.erd.constraint.application.port.in.CreateConstraintUseCase;
 import com.schemafy.core.erd.constraint.domain.type.ConstraintKind;
+import com.schemafy.core.erd.operation.application.port.out.IncrementSchemaCollaborationRevisionPort;
 import com.schemafy.core.erd.relationship.application.port.in.ChangeRelationshipKindCommand;
 import com.schemafy.core.erd.relationship.application.port.in.ChangeRelationshipKindUseCase;
 import com.schemafy.core.erd.relationship.application.port.in.CreateRelationshipCommand;
 import com.schemafy.core.erd.relationship.application.port.in.CreateRelationshipUseCase;
 import com.schemafy.core.erd.relationship.domain.type.Cardinality;
 import com.schemafy.core.erd.relationship.domain.type.RelationshipKind;
+import com.schemafy.core.erd.schema.application.port.in.ChangeSchemaNameCommand;
+import com.schemafy.core.erd.schema.application.port.in.ChangeSchemaNameUseCase;
 import com.schemafy.core.erd.schema.application.port.in.CreateSchemaCommand;
 import com.schemafy.core.erd.schema.application.port.in.CreateSchemaUseCase;
 import com.schemafy.core.erd.support.ErdProjectIntegrationSupport;
@@ -34,6 +37,9 @@ import com.schemafy.core.erd.table.application.port.in.DeleteTableCommand;
 import com.schemafy.core.erd.table.application.port.in.DeleteTableUseCase;
 
 import reactor.test.StepVerifier;
+import reactor.core.scheduler.Schedulers;
+import reactor.core.publisher.Flux;
+import reactor.core.publisher.Mono;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -44,6 +50,9 @@ class ErdOperationLedgerIntegrationTest extends ErdProjectIntegrationSupport {
 
   @Autowired
   CreateSchemaUseCase createSchemaUseCase;
+
+  @Autowired
+  ChangeSchemaNameUseCase changeSchemaNameUseCase;
 
   @Autowired
   CreateTableUseCase createTableUseCase;
@@ -68,6 +77,9 @@ class ErdOperationLedgerIntegrationTest extends ErdProjectIntegrationSupport {
 
   @Autowired
   JsonCodec jsonCodec;
+
+  @Autowired
+  IncrementSchemaCollaborationRevisionPort incrementSchemaCollaborationRevisionPort;
 
   @Test
   @DisplayName("schema revision과 operation log를 순서대로 기록한다")
@@ -236,6 +248,75 @@ class ErdOperationLedgerIntegrationTest extends ErdProjectIntegrationSupport {
     assertThat(currentRevision(schemaId)).isEqualTo(beforeChangeRevision);
   }
 
+  @Test
+  @DisplayName("같은 schema에 대한 concurrent revision increment는 유실 없이 누적된다")
+  void incrementsRevisionAtomicallyUnderConcurrency() {
+    String projectId = createActiveProjectId("erd_operation_atomic_increment");
+
+    String schemaId = createSchemaUseCase.createSchema(new CreateSchemaCommand(
+        projectId,
+        "MySQL",
+        "atomic_increment_schema",
+        "utf8mb4",
+        "utf8mb4_general_ci")).block().result().id();
+
+    long beforeRevision = currentRevision(schemaId);
+    long beforeVersion = currentVersion(schemaId);
+    int incrementCount = 20;
+
+    StepVerifier.create(Flux.range(0, incrementCount)
+        .flatMap(i -> incrementSchemaCollaborationRevisionPort.increment(schemaId)
+            .subscribeOn(Schedulers.parallel()), incrementCount)
+        .collectList())
+        .assertNext(states -> assertThat(states).hasSize(incrementCount))
+        .verifyComplete();
+
+    assertThat(currentRevision(schemaId)).isEqualTo(beforeRevision + incrementCount);
+    assertThat(currentVersion(schemaId)).isEqualTo(beforeVersion + incrementCount);
+  }
+
+  @Test
+  @DisplayName("같은 schema에 대한 병렬 mutation은 모두 성공하고 연속 revision으로 기록된다")
+  void recordsAdjacentRevisionsForParallelMutationsOnSameSchema() {
+    String projectId = createActiveProjectId("erd_operation_parallel_mutation");
+
+    String schemaId = createSchemaUseCase.createSchema(new CreateSchemaCommand(
+        projectId,
+        "MySQL",
+        "parallel_mutation_schema",
+        "utf8mb4",
+        "utf8mb4_general_ci")).block().result().id();
+
+    String tableId = createTableUseCase.createTable(new CreateTableCommand(
+        schemaId,
+        "parallel_table",
+        "utf8mb4",
+        "utf8mb4_general_ci",
+        null)).block().result().tableId();
+
+    long beforeRevision = currentRevision(schemaId);
+    long beforeCount = operationCount(schemaId);
+
+    Mono<?> changeSchemaName = Mono.defer(() -> changeSchemaNameUseCase.changeSchemaName(
+        new ChangeSchemaNameCommand(schemaId, "parallel_mutation_schema_renamed")))
+        .subscribeOn(Schedulers.parallel());
+
+    Mono<?> changeTableExtra = Mono.defer(() -> changeTableExtraUseCase.changeTableExtra(
+        new ChangeTableExtraCommand(tableId, "{\"comment\":\"parallel\"}")))
+        .subscribeOn(Schedulers.parallel());
+
+    StepVerifier.create(Flux.merge(changeSchemaName, changeTableExtra).collectList())
+        .assertNext(results -> assertThat(results).hasSize(2))
+        .verifyComplete();
+
+    assertThat(currentRevision(schemaId)).isEqualTo(beforeRevision + 2);
+    assertThat(operationCount(schemaId)).isEqualTo(beforeCount + 2);
+    assertThat(recentOperationRevisions(schemaId, 2))
+        .containsExactly(beforeRevision + 1, beforeRevision + 2);
+    assertThat(recentOperationTypes(schemaId, 2))
+        .containsExactlyInAnyOrder("CHANGE_SCHEMA_NAME", "CHANGE_TABLE_EXTRA");
+  }
+
   private long currentRevision(String schemaId) {
     return databaseClient.sql("""
         SELECT current_revision
@@ -256,6 +337,18 @@ class ErdOperationLedgerIntegrationTest extends ErdProjectIntegrationSupport {
         """)
         .bind("schemaId", schemaId)
         .map((row, metadata) -> ((Number) row.get("cnt")).longValue())
+        .one()
+        .block();
+  }
+
+  private long currentVersion(String schemaId) {
+    return databaseClient.sql("""
+        SELECT version
+        FROM schema_collaboration_state
+        WHERE schema_id = :schemaId
+        """)
+        .bind("schemaId", schemaId)
+        .map((row, metadata) -> ((Number) row.get("version")).longValue())
         .one()
         .block();
   }
@@ -297,6 +390,39 @@ class ErdOperationLedgerIntegrationTest extends ErdProjectIntegrationSupport {
     return java.util.stream.StreamSupport.stream(node.spliterator(), false)
         .map(JsonNode::asText)
         .toList();
+  }
+
+  private List<Long> recentOperationRevisions(String schemaId, int limit) {
+    return databaseClient.sql("""
+        SELECT committed_revision
+        FROM erd_operation_log
+        WHERE schema_id = :schemaId
+        ORDER BY committed_revision DESC
+        LIMIT %d
+        """.formatted(limit))
+        .bind("schemaId", schemaId)
+        .map((row, metadata) -> ((Number) row.get("committed_revision")).longValue())
+        .all()
+        .collectList()
+        .map(revisions -> revisions.stream()
+            .sorted()
+            .toList())
+        .block();
+  }
+
+  private List<String> recentOperationTypes(String schemaId, int limit) {
+    return databaseClient.sql("""
+        SELECT op_type
+        FROM erd_operation_log
+        WHERE schema_id = :schemaId
+        ORDER BY committed_revision DESC
+        LIMIT %d
+        """.formatted(limit))
+        .bind("schemaId", schemaId)
+        .map((row, metadata) -> row.get("op_type", String.class))
+        .all()
+        .collectList()
+        .block();
   }
 
   private record OperationLogRow(

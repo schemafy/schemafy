@@ -6,6 +6,7 @@ import com.schemafy.core.erd.operation.ErdOperationContexts;
 import com.schemafy.core.erd.operation.ErdOperationMetadata;
 import com.schemafy.core.erd.operation.application.port.out.AppendErdOperationLogPort;
 import com.schemafy.core.erd.operation.application.port.out.FindSchemaCollaborationStatePort;
+import com.schemafy.core.erd.operation.application.port.out.IncrementSchemaCollaborationRevisionPort;
 import com.schemafy.core.erd.operation.application.port.out.SaveSchemaCollaborationStatePort;
 import com.schemafy.core.erd.operation.application.service.ErdMutationTargetResolver.FinalizedErdMutationTarget;
 import com.schemafy.core.erd.operation.application.service.ErdMutationTargetResolver.ResolvedErdMutationTarget;
@@ -30,6 +31,7 @@ class DefaultErdMutationCoordinator implements ErdMutationCoordinator {
   private final TransactionalOperator transactionalOperator;
   private final ErdMutationTargetResolver erdMutationTargetResolver;
   private final FindSchemaCollaborationStatePort findSchemaCollaborationStatePort;
+  private final IncrementSchemaCollaborationRevisionPort incrementSchemaCollaborationRevisionPort;
   private final SaveSchemaCollaborationStatePort saveSchemaCollaborationStatePort;
   private final AppendErdOperationLogPort appendErdOperationLogPort;
   private final UlidGeneratorPort ulidGeneratorPort;
@@ -116,7 +118,7 @@ class DefaultErdMutationCoordinator implements ErdMutationCoordinator {
         mutationResult);
 
     return resolveSchemaState(operationType, resolvedTarget, finalizedTarget, preloadedState)
-        .flatMap(schemaState -> saveSchemaCollaborationStatePort.save(schemaState.incremented())
+        .flatMap(schemaState -> incrementSchemaCollaborationRevisionPort.increment(schemaState.schemaId())
             .flatMap(updatedState -> appendErdOperationLogPort.append(buildOperationLog(
                 operationType,
                 payload,

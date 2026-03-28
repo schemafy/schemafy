@@ -3,6 +3,7 @@ package com.schemafy.core.erd.operation.adapter.out.persistence;
 import com.schemafy.core.common.PersistenceAdapter;
 import com.schemafy.core.erd.operation.application.port.out.AppendErdOperationLogPort;
 import com.schemafy.core.erd.operation.application.port.out.FindSchemaCollaborationStatePort;
+import com.schemafy.core.erd.operation.application.port.out.IncrementSchemaCollaborationRevisionPort;
 import com.schemafy.core.erd.operation.application.port.out.SaveSchemaCollaborationStatePort;
 import com.schemafy.core.erd.operation.domain.ErdOperationLog;
 import com.schemafy.core.erd.operation.domain.SchemaCollaborationState;
@@ -14,6 +15,7 @@ import reactor.core.publisher.Mono;
 @RequiredArgsConstructor
 class ErdOperationPersistenceAdapter implements
     FindSchemaCollaborationStatePort,
+    IncrementSchemaCollaborationRevisionPort,
     SaveSchemaCollaborationStatePort,
     AppendErdOperationLogPort {
 
@@ -43,6 +45,21 @@ class ErdOperationPersistenceAdapter implements
           entity.setCurrentRevision(schemaCollaborationState.currentRevision());
           entity.setVersion(schemaCollaborationState.version());
           return schemaCollaborationStateRepository.save(entity);
+        })
+        .map(schemaCollaborationStateMapper::toDomain);
+  }
+
+  @Override
+  public Mono<SchemaCollaborationState> increment(String schemaId) {
+    return schemaCollaborationStateRepository.incrementRevision(schemaId)
+        .flatMap(rowsUpdated -> {
+          if (rowsUpdated != 1) {
+            return Mono.error(new IllegalStateException(
+                "Schema collaboration state increment failed: schemaId=" + schemaId));
+          }
+          return schemaCollaborationStateRepository.findById(schemaId)
+              .switchIfEmpty(Mono.error(new IllegalStateException(
+                  "Schema collaboration state missing after increment: schemaId=" + schemaId)));
         })
         .map(schemaCollaborationStateMapper::toDomain);
   }
