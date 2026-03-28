@@ -5,6 +5,8 @@ export const TablePreview = () => {
   const divRef = useRef<HTMLDivElement>(null);
   const zoom = useStore((s) => s.transform[2]);
   const zoomRef = useRef(zoom);
+  const frameRef = useRef<number | null>(null);
+  const latestPositionRef = useRef<{ x: number; y: number } | null>(null);
 
   useEffect(() => {
     zoomRef.current = zoom;
@@ -19,12 +21,32 @@ export const TablePreview = () => {
     if (!el) return;
 
     const handleMouseMove = (e: MouseEvent) => {
-      el.style.display = 'block';
-      el.style.transform = `translate(${e.clientX}px, ${e.clientY - 60}px)`;
+      latestPositionRef.current = { x: e.clientX, y: e.clientY };
+
+      if (frameRef.current !== null) return;
+
+      frameRef.current = window.requestAnimationFrame(() => {
+        frameRef.current = null;
+        const position = latestPositionRef.current;
+        if (!position) return;
+
+        el.style.display = 'block';
+        el.style.transform = `translate3d(${position.x}px, ${
+          position.y - 60
+        }px, 0)`;
+      });
     };
 
     window.addEventListener('mousemove', handleMouseMove);
-    return () => window.removeEventListener('mousemove', handleMouseMove);
+
+    return () => {
+      window.removeEventListener('mousemove', handleMouseMove);
+
+      if (frameRef.current !== null) {
+        window.cancelAnimationFrame(frameRef.current);
+        frameRef.current = null;
+      }
+    };
   }, []);
 
   return (
@@ -39,6 +61,7 @@ export const TablePreview = () => {
         opacity: 0.4,
         width: `${200 * zoom}px`,
         height: `${100 * zoom}px`,
+        willChange: 'transform',
       }}
     />
   );
