@@ -63,13 +63,13 @@ class DefaultErdMutationCoordinator implements ErdMutationCoordinator {
                   resolvedTarget,
                   preloadedState,
                   metadata))
-              .switchIfEmpty(executeMutationAndCommit(
+              .switchIfEmpty(Mono.defer(() -> executeMutationAndCommit(
                   operationType,
                   payload,
                   mutationSupplier,
                   resolvedTarget,
                   null,
-                  metadata)));
+                  metadata))));
     }).as(transactionalOperator::transactional);
   }
 
