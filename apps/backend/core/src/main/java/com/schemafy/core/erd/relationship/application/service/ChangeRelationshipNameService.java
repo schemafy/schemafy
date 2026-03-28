@@ -39,26 +39,26 @@ public class ChangeRelationshipNameService implements ChangeRelationshipNameUseC
   public Mono<MutationResult<Void>> changeRelationshipName(ChangeRelationshipNameCommand command) {
     return erdMutationCoordinator.coordinate(ErdOperationType.CHANGE_RELATIONSHIP_NAME, command,
         () -> Mono.defer(() -> {
-      String normalizedName = normalizeName(command.newName());
-      RelationshipValidator.validateName(normalizedName);
-      return getRelationshipByIdPort.findRelationshipById(command.relationshipId())
-          .switchIfEmpty(Mono.error(new DomainException(RelationshipErrorCode.NOT_FOUND, "Relationship not found")))
-          .flatMap(relationship -> relationshipExistsPort.existsByFkTableIdAndNameExcludingId(
-              relationship.fkTableId(),
-              normalizedName,
-              relationship.id())
-              .flatMap(exists -> {
-                if (exists) {
-                  return Mono.error(new DomainException(RelationshipErrorCode.NAME_DUPLICATE,
-                      "Relationship name '%s' already exists in table".formatted(normalizedName)));
-                }
-                Set<String> affectedTableIds = new HashSet<>();
-                affectedTableIds.add(relationship.fkTableId());
-                affectedTableIds.add(relationship.pkTableId());
-                return changeRelationshipNamePort
-                    .changeRelationshipName(relationship.id(), normalizedName)
-                    .thenReturn(MutationResult.<Void>of(null, affectedTableIds));
-              }));
+          String normalizedName = normalizeName(command.newName());
+          RelationshipValidator.validateName(normalizedName);
+          return getRelationshipByIdPort.findRelationshipById(command.relationshipId())
+              .switchIfEmpty(Mono.error(new DomainException(RelationshipErrorCode.NOT_FOUND, "Relationship not found")))
+              .flatMap(relationship -> relationshipExistsPort.existsByFkTableIdAndNameExcludingId(
+                  relationship.fkTableId(),
+                  normalizedName,
+                  relationship.id())
+                  .flatMap(exists -> {
+                    if (exists) {
+                      return Mono.error(new DomainException(RelationshipErrorCode.NAME_DUPLICATE,
+                          "Relationship name '%s' already exists in table".formatted(normalizedName)));
+                    }
+                    Set<String> affectedTableIds = new HashSet<>();
+                    affectedTableIds.add(relationship.fkTableId());
+                    affectedTableIds.add(relationship.pkTableId());
+                    return changeRelationshipNamePort
+                        .changeRelationshipName(relationship.id(), normalizedName)
+                        .thenReturn(MutationResult.<Void>of(null, affectedTableIds));
+                  }));
         }));
   }
 

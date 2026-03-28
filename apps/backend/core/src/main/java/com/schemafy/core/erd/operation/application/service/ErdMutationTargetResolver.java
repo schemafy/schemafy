@@ -6,13 +6,13 @@ import org.springframework.stereotype.Component;
 
 import com.schemafy.core.common.MutationResult;
 import com.schemafy.core.common.exception.DomainException;
-import com.schemafy.core.erd.column.application.port.in.CreateColumnCommand;
-import com.schemafy.core.erd.column.application.port.in.CreateColumnResult;
-import com.schemafy.core.erd.column.application.port.in.DeleteColumnCommand;
 import com.schemafy.core.erd.column.application.port.in.ChangeColumnMetaCommand;
 import com.schemafy.core.erd.column.application.port.in.ChangeColumnNameCommand;
 import com.schemafy.core.erd.column.application.port.in.ChangeColumnPositionCommand;
 import com.schemafy.core.erd.column.application.port.in.ChangeColumnTypeCommand;
+import com.schemafy.core.erd.column.application.port.in.CreateColumnCommand;
+import com.schemafy.core.erd.column.application.port.in.CreateColumnResult;
+import com.schemafy.core.erd.column.application.port.in.DeleteColumnCommand;
 import com.schemafy.core.erd.column.application.port.out.GetColumnByIdPort;
 import com.schemafy.core.erd.column.domain.exception.ColumnErrorCode;
 import com.schemafy.core.erd.constraint.application.port.in.AddConstraintColumnCommand;
@@ -91,167 +91,167 @@ class ErdMutationTargetResolver {
 
   Mono<ResolvedErdMutationTarget> resolveBefore(ErdOperationType operationType, Object payload) {
     return switch (operationType) {
-      case CREATE_SCHEMA -> {
-        CreateSchemaCommand command = requirePayload(payload, CreateSchemaCommand.class);
-        yield Mono.just(new ResolvedErdMutationTarget(command.projectId(), null, null));
-      }
-      case CHANGE_SCHEMA_NAME -> {
-        ChangeSchemaNameCommand command = requirePayload(payload, ChangeSchemaNameCommand.class);
-        yield resolveBySchemaId(command.schemaId(), command.schemaId());
-      }
-      case DELETE_SCHEMA -> {
-        DeleteSchemaCommand command = requirePayload(payload, DeleteSchemaCommand.class);
-        yield resolveBySchemaId(command.schemaId(), command.schemaId());
-      }
-      case CREATE_TABLE -> {
-        CreateTableCommand command = requirePayload(payload, CreateTableCommand.class);
-        yield resolveSchemaContext(command.schemaId());
-      }
-      case CHANGE_TABLE_NAME -> {
-        ChangeTableNameCommand command = requirePayload(payload, ChangeTableNameCommand.class);
-        yield resolveByTableId(command.tableId(), command.tableId());
-      }
-      case CHANGE_TABLE_META -> {
-        ChangeTableMetaCommand command = requirePayload(payload, ChangeTableMetaCommand.class);
-        yield resolveByTableId(command.tableId(), command.tableId());
-      }
-      case CHANGE_TABLE_EXTRA -> {
-        ChangeTableExtraCommand command = requirePayload(payload, ChangeTableExtraCommand.class);
-        yield resolveByTableId(command.tableId(), command.tableId());
-      }
-      case DELETE_TABLE -> {
-        DeleteTableCommand command = requirePayload(payload, DeleteTableCommand.class);
-        yield resolveByTableId(command.tableId(), command.tableId());
-      }
-      case CREATE_COLUMN -> {
-        CreateColumnCommand command = requirePayload(payload, CreateColumnCommand.class);
-        yield resolveTableContext(command.tableId());
-      }
-      case CHANGE_COLUMN_NAME -> {
-        ChangeColumnNameCommand command = requirePayload(payload, ChangeColumnNameCommand.class);
-        yield resolveByColumnId(command.columnId(), command.columnId());
-      }
-      case CHANGE_COLUMN_TYPE -> {
-        ChangeColumnTypeCommand command = requirePayload(payload, ChangeColumnTypeCommand.class);
-        yield resolveByColumnId(command.columnId(), command.columnId());
-      }
-      case CHANGE_COLUMN_META -> {
-        ChangeColumnMetaCommand command = requirePayload(payload, ChangeColumnMetaCommand.class);
-        yield resolveByColumnId(command.columnId(), command.columnId());
-      }
-      case CHANGE_COLUMN_POSITION -> {
-        ChangeColumnPositionCommand command = requirePayload(payload, ChangeColumnPositionCommand.class);
-        yield resolveByColumnId(command.columnId(), command.columnId());
-      }
-      case DELETE_COLUMN -> {
-        DeleteColumnCommand command = requirePayload(payload, DeleteColumnCommand.class);
-        yield resolveByColumnId(command.columnId(), command.columnId());
-      }
-      case CREATE_CONSTRAINT -> {
-        CreateConstraintCommand command = requirePayload(payload, CreateConstraintCommand.class);
-        yield resolveTableContext(command.tableId());
-      }
-      case CHANGE_CONSTRAINT_NAME -> {
-        ChangeConstraintNameCommand command = requirePayload(payload, ChangeConstraintNameCommand.class);
-        yield resolveByConstraintId(command.constraintId(), command.constraintId());
-      }
-      case CHANGE_CONSTRAINT_CHECK_EXPR -> {
-        ChangeConstraintCheckExprCommand command = requirePayload(payload, ChangeConstraintCheckExprCommand.class);
-        yield resolveByConstraintId(command.constraintId(), command.constraintId());
-      }
-      case CHANGE_CONSTRAINT_DEFAULT_EXPR -> {
-        ChangeConstraintDefaultExprCommand command = requirePayload(payload, ChangeConstraintDefaultExprCommand.class);
-        yield resolveByConstraintId(command.constraintId(), command.constraintId());
-      }
-      case DELETE_CONSTRAINT -> {
-        DeleteConstraintCommand command = requirePayload(payload, DeleteConstraintCommand.class);
-        yield resolveByConstraintId(command.constraintId(), command.constraintId());
-      }
-      case ADD_CONSTRAINT_COLUMN -> {
-        AddConstraintColumnCommand command = requirePayload(payload, AddConstraintColumnCommand.class);
-        yield resolveByConstraintId(command.constraintId(), null);
-      }
-      case REMOVE_CONSTRAINT_COLUMN -> {
-        RemoveConstraintColumnCommand command = requirePayload(payload, RemoveConstraintColumnCommand.class);
-        yield resolveByConstraintColumnId(command.constraintColumnId(), command.constraintColumnId());
-      }
-      case CHANGE_CONSTRAINT_COLUMN_POSITION -> {
-        ChangeConstraintColumnPositionCommand command = requirePayload(payload,
-            ChangeConstraintColumnPositionCommand.class);
-        yield resolveByConstraintColumnId(command.constraintColumnId(), command.constraintColumnId());
-      }
-      case CREATE_INDEX -> {
-        CreateIndexCommand command = requirePayload(payload, CreateIndexCommand.class);
-        yield resolveTableContext(command.tableId());
-      }
-      case CHANGE_INDEX_NAME -> {
-        ChangeIndexNameCommand command = requirePayload(payload, ChangeIndexNameCommand.class);
-        yield resolveByIndexId(command.indexId(), command.indexId());
-      }
-      case CHANGE_INDEX_TYPE -> {
-        ChangeIndexTypeCommand command = requirePayload(payload, ChangeIndexTypeCommand.class);
-        yield resolveByIndexId(command.indexId(), command.indexId());
-      }
-      case DELETE_INDEX -> {
-        DeleteIndexCommand command = requirePayload(payload, DeleteIndexCommand.class);
-        yield resolveByIndexId(command.indexId(), command.indexId());
-      }
-      case ADD_INDEX_COLUMN -> {
-        AddIndexColumnCommand command = requirePayload(payload, AddIndexColumnCommand.class);
-        yield resolveByIndexId(command.indexId(), null);
-      }
-      case REMOVE_INDEX_COLUMN -> {
-        RemoveIndexColumnCommand command = requirePayload(payload, RemoveIndexColumnCommand.class);
-        yield resolveByIndexColumnId(command.indexColumnId(), command.indexColumnId());
-      }
-      case CHANGE_INDEX_COLUMN_POSITION -> {
-        ChangeIndexColumnPositionCommand command = requirePayload(payload,
-            ChangeIndexColumnPositionCommand.class);
-        yield resolveByIndexColumnId(command.indexColumnId(), command.indexColumnId());
-      }
-      case CHANGE_INDEX_COLUMN_SORT_DIRECTION -> {
-        ChangeIndexColumnSortDirectionCommand command = requirePayload(payload,
-            ChangeIndexColumnSortDirectionCommand.class);
-        yield resolveByIndexColumnId(command.indexColumnId(), command.indexColumnId());
-      }
-      case CREATE_RELATIONSHIP -> {
-        CreateRelationshipCommand command = requirePayload(payload, CreateRelationshipCommand.class);
-        yield resolveTableContext(command.fkTableId());
-      }
-      case CHANGE_RELATIONSHIP_NAME -> {
-        ChangeRelationshipNameCommand command = requirePayload(payload, ChangeRelationshipNameCommand.class);
-        yield resolveByRelationshipId(command.relationshipId(), command.relationshipId());
-      }
-      case CHANGE_RELATIONSHIP_KIND -> {
-        ChangeRelationshipKindCommand command = requirePayload(payload, ChangeRelationshipKindCommand.class);
-        yield resolveByRelationshipId(command.relationshipId(), command.relationshipId());
-      }
-      case CHANGE_RELATIONSHIP_CARDINALITY -> {
-        ChangeRelationshipCardinalityCommand command = requirePayload(payload,
-            ChangeRelationshipCardinalityCommand.class);
-        yield resolveByRelationshipId(command.relationshipId(), command.relationshipId());
-      }
-      case CHANGE_RELATIONSHIP_EXTRA -> {
-        ChangeRelationshipExtraCommand command = requirePayload(payload, ChangeRelationshipExtraCommand.class);
-        yield resolveByRelationshipId(command.relationshipId(), command.relationshipId());
-      }
-      case DELETE_RELATIONSHIP -> {
-        DeleteRelationshipCommand command = requirePayload(payload, DeleteRelationshipCommand.class);
-        yield resolveByRelationshipId(command.relationshipId(), command.relationshipId());
-      }
-      case ADD_RELATIONSHIP_COLUMN -> {
-        AddRelationshipColumnCommand command = requirePayload(payload, AddRelationshipColumnCommand.class);
-        yield resolveByRelationshipId(command.relationshipId(), null);
-      }
-      case REMOVE_RELATIONSHIP_COLUMN -> {
-        RemoveRelationshipColumnCommand command = requirePayload(payload, RemoveRelationshipColumnCommand.class);
-        yield resolveByRelationshipColumnId(command.relationshipColumnId(), command.relationshipColumnId());
-      }
-      case CHANGE_RELATIONSHIP_COLUMN_POSITION -> {
-        ChangeRelationshipColumnPositionCommand command = requirePayload(payload,
-            ChangeRelationshipColumnPositionCommand.class);
-        yield resolveByRelationshipColumnId(command.relationshipColumnId(), command.relationshipColumnId());
-      }
+    case CREATE_SCHEMA -> {
+      CreateSchemaCommand command = requirePayload(payload, CreateSchemaCommand.class);
+      yield Mono.just(new ResolvedErdMutationTarget(command.projectId(), null, null));
+    }
+    case CHANGE_SCHEMA_NAME -> {
+      ChangeSchemaNameCommand command = requirePayload(payload, ChangeSchemaNameCommand.class);
+      yield resolveBySchemaId(command.schemaId(), command.schemaId());
+    }
+    case DELETE_SCHEMA -> {
+      DeleteSchemaCommand command = requirePayload(payload, DeleteSchemaCommand.class);
+      yield resolveBySchemaId(command.schemaId(), command.schemaId());
+    }
+    case CREATE_TABLE -> {
+      CreateTableCommand command = requirePayload(payload, CreateTableCommand.class);
+      yield resolveSchemaContext(command.schemaId());
+    }
+    case CHANGE_TABLE_NAME -> {
+      ChangeTableNameCommand command = requirePayload(payload, ChangeTableNameCommand.class);
+      yield resolveByTableId(command.tableId(), command.tableId());
+    }
+    case CHANGE_TABLE_META -> {
+      ChangeTableMetaCommand command = requirePayload(payload, ChangeTableMetaCommand.class);
+      yield resolveByTableId(command.tableId(), command.tableId());
+    }
+    case CHANGE_TABLE_EXTRA -> {
+      ChangeTableExtraCommand command = requirePayload(payload, ChangeTableExtraCommand.class);
+      yield resolveByTableId(command.tableId(), command.tableId());
+    }
+    case DELETE_TABLE -> {
+      DeleteTableCommand command = requirePayload(payload, DeleteTableCommand.class);
+      yield resolveByTableId(command.tableId(), command.tableId());
+    }
+    case CREATE_COLUMN -> {
+      CreateColumnCommand command = requirePayload(payload, CreateColumnCommand.class);
+      yield resolveTableContext(command.tableId());
+    }
+    case CHANGE_COLUMN_NAME -> {
+      ChangeColumnNameCommand command = requirePayload(payload, ChangeColumnNameCommand.class);
+      yield resolveByColumnId(command.columnId(), command.columnId());
+    }
+    case CHANGE_COLUMN_TYPE -> {
+      ChangeColumnTypeCommand command = requirePayload(payload, ChangeColumnTypeCommand.class);
+      yield resolveByColumnId(command.columnId(), command.columnId());
+    }
+    case CHANGE_COLUMN_META -> {
+      ChangeColumnMetaCommand command = requirePayload(payload, ChangeColumnMetaCommand.class);
+      yield resolveByColumnId(command.columnId(), command.columnId());
+    }
+    case CHANGE_COLUMN_POSITION -> {
+      ChangeColumnPositionCommand command = requirePayload(payload, ChangeColumnPositionCommand.class);
+      yield resolveByColumnId(command.columnId(), command.columnId());
+    }
+    case DELETE_COLUMN -> {
+      DeleteColumnCommand command = requirePayload(payload, DeleteColumnCommand.class);
+      yield resolveByColumnId(command.columnId(), command.columnId());
+    }
+    case CREATE_CONSTRAINT -> {
+      CreateConstraintCommand command = requirePayload(payload, CreateConstraintCommand.class);
+      yield resolveTableContext(command.tableId());
+    }
+    case CHANGE_CONSTRAINT_NAME -> {
+      ChangeConstraintNameCommand command = requirePayload(payload, ChangeConstraintNameCommand.class);
+      yield resolveByConstraintId(command.constraintId(), command.constraintId());
+    }
+    case CHANGE_CONSTRAINT_CHECK_EXPR -> {
+      ChangeConstraintCheckExprCommand command = requirePayload(payload, ChangeConstraintCheckExprCommand.class);
+      yield resolveByConstraintId(command.constraintId(), command.constraintId());
+    }
+    case CHANGE_CONSTRAINT_DEFAULT_EXPR -> {
+      ChangeConstraintDefaultExprCommand command = requirePayload(payload, ChangeConstraintDefaultExprCommand.class);
+      yield resolveByConstraintId(command.constraintId(), command.constraintId());
+    }
+    case DELETE_CONSTRAINT -> {
+      DeleteConstraintCommand command = requirePayload(payload, DeleteConstraintCommand.class);
+      yield resolveByConstraintId(command.constraintId(), command.constraintId());
+    }
+    case ADD_CONSTRAINT_COLUMN -> {
+      AddConstraintColumnCommand command = requirePayload(payload, AddConstraintColumnCommand.class);
+      yield resolveByConstraintId(command.constraintId(), null);
+    }
+    case REMOVE_CONSTRAINT_COLUMN -> {
+      RemoveConstraintColumnCommand command = requirePayload(payload, RemoveConstraintColumnCommand.class);
+      yield resolveByConstraintColumnId(command.constraintColumnId(), command.constraintColumnId());
+    }
+    case CHANGE_CONSTRAINT_COLUMN_POSITION -> {
+      ChangeConstraintColumnPositionCommand command = requirePayload(payload,
+          ChangeConstraintColumnPositionCommand.class);
+      yield resolveByConstraintColumnId(command.constraintColumnId(), command.constraintColumnId());
+    }
+    case CREATE_INDEX -> {
+      CreateIndexCommand command = requirePayload(payload, CreateIndexCommand.class);
+      yield resolveTableContext(command.tableId());
+    }
+    case CHANGE_INDEX_NAME -> {
+      ChangeIndexNameCommand command = requirePayload(payload, ChangeIndexNameCommand.class);
+      yield resolveByIndexId(command.indexId(), command.indexId());
+    }
+    case CHANGE_INDEX_TYPE -> {
+      ChangeIndexTypeCommand command = requirePayload(payload, ChangeIndexTypeCommand.class);
+      yield resolveByIndexId(command.indexId(), command.indexId());
+    }
+    case DELETE_INDEX -> {
+      DeleteIndexCommand command = requirePayload(payload, DeleteIndexCommand.class);
+      yield resolveByIndexId(command.indexId(), command.indexId());
+    }
+    case ADD_INDEX_COLUMN -> {
+      AddIndexColumnCommand command = requirePayload(payload, AddIndexColumnCommand.class);
+      yield resolveByIndexId(command.indexId(), null);
+    }
+    case REMOVE_INDEX_COLUMN -> {
+      RemoveIndexColumnCommand command = requirePayload(payload, RemoveIndexColumnCommand.class);
+      yield resolveByIndexColumnId(command.indexColumnId(), command.indexColumnId());
+    }
+    case CHANGE_INDEX_COLUMN_POSITION -> {
+      ChangeIndexColumnPositionCommand command = requirePayload(payload,
+          ChangeIndexColumnPositionCommand.class);
+      yield resolveByIndexColumnId(command.indexColumnId(), command.indexColumnId());
+    }
+    case CHANGE_INDEX_COLUMN_SORT_DIRECTION -> {
+      ChangeIndexColumnSortDirectionCommand command = requirePayload(payload,
+          ChangeIndexColumnSortDirectionCommand.class);
+      yield resolveByIndexColumnId(command.indexColumnId(), command.indexColumnId());
+    }
+    case CREATE_RELATIONSHIP -> {
+      CreateRelationshipCommand command = requirePayload(payload, CreateRelationshipCommand.class);
+      yield resolveTableContext(command.fkTableId());
+    }
+    case CHANGE_RELATIONSHIP_NAME -> {
+      ChangeRelationshipNameCommand command = requirePayload(payload, ChangeRelationshipNameCommand.class);
+      yield resolveByRelationshipId(command.relationshipId(), command.relationshipId());
+    }
+    case CHANGE_RELATIONSHIP_KIND -> {
+      ChangeRelationshipKindCommand command = requirePayload(payload, ChangeRelationshipKindCommand.class);
+      yield resolveByRelationshipId(command.relationshipId(), command.relationshipId());
+    }
+    case CHANGE_RELATIONSHIP_CARDINALITY -> {
+      ChangeRelationshipCardinalityCommand command = requirePayload(payload,
+          ChangeRelationshipCardinalityCommand.class);
+      yield resolveByRelationshipId(command.relationshipId(), command.relationshipId());
+    }
+    case CHANGE_RELATIONSHIP_EXTRA -> {
+      ChangeRelationshipExtraCommand command = requirePayload(payload, ChangeRelationshipExtraCommand.class);
+      yield resolveByRelationshipId(command.relationshipId(), command.relationshipId());
+    }
+    case DELETE_RELATIONSHIP -> {
+      DeleteRelationshipCommand command = requirePayload(payload, DeleteRelationshipCommand.class);
+      yield resolveByRelationshipId(command.relationshipId(), command.relationshipId());
+    }
+    case ADD_RELATIONSHIP_COLUMN -> {
+      AddRelationshipColumnCommand command = requirePayload(payload, AddRelationshipColumnCommand.class);
+      yield resolveByRelationshipId(command.relationshipId(), null);
+    }
+    case REMOVE_RELATIONSHIP_COLUMN -> {
+      RemoveRelationshipColumnCommand command = requirePayload(payload, RemoveRelationshipColumnCommand.class);
+      yield resolveByRelationshipColumnId(command.relationshipColumnId(), command.relationshipColumnId());
+    }
+    case CHANGE_RELATIONSHIP_COLUMN_POSITION -> {
+      ChangeRelationshipColumnPositionCommand command = requirePayload(payload,
+          ChangeRelationshipColumnPositionCommand.class);
+      yield resolveByRelationshipColumnId(command.relationshipColumnId(), command.relationshipColumnId());
+    }
     };
   }
 
@@ -279,16 +279,16 @@ class ErdMutationTargetResolver {
   private <T> String resolveCreatedEntityId(ErdOperationType operationType, MutationResult<T> mutationResult) {
     Object result = mutationResult.result();
     return switch (operationType) {
-      case CREATE_SCHEMA -> requireResult(result, CreateSchemaResult.class).id();
-      case CREATE_TABLE -> requireResult(result, CreateTableResult.class).tableId();
-      case CREATE_COLUMN -> requireResult(result, CreateColumnResult.class).columnId();
-      case CREATE_CONSTRAINT -> requireResult(result, CreateConstraintResult.class).constraintId();
-      case ADD_CONSTRAINT_COLUMN -> requireResult(result, AddConstraintColumnResult.class).constraintColumnId();
-      case CREATE_INDEX -> requireResult(result, CreateIndexResult.class).indexId();
-      case ADD_INDEX_COLUMN -> requireResult(result, AddIndexColumnResult.class).indexColumnId();
-      case CREATE_RELATIONSHIP -> requireResult(result, CreateRelationshipResult.class).relationshipId();
-      case ADD_RELATIONSHIP_COLUMN -> requireResult(result, AddRelationshipColumnResult.class).relationshipColumnId();
-      default -> throw new IllegalArgumentException("Unsupported create operation: " + operationType);
+    case CREATE_SCHEMA -> requireResult(result, CreateSchemaResult.class).id();
+    case CREATE_TABLE -> requireResult(result, CreateTableResult.class).tableId();
+    case CREATE_COLUMN -> requireResult(result, CreateColumnResult.class).columnId();
+    case CREATE_CONSTRAINT -> requireResult(result, CreateConstraintResult.class).constraintId();
+    case ADD_CONSTRAINT_COLUMN -> requireResult(result, AddConstraintColumnResult.class).constraintColumnId();
+    case CREATE_INDEX -> requireResult(result, CreateIndexResult.class).indexId();
+    case ADD_INDEX_COLUMN -> requireResult(result, AddIndexColumnResult.class).indexColumnId();
+    case CREATE_RELATIONSHIP -> requireResult(result, CreateRelationshipResult.class).relationshipId();
+    case ADD_RELATIONSHIP_COLUMN -> requireResult(result, AddRelationshipColumnResult.class).relationshipColumnId();
+    default -> throw new IllegalArgumentException("Unsupported create operation: " + operationType);
     };
   }
 
@@ -396,6 +396,7 @@ class ErdMutationTargetResolver {
     ResolvedErdMutationTarget withTouchedEntityId(String nextTouchedEntityId) {
       return new ResolvedErdMutationTarget(projectId, schemaId, nextTouchedEntityId);
     }
+
   }
 
   record FinalizedErdMutationTarget(

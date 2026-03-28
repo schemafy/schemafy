@@ -33,7 +33,7 @@ class ErdOperationPersistenceAdapter implements
   @Override
   public Mono<SchemaCollaborationState> save(SchemaCollaborationState schemaCollaborationState) {
     return schemaCollaborationStateRepository.save(
-            schemaCollaborationStateMapper.toEntity(schemaCollaborationState))
+        schemaCollaborationStateMapper.toEntity(schemaCollaborationState))
         .map(schemaCollaborationStateMapper::toDomain);
   }
 

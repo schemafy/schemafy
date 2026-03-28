@@ -49,33 +49,33 @@ public class DeleteRelationshipService implements DeleteRelationshipUseCase {
   public Mono<MutationResult<Void>> deleteRelationship(DeleteRelationshipCommand command) {
     String relationshipId = command.relationshipId();
 
-	    return erdMutationCoordinator.coordinate(ErdOperationType.DELETE_RELATIONSHIP, command,
+    return erdMutationCoordinator.coordinate(ErdOperationType.DELETE_RELATIONSHIP, command,
         () -> getRelationshipByIdPort.findRelationshipById(relationshipId)
-        .switchIfEmpty(Mono.error(new DomainException(RelationshipErrorCode.NOT_FOUND, "Relationship not found")))
-        .flatMap(relationship -> {
-          Set<String> affectedTableIds = new HashSet<>();
-          affectedTableIds.add(relationship.fkTableId());
-          affectedTableIds.add(relationship.pkTableId());
-          return getRelationshipColumnsByRelationshipIdPort
-              .findRelationshipColumnsByRelationshipId(relationshipId)
-              .defaultIfEmpty(List.of())
-              .flatMap(relColumns -> {
-                List<String> fkColumnIds = relColumns.stream()
-                    .map(RelationshipColumn::fkColumnId)
-                    .toList();
+            .switchIfEmpty(Mono.error(new DomainException(RelationshipErrorCode.NOT_FOUND, "Relationship not found")))
+            .flatMap(relationship -> {
+              Set<String> affectedTableIds = new HashSet<>();
+              affectedTableIds.add(relationship.fkTableId());
+              affectedTableIds.add(relationship.pkTableId());
+              return getRelationshipColumnsByRelationshipIdPort
+                  .findRelationshipColumnsByRelationshipId(relationshipId)
+                  .defaultIfEmpty(List.of())
+                  .flatMap(relColumns -> {
+                    List<String> fkColumnIds = relColumns.stream()
+                        .map(RelationshipColumn::fkColumnId)
+                        .toList();
 
-                return deleteRelationshipColumnsPort.deleteByRelationshipId(relationshipId)
-                    .then(deleteRelationshipPort.deleteRelationship(relationshipId))
-                    .thenMany(Flux.fromIterable(fkColumnIds))
-                    .concatMap(fkColumnId -> deleteColumnUseCase.deleteColumn(
-                        new DeleteColumnCommand(fkColumnId))
-                        .contextWrite(ErdOperationContexts.suppressNestedMutation())
-                        .doOnNext(result -> affectedTableIds.addAll(result.affectedTableIds()))
-                        .then())
-                    .then()
-                    .then(Mono.fromCallable(() -> MutationResult.<Void>of(null, affectedTableIds)));
-	              });
-	        }))
+                    return deleteRelationshipColumnsPort.deleteByRelationshipId(relationshipId)
+                        .then(deleteRelationshipPort.deleteRelationship(relationshipId))
+                        .thenMany(Flux.fromIterable(fkColumnIds))
+                        .concatMap(fkColumnId -> deleteColumnUseCase.deleteColumn(
+                            new DeleteColumnCommand(fkColumnId))
+                            .contextWrite(ErdOperationContexts.suppressNestedMutation())
+                            .doOnNext(result -> affectedTableIds.addAll(result.affectedTableIds()))
+                            .then())
+                        .then()
+                        .then(Mono.fromCallable(() -> MutationResult.<Void>of(null, affectedTableIds)));
+                  });
+            }))
         .as(transactionalOperator::transactional);
   }
 

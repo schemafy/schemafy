@@ -10,8 +10,6 @@ import org.springframework.transaction.reactive.TransactionalOperator;
 
 import com.schemafy.core.common.MutationResult;
 import com.schemafy.core.common.exception.DomainException;
-import com.schemafy.core.erd.operation.application.service.ErdMutationCoordinator;
-import com.schemafy.core.erd.operation.domain.ErdOperationType;
 import com.schemafy.core.erd.index.application.port.in.ChangeIndexColumnSortDirectionCommand;
 import com.schemafy.core.erd.index.application.port.in.ChangeIndexColumnSortDirectionUseCase;
 import com.schemafy.core.erd.index.application.port.out.ChangeIndexColumnSortDirectionPort;
@@ -23,6 +21,8 @@ import com.schemafy.core.erd.index.domain.Index;
 import com.schemafy.core.erd.index.domain.IndexColumn;
 import com.schemafy.core.erd.index.domain.exception.IndexErrorCode;
 import com.schemafy.core.erd.index.domain.validator.IndexValidator;
+import com.schemafy.core.erd.operation.application.service.ErdMutationCoordinator;
+import com.schemafy.core.erd.operation.domain.ErdOperationType;
 
 import lombok.RequiredArgsConstructor;
 import reactor.core.publisher.Flux;
@@ -56,12 +56,12 @@ public class ChangeIndexColumnSortDirectionService
     }
     return erdMutationCoordinator.coordinate(ErdOperationType.CHANGE_INDEX_COLUMN_SORT_DIRECTION, command,
         () -> getIndexColumnByIdPort.findIndexColumnById(command.indexColumnId())
-        .switchIfEmpty(Mono.error(new DomainException(
-            IndexErrorCode.COLUMN_NOT_FOUND, "Index column not found")))
-        .flatMap(indexColumn -> getIndexByIdPort.findIndexById(indexColumn.indexId())
-            .switchIfEmpty(Mono.error(new DomainException(IndexErrorCode.NOT_FOUND, "Index not found")))
-            .flatMap(index -> validateAndChange(index, indexColumn, command)
-                .thenReturn(MutationResult.<Void>of(null, index.tableId())))))
+            .switchIfEmpty(Mono.error(new DomainException(
+                IndexErrorCode.COLUMN_NOT_FOUND, "Index column not found")))
+            .flatMap(indexColumn -> getIndexByIdPort.findIndexById(indexColumn.indexId())
+                .switchIfEmpty(Mono.error(new DomainException(IndexErrorCode.NOT_FOUND, "Index not found")))
+                .flatMap(index -> validateAndChange(index, indexColumn, command)
+                    .thenReturn(MutationResult.<Void>of(null, index.tableId())))))
         .as(transactionalOperator::transactional);
   }
 

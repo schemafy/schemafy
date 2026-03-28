@@ -8,8 +8,6 @@ import org.springframework.transaction.reactive.TransactionalOperator;
 
 import com.schemafy.core.common.MutationResult;
 import com.schemafy.core.common.exception.DomainException;
-import com.schemafy.core.erd.operation.application.service.ErdMutationCoordinator;
-import com.schemafy.core.erd.operation.domain.ErdOperationType;
 import com.schemafy.core.erd.column.application.port.in.CreateColumnCommand;
 import com.schemafy.core.erd.column.application.port.in.CreateColumnResult;
 import com.schemafy.core.erd.column.application.port.in.CreateColumnUseCase;
@@ -18,6 +16,8 @@ import com.schemafy.core.erd.column.application.port.out.GetColumnsByTableIdPort
 import com.schemafy.core.erd.column.domain.Column;
 import com.schemafy.core.erd.column.domain.ColumnTypeArguments;
 import com.schemafy.core.erd.column.domain.validator.ColumnValidator;
+import com.schemafy.core.erd.operation.application.service.ErdMutationCoordinator;
+import com.schemafy.core.erd.operation.domain.ErdOperationType;
 import com.schemafy.core.erd.schema.application.port.out.GetSchemaByIdPort;
 import com.schemafy.core.erd.schema.domain.Schema;
 import com.schemafy.core.erd.schema.domain.exception.SchemaErrorCode;
@@ -57,10 +57,10 @@ public class CreateColumnService implements CreateColumnUseCase {
 
     return erdMutationCoordinator.coordinate(ErdOperationType.CREATE_COLUMN, command,
         () -> getTableByIdPort.findTableById(command.tableId())
-        .switchIfEmpty(Mono.error(new DomainException(TableErrorCode.NOT_FOUND, "Table not found")))
-        .flatMap(table -> fetchSchemaAndColumns(table)
-            .flatMap(tuple -> createColumn(table, tuple, command, typeArguments))
-            .map(result -> MutationResult.of(result, table.id()))))
+            .switchIfEmpty(Mono.error(new DomainException(TableErrorCode.NOT_FOUND, "Table not found")))
+            .flatMap(table -> fetchSchemaAndColumns(table)
+                .flatMap(tuple -> createColumn(table, tuple, command, typeArguments))
+                .map(result -> MutationResult.of(result, table.id()))))
         .as(transactionalOperator::transactional);
   }
 

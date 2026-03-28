@@ -8,8 +8,6 @@ import org.springframework.stereotype.Service;
 
 import com.schemafy.core.common.MutationResult;
 import com.schemafy.core.common.exception.DomainException;
-import com.schemafy.core.erd.operation.application.service.ErdMutationCoordinator;
-import com.schemafy.core.erd.operation.domain.ErdOperationType;
 import com.schemafy.core.erd.constraint.application.port.in.ChangeConstraintCheckExprCommand;
 import com.schemafy.core.erd.constraint.application.port.in.ChangeConstraintCheckExprUseCase;
 import com.schemafy.core.erd.constraint.application.port.in.ChangeConstraintDefaultExprCommand;
@@ -23,6 +21,8 @@ import com.schemafy.core.erd.constraint.domain.ConstraintColumn;
 import com.schemafy.core.erd.constraint.domain.exception.ConstraintErrorCode;
 import com.schemafy.core.erd.constraint.domain.type.ConstraintKind;
 import com.schemafy.core.erd.constraint.domain.validator.ConstraintValidator;
+import com.schemafy.core.erd.operation.application.service.ErdMutationCoordinator;
+import com.schemafy.core.erd.operation.domain.ErdOperationType;
 
 import lombok.RequiredArgsConstructor;
 import reactor.core.publisher.Flux;
@@ -50,13 +50,13 @@ public class ChangeConstraintExpressionService implements
       ChangeConstraintCheckExprCommand command) {
     return erdMutationCoordinator.coordinate(ErdOperationType.CHANGE_CONSTRAINT_CHECK_EXPR, command,
         () -> Mono.defer(() -> {
-      String normalizedCheckExpr = normalizeOptional(command.checkExpr());
-      return getConstraintByIdPort.findConstraintById(command.constraintId())
-          .switchIfEmpty(Mono.error(new DomainException(ConstraintErrorCode.NOT_FOUND, "Constraint not found")))
-          .flatMap(constraint -> {
-            validateKind(constraint.kind(), ConstraintKind.CHECK, "check expression");
-            return changeExpression(constraint, normalizedCheckExpr, constraint.defaultExpr());
-          });
+          String normalizedCheckExpr = normalizeOptional(command.checkExpr());
+          return getConstraintByIdPort.findConstraintById(command.constraintId())
+              .switchIfEmpty(Mono.error(new DomainException(ConstraintErrorCode.NOT_FOUND, "Constraint not found")))
+              .flatMap(constraint -> {
+                validateKind(constraint.kind(), ConstraintKind.CHECK, "check expression");
+                return changeExpression(constraint, normalizedCheckExpr, constraint.defaultExpr());
+              });
         }));
   }
 
@@ -65,13 +65,13 @@ public class ChangeConstraintExpressionService implements
       ChangeConstraintDefaultExprCommand command) {
     return erdMutationCoordinator.coordinate(ErdOperationType.CHANGE_CONSTRAINT_DEFAULT_EXPR, command,
         () -> Mono.defer(() -> {
-      String normalizedDefaultExpr = normalizeOptional(command.defaultExpr());
-      return getConstraintByIdPort.findConstraintById(command.constraintId())
-          .switchIfEmpty(Mono.error(new DomainException(ConstraintErrorCode.NOT_FOUND, "Constraint not found")))
-          .flatMap(constraint -> {
-            validateKind(constraint.kind(), ConstraintKind.DEFAULT, "default expression");
-            return changeExpression(constraint, constraint.checkExpr(), normalizedDefaultExpr);
-          });
+          String normalizedDefaultExpr = normalizeOptional(command.defaultExpr());
+          return getConstraintByIdPort.findConstraintById(command.constraintId())
+              .switchIfEmpty(Mono.error(new DomainException(ConstraintErrorCode.NOT_FOUND, "Constraint not found")))
+              .flatMap(constraint -> {
+                validateKind(constraint.kind(), ConstraintKind.DEFAULT, "default expression");
+                return changeExpression(constraint, constraint.checkExpr(), normalizedDefaultExpr);
+              });
         }));
   }
 

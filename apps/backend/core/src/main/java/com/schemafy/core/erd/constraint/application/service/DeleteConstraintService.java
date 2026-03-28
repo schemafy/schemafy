@@ -48,23 +48,23 @@ public class DeleteConstraintService implements DeleteConstraintUseCase {
     String constraintId = command.constraintId();
     return erdMutationCoordinator.coordinate(ErdOperationType.DELETE_CONSTRAINT, command,
         () -> getConstraintByIdPort.findConstraintById(constraintId)
-        .switchIfEmpty(Mono.error(new DomainException(ConstraintErrorCode.NOT_FOUND, "Constraint not found")))
-        .flatMap(constraint -> {
-          Set<String> affectedTableIds = new HashSet<>();
-          affectedTableIds.add(constraint.tableId());
-          if (constraint.kind() == ConstraintKind.PRIMARY_KEY) {
-            return cascadeDeleteFkColumns(
-                constraint.tableId(),
-                constraintId,
-                affectedTableIds)
-                .then(deleteConstraintColumnsPort.deleteByConstraintId(constraintId))
-                .then(deleteConstraintPort.deleteConstraint(constraintId))
-                .then(Mono.fromCallable(() -> MutationResult.<Void>of(null, affectedTableIds)));
-          }
-          return deleteConstraintColumnsPort.deleteByConstraintId(constraintId)
-              .then(deleteConstraintPort.deleteConstraint(constraintId))
-              .then(Mono.fromCallable(() -> MutationResult.<Void>of(null, affectedTableIds)));
-        }))
+            .switchIfEmpty(Mono.error(new DomainException(ConstraintErrorCode.NOT_FOUND, "Constraint not found")))
+            .flatMap(constraint -> {
+              Set<String> affectedTableIds = new HashSet<>();
+              affectedTableIds.add(constraint.tableId());
+              if (constraint.kind() == ConstraintKind.PRIMARY_KEY) {
+                return cascadeDeleteFkColumns(
+                    constraint.tableId(),
+                    constraintId,
+                    affectedTableIds)
+                    .then(deleteConstraintColumnsPort.deleteByConstraintId(constraintId))
+                    .then(deleteConstraintPort.deleteConstraint(constraintId))
+                    .then(Mono.fromCallable(() -> MutationResult.<Void>of(null, affectedTableIds)));
+              }
+              return deleteConstraintColumnsPort.deleteByConstraintId(constraintId)
+                  .then(deleteConstraintPort.deleteConstraint(constraintId))
+                  .then(Mono.fromCallable(() -> MutationResult.<Void>of(null, affectedTableIds)));
+            }))
         .as(transactionalOperator::transactional);
   }
 

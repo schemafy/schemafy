@@ -71,7 +71,7 @@ public class AddConstraintColumnService implements AddConstraintColumnUseCase {
                     context,
                     command,
                     affectedTableIds));
-	          });
+          });
     })).as(transactionalOperator::transactional);
   }
 

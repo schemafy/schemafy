@@ -53,26 +53,26 @@ public class RemoveRelationshipColumnService implements RemoveRelationshipColumn
   public Mono<MutationResult<Void>> removeRelationshipColumn(RemoveRelationshipColumnCommand command) {
     return erdMutationCoordinator.coordinate(ErdOperationType.REMOVE_RELATIONSHIP_COLUMN, command,
         () -> getRelationshipColumnByIdPort
-        .findRelationshipColumnById(command.relationshipColumnId())
-        .switchIfEmpty(Mono.error(new DomainException(RelationshipErrorCode.COLUMN_NOT_FOUND,
-            "Relationship column not found")))
-        .flatMap(relationshipColumn -> getRelationshipByIdPort
-            .findRelationshipById(relationshipColumn.relationshipId())
-            .switchIfEmpty(Mono.error(new DomainException(RelationshipErrorCode.NOT_FOUND, "Relationship not found")))
-            .flatMap(relationship -> {
-              Set<String> affectedTableIds = new HashSet<>();
-              affectedTableIds.add(relationship.fkTableId());
-              affectedTableIds.add(relationship.pkTableId());
-              String fkColumnId = relationshipColumn.fkColumnId();
-              return deleteRelationshipColumnPort
-                  .deleteRelationshipColumn(relationshipColumn.id())
-                  .then(handleRemainingColumns(relationship.id()))
-                  .then(deleteColumnUseCase.deleteColumn(new DeleteColumnCommand(fkColumnId))
-                      .contextWrite(ErdOperationContexts.suppressNestedMutation()))
-                  .doOnNext(result -> affectedTableIds.addAll(result.affectedTableIds()))
-                  .then(Mono.fromCallable(() -> MutationResult.<Void>of(null, affectedTableIds)));
-	            }))
-	        )
+            .findRelationshipColumnById(command.relationshipColumnId())
+            .switchIfEmpty(Mono.error(new DomainException(RelationshipErrorCode.COLUMN_NOT_FOUND,
+                "Relationship column not found")))
+            .flatMap(relationshipColumn -> getRelationshipByIdPort
+                .findRelationshipById(relationshipColumn.relationshipId())
+                .switchIfEmpty(Mono.error(new DomainException(RelationshipErrorCode.NOT_FOUND,
+                    "Relationship not found")))
+                .flatMap(relationship -> {
+                  Set<String> affectedTableIds = new HashSet<>();
+                  affectedTableIds.add(relationship.fkTableId());
+                  affectedTableIds.add(relationship.pkTableId());
+                  String fkColumnId = relationshipColumn.fkColumnId();
+                  return deleteRelationshipColumnPort
+                      .deleteRelationshipColumn(relationshipColumn.id())
+                      .then(handleRemainingColumns(relationship.id()))
+                      .then(deleteColumnUseCase.deleteColumn(new DeleteColumnCommand(fkColumnId))
+                          .contextWrite(ErdOperationContexts.suppressNestedMutation()))
+                      .doOnNext(result -> affectedTableIds.addAll(result.affectedTableIds()))
+                      .then(Mono.fromCallable(() -> MutationResult.<Void>of(null, affectedTableIds)));
+                })))
         .as(transactionalOperator::transactional);
   }
 

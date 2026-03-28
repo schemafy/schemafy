@@ -14,13 +14,12 @@ public interface ErdMutationCoordinator {
       Object payload,
       Supplier<Mono<MutationResult<T>>> mutationSupplier);
 
-  /**
-   * Null-object fallback used as the default field value in mutation services.
+  /** Null-object fallback used as the default field value in mutation services.
    * Spring overrides it via setter injection at runtime, while legacy Mockito
-   * {@code @InjectMocks} tests can keep instantiating services without an extra mock.
-   */
+   * {@code @InjectMocks} tests can keep instantiating services without an extra mock. */
   static ErdMutationCoordinator noop() {
     return new ErdMutationCoordinator() {
+
       @Override
       public <T> Mono<MutationResult<T>> coordinate(
           ErdOperationType operationType,
@@ -28,6 +27,7 @@ public interface ErdMutationCoordinator {
           Supplier<Mono<MutationResult<T>>> mutationSupplier) {
         return mutationSupplier.get();
       }
+
     };
   }
 

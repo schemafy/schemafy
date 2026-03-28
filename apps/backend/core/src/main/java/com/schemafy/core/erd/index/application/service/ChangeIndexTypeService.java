@@ -8,8 +8,6 @@ import org.springframework.stereotype.Service;
 
 import com.schemafy.core.common.MutationResult;
 import com.schemafy.core.common.exception.DomainException;
-import com.schemafy.core.erd.operation.application.service.ErdMutationCoordinator;
-import com.schemafy.core.erd.operation.domain.ErdOperationType;
 import com.schemafy.core.erd.index.application.port.in.ChangeIndexTypeCommand;
 import com.schemafy.core.erd.index.application.port.in.ChangeIndexTypeUseCase;
 import com.schemafy.core.erd.index.application.port.out.ChangeIndexTypePort;
@@ -20,6 +18,8 @@ import com.schemafy.core.erd.index.domain.Index;
 import com.schemafy.core.erd.index.domain.IndexColumn;
 import com.schemafy.core.erd.index.domain.exception.IndexErrorCode;
 import com.schemafy.core.erd.index.domain.validator.IndexValidator;
+import com.schemafy.core.erd.operation.application.service.ErdMutationCoordinator;
+import com.schemafy.core.erd.operation.domain.ErdOperationType;
 
 import lombok.RequiredArgsConstructor;
 import reactor.core.publisher.Flux;

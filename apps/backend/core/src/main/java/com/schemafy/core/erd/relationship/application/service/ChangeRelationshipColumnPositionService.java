@@ -48,19 +48,20 @@ public class ChangeRelationshipColumnPositionService
       ChangeRelationshipColumnPositionCommand command) {
     return erdMutationCoordinator.coordinate(ErdOperationType.CHANGE_RELATIONSHIP_COLUMN_POSITION, command,
         () -> getRelationshipColumnByIdPort.findRelationshipColumnById(command.relationshipColumnId())
-        .switchIfEmpty(Mono.error(new DomainException(RelationshipErrorCode.POSITION_INVALID,
-            "Relationship column not found")))
-        .flatMap(relationshipColumn -> getRelationshipByIdPort
-            .findRelationshipById(relationshipColumn.relationshipId())
-            .switchIfEmpty(Mono.error(new DomainException(RelationshipErrorCode.NOT_FOUND, "Relationship not found")))
-            .flatMap(relationship -> getRelationshipColumnsByRelationshipIdPort
-                .findRelationshipColumnsByRelationshipId(relationshipColumn.relationshipId())
-	                .defaultIfEmpty(List.of())
-	                .flatMap(columns -> reorderColumns(
-	                    relationshipColumn,
-	                    columns,
-	                    command.seqNo()))
-	                .thenReturn(MutationResult.<Void>of(null, toTableIdSet(relationship))))))
+            .switchIfEmpty(Mono.error(new DomainException(RelationshipErrorCode.POSITION_INVALID,
+                "Relationship column not found")))
+            .flatMap(relationshipColumn -> getRelationshipByIdPort
+                .findRelationshipById(relationshipColumn.relationshipId())
+                .switchIfEmpty(Mono.error(new DomainException(RelationshipErrorCode.NOT_FOUND,
+                    "Relationship not found")))
+                .flatMap(relationship -> getRelationshipColumnsByRelationshipIdPort
+                    .findRelationshipColumnsByRelationshipId(relationshipColumn.relationshipId())
+                    .defaultIfEmpty(List.of())
+                    .flatMap(columns -> reorderColumns(
+                        relationshipColumn,
+                        columns,
+                        command.seqNo()))
+                    .thenReturn(MutationResult.<Void>of(null, toTableIdSet(relationship))))))
         .as(transactionalOperator::transactional);
   }
 

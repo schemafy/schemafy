@@ -72,13 +72,9 @@ public class ErdOperationLogEntity implements Persistable<String> {
   private Instant createdAt;
 
   @Override
-  public String getId() {
-    return opId;
-  }
+  public String getId() { return opId; }
 
   @Override
-  public boolean isNew() {
-    return createdAt == null;
-  }
+  public boolean isNew() { return createdAt == null; }
 
 }

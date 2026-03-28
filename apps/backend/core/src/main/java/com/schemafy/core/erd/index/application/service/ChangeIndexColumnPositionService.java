@@ -44,14 +44,14 @@ public class ChangeIndexColumnPositionService implements ChangeIndexColumnPositi
       ChangeIndexColumnPositionCommand command) {
     return erdMutationCoordinator.coordinate(ErdOperationType.CHANGE_INDEX_COLUMN_POSITION, command,
         () -> getIndexColumnByIdPort.findIndexColumnById(command.indexColumnId())
-        .switchIfEmpty(Mono.error(new DomainException(IndexErrorCode.POSITION_INVALID, "Index column not found")))
-        .flatMap(indexColumn -> getIndexByIdPort.findIndexById(indexColumn.indexId())
-            .switchIfEmpty(Mono.error(new DomainException(IndexErrorCode.NOT_FOUND, "Index not found")))
-            .flatMap(index -> getIndexColumnsByIndexIdPort
-                .findIndexColumnsByIndexId(indexColumn.indexId())
-                .defaultIfEmpty(List.of())
-                .flatMap(columns -> reorderColumns(indexColumn, columns, command.seqNo()))
-                .thenReturn(MutationResult.<Void>of(null, index.tableId())))))
+            .switchIfEmpty(Mono.error(new DomainException(IndexErrorCode.POSITION_INVALID, "Index column not found")))
+            .flatMap(indexColumn -> getIndexByIdPort.findIndexById(indexColumn.indexId())
+                .switchIfEmpty(Mono.error(new DomainException(IndexErrorCode.NOT_FOUND, "Index not found")))
+                .flatMap(index -> getIndexColumnsByIndexIdPort
+                    .findIndexColumnsByIndexId(indexColumn.indexId())
+                    .defaultIfEmpty(List.of())
+                    .flatMap(columns -> reorderColumns(indexColumn, columns, command.seqNo()))
+                    .thenReturn(MutationResult.<Void>of(null, index.tableId())))))
         .as(transactionalOperator::transactional);
   }
 

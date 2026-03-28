@@ -21,11 +21,11 @@ import com.schemafy.core.erd.column.domain.Column;
 import com.schemafy.core.erd.column.domain.ColumnTypeArguments;
 import com.schemafy.core.erd.column.domain.exception.ColumnErrorCode;
 import com.schemafy.core.erd.column.domain.validator.ColumnValidator;
-import com.schemafy.core.erd.operation.application.service.ErdMutationCoordinator;
-import com.schemafy.core.erd.operation.domain.ErdOperationType;
 import com.schemafy.core.erd.constraint.application.port.out.GetConstraintByIdPort;
 import com.schemafy.core.erd.constraint.application.port.out.GetConstraintColumnsByColumnIdPort;
 import com.schemafy.core.erd.constraint.domain.type.ConstraintKind;
+import com.schemafy.core.erd.operation.application.service.ErdMutationCoordinator;
+import com.schemafy.core.erd.operation.domain.ErdOperationType;
 import com.schemafy.core.erd.relationship.application.port.out.GetRelationshipColumnsByColumnIdPort;
 import com.schemafy.core.erd.relationship.application.port.out.GetRelationshipColumnsByRelationshipIdPort;
 import com.schemafy.core.erd.relationship.application.port.out.GetRelationshipsByPkTableIdPort;
@@ -66,20 +66,20 @@ public class ChangeColumnTypeService implements ChangeColumnTypeUseCase {
 
     return erdMutationCoordinator.coordinate(ErdOperationType.CHANGE_COLUMN_TYPE, command,
         () -> rejectIfForeignKeyColumn(command.columnId())
-        .then(getColumnByIdPort.findColumnById(command.columnId()))
-        .switchIfEmpty(Mono.error(new DomainException(ColumnErrorCode.NOT_FOUND, "Column not found")))
-        .flatMap(column -> {
-          affectedTableIds.add(column.tableId());
-          return getColumnsByTableIdPort.findColumnsByTableId(column.tableId())
-              .defaultIfEmpty(List.of())
-              .flatMap(columns -> applyChange(
-                  column,
-                  columns,
-                  command.dataType(),
-                  typeArguments,
-                  affectedTableIds));
-        })
-        .then(Mono.fromCallable(() -> MutationResult.<Void>of(null, affectedTableIds))))
+            .then(getColumnByIdPort.findColumnById(command.columnId()))
+            .switchIfEmpty(Mono.error(new DomainException(ColumnErrorCode.NOT_FOUND, "Column not found")))
+            .flatMap(column -> {
+              affectedTableIds.add(column.tableId());
+              return getColumnsByTableIdPort.findColumnsByTableId(column.tableId())
+                  .defaultIfEmpty(List.of())
+                  .flatMap(columns -> applyChange(
+                      column,
+                      columns,
+                      command.dataType(),
+                      typeArguments,
+                      affectedTableIds));
+            })
+            .then(Mono.fromCallable(() -> MutationResult.<Void>of(null, affectedTableIds))))
         .as(transactionalOperator::transactional);
   }
 

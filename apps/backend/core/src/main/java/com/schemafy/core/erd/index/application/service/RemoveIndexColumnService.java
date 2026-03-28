@@ -47,13 +47,13 @@ public class RemoveIndexColumnService implements RemoveIndexColumnUseCase {
   public Mono<MutationResult<Void>> removeIndexColumn(RemoveIndexColumnCommand command) {
     return erdMutationCoordinator.coordinate(ErdOperationType.REMOVE_INDEX_COLUMN, command,
         () -> getIndexColumnByIdPort.findIndexColumnById(command.indexColumnId())
-        .switchIfEmpty(Mono.error(new DomainException(
-            IndexErrorCode.COLUMN_NOT_FOUND, "Index column not found")))
-        .flatMap(indexColumn -> getIndexByIdPort.findIndexById(indexColumn.indexId())
-            .switchIfEmpty(Mono.error(new DomainException(IndexErrorCode.NOT_FOUND, "Index not found")))
-            .flatMap(index -> deleteIndexColumnPort.deleteIndexColumn(indexColumn.id())
-                .then(handleRemainingColumns(index.id()))
-                .thenReturn(MutationResult.<Void>of(null, index.tableId())))))
+            .switchIfEmpty(Mono.error(new DomainException(
+                IndexErrorCode.COLUMN_NOT_FOUND, "Index column not found")))
+            .flatMap(indexColumn -> getIndexByIdPort.findIndexById(indexColumn.indexId())
+                .switchIfEmpty(Mono.error(new DomainException(IndexErrorCode.NOT_FOUND, "Index not found")))
+                .flatMap(index -> deleteIndexColumnPort.deleteIndexColumn(indexColumn.id())
+                    .then(handleRemainingColumns(index.id()))
+                    .thenReturn(MutationResult.<Void>of(null, index.tableId())))))
         .as(transactionalOperator::transactional);
   }
 

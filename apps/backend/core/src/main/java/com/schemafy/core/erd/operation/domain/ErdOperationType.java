@@ -1,6 +1,7 @@
 package com.schemafy.core.erd.operation.domain;
 
 public enum ErdOperationType {
+
   CREATE_SCHEMA(ErdTouchedEntityType.SCHEMA, true),
   CHANGE_SCHEMA_NAME(ErdTouchedEntityType.SCHEMA, false),
   DELETE_SCHEMA(ErdTouchedEntityType.SCHEMA, false),

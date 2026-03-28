@@ -50,10 +50,10 @@ public class ChangeColumnNameService implements ChangeColumnNameUseCase {
   public Mono<MutationResult<Void>> changeColumnName(ChangeColumnNameCommand command) {
     return erdMutationCoordinator.coordinate(ErdOperationType.CHANGE_COLUMN_NAME, command,
         () -> getColumnByIdPort.findColumnById(command.columnId())
-        .switchIfEmpty(Mono.error(new DomainException(ColumnErrorCode.NOT_FOUND, "Column not found")))
-        .flatMap(column -> fetchTableSchemaAndColumns(column)
-            .flatMap(tuple -> applyChange(column, tuple, command.newName()))
-            .thenReturn(MutationResult.<Void>of(null, column.tableId()))))
+            .switchIfEmpty(Mono.error(new DomainException(ColumnErrorCode.NOT_FOUND, "Column not found")))
+            .flatMap(column -> fetchTableSchemaAndColumns(column)
+                .flatMap(tuple -> applyChange(column, tuple, command.newName()))
+                .thenReturn(MutationResult.<Void>of(null, column.tableId()))))
         .as(transactionalOperator::transactional);
   }
 

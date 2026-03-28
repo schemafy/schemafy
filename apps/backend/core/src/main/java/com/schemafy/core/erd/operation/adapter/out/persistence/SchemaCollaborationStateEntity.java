@@ -37,13 +37,9 @@ public class SchemaCollaborationStateEntity implements Persistable<String> {
   private Instant updatedAt;
 
   @Override
-  public String getId() {
-    return schemaId;
-  }
+  public String getId() { return schemaId; }
 
   @Override
-  public boolean isNew() {
-    return createdAt == null;
-  }
+  public boolean isNew() { return createdAt == null; }
 
 }

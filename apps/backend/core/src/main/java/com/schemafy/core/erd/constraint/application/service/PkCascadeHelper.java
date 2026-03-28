@@ -14,7 +14,6 @@ import com.schemafy.core.erd.column.application.port.out.CreateColumnPort;
 import com.schemafy.core.erd.column.application.port.out.GetColumnByIdPort;
 import com.schemafy.core.erd.column.application.port.out.GetColumnsByTableIdPort;
 import com.schemafy.core.erd.column.domain.Column;
-import com.schemafy.core.erd.operation.ErdOperationContexts;
 import com.schemafy.core.erd.constraint.application.port.out.ConstraintExistsPort;
 import com.schemafy.core.erd.constraint.application.port.out.CreateConstraintColumnPort;
 import com.schemafy.core.erd.constraint.application.port.out.CreateConstraintPort;
@@ -25,6 +24,7 @@ import com.schemafy.core.erd.constraint.application.port.out.GetConstraintsByTab
 import com.schemafy.core.erd.constraint.domain.Constraint;
 import com.schemafy.core.erd.constraint.domain.ConstraintColumn;
 import com.schemafy.core.erd.constraint.domain.type.ConstraintKind;
+import com.schemafy.core.erd.operation.ErdOperationContexts;
 import com.schemafy.core.erd.relationship.application.port.out.CreateRelationshipColumnPort;
 import com.schemafy.core.erd.relationship.application.port.out.DeleteRelationshipColumnPort;
 import com.schemafy.core.erd.relationship.application.port.out.DeleteRelationshipColumnsByRelationshipIdPort;

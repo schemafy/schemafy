@@ -41,15 +41,15 @@ public class ChangeRelationshipCardinalityService implements ChangeRelationshipC
     }
     return erdMutationCoordinator.coordinate(ErdOperationType.CHANGE_RELATIONSHIP_CARDINALITY, command,
         () -> getRelationshipByIdPort.findRelationshipById(command.relationshipId())
-        .switchIfEmpty(Mono.error(new DomainException(RelationshipErrorCode.NOT_FOUND, "Relationship not found")))
-        .flatMap(relationship -> {
-          Set<String> affectedTableIds = new HashSet<>();
-          affectedTableIds.add(relationship.fkTableId());
-          affectedTableIds.add(relationship.pkTableId());
-          return changeRelationshipCardinalityPort
-              .changeRelationshipCardinality(relationship.id(), command.cardinality())
-              .thenReturn(MutationResult.<Void>of(null, affectedTableIds));
-        }));
+            .switchIfEmpty(Mono.error(new DomainException(RelationshipErrorCode.NOT_FOUND, "Relationship not found")))
+            .flatMap(relationship -> {
+              Set<String> affectedTableIds = new HashSet<>();
+              affectedTableIds.add(relationship.fkTableId());
+              affectedTableIds.add(relationship.pkTableId());
+              return changeRelationshipCardinalityPort
+                  .changeRelationshipCardinality(relationship.id(), command.cardinality())
+                  .thenReturn(MutationResult.<Void>of(null, affectedTableIds));
+            }));
   }
 
 }

@@ -13,6 +13,8 @@ import com.schemafy.core.common.MutationResult;
 import com.schemafy.core.common.exception.DomainException;
 import com.schemafy.core.erd.column.application.port.out.GetColumnsByTableIdPort;
 import com.schemafy.core.erd.column.domain.Column;
+import com.schemafy.core.erd.operation.application.service.ErdMutationCoordinator;
+import com.schemafy.core.erd.operation.domain.ErdOperationType;
 import com.schemafy.core.erd.relationship.application.port.in.AddRelationshipColumnCommand;
 import com.schemafy.core.erd.relationship.application.port.in.AddRelationshipColumnResult;
 import com.schemafy.core.erd.relationship.application.port.in.AddRelationshipColumnUseCase;
@@ -23,8 +25,6 @@ import com.schemafy.core.erd.relationship.domain.Relationship;
 import com.schemafy.core.erd.relationship.domain.RelationshipColumn;
 import com.schemafy.core.erd.relationship.domain.exception.RelationshipErrorCode;
 import com.schemafy.core.erd.relationship.domain.validator.RelationshipValidator;
-import com.schemafy.core.erd.operation.application.service.ErdMutationCoordinator;
-import com.schemafy.core.erd.operation.domain.ErdOperationType;
 import com.schemafy.core.erd.table.application.port.out.GetTableByIdPort;
 import com.schemafy.core.erd.table.domain.Table;
 import com.schemafy.core.ulid.application.port.out.UlidGeneratorPort;
@@ -55,19 +55,19 @@ public class AddRelationshipColumnService implements AddRelationshipColumnUseCas
       AddRelationshipColumnCommand command) {
     return erdMutationCoordinator.coordinate(ErdOperationType.ADD_RELATIONSHIP_COLUMN, command,
         () -> getRelationshipByIdPort.findRelationshipById(command.relationshipId())
-        .switchIfEmpty(Mono.error(new DomainException(RelationshipErrorCode.NOT_FOUND, "Relationship not found")))
-        .flatMap(relationship -> {
-          Set<String> affectedTableIds = new HashSet<>();
-          affectedTableIds.add(relationship.fkTableId());
-          affectedTableIds.add(relationship.pkTableId());
-          return loadTables(relationship)
-              .flatMap(tables -> addColumn(
-                  relationship,
-                  tables.fkTable(),
-                  tables.pkTable(),
-                  command))
-	              .map(result -> MutationResult.of(result, affectedTableIds));
-	        }))
+            .switchIfEmpty(Mono.error(new DomainException(RelationshipErrorCode.NOT_FOUND, "Relationship not found")))
+            .flatMap(relationship -> {
+              Set<String> affectedTableIds = new HashSet<>();
+              affectedTableIds.add(relationship.fkTableId());
+              affectedTableIds.add(relationship.pkTableId());
+              return loadTables(relationship)
+                  .flatMap(tables -> addColumn(
+                      relationship,
+                      tables.fkTable(),
+                      tables.pkTable(),
+                      command))
+                  .map(result -> MutationResult.of(result, affectedTableIds));
+            }))
         .as(transactionalOperator::transactional);
   }
 

@@ -16,8 +16,6 @@ import com.schemafy.core.erd.column.application.port.in.DeleteColumnUseCase;
 import com.schemafy.core.erd.column.application.port.out.DeleteColumnPort;
 import com.schemafy.core.erd.column.application.port.out.GetColumnByIdPort;
 import com.schemafy.core.erd.column.domain.exception.ColumnErrorCode;
-import com.schemafy.core.erd.operation.application.service.ErdMutationCoordinator;
-import com.schemafy.core.erd.operation.domain.ErdOperationType;
 import com.schemafy.core.erd.constraint.application.port.out.DeleteConstraintColumnsByColumnIdPort;
 import com.schemafy.core.erd.constraint.application.port.out.DeleteConstraintPort;
 import com.schemafy.core.erd.constraint.application.port.out.GetConstraintByIdPort;
@@ -31,6 +29,8 @@ import com.schemafy.core.erd.index.application.port.out.DeleteIndexPort;
 import com.schemafy.core.erd.index.application.port.out.GetIndexColumnsByColumnIdPort;
 import com.schemafy.core.erd.index.application.port.out.GetIndexColumnsByIndexIdPort;
 import com.schemafy.core.erd.index.domain.IndexColumn;
+import com.schemafy.core.erd.operation.application.service.ErdMutationCoordinator;
+import com.schemafy.core.erd.operation.domain.ErdOperationType;
 import com.schemafy.core.erd.relationship.application.port.out.DeleteRelationshipColumnPort;
 import com.schemafy.core.erd.relationship.application.port.out.DeleteRelationshipColumnsByColumnIdPort;
 import com.schemafy.core.erd.relationship.application.port.out.DeleteRelationshipColumnsByRelationshipIdPort;
@@ -85,11 +85,11 @@ public class DeleteColumnService implements DeleteColumnUseCase {
     Set<String> affectedTableIds = ConcurrentHashMap.newKeySet();
     return erdMutationCoordinator.coordinate(ErdOperationType.DELETE_COLUMN, command,
         () -> rejectIfForeignKeyColumn(command.columnId())
-        .then(Mono.defer(() -> deleteColumnInternal(
-            command.columnId(),
-            ConcurrentHashMap.newKeySet(),
-            affectedTableIds)))
-        .then(Mono.fromCallable(() -> MutationResult.<Void>of(null, affectedTableIds))))
+            .then(Mono.defer(() -> deleteColumnInternal(
+                command.columnId(),
+                ConcurrentHashMap.newKeySet(),
+                affectedTableIds)))
+            .then(Mono.fromCallable(() -> MutationResult.<Void>of(null, affectedTableIds))))
         .as(transactionalOperator::transactional);
   }
 
