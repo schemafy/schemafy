@@ -36,10 +36,12 @@ export const useColumn = (
   const saveColumnType = async (columnId: string, typeData: string) => {
     const { dataType, lengthScale, category, prevCategory } =
       JSON.parse(typeData);
-    const params = JSON.parse(lengthScale || '{}') as Record<
-      string,
-      number | null
-    >;
+    const params = JSON.parse(lengthScale || '{}') as {
+      length?: number | null;
+      precision?: number | null;
+      scale?: number | null;
+      values?: string[] | null;
+    };
 
     const typePayload = {
       columnId,
@@ -48,6 +50,7 @@ export const useColumn = (
         length: params.length ?? null,
         precision: params.precision ?? null,
         scale: params.scale ?? null,
+        values: params.values ?? null,
       },
     };
 

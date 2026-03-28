@@ -180,7 +180,7 @@ export const TypeSelector = ({
                           key={`${displayType}-${param.name}`}
                           type={isStringArray ? 'text' : 'number'}
                           defaultValue={displayVal}
-                          placeholder={param.label}
+                          placeholder={isStringArray ? 'e.g. a, b, c' : param.label}
                           onPointerDown={(e) => e.stopPropagation()}
                           onClick={(e) => {
                             e.stopPropagation();
@@ -198,7 +198,7 @@ export const TypeSelector = ({
                               param.valueType,
                             )
                           }
-                          className={`${isStringArray ? 'w-24' : 'w-8'} text-center bg-transparent border-b border-schemafy-dark-gray focus:outline-none [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none`}
+                          className={`${isStringArray ? 'w-28' : 'w-8'} text-center bg-transparent border-b border-schemafy-dark-gray focus:outline-none [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none`}
                         />
                       </Fragment>
                     );

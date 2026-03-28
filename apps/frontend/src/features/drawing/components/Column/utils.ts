@@ -13,9 +13,16 @@ export const formatTypeDisplay = (
   lengthScale: string,
 ): string => {
   const parsed = parseLengthScale(lengthScale);
-  const values = Object.values(parsed).filter((v) => typeof v === 'number');
-  if (values.length === 0) return type;
-  return `${type}(${values.join(',')})`;
+  const parts: string[] = [];
+  for (const v of Object.values(parsed)) {
+    if (typeof v === 'number') {
+      parts.push(String(v));
+    } else if (Array.isArray(v) && v.length > 0) {
+      parts.push(v.join(', '));
+    }
+  }
+  if (parts.length === 0) return type;
+  return `${type}(${parts.join(',')})`;
 };
 
 export const CATEGORY_LABELS: Record<string, string> = {
