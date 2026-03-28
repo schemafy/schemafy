@@ -63,21 +63,6 @@ interface ReactFlowCanvasProps {
   onRelationshipsChange: (changes: EdgeChange[]) => void;
   onConnect: (connection: Connection) => void;
   onRelationshipClick: (event: React.MouseEvent, edge: Edge) => void;
-  onReconnect: (
-    ...args: Parameters<
-      NonNullable<React.ComponentProps<typeof ReactFlow>['onReconnect']>
-    >
-  ) => void;
-  onReconnectStart: (
-    ...args: Parameters<
-      NonNullable<React.ComponentProps<typeof ReactFlow>['onReconnectStart']>
-    >
-  ) => void;
-  onReconnectEnd: (
-    ...args: Parameters<
-      NonNullable<React.ComponentProps<typeof ReactFlow>['onReconnectEnd']>
-    >
-  ) => void;
   handleMoveEnd: (
     ...args: Parameters<
       NonNullable<React.ComponentProps<typeof ReactFlow>['onMoveEnd']>
@@ -98,9 +83,6 @@ const ReactFlowCanvasComponent = ({
   onRelationshipsChange,
   onConnect,
   onRelationshipClick,
-  onReconnect,
-  onReconnectStart,
-  onReconnectEnd,
   handleMoveEnd,
   handlePaneClick,
   handleMouseMove,
@@ -201,9 +183,7 @@ const ReactFlowCanvasComponent = ({
         panOnDrag={activeTool === 'hand'}
         onConnect={onConnect}
         onEdgeClick={onRelationshipClick}
-        onReconnect={onReconnect}
-        onReconnectStart={onReconnectStart}
-        onReconnectEnd={onReconnectEnd}
+        edgesReconnectable={false}
         nodeTypes={NODE_TYPES}
         edgeTypes={EDGE_TYPES}
         connectionLineComponent={CustomConnectionLine}

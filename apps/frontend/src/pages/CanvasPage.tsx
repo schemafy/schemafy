@@ -34,9 +34,6 @@ const CanvasContent = () => {
       handleMoveEnd,
       onConnect,
       onRelationshipClick,
-      onReconnect,
-      onReconnectStart,
-      onReconnectEnd,
       updateRelationshipConfig,
       updateRelationshipName,
       deleteRelationship,
@@ -75,9 +72,6 @@ const CanvasContent = () => {
             onRelationshipsChange={onRelationshipsChange}
             onConnect={onConnect}
             onRelationshipClick={onRelationshipClick}
-            onReconnect={onReconnect}
-            onReconnectStart={onReconnectStart}
-            onReconnectEnd={onReconnectEnd}
             handleMoveEnd={handleMoveEnd}
             handlePaneClick={handlePaneClick}
             handleMouseMove={handleMouseMove}

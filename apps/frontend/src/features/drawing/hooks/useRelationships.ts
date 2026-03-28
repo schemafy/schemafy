@@ -59,7 +59,6 @@ export const useRelationships = (relationshipConfig: RelationshipConfig) => {
   const [selectedRelationship, setSelectedRelationship] = useState<
     string | null
   >(null);
-  const relationshipReconnectSuccessful = useRef(true);
   const justFinishedControlPointDrag = useRef(false);
 
   const updateExtra = useCallback(
@@ -92,7 +91,7 @@ export const useRelationships = (relationshipConfig: RelationshipConfig) => {
       updateExtra(relationshipId, (extra: RelationshipExtra) => ({
         ...extra,
         controlPoint1,
-        ...(controlPoint2 && { controlPoint2 }),
+        controlPoint2: controlPoint2 ?? undefined,
       }));
     },
     [updateExtra],
@@ -134,6 +133,18 @@ export const useRelationships = (relationshipConfig: RelationshipConfig) => {
         : nextRelationships;
     });
   }, [snapshotsData, updateRelationshipControlPoint]);
+
+  useEffect(() => {
+    setSelectedRelationship((currentSelectedRelationship) => {
+      if (!currentSelectedRelationship) return currentSelectedRelationship;
+
+      const relationshipExists = relationships.some(
+        (relationship) => relationship.id === currentSelectedRelationship,
+      );
+
+      return relationshipExists ? currentSelectedRelationship : null;
+    });
+  }, [relationships]);
 
   const createRelationshipFromValidation = useCallback(
     (
@@ -213,70 +224,6 @@ export const useRelationships = (relationshipConfig: RelationshipConfig) => {
     [],
   );
 
-  const onReconnectStart = useCallback(() => {
-    relationshipReconnectSuccessful.current = false;
-  }, []);
-
-  const onReconnect = useCallback(
-    (oldRelationship: Edge, newConnection: Connection) => {
-      const validation = validateConnection({
-        snapshots: snapshotsRef.current,
-        connection: newConnection,
-      });
-
-      if (!validation.isValid) {
-        if (validation.error) {
-          toast.error(validation.error);
-        }
-        return;
-      }
-
-      relationshipReconnectSuccessful.current = true;
-
-      const isSameTablePair =
-        oldRelationship.source === validation.fkTableId &&
-        oldRelationship.target === validation.pkTableId;
-
-      if (isSameTablePair) {
-        const isSameDirection = newConnection.source === validation.fkTableId;
-
-        updateExtra(oldRelationship.id, (extra) => ({
-          ...extra,
-          fkHandle:
-            (isSameDirection
-              ? newConnection.sourceHandle
-              : newConnection.targetHandle) ?? undefined,
-          pkHandle:
-            (isSameDirection
-              ? newConnection.targetHandle
-              : newConnection.sourceHandle) ?? undefined,
-        }));
-      } else {
-        deleteRelationshipMutation(oldRelationship.id, {
-          onSuccess: () => {
-            createRelationshipFromValidation(validation, newConnection);
-          },
-        });
-      }
-    },
-    [
-      createRelationshipFromValidation,
-      deleteRelationshipMutation,
-      snapshotsRef,
-      updateExtra,
-    ],
-  );
-
-  const onReconnectEnd = useCallback(
-    (_: MouseEvent | TouchEvent, relationship: Edge) => {
-      if (!relationshipReconnectSuccessful.current) {
-        deleteRelationshipMutation(relationship.id);
-      }
-      relationshipReconnectSuccessful.current = true;
-    },
-    [deleteRelationshipMutation],
-  );
-
   const updateRelationshipConfig = useCallback(
     (relationshipId: string, config: RelationshipConfig) => {
       const relationshipSnapshot = findRelationshipById(
@@ -347,9 +294,6 @@ export const useRelationships = (relationshipConfig: RelationshipConfig) => {
     onConnect,
     onRelationshipsChange,
     onRelationshipClick,
-    onReconnectStart,
-    onReconnect,
-    onReconnectEnd,
     updateRelationshipConfig,
     deleteRelationship,
     updateRelationshipName,
@@ -368,26 +312,47 @@ const hasSameEdgeContent = (previousEdge: Edge, nextEdge: Edge) =>
   previousEdge.targetHandle === nextEdge.targetHandle &&
   previousEdge.label === nextEdge.label &&
   previousEdge.type === nextEdge.type &&
-  JSON.stringify(previousEdge.style ?? null) ===
-    JSON.stringify(nextEdge.style ?? null) &&
-  JSON.stringify(previousEdge.markerStart ?? null) ===
-    JSON.stringify(nextEdge.markerStart ?? null) &&
-  JSON.stringify(previousEdge.markerEnd ?? null) ===
-    JSON.stringify(nextEdge.markerEnd ?? null) &&
-  JSON.stringify(previousEdge.labelStyle ?? null) ===
-    JSON.stringify(nextEdge.labelStyle ?? null) &&
-  JSON.stringify(stripEdgeCallback(previousEdge.data)) ===
-    JSON.stringify(stripEdgeCallback(nextEdge.data));
+  previousEdge.style === nextEdge.style &&
+  previousEdge.markerStart === nextEdge.markerStart &&
+  previousEdge.markerEnd === nextEdge.markerEnd &&
+  shallowEqual(previousEdge.labelStyle, nextEdge.labelStyle) &&
+  shallowEqualEdgeData(previousEdge.data, nextEdge.data);
 
-const stripEdgeCallback = (
-  data: Edge['data'] | undefined,
-): Record<string, unknown> | null => {
-  if (!data) return null;
+const shallowEqual = (
+  a: object | undefined,
+  b: object | undefined,
+): boolean => {
+  if (a === b) return true;
+  if (!a || !b) return false;
 
-  const { onControlPointDragEnd: _ignored, ...rest } = data as Record<
-    string,
-    unknown
-  >;
+  const aRecord = a as Record<string, unknown>;
+  const bRecord = b as Record<string, unknown>;
+  const keysA = Object.keys(aRecord);
+  if (keysA.length !== Object.keys(bRecord).length) return false;
 
-  return rest;
+  return keysA.every((key) => aRecord[key] === bRecord[key]);
+};
+
+const EDGE_DATA_CALLBACK_KEYS = new Set(['onControlPointDragEnd']);
+
+const shallowEqualEdgeData = (
+  a: Edge['data'] | undefined,
+  b: Edge['data'] | undefined,
+): boolean => {
+  if (a === b) return true;
+  if (!a || !b) return false;
+
+  const aRecord = a as Record<string, unknown>;
+  const bRecord = b as Record<string, unknown>;
+
+  const keysA = Object.keys(aRecord).filter(
+    (k) => !EDGE_DATA_CALLBACK_KEYS.has(k),
+  );
+  const keysB = Object.keys(bRecord).filter(
+    (k) => !EDGE_DATA_CALLBACK_KEYS.has(k),
+  );
+
+  if (keysA.length !== keysB.length) return false;
+
+  return keysA.every((key) => aRecord[key] === bRecord[key]);
 };
