@@ -104,34 +104,11 @@ export const useRelationships = (relationshipConfig: RelationshipConfig) => {
   );
 
   useEffect(() => {
-    setRelationships((previousRelationships) => {
-      const previousEdgesById = new Map(
-        previousRelationships.map((relationship) => [
-          relationship.id,
-          relationship,
-        ]),
-      );
-
-      const nextRelationships = convertSnapshotsToEdges(snapshotsData).map(
-        (edge) => {
-          const nextEdge = attachControlPointHandler(
-            edge,
-            updateRelationshipControlPoint,
-          );
-          const previousEdge = previousEdgesById.get(edge.id);
-
-          if (previousEdge && hasSameEdgeContent(previousEdge, nextEdge)) {
-            return previousEdge;
-          }
-
-          return nextEdge;
-        },
-      );
-
-      return isSameEdgeList(previousRelationships, nextRelationships)
-        ? previousRelationships
-        : nextRelationships;
-    });
+    setRelationships(
+      convertSnapshotsToEdges(snapshotsData).map((edge) =>
+        attachControlPointHandler(edge, updateRelationshipControlPoint),
+      ),
+    );
   }, [snapshotsData, updateRelationshipControlPoint]);
 
   useEffect(() => {
@@ -299,60 +276,4 @@ export const useRelationships = (relationshipConfig: RelationshipConfig) => {
     updateRelationshipName,
     setSelectedRelationship,
   };
-};
-
-const isSameEdgeList = (prev: Edge[], next: Edge[]) =>
-  prev.length === next.length &&
-  prev.every((edge, index) => edge === next[index]);
-
-const hasSameEdgeContent = (previousEdge: Edge, nextEdge: Edge) =>
-  previousEdge.source === nextEdge.source &&
-  previousEdge.target === nextEdge.target &&
-  previousEdge.sourceHandle === nextEdge.sourceHandle &&
-  previousEdge.targetHandle === nextEdge.targetHandle &&
-  previousEdge.label === nextEdge.label &&
-  previousEdge.type === nextEdge.type &&
-  previousEdge.style === nextEdge.style &&
-  previousEdge.markerStart === nextEdge.markerStart &&
-  previousEdge.markerEnd === nextEdge.markerEnd &&
-  shallowEqual(previousEdge.labelStyle, nextEdge.labelStyle) &&
-  shallowEqualEdgeData(previousEdge.data, nextEdge.data);
-
-const shallowEqual = (
-  a: object | undefined,
-  b: object | undefined,
-): boolean => {
-  if (a === b) return true;
-  if (!a || !b) return false;
-
-  const aRecord = a as Record<string, unknown>;
-  const bRecord = b as Record<string, unknown>;
-  const keysA = Object.keys(aRecord);
-  if (keysA.length !== Object.keys(bRecord).length) return false;
-
-  return keysA.every((key) => aRecord[key] === bRecord[key]);
-};
-
-const EDGE_DATA_CALLBACK_KEYS = new Set(['onControlPointDragEnd']);
-
-const shallowEqualEdgeData = (
-  a: Edge['data'] | undefined,
-  b: Edge['data'] | undefined,
-): boolean => {
-  if (a === b) return true;
-  if (!a || !b) return false;
-
-  const aRecord = a as Record<string, unknown>;
-  const bRecord = b as Record<string, unknown>;
-
-  const keysA = Object.keys(aRecord).filter(
-    (k) => !EDGE_DATA_CALLBACK_KEYS.has(k),
-  );
-  const keysB = Object.keys(bRecord).filter(
-    (k) => !EDGE_DATA_CALLBACK_KEYS.has(k),
-  );
-
-  if (keysA.length !== keysB.length) return false;
-
-  return keysA.every((key) => aRecord[key] === bRecord[key]);
 };

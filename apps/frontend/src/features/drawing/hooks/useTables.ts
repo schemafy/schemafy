@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { type Node } from '@xyflow/react';
 import type { TableData, Point } from '../types';
 import {
@@ -24,19 +24,11 @@ const buildTableNodes = (
     transformSnapshotToNode(snapshot, schemaId),
   );
 
-const isSameNodeList = (prev: Node<TableData>[], next: Node<TableData>[]) =>
-  prev.length === next.length &&
-  prev.every((node, index) => node === next[index]);
-
 export const useTables = () => {
   const { selectedSchemaId } = useSelectedSchema();
   const { data: snapshotsData } = useSchemaSnapshots(selectedSchemaId);
 
   const snapshotsRef = useLatest(snapshotsData);
-  const previousSnapshotsRef = useRef<Record<
-    string,
-    TableSnapshotResponse
-  > | null>(null);
   const { mutate: createTableWithExtra } =
     useCreateTableWithExtra(selectedSchemaId);
   const { mutate: changeTableExtra } = useChangeTableExtra(selectedSchemaId);
@@ -47,33 +39,7 @@ export const useTables = () => {
   );
 
   useEffect(() => {
-    const previousSnapshots = previousSnapshotsRef.current;
-    previousSnapshotsRef.current = snapshotsData;
-
-    setTables((previousTables) => {
-      const previousNodesById = new Map(
-        previousTables.map((table) => [table.id, table]),
-      );
-
-      const nextTables = Object.values(snapshotsData).map((snapshot) => {
-        const previousNode = previousNodesById.get(snapshot.table.id);
-        const previousSnapshot = previousSnapshots?.[snapshot.table.id];
-
-        if (
-          previousNode &&
-          previousSnapshot === snapshot &&
-          previousNode.data.schemaId === selectedSchemaId
-        ) {
-          return previousNode;
-        }
-
-        return transformSnapshotToNode(snapshot, selectedSchemaId);
-      });
-
-      return isSameNodeList(previousTables, nextTables)
-        ? previousTables
-        : nextTables;
-    });
+    setTables(buildTableNodes(snapshotsData, selectedSchemaId));
   }, [selectedSchemaId, snapshotsData]);
 
   const addTable = useCallback(
