@@ -50,8 +50,9 @@ export const TypeSelector = ({
   const displayType = pendingType ?? value;
   const displayTypeConfig = vendorTypes.find((t) => t.sqlType === displayType);
   const params: DatatypeParameter[] = displayTypeConfig?.parameters ?? [];
-  const displayParams: Record<string, number | string[] | null> =
-    pendingType ? pendingParams : parsed;
+  const displayParams: Record<string, number | string[] | null> = pendingType
+    ? pendingParams
+    : parsed;
 
   const pendingTypeRef = useRef(pendingType);
   pendingTypeRef.current = pendingType;
@@ -181,7 +182,9 @@ export const TypeSelector = ({
                           key={`${displayType}-${param.name}`}
                           type={isStringArray ? 'text' : 'number'}
                           defaultValue={displayVal}
-                          placeholder={isStringArray ? 'e.g. a, b, c' : param.label}
+                          placeholder={
+                            isStringArray ? 'e.g. a, b, c' : param.label
+                          }
                           onPointerDown={(e) => e.stopPropagation()}
                           onClick={(e) => {
                             e.stopPropagation();

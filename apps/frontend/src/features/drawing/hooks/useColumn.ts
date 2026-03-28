@@ -40,7 +40,12 @@ export const useColumn = (
     } catch {
       return;
     }
-    const { dataType, typeArguments: typeArgsStr, category, prevCategory } = parsed;
+    const {
+      dataType,
+      typeArguments: typeArgsStr,
+      category,
+      prevCategory,
+    } = parsed;
 
     let params: {
       length?: number | null;
