@@ -100,7 +100,7 @@ class DefaultErdMutationCoordinator implements ErdMutationCoordinator {
   private Mono<SchemaCollaborationState> loadOrCreateSchemaState(String schemaId, String projectId) {
     return findSchemaCollaborationStatePort.findBySchemaId(schemaId)
         .switchIfEmpty(saveSchemaCollaborationStatePort
-            .save(new SchemaCollaborationState(schemaId, projectId, 0L, null, null, null))
+            .save(new SchemaCollaborationState(schemaId, projectId, 0L, null, null))
             .onErrorResume(DuplicateKeyException.class,
                 ex -> findSchemaCollaborationStatePort.findBySchemaId(schemaId)));
   }

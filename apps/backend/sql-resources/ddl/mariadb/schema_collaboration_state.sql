@@ -4,6 +4,5 @@ CREATE TABLE IF NOT EXISTS schema_collaboration_state (
     current_revision  BIGINT     NOT NULL DEFAULT 0,
     created_at        TIMESTAMP  NOT NULL DEFAULT CURRENT_TIMESTAMP,
     updated_at        TIMESTAMP  NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-    version           BIGINT     NOT NULL DEFAULT 0,
     CONSTRAINT pk_schema_collaboration_state PRIMARY KEY (schema_id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;

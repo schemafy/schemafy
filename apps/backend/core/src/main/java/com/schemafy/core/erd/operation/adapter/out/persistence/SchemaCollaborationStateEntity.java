@@ -5,7 +5,6 @@ import java.time.Instant;
 import org.springframework.data.annotation.CreatedDate;
 import org.springframework.data.annotation.Id;
 import org.springframework.data.annotation.LastModifiedDate;
-import org.springframework.data.annotation.Version;
 import org.springframework.data.domain.Persistable;
 import org.springframework.data.relational.core.mapping.Column;
 import org.springframework.data.relational.core.mapping.Table;
@@ -37,9 +36,6 @@ public class SchemaCollaborationStateEntity implements Persistable<String> {
   @LastModifiedDate
   private Instant updatedAt;
 
-  @Version
-  private Long version;
-
   @Override
   public String getId() {
     return schemaId;
@@ -47,7 +43,7 @@ public class SchemaCollaborationStateEntity implements Persistable<String> {
 
   @Override
   public boolean isNew() {
-    return version == null;
+    return createdAt == null;
   }
 
 }

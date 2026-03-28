@@ -14,7 +14,6 @@ class SchemaCollaborationStateMapper {
     entity.setCurrentRevision(schemaCollaborationState.currentRevision());
     entity.setCreatedAt(schemaCollaborationState.createdAt());
     entity.setUpdatedAt(schemaCollaborationState.updatedAt());
-    entity.setVersion(schemaCollaborationState.version());
     return entity;
   }
 
@@ -24,8 +23,7 @@ class SchemaCollaborationStateMapper {
         entity.getProjectId(),
         entity.getCurrentRevision(),
         entity.getCreatedAt(),
-        entity.getUpdatedAt(),
-        entity.getVersion());
+        entity.getUpdatedAt());
   }
 
 }

@@ -7,6 +7,5 @@ public record SchemaCollaborationState(
     String projectId,
     long currentRevision,
     Instant createdAt,
-    Instant updatedAt,
-    Long version) {
+    Instant updatedAt) {
 }

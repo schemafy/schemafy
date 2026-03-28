@@ -261,7 +261,6 @@ class ErdOperationLedgerIntegrationTest extends ErdProjectIntegrationSupport {
         "utf8mb4_general_ci")).block().result().id();
 
     long beforeRevision = currentRevision(schemaId);
-    long beforeVersion = currentVersion(schemaId);
     int incrementCount = 20;
 
     StepVerifier.create(Flux.range(0, incrementCount)
@@ -272,7 +271,6 @@ class ErdOperationLedgerIntegrationTest extends ErdProjectIntegrationSupport {
         .verifyComplete();
 
     assertThat(currentRevision(schemaId)).isEqualTo(beforeRevision + incrementCount);
-    assertThat(currentVersion(schemaId)).isEqualTo(beforeVersion + incrementCount);
   }
 
   @Test
@@ -337,18 +335,6 @@ class ErdOperationLedgerIntegrationTest extends ErdProjectIntegrationSupport {
         """)
         .bind("schemaId", schemaId)
         .map((row, metadata) -> ((Number) row.get("cnt")).longValue())
-        .one()
-        .block();
-  }
-
-  private long currentVersion(String schemaId) {
-    return databaseClient.sql("""
-        SELECT version
-        FROM schema_collaboration_state
-        WHERE schema_id = :schemaId
-        """)
-        .bind("schemaId", schemaId)
-        .map((row, metadata) -> ((Number) row.get("version")).longValue())
         .one()
         .block();
   }

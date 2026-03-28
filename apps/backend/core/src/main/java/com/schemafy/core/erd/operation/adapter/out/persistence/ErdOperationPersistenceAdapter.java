@@ -32,20 +32,8 @@ class ErdOperationPersistenceAdapter implements
 
   @Override
   public Mono<SchemaCollaborationState> save(SchemaCollaborationState schemaCollaborationState) {
-    if (schemaCollaborationState.version() == null) {
-      return schemaCollaborationStateRepository.save(
-          schemaCollaborationStateMapper.toEntity(schemaCollaborationState))
-          .map(schemaCollaborationStateMapper::toDomain);
-    }
-
-    return schemaCollaborationStateRepository.findById(schemaCollaborationState.schemaId())
-        .defaultIfEmpty(schemaCollaborationStateMapper.toEntity(schemaCollaborationState))
-        .flatMap(entity -> {
-          entity.setProjectId(schemaCollaborationState.projectId());
-          entity.setCurrentRevision(schemaCollaborationState.currentRevision());
-          entity.setVersion(schemaCollaborationState.version());
-          return schemaCollaborationStateRepository.save(entity);
-        })
+    return schemaCollaborationStateRepository.save(
+            schemaCollaborationStateMapper.toEntity(schemaCollaborationState))
         .map(schemaCollaborationStateMapper::toDomain);
   }
 

@@ -13,8 +13,7 @@ interface SchemaCollaborationStateRepository
   @Query("""
       UPDATE schema_collaboration_state
       SET current_revision = current_revision + 1,
-          updated_at = CURRENT_TIMESTAMP,
-          version = version + 1
+          updated_at = CURRENT_TIMESTAMP
       WHERE schema_id = :schemaId
       """)
   Mono<Long> incrementRevision(String schemaId);
