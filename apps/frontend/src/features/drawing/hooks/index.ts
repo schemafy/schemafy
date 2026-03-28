@@ -26,3 +26,4 @@ export * from './useControlPointDrag';
 export * from './useVendors';
 export * from './useErdMutationSync';
 export * from './useLatest';
+export * from './useMouseTrackingPreview';
