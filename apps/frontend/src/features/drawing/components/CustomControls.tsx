@@ -1,8 +1,7 @@
-import { memo } from 'react';
 import { useReactFlow } from '@xyflow/react';
 import { Plus, Minus } from 'lucide-react';
 
-export const CustomControls = memo(() => {
+export const CustomControls = () => {
   const { zoomIn, zoomOut } = useReactFlow();
   return (
     <div
@@ -19,4 +18,4 @@ export const CustomControls = memo(() => {
       </button>
     </div>
   );
-});
+};

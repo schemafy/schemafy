@@ -1,7 +1,7 @@
 import { Bot, MessageCircle, Ellipsis } from 'lucide-react';
-import { memo, useState } from 'react';
+import { useState } from 'react';
 
-export const FloatingButtons = memo(() => {
+export const FloatingButtons = () => {
   const [isExpanded, setIsExpanded] = useState(false);
 
   return (
@@ -33,4 +33,4 @@ export const FloatingButtons = memo(() => {
       </div>
     </div>
   );
-});
+};

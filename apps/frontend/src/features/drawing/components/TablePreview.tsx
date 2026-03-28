@@ -1,14 +1,9 @@
-import { useEffect, useRef } from 'react';
+import { useEffect } from 'react';
 import { useStore } from '@xyflow/react';
 import { useMouseTrackingPreview } from '../hooks/useMouseTrackingPreview';
 
 export const TablePreview = () => {
   const zoom = useStore((s) => s.transform[2]);
-  const zoomRef = useRef(zoom);
-
-  useEffect(() => {
-    zoomRef.current = zoom;
-  }, [zoom]);
 
   const divRef = useMouseTrackingPreview(
     (position) =>
