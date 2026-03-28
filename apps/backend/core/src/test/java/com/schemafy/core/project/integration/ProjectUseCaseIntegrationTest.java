@@ -305,4 +305,27 @@ class ProjectUseCaseIntegrationTest extends ProjectDomainIntegrationSupport {
     assertThat(deletedMember.isDeleted()).isTrue();
   }
 
+  @Test
+  @DisplayName("워크스페이스 관리자가 아닌 프로젝트 VIEWER는 프로젝트를 직접 나갈 수 있다")
+  void leaveProject_allowsProjectViewerWithoutWorkspaceAdmin() {
+    User projectViewer = signUpUser("requester-project-viewer-leave@test.com", "Requester");
+    User remainingMember = signUpUser("member-project-viewer-leave@test.com", "Member");
+    Workspace workspace = saveWorkspace("Project Viewer Leave WS", "Description");
+    saveWorkspaceMember(workspace, projectViewer, WorkspaceRole.MEMBER);
+    saveWorkspaceMember(workspace, remainingMember, WorkspaceRole.MEMBER);
+    var project = saveProject(workspace, "Project Viewer Leave Project");
+    ProjectMember projectViewerMember = saveProjectMember(project, projectViewer,
+        ProjectRole.VIEWER);
+    saveProjectMember(project, remainingMember, ProjectRole.ADMIN);
+
+    leaveProjectUseCase.leaveProject(new LeaveProjectCommand(project.getId(), projectViewer.id()))
+        .block();
+
+    ProjectMember deletedMember = projectMemberRepository.findById(projectViewerMember.getId())
+        .block();
+    assertThat(deletedMember).isNotNull();
+    assertThat(deletedMember.isDeleted()).isTrue();
+    assertThat(projectRepository.findByIdAndNotDeleted(project.getId()).block()).isNotNull();
+  }
+
 }
