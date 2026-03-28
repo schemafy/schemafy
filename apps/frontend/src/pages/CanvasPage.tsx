@@ -1,4 +1,3 @@
-import { observer } from 'mobx-react-lite';
 import {
   FloatingButtons,
   ReactFlowCanvas,
@@ -16,7 +15,7 @@ import {
   ChatOverlay,
 } from '@/features/collaboration/components';
 
-const CanvasContent = observer(() => {
+const CanvasContent = () => {
   const {
     state: {
       relationshipConfig,
@@ -116,7 +115,7 @@ const CanvasContent = observer(() => {
       <RemoteCursors />
     </>
   );
-});
+};
 
 export const CanvasPage = () => {
   const projectId = '06DS8JSJ7Y112MC87X0AB2CE8M';

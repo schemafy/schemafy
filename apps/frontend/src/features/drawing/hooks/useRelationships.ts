@@ -259,7 +259,12 @@ export const useRelationships = (relationshipConfig: RelationshipConfig) => {
         });
       }
     },
-    [createRelationshipFromValidation, deleteRelationshipMutation, snapshotsRef, updateExtra],
+    [
+      createRelationshipFromValidation,
+      deleteRelationshipMutation,
+      snapshotsRef,
+      updateExtra,
+    ],
   );
 
   const onReconnectEnd = useCallback(

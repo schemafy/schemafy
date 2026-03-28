@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { type Node, type NodeChange, applyNodeChanges } from '@xyflow/react';
+import { type Node } from '@xyflow/react';
 import type { TableData, Point } from '../types';
 import {
   transformSnapshotToNode,
@@ -27,15 +27,6 @@ const buildTableNodes = (
 const isSameNodeList = (prev: Node<TableData>[], next: Node<TableData>[]) =>
   prev.length === next.length &&
   prev.every((node, index) => node === next[index]);
-
-const hasSameTableNodeContent = (
-  previousNode: Node<TableData>,
-  nextNode: Node<TableData>,
-) =>
-  previousNode.position.x === nextNode.position.x &&
-  previousNode.position.y === nextNode.position.y &&
-  previousNode.data.schemaId === nextNode.data.schemaId &&
-  JSON.stringify(previousNode.data) === JSON.stringify(nextNode.data);
 
 export const useTables = () => {
   const { selectedSchemaId } = useSelectedSchema();
@@ -68,8 +59,6 @@ export const useTables = () => {
         const previousNode = previousNodesById.get(snapshot.table.id);
         const previousSnapshot = previousSnapshots?.[snapshot.table.id];
 
-        const nextNode = transformSnapshotToNode(snapshot, selectedSchemaId);
-
         if (
           previousNode &&
           previousSnapshot === snapshot &&
@@ -78,11 +67,7 @@ export const useTables = () => {
           return previousNode;
         }
 
-        if (previousNode && hasSameTableNodeContent(previousNode, nextNode)) {
-          return previousNode;
-        }
-
-        return nextNode;
+        return transformSnapshotToNode(snapshot, selectedSchemaId);
       });
 
       return isSameNodeList(previousTables, nextTables)
@@ -131,10 +116,6 @@ export const useTables = () => {
     [changeTableExtra, snapshotsRef],
   );
 
-  const onTablesChange = useCallback((changes: NodeChange[]) => {
-    setTables((nds) => applyNodeChanges(changes, nds) as Node<TableData>[]);
-  }, []);
-
   const onNodesDelete = useCallback(
     (deletedNodes: Node<TableData>[]) => {
       deletedNodes.forEach((node) => {
@@ -147,7 +128,6 @@ export const useTables = () => {
   return {
     tables,
     addTable,
-    onTablesChange,
     onNodeDragStop,
     onNodesDelete,
   };

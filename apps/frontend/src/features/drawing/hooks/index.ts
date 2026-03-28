@@ -9,7 +9,6 @@ export * from './useConstraints';
 export * from './useViewport';
 export * from './useSchemaEditor';
 export * from './useCanvasKeyboard';
-export * from './useCanvasNodes';
 export * from './useCanvasController';
 export * from './useLocalStorage';
 export * from './useDebouncedMutation';

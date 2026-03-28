@@ -33,6 +33,21 @@ const EDGE_TYPES = {
   customSmoothStep: CustomSmoothStepEdge,
 };
 
+const MINIMAP_NODE_COLOR = () => 'var(--color-schemafy-text)';
+
+const MINIMAP_STYLE = {
+  backgroundColor: 'var(--color-schemafy-bg-80)',
+  boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)',
+  borderRadius: '10px',
+  overflow: 'hidden' as const,
+  position: 'absolute' as const,
+  bottom: '1rem',
+  right: '1rem',
+  margin: '0',
+};
+
+const PRO_OPTIONS = { hideAttribution: true };
+
 const areSameNodes = (prev: Node[], next: Node[]) =>
   prev.length === next.length &&
   prev.every((node, index) => node === next[index]);
@@ -109,7 +124,7 @@ const ReactFlowCanvasComponent = ({
         if (
           prev.position.x === node.position.x &&
           prev.position.y === node.position.y &&
-          JSON.stringify(prev.data) === JSON.stringify(node.data)
+          prev.data === node.data
         ) {
           return prev;
         }
@@ -165,8 +180,6 @@ const ReactFlowCanvasComponent = ({
     [tableIds, onTablesDelete],
   );
 
-  const miniMapNodeColor = useCallback(() => 'var(--color-schemafy-text)', []);
-
   return (
     <div
       style={{ cursor: activeTool === 'hand' ? 'grab' : 'default' }}
@@ -194,25 +207,16 @@ const ReactFlowCanvasComponent = ({
         nodeTypes={NODE_TYPES}
         edgeTypes={EDGE_TYPES}
         connectionLineComponent={CustomConnectionLine}
-        proOptions={{ hideAttribution: true }}
+        proOptions={PRO_OPTIONS}
         connectionMode={ConnectionMode.Loose}
         fitView={false}
         minZoom={0.1}
         maxZoom={4}
       >
         <MiniMap
-          nodeColor={miniMapNodeColor}
+          nodeColor={MINIMAP_NODE_COLOR}
           maskColor="var(--color-schemafy-bg-80)"
-          style={{
-            backgroundColor: 'var(--color-schemafy-bg-80)',
-            boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)',
-            borderRadius: '10px',
-            overflow: 'hidden',
-            position: 'absolute',
-            bottom: '1rem',
-            right: '1rem',
-            margin: '0',
-          }}
+          style={MINIMAP_STYLE}
           zoomable
           pannable
         />

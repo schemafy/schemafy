@@ -11,43 +11,59 @@ import * as memoApi from '../api/api';
 import type { Memo } from '../api/types';
 import { type MemoData, transformApiMemoToNode } from './memo.helper';
 import { useSelectedSchema } from '@/features';
+import { useLatest } from '@/features/drawing/hooks/useLatest';
 
 export const useMemoStore = () => {
   const [storedMemos, setStoredMemos] = useState<Memo[]>([]);
   const [memos, setMemos] = useState<Node<MemoData>[]>([]);
 
   const { selectedSchemaId } = useSelectedSchema();
+  const selectedSchemaIdRef = useLatest(selectedSchemaId);
 
   useEffect(() => {
     setMemos(storedMemos.map(transformApiMemoToNode));
   }, [storedMemos]);
 
   useEffect(() => {
-    if (!selectedSchemaId) return;
+    if (!selectedSchemaId) {
+      setStoredMemos([]);
+      return;
+    }
+
+    let cancelled = false;
 
     memoApi
       .getSchemaMemosWithComments(selectedSchemaId)
       .then((memos) => {
-        setStoredMemos(memos);
+        if (!cancelled) {
+          setStoredMemos(memos);
+        }
       })
       .catch((error) => {
         console.error('Failed to fetch memos:', error);
       });
-  }, []);
 
-  const createMemo = useCallback(async (
-    position: { x: number; y: number },
-    content: string,
-  ) => {
-    try {
-      const memo = await memoApi.createMemo({
-        schemaId: selectedSchemaId,
-        positions: { x: position.x, y: position.y },
-        body: content,
-      });
-      setStoredMemos((prev) => [memo, ...prev]);
-    } catch {}
+    return () => {
+      cancelled = true;
+    };
   }, [selectedSchemaId]);
+
+  const createMemo = useCallback(
+    async (position: { x: number; y: number }, content: string) => {
+      const schemaId = selectedSchemaIdRef.current;
+      if (!schemaId) return;
+
+      try {
+        const memo = await memoApi.createMemo({
+          schemaId,
+          positions: { x: position.x, y: position.y },
+          body: content,
+        });
+        setStoredMemos((prev) => [memo, ...prev]);
+      } catch {}
+    },
+    [selectedSchemaIdRef],
+  );
 
   const updateMemo = useCallback(
     async (id: string, positions: Memo['positions']) => {
@@ -72,7 +88,7 @@ export const useMemoStore = () => {
 
   const onMemosChange = useCallback(
     (changes: NodeChange[]) => {
-      if (!selectedSchemaId) return;
+      if (!selectedSchemaIdRef.current) return;
 
       setMemos((nds) => applyNodeChanges(changes, nds) as Node<MemoData>[]);
 
@@ -86,7 +102,7 @@ export const useMemoStore = () => {
         }
       });
     },
-    [updateMemo, deleteMemo],
+    [deleteMemo, selectedSchemaIdRef, updateMemo],
   );
 
   const createComment = useCallback(async (memoId: string, body: string) => {
