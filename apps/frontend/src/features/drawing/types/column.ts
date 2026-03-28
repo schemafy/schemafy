@@ -5,7 +5,7 @@ export type ColumnType = {
   id: string;
   name: string;
   type: string;
-  lengthScale: string;
+  typeArguments: string;
   isPrimaryKey: boolean;
   isForeignKey: boolean;
   isNotNull: boolean;
@@ -60,12 +60,12 @@ export interface DragHandleProps {
 
 export interface TypeSelectorProps {
   value: string;
-  lengthScale: string;
+  typeArguments: string;
   vendorTypes: VendorDatatype[];
   disabled?: boolean;
   onChange: (
     dataType: string,
-    lengthScale: string,
+    typeArguments: string,
     category: string,
     prevCategory: string,
   ) => void;

@@ -1,28 +1,38 @@
-export const parseLengthScale = (
-  lengthScale: string,
-): Record<string, number | string[] | null> => {
+import type { ColumnTypeArguments } from '../../api';
+
+export const parseTypeArguments = (
+  typeArguments: string,
+): ColumnTypeArguments => {
   try {
-    return JSON.parse(lengthScale || '{}') ?? {};
+    const parsed = JSON.parse(typeArguments || '{}');
+    return {
+      length: parsed?.length ?? null,
+      precision: parsed?.precision ?? null,
+      scale: parsed?.scale ?? null,
+      values: parsed?.values ?? null,
+    };
   } catch {
-    return {};
+    return { length: null, precision: null, scale: null, values: null };
   }
 };
 
 export const formatTypeDisplay = (
   type: string,
-  lengthScale: string,
+  typeArguments: string,
 ): string => {
-  const parsed = parseLengthScale(lengthScale);
-  const parts: string[] = [];
-  for (const v of Object.values(parsed)) {
-    if (typeof v === 'number') {
-      parts.push(String(v));
-    } else if (Array.isArray(v) && v.length > 0) {
-      parts.push(v.join(', '));
-    }
+  const { length, precision, scale, values } =
+    parseTypeArguments(typeArguments);
+
+  if (values && values.length > 0) {
+    return `${type}(${values.join(',')})`;
   }
-  if (parts.length === 0) return type;
-  return `${type}(${parts.join(',')})`;
+  if (precision != null && scale != null) {
+    return `${type}(${precision},${scale})`;
+  }
+  if (length != null) {
+    return `${type}(${length})`;
+  }
+  return type;
 };
 
 export const CATEGORY_LABELS: Record<string, string> = {

@@ -75,7 +75,7 @@ const transformColumnWithMap = (
     id: columnId,
     name: columnName,
     type: dataType || 'VARCHAR',
-    lengthScale: JSON.stringify(typeArguments),
+    typeArguments: JSON.stringify(typeArguments),
     isPrimaryKey,
     isForeignKey,
     isNotNull,

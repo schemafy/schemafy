@@ -34,14 +34,25 @@ export const useColumn = (
   };
 
   const saveColumnType = async (columnId: string, typeData: string) => {
-    const { dataType, lengthScale, category, prevCategory } =
-      JSON.parse(typeData);
-    const params = JSON.parse(lengthScale || '{}') as {
+    let parsed;
+    try {
+      parsed = JSON.parse(typeData);
+    } catch {
+      return;
+    }
+    const { dataType, typeArguments: typeArgsStr, category, prevCategory } = parsed;
+
+    let params: {
       length?: number | null;
       precision?: number | null;
       scale?: number | null;
       values?: string[] | null;
     };
+    try {
+      params = JSON.parse(typeArgsStr || '{}');
+    } catch {
+      params = {};
+    }
 
     const typePayload = {
       columnId,
