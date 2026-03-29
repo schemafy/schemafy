@@ -29,6 +29,7 @@ const MAX_RECONNECT_DELAY_MS = 60000;
 
 export class CollaborationStore {
   cursors: Map<string, CursorPosition> = new Map();
+  schemaRevisions: Map<string, number> = new Map();
   projectId: string | null = null;
   sessionId: string | null = null;
   private ws: WebSocket | null = null;
@@ -41,6 +42,7 @@ export class CollaborationStore {
   constructor() {
     makeObservable(this, {
       cursors: observable,
+      schemaRevisions: observable.shallow,
       projectId: observable,
       sessionId: observable,
       currentUser: computed,
@@ -48,11 +50,25 @@ export class CollaborationStore {
       disconnect: action,
       sendMessage: action,
       sendCursor: action,
+      setSchemaRevision: action,
+      clearSchemaRevision: action,
     });
   }
 
   get currentUser() {
     return authStore.user;
+  }
+
+  getSchemaRevision(schemaId: string): number | null {
+    return this.schemaRevisions.get(schemaId) ?? null;
+  }
+
+  setSchemaRevision(schemaId: string, revision: number) {
+    this.schemaRevisions.set(schemaId, revision);
+  }
+
+  clearSchemaRevision(schemaId: string) {
+    this.schemaRevisions.delete(schemaId);
   }
 
   connect(projectId: string, isReconnect = false) {
@@ -153,6 +169,7 @@ export class CollaborationStore {
     runInAction(() => {
       this.projectId = null;
       this.cursors.clear();
+      this.schemaRevisions.clear();
       this.sessionId = null;
     });
   }
@@ -268,6 +285,10 @@ export class CollaborationStore {
   }
 
   private handleErdMutatedMessage(message: ReceiveErdMutated) {
+    this.setSchemaRevision(
+      message.schemaId,
+      message.operation.committedRevision,
+    );
     this.erdMutatedListeners.forEach((listener) => listener(message));
   }
 

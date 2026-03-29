@@ -1,4 +1,5 @@
 import { apiClient } from '@/lib/api';
+import { createErdMutationConfig } from './mutation-request';
 import type {
   MutationResponse,
   RelationshipResponse,
@@ -15,10 +16,11 @@ import type {
 
 export const createRelationship = async (
   data: CreateRelationshipRequest,
+  schemaId: string,
 ): Promise<MutationResponse<RelationshipResponse>> => {
   const { data: res } = await apiClient.post<
     MutationResponse<RelationshipResponse>
-  >('/relationships', data);
+  >('/relationships', data, createErdMutationConfig(schemaId));
   return res;
 };
 
@@ -43,10 +45,12 @@ export const getRelationshipsByTableId = async (
 export const changeRelationshipName = async (
   relationshipId: string,
   data: ChangeRelationshipNameRequest,
+  schemaId: string,
 ): Promise<MutationResponse> => {
   const { data: res } = await apiClient.patch<MutationResponse>(
     `/relationships/${relationshipId}/name`,
     data,
+    createErdMutationConfig(schemaId),
   );
   return res;
 };
@@ -54,10 +58,12 @@ export const changeRelationshipName = async (
 export const changeRelationshipKind = async (
   relationshipId: string,
   data: ChangeRelationshipKindRequest,
+  schemaId: string,
 ): Promise<MutationResponse> => {
   const { data: res } = await apiClient.patch<MutationResponse>(
     `/relationships/${relationshipId}/kind`,
     data,
+    createErdMutationConfig(schemaId),
   );
   return res;
 };
@@ -65,10 +71,12 @@ export const changeRelationshipKind = async (
 export const changeRelationshipCardinality = async (
   relationshipId: string,
   data: ChangeRelationshipCardinalityRequest,
+  schemaId: string,
 ): Promise<MutationResponse> => {
   const { data: res } = await apiClient.patch<MutationResponse>(
     `/relationships/${relationshipId}/cardinality`,
     data,
+    createErdMutationConfig(schemaId),
   );
   return res;
 };
@@ -76,19 +84,23 @@ export const changeRelationshipCardinality = async (
 export const changeRelationshipExtra = async (
   relationshipId: string,
   data: ChangeRelationshipExtraRequest,
+  schemaId: string,
 ): Promise<MutationResponse> => {
   const { data: res } = await apiClient.patch<MutationResponse>(
     `/relationships/${relationshipId}/extra`,
     data,
+    createErdMutationConfig(schemaId),
   );
   return res;
 };
 
 export const deleteRelationship = async (
   relationshipId: string,
+  schemaId: string,
 ): Promise<MutationResponse> => {
   const { data: res } = await apiClient.delete<MutationResponse>(
     `/relationships/${relationshipId}`,
+    createErdMutationConfig(schemaId),
   );
   return res;
 };
@@ -105,18 +117,25 @@ export const getRelationshipColumns = async (
 export const addRelationshipColumn = async (
   relationshipId: string,
   data: AddRelationshipColumnRequest,
+  schemaId: string,
 ): Promise<MutationResponse<AddRelationshipColumnResponse>> => {
   const { data: res } = await apiClient.post<
     MutationResponse<AddRelationshipColumnResponse>
-  >(`/relationships/${relationshipId}/columns`, data);
+  >(
+    `/relationships/${relationshipId}/columns`,
+    data,
+    createErdMutationConfig(schemaId),
+  );
   return res;
 };
 
 export const removeRelationshipColumn = async (
   relationshipColumnId: string,
+  schemaId: string,
 ): Promise<MutationResponse> => {
   const { data: res } = await apiClient.delete<MutationResponse>(
     `/relationship-columns/${relationshipColumnId}`,
+    createErdMutationConfig(schemaId),
   );
   return res;
 };
@@ -133,10 +152,12 @@ export const getRelationshipColumn = async (
 export const changeRelationshipColumnPosition = async (
   relationshipColumnId: string,
   data: ChangeRelationshipColumnPositionRequest,
+  schemaId: string,
 ): Promise<MutationResponse> => {
   const { data: res } = await apiClient.patch<MutationResponse>(
     `/relationship-columns/${relationshipColumnId}/position`,
     data,
+    createErdMutationConfig(schemaId),
   );
   return res;
 };

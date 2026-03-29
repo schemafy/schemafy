@@ -1,4 +1,5 @@
 import { apiClient } from '@/lib/api';
+import { createErdMutationConfig } from './mutation-request';
 import type {
   MutationResponse,
   TableResponse,
@@ -15,6 +16,7 @@ export const createTable = async (
   const { data: res } = await apiClient.post<MutationResponse<TableResponse>>(
     '/tables',
     data,
+    createErdMutationConfig(data.schemaId),
   );
   return res;
 };
@@ -55,10 +57,12 @@ export const getTableSnapshots = async (
 export const changeTableName = async (
   tableId: string,
   data: ChangeTableNameRequest,
+  schemaId: string,
 ): Promise<MutationResponse> => {
   const { data: res } = await apiClient.patch<MutationResponse>(
     `/tables/${tableId}/name`,
     data,
+    createErdMutationConfig(schemaId),
   );
   return res;
 };
@@ -66,10 +70,12 @@ export const changeTableName = async (
 export const changeTableMeta = async (
   tableId: string,
   data: ChangeTableMetaRequest,
+  schemaId: string,
 ): Promise<MutationResponse> => {
   const { data: res } = await apiClient.patch<MutationResponse>(
     `/tables/${tableId}/meta`,
     data,
+    createErdMutationConfig(schemaId),
   );
   return res;
 };
@@ -77,19 +83,23 @@ export const changeTableMeta = async (
 export const changeTableExtra = async (
   tableId: string,
   data: ChangeTableExtraRequest,
+  schemaId: string,
 ): Promise<MutationResponse> => {
   const { data: res } = await apiClient.patch<MutationResponse>(
     `/tables/${tableId}/extra`,
     data,
+    createErdMutationConfig(schemaId),
   );
   return res;
 };
 
 export const deleteTable = async (
   tableId: string,
+  schemaId: string,
 ): Promise<MutationResponse> => {
   const { data: res } = await apiClient.delete<MutationResponse>(
     `/tables/${tableId}`,
+    createErdMutationConfig(schemaId),
   );
   return res;
 };

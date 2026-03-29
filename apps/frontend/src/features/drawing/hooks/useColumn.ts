@@ -75,7 +75,11 @@ export const useColumn = (
 
     if (isTextToNonText) {
       try {
-        await changeColumnMeta(columnId, { charset: '', collation: '' });
+        await changeColumnMeta(
+          columnId,
+          { charset: '', collation: '' },
+          schemaId,
+        );
       } catch {
         return;
       }
@@ -86,7 +90,7 @@ export const useColumn = (
         await changeColumnMeta(columnId, {
           charset: 'utf8mb4',
           collation: 'utf8mb4_general_ci',
-        });
+        }, schemaId);
       } catch {}
     } else {
       changeColumnTypeMutation.mutate(typePayload);

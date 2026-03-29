@@ -1,6 +1,14 @@
+export type ErdOperation = {
+  opId: string;
+  clientOperationId: string | null;
+  committedRevision: number;
+  derivationKind: string;
+};
+
 export type MutationResponse<T = null> = {
   data: T;
   affectedTableIds: string[];
+  operation: ErdOperation;
 };
 
 export type JsonPrimitive = string | number | boolean | null;
