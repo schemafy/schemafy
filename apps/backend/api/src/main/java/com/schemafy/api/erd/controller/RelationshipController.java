@@ -95,12 +95,14 @@ public class RelationshipController {
         request.cardinality(),
         jsonCodec.canonicalizeOptional(request.extra()));
     return createRelationshipUseCase.createRelationship(command)
-        .flatMap(result -> broadcastMutation(result.affectedTableIds())
+        .flatMap(result -> broadcastMutation(result.affectedTableIds(),
+            result.operation())
             .thenReturn(result))
         .map(result -> MutationResponse.of(
             relationshipResponseMapper.toRelationshipResponse(
                 result.result()),
-            result.affectedTableIds()));
+            result.affectedTableIds(),
+            result.operation()));
   }
 
   @PreAuthorize("hasAnyRole('OWNER','ADMIN','EDITOR','COMMENTER','VIEWER')")
@@ -132,9 +134,11 @@ public class RelationshipController {
         relationshipId,
         request.newName());
     return changeRelationshipNameUseCase.changeRelationshipName(command)
-        .flatMap(result -> broadcastMutation(result.affectedTableIds())
+        .flatMap(result -> broadcastMutation(result.affectedTableIds(),
+            result.operation())
             .thenReturn(result))
-        .map(result -> MutationResponse.<Void>of(null, result.affectedTableIds()));
+        .map(result -> MutationResponse.<Void>of(null,
+            result.affectedTableIds(), result.operation()));
   }
 
   @PreAuthorize("hasAnyRole('OWNER','ADMIN','EDITOR')")
@@ -146,9 +150,11 @@ public class RelationshipController {
         relationshipId,
         request.kind());
     return changeRelationshipKindUseCase.changeRelationshipKind(command)
-        .flatMap(result -> broadcastMutation(result.affectedTableIds())
+        .flatMap(result -> broadcastMutation(result.affectedTableIds(),
+            result.operation())
             .thenReturn(result))
-        .map(result -> MutationResponse.<Void>of(null, result.affectedTableIds()));
+        .map(result -> MutationResponse.<Void>of(null,
+            result.affectedTableIds(), result.operation()));
   }
 
   @PreAuthorize("hasAnyRole('OWNER','ADMIN','EDITOR')")
@@ -160,9 +166,11 @@ public class RelationshipController {
         relationshipId,
         request.cardinality());
     return changeRelationshipCardinalityUseCase.changeRelationshipCardinality(command)
-        .flatMap(result -> broadcastMutation(result.affectedTableIds())
+        .flatMap(result -> broadcastMutation(result.affectedTableIds(),
+            result.operation())
             .thenReturn(result))
-        .map(result -> MutationResponse.<Void>of(null, result.affectedTableIds()));
+        .map(result -> MutationResponse.<Void>of(null,
+            result.affectedTableIds(), result.operation()));
   }
 
   @PreAuthorize("hasAnyRole('OWNER','ADMIN','EDITOR')")
@@ -174,9 +182,11 @@ public class RelationshipController {
         relationshipId,
         jsonCodec.canonicalizeOptional(request.extra()));
     return changeRelationshipExtraUseCase.changeRelationshipExtra(command)
-        .flatMap(result -> broadcastMutation(result.affectedTableIds())
+        .flatMap(result -> broadcastMutation(result.affectedTableIds(),
+            result.operation())
             .thenReturn(result))
-        .map(result -> MutationResponse.<Void>of(null, result.affectedTableIds()));
+        .map(result -> MutationResponse.<Void>of(null,
+            result.affectedTableIds(), result.operation()));
   }
 
   @PreAuthorize("hasAnyRole('OWNER','ADMIN')")
@@ -185,9 +195,11 @@ public class RelationshipController {
       @PathVariable String relationshipId) {
     DeleteRelationshipCommand command = new DeleteRelationshipCommand(relationshipId);
     return deleteRelationshipUseCase.deleteRelationship(command)
-        .flatMap(result -> broadcastMutation(result.affectedTableIds())
+        .flatMap(result -> broadcastMutation(result.affectedTableIds(),
+            result.operation())
             .thenReturn(result))
-        .map(result -> MutationResponse.<Void>of(null, result.affectedTableIds()));
+        .map(result -> MutationResponse.<Void>of(null,
+            result.affectedTableIds(), result.operation()));
   }
 
   @PreAuthorize("hasAnyRole('OWNER','ADMIN','EDITOR','COMMENTER','VIEWER')")
@@ -213,11 +225,13 @@ public class RelationshipController {
         request.fkColumnId(),
         request.seqNo());
     return addRelationshipColumnUseCase.addRelationshipColumn(command)
-        .flatMap(result -> broadcastMutation(result.affectedTableIds())
+        .flatMap(result -> broadcastMutation(result.affectedTableIds(),
+            result.operation())
             .thenReturn(result))
         .map(result -> MutationResponse.of(
             AddRelationshipColumnResponse.from(result.result()),
-            result.affectedTableIds()));
+            result.affectedTableIds(),
+            result.operation()));
   }
 
   @PreAuthorize("hasAnyRole('OWNER','ADMIN','EDITOR')")
@@ -227,9 +241,11 @@ public class RelationshipController {
     RemoveRelationshipColumnCommand command = new RemoveRelationshipColumnCommand(
         relationshipColumnId);
     return removeRelationshipColumnUseCase.removeRelationshipColumn(command)
-        .flatMap(result -> broadcastMutation(result.affectedTableIds())
+        .flatMap(result -> broadcastMutation(result.affectedTableIds(),
+            result.operation())
             .thenReturn(result))
-        .map(result -> MutationResponse.<Void>of(null, result.affectedTableIds()));
+        .map(result -> MutationResponse.<Void>of(null,
+            result.affectedTableIds(), result.operation()));
   }
 
   @PreAuthorize("hasAnyRole('OWNER','ADMIN','EDITOR','COMMENTER','VIEWER')")
@@ -250,17 +266,20 @@ public class RelationshipController {
         relationshipColumnId,
         request.seqNo());
     return changeRelationshipColumnPositionUseCase.changeRelationshipColumnPosition(command)
-        .flatMap(result -> broadcastMutation(result.affectedTableIds())
+        .flatMap(result -> broadcastMutation(result.affectedTableIds(),
+            result.operation())
             .thenReturn(result))
-        .map(result -> MutationResponse.<Void>of(null, result.affectedTableIds()));
+        .map(result -> MutationResponse.<Void>of(null,
+            result.affectedTableIds(), result.operation()));
   }
 
-  private Mono<Void> broadcastMutation(Set<String> affectedTableIds) {
+  private Mono<Void> broadcastMutation(Set<String> affectedTableIds,
+      com.schemafy.core.erd.operation.domain.CommittedErdOperation operation) {
     ErdMutationBroadcaster broadcaster = broadcasterProvider.getIfAvailable();
     if (broadcaster == null) {
       return Mono.empty();
     }
-    return broadcaster.broadcast(affectedTableIds);
+    return broadcaster.broadcast(affectedTableIds, operation);
   }
 
 }

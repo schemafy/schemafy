@@ -92,11 +92,13 @@ public class ConstraintController {
         request.defaultExpr(),
         mapConstraintColumns(request.columns()));
     return createConstraintUseCase.createConstraint(command)
-        .flatMap(result -> broadcastMutation(result.affectedTableIds())
+        .flatMap(result -> broadcastMutation(result.affectedTableIds(),
+            result.operation())
             .thenReturn(result))
         .map(result -> MutationResponse.of(
             ConstraintResponse.from(result.result(), request.tableId()),
-            result.affectedTableIds()));
+            result.affectedTableIds(),
+            result.operation()));
   }
 
   @PreAuthorize("hasAnyRole('OWNER','ADMIN','EDITOR','COMMENTER','VIEWER')")
@@ -131,9 +133,11 @@ public class ConstraintController {
         constraintId,
         request.checkExpr().orElse(null));
     return changeConstraintCheckExprUseCase.changeConstraintCheckExpr(command)
-        .flatMap(result -> broadcastMutation(result.affectedTableIds())
+        .flatMap(result -> broadcastMutation(result.affectedTableIds(),
+            result.operation())
             .thenReturn(result))
-        .map(result -> MutationResponse.<Void>of(null, result.affectedTableIds()));
+        .map(result -> MutationResponse.<Void>of(null,
+            result.affectedTableIds(), result.operation()));
   }
 
   @PreAuthorize("hasAnyRole('OWNER','ADMIN','EDITOR')")
@@ -148,9 +152,11 @@ public class ConstraintController {
         constraintId,
         request.defaultExpr().orElse(null));
     return changeConstraintDefaultExprUseCase.changeConstraintDefaultExpr(command)
-        .flatMap(result -> broadcastMutation(result.affectedTableIds())
+        .flatMap(result -> broadcastMutation(result.affectedTableIds(),
+            result.operation())
             .thenReturn(result))
-        .map(result -> MutationResponse.<Void>of(null, result.affectedTableIds()));
+        .map(result -> MutationResponse.<Void>of(null,
+            result.affectedTableIds(), result.operation()));
   }
 
   @PreAuthorize("hasAnyRole('OWNER','ADMIN','EDITOR')")
@@ -162,9 +168,11 @@ public class ConstraintController {
         constraintId,
         request.newName());
     return changeConstraintNameUseCase.changeConstraintName(command)
-        .flatMap(result -> broadcastMutation(result.affectedTableIds())
+        .flatMap(result -> broadcastMutation(result.affectedTableIds(),
+            result.operation())
             .thenReturn(result))
-        .map(result -> MutationResponse.<Void>of(null, result.affectedTableIds()));
+        .map(result -> MutationResponse.<Void>of(null,
+            result.affectedTableIds(), result.operation()));
   }
 
   @PreAuthorize("hasAnyRole('OWNER','ADMIN')")
@@ -173,9 +181,11 @@ public class ConstraintController {
       @PathVariable String constraintId) {
     DeleteConstraintCommand command = new DeleteConstraintCommand(constraintId);
     return deleteConstraintUseCase.deleteConstraint(command)
-        .flatMap(result -> broadcastMutation(result.affectedTableIds())
+        .flatMap(result -> broadcastMutation(result.affectedTableIds(),
+            result.operation())
             .thenReturn(result))
-        .map(result -> MutationResponse.<Void>of(null, result.affectedTableIds()));
+        .map(result -> MutationResponse.<Void>of(null,
+            result.affectedTableIds(), result.operation()));
   }
 
   @PreAuthorize("hasAnyRole('OWNER','ADMIN','EDITOR','COMMENTER','VIEWER')")
@@ -199,11 +209,13 @@ public class ConstraintController {
         request.columnId(),
         request.seqNo());
     return addConstraintColumnUseCase.addConstraintColumn(command)
-        .flatMap(result -> broadcastMutation(result.affectedTableIds())
+        .flatMap(result -> broadcastMutation(result.affectedTableIds(),
+            result.operation())
             .thenReturn(result))
         .map(result -> MutationResponse.of(
             AddConstraintColumnResponse.from(result.result()),
-            result.affectedTableIds()));
+            result.affectedTableIds(),
+            result.operation()));
   }
 
   @PreAuthorize("hasAnyRole('OWNER','ADMIN','EDITOR')")
@@ -213,9 +225,11 @@ public class ConstraintController {
     RemoveConstraintColumnCommand command = new RemoveConstraintColumnCommand(
         constraintColumnId);
     return removeConstraintColumnUseCase.removeConstraintColumn(command)
-        .flatMap(result -> broadcastMutation(result.affectedTableIds())
+        .flatMap(result -> broadcastMutation(result.affectedTableIds(),
+            result.operation())
             .thenReturn(result))
-        .map(result -> MutationResponse.<Void>of(null, result.affectedTableIds()));
+        .map(result -> MutationResponse.<Void>of(null,
+            result.affectedTableIds(), result.operation()));
   }
 
   @PreAuthorize("hasAnyRole('OWNER','ADMIN','EDITOR','COMMENTER','VIEWER')")
@@ -236,17 +250,20 @@ public class ConstraintController {
         constraintColumnId,
         request.seqNo());
     return changeConstraintColumnPositionUseCase.changeConstraintColumnPosition(command)
-        .flatMap(result -> broadcastMutation(result.affectedTableIds())
+        .flatMap(result -> broadcastMutation(result.affectedTableIds(),
+            result.operation())
             .thenReturn(result))
-        .map(result -> MutationResponse.<Void>of(null, result.affectedTableIds()));
+        .map(result -> MutationResponse.<Void>of(null,
+            result.affectedTableIds(), result.operation()));
   }
 
-  private Mono<Void> broadcastMutation(Set<String> affectedTableIds) {
+  private Mono<Void> broadcastMutation(Set<String> affectedTableIds,
+      com.schemafy.core.erd.operation.domain.CommittedErdOperation operation) {
     ErdMutationBroadcaster broadcaster = broadcasterProvider.getIfAvailable();
     if (broadcaster == null) {
       return Mono.empty();
     }
-    return broadcaster.broadcast(affectedTableIds);
+    return broadcaster.broadcast(affectedTableIds, operation);
   }
 
   private static List<CreateConstraintColumnCommand> mapConstraintColumns(

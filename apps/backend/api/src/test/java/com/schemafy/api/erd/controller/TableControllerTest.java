@@ -49,6 +49,8 @@ import static org.mockito.ArgumentMatchers.anyList;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.then;
 import static org.springframework.restdocs.webtestclient.WebTestClientRestDocumentation.document;
+import static com.schemafy.api.erd.controller.ErdOperationFixtures.OP_ID;
+import static com.schemafy.api.erd.controller.ErdOperationFixtures.committedOperation;
 
 @ActiveProfiles("test")
 @SpringBootTest
@@ -112,7 +114,9 @@ class TableControllerTest {
         null);
 
     given(createTableUseCase.createTable(any(CreateTableCommand.class)))
-        .willReturn(Mono.just(MutationResult.of(result, tableId)));
+        .willReturn(Mono.just(
+            MutationResult.of(result, tableId)
+                .withOperation(committedOperation())));
 
     webTestClient.post()
         .uri(API_BASE_PATH + "/tables")
@@ -123,6 +127,7 @@ class TableControllerTest {
         .expectStatus().isOk()
         .expectBody()
         .jsonPath("$.affectedTableIds").isArray()
+        .jsonPath("$.operation.opId").isEqualTo(OP_ID)
         .jsonPath("$.data.id").isEqualTo(tableId)
         .consumeWith(document("table-create",
             TableApiSnippets.createTableRequestHeaders(),
@@ -145,7 +150,9 @@ class TableControllerTest {
         "{\"position\":{\"x\":12,\"y\":24},\"color\":\"#22c55e\"}");
 
     given(createTableUseCase.createTable(any(CreateTableCommand.class)))
-        .willReturn(Mono.just(MutationResult.of(result, tableId)));
+        .willReturn(Mono.just(
+            MutationResult.of(result, tableId)
+                .withOperation(committedOperation())));
 
     webTestClient.post()
         .uri(API_BASE_PATH + "/tables")
@@ -445,7 +452,9 @@ class TableControllerTest {
     ChangeTableNameRequest request = new ChangeTableNameRequest("new_users");
 
     given(changeTableNameUseCase.changeTableName(any(ChangeTableNameCommand.class)))
-        .willReturn(Mono.just(MutationResult.<Void>of(null, tableId)));
+        .willReturn(Mono.just(
+            MutationResult.<Void>of(null, tableId)
+                .withOperation(committedOperation())));
 
     webTestClient.patch()
         .uri(API_BASE_PATH + "/tables/{tableId}/name", tableId)
@@ -456,6 +465,7 @@ class TableControllerTest {
         .expectStatus().isOk()
         .expectBody()
         .jsonPath("$.affectedTableIds").isArray()
+        .jsonPath("$.operation.opId").isEqualTo(OP_ID)
         .consumeWith(document("table-change-name",
             TableApiSnippets.changeTableNamePathParameters(),
             TableApiSnippets.changeTableNameRequestHeaders(),
@@ -470,7 +480,9 @@ class TableControllerTest {
     String tableId = "06D6W2BAHD51T5NJPK29Q6BCR9";
 
     given(changeTableMetaUseCase.changeTableMeta(any(ChangeTableMetaCommand.class)))
-        .willReturn(Mono.just(MutationResult.<Void>of(null, tableId)));
+        .willReturn(Mono.just(
+            MutationResult.<Void>of(null, tableId)
+                .withOperation(committedOperation())));
 
     webTestClient.patch()
         .uri(API_BASE_PATH + "/tables/{tableId}/meta", tableId)
@@ -483,6 +495,7 @@ class TableControllerTest {
         .expectStatus().isOk()
         .expectBody()
         .jsonPath("$.affectedTableIds").isArray()
+        .jsonPath("$.operation.opId").isEqualTo(OP_ID)
         .consumeWith(document("table-change-meta",
             TableApiSnippets.changeTableMetaPathParameters(),
             TableApiSnippets.changeTableMetaRequestHeaders(),
@@ -497,7 +510,9 @@ class TableControllerTest {
     String tableId = "06D6W2BAHD51T5NJPK29Q6BCR9";
 
     given(changeTableMetaUseCase.changeTableMeta(any(ChangeTableMetaCommand.class)))
-        .willReturn(Mono.just(MutationResult.<Void>of(null, tableId)));
+        .willReturn(Mono.just(
+            MutationResult.<Void>of(null, tableId)
+                .withOperation(committedOperation())));
 
     webTestClient.patch()
         .uri(API_BASE_PATH + "/tables/{tableId}/meta", tableId)
@@ -509,7 +524,8 @@ class TableControllerTest {
         .exchange()
         .expectStatus().isOk()
         .expectBody()
-        .jsonPath("$.affectedTableIds").isArray();
+        .jsonPath("$.affectedTableIds").isArray()
+        .jsonPath("$.operation.opId").isEqualTo(OP_ID);
   }
 
   @Test
@@ -518,7 +534,9 @@ class TableControllerTest {
     String tableId = "06D6W2BAHD51T5NJPK29Q6BCR9";
 
     given(changeTableMetaUseCase.changeTableMeta(any(ChangeTableMetaCommand.class)))
-        .willReturn(Mono.just(MutationResult.<Void>of(null, tableId)));
+        .willReturn(Mono.just(
+            MutationResult.<Void>of(null, tableId)
+                .withOperation(committedOperation())));
 
     webTestClient.patch()
         .uri(API_BASE_PATH + "/tables/{tableId}/meta", tableId)
@@ -530,7 +548,8 @@ class TableControllerTest {
         .exchange()
         .expectStatus().isOk()
         .expectBody()
-        .jsonPath("$.affectedTableIds").isArray();
+        .jsonPath("$.affectedTableIds").isArray()
+        .jsonPath("$.operation.opId").isEqualTo(OP_ID);
   }
 
   @Test
@@ -539,7 +558,9 @@ class TableControllerTest {
     String tableId = "06D6W2BAHD51T5NJPK29Q6BCR9";
 
     given(changeTableExtraUseCase.changeTableExtra(any(ChangeTableExtraCommand.class)))
-        .willReturn(Mono.just(MutationResult.<Void>of(null, tableId)));
+        .willReturn(Mono.just(
+            MutationResult.<Void>of(null, tableId)
+                .withOperation(committedOperation())));
 
     webTestClient.patch()
         .uri(API_BASE_PATH + "/tables/{tableId}/extra", tableId)
@@ -552,6 +573,7 @@ class TableControllerTest {
         .expectStatus().isOk()
         .expectBody()
         .jsonPath("$.affectedTableIds").isArray()
+        .jsonPath("$.operation.opId").isEqualTo(OP_ID)
         .consumeWith(document("table-change-extra",
             TableApiSnippets.changeTableExtraPathParameters(),
             TableApiSnippets.changeTableExtraRequestHeaders(),
@@ -566,7 +588,9 @@ class TableControllerTest {
     String tableId = "06D6W2BAHD51T5NJPK29Q6BCR9";
 
     given(changeTableExtraUseCase.changeTableExtra(any(ChangeTableExtraCommand.class)))
-        .willReturn(Mono.just(MutationResult.<Void>of(null, tableId)));
+        .willReturn(Mono.just(
+            MutationResult.<Void>of(null, tableId)
+                .withOperation(committedOperation())));
 
     webTestClient.patch()
         .uri(API_BASE_PATH + "/tables/{tableId}/extra", tableId)
@@ -578,7 +602,8 @@ class TableControllerTest {
         .exchange()
         .expectStatus().isOk()
         .expectBody()
-        .jsonPath("$.affectedTableIds").isArray();
+        .jsonPath("$.affectedTableIds").isArray()
+        .jsonPath("$.operation.opId").isEqualTo(OP_ID);
 
     then(changeTableExtraUseCase).should()
         .changeTableExtra(new ChangeTableExtraCommand(tableId,
@@ -613,7 +638,9 @@ class TableControllerTest {
     String tableId = "06D6W2BAHD51T5NJPK29Q6BCR9";
 
     given(deleteTableUseCase.deleteTable(any(DeleteTableCommand.class)))
-        .willReturn(Mono.just(MutationResult.<Void>of(null, tableId)));
+        .willReturn(Mono.just(
+            MutationResult.<Void>of(null, tableId)
+                .withOperation(committedOperation())));
 
     webTestClient.delete()
         .uri(API_BASE_PATH + "/tables/{tableId}", tableId)
@@ -622,6 +649,7 @@ class TableControllerTest {
         .expectStatus().isOk()
         .expectBody()
         .jsonPath("$.affectedTableIds").isArray()
+        .jsonPath("$.operation.opId").isEqualTo(OP_ID)
         .consumeWith(document("table-delete",
             TableApiSnippets.deleteTablePathParameters(),
             TableApiSnippets.deleteTableRequestHeaders(),

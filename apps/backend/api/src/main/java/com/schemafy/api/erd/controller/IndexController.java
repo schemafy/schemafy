@@ -88,11 +88,13 @@ public class IndexController {
         request.type(),
         mapIndexColumns(request.columns()));
     return createIndexUseCase.createIndex(command)
-        .flatMap(result -> broadcastMutation(result.affectedTableIds())
+        .flatMap(result -> broadcastMutation(result.affectedTableIds(),
+            result.operation())
             .thenReturn(result))
         .map(result -> MutationResponse.of(
             IndexResponse.from(result.result(), request.tableId()),
-            result.affectedTableIds()));
+            result.affectedTableIds(),
+            result.operation()));
   }
 
   @PreAuthorize("hasAnyRole('OWNER','ADMIN','EDITOR','COMMENTER','VIEWER')")
@@ -124,9 +126,11 @@ public class IndexController {
         indexId,
         request.newName());
     return changeIndexNameUseCase.changeIndexName(command)
-        .flatMap(result -> broadcastMutation(result.affectedTableIds())
+        .flatMap(result -> broadcastMutation(result.affectedTableIds(),
+            result.operation())
             .thenReturn(result))
-        .map(result -> MutationResponse.<Void>of(null, result.affectedTableIds()));
+        .map(result -> MutationResponse.<Void>of(null,
+            result.affectedTableIds(), result.operation()));
   }
 
   @PreAuthorize("hasAnyRole('OWNER','ADMIN','EDITOR')")
@@ -138,9 +142,11 @@ public class IndexController {
         indexId,
         request.type());
     return changeIndexTypeUseCase.changeIndexType(command)
-        .flatMap(result -> broadcastMutation(result.affectedTableIds())
+        .flatMap(result -> broadcastMutation(result.affectedTableIds(),
+            result.operation())
             .thenReturn(result))
-        .map(result -> MutationResponse.<Void>of(null, result.affectedTableIds()));
+        .map(result -> MutationResponse.<Void>of(null,
+            result.affectedTableIds(), result.operation()));
   }
 
   @PreAuthorize("hasAnyRole('OWNER','ADMIN')")
@@ -149,9 +155,11 @@ public class IndexController {
       @PathVariable String indexId) {
     DeleteIndexCommand command = new DeleteIndexCommand(indexId);
     return deleteIndexUseCase.deleteIndex(command)
-        .flatMap(result -> broadcastMutation(result.affectedTableIds())
+        .flatMap(result -> broadcastMutation(result.affectedTableIds(),
+            result.operation())
             .thenReturn(result))
-        .map(result -> MutationResponse.<Void>of(null, result.affectedTableIds()));
+        .map(result -> MutationResponse.<Void>of(null,
+            result.affectedTableIds(), result.operation()));
   }
 
   @PreAuthorize("hasAnyRole('OWNER','ADMIN','EDITOR','COMMENTER','VIEWER')")
@@ -176,11 +184,13 @@ public class IndexController {
         request.seqNo(),
         request.sortDirection());
     return addIndexColumnUseCase.addIndexColumn(command)
-        .flatMap(result -> broadcastMutation(result.affectedTableIds())
+        .flatMap(result -> broadcastMutation(result.affectedTableIds(),
+            result.operation())
             .thenReturn(result))
         .map(result -> MutationResponse.of(
             AddIndexColumnResponse.from(result.result()),
-            result.affectedTableIds()));
+            result.affectedTableIds(),
+            result.operation()));
   }
 
   @PreAuthorize("hasAnyRole('OWNER','ADMIN','EDITOR')")
@@ -189,9 +199,11 @@ public class IndexController {
       @PathVariable String indexColumnId) {
     RemoveIndexColumnCommand command = new RemoveIndexColumnCommand(indexColumnId);
     return removeIndexColumnUseCase.removeIndexColumn(command)
-        .flatMap(result -> broadcastMutation(result.affectedTableIds())
+        .flatMap(result -> broadcastMutation(result.affectedTableIds(),
+            result.operation())
             .thenReturn(result))
-        .map(result -> MutationResponse.<Void>of(null, result.affectedTableIds()));
+        .map(result -> MutationResponse.<Void>of(null,
+            result.affectedTableIds(), result.operation()));
   }
 
   @PreAuthorize("hasAnyRole('OWNER','ADMIN','EDITOR','COMMENTER','VIEWER')")
@@ -212,9 +224,11 @@ public class IndexController {
         indexColumnId,
         request.seqNo());
     return changeIndexColumnPositionUseCase.changeIndexColumnPosition(command)
-        .flatMap(result -> broadcastMutation(result.affectedTableIds())
+        .flatMap(result -> broadcastMutation(result.affectedTableIds(),
+            result.operation())
             .thenReturn(result))
-        .map(result -> MutationResponse.<Void>of(null, result.affectedTableIds()));
+        .map(result -> MutationResponse.<Void>of(null,
+            result.affectedTableIds(), result.operation()));
   }
 
   @PreAuthorize("hasAnyRole('OWNER','ADMIN','EDITOR')")
@@ -226,17 +240,20 @@ public class IndexController {
         indexColumnId,
         request.sortDirection());
     return changeIndexColumnSortDirectionUseCase.changeIndexColumnSortDirection(command)
-        .flatMap(result -> broadcastMutation(result.affectedTableIds())
+        .flatMap(result -> broadcastMutation(result.affectedTableIds(),
+            result.operation())
             .thenReturn(result))
-        .map(result -> MutationResponse.<Void>of(null, result.affectedTableIds()));
+        .map(result -> MutationResponse.<Void>of(null,
+            result.affectedTableIds(), result.operation()));
   }
 
-  private Mono<Void> broadcastMutation(Set<String> affectedTableIds) {
+  private Mono<Void> broadcastMutation(Set<String> affectedTableIds,
+      com.schemafy.core.erd.operation.domain.CommittedErdOperation operation) {
     ErdMutationBroadcaster broadcaster = broadcasterProvider.getIfAvailable();
     if (broadcaster == null) {
       return Mono.empty();
     }
-    return broadcaster.broadcast(affectedTableIds);
+    return broadcaster.broadcast(affectedTableIds, operation);
   }
 
   private static List<CreateIndexColumnCommand> mapIndexColumns(

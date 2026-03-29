@@ -15,6 +15,8 @@ import com.schemafy.api.collaboration.constant.CollaborationConstants;
 import com.schemafy.api.collaboration.dto.event.CollaborationOutbound;
 import com.schemafy.api.collaboration.dto.event.ErdMutatedEvent;
 import com.schemafy.api.collaboration.service.CollaborationEventPublisher;
+import com.schemafy.core.erd.operation.domain.CommittedErdOperation;
+import com.schemafy.core.erd.operation.domain.ErdOperationDerivationKind;
 import com.schemafy.core.erd.schema.application.port.out.GetSchemaByIdPort;
 import com.schemafy.core.erd.schema.domain.Schema;
 import com.schemafy.core.erd.table.application.port.out.GetTableByIdPort;
@@ -33,6 +35,12 @@ import static org.mockito.Mockito.verify;
 @ExtendWith(MockitoExtension.class)
 @DisplayName("ErdMutationBroadcaster 단위 테스트")
 class ErdMutationBroadcasterTest {
+
+  private static final CommittedErdOperation OPERATION = new CommittedErdOperation(
+      "op-1",
+      "client-op-1",
+      42L,
+      ErdOperationDerivationKind.ORIGINAL);
 
   @InjectMocks
   private ErdMutationBroadcaster broadcaster;
@@ -68,7 +76,7 @@ class ErdMutationBroadcasterTest {
           any(CollaborationOutbound.class)))
           .willReturn(Mono.empty());
 
-      StepVerifier.create(broadcaster.broadcast(tableIds))
+      StepVerifier.create(broadcaster.broadcast(tableIds, OPERATION))
           .verifyComplete();
 
       ArgumentCaptor<CollaborationOutbound> captor = ArgumentCaptor
@@ -80,6 +88,7 @@ class ErdMutationBroadcasterTest {
           .getValue();
       assertThat(event.sessionId()).isNull();
       assertThat(event.schemaId()).isEqualTo(schemaId);
+      assertThat(event.operation()).isEqualTo(OPERATION);
       assertThat(event.affectedTableIds()).containsExactly(tableId);
     }
 
@@ -101,7 +110,7 @@ class ErdMutationBroadcasterTest {
           any(CollaborationOutbound.class)))
           .willReturn(Mono.empty());
 
-      StepVerifier.create(broadcaster.broadcast(tableIds)
+      StepVerifier.create(broadcaster.broadcast(tableIds, OPERATION)
           .contextWrite(ctx -> ctx.put(
               CollaborationConstants.SESSION_ID_CONTEXT_KEY,
               "session-1")))
@@ -116,6 +125,7 @@ class ErdMutationBroadcasterTest {
           .getValue();
       assertThat(event.sessionId()).isEqualTo("session-1");
       assertThat(event.schemaId()).isEqualTo(schemaId);
+      assertThat(event.operation()).isEqualTo(OPERATION);
       assertThat(event.affectedTableIds()).containsExactly(tableId);
     }
 
@@ -193,11 +203,16 @@ class ErdMutationBroadcasterTest {
           any(CollaborationOutbound.class)))
           .willReturn(Mono.empty());
 
-      StepVerifier.create(broadcaster.broadcastSchemaChange(schemaId))
+      StepVerifier.create(broadcaster.broadcastSchemaChange(schemaId,
+          OPERATION))
           .verifyComplete();
 
-      verify(eventPublisher).publish(eq(projectId),
-          any(CollaborationOutbound.class));
+      ArgumentCaptor<CollaborationOutbound> captor = ArgumentCaptor
+          .forClass(CollaborationOutbound.class);
+      verify(eventPublisher).publish(eq(projectId), captor.capture());
+      ErdMutatedEvent.Outbound event = (ErdMutatedEvent.Outbound) captor
+          .getValue();
+      assertThat(event.operation()).isEqualTo(OPERATION);
     }
 
   }
@@ -220,11 +235,15 @@ class ErdMutationBroadcasterTest {
           .willReturn(Mono.empty());
 
       StepVerifier.create(
-          broadcaster.broadcastWithContext(ctx, tableIds))
+          broadcaster.broadcastWithContext(ctx, tableIds, OPERATION))
           .verifyComplete();
 
-      verify(eventPublisher).publish(eq(projectId),
-          any(CollaborationOutbound.class));
+      ArgumentCaptor<CollaborationOutbound> captor = ArgumentCaptor
+          .forClass(CollaborationOutbound.class);
+      verify(eventPublisher).publish(eq(projectId), captor.capture());
+      ErdMutatedEvent.Outbound event = (ErdMutatedEvent.Outbound) captor
+          .getValue();
+      assertThat(event.operation()).isEqualTo(OPERATION);
     }
 
   }

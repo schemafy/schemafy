@@ -79,12 +79,14 @@ public class TableController {
         request.collation(),
         jsonCodec.canonicalizeOptional(request.extra()));
     return createTableUseCase.createTable(command)
-        .flatMap(result -> broadcastMutation(result.affectedTableIds())
+        .flatMap(result -> broadcastMutation(result.affectedTableIds(),
+            result.operation())
             .thenReturn(result))
         .map(result -> MutationResponse.of(
             tableResponseMapper.toTableResponse(result.result(),
                 request.schemaId()),
-            result.affectedTableIds()));
+            result.affectedTableIds(),
+            result.operation()));
   }
 
   @PreAuthorize("hasAnyRole('OWNER','ADMIN','EDITOR','COMMENTER','VIEWER')")
@@ -129,9 +131,11 @@ public class TableController {
         tableId,
         request.newName());
     return changeTableNameUseCase.changeTableName(command)
-        .flatMap(result -> broadcastMutation(result.affectedTableIds())
+        .flatMap(result -> broadcastMutation(result.affectedTableIds(),
+            result.operation())
             .thenReturn(result))
-        .map(result -> MutationResponse.<Void>of(null, result.affectedTableIds()));
+        .map(result -> MutationResponse.<Void>of(null,
+            result.affectedTableIds(), result.operation()));
   }
 
   @PreAuthorize("hasAnyRole('OWNER','ADMIN','EDITOR')")
@@ -144,9 +148,11 @@ public class TableController {
         toPatchField(request.charset()),
         toPatchField(request.collation()));
     return changeTableMetaUseCase.changeTableMeta(command)
-        .flatMap(result -> broadcastMutation(result.affectedTableIds())
+        .flatMap(result -> broadcastMutation(result.affectedTableIds(),
+            result.operation())
             .thenReturn(result))
-        .map(result -> MutationResponse.<Void>of(null, result.affectedTableIds()));
+        .map(result -> MutationResponse.<Void>of(null,
+            result.affectedTableIds(), result.operation()));
   }
 
   @PreAuthorize("hasAnyRole('OWNER','ADMIN','EDITOR')")
@@ -158,9 +164,11 @@ public class TableController {
         tableId,
         jsonCodec.canonicalizeOptional(request.extra()));
     return changeTableExtraUseCase.changeTableExtra(command)
-        .flatMap(result -> broadcastMutation(result.affectedTableIds())
+        .flatMap(result -> broadcastMutation(result.affectedTableIds(),
+            result.operation())
             .thenReturn(result))
-        .map(result -> MutationResponse.<Void>of(null, result.affectedTableIds()));
+        .map(result -> MutationResponse.<Void>of(null,
+            result.affectedTableIds(), result.operation()));
   }
 
   @PreAuthorize("hasAnyRole('OWNER','ADMIN')")
@@ -171,22 +179,26 @@ public class TableController {
     ErdMutationBroadcaster broadcaster = broadcasterProvider.getIfAvailable();
     if (broadcaster == null) {
       return deleteTableUseCase.deleteTable(command)
-          .map(result -> MutationResponse.<Void>of(null, result.affectedTableIds()));
+          .map(result -> MutationResponse.<Void>of(null,
+              result.affectedTableIds(), result.operation()));
     }
     return broadcaster.resolveFromTableId(tableId)
         .flatMap(ctx -> deleteTableUseCase.deleteTable(command)
             .flatMap(result -> broadcaster
-                .broadcastWithContext(ctx, result.affectedTableIds())
+                .broadcastWithContext(ctx, result.affectedTableIds(),
+                    result.operation())
                 .thenReturn(result)))
-        .map(result -> MutationResponse.<Void>of(null, result.affectedTableIds()));
+        .map(result -> MutationResponse.<Void>of(null,
+            result.affectedTableIds(), result.operation()));
   }
 
-  private Mono<Void> broadcastMutation(Set<String> affectedTableIds) {
+  private Mono<Void> broadcastMutation(Set<String> affectedTableIds,
+      com.schemafy.core.erd.operation.domain.CommittedErdOperation operation) {
     ErdMutationBroadcaster broadcaster = broadcasterProvider.getIfAvailable();
     if (broadcaster == null) {
       return Mono.empty();
     }
-    return broadcaster.broadcast(affectedTableIds);
+    return broadcaster.broadcast(affectedTableIds, operation);
   }
 
 }

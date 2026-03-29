@@ -3,6 +3,7 @@ package com.schemafy.api.collaboration.dto.event;
 import java.util.Set;
 
 import com.schemafy.api.collaboration.dto.CursorPosition;
+import com.schemafy.core.erd.operation.domain.CommittedErdOperation;
 
 public final class CollaborationOutboundFactory {
 
@@ -42,8 +43,15 @@ public final class CollaborationOutboundFactory {
 
   public static ErdMutatedEvent.Outbound erdMutated(String sessionId,
       String schemaId, Set<String> affectedTableIds) {
+    return erdMutated(sessionId, schemaId, affectedTableIds, null);
+  }
+
+  public static ErdMutatedEvent.Outbound erdMutated(String sessionId,
+      String schemaId,
+      Set<String> affectedTableIds,
+      CommittedErdOperation operation) {
     return ErdMutatedEvent.Outbound.of(sessionId, schemaId,
-        affectedTableIds);
+        affectedTableIds, operation);
   }
 
 }

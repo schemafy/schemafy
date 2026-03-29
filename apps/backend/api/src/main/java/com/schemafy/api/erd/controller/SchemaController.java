@@ -60,11 +60,13 @@ public class SchemaController {
         request.collation());
     return createSchemaUseCase.createSchema(command)
         .flatMap(result -> broadcastSchemaChange(
-            result.result().id())
+            result.result().id(),
+            result.operation())
             .thenReturn(result))
         .map(result -> MutationResponse.of(
             SchemaResponse.from(result.result()),
-            result.affectedTableIds()));
+            result.affectedTableIds(),
+            result.operation()));
   }
 
   @PreAuthorize("hasAnyRole('OWNER','ADMIN','EDITOR','COMMENTER','VIEWER')")
@@ -95,9 +97,10 @@ public class SchemaController {
         schemaId,
         request.newName());
     return changeSchemaNameUseCase.changeSchemaName(command)
-        .flatMap(result -> broadcastSchemaChange(schemaId)
+        .flatMap(result -> broadcastSchemaChange(schemaId, result.operation())
             .thenReturn(result))
-        .map(result -> MutationResponse.<Void>of(null, result.affectedTableIds()));
+        .map(result -> MutationResponse.<Void>of(null,
+            result.affectedTableIds(), result.operation()));
   }
 
   @PreAuthorize("hasAnyRole('OWNER','ADMIN')")
@@ -108,22 +111,26 @@ public class SchemaController {
     ErdMutationBroadcaster broadcaster = broadcasterProvider.getIfAvailable();
     if (broadcaster == null) {
       return deleteSchemaUseCase.deleteSchema(command)
-          .map(result -> MutationResponse.<Void>of(null, result.affectedTableIds()));
+          .map(result -> MutationResponse.<Void>of(null,
+              result.affectedTableIds(), result.operation()));
     }
     return broadcaster.resolveFromSchemaId(schemaId)
         .flatMap(ctx -> deleteSchemaUseCase.deleteSchema(command)
             .flatMap(result -> broadcaster
-                .broadcastWithContext(ctx, result.affectedTableIds())
+                .broadcastWithContext(ctx, result.affectedTableIds(),
+                    result.operation())
                 .thenReturn(result)))
-        .map(result -> MutationResponse.<Void>of(null, result.affectedTableIds()));
+        .map(result -> MutationResponse.<Void>of(null,
+            result.affectedTableIds(), result.operation()));
   }
 
-  private Mono<Void> broadcastSchemaChange(String schemaId) {
+  private Mono<Void> broadcastSchemaChange(String schemaId,
+      com.schemafy.core.erd.operation.domain.CommittedErdOperation operation) {
     ErdMutationBroadcaster broadcaster = broadcasterProvider.getIfAvailable();
     if (broadcaster == null) {
       return Mono.empty();
     }
-    return broadcaster.broadcastSchemaChange(schemaId);
+    return broadcaster.broadcastSchemaChange(schemaId, operation);
   }
 
 }

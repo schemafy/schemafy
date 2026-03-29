@@ -62,6 +62,8 @@ import reactor.core.publisher.Mono;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
 import static org.springframework.restdocs.webtestclient.WebTestClientRestDocumentation.document;
+import static com.schemafy.api.erd.controller.ErdOperationFixtures.OP_ID;
+import static com.schemafy.api.erd.controller.ErdOperationFixtures.committedOperation;
 
 @ActiveProfiles("test")
 @SpringBootTest
@@ -135,7 +137,9 @@ class IndexControllerTest {
         IndexType.BTREE);
 
     given(createIndexUseCase.createIndex(any(CreateIndexCommand.class)))
-        .willReturn(Mono.just(MutationResult.of(result, tableId)));
+        .willReturn(Mono.just(
+            MutationResult.of(result, tableId)
+                .withOperation(committedOperation())));
 
     webTestClient.post()
         .uri(API_BASE_PATH + "/indexes")
@@ -145,6 +149,7 @@ class IndexControllerTest {
         .exchange()
         .expectStatus().isOk()
         .expectBody()
+        .jsonPath("$.operation.opId").isEqualTo(OP_ID)
         .jsonPath("$.data.id").isEqualTo(indexId)
         .consumeWith(document("index-create",
             IndexApiSnippets.createIndexRequestHeaders(),
@@ -215,7 +220,9 @@ class IndexControllerTest {
     ChangeIndexNameRequest request = new ChangeIndexNameRequest("idx_users_email_new");
 
     given(changeIndexNameUseCase.changeIndexName(any(ChangeIndexNameCommand.class)))
-        .willReturn(Mono.just(MutationResult.<Void>of(null, tableId)));
+        .willReturn(Mono.just(
+            MutationResult.<Void>of(null, tableId)
+                .withOperation(committedOperation())));
 
     webTestClient.patch()
         .uri(API_BASE_PATH + "/indexes/{indexId}/name", indexId)
@@ -226,6 +233,7 @@ class IndexControllerTest {
         .expectStatus().isOk()
         .expectBody()
         .jsonPath("$.affectedTableIds").isArray()
+        .jsonPath("$.operation.opId").isEqualTo(OP_ID)
         .consumeWith(document("index-change-name",
             IndexApiSnippets.changeIndexNamePathParameters(),
             IndexApiSnippets.changeIndexNameRequestHeaders(),
@@ -243,7 +251,9 @@ class IndexControllerTest {
     ChangeIndexTypeRequest request = new ChangeIndexTypeRequest(IndexType.HASH);
 
     given(changeIndexTypeUseCase.changeIndexType(any(ChangeIndexTypeCommand.class)))
-        .willReturn(Mono.just(MutationResult.<Void>of(null, tableId)));
+        .willReturn(Mono.just(
+            MutationResult.<Void>of(null, tableId)
+                .withOperation(committedOperation())));
 
     webTestClient.patch()
         .uri(API_BASE_PATH + "/indexes/{indexId}/type", indexId)
@@ -254,6 +264,7 @@ class IndexControllerTest {
         .expectStatus().isOk()
         .expectBody()
         .jsonPath("$.affectedTableIds").isArray()
+        .jsonPath("$.operation.opId").isEqualTo(OP_ID)
         .consumeWith(document("index-change-type",
             IndexApiSnippets.changeIndexTypePathParameters(),
             IndexApiSnippets.changeIndexTypeRequestHeaders(),
@@ -270,7 +281,9 @@ class IndexControllerTest {
     String tableId = "06D6W2BAHD51T5NJPK29Q6BCR9";
 
     given(deleteIndexUseCase.deleteIndex(any(DeleteIndexCommand.class)))
-        .willReturn(Mono.just(MutationResult.<Void>of(null, tableId)));
+        .willReturn(Mono.just(
+            MutationResult.<Void>of(null, tableId)
+                .withOperation(committedOperation())));
 
     webTestClient.delete()
         .uri(API_BASE_PATH + "/indexes/{indexId}", indexId)
@@ -279,6 +292,7 @@ class IndexControllerTest {
         .expectStatus().isOk()
         .expectBody()
         .jsonPath("$.affectedTableIds").isArray()
+        .jsonPath("$.operation.opId").isEqualTo(OP_ID)
         .consumeWith(document("index-delete",
             IndexApiSnippets.deleteIndexPathParameters(),
             IndexApiSnippets.deleteIndexRequestHeaders(),
@@ -337,7 +351,9 @@ class IndexControllerTest {
         SortDirection.ASC);
 
     given(addIndexColumnUseCase.addIndexColumn(any(AddIndexColumnCommand.class)))
-        .willReturn(Mono.just(MutationResult.of(result, tableId)));
+        .willReturn(Mono.just(
+            MutationResult.of(result, tableId)
+                .withOperation(committedOperation())));
 
     webTestClient.post()
         .uri(API_BASE_PATH + "/indexes/{indexId}/columns", indexId)
@@ -347,6 +363,7 @@ class IndexControllerTest {
         .exchange()
         .expectStatus().isOk()
         .expectBody()
+        .jsonPath("$.operation.opId").isEqualTo(OP_ID)
         .jsonPath("$.data.id").isEqualTo(indexColumnId)
         .consumeWith(document("index-column-add",
             IndexApiSnippets.addIndexColumnPathParameters(),
@@ -363,7 +380,9 @@ class IndexControllerTest {
     String tableId = "06D6W2BAHD51T5NJPK29Q6BCR9";
 
     given(removeIndexColumnUseCase.removeIndexColumn(any(RemoveIndexColumnCommand.class)))
-        .willReturn(Mono.just(MutationResult.<Void>of(null, tableId)));
+        .willReturn(Mono.just(
+            MutationResult.<Void>of(null, tableId)
+                .withOperation(committedOperation())));
 
     webTestClient.delete()
         .uri(API_BASE_PATH + "/index-columns/{indexColumnId}", indexColumnId)
@@ -372,6 +391,7 @@ class IndexControllerTest {
         .expectStatus().isOk()
         .expectBody()
         .jsonPath("$.affectedTableIds").isArray()
+        .jsonPath("$.operation.opId").isEqualTo(OP_ID)
         .consumeWith(document("index-column-remove",
             IndexApiSnippets.removeIndexColumnPathParameters(),
             IndexApiSnippets.removeIndexColumnRequestHeaders(),
@@ -416,7 +436,9 @@ class IndexControllerTest {
 
     given(changeIndexColumnPositionUseCase.changeIndexColumnPosition(
         any(ChangeIndexColumnPositionCommand.class)))
-        .willReturn(Mono.just(MutationResult.<Void>of(null, tableId)));
+        .willReturn(Mono.just(
+            MutationResult.<Void>of(null, tableId)
+                .withOperation(committedOperation())));
 
     webTestClient.patch()
         .uri(API_BASE_PATH + "/index-columns/{indexColumnId}/position", indexColumnId)
@@ -427,6 +449,7 @@ class IndexControllerTest {
         .expectStatus().isOk()
         .expectBody()
         .jsonPath("$.affectedTableIds").isArray()
+        .jsonPath("$.operation.opId").isEqualTo(OP_ID)
         .consumeWith(document("index-column-change-position",
             IndexApiSnippets.changeIndexColumnPositionPathParameters(),
             IndexApiSnippets.changeIndexColumnPositionRequestHeaders(),
@@ -445,7 +468,9 @@ class IndexControllerTest {
 
     given(changeIndexColumnSortDirectionUseCase.changeIndexColumnSortDirection(
         any(ChangeIndexColumnSortDirectionCommand.class)))
-        .willReturn(Mono.just(MutationResult.<Void>of(null, tableId)));
+        .willReturn(Mono.just(
+            MutationResult.<Void>of(null, tableId)
+                .withOperation(committedOperation())));
 
     webTestClient.patch()
         .uri(API_BASE_PATH + "/index-columns/{indexColumnId}/sort-direction", indexColumnId)
@@ -456,6 +481,7 @@ class IndexControllerTest {
         .expectStatus().isOk()
         .expectBody()
         .jsonPath("$.affectedTableIds").isArray()
+        .jsonPath("$.operation.opId").isEqualTo(OP_ID)
         .consumeWith(document("index-column-change-sort-direction",
             IndexApiSnippets.changeIndexColumnSortDirectionPathParameters(),
             IndexApiSnippets.changeIndexColumnSortDirectionRequestHeaders(),

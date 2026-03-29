@@ -11,6 +11,8 @@ import com.schemafy.api.collaboration.dto.event.CollaborationOutboundFactory;
 import com.schemafy.api.collaboration.dto.event.CursorEvent;
 import com.schemafy.api.collaboration.dto.event.ErdMutatedEvent;
 import com.schemafy.core.common.json.JsonCodec;
+import com.schemafy.core.erd.operation.domain.CommittedErdOperation;
+import com.schemafy.core.erd.operation.domain.ErdOperationDerivationKind;
 
 import reactor.test.StepVerifier;
 
@@ -18,6 +20,12 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 @DisplayName("CollaborationPayloadSerializer 테스트")
 class CollaborationPayloadSerializerTest {
+
+  private static final CommittedErdOperation OPERATION = new CommittedErdOperation(
+      "op-1",
+      "client-op-1",
+      42L,
+      ErdOperationDerivationKind.ORIGINAL);
 
   private final CollaborationPayloadSerializer serializer = new CollaborationPayloadSerializer(
       new JsonCodec(new ObjectMapper().findAndRegisterModules()));
@@ -58,11 +66,12 @@ class CollaborationPayloadSerializerTest {
   void serialize_includes_session_id_for_erd_mutated() {
     StepVerifier.create(serializer.serialize(
         CollaborationOutboundFactory.erdMutated("session-1", "schema-1",
-            Set.of("table-1"))))
+            Set.of("table-1"), OPERATION)))
         .assertNext(json -> {
           assertThat(json).contains("\"type\":\"ERD_MUTATED\"");
           assertThat(json).contains("\"sessionId\":\"session-1\"");
           assertThat(json).contains("\"schemaId\":\"schema-1\"");
+          assertThat(json).contains("\"opId\":\"op-1\"");
         })
         .verifyComplete();
   }
@@ -71,10 +80,12 @@ class CollaborationPayloadSerializerTest {
   @DisplayName("sessionId가 없는 ERD_MUTATED 직렬화 시 sessionId를 생략한다")
   void serialize_omits_session_id_when_erd_mutated_has_no_session() {
     StepVerifier.create(serializer.serialize(
-        ErdMutatedEvent.Outbound.of("schema-1", Set.of("table-1"))))
+        ErdMutatedEvent.Outbound.of("schema-1", Set.of("table-1"),
+            OPERATION)))
         .assertNext(json -> {
           assertThat(json).contains("\"type\":\"ERD_MUTATED\"");
           assertThat(json).contains("\"schemaId\":\"schema-1\"");
+          assertThat(json).contains("\"committedRevision\":42");
           assertThat(json).doesNotContain("sessionId");
         })
         .verifyComplete();

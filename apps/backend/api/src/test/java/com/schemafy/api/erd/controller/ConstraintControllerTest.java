@@ -65,6 +65,8 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.then;
 import static org.springframework.restdocs.webtestclient.WebTestClientRestDocumentation.document;
+import static com.schemafy.api.erd.controller.ErdOperationFixtures.OP_ID;
+import static com.schemafy.api.erd.controller.ErdOperationFixtures.committedOperation;
 
 @ActiveProfiles("test")
 @SpringBootTest
@@ -142,7 +144,9 @@ class ConstraintControllerTest {
         null);
 
     given(createConstraintUseCase.createConstraint(any(CreateConstraintCommand.class)))
-        .willReturn(Mono.just(MutationResult.of(result, tableId)));
+        .willReturn(Mono.just(
+            MutationResult.of(result, tableId)
+                .withOperation(committedOperation())));
 
     webTestClient.post()
         .uri(API_BASE_PATH + "/constraints")
@@ -153,6 +157,7 @@ class ConstraintControllerTest {
         .expectStatus().isOk()
         .expectBody()
         .jsonPath("$.affectedTableIds").isArray()
+        .jsonPath("$.operation.opId").isEqualTo(OP_ID)
         .jsonPath("$.data.id").isEqualTo(constraintId)
         .consumeWith(document("constraint-create",
             ConstraintApiSnippets.createConstraintRequestHeaders(),
@@ -256,7 +261,9 @@ class ConstraintControllerTest {
     ChangeConstraintCheckExprRequest request = new ChangeConstraintCheckExprRequest(JsonNullable.of("value > 0"));
 
     given(changeConstraintCheckExprUseCase.changeConstraintCheckExpr(any(ChangeConstraintCheckExprCommand.class)))
-        .willReturn(Mono.just(MutationResult.<Void>of(null, tableId)));
+        .willReturn(Mono.just(
+            MutationResult.<Void>of(null, tableId)
+                .withOperation(committedOperation())));
 
     webTestClient.patch()
         .uri(API_BASE_PATH + "/constraints/{constraintId}/check-expr", constraintId)
@@ -267,6 +274,7 @@ class ConstraintControllerTest {
         .expectStatus().isOk()
         .expectBody()
         .jsonPath("$.affectedTableIds").isArray()
+        .jsonPath("$.operation.opId").isEqualTo(OP_ID)
         .consumeWith(document("constraint-change-check-expr",
             ConstraintApiSnippets.changeConstraintCheckExprPathParameters(),
             ConstraintApiSnippets.changeConstraintCheckExprRequestHeaders(),
@@ -282,7 +290,9 @@ class ConstraintControllerTest {
     String tableId = "06D6W2BAHD51T5NJPK29Q6BCR9";
 
     given(changeConstraintCheckExprUseCase.changeConstraintCheckExpr(any(ChangeConstraintCheckExprCommand.class)))
-        .willReturn(Mono.just(MutationResult.<Void>of(null, tableId)));
+        .willReturn(Mono.just(
+            MutationResult.<Void>of(null, tableId)
+                .withOperation(committedOperation())));
 
     webTestClient.patch()
         .uri(API_BASE_PATH + "/constraints/{constraintId}/check-expr", constraintId)
@@ -296,7 +306,8 @@ class ConstraintControllerTest {
         .exchange()
         .expectStatus().isOk()
         .expectBody()
-        .jsonPath("$.affectedTableIds").isArray();
+        .jsonPath("$.affectedTableIds").isArray()
+        .jsonPath("$.operation.opId").isEqualTo(OP_ID);
   }
 
   @Test
@@ -306,7 +317,9 @@ class ConstraintControllerTest {
     String tableId = "06D6W2BAHD51T5NJPK29Q6BCR9";
 
     given(changeConstraintCheckExprUseCase.changeConstraintCheckExpr(any(ChangeConstraintCheckExprCommand.class)))
-        .willReturn(Mono.just(MutationResult.<Void>of(null, tableId)));
+        .willReturn(Mono.just(
+            MutationResult.<Void>of(null, tableId)
+                .withOperation(committedOperation())));
 
     webTestClient.patch()
         .uri(API_BASE_PATH + "/constraints/{constraintId}/check-expr", constraintId)
@@ -320,7 +333,8 @@ class ConstraintControllerTest {
         .exchange()
         .expectStatus().isOk()
         .expectBody()
-        .jsonPath("$.affectedTableIds").isArray();
+        .jsonPath("$.affectedTableIds").isArray()
+        .jsonPath("$.operation.opId").isEqualTo(OP_ID);
   }
 
   @Test
@@ -352,7 +366,9 @@ class ConstraintControllerTest {
     ChangeConstraintDefaultExprRequest request = new ChangeConstraintDefaultExprRequest(JsonNullable.of("0"));
 
     given(changeConstraintDefaultExprUseCase.changeConstraintDefaultExpr(any(ChangeConstraintDefaultExprCommand.class)))
-        .willReturn(Mono.just(MutationResult.<Void>of(null, tableId)));
+        .willReturn(Mono.just(
+            MutationResult.<Void>of(null, tableId)
+                .withOperation(committedOperation())));
 
     webTestClient.patch()
         .uri(API_BASE_PATH + "/constraints/{constraintId}/default-expr", constraintId)
@@ -363,6 +379,7 @@ class ConstraintControllerTest {
         .expectStatus().isOk()
         .expectBody()
         .jsonPath("$.affectedTableIds").isArray()
+        .jsonPath("$.operation.opId").isEqualTo(OP_ID)
         .consumeWith(document("constraint-change-default-expr",
             ConstraintApiSnippets.changeConstraintDefaultExprPathParameters(),
             ConstraintApiSnippets.changeConstraintDefaultExprRequestHeaders(),
@@ -378,7 +395,9 @@ class ConstraintControllerTest {
     String tableId = "06D6W2BAHD51T5NJPK29Q6BCR9";
 
     given(changeConstraintDefaultExprUseCase.changeConstraintDefaultExpr(any(ChangeConstraintDefaultExprCommand.class)))
-        .willReturn(Mono.just(MutationResult.<Void>of(null, tableId)));
+        .willReturn(Mono.just(
+            MutationResult.<Void>of(null, tableId)
+                .withOperation(committedOperation())));
 
     webTestClient.patch()
         .uri(API_BASE_PATH + "/constraints/{constraintId}/default-expr", constraintId)
@@ -392,7 +411,8 @@ class ConstraintControllerTest {
         .exchange()
         .expectStatus().isOk()
         .expectBody()
-        .jsonPath("$.affectedTableIds").isArray();
+        .jsonPath("$.affectedTableIds").isArray()
+        .jsonPath("$.operation.opId").isEqualTo(OP_ID);
   }
 
   @Test
@@ -402,7 +422,9 @@ class ConstraintControllerTest {
     String tableId = "06D6W2BAHD51T5NJPK29Q6BCR9";
 
     given(changeConstraintDefaultExprUseCase.changeConstraintDefaultExpr(any(ChangeConstraintDefaultExprCommand.class)))
-        .willReturn(Mono.just(MutationResult.<Void>of(null, tableId)));
+        .willReturn(Mono.just(
+            MutationResult.<Void>of(null, tableId)
+                .withOperation(committedOperation())));
 
     webTestClient.patch()
         .uri(API_BASE_PATH + "/constraints/{constraintId}/default-expr", constraintId)
@@ -416,7 +438,8 @@ class ConstraintControllerTest {
         .exchange()
         .expectStatus().isOk()
         .expectBody()
-        .jsonPath("$.affectedTableIds").isArray();
+        .jsonPath("$.affectedTableIds").isArray()
+        .jsonPath("$.operation.opId").isEqualTo(OP_ID);
   }
 
   @Test
@@ -448,7 +471,9 @@ class ConstraintControllerTest {
     ChangeConstraintNameRequest request = new ChangeConstraintNameRequest("pk_users_new");
 
     given(changeConstraintNameUseCase.changeConstraintName(any(ChangeConstraintNameCommand.class)))
-        .willReturn(Mono.just(MutationResult.<Void>of(null, tableId)));
+        .willReturn(Mono.just(
+            MutationResult.<Void>of(null, tableId)
+                .withOperation(committedOperation())));
 
     webTestClient.patch()
         .uri(API_BASE_PATH + "/constraints/{constraintId}/name", constraintId)
@@ -459,6 +484,7 @@ class ConstraintControllerTest {
         .expectStatus().isOk()
         .expectBody()
         .jsonPath("$.affectedTableIds").isArray()
+        .jsonPath("$.operation.opId").isEqualTo(OP_ID)
         .consumeWith(document("constraint-change-name",
             ConstraintApiSnippets.changeConstraintNamePathParameters(),
             ConstraintApiSnippets.changeConstraintNameRequestHeaders(),
@@ -475,7 +501,9 @@ class ConstraintControllerTest {
     String tableId = "06D6W2BAHD51T5NJPK29Q6BCR9";
 
     given(deleteConstraintUseCase.deleteConstraint(any(DeleteConstraintCommand.class)))
-        .willReturn(Mono.just(MutationResult.<Void>of(null, tableId)));
+        .willReturn(Mono.just(
+            MutationResult.<Void>of(null, tableId)
+                .withOperation(committedOperation())));
 
     webTestClient.delete()
         .uri(API_BASE_PATH + "/constraints/{constraintId}", constraintId)
@@ -484,6 +512,7 @@ class ConstraintControllerTest {
         .expectStatus().isOk()
         .expectBody()
         .jsonPath("$.affectedTableIds").isArray()
+        .jsonPath("$.operation.opId").isEqualTo(OP_ID)
         .consumeWith(document("constraint-delete",
             ConstraintApiSnippets.deleteConstraintPathParameters(),
             ConstraintApiSnippets.deleteConstraintRequestHeaders(),
@@ -542,7 +571,9 @@ class ConstraintControllerTest {
         List.of());
 
     given(addConstraintColumnUseCase.addConstraintColumn(any(AddConstraintColumnCommand.class)))
-        .willReturn(Mono.just(MutationResult.of(result, tableId)));
+        .willReturn(Mono.just(
+            MutationResult.of(result, tableId)
+                .withOperation(committedOperation())));
 
     webTestClient.post()
         .uri(API_BASE_PATH + "/constraints/{constraintId}/columns", constraintId)
@@ -552,6 +583,7 @@ class ConstraintControllerTest {
         .exchange()
         .expectStatus().isOk()
         .expectBody()
+        .jsonPath("$.operation.opId").isEqualTo(OP_ID)
         .jsonPath("$.data.id").isEqualTo(constraintColumnId)
         .consumeWith(document("constraint-column-add",
             ConstraintApiSnippets.addConstraintColumnPathParameters(),
@@ -568,7 +600,9 @@ class ConstraintControllerTest {
     String tableId = "06D6W2BAHD51T5NJPK29Q6BCR9";
 
     given(removeConstraintColumnUseCase.removeConstraintColumn(any(RemoveConstraintColumnCommand.class)))
-        .willReturn(Mono.just(MutationResult.<Void>of(null, tableId)));
+        .willReturn(Mono.just(
+            MutationResult.<Void>of(null, tableId)
+                .withOperation(committedOperation())));
 
     webTestClient.delete()
         .uri(API_BASE_PATH + "/constraint-columns/{constraintColumnId}", constraintColumnId)
@@ -577,6 +611,7 @@ class ConstraintControllerTest {
         .expectStatus().isOk()
         .expectBody()
         .jsonPath("$.affectedTableIds").isArray()
+        .jsonPath("$.operation.opId").isEqualTo(OP_ID)
         .consumeWith(document("constraint-column-remove",
             ConstraintApiSnippets.removeConstraintColumnPathParameters(),
             ConstraintApiSnippets.removeConstraintColumnRequestHeaders(),
@@ -621,7 +656,9 @@ class ConstraintControllerTest {
 
     given(changeConstraintColumnPositionUseCase.changeConstraintColumnPosition(
         any(ChangeConstraintColumnPositionCommand.class)))
-        .willReturn(Mono.just(MutationResult.<Void>of(null, tableId)));
+        .willReturn(Mono.just(
+            MutationResult.<Void>of(null, tableId)
+                .withOperation(committedOperation())));
 
     webTestClient.patch()
         .uri(API_BASE_PATH + "/constraint-columns/{constraintColumnId}/position", constraintColumnId)
@@ -632,6 +669,7 @@ class ConstraintControllerTest {
         .expectStatus().isOk()
         .expectBody()
         .jsonPath("$.affectedTableIds").isArray()
+        .jsonPath("$.operation.opId").isEqualTo(OP_ID)
         .consumeWith(document("constraint-column-change-position",
             ConstraintApiSnippets.changeConstraintColumnPositionPathParameters(),
             ConstraintApiSnippets.changeConstraintColumnPositionRequestHeaders(),

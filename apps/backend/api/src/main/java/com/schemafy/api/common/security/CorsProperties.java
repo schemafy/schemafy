@@ -4,6 +4,8 @@ import java.util.List;
 
 import org.springframework.boot.context.properties.ConfigurationProperties;
 
+import com.schemafy.api.collaboration.constant.CollaborationConstants;
+
 import lombok.Getter;
 import lombok.Setter;
 
@@ -19,7 +21,10 @@ public class CorsProperties {
 
   private final List<String> allowedHeaders = List.of("Authorization",
       "Content-Type", "X-Requested-With", "Accept",
-      "X-Hmac-Signature", "X-Hmac-Timestamp", "X-Hmac-Nonce");
+      "X-Hmac-Signature", "X-Hmac-Timestamp", "X-Hmac-Nonce",
+      CollaborationConstants.SESSION_ID_HEADER,
+      CollaborationConstants.CLIENT_OPERATION_ID_HEADER,
+      CollaborationConstants.BASE_SCHEMA_REVISION_HEADER);
 
   private final List<String> exposedHeaders = List.of("Authorization",
       "Content-Type");
