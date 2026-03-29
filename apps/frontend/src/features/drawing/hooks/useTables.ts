@@ -29,9 +29,10 @@ export const useTables = () => {
   const { data: snapshotsData } = useSchemaSnapshots(selectedSchemaId);
 
   const snapshotsRef = useLatest(snapshotsData);
-  const previousSnapshotsRef = useRef<Record<string, TableSnapshotResponse> | null>(
-    null,
-  );
+  const previousSnapshotsRef = useRef<Record<
+    string,
+    TableSnapshotResponse
+  > | null>(null);
   const previousSchemaIdRef = useRef(selectedSchemaId);
   const { mutate: createTableWithExtra } =
     useCreateTableWithExtra(selectedSchemaId);

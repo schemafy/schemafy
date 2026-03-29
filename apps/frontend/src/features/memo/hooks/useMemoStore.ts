@@ -116,43 +116,47 @@ export const useMemoStore = () => {
     } catch {}
   }, []);
 
-  const updateComment = useCallback(async (
-    memoId: string,
-    commentId: string,
-    body: string,
-  ) => {
-    try {
-      const updated = await memoApi.updateMemoComment(memoId, commentId, {
-        body,
-      });
-      setStoredMemos((prev) =>
-        prev.map((m) =>
-          m.id === memoId
-            ? {
-                ...m,
-                comments: m.comments.map((c) =>
-                  c.id === commentId ? updated : c,
-                ),
-              }
-            : m,
-        ),
-      );
-    } catch {}
-  }, []);
-
-  const deleteComment = useCallback(async (memoId: string, commentId: string) => {
-    try {
-      await memoApi.deleteMemoComment(memoId, commentId);
-      setStoredMemos((prev) => {
-        const updated = prev.map((m) =>
-          m.id === memoId
-            ? { ...m, comments: m.comments.filter((c) => c.id !== commentId) }
-            : m,
+  const updateComment = useCallback(
+    async (memoId: string, commentId: string, body: string) => {
+      try {
+        const updated = await memoApi.updateMemoComment(memoId, commentId, {
+          body,
+        });
+        setStoredMemos((prev) =>
+          prev.map((m) =>
+            m.id === memoId
+              ? {
+                  ...m,
+                  comments: m.comments.map((c) =>
+                    c.id === commentId ? updated : c,
+                  ),
+                }
+              : m,
+          ),
         );
-        return updated.filter((m) => m.id !== memoId || m.comments.length > 0);
-      });
-    } catch {}
-  }, []);
+      } catch {}
+    },
+    [],
+  );
+
+  const deleteComment = useCallback(
+    async (memoId: string, commentId: string) => {
+      try {
+        await memoApi.deleteMemoComment(memoId, commentId);
+        setStoredMemos((prev) => {
+          const updated = prev.map((m) =>
+            m.id === memoId
+              ? { ...m, comments: m.comments.filter((c) => c.id !== commentId) }
+              : m,
+          );
+          return updated.filter(
+            (m) => m.id !== memoId || m.comments.length > 0,
+          );
+        });
+      } catch {}
+    },
+    [],
+  );
 
   return useMemo(
     () => ({

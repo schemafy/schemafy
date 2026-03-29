@@ -6,8 +6,7 @@ export const TablePreview = () => {
   const zoom = useStore((s) => s.transform[2]);
 
   const divRef = useMouseTrackingPreview(
-    (position) =>
-      `translate3d(${position.x}px, ${position.y - 60}px, 0)`,
+    (position) => `translate3d(${position.x}px, ${position.y - 60}px, 0)`,
   );
 
   useEffect(() => {
