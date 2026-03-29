@@ -30,6 +30,8 @@ export const useMemoStore = () => {
       return;
     }
 
+    setStoredMemos([]);
+
     let cancelled = false;
 
     memoApi
