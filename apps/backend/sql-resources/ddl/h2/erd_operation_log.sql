@@ -1,0 +1,21 @@
+CREATE TABLE IF NOT EXISTS erd_operation_log (
+    op_id                   CHAR(26)     NOT NULL,
+    project_id              CHAR(26)     NOT NULL,
+    schema_id               CHAR(26)     NOT NULL,
+    op_type                 VARCHAR(64)  NOT NULL,
+    committed_revision      BIGINT       NOT NULL,
+    base_schema_revision    BIGINT       NULL,
+    client_operation_id     VARCHAR(255) NULL,
+    collab_session_id       VARCHAR(255) NULL,
+    actor_user_id           CHAR(26)     NOT NULL,
+    derivation_kind         VARCHAR(32)  NOT NULL,
+    derived_from_op_id      CHAR(26)     NULL,
+    lifecycle_state         VARCHAR(32)  NOT NULL,
+    payload_json            JSON         NOT NULL,
+    inverse_payload_json    JSON         NULL,
+    touched_entities_json   JSON         NOT NULL,
+    affected_table_ids_json JSON         NOT NULL,
+    created_at              TIMESTAMP    NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    CONSTRAINT pk_erd_operation_log PRIMARY KEY (op_id),
+    CONSTRAINT uq_erd_operation_log_schema_revision UNIQUE (schema_id, committed_revision)
+);

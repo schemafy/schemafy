@@ -3,6 +3,7 @@ package com.schemafy.core.erd.constraint.application.service;
 import java.util.ArrayList;
 import java.util.List;
 
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.reactive.TransactionalOperator;
 
@@ -16,6 +17,8 @@ import com.schemafy.core.erd.constraint.application.port.out.GetConstraintColumn
 import com.schemafy.core.erd.constraint.application.port.out.GetConstraintColumnsByConstraintIdPort;
 import com.schemafy.core.erd.constraint.domain.ConstraintColumn;
 import com.schemafy.core.erd.constraint.domain.exception.ConstraintErrorCode;
+import com.schemafy.core.erd.operation.application.service.ErdMutationCoordinator;
+import com.schemafy.core.erd.operation.domain.ErdOperationType;
 
 import lombok.RequiredArgsConstructor;
 import reactor.core.publisher.Mono;
@@ -24,35 +27,42 @@ import reactor.core.publisher.Mono;
 @RequiredArgsConstructor
 public class ChangeConstraintColumnPositionService implements ChangeConstraintColumnPositionUseCase {
 
+  private final TransactionalOperator transactionalOperator;
   private final ChangeConstraintColumnPositionPort changeConstraintColumnPositionPort;
   private final GetConstraintColumnByIdPort getConstraintColumnByIdPort;
   private final GetConstraintColumnsByConstraintIdPort getConstraintColumnsByConstraintIdPort;
   private final GetConstraintByIdPort getConstraintByIdPort;
-  private final TransactionalOperator transactionalOperator;
+  private ErdMutationCoordinator erdMutationCoordinator = ErdMutationCoordinator.noop();
+
+  @Autowired
+  void setErdMutationCoordinator(ErdMutationCoordinator erdMutationCoordinator) {
+    this.erdMutationCoordinator = erdMutationCoordinator;
+  }
 
   @Override
   public Mono<MutationResult<Void>> changeConstraintColumnPosition(
       ChangeConstraintColumnPositionCommand command) {
-    return Mono.defer(() -> getConstraintColumnByIdPort
-        .findConstraintColumnById(command.constraintColumnId())
-        .switchIfEmpty(Mono.error(new DomainException(
-            ConstraintErrorCode.COLUMN_NOT_FOUND,
-            "Constraint column not found")))
-        .flatMap(constraintColumn -> getConstraintByIdPort
-            .findConstraintById(constraintColumn.constraintId())
+    return erdMutationCoordinator.coordinate(ErdOperationType.CHANGE_CONSTRAINT_COLUMN_POSITION, command,
+        () -> getConstraintColumnByIdPort
+            .findConstraintColumnById(command.constraintColumnId())
             .switchIfEmpty(Mono.error(new DomainException(
-                ConstraintErrorCode.NOT_FOUND,
-                "Constraint not found")))
-            .flatMap(constraint -> getConstraintColumnsByConstraintIdPort
-                .findConstraintColumnsByConstraintId(
-                    constraintColumn.constraintId())
-                .defaultIfEmpty(List.of())
-                .flatMap(columns -> reorderColumns(
-                    constraintColumn,
-                    columns,
-                    command.seqNo()))
-                .thenReturn(MutationResult.<Void>of(null,
-                    constraint.tableId())))))
+                ConstraintErrorCode.COLUMN_NOT_FOUND,
+                "Constraint column not found")))
+            .flatMap(constraintColumn -> getConstraintByIdPort
+                .findConstraintById(constraintColumn.constraintId())
+                .switchIfEmpty(Mono.error(new DomainException(
+                    ConstraintErrorCode.NOT_FOUND,
+                    "Constraint not found")))
+                .flatMap(constraint -> getConstraintColumnsByConstraintIdPort
+                    .findConstraintColumnsByConstraintId(
+                        constraintColumn.constraintId())
+                    .defaultIfEmpty(List.of())
+                    .flatMap(columns -> reorderColumns(
+                        constraintColumn,
+                        columns,
+                        command.seqNo()))
+                    .thenReturn(MutationResult.<Void>of(null,
+                        constraint.tableId())))))
         .as(transactionalOperator::transactional);
   }
 

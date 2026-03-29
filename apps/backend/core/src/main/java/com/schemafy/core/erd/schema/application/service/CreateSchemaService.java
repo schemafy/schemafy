@@ -1,10 +1,13 @@
 package com.schemafy.core.erd.schema.application.service;
 
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.reactive.TransactionalOperator;
 
 import com.schemafy.core.common.MutationResult;
 import com.schemafy.core.common.exception.DomainException;
+import com.schemafy.core.erd.operation.application.service.ErdMutationCoordinator;
+import com.schemafy.core.erd.operation.domain.ErdOperationType;
 import com.schemafy.core.erd.schema.application.port.in.CreateSchemaCommand;
 import com.schemafy.core.erd.schema.application.port.in.CreateSchemaResult;
 import com.schemafy.core.erd.schema.application.port.in.CreateSchemaUseCase;
@@ -28,10 +31,17 @@ class CreateSchemaService implements CreateSchemaUseCase {
   private final CreateSchemaPort createSchemaPort;
   private final SchemaExistsPort schemaExistsPort;
   private final TransactionalOperator transactionalOperator;
+  private ErdMutationCoordinator erdMutationCoordinator = ErdMutationCoordinator.noop();
+
+  @Autowired
+  void setErdMutationCoordinator(ErdMutationCoordinator erdMutationCoordinator) {
+    this.erdMutationCoordinator = erdMutationCoordinator;
+  }
 
   @Override
   public Mono<MutationResult<CreateSchemaResult>> createSchema(CreateSchemaCommand command) {
-    return activeProjectExistsPort.existsActiveProjectById(command.projectId())
+    return erdMutationCoordinator.coordinate(ErdOperationType.CREATE_SCHEMA, command, () -> activeProjectExistsPort
+        .existsActiveProjectById(command.projectId())
         .flatMap(projectExists -> {
           if (!projectExists) {
             return Mono.error(new DomainException(ProjectErrorCode.NOT_FOUND,
@@ -67,7 +77,7 @@ class CreateSchemaService implements CreateSchemaUseCase {
                           .map(MutationResult::empty);
                     });
               });
-        })
+        }))
         .as(transactionalOperator::transactional);
   }
 

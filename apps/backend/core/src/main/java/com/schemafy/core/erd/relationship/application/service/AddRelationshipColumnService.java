@@ -5,6 +5,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.reactive.TransactionalOperator;
 
@@ -12,6 +13,8 @@ import com.schemafy.core.common.MutationResult;
 import com.schemafy.core.common.exception.DomainException;
 import com.schemafy.core.erd.column.application.port.out.GetColumnsByTableIdPort;
 import com.schemafy.core.erd.column.domain.Column;
+import com.schemafy.core.erd.operation.application.service.ErdMutationCoordinator;
+import com.schemafy.core.erd.operation.domain.ErdOperationType;
 import com.schemafy.core.erd.relationship.application.port.in.AddRelationshipColumnCommand;
 import com.schemafy.core.erd.relationship.application.port.in.AddRelationshipColumnResult;
 import com.schemafy.core.erd.relationship.application.port.in.AddRelationshipColumnUseCase;
@@ -33,31 +36,38 @@ import reactor.core.publisher.Mono;
 @RequiredArgsConstructor
 public class AddRelationshipColumnService implements AddRelationshipColumnUseCase {
 
+  private final TransactionalOperator transactionalOperator;
   private final UlidGeneratorPort ulidGeneratorPort;
   private final CreateRelationshipColumnPort createRelationshipColumnPort;
   private final GetRelationshipByIdPort getRelationshipByIdPort;
   private final GetRelationshipColumnsByRelationshipIdPort getRelationshipColumnsByRelationshipIdPort;
   private final GetTableByIdPort getTableByIdPort;
   private final GetColumnsByTableIdPort getColumnsByTableIdPort;
-  private final TransactionalOperator transactionalOperator;
+  private ErdMutationCoordinator erdMutationCoordinator = ErdMutationCoordinator.noop();
+
+  @Autowired
+  void setErdMutationCoordinator(ErdMutationCoordinator erdMutationCoordinator) {
+    this.erdMutationCoordinator = erdMutationCoordinator;
+  }
 
   @Override
   public Mono<MutationResult<AddRelationshipColumnResult>> addRelationshipColumn(
       AddRelationshipColumnCommand command) {
-    return getRelationshipByIdPort.findRelationshipById(command.relationshipId())
-        .switchIfEmpty(Mono.error(new DomainException(RelationshipErrorCode.NOT_FOUND, "Relationship not found")))
-        .flatMap(relationship -> {
-          Set<String> affectedTableIds = new HashSet<>();
-          affectedTableIds.add(relationship.fkTableId());
-          affectedTableIds.add(relationship.pkTableId());
-          return loadTables(relationship)
-              .flatMap(tables -> addColumn(
-                  relationship,
-                  tables.fkTable(),
-                  tables.pkTable(),
-                  command))
-              .map(result -> MutationResult.of(result, affectedTableIds));
-        })
+    return erdMutationCoordinator.coordinate(ErdOperationType.ADD_RELATIONSHIP_COLUMN, command,
+        () -> getRelationshipByIdPort.findRelationshipById(command.relationshipId())
+            .switchIfEmpty(Mono.error(new DomainException(RelationshipErrorCode.NOT_FOUND, "Relationship not found")))
+            .flatMap(relationship -> {
+              Set<String> affectedTableIds = new HashSet<>();
+              affectedTableIds.add(relationship.fkTableId());
+              affectedTableIds.add(relationship.pkTableId());
+              return loadTables(relationship)
+                  .flatMap(tables -> addColumn(
+                      relationship,
+                      tables.fkTable(),
+                      tables.pkTable(),
+                      command))
+                  .map(result -> MutationResult.of(result, affectedTableIds));
+            }))
         .as(transactionalOperator::transactional);
   }
 

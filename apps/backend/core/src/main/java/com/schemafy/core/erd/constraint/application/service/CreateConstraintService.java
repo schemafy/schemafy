@@ -7,6 +7,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.reactive.TransactionalOperator;
 
@@ -29,6 +30,8 @@ import com.schemafy.core.erd.constraint.domain.ConstraintColumn;
 import com.schemafy.core.erd.constraint.domain.exception.ConstraintErrorCode;
 import com.schemafy.core.erd.constraint.domain.type.ConstraintKind;
 import com.schemafy.core.erd.constraint.domain.validator.ConstraintValidator;
+import com.schemafy.core.erd.operation.application.service.ErdMutationCoordinator;
+import com.schemafy.core.erd.operation.domain.ErdOperationType;
 import com.schemafy.core.erd.table.application.port.out.GetTableByIdPort;
 import com.schemafy.core.erd.table.domain.Table;
 import com.schemafy.core.erd.table.domain.exception.TableErrorCode;
@@ -42,10 +45,10 @@ import reactor.core.publisher.Mono;
 @RequiredArgsConstructor
 public class CreateConstraintService implements CreateConstraintUseCase {
 
+  private final TransactionalOperator transactionalOperator;
   private final UlidGeneratorPort ulidGeneratorPort;
   private final CreateConstraintPort createConstraintPort;
   private final CreateConstraintColumnPort createConstraintColumnPort;
-  private final TransactionalOperator transactionalOperator;
   private final ConstraintExistsPort constraintExistsPort;
   private final GetTableByIdPort getTableByIdPort;
   private final GetColumnsByTableIdPort getColumnsByTableIdPort;
@@ -53,10 +56,16 @@ public class CreateConstraintService implements CreateConstraintUseCase {
   private final GetConstraintsByTableIdPort getConstraintsByTableIdPort;
   private final GetConstraintColumnsByConstraintIdPort getConstraintColumnsByConstraintIdPort;
   private final PkCascadeHelper pkCascadeHelper;
+  private ErdMutationCoordinator erdMutationCoordinator = ErdMutationCoordinator.noop();
+
+  @Autowired
+  void setErdMutationCoordinator(ErdMutationCoordinator erdMutationCoordinator) {
+    this.erdMutationCoordinator = erdMutationCoordinator;
+  }
 
   @Override
   public Mono<MutationResult<CreateConstraintResult>> createConstraint(CreateConstraintCommand command) {
-    return Mono.defer(() -> {
+    return erdMutationCoordinator.coordinate(ErdOperationType.CREATE_CONSTRAINT, command, () -> Mono.defer(() -> {
       String normalizedName = normalizeName(command.name());
       String normalizedCheckExpr = normalizeOptional(command.checkExpr());
       String normalizedDefaultExpr = normalizeOptional(command.defaultExpr());
@@ -99,7 +108,7 @@ public class CreateConstraintService implements CreateConstraintUseCase {
                     columnCommands,
                     affectedTableIds)));
           });
-    }).as(transactionalOperator::transactional);
+    })).as(transactionalOperator::transactional);
   }
 
   private Mono<MutationResult<CreateConstraintResult>> createConstraint(

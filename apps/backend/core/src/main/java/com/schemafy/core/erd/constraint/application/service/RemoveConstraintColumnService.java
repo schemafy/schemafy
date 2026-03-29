@@ -5,6 +5,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.reactive.TransactionalOperator;
 
@@ -22,6 +23,8 @@ import com.schemafy.core.erd.constraint.domain.Constraint;
 import com.schemafy.core.erd.constraint.domain.ConstraintColumn;
 import com.schemafy.core.erd.constraint.domain.exception.ConstraintErrorCode;
 import com.schemafy.core.erd.constraint.domain.type.ConstraintKind;
+import com.schemafy.core.erd.operation.application.service.ErdMutationCoordinator;
+import com.schemafy.core.erd.operation.domain.ErdOperationType;
 
 import lombok.RequiredArgsConstructor;
 import reactor.core.publisher.Mono;
@@ -30,36 +33,43 @@ import reactor.core.publisher.Mono;
 @RequiredArgsConstructor
 public class RemoveConstraintColumnService implements RemoveConstraintColumnUseCase {
 
+  private final TransactionalOperator transactionalOperator;
   private final DeleteConstraintColumnPort deleteConstraintColumnPort;
   private final DeleteConstraintPort deleteConstraintPort;
-  private final TransactionalOperator transactionalOperator;
   private final ChangeConstraintColumnPositionPort changeConstraintColumnPositionPort;
   private final GetConstraintByIdPort getConstraintByIdPort;
   private final GetConstraintColumnByIdPort getConstraintColumnByIdPort;
   private final GetConstraintColumnsByConstraintIdPort getConstraintColumnsByConstraintIdPort;
   private final PkCascadeHelper pkCascadeHelper;
+  private ErdMutationCoordinator erdMutationCoordinator = ErdMutationCoordinator.noop();
+
+  @Autowired
+  void setErdMutationCoordinator(ErdMutationCoordinator erdMutationCoordinator) {
+    this.erdMutationCoordinator = erdMutationCoordinator;
+  }
 
   @Override
   public Mono<MutationResult<Void>> removeConstraintColumn(RemoveConstraintColumnCommand command) {
-    return getConstraintColumnByIdPort
-        .findConstraintColumnById(command.constraintColumnId())
-        .switchIfEmpty(Mono.error(new DomainException(ConstraintErrorCode.COLUMN_NOT_FOUND,
-            "Constraint column not found: " + command.constraintColumnId())))
-        .flatMap(constraintColumn -> getConstraintByIdPort
-            .findConstraintById(constraintColumn.constraintId())
-            .switchIfEmpty(Mono.error(new DomainException(ConstraintErrorCode.NOT_FOUND,
-                "Constraint not found: " + constraintColumn.constraintId())))
-            .flatMap(constraint -> {
-              Set<String> affectedTableIds = new HashSet<>();
-              affectedTableIds.add(constraint.tableId());
-              return deleteConstraintColumnPort.deleteConstraintColumn(constraintColumn.id())
-                  .then(handlePkConstraintColumnRemoval(
-                      constraint,
-                      constraintColumn.columnId(),
-                      affectedTableIds))
-                  .then(reorderOrDeleteConstraint(constraint.id()))
-                  .then(Mono.fromCallable(() -> MutationResult.<Void>of(null, affectedTableIds)));
-            }))
+    return erdMutationCoordinator.coordinate(ErdOperationType.REMOVE_CONSTRAINT_COLUMN, command,
+        () -> getConstraintColumnByIdPort
+            .findConstraintColumnById(command.constraintColumnId())
+            .switchIfEmpty(Mono.error(new DomainException(ConstraintErrorCode.COLUMN_NOT_FOUND,
+                "Constraint column not found: " + command.constraintColumnId())))
+            .flatMap(constraintColumn -> getConstraintByIdPort
+                .findConstraintById(constraintColumn.constraintId())
+                .switchIfEmpty(Mono.error(new DomainException(ConstraintErrorCode.NOT_FOUND,
+                    "Constraint not found: " + constraintColumn.constraintId())))
+                .flatMap(constraint -> {
+                  Set<String> affectedTableIds = new HashSet<>();
+                  affectedTableIds.add(constraint.tableId());
+                  return deleteConstraintColumnPort.deleteConstraintColumn(constraintColumn.id())
+                      .then(handlePkConstraintColumnRemoval(
+                          constraint,
+                          constraintColumn.columnId(),
+                          affectedTableIds))
+                      .then(reorderOrDeleteConstraint(constraint.id()))
+                      .then(Mono.fromCallable(() -> MutationResult.<Void>of(null, affectedTableIds)));
+                })))
         .as(transactionalOperator::transactional);
   }
 

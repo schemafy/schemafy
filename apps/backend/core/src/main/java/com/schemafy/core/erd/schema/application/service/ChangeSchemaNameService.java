@@ -1,9 +1,12 @@
 package com.schemafy.core.erd.schema.application.service;
 
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import com.schemafy.core.common.MutationResult;
 import com.schemafy.core.common.exception.DomainException;
+import com.schemafy.core.erd.operation.application.service.ErdMutationCoordinator;
+import com.schemafy.core.erd.operation.domain.ErdOperationType;
 import com.schemafy.core.erd.schema.application.port.in.ChangeSchemaNameCommand;
 import com.schemafy.core.erd.schema.application.port.in.ChangeSchemaNameUseCase;
 import com.schemafy.core.erd.schema.application.port.out.ChangeSchemaNamePort;
@@ -21,10 +24,17 @@ public class ChangeSchemaNameService implements ChangeSchemaNameUseCase {
   private final ChangeSchemaNamePort changeSchemaNamePort;
   private final SchemaExistsPort schemaExistsPort;
   private final GetSchemaByIdPort getSchemaByIdPort;
+  private ErdMutationCoordinator erdMutationCoordinator = ErdMutationCoordinator.noop();
+
+  @Autowired
+  void setErdMutationCoordinator(ErdMutationCoordinator erdMutationCoordinator) {
+    this.erdMutationCoordinator = erdMutationCoordinator;
+  }
 
   @Override
   public Mono<MutationResult<Void>> changeSchemaName(ChangeSchemaNameCommand command) {
-    return getSchemaByIdPort.findSchemaById(command.schemaId())
+    return erdMutationCoordinator.coordinate(ErdOperationType.CHANGE_SCHEMA_NAME, command, () -> getSchemaByIdPort
+        .findSchemaById(command.schemaId())
         .switchIfEmpty(Mono.error(new DomainException(SchemaErrorCode.NOT_FOUND, "Schema not found: " + command
             .schemaId())))
         .flatMap(schema -> schemaExistsPort.existsActiveByProjectIdAndName(schema.projectId(), command.newName())
@@ -36,7 +46,7 @@ public class ChangeSchemaNameService implements ChangeSchemaNameUseCase {
 
               return changeSchemaNamePort.changeSchemaName(command.schemaId(), command.newName())
                   .thenReturn(MutationResult.empty(null));
-            }));
+            })));
   }
 
 }
