@@ -9,6 +9,7 @@ import org.springframework.data.relational.core.mapping.Column;
 import org.springframework.data.relational.core.mapping.Table;
 
 import lombok.AccessLevel;
+import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
@@ -70,6 +71,42 @@ public class ErdOperationLogEntity implements Persistable<String> {
 
   @CreatedDate
   private Instant createdAt;
+
+  @Builder
+  ErdOperationLogEntity(
+      String opId,
+      String projectId,
+      String schemaId,
+      String opType,
+      Long committedRevision,
+      Long baseSchemaRevision,
+      String clientOperationId,
+      String collabSessionId,
+      String actorUserId,
+      String derivationKind,
+      String derivedFromOpId,
+      String lifecycleState,
+      String payloadJson,
+      String inversePayloadJson,
+      String touchedEntitiesJson,
+      String affectedTableIdsJson) {
+    this.opId = opId;
+    this.projectId = projectId;
+    this.schemaId = schemaId;
+    this.opType = opType;
+    this.committedRevision = committedRevision;
+    this.baseSchemaRevision = baseSchemaRevision;
+    this.clientOperationId = clientOperationId;
+    this.collabSessionId = collabSessionId;
+    this.actorUserId = actorUserId;
+    this.derivationKind = derivationKind;
+    this.derivedFromOpId = derivedFromOpId;
+    this.lifecycleState = lifecycleState;
+    this.payloadJson = payloadJson;
+    this.inversePayloadJson = inversePayloadJson;
+    this.touchedEntitiesJson = touchedEntitiesJson;
+    this.affectedTableIdsJson = affectedTableIdsJson;
+  }
 
   @Override
   public String getId() { return opId; }

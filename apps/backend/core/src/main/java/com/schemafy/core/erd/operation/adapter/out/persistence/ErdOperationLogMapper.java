@@ -11,24 +11,24 @@ import com.schemafy.core.erd.operation.domain.ErdOperationType;
 class ErdOperationLogMapper {
 
   ErdOperationLogEntity toEntity(ErdOperationLog erdOperationLog) {
-    var entity = new ErdOperationLogEntity();
-    entity.setOpId(erdOperationLog.opId());
-    entity.setProjectId(erdOperationLog.projectId());
-    entity.setSchemaId(erdOperationLog.schemaId());
-    entity.setOpType(erdOperationLog.opType().name());
-    entity.setCommittedRevision(erdOperationLog.committedRevision());
-    entity.setBaseSchemaRevision(erdOperationLog.baseSchemaRevision());
-    entity.setClientOperationId(erdOperationLog.clientOperationId());
-    entity.setCollabSessionId(erdOperationLog.collabSessionId());
-    entity.setActorUserId(erdOperationLog.actorUserId());
-    entity.setDerivationKind(erdOperationLog.derivationKind().name());
-    entity.setDerivedFromOpId(erdOperationLog.derivedFromOpId());
-    entity.setLifecycleState(erdOperationLog.lifecycleState().name());
-    entity.setPayloadJson(erdOperationLog.payloadJson());
-    entity.setInversePayloadJson(erdOperationLog.inversePayloadJson());
-    entity.setTouchedEntitiesJson(erdOperationLog.touchedEntitiesJson());
-    entity.setAffectedTableIdsJson(erdOperationLog.affectedTableIdsJson());
-    return entity;
+    return ErdOperationLogEntity.builder()
+        .opId(erdOperationLog.opId())
+        .projectId(erdOperationLog.projectId())
+        .schemaId(erdOperationLog.schemaId())
+        .opType(erdOperationLog.opType().name())
+        .committedRevision(erdOperationLog.committedRevision())
+        .baseSchemaRevision(erdOperationLog.baseSchemaRevision())
+        .clientOperationId(erdOperationLog.clientOperationId())
+        .collabSessionId(erdOperationLog.collabSessionId())
+        .actorUserId(erdOperationLog.actorUserId())
+        .derivationKind(erdOperationLog.derivationKind().name())
+        .derivedFromOpId(erdOperationLog.derivedFromOpId())
+        .lifecycleState(erdOperationLog.lifecycleState().name())
+        .payloadJson(erdOperationLog.payloadJson())
+        .inversePayloadJson(erdOperationLog.inversePayloadJson())
+        .touchedEntitiesJson(erdOperationLog.touchedEntitiesJson())
+        .affectedTableIdsJson(erdOperationLog.affectedTableIdsJson())
+        .build();
   }
 
   ErdOperationLog toDomain(ErdOperationLogEntity entity) {

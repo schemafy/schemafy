@@ -10,6 +10,7 @@ import org.springframework.data.relational.core.mapping.Column;
 import org.springframework.data.relational.core.mapping.Table;
 
 import lombok.AccessLevel;
+import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
@@ -35,6 +36,20 @@ public class SchemaCollaborationStateEntity implements Persistable<String> {
 
   @LastModifiedDate
   private Instant updatedAt;
+
+  @Builder
+  SchemaCollaborationStateEntity(
+      String schemaId,
+      String projectId,
+      Long currentRevision,
+      Instant createdAt,
+      Instant updatedAt) {
+    this.schemaId = schemaId;
+    this.projectId = projectId;
+    this.currentRevision = currentRevision;
+    this.createdAt = createdAt;
+    this.updatedAt = updatedAt;
+  }
 
   @Override
   public String getId() { return schemaId; }
