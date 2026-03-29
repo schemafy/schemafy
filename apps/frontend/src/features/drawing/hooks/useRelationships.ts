@@ -187,7 +187,7 @@ export const useRelationships = (relationshipConfig: RelationshipConfig) => {
         (relationshipId) => previousEdgesById.get(relationshipId)!,
       );
     });
-  }, [snapshotsData, updateRelationshipControlPoint]);
+  }, [snapshotsData, selectedSchemaId, updateRelationshipControlPoint]);
 
   useEffect(() => {
     setSelectedRelationship((currentSelectedRelationship) => {
