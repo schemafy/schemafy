@@ -28,7 +28,7 @@ export interface Column {
   seqNo: number;
   ordinalPosition: number;
   dataType?: string | null;
-  lengthScale: string;
+  typeArguments: string;
   isAutoIncrement: boolean;
   charset: string;
   collation: string;

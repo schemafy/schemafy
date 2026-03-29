@@ -31,14 +31,14 @@ export const EditModeColumn = ({
 
   const handleTypeChange = (
     dataType: string,
-    lengthScale: string,
+    typeArguments: string,
     category: string,
     prevCategory: string,
   ) => {
     onUpdateColumn(
       column.id,
       'type',
-      JSON.stringify({ dataType, lengthScale, category, prevCategory }),
+      JSON.stringify({ dataType, typeArguments, category, prevCategory }),
     );
   };
 
@@ -69,7 +69,7 @@ export const EditModeColumn = ({
 
         <TypeSelector
           value={column.type}
-          lengthScale={column.lengthScale}
+          typeArguments={column.typeArguments}
           vendorTypes={vendorTypes}
           disabled={isFk}
           onChange={handleTypeChange}

@@ -9,7 +9,7 @@ import {
   SelectLabel,
   SelectTrigger,
 } from '@/components';
-import { parseLengthScale, CATEGORY_LABELS } from './utils';
+import { parseTypeArguments, CATEGORY_LABELS } from './utils';
 
 const getCategoryGroup = (category: string): string => {
   const prefix = category.split('_')[0];
@@ -32,13 +32,13 @@ const groupTypesByCategory = (
 
 export const TypeSelector = ({
   value,
-  lengthScale,
+  typeArguments,
   vendorTypes,
   disabled,
   onChange,
   onPendingChange,
 }: TypeSelectorProps) => {
-  const parsed = parseLengthScale(lengthScale);
+  const parsed = parseTypeArguments(typeArguments);
   const [pendingType, setPendingType] = useState<string | null>(null);
   const [pendingParams, setPendingParams] = useState<
     Record<string, number | string[] | null>
@@ -50,7 +50,9 @@ export const TypeSelector = ({
   const displayType = pendingType ?? value;
   const displayTypeConfig = vendorTypes.find((t) => t.sqlType === displayType);
   const params: DatatypeParameter[] = displayTypeConfig?.parameters ?? [];
-  const displayParams = pendingType ? pendingParams : parsed;
+  const displayParams: Record<string, number | string[] | null> = pendingType
+    ? pendingParams
+    : parsed;
 
   const pendingTypeRef = useRef(pendingType);
   pendingTypeRef.current = pendingType;
@@ -180,7 +182,9 @@ export const TypeSelector = ({
                           key={`${displayType}-${param.name}`}
                           type={isStringArray ? 'text' : 'number'}
                           defaultValue={displayVal}
-                          placeholder={param.label}
+                          placeholder={
+                            isStringArray ? 'e.g. a, b, c' : param.label
+                          }
                           onPointerDown={(e) => e.stopPropagation()}
                           onClick={(e) => {
                             e.stopPropagation();
@@ -198,7 +202,7 @@ export const TypeSelector = ({
                               param.valueType,
                             )
                           }
-                          className={`${isStringArray ? 'w-24' : 'w-8'} text-center bg-transparent border-b border-schemafy-dark-gray focus:outline-none [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none`}
+                          className={`${isStringArray ? 'w-28' : 'w-8'} text-center bg-transparent border-b border-schemafy-dark-gray focus:outline-none [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none`}
                         />
                       </Fragment>
                     );

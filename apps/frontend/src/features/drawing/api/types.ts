@@ -60,10 +60,11 @@ export type ChangeTableExtraRequest = {
   extra: JsonObject | null;
 };
 
-export type ColumnLengthScale = {
+export type ColumnTypeArguments = {
   length: number | null;
   precision: number | null;
   scale: number | null;
+  values: string[] | null;
 };
 
 export type ColumnResponse = {
@@ -71,7 +72,7 @@ export type ColumnResponse = {
   tableId: string;
   name: string;
   dataType: string;
-  lengthScale: ColumnLengthScale;
+  typeArguments: ColumnTypeArguments;
   seqNo: number;
   autoIncrement: boolean;
   charset: string;
@@ -101,6 +102,7 @@ export type ChangeColumnTypeRequest = {
   length?: number | null;
   precision?: number | null;
   scale?: number | null;
+  values?: string[] | null;
 };
 
 export type ChangeColumnMetaRequest = {
