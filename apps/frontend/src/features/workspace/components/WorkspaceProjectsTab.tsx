@@ -18,10 +18,12 @@ import type { ProjectSummaryResponse } from '@/features/project/api';
 
 interface WorkspaceProjectsTabProps {
   workspaceId: string;
+  currentUserRole: string;
 }
 
 export const WorkspaceProjectsTab = ({
   workspaceId,
+  currentUserRole,
 }: WorkspaceProjectsTabProps) => {
   const navigate = useNavigate();
   const [searchQuery, setSearchQuery] = useState('');
@@ -59,11 +61,13 @@ export const WorkspaceProjectsTab = ({
         />
       </div>
 
-      <div className="w-full flex justify-end items-center">
-        <Button size="sm" onClick={() => setIsCreateDialogOpen(true)}>
-          Create
-        </Button>
-      </div>
+      {currentUserRole === 'ADMIN' && (
+        <div className="w-full flex justify-end items-center">
+          <Button size="sm" onClick={() => setIsCreateDialogOpen(true)}>
+            Create
+          </Button>
+        </div>
+      )}
 
       <div className="border border-schemafy-light-gray rounded-[12px] overflow-hidden">
         <table className="w-full">

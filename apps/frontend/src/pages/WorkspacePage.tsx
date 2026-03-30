@@ -120,7 +120,7 @@ export const WorkspacePage = () => {
 
             <div className="flex-1">
               {activeTab === 'projects' ? (
-                <WorkspaceProjectsTab workspaceId={selectedWorkspaceId} />
+                <WorkspaceProjectsTab key={selectedWorkspaceId} workspaceId={selectedWorkspaceId} currentUserRole={currentUserRole} />
               ) : (
                 <WorkspaceMembersTab
                   workspaceId={selectedWorkspaceId}
