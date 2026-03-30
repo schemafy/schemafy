@@ -51,6 +51,24 @@ public interface ProjectMemberRepository
       String userId, int limit, int offset);
 
   @Query("""
+      SELECT pm.role FROM project_members pm
+      INNER JOIN projects p ON pm.project_id = p.id
+      WHERE pm.user_id = :userId
+        AND pm.deleted_at IS NULL
+        AND p.deleted_at IS NULL
+        AND NOT EXISTS (
+          SELECT 1 FROM workspace_members wm
+          WHERE wm.workspace_id = p.workspace_id
+            AND wm.user_id = :userId
+            AND wm.deleted_at IS NULL
+        )
+      ORDER BY p.created_at DESC, p.id DESC
+      LIMIT :limit OFFSET :offset
+      """)
+  Flux<String> findSharedRolesByUserIdWithPaging(String userId, int limit,
+      int offset);
+
+  @Query("""
       SELECT COUNT(*) FROM project_members pm
       INNER JOIN projects p ON pm.project_id = p.id
       WHERE p.workspace_id = :workspaceId
@@ -81,5 +99,20 @@ public interface ProjectMemberRepository
       """)
   Flux<ProjectMember> findByWorkspaceIdAndUserId(String workspaceId,
       String userId);
+
+  @Query("""
+      SELECT COUNT(*) FROM project_members pm
+      INNER JOIN projects p ON pm.project_id = p.id
+      WHERE pm.user_id = :userId
+        AND pm.deleted_at IS NULL
+        AND p.deleted_at IS NULL
+        AND NOT EXISTS (
+          SELECT 1 FROM workspace_members wm
+          WHERE wm.workspace_id = p.workspace_id
+            AND wm.user_id = :userId
+            AND wm.deleted_at IS NULL
+        )
+      """)
+  Mono<Long> countSharedByUserId(String userId);
 
 }
