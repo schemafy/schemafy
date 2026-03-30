@@ -2,10 +2,9 @@ import { useEffect, useRef, useState } from 'react';
 import { observer } from 'mobx-react-lite';
 import { CURSOR_TRANSITION_MS, getCursorColor } from '@/features/collaboration/utils';
 import { collaborationStore } from '@/store/collaboration.store';
-import type { ChatMessage } from '@/features/collaboration/api';
+import { useChatAnimation } from '@/features/collaboration/hooks/useChatAnimation';
+import { useInactivityTimer } from '@/features/collaboration/hooks/useInactivityTimer';
 
-const ANIMATION_MS = 250;
-const MESSAGE_DURATION_MS = 4000;
 const INACTIVITY_CLOSE_MS = 4000;
 
 const SLIDE_STYLES = `
@@ -19,78 +18,28 @@ const SLIDE_STYLES = `
   }
 `;
 
+const ANIMATION_MS = 250;
+
 interface ChatInputProps {
   position: { x: number; y: number };
   onSend: (message: string) => void;
   onCancel: () => void;
 }
 
-export const ChatInput = observer(({position, onSend, onCancel}: ChatInputProps) => {
+export const ChatInput = observer(({ position, onSend, onCancel }: ChatInputProps) => {
   const [message, setMessage] = useState('');
-  const [displayedMessage, setDisplayedMessage] = useState<ChatMessage | null>(null);
-  const [exitingMessage, setExitingMessage] = useState<ChatMessage | null>(null);
-  const [isEntering, setIsEntering] = useState(false);
-
   const inputRef = useRef<HTMLInputElement>(null);
-  const addedIds = useRef<Set<string>>(new Set());
-  const displayedRef = useRef<ChatMessage | null>(null);
-  const removeTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const exitAnimTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const inactivityTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const sessionId = collaborationStore.sessionId ?? '';
   const activeMessage = collaborationStore.activeChatMessages.get(sessionId);
   const color = getCursorColor(sessionId);
 
-  const setDisplayed = (msg: ChatMessage | null) => {
-    displayedRef.current = msg;
-    setDisplayedMessage(msg);
-  };
-
-  const onCancelRef = useRef(onCancel);
-  useEffect(() => {
-    onCancelRef.current = onCancel;
-  }, [onCancel]);
-
-  const resetInactivityTimer = () => {
-    if (inactivityTimerRef.current) clearTimeout(inactivityTimerRef.current);
-    inactivityTimerRef.current = setTimeout(() => onCancelRef.current(), INACTIVITY_CLOSE_MS);
-  };
+  const { displayedMessage, exitingMessage, isEntering } = useChatAnimation(activeMessage);
+  const resetInactivityTimer = useInactivityTimer(onCancel, INACTIVITY_CLOSE_MS);
 
   useEffect(() => {
     inputRef.current?.focus();
-    resetInactivityTimer();
-    return () => {
-      if (inactivityTimerRef.current) clearTimeout(inactivityTimerRef.current);
-      if (removeTimerRef.current) clearTimeout(removeTimerRef.current);
-      if (exitAnimTimerRef.current) clearTimeout(exitAnimTimerRef.current);
-    };
   }, []);
-
-  useEffect(() => {
-    if (!activeMessage) return;
-    if (addedIds.current.has(activeMessage.messageId)) return;
-    addedIds.current.add(activeMessage.messageId);
-
-    if (removeTimerRef.current) clearTimeout(removeTimerRef.current);
-    if (exitAnimTimerRef.current) clearTimeout(exitAnimTimerRef.current);
-
-    const prev = displayedRef.current;
-    setExitingMessage(prev);
-    setDisplayed(activeMessage);
-    setIsEntering(true);
-
-    exitAnimTimerRef.current = setTimeout(() => {
-      setExitingMessage(null);
-      setIsEntering(false);
-    }, ANIMATION_MS);
-
-    removeTimerRef.current = setTimeout(() => {
-      setExitingMessage(displayedRef.current);
-      setDisplayed(null);
-      exitAnimTimerRef.current = setTimeout(() => setExitingMessage(null), ANIMATION_MS);
-    }, MESSAGE_DURATION_MS);
-  }, [activeMessage?.messageId]);
 
   if (!collaborationStore.sessionId) return null;
 
@@ -126,15 +75,18 @@ export const ChatInput = observer(({position, onSend, onCancel}: ChatInputProps)
       >
         <div
           className="rounded-lg shadow-lg overflow-hidden min-w-[180px] max-w-xs"
-          style={{backgroundColor: color}}
+          style={{ backgroundColor: color }}
         >
           {hasMessage && (
-            <div className="relative overflow-hidden border-b border-white/20" style={{height: '2rem'}}>
+            <div
+              className="relative overflow-hidden border-b border-white/20"
+              style={{ height: '2rem' }}
+            >
               {exitingMessage && (
                 <div
                   key={`exit-${exitingMessage.messageId}`}
                   className="absolute inset-0 px-2.5 flex items-center font-body-sm text-white"
-                  style={{animation: `chat-slide-out ${ANIMATION_MS}ms ease forwards`}}
+                  style={{ animation: `chat-slide-out ${ANIMATION_MS}ms ease forwards` }}
                 >
                   {exitingMessage.content}
                 </div>
