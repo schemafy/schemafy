@@ -28,6 +28,7 @@ import { ChatInput, ChatOverlay } from '@/features/collaboration/components';
 import { useNavigate, useParams } from 'react-router-dom';
 import { useGetProject } from '@/features/project/hooks/useProjects';
 import { useEffect } from 'react';
+import axios from 'axios';
 
 const NODE_TYPES = {
   table: TableNode,
@@ -187,11 +188,18 @@ const CanvasContent = observer(() => {
 export const CanvasPage = () => {
   const { projectId = '' } = useParams();
   const navigate = useNavigate();
-  const { isError, isLoading } = useGetProject(projectId);
+  const { isError, isLoading, error } = useGetProject(projectId);
 
   useEffect(() => {
-    if (isError) navigate('/not-found', { replace: true });
-  }, [isError, navigate]);
+    if (!isError) return;
+
+    if (axios.isAxiosError(error) && error.response?.status === 403) {
+      navigate('/workspace', { replace: true });
+      return;
+    }
+
+    navigate('/not-found', { replace: true });
+  }, [isError, error, navigate]);
 
   if (isLoading || isError) return null;
 
