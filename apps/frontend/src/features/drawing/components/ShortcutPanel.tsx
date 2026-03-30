@@ -28,7 +28,7 @@ export const ShortcutPanel = ({ onClose }: ShortcutPanelProps) => {
       }}
     >
       <div
-        className="absolute bottom-16 left-1/2 -translate-x-1/2 bg-schemafy-bg rounded-xl shadow-xl border border-schemafy-light-gray px-6 py-4 min-w-[320px]"
+        className="absolute bottom-4 left-24 bg-schemafy-bg rounded-xl shadow-xl border border-schemafy-light-gray px-6 py-4 min-w-[320px]"
         style={{ boxShadow: '0 8px 32px rgba(0,0,0,0.18)' }}
       >
         <div className="flex items-center justify-between mb-3">
