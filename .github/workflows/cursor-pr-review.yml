@@ -425,34 +425,33 @@ jobs:
             sanitized_output="$(sed -e 's/\x1b\[[0-9;]*m//g' cursor-review-output.txt | tr -d '\r')"
           fi
 
-          summary_line="$(printf '%s\n' "${sanitized_output}" | grep -E '요약:[[:space:]]*High=[0-9]+,[[:space:]]*Medium=[0-9]+,[[:space:]]*Comments=[0-9]+' | tail -n 1)"
-          overall_comment="$(printf '%s\n' "${sanitized_output}" | sed -n '/^[[:space:]]*PR_OVERALL_COMMENT_BEGIN[[:space:]]*$/,/^[[:space:]]*PR_OVERALL_COMMENT_END[[:space:]]*$/p' | sed '1d;$d')"
+          overall_comment="$(printf '%s\n' "${sanitized_output}" \
+            | sed -n '/^OVERALL_COMMENT_BEGIN$/,/^OVERALL_COMMENT_END$/p' | sed '1d;$d')"
 
-          # Parse line comments JSON (B3)
-          line_comments_json="$(printf '%s\n' "${sanitized_output}" \
-            | sed -n '/^[[:space:]]*LINE_COMMENTS_BEGIN[[:space:]]*$/,/^[[:space:]]*LINE_COMMENTS_END[[:space:]]*$/p' | sed '1d;$d')"
+          review_json="$(printf '%s\n' "${sanitized_output}" \
+            | sed -n '/^REVIEW_JSON_BEGIN$/,/^REVIEW_JSON_END$/p' | sed '1d;$d;/^```/d')"
 
-          if [ -z "$(printf '%s' "${line_comments_json:-}" | tr -d '[:space:]')" ]; then
-            line_comments_json="[]"
-          fi
-
-          # Validate JSON array, fallback to empty array
-          if ! echo "${line_comments_json:-[]}" | jq -e 'type == "array"' >/dev/null 2>&1; then
-            echo "Warning: LINE_COMMENTS JSON is invalid, falling back to empty array."
-            line_comments_json="[]"
-          fi
-
+          line_comments_json="[]"
           high_count="N/A"
           medium_count="N/A"
           comment_count="N/A"
-          if [[ "${summary_line}" =~ High=([0-9]+),[[:space:]]*Medium=([0-9]+),[[:space:]]*Comments=([0-9]+) ]]; then
-            high_count="${BASH_REMATCH[1]}"
-            medium_count="${BASH_REMATCH[2]}"
-            comment_count="${BASH_REMATCH[3]}"
+
+          if echo "${review_json:-}" | jq -e 'type == "object"' >/dev/null 2>&1; then
+            line_comments_json="$(echo "${review_json}" | jq -c '.line_comments // []')"
+            high_count="$(echo "${review_json}" | jq -r '.summary.high // "N/A"')"
+            medium_count="$(echo "${review_json}" | jq -r '.summary.medium // "N/A"')"
+            comment_count="$(echo "${review_json}" | jq -r '.summary.comments // "N/A"')"
+          else
+            echo "Warning: REVIEW_JSON not found or invalid JSON."
+          fi
+
+          if ! echo "${line_comments_json}" | jq -e 'type == "array"' >/dev/null 2>&1; then
+            echo "Warning: line_comments is not a valid JSON array, falling back to []."
+            line_comments_json="[]"
           fi
 
           if [ -z "${overall_comment:-}" ]; then
-            overall_comment=$'### 요약\nPR 전반 코멘트를 생성하지 못했습니다.\n\n### 주요 변경점\n- (파싱 실패)\n\n### 개선 사항\n- Cursor 출력에서 전체 코멘트 블록을 찾지 못했습니다.\n- 재실행 후 전체 코멘트 생성 여부를 확인해주세요.'
+            overall_comment=$'### 요약\nPR 전반 코멘트를 생성하지 못했습니다.\n\n### 주요 변경점\n- (파싱 실패)\n\n### 개선 사항\n- Cursor 출력에서 코멘트 블록을 찾지 못했습니다.\n- 재실행 후 출력 생성 여부를 확인해주세요.'
           fi
 
           if [ "${high_count}" = "0" ] && [ "${medium_count}" = "0" ]; then
