@@ -463,7 +463,7 @@ jobs:
           # Check for existing PR review (B4)
           existing_review="$(
             gh api "repos/${GITHUB_REPOSITORY}/pulls/${PR_NUMBER}/reviews?per_page=100" --paginate \
-              | jq -r ".[] | select(.user.login == \"github-actions[bot]\" and (.body | contains(\"${SUMMARY_MARKER}\"))) | {id, body, commit_id}" \
+              | jq -r ".[] | select(.user.login == \"github-actions[bot]\" and (.body | contains(\"${SUMMARY_MARKER}\"))) | {id, body}" \
               | jq -s 'last // empty'
           )"
 
