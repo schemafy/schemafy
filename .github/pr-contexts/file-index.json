@@ -1,0 +1,50 @@
+{
+  "apps/frontend/src/features/collaboration/components/ChatBubble.tsx": [
+    291
+  ],
+  "apps/frontend/src/features/collaboration/components/ChatInput.tsx": [
+    291
+  ],
+  "apps/frontend/src/features/collaboration/components/ChatOverlay.tsx": [
+    291
+  ],
+  "apps/frontend/src/features/collaboration/components/RemoteCursors.tsx": [
+    291
+  ],
+  "apps/frontend/src/features/collaboration/components/index.ts": [
+    291
+  ],
+  "apps/frontend/src/features/collaboration/hooks/useChatAnimation.ts": [
+    291
+  ],
+  "apps/frontend/src/features/collaboration/hooks/useInactivityTimer.ts": [
+    291
+  ],
+  "apps/frontend/src/features/drawing/components/FloatingButtons.tsx": [
+    291
+  ],
+  "apps/frontend/src/features/drawing/components/ShortcutPanel.tsx": [
+    291
+  ],
+  "apps/frontend/src/features/drawing/components/Toolbar.tsx": [
+    291
+  ],
+  "apps/frontend/src/features/drawing/components/index.ts": [
+    291
+  ],
+  "apps/frontend/src/features/drawing/hooks/useCanvasController.ts": [
+    291
+  ],
+  "apps/frontend/src/features/drawing/hooks/useCanvasKeyboard.ts": [
+    291
+  ],
+  "apps/frontend/src/hooks/useChatMessages.ts": [
+    291
+  ],
+  "apps/frontend/src/pages/CanvasPage.tsx": [
+    291
+  ],
+  "apps/frontend/src/store/collaboration.store.ts": [
+    291
+  ]
+}
