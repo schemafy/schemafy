@@ -7,6 +7,7 @@ import type {
   ChangeTableNameRequest,
   ChangeTableMetaRequest,
   ChangeTableExtraRequest,
+  SchemaSnapshotsResponse,
   TableSnapshotResponse,
 } from './types';
 
@@ -106,8 +107,8 @@ export const deleteTable = async (
 
 export const getSchemaWithSnapshots = async (
   schemaId: string,
-): Promise<Record<string, TableSnapshotResponse>> => {
-  const { data } = await apiClient.get<Record<string, TableSnapshotResponse>>(
+): Promise<SchemaSnapshotsResponse> => {
+  const { data } = await apiClient.get<SchemaSnapshotsResponse>(
     `/schemas/${schemaId}/snapshots`,
   );
   return data;

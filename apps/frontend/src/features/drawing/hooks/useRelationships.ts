@@ -22,7 +22,8 @@ import { RELATIONSHIP_TYPES } from '../types';
 
 export const useRelationships = (relationshipConfig: RelationshipConfig) => {
   const { selectedSchemaId } = useSelectedSchema();
-  const { data: snapshotsData } = useSchemaSnapshots(selectedSchemaId);
+  const { data: schemaSnapshots } = useSchemaSnapshots(selectedSchemaId);
+  const snapshotsData = schemaSnapshots.snapshots;
 
   const createRelationshipWithExtraMutation =
     useCreateRelationshipWithExtra(selectedSchemaId);

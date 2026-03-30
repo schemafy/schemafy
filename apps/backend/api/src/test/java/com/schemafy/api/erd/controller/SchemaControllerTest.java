@@ -205,6 +205,7 @@ class SchemaControllerTest {
         .exchange()
         .expectStatus().isOk()
         .expectBody()
+        .jsonPath("$.currentRevision").isEqualTo(0)
         .consumeWith(document("schema-get",
             pathParameters(
                 parameterWithName("schemaId")
@@ -221,7 +222,8 @@ class SchemaControllerTest {
                 fieldWithPath("dbVendorName").description("DB 벤더 이름"),
                 fieldWithPath("name").description("스키마 이름"),
                 fieldWithPath("charset").description("문자셋"),
-                fieldWithPath("collation").description("콜레이션"))));
+                fieldWithPath("collation").description("콜레이션"),
+                fieldWithPath("currentRevision").description("현재 schema revision"))));
   }
 
   @Test
@@ -312,6 +314,7 @@ class SchemaControllerTest {
         .exchange()
         .expectStatus().isOk()
         .expectBody()
+        .jsonPath("$.data").isEqualTo(null)
         .jsonPath("$.operation.opId").isEqualTo(OP_ID)
         .consumeWith(document("schema-change-name",
             pathParameters(
@@ -369,6 +372,7 @@ class SchemaControllerTest {
         .exchange()
         .expectStatus().isOk()
         .expectBody()
+        .jsonPath("$.data").isEqualTo(null)
         .jsonPath("$.operation.opId").isEqualTo(OP_ID)
         .consumeWith(document("schema-delete",
             pathParameters(

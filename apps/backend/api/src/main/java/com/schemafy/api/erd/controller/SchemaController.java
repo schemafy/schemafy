@@ -21,6 +21,7 @@ import com.schemafy.api.erd.broadcast.ErdMutationBroadcaster;
 import com.schemafy.api.erd.controller.dto.request.ChangeSchemaNameRequest;
 import com.schemafy.api.erd.controller.dto.request.CreateSchemaRequest;
 import com.schemafy.api.erd.controller.dto.response.SchemaResponse;
+import com.schemafy.core.erd.operation.application.port.out.FindSchemaCollaborationStatePort;
 import com.schemafy.core.erd.schema.application.port.in.ChangeSchemaNameCommand;
 import com.schemafy.core.erd.schema.application.port.in.ChangeSchemaNameUseCase;
 import com.schemafy.core.erd.schema.application.port.in.CreateSchemaCommand;
@@ -45,6 +46,7 @@ public class SchemaController {
   private final GetSchemasByProjectIdUseCase getSchemasByProjectIdUseCase;
   private final ChangeSchemaNameUseCase changeSchemaNameUseCase;
   private final DeleteSchemaUseCase deleteSchemaUseCase;
+  private final FindSchemaCollaborationStatePort findSchemaCollaborationStatePort;
 
   private final ObjectProvider<ErdMutationBroadcaster> broadcasterProvider;
 
@@ -75,7 +77,9 @@ public class SchemaController {
       @PathVariable String schemaId) {
     GetSchemaQuery query = new GetSchemaQuery(schemaId);
     return getSchemaUseCase.getSchema(query)
-        .map(SchemaResponse::from);
+        .flatMap(schema -> findSchemaCollaborationStatePort.findBySchemaId(schemaId)
+            .map(state -> SchemaResponse.from(schema, state.currentRevision()))
+            .defaultIfEmpty(SchemaResponse.from(schema, 0L)));
   }
 
   @PreAuthorize("hasAnyRole('OWNER','ADMIN','EDITOR','COMMENTER','VIEWER')")

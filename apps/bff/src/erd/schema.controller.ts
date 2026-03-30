@@ -12,7 +12,11 @@ import { TableService } from './table.service';
 import { AuthHeader } from '../common/decorators/auth-header.decorator';
 import { CollaborationHeaders } from '../common/decorators/collaboration-headers.decorator';
 import type { CollaborationRequestHeaders } from '../common/backend-client/backend-client.service';
-import type { ChangeSchemaNameRequest, CreateSchemaRequest } from './erd.types';
+import type {
+  ChangeSchemaNameRequest,
+  CreateSchemaRequest,
+  SchemaSnapshotsResponse,
+} from './erd.types';
 
 @Controller('api/v1.0')
 export class SchemaController {
@@ -85,7 +89,15 @@ export class SchemaController {
   async getSchemaWithSnapshots(
     @Param('schemaId') schemaId: string,
     @AuthHeader() authHeader: string,
-  ) {
-    return this.tableService.getSchemaWithSnapshots(schemaId, authHeader);
+  ): Promise<SchemaSnapshotsResponse> {
+    const [schema, snapshots] = await Promise.all([
+      this.schemaService.getSchema(schemaId, authHeader),
+      this.tableService.getSchemaWithSnapshots(schemaId, authHeader),
+    ]);
+
+    return {
+      currentRevision: schema.currentRevision ?? 0,
+      snapshots,
+    };
   }
 }
