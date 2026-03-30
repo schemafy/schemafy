@@ -3,6 +3,12 @@ export type MutationResponse<T = null> = {
   affectedTableIds: string[];
 };
 
+export type JsonPrimitive = string | number | boolean | null;
+export type JsonValue = JsonPrimitive | JsonObject | JsonValue[];
+export type JsonObject = {
+  [key: string]: JsonValue;
+};
+
 export type SchemaResponse = {
   id: string;
   projectId: string;
@@ -30,7 +36,7 @@ export type TableResponse = {
   name: string;
   charset: string;
   collation: string;
-  extra: string | null;
+  extra: JsonObject | null;
 };
 
 export type CreateTableRequest = {
@@ -38,7 +44,7 @@ export type CreateTableRequest = {
   name: string;
   charset: string;
   collation: string;
-  extra?: string;
+  extra?: JsonObject | null;
 };
 
 export type ChangeTableNameRequest = {
@@ -51,13 +57,14 @@ export type ChangeTableMetaRequest = {
 };
 
 export type ChangeTableExtraRequest = {
-  extra: string;
+  extra: JsonObject | null;
 };
 
-export type ColumnLengthScale = {
+export type ColumnTypeArguments = {
   length: number | null;
   precision: number | null;
   scale: number | null;
+  values: string[] | null;
 };
 
 export type ColumnResponse = {
@@ -65,7 +72,7 @@ export type ColumnResponse = {
   tableId: string;
   name: string;
   dataType: string;
-  lengthScale: ColumnLengthScale;
+  typeArguments: ColumnTypeArguments;
   seqNo: number;
   autoIncrement: boolean;
   charset: string;
@@ -95,6 +102,7 @@ export type ChangeColumnTypeRequest = {
   length?: number | null;
   precision?: number | null;
   scale?: number | null;
+  values?: string[] | null;
 };
 
 export type ChangeColumnMetaRequest = {
@@ -252,7 +260,7 @@ export type RelationshipResponse = {
   name: string;
   kind: string;
   cardinality: string;
-  extra: string | null;
+  extra: JsonObject | null;
 };
 
 export type RelationshipColumnResponse = {
@@ -268,7 +276,7 @@ export type CreateRelationshipRequest = {
   pkTableId: string;
   kind: string;
   cardinality: string;
-  extra?: string;
+  extra?: JsonObject | null;
 };
 
 export type ChangeRelationshipNameRequest = {
@@ -284,7 +292,7 @@ export type ChangeRelationshipCardinalityRequest = {
 };
 
 export type ChangeRelationshipExtraRequest = {
-  extra: string;
+  extra: JsonObject | null;
 };
 
 export type AddRelationshipColumnRequest = {

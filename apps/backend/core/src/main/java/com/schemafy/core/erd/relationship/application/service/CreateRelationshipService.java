@@ -8,6 +8,7 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
 
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.reactive.TransactionalOperator;
 
@@ -22,6 +23,8 @@ import com.schemafy.core.erd.constraint.application.service.PkCascadeHelper;
 import com.schemafy.core.erd.constraint.domain.Constraint;
 import com.schemafy.core.erd.constraint.domain.ConstraintColumn;
 import com.schemafy.core.erd.constraint.domain.type.ConstraintKind;
+import com.schemafy.core.erd.operation.application.service.ErdMutationCoordinator;
+import com.schemafy.core.erd.operation.domain.ErdOperationType;
 import com.schemafy.core.erd.relationship.application.port.in.CreateRelationshipCommand;
 import com.schemafy.core.erd.relationship.application.port.in.CreateRelationshipResult;
 import com.schemafy.core.erd.relationship.application.port.in.CreateRelationshipUseCase;
@@ -46,11 +49,11 @@ import reactor.core.publisher.Mono;
 @RequiredArgsConstructor
 public class CreateRelationshipService implements CreateRelationshipUseCase {
 
+  private final TransactionalOperator transactionalOperator;
   private final UlidGeneratorPort ulidGeneratorPort;
   private final CreateRelationshipPort createRelationshipPort;
   private final CreateRelationshipColumnPort createRelationshipColumnPort;
   private final CreateColumnPort createColumnPort;
-  private final TransactionalOperator transactionalOperator;
   private final RelationshipExistsPort relationshipExistsPort;
   private final GetTableByIdPort getTableByIdPort;
   private final GetColumnsByTableIdPort getColumnsByTableIdPort;
@@ -58,11 +61,17 @@ public class CreateRelationshipService implements CreateRelationshipUseCase {
   private final GetConstraintsByTableIdPort getConstraintsByTableIdPort;
   private final GetConstraintColumnsByConstraintIdPort getConstraintColumnsByConstraintIdPort;
   private final PkCascadeHelper pkCascadeHelper;
+  private ErdMutationCoordinator erdMutationCoordinator = ErdMutationCoordinator.noop();
+
+  @Autowired
+  void setErdMutationCoordinator(ErdMutationCoordinator erdMutationCoordinator) {
+    this.erdMutationCoordinator = erdMutationCoordinator;
+  }
 
   @Override
   public Mono<MutationResult<CreateRelationshipResult>> createRelationship(
       CreateRelationshipCommand command) {
-    return Mono.defer(() -> {
+    return erdMutationCoordinator.coordinate(ErdOperationType.CREATE_RELATIONSHIP, command, () -> Mono.defer(() -> {
       return getTableByIdPort.findTableById(command.fkTableId())
           .switchIfEmpty(Mono.error(new DomainException(RelationshipErrorCode.TARGET_TABLE_NOT_FOUND,
               "Relationship fk table not found")))
@@ -79,7 +88,7 @@ public class CreateRelationshipService implements CreateRelationshipUseCase {
                     command,
                     affectedTableIds);
               }));
-    }).as(transactionalOperator::transactional);
+    })).as(transactionalOperator::transactional);
   }
 
   private Mono<MutationResult<CreateRelationshipResult>> createRelationshipAuto(

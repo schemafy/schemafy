@@ -24,8 +24,10 @@ import { useErdCache } from './useErdCache';
 export const useCreateRelationshipWithExtra = (schemaId: string) => {
   const { updateAffectedTables } = useErdCache(schemaId);
   return useMutation({
-    mutationFn: (data: { request: CreateRelationshipRequest; extra: string }) =>
-      createRelationship({ ...data.request, extra: data.extra }),
+    mutationFn: (data: {
+      request: CreateRelationshipRequest;
+      extra: NonNullable<CreateRelationshipRequest['extra']>;
+    }) => createRelationship({ ...data.request, extra: data.extra }),
     onSuccess: (result) => {
       updateAffectedTables(result.affectedTableIds);
     },

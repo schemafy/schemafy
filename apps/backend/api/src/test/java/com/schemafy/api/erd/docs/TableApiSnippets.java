@@ -31,8 +31,8 @@ public class TableApiSnippets extends RestDocsSnippets {
           .description("문자셋").optional(),
       fieldWithPath(prefix + "collation").type(JsonFieldType.STRING)
           .description("콜레이션").optional(),
-      fieldWithPath(prefix + "extra").type(JsonFieldType.STRING)
-          .description("프론트엔드 메타데이터(JSON 문자열)").optional()
+      subsectionWithPath(prefix + "extra")
+          .description("프론트엔드 메타데이터(JSON 객체)").optional()
     };
   }
 
@@ -121,8 +121,8 @@ public class TableApiSnippets extends RestDocsSnippets {
           .description("관계 종류 (IDENTIFYING, NON_IDENTIFYING)"),
       fieldWithPath(prefix + "cardinality").type(JsonFieldType.STRING)
           .description("카디널리티 (ONE_TO_ONE, ONE_TO_MANY)"),
-      fieldWithPath(prefix + "extra").type(JsonFieldType.STRING)
-          .description("프론트엔드 메타데이터(JSON 문자열, 예: position, color)").optional()
+      subsectionWithPath(prefix + "extra")
+          .description("프론트엔드 메타데이터(JSON 객체, 예: position, color)").optional()
     };
   }
 
@@ -190,8 +190,8 @@ public class TableApiSnippets extends RestDocsSnippets {
             .description("문자셋").optional(),
         fieldWithPath("collation").type(JsonFieldType.STRING)
             .description("콜레이션").optional(),
-        fieldWithPath("extra").type(JsonFieldType.VARIES)
-            .description("추가 정보 (JSON)").optional());
+        fieldWithPath("extra").type(JsonFieldType.OBJECT)
+            .description("추가 정보 (JSON 객체)").optional());
   }
 
   /** 테이블 생성 응답 헤더 */
@@ -448,7 +448,7 @@ public class TableApiSnippets extends RestDocsSnippets {
   public static Snippet changeTableExtraRequest() {
     return requestFields(
         subsectionWithPath("extra")
-            .description("프론트엔드 메타데이터 (예: position, color 등 임의 JSON 구조, 문자열도 허용)")
+            .description("프론트엔드 메타데이터 (예: position, color 등 임의 JSON 객체)")
             .optional());
   }
 

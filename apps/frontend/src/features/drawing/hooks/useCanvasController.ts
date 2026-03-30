@@ -12,7 +12,7 @@ import { useErdMutationSync } from './useErdMutationSync';
 import type { Point, RelationshipConfig } from '../types';
 import { collaborationStore } from '@/store/collaboration.store';
 
-const CURSOR_THROTTLE_MS = 100;
+const CURSOR_THROTTLE_MS = 50;
 
 export const useCanvasController = () => {
   const { projectId, selectedSchemaId } = useSelectedSchema();

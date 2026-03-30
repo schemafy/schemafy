@@ -440,6 +440,50 @@ class WorkspaceControllerTest extends ProjectHttpTestSupport {
         .isEqualTo(WorkspaceRole.ADMIN.name());
   }
 
+  @Test
+  @DisplayName("프로젝트 관리자여도 워크스페이스에서는 관리자 등급을 내릴 수 있다")
+  void updateMemberRole_ProjectAdminTarget_Success() {
+    Workspace workspace = saveWorkspace("Test Workspace", "Description");
+    addWorkspaceMember(workspace.getId(), testUserId, WorkspaceRole.ADMIN);
+    addWorkspaceMember(workspace.getId(), testUser2Id, WorkspaceRole.ADMIN);
+    Project project = saveProject(workspace.getId(), "Project", "Description");
+    addProjectMember(project.getId(), testUser2Id, ProjectRole.ADMIN);
+
+    UpdateMemberRoleRequest request = updateMemberRoleRequest("MEMBER");
+
+    webTestClient.patch()
+        .uri(ApiPath.API.replace("{version}", "v1.0")
+            + "/workspaces/{workspaceId}/members/{userId}/role",
+            workspace.getId(), testUser2Id)
+        .header("Authorization", "Bearer " + accessToken)
+        .contentType(MediaType.APPLICATION_JSON).bodyValue(request)
+        .exchange().expectStatus().isOk().expectBody()
+        .jsonPath("$.role")
+        .isEqualTo(WorkspaceRole.MEMBER.name());
+  }
+
+  @Test
+  @DisplayName("프로젝트 관리자여도 워크스페이스에서는 멤버를 추방할 수 있다")
+  void removeMember_ProjectAdminTarget_Success() {
+    Workspace workspace = saveWorkspace("Test Workspace", "Description");
+    addWorkspaceMember(workspace.getId(), testUserId, WorkspaceRole.ADMIN);
+    WorkspaceMember target = addWorkspaceMember(workspace.getId(), testUser2Id,
+        WorkspaceRole.ADMIN);
+    Project project = saveProject(workspace.getId(), "Project", "Description");
+    addProjectMember(project.getId(), testUser2Id, ProjectRole.ADMIN);
+
+    webTestClient.delete()
+        .uri(ApiPath.API.replace("{version}", "v1.0")
+            + "/workspaces/{workspaceId}/members/{userId}",
+            workspace.getId(), testUser2Id)
+        .header("Authorization", "Bearer " + accessToken)
+        .exchange().expectStatus().isNoContent();
+
+    WorkspaceMember deleted = workspaceMemberRepository.findById(target.getId()).block();
+    assertThat(deleted).isNotNull();
+    assertThat(deleted.isDeleted()).isTrue();
+  }
+
   private AddWorkspaceMemberRequest addWorkspaceMemberRequest(
       String email,
       String role) {

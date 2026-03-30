@@ -80,7 +80,7 @@ class AcceptWorkspaceInvitationService
                                   ProjectErrorCode.INVITATION_DUPLICATE_WORKSPACE_MEMBER));
                             })
                         .flatMap(savedMember -> projectMembershipPropagationHelper
-                            .propagateToExistingProjects(
+                            .syncProjectMembershipsForWorkspaceRole(
                                 invitation.getWorkspaceId(),
                                 command.requesterId(),
                                 invitation.getWorkspaceRole())

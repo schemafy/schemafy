@@ -1,31 +1,35 @@
 import { observer } from 'mobx-react-lite';
 import {
-  ReactFlow,
-  MiniMap,
   Background,
   BackgroundVariant,
   ConnectionMode,
+  MiniMap,
+  ReactFlow,
 } from '@xyflow/react';
 import '@xyflow/react/dist/style.css';
 import {
-  TableNode,
-  RelationshipMarker,
-  Toolbar,
-  RelationshipEditor,
-  CustomControls,
-  TablePreview,
-  CustomSmoothStepEdge,
   CustomConnectionLine,
+  CustomControls,
+  CustomSmoothStepEdge,
   FloatingButtons,
+  RelationshipEditor,
+  RelationshipMarker,
   SchemaSelector,
+  SelectedSchemaProvider,
+  TableNode,
+  TablePreview,
   TempMemoPreview,
+  Toolbar,
   ShortcutPanel,
   useCanvasController,
-  SelectedSchemaProvider,
 } from '@/features/drawing';
 import { Memo, MemoPreview } from '@/features/memo/components';
 import { MemoProvider } from '@/features/memo/context';
-import { ChatOverlay, ChatInput } from '@/components/Collaboration';
+import {
+  RemoteCursors,
+  ChatInput,
+  ChatOverlay,
+} from '@/features/collaboration/components';
 
 const NODE_TYPES = {
   table: TableNode,
@@ -190,6 +194,7 @@ const CanvasContent = observer(() => {
         <ShortcutPanel onClose={() => setIsShortcutPanelOpen(false)} />
       )}
       <ChatOverlay />
+      <RemoteCursors />
     </>
   );
 });

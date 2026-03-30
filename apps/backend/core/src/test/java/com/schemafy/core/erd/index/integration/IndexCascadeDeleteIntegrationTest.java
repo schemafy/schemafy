@@ -34,6 +34,7 @@ import com.schemafy.core.erd.index.domain.type.IndexType;
 import com.schemafy.core.erd.index.domain.type.SortDirection;
 import com.schemafy.core.erd.schema.application.port.in.CreateSchemaCommand;
 import com.schemafy.core.erd.schema.application.port.in.CreateSchemaUseCase;
+import com.schemafy.core.erd.support.ErdProjectIntegrationSupport;
 import com.schemafy.core.erd.table.application.port.in.CreateTableCommand;
 import com.schemafy.core.erd.table.application.port.in.CreateTableUseCase;
 import com.schemafy.core.erd.table.application.port.in.DeleteTableCommand;
@@ -46,7 +47,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 @SpringBootTest
 @ActiveProfiles("test")
 @DisplayName("Index Cascade 삭제 통합 테스트")
-class IndexCascadeDeleteIntegrationTest {
+class IndexCascadeDeleteIntegrationTest extends ErdProjectIntegrationSupport {
 
   @Autowired
   CreateSchemaUseCase createSchemaUseCase;
@@ -78,8 +79,6 @@ class IndexCascadeDeleteIntegrationTest {
   @Autowired
   RemoveIndexColumnUseCase removeIndexColumnUseCase;
 
-  private static final String PROJECT_ID = "01ARZ3NDEKTSV4RRFFQ69GPROJ";
-
   private String schemaId;
   private String tableId;
   private String columnId1;
@@ -90,9 +89,10 @@ class IndexCascadeDeleteIntegrationTest {
   void setUp(TestInfo testInfo) {
     String uniqueSuffix = UUID.randomUUID().toString().substring(0, 8);
     String schemaName = "index_cascade_" + uniqueSuffix;
+    String projectId = createActiveProjectId("index_cascade");
 
     var createSchemaCommand = new CreateSchemaCommand(
-        PROJECT_ID, "MySQL", schemaName,
+        projectId, "MySQL", schemaName,
         "utf8mb4", "utf8mb4_general_ci");
     var schemaResult = createSchemaUseCase.createSchema(createSchemaCommand).block().result();
     schemaId = schemaResult.id();

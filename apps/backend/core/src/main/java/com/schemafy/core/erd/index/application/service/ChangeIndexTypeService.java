@@ -3,6 +3,7 @@ package com.schemafy.core.erd.index.application.service;
 import java.util.List;
 import java.util.Map;
 
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import com.schemafy.core.common.MutationResult;
@@ -17,6 +18,8 @@ import com.schemafy.core.erd.index.domain.Index;
 import com.schemafy.core.erd.index.domain.IndexColumn;
 import com.schemafy.core.erd.index.domain.exception.IndexErrorCode;
 import com.schemafy.core.erd.index.domain.validator.IndexValidator;
+import com.schemafy.core.erd.operation.application.service.ErdMutationCoordinator;
+import com.schemafy.core.erd.operation.domain.ErdOperationType;
 
 import lombok.RequiredArgsConstructor;
 import reactor.core.publisher.Flux;
@@ -30,10 +33,16 @@ public class ChangeIndexTypeService implements ChangeIndexTypeUseCase {
   private final GetIndexByIdPort getIndexByIdPort;
   private final GetIndexesByTableIdPort getIndexesByTableIdPort;
   private final GetIndexColumnsByIndexIdPort getIndexColumnsByIndexIdPort;
+  private ErdMutationCoordinator erdMutationCoordinator = ErdMutationCoordinator.noop();
+
+  @Autowired
+  void setErdMutationCoordinator(ErdMutationCoordinator erdMutationCoordinator) {
+    this.erdMutationCoordinator = erdMutationCoordinator;
+  }
 
   @Override
   public Mono<MutationResult<Void>> changeIndexType(ChangeIndexTypeCommand command) {
-    return Mono.defer(() -> {
+    return erdMutationCoordinator.coordinate(ErdOperationType.CHANGE_INDEX_TYPE, command, () -> Mono.defer(() -> {
       IndexValidator.validateType(command.type());
       return getIndexByIdPort.findIndexById(command.indexId())
           .switchIfEmpty(Mono.error(new DomainException(IndexErrorCode.NOT_FOUND, "Index not found")))
@@ -55,7 +64,7 @@ public class ChangeIndexTypeService implements ChangeIndexTypeUseCase {
                             .changeIndexType(index.id(), command.type())
                             .thenReturn(MutationResult.<Void>of(null, index.tableId()));
                       }))));
-    });
+    }));
   }
 
   private Mono<Map<String, List<IndexColumn>>> fetchIndexColumns(List<Index> indexes) {

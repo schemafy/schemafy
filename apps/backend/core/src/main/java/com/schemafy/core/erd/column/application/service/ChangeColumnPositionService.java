@@ -3,6 +3,7 @@ package com.schemafy.core.erd.column.application.service;
 import java.util.ArrayList;
 import java.util.List;
 
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.reactive.TransactionalOperator;
 
@@ -15,6 +16,8 @@ import com.schemafy.core.erd.column.application.port.out.GetColumnByIdPort;
 import com.schemafy.core.erd.column.application.port.out.GetColumnsByTableIdPort;
 import com.schemafy.core.erd.column.domain.Column;
 import com.schemafy.core.erd.column.domain.exception.ColumnErrorCode;
+import com.schemafy.core.erd.operation.application.service.ErdMutationCoordinator;
+import com.schemafy.core.erd.operation.domain.ErdOperationType;
 
 import lombok.RequiredArgsConstructor;
 import reactor.core.publisher.Mono;
@@ -27,10 +30,16 @@ public class ChangeColumnPositionService implements ChangeColumnPositionUseCase 
   private final GetColumnByIdPort getColumnByIdPort;
   private final GetColumnsByTableIdPort getColumnsByTableIdPort;
   private final TransactionalOperator transactionalOperator;
+  private ErdMutationCoordinator erdMutationCoordinator = ErdMutationCoordinator.noop();
+
+  @Autowired
+  void setErdMutationCoordinator(ErdMutationCoordinator erdMutationCoordinator) {
+    this.erdMutationCoordinator = erdMutationCoordinator;
+  }
 
   @Override
   public Mono<MutationResult<Void>> changeColumnPosition(ChangeColumnPositionCommand command) {
-    return Mono.defer(() -> {
+    return erdMutationCoordinator.coordinate(ErdOperationType.CHANGE_COLUMN_POSITION, command, () -> Mono.defer(() -> {
       return getColumnByIdPort.findColumnById(command.columnId())
           .switchIfEmpty(Mono.error(new DomainException(ColumnErrorCode.NOT_FOUND, "Column not found")))
           .flatMap(column -> getColumnsByTableIdPort.findColumnsByTableId(column.tableId())
@@ -38,9 +47,8 @@ public class ChangeColumnPositionService implements ChangeColumnPositionUseCase 
               .flatMap(columns -> reorderColumns(column, columns, command.seqNo()))
               .flatMap(reordered -> changeColumnPositionPort
                   .changeColumnPositions(column.tableId(), reordered))
-              .thenReturn(MutationResult.<Void>of(null, column.tableId())))
-          .as(transactionalOperator::transactional);
-    });
+              .thenReturn(MutationResult.<Void>of(null, column.tableId())));
+    })).as(transactionalOperator::transactional);
   }
 
   private Mono<List<Column>> reorderColumns(Column targetColumn, List<Column> columns, int nextPosition) {

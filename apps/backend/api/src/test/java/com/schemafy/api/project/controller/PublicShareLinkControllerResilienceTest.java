@@ -15,7 +15,7 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
 import com.schemafy.api.testsupport.project.ProjectHttpTestSupport;
-import com.schemafy.core.project.adapter.out.persistence.DomainShareLinkRepository;
+import com.schemafy.core.project.adapter.out.persistence.ShareLinkRepository;
 import com.schemafy.core.project.domain.Project;
 import com.schemafy.core.project.domain.ShareLink;
 import com.schemafy.core.project.domain.Workspace;
@@ -40,7 +40,7 @@ class PublicShareLinkControllerResilienceTest extends ProjectHttpTestSupport {
   private WebTestClient webTestClient;
 
   @MockitoSpyBean
-  private DomainShareLinkRepository shareLinkRepository;
+  private ShareLinkRepository shareLinkRepository;
 
   private User testUser;
   private Workspace testWorkspace;

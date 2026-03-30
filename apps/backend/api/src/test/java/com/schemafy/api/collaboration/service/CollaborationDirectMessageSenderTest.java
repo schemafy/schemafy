@@ -9,6 +9,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.schemafy.api.collaboration.service.model.SessionEntry;
+import com.schemafy.core.common.json.JsonCodec;
 
 import reactor.core.publisher.Sinks;
 import reactor.test.StepVerifier;
@@ -27,7 +28,7 @@ class CollaborationDirectMessageSenderTest {
 
   private final CollaborationDirectMessageSender sender = new CollaborationDirectMessageSender(
       new CollaborationPayloadSerializer(
-          new ObjectMapper().findAndRegisterModules()));
+          new JsonCodec(new ObjectMapper().findAndRegisterModules())));
 
   @Test
   @DisplayName("SESSION_READY를 현재 세션에 직접 전송한다")

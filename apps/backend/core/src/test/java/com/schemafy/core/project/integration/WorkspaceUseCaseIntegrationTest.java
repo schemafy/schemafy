@@ -14,6 +14,8 @@ import com.schemafy.core.project.application.port.in.DeleteWorkspaceCommand;
 import com.schemafy.core.project.application.port.in.DeleteWorkspaceUseCase;
 import com.schemafy.core.project.application.port.in.LeaveWorkspaceCommand;
 import com.schemafy.core.project.application.port.in.LeaveWorkspaceUseCase;
+import com.schemafy.core.project.application.port.in.RemoveWorkspaceMemberCommand;
+import com.schemafy.core.project.application.port.in.RemoveWorkspaceMemberUseCase;
 import com.schemafy.core.project.application.port.in.UpdateWorkspaceMemberRoleCommand;
 import com.schemafy.core.project.application.port.in.UpdateWorkspaceMemberRoleUseCase;
 import com.schemafy.core.project.application.port.in.WorkspaceDetail;
@@ -47,6 +49,9 @@ class WorkspaceUseCaseIntegrationTest extends ProjectDomainIntegrationSupport {
   private UpdateWorkspaceMemberRoleUseCase updateWorkspaceMemberRoleUseCase;
 
   @Autowired
+  private RemoveWorkspaceMemberUseCase removeWorkspaceMemberUseCase;
+
+  @Autowired
   private LeaveWorkspaceUseCase leaveWorkspaceUseCase;
 
   @Test
@@ -71,7 +76,7 @@ class WorkspaceUseCaseIntegrationTest extends ProjectDomainIntegrationSupport {
   }
 
   @Test
-  @DisplayName("워크스페이스 삭제 시 프로젝트, 멤버십, 초대, 공유 링크를 soft delete 한다")
+  @DisplayName("워크스페이스 삭제 시 프로젝트 관련 데이터와 schema를 함께 정리한다")
   void deleteWorkspace_cascadesRelatedRows() {
     User admin = signUpUser("admin-delete@test.com", "Admin");
     User invitee = signUpUser("invitee-delete@test.com", "Invitee");
@@ -80,7 +85,11 @@ class WorkspaceUseCaseIntegrationTest extends ProjectDomainIntegrationSupport {
     WorkspaceMember inviteeMember = saveWorkspaceMember(workspace, invitee,
         WorkspaceRole.MEMBER);
     var project = saveProject(workspace, "Cascade Project");
+    var secondProject = saveProject(workspace, "Cascade Project 2");
     saveProjectMember(project, admin, ProjectRole.ADMIN);
+    saveProjectMember(secondProject, admin, ProjectRole.ADMIN);
+    createSchema(project, "workspace_delete_schema_1");
+    createSchema(secondProject, "workspace_delete_schema_2");
     Invitation workspaceInvitation = saveWorkspaceInvitation(workspace, invitee.email(),
         WorkspaceRole.MEMBER, admin);
     Invitation projectInvitation = saveProjectInvitation(project, workspace, invitee.email(),
@@ -93,6 +102,9 @@ class WorkspaceUseCaseIntegrationTest extends ProjectDomainIntegrationSupport {
 
     assertThat(workspaceRepository.findByIdAndNotDeleted(workspace.getId()).block()).isNull();
     assertThat(projectRepository.findByIdAndNotDeleted(project.getId()).block()).isNull();
+    assertThat(projectRepository.findByIdAndNotDeleted(secondProject.getId()).block()).isNull();
+    assertThat(findSchemasByProjectId(project.getId())).isEmpty();
+    assertThat(findSchemasByProjectId(secondProject.getId())).isEmpty();
 
     WorkspaceMember deletedWorkspaceMember = workspaceMemberRepository
         .findById(inviteeMember.getId())
@@ -143,6 +155,38 @@ class WorkspaceUseCaseIntegrationTest extends ProjectDomainIntegrationSupport {
   }
 
   @Test
+  @DisplayName("워크스페이스 ADMIN으로 합류하면 기존 참여 프로젝트는 ADMIN으로 승격하고 미참여 프로젝트는 ADMIN으로 추가한다")
+  void addWorkspaceMember_promotesJoinedProjectsAndCreatesMissingProjectsForWorkspaceAdmin() {
+    User admin = signUpUser("admin-add-admin@test.com", "Admin");
+    User target = signUpUser("target-add-admin@test.com", "Target");
+    Workspace workspace = saveWorkspace("Admin Join WS", "Description");
+    saveWorkspaceMember(workspace, admin, WorkspaceRole.ADMIN);
+    var joinedProject = saveProject(workspace, "Joined Project");
+    var missingProject = saveProject(workspace, "Missing Project");
+    ProjectMember existingProjectMember = saveProjectMember(joinedProject, target,
+        ProjectRole.VIEWER);
+
+    WorkspaceMember addedMember = addWorkspaceMemberUseCase.addWorkspaceMember(
+        new AddWorkspaceMemberCommand(workspace.getId(), target.email(), WorkspaceRole.ADMIN,
+            admin.id()))
+        .block();
+
+    ProjectMember upgradedProjectMember = projectMemberRepository
+        .findByProjectIdAndUserIdAndNotDeleted(joinedProject.getId(), target.id())
+        .block();
+    ProjectMember createdProjectMember = projectMemberRepository
+        .findByProjectIdAndUserIdAndNotDeleted(missingProject.getId(), target.id())
+        .block();
+
+    assertThat(addedMember).isNotNull();
+    assertThat(addedMember.getRoleAsEnum()).isEqualTo(WorkspaceRole.ADMIN);
+    assertThat(upgradedProjectMember.getId()).isEqualTo(existingProjectMember.getId());
+    assertThat(upgradedProjectMember.getRoleAsEnum()).isEqualTo(ProjectRole.ADMIN);
+    assertThat(createdProjectMember).isNotNull();
+    assertThat(createdProjectMember.getRoleAsEnum()).isEqualTo(ProjectRole.ADMIN);
+  }
+
+  @Test
   @DisplayName("워크스페이스 멤버 추가 시 대문자 이메일 입력을 정규화한다")
   void addWorkspaceMember_normalizesUppercaseEmail() {
     User admin = signUpUser("admin-upper@test.com", "Admin");
@@ -185,13 +229,134 @@ class WorkspaceUseCaseIntegrationTest extends ProjectDomainIntegrationSupport {
   }
 
   @Test
-  @DisplayName("마지막 워크스페이스 멤버가 나가면 프로젝트 전용 멤버가 있어도 워크스페이스를 삭제한다")
+  @DisplayName("워크스페이스 멤버를 ADMIN으로 승격하면 활성, 삭제, 누락 프로젝트 멤버십을 모두 ADMIN으로 맞춘다")
+  void updateWorkspaceMemberRole_promotesAndRestoresProjectMembershipsForAdmin() {
+    User requester = signUpUser("requester-workspace-promote@test.com", "Requester");
+    User target = signUpUser("target-workspace-promote@test.com", "Target");
+    Workspace workspace = saveWorkspace("Workspace Promote WS", "Description");
+    saveWorkspaceMember(workspace, requester, WorkspaceRole.ADMIN);
+    WorkspaceMember targetWorkspaceMember = saveWorkspaceMember(workspace, target,
+        WorkspaceRole.MEMBER);
+    var activeProject = saveProject(workspace, "Workspace Promote Active Project");
+    var deletedProject = saveProject(workspace, "Workspace Promote Deleted Project");
+    var missingProject = saveProject(workspace, "Workspace Promote Missing Project");
+    ProjectMember activeProjectMember = saveProjectMember(activeProject, target, ProjectRole.VIEWER);
+    ProjectMember deletedProjectMember = saveProjectMember(deletedProject, target,
+        ProjectRole.VIEWER);
+    softDeleteProjectMember(deletedProjectMember.getId());
+
+    WorkspaceMember updatedMember = updateWorkspaceMemberRoleUseCase.updateWorkspaceMemberRole(
+        new UpdateWorkspaceMemberRoleCommand(workspace.getId(), target.id(), WorkspaceRole.ADMIN,
+            requester.id()))
+        .block();
+
+    ProjectMember promotedProjectMember = projectMemberRepository.findById(activeProjectMember.getId())
+        .block();
+    ProjectMember restoredProjectMember = projectMemberRepository.findById(deletedProjectMember.getId())
+        .block();
+    ProjectMember createdProjectMember = projectMemberRepository
+        .findByProjectIdAndUserIdAndNotDeleted(missingProject.getId(), target.id())
+        .block();
+
+    assertThat(updatedMember.getId()).isEqualTo(targetWorkspaceMember.getId());
+    assertThat(updatedMember.getRoleAsEnum()).isEqualTo(WorkspaceRole.ADMIN);
+    assertThat(promotedProjectMember).isNotNull();
+    assertThat(promotedProjectMember.getRoleAsEnum()).isEqualTo(ProjectRole.ADMIN);
+    assertThat(restoredProjectMember).isNotNull();
+    assertThat(restoredProjectMember.isDeleted()).isFalse();
+    assertThat(restoredProjectMember.getRoleAsEnum()).isEqualTo(ProjectRole.ADMIN);
+    assertThat(createdProjectMember).isNotNull();
+    assertThat(createdProjectMember.getRoleAsEnum()).isEqualTo(ProjectRole.ADMIN);
+  }
+
+  @Test
+  @DisplayName("워크스페이스 ADMIN이자 프로젝트 ADMIN인 대상자를 워크스페이스 MEMBER로 강등하면 프로젝트 역할도 VIEWER로 내려간다")
+  void updateWorkspaceMemberRole_demotesWorkspaceAndProjectAdminToViewer() {
+    User requester = signUpUser("requester-workspace-demote@test.com", "Requester");
+    User target = signUpUser("target-workspace-demote@test.com", "Target");
+    Workspace workspace = saveWorkspace("Workspace Demote WS", "Description");
+    saveWorkspaceMember(workspace, requester, WorkspaceRole.ADMIN);
+    WorkspaceMember targetWorkspaceMember = saveWorkspaceMember(workspace, target,
+        WorkspaceRole.ADMIN);
+    var project = saveProject(workspace, "Workspace Demote Project");
+    ProjectMember targetProjectMember = saveProjectMember(project, target, ProjectRole.ADMIN);
+
+    WorkspaceMember updatedMember = updateWorkspaceMemberRoleUseCase.updateWorkspaceMemberRole(
+        new UpdateWorkspaceMemberRoleCommand(workspace.getId(), target.id(), WorkspaceRole.MEMBER,
+            requester.id()))
+        .block();
+
+    ProjectMember updatedProjectMember = projectMemberRepository.findById(targetProjectMember.getId())
+        .block();
+
+    assertThat(updatedMember.getId()).isEqualTo(targetWorkspaceMember.getId());
+    assertThat(updatedMember.getRoleAsEnum()).isEqualTo(WorkspaceRole.MEMBER);
+    assertThat(updatedProjectMember.getRoleAsEnum()).isEqualTo(ProjectRole.VIEWER);
+  }
+
+  @Test
+  @DisplayName("프로젝트 관리자여도 워크스페이스에서는 멤버를 제거할 수 있다")
+  void removeWorkspaceMember_allowsProjectAdminTarget() {
+    User requester = signUpUser("requester-workspace-remove@test.com", "Requester");
+    User target = signUpUser("target-workspace-remove@test.com", "Target");
+    Workspace workspace = saveWorkspace("Workspace Remove WS", "Description");
+    saveWorkspaceMember(workspace, requester, WorkspaceRole.ADMIN);
+    WorkspaceMember targetWorkspaceMember = saveWorkspaceMember(workspace, target,
+        WorkspaceRole.ADMIN);
+    var project = saveProject(workspace, "Workspace Remove Project");
+    saveProjectMember(project, target, ProjectRole.ADMIN);
+
+    removeWorkspaceMemberUseCase.removeWorkspaceMember(new RemoveWorkspaceMemberCommand(
+        workspace.getId(), target.id(), requester.id())).block();
+
+    WorkspaceMember deletedMember = workspaceMemberRepository.findById(targetWorkspaceMember.getId())
+        .block();
+    assertThat(deletedMember).isNotNull();
+    assertThat(deletedMember.isDeleted()).isTrue();
+  }
+
+  @Test
+  @DisplayName("워크스페이스에서 멤버를 추방하면 같은 워크스페이스의 프로젝트 멤버십도 모두 삭제한다")
+  void removeWorkspaceMember_removesAllSameWorkspaceProjectMemberships() {
+    User requester = signUpUser("requester-workspace-cascade-remove@test.com", "Requester");
+    User target = signUpUser("target-workspace-cascade-remove@test.com", "Target");
+    Workspace workspace = saveWorkspace("Workspace Cascade Remove WS", "Description");
+    saveWorkspaceMember(workspace, requester, WorkspaceRole.ADMIN);
+    WorkspaceMember targetWorkspaceMember = saveWorkspaceMember(workspace, target,
+        WorkspaceRole.ADMIN);
+    var firstProject = saveProject(workspace, "Workspace Cascade Remove Project 1");
+    var secondProject = saveProject(workspace, "Workspace Cascade Remove Project 2");
+    ProjectMember firstProjectMember = saveProjectMember(firstProject, target, ProjectRole.ADMIN);
+    ProjectMember secondProjectMember = saveProjectMember(secondProject, target,
+        ProjectRole.EDITOR);
+
+    removeWorkspaceMemberUseCase.removeWorkspaceMember(new RemoveWorkspaceMemberCommand(
+        workspace.getId(), target.id(), requester.id())).block();
+
+    WorkspaceMember deletedWorkspaceMember = workspaceMemberRepository
+        .findById(targetWorkspaceMember.getId()).block();
+    ProjectMember deletedFirstProjectMember = projectMemberRepository
+        .findById(firstProjectMember.getId()).block();
+    ProjectMember deletedSecondProjectMember = projectMemberRepository
+        .findById(secondProjectMember.getId()).block();
+
+    assertThat(deletedWorkspaceMember).isNotNull();
+    assertThat(deletedWorkspaceMember.isDeleted()).isTrue();
+    assertThat(deletedFirstProjectMember).isNotNull();
+    assertThat(deletedFirstProjectMember.isDeleted()).isTrue();
+    assertThat(deletedSecondProjectMember).isNotNull();
+    assertThat(deletedSecondProjectMember.isDeleted()).isTrue();
+  }
+
+  @Test
+  @DisplayName("마지막 워크스페이스 멤버가 나가면 schema까지 포함해 워크스페이스를 삭제한다")
   void leaveWorkspace_lastMemberDeletesWorkspace() {
     User admin = signUpUser("admin-leave@test.com", "Admin");
     User outsider = signUpUser("outsider-leave@test.com", "Outsider");
     Workspace workspace = saveWorkspace("Leave WS", "Description");
     saveWorkspaceMember(workspace, admin, WorkspaceRole.ADMIN);
     var project = saveProject(workspace, "Leave Project");
+    createSchema(project, "leave_workspace_schema");
     saveProjectMember(project, outsider, ProjectRole.VIEWER);
 
     leaveWorkspaceUseCase.leaveWorkspace(new LeaveWorkspaceCommand(
@@ -203,6 +368,7 @@ class WorkspaceUseCaseIntegrationTest extends ProjectDomainIntegrationSupport {
     assertThat(projectMemberRepository
         .findByProjectIdAndUserIdAndNotDeleted(project.getId(), outsider.id())
         .block()).isNull();
+    assertThat(findSchemasByProjectId(project.getId())).isEmpty();
   }
 
   @Test
@@ -219,6 +385,40 @@ class WorkspaceUseCaseIntegrationTest extends ProjectDomainIntegrationSupport {
         .expectErrorMatches(DomainException.hasErrorCode(
             WorkspaceErrorCode.LAST_ADMIN_CANNOT_LEAVE))
         .verify();
+  }
+
+  @Test
+  @DisplayName("워크스페이스를 직접 나가면 같은 워크스페이스의 프로젝트 멤버십도 모두 삭제한다")
+  void leaveWorkspace_removesAllSameWorkspaceProjectMemberships() {
+    User admin = signUpUser("admin-workspace-cascade-leave@test.com", "Admin");
+    User requester = signUpUser("requester-workspace-cascade-leave@test.com", "Requester");
+    Workspace workspace = saveWorkspace("Workspace Cascade Leave WS", "Description");
+    saveWorkspaceMember(workspace, admin, WorkspaceRole.ADMIN);
+    WorkspaceMember requesterWorkspaceMember = saveWorkspaceMember(workspace, requester,
+        WorkspaceRole.MEMBER);
+    var firstProject = saveProject(workspace, "Workspace Cascade Leave Project 1");
+    var secondProject = saveProject(workspace, "Workspace Cascade Leave Project 2");
+    ProjectMember firstProjectMember = saveProjectMember(firstProject, requester,
+        ProjectRole.EDITOR);
+    ProjectMember secondProjectMember = saveProjectMember(secondProject, requester,
+        ProjectRole.VIEWER);
+
+    leaveWorkspaceUseCase.leaveWorkspace(new LeaveWorkspaceCommand(workspace.getId(),
+        requester.id())).block();
+
+    WorkspaceMember deletedWorkspaceMember = workspaceMemberRepository
+        .findById(requesterWorkspaceMember.getId()).block();
+    ProjectMember deletedFirstProjectMember = projectMemberRepository
+        .findById(firstProjectMember.getId()).block();
+    ProjectMember deletedSecondProjectMember = projectMemberRepository
+        .findById(secondProjectMember.getId()).block();
+
+    assertThat(deletedWorkspaceMember).isNotNull();
+    assertThat(deletedWorkspaceMember.isDeleted()).isTrue();
+    assertThat(deletedFirstProjectMember).isNotNull();
+    assertThat(deletedFirstProjectMember.isDeleted()).isTrue();
+    assertThat(deletedSecondProjectMember).isNotNull();
+    assertThat(deletedSecondProjectMember.isDeleted()).isTrue();
   }
 
 }

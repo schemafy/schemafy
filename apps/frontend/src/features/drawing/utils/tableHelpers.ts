@@ -9,21 +9,18 @@ import type {
   IndexSortDir,
   IndexType,
 } from '../types';
-import type { TableSnapshotResponse, ColumnLengthScale } from '../api';
+import type {
+  TableSnapshotResponse,
+  ColumnTypeArguments,
+  TableResponse,
+} from '../api';
 
 export type TableExtra = {
   position?: Point;
 };
 
-export const parseTableExtra = (extraString: string | null): TableExtra => {
-  if (!extraString) return {};
-
-  try {
-    return JSON.parse(extraString) as TableExtra;
-  } catch {
-    return {};
-  }
-};
+export const parseTableExtra = (extra: TableResponse['extra']): TableExtra =>
+  (extra ?? {}) as TableExtra;
 
 type ConstraintMap = {
   primaryKeys: Set<string>;
@@ -65,7 +62,7 @@ const transformColumnWithMap = (
   columnId: string,
   columnName: string,
   dataType: string,
-  lengthScale: ColumnLengthScale,
+  typeArguments: ColumnTypeArguments,
   constraintMap: ConstraintMap,
   foreignKeyColumnIds: Set<string>,
 ): ColumnType => {
@@ -78,7 +75,7 @@ const transformColumnWithMap = (
     id: columnId,
     name: columnName,
     type: dataType || 'VARCHAR',
-    lengthScale: JSON.stringify(lengthScale),
+    typeArguments: JSON.stringify(typeArguments),
     isPrimaryKey,
     isForeignKey,
     isNotNull,
@@ -114,7 +111,7 @@ export const transformSnapshotToNode = (
       col.id,
       col.name,
       col.dataType,
-      col.lengthScale,
+      col.typeArguments,
       constraintMap,
       foreignKeyColumnIds,
     ),

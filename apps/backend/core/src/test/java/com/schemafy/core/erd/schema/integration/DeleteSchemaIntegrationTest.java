@@ -17,6 +17,7 @@ import com.schemafy.core.erd.schema.application.port.in.DeleteSchemaUseCase;
 import com.schemafy.core.erd.schema.application.port.in.GetSchemaQuery;
 import com.schemafy.core.erd.schema.application.port.in.GetSchemaUseCase;
 import com.schemafy.core.erd.schema.domain.exception.SchemaErrorCode;
+import com.schemafy.core.erd.support.ErdProjectIntegrationSupport;
 import com.schemafy.core.erd.table.application.port.in.CreateTableCommand;
 import com.schemafy.core.erd.table.application.port.in.CreateTableUseCase;
 import com.schemafy.core.erd.table.application.port.in.GetTablesBySchemaIdQuery;
@@ -29,7 +30,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 @SpringBootTest
 @ActiveProfiles("test")
 @DisplayName("Schema Cascade 삭제 통합 테스트")
-class DeleteSchemaIntegrationTest {
+class DeleteSchemaIntegrationTest extends ErdProjectIntegrationSupport {
 
   @Autowired
   CreateSchemaUseCase createSchemaUseCase;
@@ -46,8 +47,6 @@ class DeleteSchemaIntegrationTest {
   @Autowired
   GetTablesBySchemaIdUseCase getTablesBySchemaIdUseCase;
 
-  private static final String PROJECT_ID = "01ARZ3NDEKTSV4RRFFQ69GPROJ";
-
   @Nested
   @DisplayName("deleteSchema 메서드는")
   class DeleteSchema {
@@ -60,8 +59,9 @@ class DeleteSchemaIntegrationTest {
 
       @BeforeEach
       void setUp() {
+        String projectId = createActiveProjectId("delete_schema");
         var createSchemaCommand = new CreateSchemaCommand(
-            PROJECT_ID, "MySQL", "integration_test_schema",
+            projectId, "MySQL", "integration_test_schema",
             "utf8mb4", "utf8mb4_general_ci");
 
         var schemaResult = createSchemaUseCase.createSchema(createSchemaCommand).block().result();

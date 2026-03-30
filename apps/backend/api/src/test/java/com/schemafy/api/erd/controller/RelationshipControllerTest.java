@@ -166,6 +166,106 @@ class RelationshipControllerTest {
   }
 
   @Test
+  @DisplayName("관계 생성 API는 extra 객체를 허용한다")
+  void createRelationshipAcceptsObjectValue() {
+    String fkTableId = "06D6W2BAHD51T5NJPK29Q6BCR9";
+    String pkTableId = "06D6W2CAHD51T5NJPK29Q6BCRA";
+    String relationshipId = "06D6W8CAHD51T5NJPK29Q6BCRK";
+
+    CreateRelationshipResult result = new CreateRelationshipResult(
+        relationshipId,
+        fkTableId,
+        pkTableId,
+        "fk_orders_users",
+        RelationshipKind.NON_IDENTIFYING,
+        Cardinality.ONE_TO_MANY,
+        "{\"fkHandle\":\"left\",\"pkHandle\":\"right\"}");
+
+    given(createRelationshipUseCase.createRelationship(any(CreateRelationshipCommand.class)))
+        .willReturn(Mono.just(MutationResult.of(result, Set.of(fkTableId, pkTableId))));
+
+    webTestClient.post()
+        .uri(API_BASE_PATH + "/relationships")
+        .contentType(MediaType.APPLICATION_JSON)
+        .bodyValue("""
+            {
+              "fkTableId": "06D6W2BAHD51T5NJPK29Q6BCR9",
+              "pkTableId": "06D6W2CAHD51T5NJPK29Q6BCRA",
+              "kind": "NON_IDENTIFYING",
+              "cardinality": "ONE_TO_MANY",
+              "extra": {"fkHandle":"left","pkHandle":"right"}
+            }
+            """)
+        .header("Accept", "application/json")
+        .exchange()
+        .expectStatus().isOk()
+        .expectBody()
+        .jsonPath("$.data.id").isEqualTo(relationshipId);
+
+    then(createRelationshipUseCase).should().createRelationship(
+        new CreateRelationshipCommand(
+            fkTableId,
+            pkTableId,
+            RelationshipKind.NON_IDENTIFYING,
+            Cardinality.ONE_TO_MANY,
+            "{\"fkHandle\":\"left\",\"pkHandle\":\"right\"}"));
+  }
+
+  @Test
+  @DisplayName("관계 생성 API는 잘못된 extra JSON 문자열이면 400 에러를 반환한다")
+  void createRelationshipRejectsInvalidExtraJsonString() {
+    webTestClient.post()
+        .uri(API_BASE_PATH + "/relationships")
+        .contentType(MediaType.APPLICATION_JSON)
+        .bodyValue("""
+            {
+              "fkTableId": "06D6W2BAHD51T5NJPK29Q6BCR9",
+              "pkTableId": "06D6W2CAHD51T5NJPK29Q6BCRA",
+              "kind": "NON_IDENTIFYING",
+              "cardinality": "ONE_TO_MANY",
+              "extra": "{invalid"
+            }
+            """)
+        .header("Accept", "application/json")
+        .exchange()
+        .expectStatus().isBadRequest()
+        .expectBody()
+        .jsonPath("$.status").isEqualTo(400)
+        .jsonPath("$.reason").isEqualTo(CommonErrorCode.INVALID_PARAMETER.code());
+
+    then(createRelationshipUseCase).shouldHaveNoInteractions();
+  }
+
+  @Test
+  @DisplayName("관계 조회 응답은 extra를 JSON 객체로 반환한다")
+  void getRelationshipReturnsObjectExtra() {
+    String relationshipId = "06D6W8CAHD51T5NJPK29Q6BCRK";
+    String fkTableId = "06D6W2BAHD51T5NJPK29Q6BCR9";
+    String pkTableId = "06D6W2CAHD51T5NJPK29Q6BCRA";
+
+    Relationship relationship = new Relationship(
+        relationshipId,
+        pkTableId,
+        fkTableId,
+        "fk_orders_users",
+        RelationshipKind.NON_IDENTIFYING,
+        Cardinality.ONE_TO_MANY,
+        "{\"fkHandle\":\"left\",\"pkHandle\":\"right\"}");
+
+    given(getRelationshipUseCase.getRelationship(any(GetRelationshipQuery.class)))
+        .willReturn(Mono.just(relationship));
+
+    webTestClient.get()
+        .uri(API_BASE_PATH + "/relationships/{relationshipId}", relationshipId)
+        .header("Accept", "application/json")
+        .exchange()
+        .expectStatus().isOk()
+        .expectBody()
+        .jsonPath("$.extra.fkHandle").isEqualTo("left")
+        .jsonPath("$.extra.pkHandle").isEqualTo("right");
+  }
+
+  @Test
   @DisplayName("관계 생성 시 잘못된 kind 값이면 400 에러를 반환한다")
   void createRelationshipWithInvalidKindReturnsBadRequest() {
     webTestClient.post()
@@ -422,6 +522,27 @@ class RelationshipControllerTest {
 
     then(changeRelationshipExtraUseCase).should().changeRelationshipExtra(
         new ChangeRelationshipExtraCommand(relationshipId, "{\"position\":{\"x\":60,\"y\":90},\"color\":\"#6366f1\"}"));
+  }
+
+  @Test
+  @DisplayName("관계 추가정보 변경 API는 잘못된 extra JSON 문자열이면 400 에러를 반환한다")
+  void changeRelationshipExtraRejectsInvalidJsonString() {
+    String relationshipId = "06D6W8CAHD51T5NJPK29Q6BCRK";
+
+    webTestClient.patch()
+        .uri(API_BASE_PATH + "/relationships/{relationshipId}/extra", relationshipId)
+        .contentType(MediaType.APPLICATION_JSON)
+        .bodyValue("""
+            {"extra":"{invalid"}
+            """)
+        .header("Accept", "application/json")
+        .exchange()
+        .expectStatus().isBadRequest()
+        .expectBody()
+        .jsonPath("$.status").isEqualTo(400)
+        .jsonPath("$.reason").isEqualTo(CommonErrorCode.INVALID_PARAMETER.code());
+
+    then(changeRelationshipExtraUseCase).shouldHaveNoInteractions();
   }
 
   @Test

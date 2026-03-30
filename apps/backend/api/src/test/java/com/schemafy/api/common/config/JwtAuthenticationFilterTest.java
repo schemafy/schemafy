@@ -1,5 +1,7 @@
 package com.schemafy.api.common.config;
 
+import java.util.concurrent.atomic.AtomicReference;
+
 import org.springframework.http.HttpHeaders;
 import org.springframework.mock.http.server.reactive.MockServerHttpRequest;
 import org.springframework.mock.web.server.MockServerWebExchange;
@@ -19,10 +21,14 @@ import com.schemafy.api.common.exception.ProblemProperties;
 import com.schemafy.api.common.security.jwt.JwtAuthenticationFilter;
 import com.schemafy.api.common.security.jwt.JwtProvider;
 import com.schemafy.api.common.security.jwt.WebExchangeErrorWriter;
+import com.schemafy.core.common.json.JsonCodec;
+import com.schemafy.core.erd.operation.ErdOperationContexts;
+import com.schemafy.core.erd.operation.ErdOperationMetadata;
 
 import reactor.core.publisher.Mono;
 import reactor.test.StepVerifier;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.when;
 
@@ -41,7 +47,8 @@ class JwtAuthenticationFilterTest {
 
   @BeforeEach
   void setUp() {
-    errorResponseWriter = new WebExchangeErrorWriter(new ObjectMapper(),
+    errorResponseWriter = new WebExchangeErrorWriter(
+        new JsonCodec(new ObjectMapper()),
         new ProblemDetailFactory(new ProblemProperties()));
     jwtAuthenticationFilter = new JwtAuthenticationFilter(jwtProvider,
         errorResponseWriter);
@@ -74,6 +81,37 @@ class JwtAuthenticationFilterTest {
                 .getContext()))
         .expectNextCount(0)
         .verifyComplete();
+  }
+
+  @Test
+  @DisplayName("유효한 JWT 토큰이면 actorUserId를 typed operation metadata에 저장한다")
+  void storesActorUserIdInTypedOperationMetadata() {
+    String token = "valid-token";
+    String userId = "user123";
+    MockServerHttpRequest request = MockServerHttpRequest
+        .get("/api/test")
+        .header(HttpHeaders.AUTHORIZATION, "Bearer " + token)
+        .build();
+    MockServerWebExchange exchange = MockServerWebExchange.from(request);
+    AtomicReference<ErdOperationMetadata> metadataRef = new AtomicReference<>();
+
+    when(jwtProvider.extractUserId(token)).thenReturn(userId);
+    when(jwtProvider.getTokenType(token))
+        .thenReturn(JwtProvider.ACCESS_TOKEN);
+    when(jwtProvider.validateToken(token, userId)).thenReturn(true);
+    when(filterChain.filter(any())).thenReturn(Mono.deferContextual(ctx -> {
+      metadataRef.set(ErdOperationContexts.metadata(ctx));
+      return Mono.empty();
+    }));
+
+    StepVerifier.create(jwtAuthenticationFilter.filter(exchange, filterChain))
+        .verifyComplete();
+
+    assertThat(metadataRef.get()).isEqualTo(new ErdOperationMetadata(
+        null,
+        null,
+        null,
+        userId));
   }
 
   @Test
