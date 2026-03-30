@@ -201,6 +201,11 @@ abstract class ProjectDomainIntegrationSupport {
         memberId);
   }
 
+  protected void softDeleteProject(String projectId) {
+    update("UPDATE projects SET deleted_at = CURRENT_TIMESTAMP WHERE id = :id",
+        projectId);
+  }
+
   protected void softDeleteProjectMember(String memberId) {
     update("UPDATE project_members SET deleted_at = CURRENT_TIMESTAMP WHERE id = :id",
         memberId);

@@ -32,6 +32,12 @@
   "apps/frontend/src/features/drawing/components/index.ts": [
     291
   ],
+  ".github/workflows/cursor-pr-review.yml": [
+    317
+  ],
+  ".github/workflows/save-pr-context.yml": [
+    317
+  ],
   "apps/frontend/src/features/drawing/hooks/useCanvasController.ts": [
     291
   ],

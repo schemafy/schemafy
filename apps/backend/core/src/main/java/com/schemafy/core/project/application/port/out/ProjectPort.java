@@ -25,4 +25,7 @@ public interface ProjectPort {
       int limit,
       int offset);
 
+  Flux<Project> findSharedByUserIdWithPaging(String userId, int limit,
+      int offset);
+
 }

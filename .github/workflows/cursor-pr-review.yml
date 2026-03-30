@@ -3,7 +3,7 @@ name: Cursor PR Review
 on:
   pull_request_target:
     branches: [ main ]
-    types: [ opened, reopened, ready_for_review, labeled ]
+    types: [ opened, reopened, ready_for_review, labeled, synchronize ]
     paths:
       - "**/*.ts"
       - "**/*.tsx"
@@ -48,6 +48,7 @@ jobs:
         github.event_name == 'workflow_dispatch'
         || (
           github.event_name == 'pull_request_target'
+          && github.actor != 'github-actions[bot]'
           && !github.event.pull_request.draft
           && github.event.pull_request.head.repo.full_name == github.repository
           && contains(github.event.pull_request.labels.*.name, 'ai-review')
@@ -91,17 +92,29 @@ jobs:
           path: pr-head
           persist-credentials: false
 
-      - name: Guard draft PRs for issue_comment trigger
+      - name: Guard draft PRs and bot commits
         id: draft_guard
-        if: ${{ github.event_name == 'issue_comment' }}
+        if: ${{ github.event_name == 'issue_comment' || (github.event_name == 'pull_request_target' && github.event.action == 'synchronize') }}
         env:
           GH_TOKEN: ${{ github.token }}
-          PR_NUMBER: ${{ github.event.issue.number }}
+          PR_NUMBER: ${{ github.event.issue.number || github.event.pull_request.number }}
         run: |
-          is_draft="$(gh api "repos/${GITHUB_REPOSITORY}/pulls/${PR_NUMBER}" --jq '.draft')"
-          if [ "${is_draft}" = "true" ]; then
-            echo "::notice::Skipping review: PR #${PR_NUMBER} is a draft."
-            echo "skip_review=true" >> "$GITHUB_OUTPUT"
+          if [ "${{ github.event_name }}" = "issue_comment" ]; then
+            is_draft="$(gh api "repos/${GITHUB_REPOSITORY}/pulls/${PR_NUMBER}" --jq '.draft')"
+            if [ "${is_draft}" = "true" ]; then
+              echo "::notice::Skipping review: PR #${PR_NUMBER} is a draft."
+              echo "skip_review=true" >> "$GITHUB_OUTPUT"
+              exit 0
+            fi
+          fi
+
+          if [ "${{ github.event.action }}" = "synchronize" ]; then
+            commit_msg="$(gh api "repos/${GITHUB_REPOSITORY}/commits/${{ github.event.pull_request.head.sha }}" \
+              --jq '.commit.message' 2>/dev/null || echo '')"
+            if printf '%s' "${commit_msg}" | grep -qE 'chore: (add|update) PR #[0-9]+ context|\[skip ci\]'; then
+              echo "::notice::Skipping: automated commit detected (loop guard)."
+              echo "skip_review=true" >> "$GITHUB_OUTPUT"
+            fi
           fi
 
       - name: Install Cursor CLI
@@ -154,7 +167,7 @@ jobs:
               PR_BODY="$(echo "$pr_meta_json" | jq -r '.body // ""')"
             fi
           fi
-
+          
           if [ -n "${PR_HEAD_SHA:-}" ]; then
             echo "pr_head_sha=${PR_HEAD_SHA}" >> "$GITHUB_OUTPUT"
           fi
@@ -164,13 +177,13 @@ jobs:
             echo "cursor_exit_code=97" >> "$GITHUB_OUTPUT"
             exit 97
           fi
-
+          
           if [ -z "${PR_NUMBER:-}" ]; then
             echo "ERROR: PR_NUMBER is missing. For workflow_dispatch, provide inputs.pr_number." | tee cursor-review-output.txt
             echo "cursor_exit_code=98" >> "$GITHUB_OUTPUT"
             exit 98
           fi
-
+          
           pr_meta_json="$(gh api "repos/${GITHUB_REPOSITORY}/pulls/${PR_NUMBER}")"
           PR_URL="$(echo "$pr_meta_json" | jq -r '.html_url')"
           PR_HEAD_SHA="$(echo "$pr_meta_json" | jq -r '.head.sha')"
@@ -236,6 +249,76 @@ jobs:
             echo
             echo "Related Issues Context:"
             cat cursor-related-issues.md
+            echo
+            echo "## 연관 PR 컨텍스트 (변경 파일 기반)"
+
+            file_index_json="$(
+              gh api "repos/${GITHUB_REPOSITORY}/contents/.github/pr-contexts/file-index.json?ref=main" \
+                --jq '.content' 2>/dev/null | tr -d '\n' | base64 -d 2>/dev/null || echo '{}'
+            )"
+
+            pr_changed_files="$(
+              gh api "repos/${GITHUB_REPOSITORY}/pulls/${PR_NUMBER}/files?per_page=100" \
+                | jq -r '.[].filename' 2>/dev/null | head -n 50
+            )"
+
+            if [ -z "$(echo "${file_index_json}" | tr -d '[:space:]')" ] || [ "${file_index_json}" = "{}" ]; then
+              echo "(file-index.json 없음 또는 비어 있음)"
+            elif [ -z "${pr_changed_files:-}" ]; then
+              echo "(현재 PR 변경 파일 조회 실패)"
+            else
+              pr_files_json="$(echo "${pr_changed_files}" | jq -Rsc 'split("\n") | map(select(. != ""))')"
+
+              related_prs="$(
+                echo "${file_index_json}" | jq -r \
+                  --argjson files "${pr_files_json}" \
+                  --arg current "${PR_NUMBER}" \
+                  '[to_entries[]
+                    | select(.key as $k | $files | index($k) != null)
+                    | .value[]
+                    | select(tostring != $current)
+                  ]
+                  | group_by(.)
+                  | sort_by(-length)
+                  | .[0:5]
+                  | map(.[0])
+                  | .[]' 2>/dev/null
+              )"
+
+              if [ -z "${related_prs:-}" ]; then
+                echo "(변경 파일과 겹치는 이전 PR 없음)"
+              else
+                while IFS= read -r related_pr; do
+                  [ -z "$related_pr" ] && continue
+                  pr_json="$(gh api "repos/${GITHUB_REPOSITORY}/pulls/${related_pr}" 2>/dev/null || true)"
+                  [ -z "${pr_json:-}" ] && continue
+
+                  r_title="$(echo "$pr_json" | jq -r '.title // ""')"
+                  r_url="$(echo "$pr_json" | jq -r '.html_url // ""')"
+                  r_state="$(echo "$pr_json" | jq -r '.state // ""')"
+                  r_body="$(echo "$pr_json" | jq -r '.body // "(설명 없음)"')"
+                  r_files="$(
+                    gh api "repos/${GITHUB_REPOSITORY}/pulls/${related_pr}/files?per_page=100" \
+                      | jq -r '.[].filename' 2>/dev/null | head -n 20
+                  )"
+
+                  echo "### PR #${related_pr}: ${r_title} [${r_state}]"
+                  echo "- URL: ${r_url}"
+                  echo ""
+                  echo "**설명:**"
+                  printf '%s\n' "${r_body}"
+                  echo ""
+                  echo "**변경 파일:**"
+                  while IFS= read -r rf; do
+                    [ -z "$rf" ] && continue
+                    echo "- ${rf}"
+                  done <<< "${r_files}"
+                  echo ""
+                  echo "---"
+                  echo ""
+                done <<< "${related_prs}"
+              fi
+            fi
             echo
             cat trusted-base/.github/prompts/cursor-pr-review.md
           } > cursor-runtime-prompt.md
@@ -317,6 +400,7 @@ jobs:
           CURSOR_EXIT_CODE: ${{ steps.cursor_review.outputs.cursor_exit_code }}
           CURSOR_MODEL: ${{ steps.cursor_review.outputs.selected_model }}
           RELATED_ISSUE_COUNT: ${{ steps.cursor_review.outputs.related_issue_count }}
+          EVENT_NAME: ${{ github.event_name }}
         run: |
           set +e
 
@@ -341,34 +425,33 @@ jobs:
             sanitized_output="$(sed -e 's/\x1b\[[0-9;]*m//g' cursor-review-output.txt | tr -d '\r')"
           fi
 
-          summary_line="$(printf '%s\n' "${sanitized_output}" | grep -E '요약:[[:space:]]*High=[0-9]+,[[:space:]]*Medium=[0-9]+,[[:space:]]*Comments=[0-9]+' | tail -n 1)"
-          overall_comment="$(printf '%s\n' "${sanitized_output}" | sed -n '/^[[:space:]]*PR_OVERALL_COMMENT_BEGIN[[:space:]]*$/,/^[[:space:]]*PR_OVERALL_COMMENT_END[[:space:]]*$/p' | sed '1d;$d')"
+          overall_comment="$(printf '%s\n' "${sanitized_output}" \
+            | sed -n '/^OVERALL_COMMENT_BEGIN$/,/^OVERALL_COMMENT_END$/p' | sed '1d;$d')"
 
-          # Parse line comments JSON (B3)
-          line_comments_json="$(printf '%s\n' "${sanitized_output}" \
-            | sed -n '/^[[:space:]]*LINE_COMMENTS_BEGIN[[:space:]]*$/,/^[[:space:]]*LINE_COMMENTS_END[[:space:]]*$/p' | sed '1d;$d')"
+          review_json="$(printf '%s\n' "${sanitized_output}" \
+            | sed -n '/^REVIEW_JSON_BEGIN$/,/^REVIEW_JSON_END$/p' | sed '1d;$d;/^```/d')"
 
-          if [ -z "$(printf '%s' "${line_comments_json:-}" | tr -d '[:space:]')" ]; then
-            line_comments_json="[]"
-          fi
-
-          # Validate JSON array, fallback to empty array
-          if ! echo "${line_comments_json:-[]}" | jq -e 'type == "array"' >/dev/null 2>&1; then
-            echo "Warning: LINE_COMMENTS JSON is invalid, falling back to empty array."
-            line_comments_json="[]"
-          fi
-
+          line_comments_json="[]"
           high_count="N/A"
           medium_count="N/A"
           comment_count="N/A"
-          if [[ "${summary_line}" =~ High=([0-9]+),[[:space:]]*Medium=([0-9]+),[[:space:]]*Comments=([0-9]+) ]]; then
-            high_count="${BASH_REMATCH[1]}"
-            medium_count="${BASH_REMATCH[2]}"
-            comment_count="${BASH_REMATCH[3]}"
+
+          if echo "${review_json:-}" | jq -e 'type == "object"' >/dev/null 2>&1; then
+            line_comments_json="$(echo "${review_json}" | jq -c '.line_comments // []')"
+            high_count="$(echo "${review_json}" | jq -r '.summary.high // "N/A"')"
+            medium_count="$(echo "${review_json}" | jq -r '.summary.medium // "N/A"')"
+            comment_count="$(echo "${review_json}" | jq -r '.summary.comments // "N/A"')"
+          else
+            echo "Warning: REVIEW_JSON not found or invalid JSON."
+          fi
+
+          if ! echo "${line_comments_json}" | jq -e 'type == "array"' >/dev/null 2>&1; then
+            echo "Warning: line_comments is not a valid JSON array, falling back to []."
+            line_comments_json="[]"
           fi
 
           if [ -z "${overall_comment:-}" ]; then
-            overall_comment=$'### 요약\nPR 전반 코멘트를 생성하지 못했습니다.\n\n### 주요 변경점\n- (파싱 실패)\n\n### 개선 사항\n- Cursor 출력에서 전체 코멘트 블록을 찾지 못했습니다.\n- 재실행 후 전체 코멘트 생성 여부를 확인해주세요.'
+            overall_comment=$'### 요약\nPR 전반 코멘트를 생성하지 못했습니다.\n\n### 주요 변경점\n- (파싱 실패)\n\n### 개선 사항\n- Cursor 출력에서 코멘트 블록을 찾지 못했습니다.\n- 재실행 후 출력 생성 여부를 확인해주세요.'
           fi
 
           if [ "${high_count}" = "0" ] && [ "${medium_count}" = "0" ]; then
@@ -391,7 +474,7 @@ jobs:
 
             if echo "${existing_body}" | grep -q "Status: ⚠️"; then
               echo "Previous review was a failure (id=${existing_id}). Posting new review."
-            elif [ "${GITHUB_EVENT_NAME}" = "issue_comment" ]; then
+            elif [ "${EVENT_NAME}" = "issue_comment" ]; then
               echo "Manual /review trigger detected. Posting a fresh review."
             elif [ -z "${existing_commit_id:-}" ] || [ -z "${PR_HEAD_SHA:-}" ]; then
               echo "Unable to compare review commits reliably. Posting a fresh review."
@@ -426,47 +509,35 @@ jobs:
             "" \
             "${SUMMARY_MARKER}")"
 
-          # Submit as single PR review with line comments (B5)
-          if [ -n "${PR_HEAD_SHA:-}" ]; then
-            jq -n \
-              --arg commit_id "${PR_HEAD_SHA}" \
-              --arg body "${review_body}" \
-              --arg event "COMMENT" \
-              --argjson comments "${line_comments_json:-[]}" \
-              '{commit_id: $commit_id, body: $body, event: $event, comments: $comments}' \
-              > pr-review-payload.json
-          else
-            jq -n \
-              --arg body "${review_body}" \
-              --arg event "COMMENT" \
-              --argjson comments "${line_comments_json:-[]}" \
-              '{body: $body, event: $event, comments: $comments}' \
-              > pr-review-payload.json
-          fi
+          build_payload() {
+            local comments_json="${1:-[]}"
+            if [ -n "${PR_HEAD_SHA:-}" ]; then
+              jq -n \
+                --arg commit_id "${PR_HEAD_SHA}" \
+                --arg body "${review_body}" \
+                --arg event "COMMENT" \
+                --argjson comments "${comments_json}" \
+                '{commit_id: $commit_id, body: $body, event: $event, comments: $comments}'
+            else
+              jq -n \
+                --arg body "${review_body}" \
+                --arg event "COMMENT" \
+                --argjson comments "${comments_json}" \
+                '{body: $body, event: $event, comments: $comments}'
+            fi
+          }
+
+          build_payload "${line_comments_json:-[]}" > pr-review-payload.json
 
           if ! gh api "repos/${GITHUB_REPOSITORY}/pulls/${PR_NUMBER}/reviews" \
             --method POST --input pr-review-payload.json >/dev/null; then
 
-            # Fallback: retry without line comments if they caused the failure (B6)
             line_count="$(echo "${line_comments_json:-[]}" | jq 'length')"
             if [ "${line_count}" -gt 0 ]; then
               echo "Warning: PR review with line comments failed. Retrying summary-only."
-              if [ -n "${PR_HEAD_SHA:-}" ]; then
-                jq -n \
-                  --arg commit_id "${PR_HEAD_SHA}" \
-                  --arg body "${review_body}" \
-                  --arg event "COMMENT" \
-                  '{commit_id: $commit_id, body: $body, event: $event, comments: []}' \
-                  > pr-review-payload.json
-              else
-                jq -n \
-                  --arg body "${review_body}" \
-                  --arg event "COMMENT" \
-                  '{body: $body, event: $event, comments: []}' \
-                  > pr-review-payload.json
-              fi
-
+              build_payload "[]" > pr-review-payload.json
               gh api "repos/${GITHUB_REPOSITORY}/pulls/${PR_NUMBER}/reviews" \
                 --method POST --input pr-review-payload.json >/dev/null
             fi
           fi
+

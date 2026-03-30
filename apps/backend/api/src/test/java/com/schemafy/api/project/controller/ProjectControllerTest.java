@@ -15,6 +15,7 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
 import com.schemafy.api.common.constant.ApiPath;
+import com.schemafy.api.common.exception.CommonErrorCode;
 import com.schemafy.api.project.controller.dto.request.CreateProjectRequest;
 import com.schemafy.api.project.controller.dto.request.UpdateProjectMemberRoleRequest;
 import com.schemafy.api.project.controller.dto.request.UpdateProjectRequest;
@@ -175,6 +176,73 @@ class ProjectControllerTest extends ProjectHttpTestSupport {
         .header("Authorization", "Bearer " + accessToken2)
         .exchange()
         .expectStatus().isForbidden();
+  }
+
+  @Test
+  @DisplayName("프로젝트 전용 멤버는 공유 프로젝트 목록 조회에 성공한다")
+  void getMySharedProjectsSuccessForProjectOnlyMember() {
+    Workspace sharedWorkspace = saveWorkspace("Shared Workspace", "Description");
+    addWorkspaceMember(sharedWorkspace.getId(), testUserId, WorkspaceRole.ADMIN);
+
+    Project sharedProject = saveProject(sharedWorkspace.getId(), "Shared Project", "Description");
+    Project newerSharedProject = saveProject(sharedWorkspace.getId(), "Newer Shared Project", "Description");
+    addProjectMember(sharedProject.getId(), testUserId, ProjectRole.ADMIN);
+    addProjectMember(newerSharedProject.getId(), testUserId, ProjectRole.ADMIN);
+    addProjectMember(sharedProject.getId(), testUser2Id, ProjectRole.VIEWER);
+    addProjectMember(newerSharedProject.getId(), testUser2Id, ProjectRole.EDITOR);
+
+    webTestClient.get()
+        .uri(ApiPath.API.replace("{version}", "v1.0")
+            + "/projects/shared/me?page=0")
+        .header("Authorization", "Bearer " + accessToken2)
+        .exchange()
+        .expectStatus().isOk()
+        .expectBody()
+        .consumeWith(document("project-my-shared-list",
+            ProjectApiSnippets.getMySharedProjectsRequestHeaders(),
+            ProjectApiSnippets.getMySharedProjectsQueryParameters(),
+            ProjectApiSnippets.getMySharedProjectsResponseHeaders(),
+            ProjectApiSnippets.getMySharedProjectsResponse()))
+        .jsonPath("$.content[0].id").isEqualTo(newerSharedProject.getId())
+        .jsonPath("$.content[0].workspaceId").isEqualTo(sharedWorkspace.getId())
+        .jsonPath("$.content[0].myRole").isEqualTo(ProjectRole.EDITOR.name())
+        .jsonPath("$.content[1].id").isEqualTo(sharedProject.getId())
+        .jsonPath("$.content[1].myRole").isEqualTo(ProjectRole.VIEWER.name())
+        .jsonPath("$.totalElements").isEqualTo(2);
+  }
+
+  @Test
+  @DisplayName("활성 워크스페이스 멤버인 프로젝트는 공유 프로젝트 목록에서 제외된다")
+  void getMySharedProjectsExcludesActiveWorkspaceMembership() {
+    Project project = saveProject(testWorkspaceId, "Workspace Project", "Description");
+    addProjectMember(project.getId(), testUser2Id, ProjectRole.VIEWER);
+
+    webTestClient.get()
+        .uri(ApiPath.API.replace("{version}", "v1.0")
+            + "/projects/shared/me?page=0")
+        .header("Authorization", "Bearer " + accessToken2)
+        .exchange()
+        .expectStatus().isOk()
+        .expectBody()
+        .jsonPath("$.content").isArray()
+        .jsonPath("$.content").isEmpty()
+        .jsonPath("$.totalElements").isEqualTo(0);
+  }
+
+  @Test
+  @DisplayName("공유 프로젝트 목록 조회 시 page가 0 미만이면 400 Bad Request를 반환한다")
+  void getMySharedProjectsFailWhenPageIsInvalid() {
+    webTestClient.get()
+        .uri(ApiPath.API.replace("{version}", "v1.0")
+            + "/projects/shared/me?page=-1")
+        .header("Authorization", "Bearer " + accessToken2)
+        .exchange()
+        .expectStatus().isBadRequest()
+        .expectBody()
+        .jsonPath("$.reason").isEqualTo(CommonErrorCode.INVALID_PARAMETER.code())
+        .jsonPath("$.detail").value(detail -> assertThat((String) detail)
+            .isNotBlank()
+            .doesNotContain("getMySharedProjects"));
   }
 
   @Test
