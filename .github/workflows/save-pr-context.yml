@@ -1,0 +1,111 @@
+name: Save PR Context
+
+on:
+  pull_request:
+    types: [ opened, reopened, synchronize, ready_for_review ]
+    branches: [ main ]
+    paths-ignore:
+      - '.github/pr-contexts/**'
+
+permissions:
+  contents: write
+
+concurrency:
+  group: save-pr-context-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+jobs:
+  save-context:
+    runs-on: ubuntu-latest
+    if: ${{ github.actor != 'github-actions[bot]' && !github.event.pull_request.draft }}
+
+    steps:
+      - name: Check commit message guard
+        id: commit_guard
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          commit_msg="$(gh api "repos/${GITHUB_REPOSITORY}/commits/${{ github.event.pull_request.head.sha }}" \
+            --jq '.commit.message' 2>/dev/null || echo '')"
+          if printf '%s' "${commit_msg}" | grep -qE 'chore: (add|update) file-index for PR #[0-9]+|\[skip ci\]'; then
+            echo "::notice::Skipping: automated commit detected (loop guard)."
+            echo "skip=true" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Update file-index.json on PR branch
+        if: ${{ steps.commit_guard.outputs.skip != 'true' }}
+        env:
+          GH_TOKEN: ${{ github.token }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+          PR_HEAD_REF: ${{ github.event.pull_request.head.ref }}
+        run: |
+          set +e
+          [ -z "${PR_NUMBER:-}" ] && exit 0
+
+          changed_files="$(
+            gh api "repos/${GITHUB_REPOSITORY}/pulls/${PR_NUMBER}/files?per_page=100" \
+              | jq -r '.[].filename' | head -n 50
+          )"
+
+          [ -z "${changed_files:-}" ] && exit 0
+
+          ref_encoded="${PR_HEAD_REF//#/%23}"
+          index_response="$(gh api "repos/${GITHUB_REPOSITORY}/contents/.github/pr-contexts/file-index.json?ref=${ref_encoded}" 2>/dev/null || true)"
+          existing_sha=""
+          existing_content="{}"
+          if [ -n "${index_response:-}" ]; then
+            file_sha="$(echo "${index_response}" | jq -r '.sha // ""')"
+            file_content="$(echo "${index_response}" | jq -r '.content // ""')"
+            if [ -n "${file_sha:-}" ] && [ -n "${file_content:-}" ]; then
+              existing_sha="${file_sha}"
+              existing_content="$(printf '%s' "${file_content}" | tr -d '\n' | base64 -d 2>/dev/null || echo '{}')"
+            fi
+          fi
+
+          files_json="$(printf '%s\n' "${changed_files}" | jq -Rsc 'split("\n") | map(select(. != ""))')"
+
+          if [ -z "${files_json:-}" ] || [ "${files_json}" = "[]" ]; then
+            echo "No changed files to index."
+            exit 0
+          fi
+
+          updated_content="$(
+            printf '%s' "${existing_content}" | jq \
+              --argjson files "${files_json}" \
+              --arg pr "${PR_NUMBER}" \
+              'reduce $files[] as $file (
+                .;
+                if (.[$file] | type) == "array"
+                then
+                  if (.[$file] | map(select(. == ($pr | tonumber))) | length) == 0
+                  then .[$file] += [($pr | tonumber)]
+                  else .
+                  end
+                else .[$file] = [($pr | tonumber)]
+                end
+              )'
+          )"
+
+          if [ -z "${updated_content:-}" ]; then
+            echo "ERROR: failed to build updated file-index content."
+            exit 1
+          fi
+
+          new_content="$(printf '%s' "${updated_content}" | base64 -w0)"
+
+          if [ -n "${existing_sha:-}" ]; then
+            gh api "repos/${GITHUB_REPOSITORY}/contents/.github/pr-contexts/file-index.json" \
+              --method PUT \
+              -f message="chore: update file-index for PR #${PR_NUMBER}" \
+              -f content="${new_content}" \
+              -f branch="${PR_HEAD_REF}" \
+              -f sha="${existing_sha}" >/dev/null
+          else
+            gh api "repos/${GITHUB_REPOSITORY}/contents/.github/pr-contexts/file-index.json" \
+              --method PUT \
+              -f message="chore: add file-index for PR #${PR_NUMBER}" \
+              -f content="${new_content}" \
+              -f branch="${PR_HEAD_REF}" >/dev/null
+          fi
+
+          echo "file-index.json updated for PR #${PR_NUMBER} on ${PR_HEAD_REF}"
