@@ -27,24 +27,19 @@ jobs:
         run: |
           commit_msg="$(gh api "repos/${GITHUB_REPOSITORY}/commits/${{ github.event.pull_request.head.sha }}" \
             --jq '.commit.message' 2>/dev/null || echo '')"
-          if printf '%s' "${commit_msg}" | grep -qE 'chore: (add|update) PR #[0-9]+ context|\[skip ci\]'; then
+          if printf '%s' "${commit_msg}" | grep -qE 'chore: (add|update) file-index for PR #[0-9]+|\[skip ci\]'; then
             echo "::notice::Skipping: automated commit detected (loop guard)."
             echo "skip=true" >> "$GITHUB_OUTPUT"
           fi
 
-      - name: Save PR context to PR branch
+      - name: Update file-index.json on PR branch
         if: ${{ steps.commit_guard.outputs.skip != 'true' }}
         env:
           GH_TOKEN: ${{ github.token }}
           PR_NUMBER: ${{ github.event.pull_request.number }}
-          PR_TITLE: ${{ github.event.pull_request.title }}
-          PR_URL: ${{ github.event.pull_request.html_url }}
-          PR_BODY: ${{ github.event.pull_request.body }}
           PR_HEAD_REF: ${{ github.event.pull_request.head.ref }}
-          PR_HEAD_SHA: ${{ github.event.pull_request.head.sha }}
         run: |
           set +e
-
           [ -z "${PR_NUMBER:-}" ] && exit 0
 
           changed_files="$(
@@ -52,79 +47,50 @@ jobs:
               | jq -r '.[].filename' | head -n 50
           )"
 
-          issue_numbers="$(
-            {
-              printf '%s\n' "${PR_HEAD_REF:-}"
-              printf '%s\n' "${PR_TITLE:-}"
-              printf '%s\n' "${PR_BODY:-}"
-            } \
-              | grep -oE '#[0-9]+' \
-              | tr -d '#' \
-              | sort -n \
-              | uniq \
-              | head -n 10
+          [ -z "${changed_files:-}" ] && exit 0
+
+          index_response="$(gh api "repos/${GITHUB_REPOSITORY}/contents/.github/pr-contexts/file-index.json?ref=${PR_HEAD_REF}" 2>/dev/null || true)"
+          existing_sha=""
+          existing_content="{}"
+          if [ -n "${index_response:-}" ]; then
+            existing_sha="$(echo "${index_response}" | jq -r '.sha // ""')"
+            existing_content="$(echo "${index_response}" | jq -r '.content' | tr -d '\n' | base64 -d 2>/dev/null || echo '{}')"
+          fi
+
+          files_json="$(echo "${changed_files}" | jq -Rsc 'split("\n") | map(select(. != ""))')"
+
+          updated_content="$(
+            echo "${existing_content}" | jq \
+              --argjson files "${files_json}" \
+              --argjson pr "$PR_NUMBER" \
+              'reduce $files[] as $file (
+                .;
+                if (.[$file] | type) == "array"
+                then
+                  if (.[$file] | map(select(. == $pr)) | length) == 0
+                  then .[$file] += [$pr]
+                  else .
+                  end
+                else .[$file] = [$pr]
+                end
+              )'
           )"
 
-          context_file="$(mktemp)"
-          {
-            echo "# PR #${PR_NUMBER}: ${PR_TITLE}"
-            echo ""
-            echo "- 브랜치: ${PR_HEAD_REF} → main"
-            echo "- PR URL: ${PR_URL}"
-            echo "- HEAD SHA: ${PR_HEAD_SHA}"
-            echo ""
-            echo "## 연관 이슈"
-            if [ -z "${issue_numbers:-}" ]; then
-              echo "- (없음)"
-            else
-              while IFS= read -r issue_no; do
-                [ -z "$issue_no" ] && continue
-                issue_json="$(gh api "repos/${GITHUB_REPOSITORY}/issues/${issue_no}" 2>/dev/null || true)"
-                if [ -n "${issue_json}" ]; then
-                  issue_title="$(echo "$issue_json" | jq -r '.title // ""')"
-                  echo "- #${issue_no}: ${issue_title}"
-                fi
-              done <<< "${issue_numbers}"
-            fi
-            echo ""
-            echo "## PR 설명"
-            if [ -z "${PR_BODY:-}" ]; then
-              echo "(설명 없음)"
-            else
-              printf '%s\n' "${PR_BODY}"
-            fi
-            echo ""
-            echo "## 변경된 파일"
-            if [ -z "${changed_files:-}" ]; then
-              echo "- (없음)"
-            else
-              while IFS= read -r f; do
-                [ -z "$f" ] && continue
-                echo "- ${f}"
-              done <<< "${changed_files}"
-            fi
-          } > "${context_file}"
-
-          context_content="$(base64 -w0 "${context_file}")"
-
-          existing_sha="$(
-            gh api "repos/${GITHUB_REPOSITORY}/contents/.github/pr-contexts/pr-${PR_NUMBER}.md?ref=${PR_HEAD_REF}" \
-              --jq '.sha' 2>/dev/null || true
-          )"
+          new_content="$(echo "${updated_content}" | base64 -w0)"
 
           if [ -n "${existing_sha:-}" ]; then
-            gh api "repos/${GITHUB_REPOSITORY}/contents/.github/pr-contexts/pr-${PR_NUMBER}.md" \
+            gh api "repos/${GITHUB_REPOSITORY}/contents/.github/pr-contexts/file-index.json" \
               --method PUT \
-              -f message="chore: update PR #${PR_NUMBER} context" \
-              -f content="${context_content}" \
+              -f message="chore: update file-index for PR #${PR_NUMBER}" \
+              -f content="${new_content}" \
               -f branch="${PR_HEAD_REF}" \
               -f sha="${existing_sha}" >/dev/null
           else
-            gh api "repos/${GITHUB_REPOSITORY}/contents/.github/pr-contexts/pr-${PR_NUMBER}.md" \
+            gh api "repos/${GITHUB_REPOSITORY}/contents/.github/pr-contexts/file-index.json" \
               --method PUT \
-              -f message="chore: add PR #${PR_NUMBER} context" \
-              -f content="${context_content}" \
+              -f message="chore: add file-index for PR #${PR_NUMBER}" \
+              -f content="${new_content}" \
               -f branch="${PR_HEAD_REF}" >/dev/null
           fi
 
-          echo "Context saved: .github/pr-contexts/pr-${PR_NUMBER}.md → ${PR_HEAD_REF}"
+          echo "file-index.json updated for PR #${PR_NUMBER} on ${PR_HEAD_REF}"
