@@ -29,6 +29,7 @@ const MAX_RECONNECT_DELAY_MS = 60000;
 
 export class CollaborationStore {
   cursors: Map<string, CursorPosition> = new Map();
+  activeChatMessages: Map<string, ChatMessage> = new Map();
   projectId: string | null = null;
   sessionId: string | null = null;
   private ws: WebSocket | null = null;
@@ -41,6 +42,7 @@ export class CollaborationStore {
   constructor() {
     makeObservable(this, {
       cursors: observable,
+      activeChatMessages: observable,
       projectId: observable,
       sessionId: observable,
       currentUser: computed,
@@ -48,6 +50,8 @@ export class CollaborationStore {
       disconnect: action,
       sendMessage: action,
       sendCursor: action,
+      setActiveChatMessage: action,
+      clearActiveChatMessage: action,
     });
   }
 
@@ -153,8 +157,17 @@ export class CollaborationStore {
     runInAction(() => {
       this.projectId = null;
       this.cursors.clear();
+      this.activeChatMessages.clear();
       this.sessionId = null;
     });
+  }
+
+  setActiveChatMessage(sessionId: string, message: ChatMessage) {
+    this.activeChatMessages.set(sessionId, message);
+  }
+
+  clearActiveChatMessage(sessionId: string) {
+    this.activeChatMessages.delete(sessionId);
   }
 
   onChatMessage(listener: (message: ChatMessage) => void) {

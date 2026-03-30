@@ -28,7 +28,6 @@ import { MemoProvider } from '@/features/memo/context';
 import {
   RemoteCursors,
   ChatInput,
-  ChatOverlay,
 } from '@/features/collaboration/components';
 
 const NODE_TYPES = {
@@ -193,7 +192,6 @@ const CanvasContent = observer(() => {
       {isShortcutPanelOpen && (
         <ShortcutPanel onClose={() => setIsShortcutPanelOpen(false)} />
       )}
-      <ChatOverlay />
       <RemoteCursors />
     </>
   );

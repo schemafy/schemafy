@@ -1,4 +1,5 @@
-import { useState, useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
+import { CURSOR_TRANSITION_MS } from "@/features/collaboration/utils";
 
 interface ChatInputProps {
   position: { x: number; y: number };
@@ -6,7 +7,7 @@ interface ChatInputProps {
   onCancel: () => void;
 }
 
-export const ChatInput = ({ position, onSend, onCancel }: ChatInputProps) => {
+export const ChatInput = ({position, onSend, onCancel}: ChatInputProps) => {
   const [message, setMessage] = useState('');
   const inputRef = useRef<HTMLInputElement>(null);
 
@@ -35,6 +36,7 @@ export const ChatInput = ({ position, onSend, onCancel }: ChatInputProps) => {
         left: 0,
         top: 0,
         transform: `translate3d(${position.x}px, ${position.y}px, 0)`,
+        transition: `transform ${CURSOR_TRANSITION_MS}ms linear`
       }}
     >
       <div className="bg-schemafy-bg border border-schemafy-light-gray rounded-lg shadow-lg p-2 min-w-[300px]">
