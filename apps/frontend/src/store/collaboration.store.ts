@@ -64,7 +64,11 @@ export class CollaborationStore {
   }
 
   setSchemaRevision(schemaId: string, revision: number) {
-    this.schemaRevisions.set(schemaId, revision);
+    const currentRevision = this.schemaRevisions.get(schemaId);
+
+    if (currentRevision === undefined || revision > currentRevision) {
+      this.schemaRevisions.set(schemaId, revision);
+    }
   }
 
   clearSchemaRevision(schemaId: string) {
