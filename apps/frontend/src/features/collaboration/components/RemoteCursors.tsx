@@ -12,14 +12,12 @@ interface RemoteCursorProps {
 }
 
 const RemoteCursor = observer(({ sessionId }: RemoteCursorProps) => {
-  const isMe = sessionId === collaborationStore.sessionId;
   const cursor = collaborationStore.cursors.get(sessionId);
   const activeMessage = collaborationStore.activeChatMessages.get(sessionId);
   const { flowToScreenPosition } = useReactFlow();
   const color = getCursorColor(sessionId);
 
   if (!cursor) return null;
-  if (isMe && !activeMessage) return null;
 
   const screenPos = flowToScreenPosition({ x: cursor.x, y: cursor.y });
 
@@ -33,7 +31,7 @@ const RemoteCursor = observer(({ sessionId }: RemoteCursorProps) => {
         transition: `transform ${CURSOR_TRANSITION_MS}ms linear`,
       }}
     >
-      {!isMe && <CursorPointer color={color} />}
+      <CursorPointer color={color} />
       {activeMessage ? (
         <ChatBubble message={activeMessage} color={color} />
       ) : (
@@ -46,7 +44,9 @@ const RemoteCursor = observer(({ sessionId }: RemoteCursorProps) => {
 export const RemoteCursors = observer(() => {
   useChatMessages();
 
-  const cursorIds = Array.from(collaborationStore.cursors.keys());
+  const cursorIds = Array.from(collaborationStore.cursors.keys()).filter(
+    (id) => id !== collaborationStore.sessionId,
+  );
 
   return (
     <>
