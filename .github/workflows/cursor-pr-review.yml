@@ -470,18 +470,13 @@ jobs:
           if [ -n "${existing_review:-}" ]; then
             existing_body="$(echo "${existing_review}" | jq -r '.body')"
             existing_id="$(echo "${existing_review}" | jq -r '.id')"
-            existing_commit_id="$(echo "${existing_review}" | jq -r '.commit_id // ""')"
 
             if echo "${existing_body}" | grep -q "Status: ⚠️"; then
               echo "Previous review was a failure (id=${existing_id}). Posting new review."
             elif [ "${EVENT_NAME}" = "issue_comment" ]; then
               echo "Manual /review trigger detected. Posting a fresh review."
-            elif [ -z "${existing_commit_id:-}" ] || [ -z "${PR_HEAD_SHA:-}" ]; then
-              echo "Unable to compare review commits reliably. Posting a fresh review."
-            elif [ "${existing_commit_id}" != "${PR_HEAD_SHA}" ]; then
-              echo "Existing successful review is for an older commit (${existing_commit_id}). Posting new review for ${PR_HEAD_SHA}."
             else
-              echo "Successful review already exists for current commit (id=${existing_id}). Skipping."
+              echo "Successful review already exists (id=${existing_id}). Skipping."
               exit 0
             fi
           fi
