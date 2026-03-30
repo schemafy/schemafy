@@ -8,7 +8,7 @@ interface ChatBubbleProps {
   color: string;
 }
 
-export const ChatBubble = ({message, color}: ChatBubbleProps) => {
+export const ChatBubble = ({ message, color }: ChatBubbleProps) => {
   const [opacity, setOpacity] = useState(1);
 
   useEffect(() => {
@@ -20,17 +20,17 @@ export const ChatBubble = ({message, color}: ChatBubbleProps) => {
   return (
     <div
       className="mt-0.5 overflow-hidden rounded-lg shadow-lg max-w-xs"
-      style={{opacity, transition: 'opacity 500ms'}}
+      style={{ opacity, transition: 'opacity 500ms' }}
     >
       <div
         className="px-1.5 py-0.5 font-overline-xs text-white whitespace-nowrap"
-        style={{backgroundColor: color}}
+        style={{ backgroundColor: color }}
       >
         {message.userName}
       </div>
       <div
         className="px-1.5 py-0.5 font-body-sm text-white break-words"
-        style={{backgroundColor: color}}
+        style={{ backgroundColor: color }}
       >
         {message.content}
       </div>

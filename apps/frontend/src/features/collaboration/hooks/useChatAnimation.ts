@@ -10,9 +10,15 @@ interface ChatAnimationState {
   isEntering: boolean;
 }
 
-export const useChatAnimation = (activeMessage: ChatMessage | undefined): ChatAnimationState => {
-  const [displayedMessage, setDisplayedMessage] = useState<ChatMessage | null>(null);
-  const [exitingMessage, setExitingMessage] = useState<ChatMessage | null>(null);
+export const useChatAnimation = (
+  activeMessage: ChatMessage | undefined,
+): ChatAnimationState => {
+  const [displayedMessage, setDisplayedMessage] = useState<ChatMessage | null>(
+    null,
+  );
+  const [exitingMessage, setExitingMessage] = useState<ChatMessage | null>(
+    null,
+  );
   const [isEntering, setIsEntering] = useState(false);
 
   const addedIds = useRef<Set<string>>(new Set());
@@ -52,7 +58,10 @@ export const useChatAnimation = (activeMessage: ChatMessage | undefined): ChatAn
     removeTimerRef.current = setTimeout(() => {
       setExitingMessage(displayedRef.current);
       setDisplayed(null);
-      exitAnimTimerRef.current = setTimeout(() => setExitingMessage(null), ANIMATION_MS);
+      exitAnimTimerRef.current = setTimeout(
+        () => setExitingMessage(null),
+        ANIMATION_MS,
+      );
     }, MESSAGE_DURATION_MS);
   }, [activeMessage?.messageId]);
 
