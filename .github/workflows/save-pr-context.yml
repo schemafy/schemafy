@@ -53,30 +53,44 @@ jobs:
           existing_sha=""
           existing_content="{}"
           if [ -n "${index_response:-}" ]; then
-            existing_sha="$(echo "${index_response}" | jq -r '.sha // ""')"
-            existing_content="$(echo "${index_response}" | jq -r '.content' | tr -d '\n' | base64 -d 2>/dev/null || echo '{}')"
+            file_sha="$(echo "${index_response}" | jq -r '.sha // ""')"
+            file_content="$(echo "${index_response}" | jq -r '.content // ""')"
+            if [ -n "${file_sha:-}" ] && [ -n "${file_content:-}" ]; then
+              existing_sha="${file_sha}"
+              existing_content="$(printf '%s' "${file_content}" | tr -d '\n' | base64 -d 2>/dev/null || echo '{}')"
+            fi
           fi
 
-          files_json="$(echo "${changed_files}" | jq -Rsc 'split("\n") | map(select(. != ""))')"
+          files_json="$(printf '%s\n' "${changed_files}" | jq -Rsc 'split("\n") | map(select(. != ""))')"
+
+          if [ -z "${files_json:-}" ] || [ "${files_json}" = "[]" ]; then
+            echo "No changed files to index."
+            exit 0
+          fi
 
           updated_content="$(
-            echo "${existing_content}" | jq \
+            printf '%s' "${existing_content}" | jq \
               --argjson files "${files_json}" \
-              --argjson pr "$PR_NUMBER" \
+              --arg pr "${PR_NUMBER}" \
               'reduce $files[] as $file (
                 .;
                 if (.[$file] | type) == "array"
                 then
-                  if (.[$file] | map(select(. == $pr)) | length) == 0
-                  then .[$file] += [$pr]
+                  if (.[$file] | map(select(. == ($pr | tonumber))) | length) == 0
+                  then .[$file] += [($pr | tonumber)]
                   else .
                   end
-                else .[$file] = [$pr]
+                else .[$file] = [($pr | tonumber)]
                 end
               )'
           )"
 
-          new_content="$(echo "${updated_content}" | base64 -w0)"
+          if [ -z "${updated_content:-}" ]; then
+            echo "ERROR: failed to build updated file-index content."
+            exit 1
+          fi
+
+          new_content="$(printf '%s' "${updated_content}" | base64 -w0)"
 
           if [ -n "${existing_sha:-}" ]; then
             gh api "repos/${GITHUB_REPOSITORY}/contents/.github/pr-contexts/file-index.json" \
