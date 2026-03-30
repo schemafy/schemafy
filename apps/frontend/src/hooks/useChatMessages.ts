@@ -1,10 +1,12 @@
 import { collaborationStore } from '@/store';
 import { useEffect } from 'react';
 
-const DISPLAY_DURATION = 3000;
+const DISPLAY_DURATION = 4000;
 
 export const useChatMessages = () => {
   useEffect(() => {
+    const timerMap = new Map<string, ReturnType<typeof setTimeout>>();
+
     const unsubscribe = collaborationStore.onChatMessage((message) => {
       const cursor = collaborationStore.cursors.get(message.sessionId);
       const position =
@@ -15,11 +17,21 @@ export const useChatMessages = () => {
         position,
       });
 
-      setTimeout(() => {
+      if (timerMap.has(message.sessionId)) {
+        clearTimeout(timerMap.get(message.sessionId)!);
+      }
+
+      const timer = setTimeout(() => {
         collaborationStore.clearActiveChatMessage(message.sessionId);
+        timerMap.delete(message.sessionId);
       }, DISPLAY_DURATION);
+
+      timerMap.set(message.sessionId, timer);
     });
 
-    return unsubscribe;
+    return () => {
+      unsubscribe();
+      timerMap.forEach(clearTimeout);
+    };
   }, []);
 };
