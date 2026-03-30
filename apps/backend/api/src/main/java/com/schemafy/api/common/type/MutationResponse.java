@@ -6,10 +6,10 @@ import java.util.List;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.schemafy.core.erd.operation.domain.CommittedErdOperation;
 
-@JsonInclude(JsonInclude.Include.NON_NULL)
 public record MutationResponse<T>(
     T data,
     List<String> affectedTableIds,
+    @JsonInclude(JsonInclude.Include.NON_NULL)
     CommittedErdOperation operation) {
 
   public static <T> MutationResponse<T> of(T data, Collection<String> affectedTableIds) {
