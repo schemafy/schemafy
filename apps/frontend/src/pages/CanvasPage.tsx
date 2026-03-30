@@ -25,10 +25,7 @@ import {
 } from '@/features/drawing';
 import { Memo, MemoPreview } from '@/features/memo/components';
 import { MemoProvider } from '@/features/memo/context';
-import {
-  RemoteCursors,
-  ChatInput,
-} from '@/features/collaboration/components';
+import { RemoteCursors, ChatInput } from '@/features/collaboration/components';
 
 const NODE_TYPES = {
   table: TableNode,
