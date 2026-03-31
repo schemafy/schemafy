@@ -11,6 +11,8 @@ import org.junit.jupiter.api.Test;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.schemafy.core.common.json.JsonCodec;
+import com.schemafy.core.erd.column.application.port.in.ChangeColumnTypeCommand;
+import com.schemafy.core.erd.column.application.port.in.ChangeColumnTypeUseCase;
 import com.schemafy.core.erd.column.application.port.in.CreateColumnCommand;
 import com.schemafy.core.erd.column.application.port.in.CreateColumnUseCase;
 import com.schemafy.core.erd.constraint.application.port.in.CreateConstraintColumnCommand;
@@ -67,6 +69,9 @@ class ErdOperationLedgerIntegrationTest extends ErdProjectIntegrationSupport {
   CreateColumnUseCase createColumnUseCase;
 
   @Autowired
+  ChangeColumnTypeUseCase changeColumnTypeUseCase;
+
+  @Autowired
   CreateConstraintUseCase createConstraintUseCase;
 
   @Autowired
@@ -115,6 +120,51 @@ class ErdOperationLedgerIntegrationTest extends ErdProjectIntegrationSupport {
     assertThat(currentRevision(schemaResult.id())).isEqualTo(3L);
     assertThat(operationCount(schemaResult.id())).isEqualTo(3L);
     assertLastOperation(schemaResult.id(), "CHANGE_TABLE_EXTRA", 3L, List.of(tableResult.tableId()));
+  }
+
+  @Test
+  @DisplayName("컬럼 category 전환은 CHANGE_COLUMN_TYPE 한 번만 기록한다")
+  void recordsSingleOperationForColumnTypeCategoryTransition() {
+    String projectId = createActiveProjectId("erd_operation_single_change_column_type");
+
+    String schemaId = createSchemaUseCase.createSchema(new CreateSchemaCommand(
+        projectId,
+        "MySQL",
+        "single_change_column_type_schema",
+        "utf8mb4",
+        "utf8mb4_general_ci")).block().result().id();
+
+    String tableId = createTableUseCase.createTable(new CreateTableCommand(
+        schemaId,
+        "single_change_column_type_table",
+        "utf8mb4",
+        "utf8mb4_general_ci",
+        null)).block().result().tableId();
+
+    String columnId = createColumnUseCase.createColumn(new CreateColumnCommand(
+        tableId,
+        "name",
+        "VARCHAR",
+        255,
+        null,
+        null,
+        false,
+        "utf8mb4",
+        "utf8mb4_general_ci",
+        null)).block().result().columnId();
+
+    long beforeRevision = currentRevision(schemaId);
+    long beforeCount = operationCount(schemaId);
+
+    StepVerifier.create(changeColumnTypeUseCase.changeColumnType(
+        new ChangeColumnTypeCommand(columnId, "INT", null, null, null)))
+        .expectNextCount(1)
+        .verifyComplete();
+
+    assertThat(currentRevision(schemaId)).isEqualTo(beforeRevision + 1);
+    assertThat(operationCount(schemaId)).isEqualTo(beforeCount + 1);
+    assertLastOperation(schemaId, "CHANGE_COLUMN_TYPE", beforeRevision + 1, List.of(tableId));
+    assertColumnMeta(columnId, null, null);
   }
 
   @Test
@@ -370,6 +420,23 @@ class ErdOperationLedgerIntegrationTest extends ErdProjectIntegrationSupport {
         .containsExactlyInAnyOrderElementsOf(expectedAffectedTableIds);
   }
 
+  private void assertColumnMeta(String columnId, String expectedCharset, String expectedCollation) {
+    ColumnMetaRow columnMetaRow = databaseClient.sql("""
+        SELECT charset, collation
+        FROM db_columns
+        WHERE id = :columnId
+        """)
+        .bind("columnId", columnId)
+        .map((row, metadata) -> new ColumnMetaRow(
+            row.get("charset", String.class),
+            row.get("collation", String.class)))
+        .one()
+        .block();
+
+    assertThat(columnMetaRow.charset()).isEqualTo(expectedCharset);
+    assertThat(columnMetaRow.collation()).isEqualTo(expectedCollation);
+  }
+
   private List<String> parseStringArray(String rawJson) {
     JsonNode node = jsonCodec.parsePersistedNode(rawJson);
     assertThat(node.isArray()).isTrue();
@@ -416,6 +483,9 @@ class ErdOperationLedgerIntegrationTest extends ErdProjectIntegrationSupport {
       long committedRevision,
       String actorUserId,
       String affectedTableIdsJson) {
+  }
+
+  private record ColumnMetaRow(String charset, String collation) {
   }
 
 }
