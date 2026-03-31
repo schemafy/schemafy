@@ -82,6 +82,7 @@ export const useCanvasController = () => {
 
   useCanvasKeyboard({
     isChatOpen,
+    isShortcutPanelOpen,
     mousePosition,
     activeTool,
     setChatInputPosition,

@@ -58,6 +58,7 @@ export const useChatAnimation = (
     removeTimerRef.current = setTimeout(() => {
       setExitingMessage(displayedRef.current);
       setDisplayed(null);
+      addedIds.current.delete(activeMessage.messageId);
       exitAnimTimerRef.current = setTimeout(
         () => setExitingMessage(null),
         ANIMATION_MS,

@@ -3,6 +3,7 @@ import type { Point } from '../types';
 
 interface UseCanvasKeyboardParams {
   isChatOpen: boolean;
+  isShortcutPanelOpen: boolean;
   mousePosition: Point | null;
   activeTool: string;
   setChatInputPosition: (pos: Point | null) => void;
@@ -19,6 +20,7 @@ const TOOL_SHORTCUTS: Record<string, string> = {
 
 export const useCanvasKeyboard = ({
   isChatOpen,
+  isShortcutPanelOpen,
   mousePosition,
   activeTool,
   setChatInputPosition,
@@ -39,6 +41,7 @@ export const useCanvasKeyboard = ({
       if (
         TOOL_SHORTCUTS[e.code] &&
         !isChatOpen &&
+        !isShortcutPanelOpen &&
         !e.metaKey &&
         !e.ctrlKey &&
         !e.altKey &&
@@ -70,6 +73,7 @@ export const useCanvasKeyboard = ({
     return () => window.removeEventListener('keydown', handleKeyPress, true);
   }, [
     isChatOpen,
+    isShortcutPanelOpen,
     mousePosition,
     activeTool,
     setChatInputPosition,
