@@ -56,10 +56,11 @@ export class SchemaService {
     schemaId: string,
     authHeader: string,
   ): Promise<SchemaSnapshotsResponse> {
-    const response = await this.backendClient.client.get<SchemaSnapshotsResponse>(
-      `/api/v1.0/schemas/${schemaId}/snapshots`,
-      this.backendClient.getAuthConfig(authHeader),
-    );
+    const response =
+      await this.backendClient.client.get<SchemaSnapshotsResponse>(
+        `/api/v1.0/schemas/${schemaId}/snapshots`,
+        this.backendClient.getAuthConfig(authHeader),
+      );
     return response.data;
   }
 

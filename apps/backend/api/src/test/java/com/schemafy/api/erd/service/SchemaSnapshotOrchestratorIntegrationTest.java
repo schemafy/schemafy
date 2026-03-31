@@ -84,8 +84,8 @@ class SchemaSnapshotOrchestratorIntegrationTest extends ProjectHttpTestSupport {
       try {
         awaitReleased(allowSnapshotRead);
         @SuppressWarnings("unchecked")
-        Mono<Map<String, TableSnapshotResponse>> realCall =
-            (Mono<Map<String, TableSnapshotResponse>>) invocation.callRealMethod();
+        Mono<Map<String, TableSnapshotResponse>> realCall = (Mono<Map<String, TableSnapshotResponse>>) invocation
+            .callRealMethod();
         return realCall;
       } catch (InterruptedException ex) {
         Thread.currentThread().interrupt();
@@ -138,4 +138,5 @@ class SchemaSnapshotOrchestratorIntegrationTest extends ProjectHttpTestSupport {
       throws InterruptedException {
     assertThat(releaseLatch.await(5, TimeUnit.SECONDS)).isTrue();
   }
+
 }
