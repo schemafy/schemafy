@@ -62,12 +62,12 @@ import com.schemafy.core.erd.relationship.domain.type.RelationshipKind;
 
 import reactor.core.publisher.Mono;
 
+import static com.schemafy.api.erd.controller.ErdOperationFixtures.OP_ID;
+import static com.schemafy.api.erd.controller.ErdOperationFixtures.committedOperation;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.then;
 import static org.springframework.restdocs.webtestclient.WebTestClientRestDocumentation.document;
-import static com.schemafy.api.erd.controller.ErdOperationFixtures.OP_ID;
-import static com.schemafy.api.erd.controller.ErdOperationFixtures.committedOperation;
 
 @ActiveProfiles("test")
 @SpringBootTest

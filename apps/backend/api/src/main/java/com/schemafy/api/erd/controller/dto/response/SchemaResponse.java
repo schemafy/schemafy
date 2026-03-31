@@ -11,8 +11,7 @@ public record SchemaResponse(
     String name,
     String charset,
     String collation,
-    @JsonInclude(JsonInclude.Include.NON_NULL)
-    Long currentRevision) {
+    @JsonInclude(JsonInclude.Include.NON_NULL) Long currentRevision) {
 
   public static SchemaResponse from(CreateSchemaResult result) {
     return new SchemaResponse(

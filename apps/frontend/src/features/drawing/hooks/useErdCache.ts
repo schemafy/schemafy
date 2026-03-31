@@ -21,7 +21,8 @@ export const useErdCache = (schemaId: string) => {
         queryClient.setQueryData<SchemaSnapshotsResponse>(
           erdKeys.schemaSnapshots(schemaId),
           (old) => {
-            const knownRevision = collaborationStore.getSchemaRevision(schemaId);
+            const knownRevision =
+              collaborationStore.getSchemaRevision(schemaId);
 
             if (!old) {
               return {

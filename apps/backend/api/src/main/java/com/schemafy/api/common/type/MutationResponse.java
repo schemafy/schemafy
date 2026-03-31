@@ -9,8 +9,7 @@ import com.schemafy.core.erd.operation.domain.CommittedErdOperation;
 public record MutationResponse<T>(
     T data,
     List<String> affectedTableIds,
-    @JsonInclude(JsonInclude.Include.NON_NULL)
-    CommittedErdOperation operation) {
+    @JsonInclude(JsonInclude.Include.NON_NULL) CommittedErdOperation operation) {
 
   public static <T> MutationResponse<T> of(T data,
       Collection<String> affectedTableIds,

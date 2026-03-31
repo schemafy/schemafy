@@ -15,9 +15,7 @@ export const CollaborationHeaders = createParamDecorator(
 
     return {
       sessionId: firstHeaderValue(request.headers['x-session-id']),
-      clientOperationId: firstHeaderValue(
-        request.headers['x-client-op-id'],
-      ),
+      clientOperationId: firstHeaderValue(request.headers['x-client-op-id']),
       baseSchemaRevision: firstHeaderValue(
         request.headers['x-base-schema-revision'],
       ),

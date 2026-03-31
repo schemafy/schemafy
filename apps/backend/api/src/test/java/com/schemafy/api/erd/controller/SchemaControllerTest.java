@@ -38,6 +38,10 @@ import com.schemafy.core.project.domain.exception.ProjectErrorCode;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
+import static com.schemafy.api.erd.controller.ErdOperationFixtures.CLIENT_OPERATION_ID;
+import static com.schemafy.api.erd.controller.ErdOperationFixtures.COMMITTED_REVISION;
+import static com.schemafy.api.erd.controller.ErdOperationFixtures.OP_ID;
+import static com.schemafy.api.erd.controller.ErdOperationFixtures.committedOperation;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
 import static org.springframework.restdocs.headers.HeaderDocumentation.headerWithName;
@@ -49,10 +53,6 @@ import static org.springframework.restdocs.payload.PayloadDocumentation.response
 import static org.springframework.restdocs.request.RequestDocumentation.parameterWithName;
 import static org.springframework.restdocs.request.RequestDocumentation.pathParameters;
 import static org.springframework.restdocs.webtestclient.WebTestClientRestDocumentation.document;
-import static com.schemafy.api.erd.controller.ErdOperationFixtures.CLIENT_OPERATION_ID;
-import static com.schemafy.api.erd.controller.ErdOperationFixtures.COMMITTED_REVISION;
-import static com.schemafy.api.erd.controller.ErdOperationFixtures.OP_ID;
-import static com.schemafy.api.erd.controller.ErdOperationFixtures.committedOperation;
 
 @ActiveProfiles("test")
 @SpringBootTest

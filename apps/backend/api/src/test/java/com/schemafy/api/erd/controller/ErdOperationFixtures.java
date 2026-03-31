@@ -9,8 +9,7 @@ final class ErdOperationFixtures {
   static final String CLIENT_OPERATION_ID = "client-op-1";
   static final long COMMITTED_REVISION = 42L;
 
-  private ErdOperationFixtures() {
-  }
+  private ErdOperationFixtures() {}
 
   static CommittedErdOperation committedOperation() {
     return new CommittedErdOperation(
