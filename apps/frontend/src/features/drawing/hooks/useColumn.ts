@@ -1,9 +1,6 @@
 import { type ColumnType, CONSTRAINT_PREFIX_MAP } from '../types';
 import type { Constraint } from '@/types';
-import {
-  useChangeColumnName,
-  useChangeColumnType,
-} from './useColumnMutations';
+import { useChangeColumnName, useChangeColumnType } from './useColumnMutations';
 import {
   useCreateConstraint,
   useDeleteConstraint,

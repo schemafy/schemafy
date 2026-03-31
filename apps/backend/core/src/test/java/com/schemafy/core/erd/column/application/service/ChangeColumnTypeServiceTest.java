@@ -366,6 +366,7 @@ class ChangeColumnTypeServiceTest {
                 eq(SchemaFixture.DEFAULT_COLLATION),
                 eq(null));
       }
+
     }
 
     @Nested

@@ -268,6 +268,7 @@ public class ChangeColumnTypeService implements ChangeColumnTypeUseCase {
     static ResolvedColumnMeta cleared() {
       return new ResolvedColumnMeta(null, null);
     }
+
   }
 
 }
