@@ -4,5 +4,155 @@
   ],
   ".github/workflows/save-pr-context.yml": [
     317
+  ],
+  "apps/backend/api/src/docs/asciidoc/api-guide.adoc": [
+    337
+  ],
+  "apps/backend/api/src/main/java/com/schemafy/api/collaboration/dto/event/CollaborationOutboundFactory.java": [
+    337
+  ],
+  "apps/backend/api/src/main/java/com/schemafy/api/collaboration/dto/event/ErdMutatedEvent.java": [
+    337
+  ],
+  "apps/backend/api/src/main/java/com/schemafy/api/common/security/CorsProperties.java": [
+    337
+  ],
+  "apps/backend/api/src/main/java/com/schemafy/api/common/type/MutationResponse.java": [
+    337
+  ],
+  "apps/backend/api/src/main/java/com/schemafy/api/erd/broadcast/ErdMutationBroadcaster.java": [
+    337
+  ],
+  "apps/backend/api/src/main/java/com/schemafy/api/erd/controller/ColumnController.java": [
+    337
+  ],
+  "apps/backend/api/src/main/java/com/schemafy/api/erd/controller/ConstraintController.java": [
+    337
+  ],
+  "apps/backend/api/src/main/java/com/schemafy/api/erd/controller/IndexController.java": [
+    337
+  ],
+  "apps/backend/api/src/main/java/com/schemafy/api/erd/controller/RelationshipController.java": [
+    337
+  ],
+  "apps/backend/api/src/main/java/com/schemafy/api/erd/controller/SchemaController.java": [
+    337
+  ],
+  "apps/backend/api/src/main/java/com/schemafy/api/erd/controller/TableController.java": [
+    337
+  ],
+  "apps/backend/api/src/main/java/com/schemafy/api/erd/controller/dto/response/SchemaResponse.java": [
+    337
+  ],
+  "apps/backend/api/src/test/java/com/schemafy/api/collaboration/dto/event/ErdMutatedEventTest.java": [
+    337
+  ],
+  "apps/backend/api/src/test/java/com/schemafy/api/collaboration/service/CollaborationPayloadSerializerTest.java": [
+    337
+  ],
+  "apps/backend/api/src/test/java/com/schemafy/api/common/docs/RestDocsSnippets.java": [
+    337
+  ],
+  "apps/backend/api/src/test/java/com/schemafy/api/erd/broadcast/ErdMutationBroadcasterTest.java": [
+    337
+  ],
+  "apps/backend/api/src/test/java/com/schemafy/api/erd/controller/ColumnControllerTest.java": [
+    337
+  ],
+  "apps/backend/api/src/test/java/com/schemafy/api/erd/controller/ConstraintControllerTest.java": [
+    337
+  ],
+  "apps/backend/api/src/test/java/com/schemafy/api/erd/controller/ErdOperationFixtures.java": [
+    337
+  ],
+  "apps/backend/api/src/test/java/com/schemafy/api/erd/controller/IndexControllerTest.java": [
+    337
+  ],
+  "apps/backend/api/src/test/java/com/schemafy/api/erd/controller/RelationshipControllerTest.java": [
+    337
+  ],
+  "apps/backend/api/src/test/java/com/schemafy/api/erd/controller/SchemaControllerTest.java": [
+    337
+  ],
+  "apps/backend/api/src/test/java/com/schemafy/api/erd/controller/TableControllerTest.java": [
+    337
+  ],
+  "apps/backend/core/src/main/java/com/schemafy/core/common/MutationResult.java": [
+    337
+  ],
+  "apps/backend/core/src/main/java/com/schemafy/core/erd/operation/application/service/DefaultErdMutationCoordinator.java": [
+    337
+  ],
+  "apps/backend/core/src/main/java/com/schemafy/core/erd/operation/domain/CommittedErdOperation.java": [
+    337
+  ],
+  "apps/backend/core/src/main/java/com/schemafy/core/erd/schema/application/port/in/GetSchemaWithRevisionResult.java": [
+    337
+  ],
+  "apps/backend/core/src/main/java/com/schemafy/core/erd/schema/application/port/in/GetSchemaWithRevisionUseCase.java": [
+    337
+  ],
+  "apps/backend/core/src/main/java/com/schemafy/core/erd/schema/application/service/GetSchemaWithRevisionService.java": [
+    337
+  ],
+  "apps/backend/core/src/test/java/com/schemafy/core/erd/schema/application/service/GetSchemaWithRevisionServiceTest.java": [
+    337
+  ],
+  "apps/bff/src/common/backend-client/backend-client.service.ts": [
+    337
+  ],
+  "apps/bff/src/common/decorators/collaboration-headers.decorator.ts": [
+    337
+  ],
+  "apps/bff/src/erd/column.controller.ts": [
+    337
+  ],
+  "apps/bff/src/erd/column.service.ts": [
+    337
+  ],
+  "apps/bff/src/erd/constraint.controller.ts": [
+    337
+  ],
+  "apps/bff/src/erd/constraint.service.ts": [
+    337
+  ],
+  "apps/bff/src/erd/erd.types.ts": [
+    337
+  ],
+  "apps/bff/src/erd/index.controller.ts": [
+    337
+  ],
+  "apps/bff/src/erd/index.service.ts": [
+    337
+  ],
+  "apps/bff/src/erd/relationship.controller.ts": [
+    337
+  ],
+  "apps/bff/src/erd/relationship.service.ts": [
+    337
+  ],
+  "apps/bff/src/erd/schema.controller.ts": [
+    337
+  ],
+  "apps/bff/src/erd/schema.service.ts": [
+    337
+  ],
+  "apps/bff/src/erd/table.controller.ts": [
+    337
+  ],
+  "apps/bff/src/erd/table.service.ts": [
+    337
+  ],
+  "apps/bff/src/main.ts": [
+    337
+  ],
+  "apps/frontend/src/features/collaboration/api/types.ts": [
+    337
+  ],
+  "apps/frontend/src/features/drawing/api/column.api.ts": [
+    337
+  ],
+  "apps/frontend/src/features/drawing/api/constraint.api.ts": [
+    337
   ]
 }
