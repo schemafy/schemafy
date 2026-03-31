@@ -22,6 +22,7 @@ import com.schemafy.api.erd.controller.dto.request.ChangeSchemaNameRequest;
 import com.schemafy.api.erd.controller.dto.request.CreateSchemaRequest;
 import com.schemafy.api.erd.controller.dto.response.SchemaResponse;
 import com.schemafy.core.erd.operation.application.port.out.FindSchemaCollaborationStatePort;
+import com.schemafy.core.erd.operation.domain.CommittedErdOperation;
 import com.schemafy.core.erd.schema.application.port.in.ChangeSchemaNameCommand;
 import com.schemafy.core.erd.schema.application.port.in.ChangeSchemaNameUseCase;
 import com.schemafy.core.erd.schema.application.port.in.CreateSchemaCommand;
@@ -129,7 +130,7 @@ public class SchemaController {
   }
 
   private Mono<Void> broadcastSchemaChange(String schemaId,
-      com.schemafy.core.erd.operation.domain.CommittedErdOperation operation) {
+      CommittedErdOperation operation) {
     ErdMutationBroadcaster broadcaster = broadcasterProvider.getIfAvailable();
     if (broadcaster == null) {
       return Mono.empty();

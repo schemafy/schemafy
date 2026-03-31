@@ -31,6 +31,7 @@ import com.schemafy.api.erd.controller.dto.response.RelationshipColumnResponse;
 import com.schemafy.api.erd.controller.dto.response.RelationshipResponse;
 import com.schemafy.api.erd.service.relationship.RelationshipApiResponseMapper;
 import com.schemafy.core.common.json.JsonCodec;
+import com.schemafy.core.erd.operation.domain.CommittedErdOperation;
 import com.schemafy.core.erd.relationship.application.port.in.AddRelationshipColumnCommand;
 import com.schemafy.core.erd.relationship.application.port.in.AddRelationshipColumnUseCase;
 import com.schemafy.core.erd.relationship.application.port.in.ChangeRelationshipCardinalityCommand;
@@ -274,7 +275,7 @@ public class RelationshipController {
   }
 
   private Mono<Void> broadcastMutation(Set<String> affectedTableIds,
-      com.schemafy.core.erd.operation.domain.CommittedErdOperation operation) {
+      CommittedErdOperation operation) {
     ErdMutationBroadcaster broadcaster = broadcasterProvider.getIfAvailable();
     if (broadcaster == null) {
       return Mono.empty();

@@ -54,6 +54,7 @@ import com.schemafy.core.erd.index.application.port.in.GetIndexesByTableIdQuery;
 import com.schemafy.core.erd.index.application.port.in.GetIndexesByTableIdUseCase;
 import com.schemafy.core.erd.index.application.port.in.RemoveIndexColumnCommand;
 import com.schemafy.core.erd.index.application.port.in.RemoveIndexColumnUseCase;
+import com.schemafy.core.erd.operation.domain.CommittedErdOperation;
 
 import lombok.RequiredArgsConstructor;
 import reactor.core.publisher.Mono;
@@ -248,7 +249,7 @@ public class IndexController {
   }
 
   private Mono<Void> broadcastMutation(Set<String> affectedTableIds,
-      com.schemafy.core.erd.operation.domain.CommittedErdOperation operation) {
+      CommittedErdOperation operation) {
     ErdMutationBroadcaster broadcaster = broadcasterProvider.getIfAvailable();
     if (broadcaster == null) {
       return Mono.empty();

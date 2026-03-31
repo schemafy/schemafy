@@ -56,6 +56,7 @@ import com.schemafy.core.erd.constraint.application.port.in.GetConstraintsByTabl
 import com.schemafy.core.erd.constraint.application.port.in.RemoveConstraintColumnCommand;
 import com.schemafy.core.erd.constraint.application.port.in.RemoveConstraintColumnUseCase;
 import com.schemafy.core.erd.constraint.domain.exception.ConstraintErrorCode;
+import com.schemafy.core.erd.operation.domain.CommittedErdOperation;
 
 import lombok.RequiredArgsConstructor;
 import reactor.core.publisher.Mono;
@@ -258,7 +259,7 @@ public class ConstraintController {
   }
 
   private Mono<Void> broadcastMutation(Set<String> affectedTableIds,
-      com.schemafy.core.erd.operation.domain.CommittedErdOperation operation) {
+      CommittedErdOperation operation) {
     ErdMutationBroadcaster broadcaster = broadcasterProvider.getIfAvailable();
     if (broadcaster == null) {
       return Mono.empty();

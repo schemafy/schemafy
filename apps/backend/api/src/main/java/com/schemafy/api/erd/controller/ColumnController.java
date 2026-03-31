@@ -41,6 +41,7 @@ import com.schemafy.core.erd.column.application.port.in.GetColumnQuery;
 import com.schemafy.core.erd.column.application.port.in.GetColumnUseCase;
 import com.schemafy.core.erd.column.application.port.in.GetColumnsByTableIdQuery;
 import com.schemafy.core.erd.column.application.port.in.GetColumnsByTableIdUseCase;
+import com.schemafy.core.erd.operation.domain.CommittedErdOperation;
 
 import lombok.RequiredArgsConstructor;
 import reactor.core.publisher.Mono;
@@ -194,7 +195,7 @@ public class ColumnController {
   }
 
   private Mono<Void> broadcastMutation(Set<String> affectedTableIds,
-      com.schemafy.core.erd.operation.domain.CommittedErdOperation operation) {
+      CommittedErdOperation operation) {
     ErdMutationBroadcaster broadcaster = broadcasterProvider.getIfAvailable();
     if (broadcaster == null) {
       return Mono.empty();

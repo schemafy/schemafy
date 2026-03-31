@@ -30,6 +30,7 @@ import com.schemafy.api.erd.controller.dto.response.TableSnapshotResponse;
 import com.schemafy.api.erd.service.TableSnapshotOrchestrator;
 import com.schemafy.api.erd.service.table.TableApiResponseMapper;
 import com.schemafy.core.common.json.JsonCodec;
+import com.schemafy.core.erd.operation.domain.CommittedErdOperation;
 import com.schemafy.core.erd.table.application.port.in.ChangeTableExtraCommand;
 import com.schemafy.core.erd.table.application.port.in.ChangeTableExtraUseCase;
 import com.schemafy.core.erd.table.application.port.in.ChangeTableMetaCommand;
@@ -193,7 +194,7 @@ public class TableController {
   }
 
   private Mono<Void> broadcastMutation(Set<String> affectedTableIds,
-      com.schemafy.core.erd.operation.domain.CommittedErdOperation operation) {
+      CommittedErdOperation operation) {
     ErdMutationBroadcaster broadcaster = broadcasterProvider.getIfAvailable();
     if (broadcaster == null) {
       return Mono.empty();
