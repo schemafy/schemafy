@@ -1,11 +1,13 @@
 package com.schemafy.api.project.controller;
 
 import jakarta.validation.Valid;
+import jakarta.validation.constraints.PositiveOrZero;
 
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
+import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
 import com.schemafy.api.common.constant.ApiPath;
@@ -26,6 +28,8 @@ import com.schemafy.core.project.application.port.in.DeleteProjectCommand;
 import com.schemafy.core.project.application.port.in.DeleteProjectUseCase;
 import com.schemafy.core.project.application.port.in.DeleteShareLinkCommand;
 import com.schemafy.core.project.application.port.in.DeleteShareLinkUseCase;
+import com.schemafy.core.project.application.port.in.GetMySharedProjectsQuery;
+import com.schemafy.core.project.application.port.in.GetMySharedProjectsUseCase;
 import com.schemafy.core.project.application.port.in.GetProjectMembersQuery;
 import com.schemafy.core.project.application.port.in.GetProjectQuery;
 import com.schemafy.core.project.application.port.in.GetProjectUseCase;
@@ -49,12 +53,14 @@ import lombok.RequiredArgsConstructor;
 import reactor.core.publisher.Mono;
 
 @RestController
+@Validated
 @RequestMapping(ApiPath.API)
 @RequiredArgsConstructor
 public class ProjectController {
 
   private final CreateProjectUseCase createProjectUseCase;
   private final GetProjectsUseCase getProjectsUseCase;
+  private final GetMySharedProjectsUseCase getMySharedProjectsUseCase;
   private final GetProjectUseCase getProjectUseCase;
   private final UpdateProjectUseCase updateProjectUseCase;
   private final DeleteProjectUseCase deleteProjectUseCase;
@@ -114,6 +120,23 @@ public class ProjectController {
     String userId = authentication.getName();
     return getProjectUseCase.getProject(new GetProjectQuery(projectId, userId))
         .map(ProjectResponse::from);
+  }
+
+  @PreAuthorize("hasAnyRole('ADMIN','EDITOR','VIEWER')")
+  @GetMapping("/projects/shared/me")
+  public Mono<PageResponse<ProjectSummaryResponse>> getMySharedProjects(
+      @RequestParam(defaultValue = "0") @PositiveOrZero int page,
+      Authentication authentication) {
+    int size = 5;
+    String userId = authentication.getName();
+    return getMySharedProjectsUseCase.getMySharedProjects(
+        new GetMySharedProjectsQuery(userId, page, size))
+        .map(result -> PageResponse.of(
+            result.content().stream()
+                .map(ProjectSummaryResponse::from).toList(),
+            result.page(),
+            result.size(),
+            result.totalElements()));
   }
 
   @PreAuthorize("hasAnyRole('ADMIN')")

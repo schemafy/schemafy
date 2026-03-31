@@ -146,6 +146,49 @@ public class ProjectApiSnippets extends RestDocsSnippets {
             projectSummaryFields("content[]."))));
   }
 
+  // ========== GET /api/projects/shared/me - 공유 프로젝트 목록 조회 ==========
+
+  /** 공유 프로젝트 목록 조회 요청 헤더 */
+  public static Snippet getMySharedProjectsRequestHeaders() {
+    return createRequestHeadersSnippet(authorizationHeader());
+  }
+
+  /** 공유 프로젝트 목록 조회 쿼리 파라미터 */
+  public static Snippet getMySharedProjectsQueryParameters() {
+    return queryParameters(
+        parameterWithName("page").description("페이지 번호 (0부터 시작, 기본값: 0)")
+            .optional());
+  }
+
+  /** 공유 프로젝트 목록 조회 응답 헤더 */
+  public static Snippet getMySharedProjectsResponseHeaders() {
+    return createResponseHeadersSnippet(commonResponseHeaders());
+  }
+
+  /** 공유 프로젝트 목록 조회 응답 */
+  public static Snippet getMySharedProjectsResponse() {
+    return createResponseFieldsSnippet(
+        successResponseFields(concat(
+            new FieldDescriptor[] {
+              fieldWithPath("content[]")
+                  .type(JsonFieldType.ARRAY)
+                  .description("프로젝트 목록"),
+              fieldWithPath("page")
+                  .type(JsonFieldType.NUMBER)
+                  .description("현재 페이지 번호 (0부터 시작)"),
+              fieldWithPath("size")
+                  .type(JsonFieldType.NUMBER)
+                  .description("페이지 크기"),
+              fieldWithPath("totalElements")
+                  .type(JsonFieldType.NUMBER)
+                  .description("전체 프로젝트 개수"),
+              fieldWithPath("totalPages")
+                  .type(JsonFieldType.NUMBER)
+                  .description("전체 페이지 수")
+            },
+            projectSummaryFields("content[]."))));
+  }
+
   // ========== GET /api/projects/{projectId} - 프로젝트 상세 조회 ==========
 
   /** 프로젝트 상세 조회 경로 파라미터 */
