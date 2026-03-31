@@ -3,13 +3,22 @@ package com.schemafy.api.common.type;
 import java.util.Collection;
 import java.util.List;
 
-public record MutationResponse<T>(T data, List<String> affectedTableIds) {
+import com.fasterxml.jackson.annotation.JsonInclude;
+import com.schemafy.core.erd.operation.domain.CommittedErdOperation;
 
-  public static <T> MutationResponse<T> of(T data, Collection<String> affectedTableIds) {
+public record MutationResponse<T>(
+    T data,
+    List<String> affectedTableIds,
+    @JsonInclude(JsonInclude.Include.NON_NULL) CommittedErdOperation operation) {
+
+  public static <T> MutationResponse<T> of(T data,
+      Collection<String> affectedTableIds,
+      CommittedErdOperation operation) {
     if (affectedTableIds == null || affectedTableIds.isEmpty()) {
-      return new MutationResponse<>(data, List.of());
+      return new MutationResponse<>(data, List.of(), operation);
     }
-    return new MutationResponse<>(data, List.copyOf(affectedTableIds));
+    return new MutationResponse<>(data, List.copyOf(affectedTableIds),
+        operation);
   }
 
 }

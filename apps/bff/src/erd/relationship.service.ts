@@ -1,5 +1,8 @@
 import { Injectable } from '@nestjs/common';
-import { BackendClientService } from '../common/backend-client/backend-client.service';
+import {
+  BackendClientService,
+  type CollaborationRequestHeaders,
+} from '../common/backend-client/backend-client.service';
 import type {
   AddRelationshipColumnRequest,
   AddRelationshipColumnResponse,
@@ -21,14 +24,14 @@ export class RelationshipService {
   async createRelationship(
     data: CreateRelationshipRequest,
     authHeader: string,
-    sessionId?: string,
+    collaborationHeaders?: CollaborationRequestHeaders,
   ): Promise<MutationResponse<RelationshipResponse>> {
     const response = await this.backendClient.client.post<
       MutationResponse<RelationshipResponse>
     >(
       '/api/v1.0/relationships',
       data,
-      this.backendClient.getAuthConfig(authHeader, sessionId),
+      this.backendClient.getAuthConfig(authHeader, collaborationHeaders),
     );
     return response.data;
   }
@@ -61,12 +64,12 @@ export class RelationshipService {
     relationshipId: string,
     data: ChangeRelationshipNameRequest,
     authHeader: string,
-    sessionId?: string,
+    collaborationHeaders?: CollaborationRequestHeaders,
   ): Promise<MutationResponse> {
     const response = await this.backendClient.client.patch<MutationResponse>(
       `/api/v1.0/relationships/${relationshipId}/name`,
       data,
-      this.backendClient.getAuthConfig(authHeader, sessionId),
+      this.backendClient.getAuthConfig(authHeader, collaborationHeaders),
     );
     return response.data;
   }
@@ -75,12 +78,12 @@ export class RelationshipService {
     relationshipId: string,
     data: ChangeRelationshipKindRequest,
     authHeader: string,
-    sessionId?: string,
+    collaborationHeaders?: CollaborationRequestHeaders,
   ): Promise<MutationResponse> {
     const response = await this.backendClient.client.patch<MutationResponse>(
       `/api/v1.0/relationships/${relationshipId}/kind`,
       data,
-      this.backendClient.getAuthConfig(authHeader, sessionId),
+      this.backendClient.getAuthConfig(authHeader, collaborationHeaders),
     );
     return response.data;
   }
@@ -89,12 +92,12 @@ export class RelationshipService {
     relationshipId: string,
     data: ChangeRelationshipCardinalityRequest,
     authHeader: string,
-    sessionId?: string,
+    collaborationHeaders?: CollaborationRequestHeaders,
   ): Promise<MutationResponse> {
     const response = await this.backendClient.client.patch<MutationResponse>(
       `/api/v1.0/relationships/${relationshipId}/cardinality`,
       data,
-      this.backendClient.getAuthConfig(authHeader, sessionId),
+      this.backendClient.getAuthConfig(authHeader, collaborationHeaders),
     );
     return response.data;
   }
@@ -103,12 +106,12 @@ export class RelationshipService {
     relationshipId: string,
     data: ChangeRelationshipExtraRequest,
     authHeader: string,
-    sessionId?: string,
+    collaborationHeaders?: CollaborationRequestHeaders,
   ): Promise<MutationResponse> {
     const response = await this.backendClient.client.patch<MutationResponse>(
       `/api/v1.0/relationships/${relationshipId}/extra`,
       data,
-      this.backendClient.getAuthConfig(authHeader, sessionId),
+      this.backendClient.getAuthConfig(authHeader, collaborationHeaders),
     );
     return response.data;
   }
@@ -116,11 +119,11 @@ export class RelationshipService {
   async deleteRelationship(
     relationshipId: string,
     authHeader: string,
-    sessionId?: string,
+    collaborationHeaders?: CollaborationRequestHeaders,
   ): Promise<MutationResponse> {
     const response = await this.backendClient.client.delete<MutationResponse>(
       `/api/v1.0/relationships/${relationshipId}`,
-      this.backendClient.getAuthConfig(authHeader, sessionId),
+      this.backendClient.getAuthConfig(authHeader, collaborationHeaders),
     );
     return response.data;
   }
@@ -142,14 +145,14 @@ export class RelationshipService {
     relationshipId: string,
     data: AddRelationshipColumnRequest,
     authHeader: string,
-    sessionId?: string,
+    collaborationHeaders?: CollaborationRequestHeaders,
   ): Promise<MutationResponse<AddRelationshipColumnResponse>> {
     const response = await this.backendClient.client.post<
       MutationResponse<AddRelationshipColumnResponse>
     >(
       `/api/v1.0/relationships/${relationshipId}/columns`,
       data,
-      this.backendClient.getAuthConfig(authHeader, sessionId),
+      this.backendClient.getAuthConfig(authHeader, collaborationHeaders),
     );
     return response.data;
   }
@@ -157,11 +160,11 @@ export class RelationshipService {
   async removeRelationshipColumn(
     relationshipColumnId: string,
     authHeader: string,
-    sessionId?: string,
+    collaborationHeaders?: CollaborationRequestHeaders,
   ): Promise<MutationResponse> {
     const response = await this.backendClient.client.delete<MutationResponse>(
       `/api/v1.0/relationship-columns/${relationshipColumnId}`,
-      this.backendClient.getAuthConfig(authHeader, sessionId),
+      this.backendClient.getAuthConfig(authHeader, collaborationHeaders),
     );
     return response.data;
   }
@@ -182,12 +185,12 @@ export class RelationshipService {
     relationshipColumnId: string,
     data: ChangeRelationshipColumnPositionRequest,
     authHeader: string,
-    sessionId?: string,
+    collaborationHeaders?: CollaborationRequestHeaders,
   ): Promise<MutationResponse> {
     const response = await this.backendClient.client.patch<MutationResponse>(
       `/api/v1.0/relationship-columns/${relationshipColumnId}/position`,
       data,
-      this.backendClient.getAuthConfig(authHeader, sessionId),
+      this.backendClient.getAuthConfig(authHeader, collaborationHeaders),
     );
     return response.data;
   }

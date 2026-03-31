@@ -1,5 +1,6 @@
 package com.schemafy.api.erd.controller.dto.response;
 
+import com.fasterxml.jackson.annotation.JsonInclude;
 import com.schemafy.core.erd.schema.application.port.in.CreateSchemaResult;
 import com.schemafy.core.erd.schema.domain.Schema;
 
@@ -9,7 +10,8 @@ public record SchemaResponse(
     String dbVendorName,
     String name,
     String charset,
-    String collation) {
+    String collation,
+    @JsonInclude(JsonInclude.Include.NON_NULL) Long currentRevision) {
 
   public static SchemaResponse from(CreateSchemaResult result) {
     return new SchemaResponse(
@@ -18,7 +20,8 @@ public record SchemaResponse(
         result.dbVendorName(),
         result.name(),
         result.charset(),
-        result.collation());
+        result.collation(),
+        null);
   }
 
   public static SchemaResponse from(Schema schema) {
@@ -28,7 +31,19 @@ public record SchemaResponse(
         schema.dbVendorName(),
         schema.name(),
         schema.charset(),
-        schema.collation());
+        schema.collation(),
+        null);
+  }
+
+  public static SchemaResponse from(Schema schema, long currentRevision) {
+    return new SchemaResponse(
+        schema.id(),
+        schema.projectId(),
+        schema.dbVendorName(),
+        schema.name(),
+        schema.charset(),
+        schema.collation(),
+        currentRevision);
   }
 
 }

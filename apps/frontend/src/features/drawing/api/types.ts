@@ -1,6 +1,14 @@
+export type ErdOperation = {
+  opId: string;
+  clientOperationId: string | null;
+  committedRevision: number;
+  derivationKind: string;
+};
+
 export type MutationResponse<T = null> = {
   data: T;
   affectedTableIds: string[];
+  operation: ErdOperation;
 };
 
 export type JsonPrimitive = string | number | boolean | null;
@@ -16,6 +24,7 @@ export type SchemaResponse = {
   name: string;
   charset: string;
   collation: string;
+  currentRevision?: number;
 };
 
 export type CreateSchemaRequest = {
@@ -324,6 +333,11 @@ export type TableSnapshotResponse = {
   constraints: ConstraintSnapshotResponse[];
   relationships: RelationshipSnapshotResponse[];
   indexes: IndexSnapshotResponse[];
+};
+
+export type SchemaSnapshotsResponse = {
+  currentRevision: number;
+  snapshots: Record<string, TableSnapshotResponse>;
 };
 
 export type DbVendorSummary = {

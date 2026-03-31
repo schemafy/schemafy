@@ -28,7 +28,8 @@ import com.schemafy.core.erd.schema.application.port.in.CreateSchemaUseCase;
 import com.schemafy.core.erd.schema.application.port.in.DeleteSchemaCommand;
 import com.schemafy.core.erd.schema.application.port.in.DeleteSchemaUseCase;
 import com.schemafy.core.erd.schema.application.port.in.GetSchemaQuery;
-import com.schemafy.core.erd.schema.application.port.in.GetSchemaUseCase;
+import com.schemafy.core.erd.schema.application.port.in.GetSchemaWithRevisionResult;
+import com.schemafy.core.erd.schema.application.port.in.GetSchemaWithRevisionUseCase;
 import com.schemafy.core.erd.schema.application.port.in.GetSchemasByProjectIdQuery;
 import com.schemafy.core.erd.schema.application.port.in.GetSchemasByProjectIdUseCase;
 import com.schemafy.core.erd.schema.domain.Schema;
@@ -37,6 +38,10 @@ import com.schemafy.core.project.domain.exception.ProjectErrorCode;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
+import static com.schemafy.api.erd.controller.ErdOperationFixtures.CLIENT_OPERATION_ID;
+import static com.schemafy.api.erd.controller.ErdOperationFixtures.COMMITTED_REVISION;
+import static com.schemafy.api.erd.controller.ErdOperationFixtures.OP_ID;
+import static com.schemafy.api.erd.controller.ErdOperationFixtures.committedOperation;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
 import static org.springframework.restdocs.headers.HeaderDocumentation.headerWithName;
@@ -70,7 +75,7 @@ class SchemaControllerTest {
   private CreateSchemaUseCase createSchemaUseCase;
 
   @MockitoBean
-  private GetSchemaUseCase getSchemaUseCase;
+  private GetSchemaWithRevisionUseCase getSchemaWithRevisionUseCase;
 
   @MockitoBean
   private GetSchemasByProjectIdUseCase getSchemasByProjectIdUseCase;
@@ -100,7 +105,9 @@ class SchemaControllerTest {
         "utf8mb4_general_ci");
 
     given(createSchemaUseCase.createSchema(any(CreateSchemaCommand.class)))
-        .willReturn(Mono.just(MutationResult.empty(result)));
+        .willReturn(Mono.just(
+            MutationResult.empty(result)
+                .withOperation(committedOperation())));
 
     webTestClient.post()
         .uri(API_BASE_PATH + "/schemas")
@@ -110,6 +117,12 @@ class SchemaControllerTest {
         .exchange()
         .expectStatus().isOk()
         .expectBody()
+        .jsonPath("$.operation.opId").isEqualTo(OP_ID)
+        .jsonPath("$.operation.clientOperationId")
+        .isEqualTo(CLIENT_OPERATION_ID)
+        .jsonPath("$.operation.committedRevision")
+        .isEqualTo((int) COMMITTED_REVISION)
+        .jsonPath("$.operation.derivationKind").isEqualTo("ORIGINAL")
         .consumeWith(document("schema-create",
             requestHeaders(
                 headerWithName("Content-Type")
@@ -133,7 +146,16 @@ class SchemaControllerTest {
                 fieldWithPath("data.name").description("스키마 이름"),
                 fieldWithPath("data.charset").description("문자셋").optional(),
                 fieldWithPath("data.collation").description("콜레이션").optional(),
-                fieldWithPath("affectedTableIds").description("영향받은 테이블 ID 목록"))));
+                fieldWithPath("affectedTableIds").description("영향받은 테이블 ID 목록"),
+                fieldWithPath("operation").type(JsonFieldType.OBJECT)
+                    .description("커밋된 ERD operation 메타데이터"),
+                fieldWithPath("operation.opId").description("커밋된 operation ID"),
+                fieldWithPath("operation.clientOperationId")
+                    .description("클라이언트가 보낸 operation ID"),
+                fieldWithPath("operation.committedRevision")
+                    .description("커밋 후 schema revision"),
+                fieldWithPath("operation.derivationKind")
+                    .description("operation derivation kind"))));
   }
 
   @Test
@@ -175,8 +197,8 @@ class SchemaControllerTest {
         "utf8mb4",
         "utf8mb4_general_ci");
 
-    given(getSchemaUseCase.getSchema(any(GetSchemaQuery.class)))
-        .willReturn(Mono.just(schema));
+    given(getSchemaWithRevisionUseCase.getSchemaWithRevision(any(GetSchemaQuery.class)))
+        .willReturn(Mono.just(new GetSchemaWithRevisionResult(schema, 0L)));
 
     webTestClient.get()
         .uri(API_BASE_PATH + "/schemas/{schemaId}", schemaId)
@@ -184,6 +206,7 @@ class SchemaControllerTest {
         .exchange()
         .expectStatus().isOk()
         .expectBody()
+        .jsonPath("$.currentRevision").isEqualTo(0)
         .consumeWith(document("schema-get",
             pathParameters(
                 parameterWithName("schemaId")
@@ -200,7 +223,8 @@ class SchemaControllerTest {
                 fieldWithPath("dbVendorName").description("DB 벤더 이름"),
                 fieldWithPath("name").description("스키마 이름"),
                 fieldWithPath("charset").description("문자셋"),
-                fieldWithPath("collation").description("콜레이션"))));
+                fieldWithPath("collation").description("콜레이션"),
+                fieldWithPath("currentRevision").description("현재 schema revision"))));
   }
 
   @Test
@@ -279,7 +303,9 @@ class SchemaControllerTest {
     ChangeSchemaNameRequest request = new ChangeSchemaNameRequest("new_schema_name");
 
     given(changeSchemaNameUseCase.changeSchemaName(any(ChangeSchemaNameCommand.class)))
-        .willReturn(Mono.just(MutationResult.empty(null)));
+        .willReturn(Mono.just(
+            MutationResult.<Void>empty(null)
+                .withOperation(committedOperation())));
 
     webTestClient.patch()
         .uri(API_BASE_PATH + "/schemas/{schemaId}/name", schemaId)
@@ -289,6 +315,8 @@ class SchemaControllerTest {
         .exchange()
         .expectStatus().isOk()
         .expectBody()
+        .jsonPath("$.data").isEqualTo(null)
+        .jsonPath("$.operation.opId").isEqualTo(OP_ID)
         .consumeWith(document("schema-change-name",
             pathParameters(
                 parameterWithName("schemaId")
@@ -310,7 +338,22 @@ class SchemaControllerTest {
                     .optional(),
                 fieldWithPath("affectedTableIds")
                     .type(JsonFieldType.ARRAY)
-                    .description("영향받은 테이블 ID 목록"))));
+                    .description("영향받은 테이블 ID 목록"),
+                fieldWithPath("operation")
+                    .type(JsonFieldType.OBJECT)
+                    .description("커밋된 ERD operation 메타데이터"),
+                fieldWithPath("operation.opId")
+                    .type(JsonFieldType.STRING)
+                    .description("커밋된 operation ID"),
+                fieldWithPath("operation.clientOperationId")
+                    .type(JsonFieldType.STRING)
+                    .description("클라이언트가 보낸 operation ID"),
+                fieldWithPath("operation.committedRevision")
+                    .type(JsonFieldType.NUMBER)
+                    .description("커밋 후 schema revision"),
+                fieldWithPath("operation.derivationKind")
+                    .type(JsonFieldType.STRING)
+                    .description("operation derivation kind"))));
   }
 
   @Test
@@ -320,7 +363,9 @@ class SchemaControllerTest {
     String schemaId = "06D6W1GAHD51T5NJPK29Q6BCR8";
 
     given(deleteSchemaUseCase.deleteSchema(any(DeleteSchemaCommand.class)))
-        .willReturn(Mono.just(MutationResult.empty(null)));
+        .willReturn(Mono.just(
+            MutationResult.<Void>empty(null)
+                .withOperation(committedOperation())));
 
     webTestClient.delete()
         .uri(API_BASE_PATH + "/schemas/{schemaId}", schemaId)
@@ -328,6 +373,8 @@ class SchemaControllerTest {
         .exchange()
         .expectStatus().isOk()
         .expectBody()
+        .jsonPath("$.data").isEqualTo(null)
+        .jsonPath("$.operation.opId").isEqualTo(OP_ID)
         .consumeWith(document("schema-delete",
             pathParameters(
                 parameterWithName("schemaId")
@@ -345,7 +392,22 @@ class SchemaControllerTest {
                     .optional(),
                 fieldWithPath("affectedTableIds")
                     .type(JsonFieldType.ARRAY)
-                    .description("영향받은 테이블 ID 목록"))));
+                    .description("영향받은 테이블 ID 목록"),
+                fieldWithPath("operation")
+                    .type(JsonFieldType.OBJECT)
+                    .description("커밋된 ERD operation 메타데이터"),
+                fieldWithPath("operation.opId")
+                    .type(JsonFieldType.STRING)
+                    .description("커밋된 operation ID"),
+                fieldWithPath("operation.clientOperationId")
+                    .type(JsonFieldType.STRING)
+                    .description("클라이언트가 보낸 operation ID"),
+                fieldWithPath("operation.committedRevision")
+                    .type(JsonFieldType.NUMBER)
+                    .description("커밋 후 schema revision"),
+                fieldWithPath("operation.derivationKind")
+                    .type(JsonFieldType.STRING)
+                    .description("operation derivation kind"))));
   }
 
 }

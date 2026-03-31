@@ -1,4 +1,5 @@
 import { apiClient } from '@/lib/api';
+import { createErdMutationConfig } from './mutation-request';
 import type {
   MutationResponse,
   SchemaResponse,
@@ -12,6 +13,7 @@ export const createSchema = async (
   const { data: res } = await apiClient.post<MutationResponse<SchemaResponse>>(
     '/schemas',
     data,
+    createErdMutationConfig(),
   );
   return res;
 };
@@ -37,6 +39,7 @@ export const changeSchemaName = async (
   const { data: res } = await apiClient.patch<MutationResponse>(
     `/schemas/${schemaId}/name`,
     data,
+    createErdMutationConfig(schemaId),
   );
   return res;
 };
@@ -46,6 +49,7 @@ export const deleteSchema = async (
 ): Promise<MutationResponse> => {
   const { data: res } = await apiClient.delete<MutationResponse>(
     `/schemas/${schemaId}`,
+    createErdMutationConfig(schemaId),
   );
   return res;
 };

@@ -128,7 +128,8 @@ class DefaultErdMutationCoordinator implements ErdMutationCoordinator {
                 finalizedTarget,
                 updatedState,
                 metadata)))
-            .thenReturn(mutationResult));
+            .map(operationLog -> mutationResult.withOperation(
+                CommittedErdOperation.from(operationLog))));
   }
 
   private Mono<SchemaCollaborationState> resolveSchemaState(

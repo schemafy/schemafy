@@ -71,7 +71,20 @@ public abstract class RestDocsSnippets {
       fieldWithPath("data").type(JsonFieldType.OBJECT)
           .description("생성/수정된 데이터").optional(),
       fieldWithPath("affectedTableIds").type(JsonFieldType.ARRAY)
-          .description("영향받은 테이블 ID 목록")
+          .description("영향받은 테이블 ID 목록"),
+      fieldWithPath("operation").type(JsonFieldType.OBJECT)
+          .description("커밋된 ERD operation 메타데이터").optional(),
+      fieldWithPath("operation.opId").type(JsonFieldType.STRING)
+          .description("커밋된 operation ID").optional(),
+      fieldWithPath("operation.clientOperationId")
+          .type(JsonFieldType.VARIES)
+          .description("클라이언트가 보낸 operation ID").optional(),
+      fieldWithPath("operation.committedRevision")
+          .type(JsonFieldType.NUMBER)
+          .description("커밋 후 schema revision").optional(),
+      fieldWithPath("operation.derivationKind")
+          .type(JsonFieldType.STRING)
+          .description("operation derivation kind").optional()
     };
     return concat(baseFields, dataFields);
   }
@@ -82,7 +95,20 @@ public abstract class RestDocsSnippets {
       fieldWithPath("data").type(JsonFieldType.NULL)
           .description("응답 데이터 (없음)").optional(),
       fieldWithPath("affectedTableIds").type(JsonFieldType.ARRAY)
-          .description("영향받은 테이블 ID 목록")
+          .description("영향받은 테이블 ID 목록"),
+      fieldWithPath("operation").type(JsonFieldType.OBJECT)
+          .description("커밋된 ERD operation 메타데이터").optional(),
+      fieldWithPath("operation.opId").type(JsonFieldType.STRING)
+          .description("커밋된 operation ID").optional(),
+      fieldWithPath("operation.clientOperationId")
+          .type(JsonFieldType.VARIES)
+          .description("클라이언트가 보낸 operation ID").optional(),
+      fieldWithPath("operation.committedRevision")
+          .type(JsonFieldType.NUMBER)
+          .description("커밋 후 schema revision").optional(),
+      fieldWithPath("operation.derivationKind")
+          .type(JsonFieldType.STRING)
+          .description("operation derivation kind").optional()
     };
   }
 

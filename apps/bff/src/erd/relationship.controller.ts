@@ -9,7 +9,8 @@ import {
 } from '@nestjs/common';
 import { RelationshipService } from './relationship.service';
 import { AuthHeader } from '../common/decorators/auth-header.decorator';
-import { SessionId } from '../common/decorators/session-id.decorator';
+import { CollaborationHeaders } from '../common/decorators/collaboration-headers.decorator';
+import type { CollaborationRequestHeaders } from '../common/backend-client/backend-client.service';
 import type {
   AddRelationshipColumnRequest,
   ChangeRelationshipCardinalityRequest,
@@ -28,12 +29,13 @@ export class RelationshipController {
   async createRelationship(
     @Body() data: CreateRelationshipRequest,
     @AuthHeader() authHeader: string,
-    @SessionId() sessionId?: string,
+    @CollaborationHeaders()
+    collaborationHeaders?: CollaborationRequestHeaders,
   ) {
     return this.relationshipService.createRelationship(
       data,
       authHeader,
-      sessionId,
+      collaborationHeaders,
     );
   }
 
@@ -61,13 +63,14 @@ export class RelationshipController {
     @Param('relationshipId') relationshipId: string,
     @Body() data: ChangeRelationshipNameRequest,
     @AuthHeader() authHeader: string,
-    @SessionId() sessionId?: string,
+    @CollaborationHeaders()
+    collaborationHeaders?: CollaborationRequestHeaders,
   ) {
     return this.relationshipService.changeRelationshipName(
       relationshipId,
       data,
       authHeader,
-      sessionId,
+      collaborationHeaders,
     );
   }
 
@@ -76,13 +79,14 @@ export class RelationshipController {
     @Param('relationshipId') relationshipId: string,
     @Body() data: ChangeRelationshipKindRequest,
     @AuthHeader() authHeader: string,
-    @SessionId() sessionId?: string,
+    @CollaborationHeaders()
+    collaborationHeaders?: CollaborationRequestHeaders,
   ) {
     return this.relationshipService.changeRelationshipKind(
       relationshipId,
       data,
       authHeader,
-      sessionId,
+      collaborationHeaders,
     );
   }
 
@@ -91,13 +95,14 @@ export class RelationshipController {
     @Param('relationshipId') relationshipId: string,
     @Body() data: ChangeRelationshipCardinalityRequest,
     @AuthHeader() authHeader: string,
-    @SessionId() sessionId?: string,
+    @CollaborationHeaders()
+    collaborationHeaders?: CollaborationRequestHeaders,
   ) {
     return this.relationshipService.changeRelationshipCardinality(
       relationshipId,
       data,
       authHeader,
-      sessionId,
+      collaborationHeaders,
     );
   }
 
@@ -106,13 +111,14 @@ export class RelationshipController {
     @Param('relationshipId') relationshipId: string,
     @Body() data: ChangeRelationshipExtraRequest,
     @AuthHeader() authHeader: string,
-    @SessionId() sessionId?: string,
+    @CollaborationHeaders()
+    collaborationHeaders?: CollaborationRequestHeaders,
   ) {
     return this.relationshipService.changeRelationshipExtra(
       relationshipId,
       data,
       authHeader,
-      sessionId,
+      collaborationHeaders,
     );
   }
 
@@ -120,12 +126,13 @@ export class RelationshipController {
   async deleteRelationship(
     @Param('relationshipId') relationshipId: string,
     @AuthHeader() authHeader: string,
-    @SessionId() sessionId?: string,
+    @CollaborationHeaders()
+    collaborationHeaders?: CollaborationRequestHeaders,
   ) {
     return this.relationshipService.deleteRelationship(
       relationshipId,
       authHeader,
-      sessionId,
+      collaborationHeaders,
     );
   }
 
@@ -145,13 +152,14 @@ export class RelationshipController {
     @Param('relationshipId') relationshipId: string,
     @Body() data: AddRelationshipColumnRequest,
     @AuthHeader() authHeader: string,
-    @SessionId() sessionId?: string,
+    @CollaborationHeaders()
+    collaborationHeaders?: CollaborationRequestHeaders,
   ) {
     return this.relationshipService.addRelationshipColumn(
       relationshipId,
       data,
       authHeader,
-      sessionId,
+      collaborationHeaders,
     );
   }
 
@@ -159,12 +167,13 @@ export class RelationshipController {
   async removeRelationshipColumn(
     @Param('relationshipColumnId') relationshipColumnId: string,
     @AuthHeader() authHeader: string,
-    @SessionId() sessionId?: string,
+    @CollaborationHeaders()
+    collaborationHeaders?: CollaborationRequestHeaders,
   ) {
     return this.relationshipService.removeRelationshipColumn(
       relationshipColumnId,
       authHeader,
-      sessionId,
+      collaborationHeaders,
     );
   }
 
@@ -184,13 +193,14 @@ export class RelationshipController {
     @Param('relationshipColumnId') relationshipColumnId: string,
     @Body() data: ChangeRelationshipColumnPositionRequest,
     @AuthHeader() authHeader: string,
-    @SessionId() sessionId?: string,
+    @CollaborationHeaders()
+    collaborationHeaders?: CollaborationRequestHeaders,
   ) {
     return this.relationshipService.changeRelationshipColumnPosition(
       relationshipColumnId,
       data,
       authHeader,
-      sessionId,
+      collaborationHeaders,
     );
   }
 }

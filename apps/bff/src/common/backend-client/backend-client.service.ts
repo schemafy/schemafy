@@ -4,6 +4,12 @@ import { ConfigService } from '@nestjs/config';
 
 import { createHmacHeaders } from '../hmac/hmac.util';
 
+export type CollaborationRequestHeaders = {
+  sessionId?: string;
+  clientOperationId?: string;
+  baseSchemaRevision?: string;
+};
+
 @Injectable()
 export class BackendClientService {
   readonly client: AxiosInstance;
@@ -51,10 +57,20 @@ export class BackendClientService {
     });
   }
 
-  getAuthConfig(authHeader: string, sessionId?: string) {
+  getAuthConfig(
+    authHeader: string,
+    collaborationHeaders?: CollaborationRequestHeaders,
+  ) {
     const headers: Record<string, string> = { Authorization: authHeader };
-    if (sessionId) {
-      headers['X-Session-Id'] = sessionId;
+    if (collaborationHeaders?.sessionId) {
+      headers['X-Session-Id'] = collaborationHeaders.sessionId;
+    }
+    if (collaborationHeaders?.clientOperationId) {
+      headers['X-Client-Op-Id'] = collaborationHeaders.clientOperationId;
+    }
+    if (collaborationHeaders?.baseSchemaRevision) {
+      headers['X-Base-Schema-Revision'] =
+        collaborationHeaders.baseSchemaRevision;
     }
     return { headers };
   }
