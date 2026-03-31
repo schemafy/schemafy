@@ -21,7 +21,6 @@ import com.schemafy.api.erd.broadcast.ErdMutationBroadcaster;
 import com.schemafy.api.erd.controller.dto.request.ChangeSchemaNameRequest;
 import com.schemafy.api.erd.controller.dto.request.CreateSchemaRequest;
 import com.schemafy.api.erd.controller.dto.response.SchemaResponse;
-import com.schemafy.core.erd.operation.application.port.out.FindSchemaCollaborationStatePort;
 import com.schemafy.core.erd.operation.domain.CommittedErdOperation;
 import com.schemafy.core.erd.schema.application.port.in.ChangeSchemaNameCommand;
 import com.schemafy.core.erd.schema.application.port.in.ChangeSchemaNameUseCase;
@@ -30,7 +29,7 @@ import com.schemafy.core.erd.schema.application.port.in.CreateSchemaUseCase;
 import com.schemafy.core.erd.schema.application.port.in.DeleteSchemaCommand;
 import com.schemafy.core.erd.schema.application.port.in.DeleteSchemaUseCase;
 import com.schemafy.core.erd.schema.application.port.in.GetSchemaQuery;
-import com.schemafy.core.erd.schema.application.port.in.GetSchemaUseCase;
+import com.schemafy.core.erd.schema.application.port.in.GetSchemaWithRevisionUseCase;
 import com.schemafy.core.erd.schema.application.port.in.GetSchemasByProjectIdQuery;
 import com.schemafy.core.erd.schema.application.port.in.GetSchemasByProjectIdUseCase;
 
@@ -43,11 +42,10 @@ import reactor.core.publisher.Mono;
 public class SchemaController {
 
   private final CreateSchemaUseCase createSchemaUseCase;
-  private final GetSchemaUseCase getSchemaUseCase;
+  private final GetSchemaWithRevisionUseCase getSchemaWithRevisionUseCase;
   private final GetSchemasByProjectIdUseCase getSchemasByProjectIdUseCase;
   private final ChangeSchemaNameUseCase changeSchemaNameUseCase;
   private final DeleteSchemaUseCase deleteSchemaUseCase;
-  private final FindSchemaCollaborationStatePort findSchemaCollaborationStatePort;
 
   private final ObjectProvider<ErdMutationBroadcaster> broadcasterProvider;
 
@@ -77,10 +75,8 @@ public class SchemaController {
   public Mono<SchemaResponse> getSchema(
       @PathVariable String schemaId) {
     GetSchemaQuery query = new GetSchemaQuery(schemaId);
-    return getSchemaUseCase.getSchema(query)
-        .flatMap(schema -> findSchemaCollaborationStatePort.findBySchemaId(schemaId)
-            .map(state -> SchemaResponse.from(schema, state.currentRevision()))
-            .defaultIfEmpty(SchemaResponse.from(schema, 0L)));
+    return getSchemaWithRevisionUseCase.getSchemaWithRevision(query)
+        .map(result -> SchemaResponse.from(result.schema(), result.currentRevision()));
   }
 
   @PreAuthorize("hasAnyRole('OWNER','ADMIN','EDITOR','COMMENTER','VIEWER')")

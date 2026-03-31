@@ -28,7 +28,8 @@ import com.schemafy.core.erd.schema.application.port.in.CreateSchemaUseCase;
 import com.schemafy.core.erd.schema.application.port.in.DeleteSchemaCommand;
 import com.schemafy.core.erd.schema.application.port.in.DeleteSchemaUseCase;
 import com.schemafy.core.erd.schema.application.port.in.GetSchemaQuery;
-import com.schemafy.core.erd.schema.application.port.in.GetSchemaUseCase;
+import com.schemafy.core.erd.schema.application.port.in.GetSchemaWithRevisionResult;
+import com.schemafy.core.erd.schema.application.port.in.GetSchemaWithRevisionUseCase;
 import com.schemafy.core.erd.schema.application.port.in.GetSchemasByProjectIdQuery;
 import com.schemafy.core.erd.schema.application.port.in.GetSchemasByProjectIdUseCase;
 import com.schemafy.core.erd.schema.domain.Schema;
@@ -74,7 +75,7 @@ class SchemaControllerTest {
   private CreateSchemaUseCase createSchemaUseCase;
 
   @MockitoBean
-  private GetSchemaUseCase getSchemaUseCase;
+  private GetSchemaWithRevisionUseCase getSchemaWithRevisionUseCase;
 
   @MockitoBean
   private GetSchemasByProjectIdUseCase getSchemasByProjectIdUseCase;
@@ -196,8 +197,8 @@ class SchemaControllerTest {
         "utf8mb4",
         "utf8mb4_general_ci");
 
-    given(getSchemaUseCase.getSchema(any(GetSchemaQuery.class)))
-        .willReturn(Mono.just(schema));
+    given(getSchemaWithRevisionUseCase.getSchemaWithRevision(any(GetSchemaQuery.class)))
+        .willReturn(Mono.just(new GetSchemaWithRevisionResult(schema, 0L)));
 
     webTestClient.get()
         .uri(API_BASE_PATH + "/schemas/{schemaId}", schemaId)
