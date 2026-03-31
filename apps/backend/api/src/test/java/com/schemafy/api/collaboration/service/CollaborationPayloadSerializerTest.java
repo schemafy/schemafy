@@ -80,8 +80,8 @@ class CollaborationPayloadSerializerTest {
   @DisplayName("sessionId가 없는 ERD_MUTATED 직렬화 시 sessionId를 생략한다")
   void serialize_omits_session_id_when_erd_mutated_has_no_session() {
     StepVerifier.create(serializer.serialize(
-        ErdMutatedEvent.Outbound.of("schema-1", Set.of("table-1"),
-            OPERATION)))
+        ErdMutatedEvent.Outbound.of(null, "schema-1",
+            Set.of("table-1"), OPERATION)))
         .assertNext(json -> {
           assertThat(json).contains("\"type\":\"ERD_MUTATED\"");
           assertThat(json).contains("\"schemaId\":\"schema-1\"");

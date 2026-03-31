@@ -12,10 +12,6 @@ public record MutationResponse<T>(
     @JsonInclude(JsonInclude.Include.NON_NULL)
     CommittedErdOperation operation) {
 
-  public static <T> MutationResponse<T> of(T data, Collection<String> affectedTableIds) {
-    return of(data, affectedTableIds, null);
-  }
-
   public static <T> MutationResponse<T> of(T data,
       Collection<String> affectedTableIds,
       CommittedErdOperation operation) {

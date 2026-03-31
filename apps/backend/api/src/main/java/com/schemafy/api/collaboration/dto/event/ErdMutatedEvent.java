@@ -19,26 +19,10 @@ public final class ErdMutatedEvent {
       long timestamp) implements CollaborationOutbound {
 
     public static Outbound of(String sessionId, String schemaId,
-        Set<String> affectedTableIds) {
-      return of(sessionId, schemaId, affectedTableIds, null);
-    }
-
-    public static Outbound of(String sessionId, String schemaId,
         Set<String> affectedTableIds,
         CommittedErdOperation operation) {
       return new Outbound(sessionId, schemaId, affectedTableIds,
           operation, System.currentTimeMillis());
-    }
-
-    public static Outbound of(String schemaId,
-        Set<String> affectedTableIds) {
-      return of(null, schemaId, affectedTableIds, null);
-    }
-
-    public static Outbound of(String schemaId,
-        Set<String> affectedTableIds,
-        CommittedErdOperation operation) {
-      return of(null, schemaId, affectedTableIds, operation);
     }
 
     @Override

@@ -28,7 +28,7 @@ class ErdMutatedEventTest {
   @DisplayName("Outbound 직렬화 시 type 디스크리미네이터가 포함된다")
   void serialize_includes_type_discriminator() throws Exception {
     ErdMutatedEvent.Outbound event = ErdMutatedEvent.Outbound.of(
-        "schema-1", Set.of("table-1", "table-2"), OPERATION);
+        null, "schema-1", Set.of("table-1", "table-2"), OPERATION);
 
     String json = objectMapper.writeValueAsString(event);
 
@@ -44,7 +44,7 @@ class ErdMutatedEventTest {
   @DisplayName("Outbound 역직렬화 시 올바른 타입으로 복원된다")
   void deserialize_restores_correct_type() throws Exception {
     ErdMutatedEvent.Outbound original = ErdMutatedEvent.Outbound.of(
-        "schema-1", Set.of("table-1"), OPERATION);
+        null, "schema-1", Set.of("table-1"), OPERATION);
 
     String json = objectMapper.writeValueAsString(original);
     CollaborationOutbound deserialized = objectMapper.readValue(json,
@@ -63,7 +63,7 @@ class ErdMutatedEventTest {
   @DisplayName("Outbound of 팩토리 메서드가 sessionId를 null로 설정한다")
   void of_sets_null_session_id() {
     ErdMutatedEvent.Outbound event = ErdMutatedEvent.Outbound.of(
-        "schema-1", Set.of(), OPERATION);
+        null, "schema-1", Set.of(), OPERATION);
 
     assertThat(event.sessionId()).isNull();
     assertThat(event.operation()).isEqualTo(OPERATION);

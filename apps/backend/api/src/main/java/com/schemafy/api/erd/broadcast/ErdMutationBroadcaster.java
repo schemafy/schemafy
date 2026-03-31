@@ -29,10 +29,6 @@ public class ErdMutationBroadcaster {
   public record ResolvedContext(String projectId, String schemaId) {
   }
 
-  public Mono<Void> broadcast(Set<String> affectedTableIds) {
-    return broadcast(affectedTableIds, null);
-  }
-
   public Mono<Void> broadcast(Set<String> affectedTableIds,
       CommittedErdOperation operation) {
     if (affectedTableIds == null || affectedTableIds.isEmpty()) {
@@ -47,10 +43,6 @@ public class ErdMutationBroadcaster {
         .onErrorResume(e -> Mono.empty());
   }
 
-  public Mono<Void> broadcastSchemaChange(String schemaId) {
-    return broadcastSchemaChange(schemaId, null);
-  }
-
   public Mono<Void> broadcastSchemaChange(String schemaId,
       CommittedErdOperation operation) {
     return resolveFromSchemaId(schemaId)
@@ -59,11 +51,6 @@ public class ErdMutationBroadcaster {
             "[ErdMutationBroadcaster] broadcastSchemaChange failed: schemaId={}, error={}",
             schemaId, e.getMessage()))
         .onErrorResume(e -> Mono.empty());
-  }
-
-  public Mono<Void> broadcastWithContext(ResolvedContext ctx,
-      Set<String> affectedTableIds) {
-    return broadcastWithContext(ctx, affectedTableIds, null);
   }
 
   public Mono<Void> broadcastWithContext(ResolvedContext ctx,

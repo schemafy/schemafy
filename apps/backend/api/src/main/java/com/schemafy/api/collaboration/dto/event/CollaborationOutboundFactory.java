@@ -42,11 +42,6 @@ public final class CollaborationOutboundFactory {
   }
 
   public static ErdMutatedEvent.Outbound erdMutated(String sessionId,
-      String schemaId, Set<String> affectedTableIds) {
-    return erdMutated(sessionId, schemaId, affectedTableIds, null);
-  }
-
-  public static ErdMutatedEvent.Outbound erdMutated(String sessionId,
       String schemaId,
       Set<String> affectedTableIds,
       CommittedErdOperation operation) {

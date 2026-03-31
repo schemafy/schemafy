@@ -132,7 +132,7 @@ class ErdMutationBroadcasterTest {
     @Test
     @DisplayName("빈 affectedTableIds이면 skip한다")
     void skips_when_empty_table_ids() {
-      StepVerifier.create(broadcaster.broadcast(Set.of()))
+      StepVerifier.create(broadcaster.broadcast(Set.of(), null))
           .verifyComplete();
 
       verify(getTableByIdPort, never()).findTableById(any());
@@ -141,7 +141,7 @@ class ErdMutationBroadcasterTest {
     @Test
     @DisplayName("null이면 skip한다")
     void skips_when_null() {
-      StepVerifier.create(broadcaster.broadcast(null))
+      StepVerifier.create(broadcaster.broadcast(null, null))
           .verifyComplete();
 
       verify(getTableByIdPort, never()).findTableById(any());
@@ -156,7 +156,7 @@ class ErdMutationBroadcasterTest {
       given(getTableByIdPort.findTableById(tableId))
           .willReturn(Mono.error(new RuntimeException("DB down")));
 
-      StepVerifier.create(broadcaster.broadcast(tableIds))
+      StepVerifier.create(broadcaster.broadcast(tableIds, null))
           .verifyComplete();
 
       verify(eventPublisher, never()).publish(any(), any());
@@ -180,7 +180,7 @@ class ErdMutationBroadcasterTest {
           any(CollaborationOutbound.class)))
           .willReturn(Mono.error(new RuntimeException("Redis down")));
 
-      StepVerifier.create(broadcaster.broadcast(tableIds))
+      StepVerifier.create(broadcaster.broadcast(tableIds, null))
           .verifyComplete();
     }
 
