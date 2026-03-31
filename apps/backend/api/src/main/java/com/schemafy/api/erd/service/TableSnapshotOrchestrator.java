@@ -141,4 +141,11 @@ public class TableSnapshotOrchestrator {
         .collectMap(snapshot -> snapshot.table().id(), Function.identity());
   }
 
+  public Mono<Map<String, TableSnapshotResponse>> getTableSnapshotsStrict(
+      List<String> tableIds) {
+    return Flux.fromIterable(tableIds)
+        .flatMap(this::getTableSnapshot)
+        .collectMap(snapshot -> snapshot.table().id(), Function.identity());
+  }
+
 }

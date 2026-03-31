@@ -8,6 +8,7 @@ import type {
   CreateSchemaRequest,
   MutationResponse,
   SchemaResponse,
+  SchemaSnapshotsResponse,
 } from './erd.types';
 
 @Injectable()
@@ -46,6 +47,17 @@ export class SchemaService {
   ): Promise<SchemaResponse> {
     const response = await this.backendClient.client.get<SchemaResponse>(
       `/api/v1.0/schemas/${schemaId}`,
+      this.backendClient.getAuthConfig(authHeader),
+    );
+    return response.data;
+  }
+
+  async getSchemaWithSnapshots(
+    schemaId: string,
+    authHeader: string,
+  ): Promise<SchemaSnapshotsResponse> {
+    const response = await this.backendClient.client.get<SchemaSnapshotsResponse>(
+      `/api/v1.0/schemas/${schemaId}/snapshots`,
       this.backendClient.getAuthConfig(authHeader),
     );
     return response.data;

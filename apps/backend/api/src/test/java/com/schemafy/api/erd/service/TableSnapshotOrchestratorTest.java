@@ -219,4 +219,33 @@ class TableSnapshotOrchestratorTest {
         .verifyComplete();
   }
 
+  @Test
+  @DisplayName("getTableSnapshotsStrict: 일부 테이블이 실패하면 전체를 실패시킨다")
+  void getTableSnapshotsStrict_failsOnPartialFailure() {
+    String tableId1 = "table-1";
+    String tableId2 = "table-2";
+
+    when(getTableUseCase.getTable(any(GetTableQuery.class)))
+        .thenAnswer(invocation -> {
+          GetTableQuery query = invocation.getArgument(0);
+          if (tableId1.equals(query.tableId())) {
+            return Mono.just(new Table(tableId1, "schema-1", "users",
+                "utf8mb4", "utf8mb4_general_ci"));
+          }
+          return Mono.error(new IllegalStateException("boom"));
+        });
+    when(getColumnsByTableIdUseCase.getColumnsByTableId(any()))
+        .thenReturn(Mono.just(List.of()));
+    when(getConstraintsByTableIdUseCase.getConstraintsByTableId(any()))
+        .thenReturn(Mono.just(List.of()));
+    when(getRelationshipsByTableIdUseCase.getRelationshipsByTableId(any()))
+        .thenReturn(Mono.just(List.of()));
+    when(getIndexesByTableIdUseCase.getIndexesByTableId(any()))
+        .thenReturn(Mono.just(List.of()));
+
+    StepVerifier.create(sut.getTableSnapshotsStrict(List.of(tableId1, tableId2)))
+        .expectErrorMessage("boom")
+        .verify();
+  }
+
 }
