@@ -15,6 +15,7 @@ import com.schemafy.api.erd.controller.dto.response.TableSnapshotResponse;
 import com.schemafy.core.common.exception.DomainException;
 import com.schemafy.core.erd.relationship.domain.exception.RelationshipErrorCode;
 
+import static com.schemafy.api.erd.service.util.mysql.MySqlDdlUtils.comparingNullableStrings;
 import static com.schemafy.api.erd.service.util.mysql.MySqlDdlUtils.escapeIdentifier;
 import static com.schemafy.api.erd.service.util.mysql.MySqlDdlUtils.quoteColumn;
 import static com.schemafy.api.erd.service.util.mysql.MySqlDdlUtils.requireNonBlank;
@@ -30,6 +31,9 @@ public class MySqlForeignKeyGenerator {
 
     return getRelationships(table).stream()
         .filter(r -> table.table().id().equals(r.relationship().fkTableId()))
+        .sorted(comparingNullableStrings(
+            r -> r.relationship() != null ? r.relationship().name() : null,
+            r -> r.relationship() != null ? r.relationship().id() : null))
         .map(r -> generateAlter(table.table().name(), r, tableIdToName,
             columnIdToName, tableColumnMaps))
         .toList();

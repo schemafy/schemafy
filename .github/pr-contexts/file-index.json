@@ -159,5 +159,29 @@
   ],
   "apps/frontend/src/features/drawing/api/constraint.api.ts": [
     337
+  ],
+  "apps/backend/api/src/main/java/com/schemafy/api/erd/service/util/mysql/MySqlAlterTableGenerator.java": [
+    344
+  ],
+  "apps/backend/api/src/main/java/com/schemafy/api/erd/service/util/mysql/MySqlCreateTableGenerator.java": [
+    344
+  ],
+  "apps/backend/api/src/main/java/com/schemafy/api/erd/service/util/mysql/MySqlDdlGenerator.java": [
+    344
+  ],
+  "apps/backend/api/src/main/java/com/schemafy/api/erd/service/util/mysql/MySqlDdlUtils.java": [
+    344
+  ],
+  "apps/backend/api/src/main/java/com/schemafy/api/erd/service/util/mysql/MySqlForeignKeyGenerator.java": [
+    344
+  ],
+  "apps/backend/api/src/main/java/com/schemafy/api/erd/service/util/mysql/MySqlIndexGenerator.java": [
+    344
+  ],
+  "apps/backend/api/src/main/java/com/schemafy/api/erd/service/util/mysql/MySqlUniqueKeyGenerator.java": [
+    344
+  ],
+  "apps/backend/api/src/test/java/com/schemafy/api/erd/service/util/mysql/MySqlDdlGeneratorTest.java": [
+    344
   ]
 }

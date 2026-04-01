@@ -1,10 +1,15 @@
 package com.schemafy.api.erd.service.util.mysql;
 
+import java.util.Collections;
+import java.util.Comparator;
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
+import java.util.function.Function;
 
 import com.schemafy.api.common.exception.CommonErrorCode;
+import com.schemafy.api.erd.controller.dto.response.TableSnapshotResponse;
 import com.schemafy.core.common.exception.DomainException;
 import com.schemafy.core.erd.column.domain.exception.ColumnErrorCode;
 
@@ -127,6 +132,27 @@ public final class MySqlDdlUtils {
     return "`" + escapeIdentifier(name) + "`";
   }
 
+  public static List<TableSnapshotResponse> normalizeTables(
+      List<TableSnapshotResponse> tables) {
+    if (tables == null || tables.isEmpty()) {
+      return Collections.emptyList();
+    }
+
+    return tables.stream()
+        .filter(table -> table != null)
+        .sorted(comparingNullableStrings(
+            table -> table.table() != null ? table.table().name() : null,
+            table -> table.table() != null ? table.table().id() : null))
+        .toList();
+  }
+
+  public static <T> Comparator<T> comparingNullableStrings(
+      Function<T, String> primary,
+      Function<T, String> secondary) {
+    return Comparator.comparing((T value) -> emptyIfNull(primary.apply(value)))
+        .thenComparing(value -> emptyIfNull(secondary.apply(value)));
+  }
+
   private static boolean isValidDataType(String value) {
     if (value.isEmpty())
       return false;
@@ -197,6 +223,10 @@ public final class MySqlDdlUtils {
         return false;
     }
     return true;
+  }
+
+  private static String emptyIfNull(String value) {
+    return value == null ? "" : value;
   }
 
 }
