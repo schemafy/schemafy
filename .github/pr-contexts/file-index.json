@@ -159,5 +159,26 @@
   ],
   "apps/frontend/src/features/drawing/api/constraint.api.ts": [
     337
+  ],
+  "apps/backend/core/src/main/java/com/schemafy/core/erd/column/application/service/ChangeColumnTypeService.java": [
+    341
+  ],
+  "apps/backend/core/src/test/java/com/schemafy/core/erd/column/application/service/ChangeColumnTypeServiceTest.java": [
+    341
+  ],
+  "apps/backend/core/src/test/java/com/schemafy/core/erd/operation/integration/ErdOperationLedgerIntegrationTest.java": [
+    341
+  ],
+  "apps/frontend/src/features/drawing/components/Column/EditModeColumn.tsx": [
+    341
+  ],
+  "apps/frontend/src/features/drawing/components/Column/TypeSelector.tsx": [
+    341
+  ],
+  "apps/frontend/src/features/drawing/hooks/useColumn.ts": [
+    341
+  ],
+  "apps/frontend/src/features/drawing/types/column.ts": [
+    341
   ]
 }
