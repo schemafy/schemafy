@@ -15,6 +15,7 @@ import com.schemafy.api.erd.controller.dto.response.TableSnapshotResponse;
 import com.schemafy.core.common.exception.DomainException;
 import com.schemafy.core.erd.constraint.domain.type.ConstraintKind;
 
+import static com.schemafy.api.erd.service.util.mysql.MySqlDdlUtils.comparingNullableStrings;
 import static com.schemafy.api.erd.service.util.mysql.MySqlDdlUtils.escapeIdentifier;
 import static com.schemafy.api.erd.service.util.mysql.MySqlDdlUtils.quoteColumn;
 import static com.schemafy.api.erd.service.util.mysql.MySqlDdlUtils.requireNonBlank;
@@ -28,6 +29,9 @@ public class MySqlUniqueKeyGenerator {
 
     return getConstraints(table).stream()
         .filter(c -> ConstraintKind.UNIQUE == c.constraint().kind())
+        .sorted(comparingNullableStrings(
+            c -> c.constraint() != null ? c.constraint().name() : null,
+            c -> c.constraint() != null ? c.constraint().id() : null))
         .map(c -> generateAlter(table.table().name(), c, columnIdToName))
         .toList();
   }
