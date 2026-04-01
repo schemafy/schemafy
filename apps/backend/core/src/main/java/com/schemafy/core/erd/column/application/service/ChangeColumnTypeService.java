@@ -188,7 +188,7 @@ public class ChangeColumnTypeService implements ChangeColumnTypeUseCase {
                     Mono<Void> changeType = changeColumnTypePort.changeColumnType(
                         rc.fkColumnId(), dataType, typeArguments);
                     Mono<Void> syncCharsetCollation = applyDerivedMetaIfNeeded(fkColumn, targetMeta);
-                    Column updatedFkColumn = new Column(
+                    Column fkColumnForCascade = new Column(
                         fkColumn.id(),
                         fkColumn.tableId(),
                         fkColumn.name(),
@@ -203,7 +203,7 @@ public class ChangeColumnTypeService implements ChangeColumnTypeUseCase {
                     return changeType
                         .then(syncCharsetCollation)
                         .then(cascadeTypeToFkColumns(
-                            updatedFkColumn,
+                            fkColumnForCascade,
                             dataType,
                             typeArguments,
                             targetMeta,
@@ -218,7 +218,9 @@ public class ChangeColumnTypeService implements ChangeColumnTypeUseCase {
     if (!ColumnValidator.isTextType(targetDataType)) {
       return Mono.just(ResolvedColumnMeta.cleared());
     }
-    if (ColumnValidator.isTextType(column.dataType())) {
+    if (ColumnValidator.isTextType(column.dataType())
+        && hasText(column.charset())
+        && hasText(column.collation())) {
       return Mono.just(new ResolvedColumnMeta(column.charset(), column.collation()));
     }
 
@@ -226,13 +228,13 @@ public class ChangeColumnTypeService implements ChangeColumnTypeUseCase {
         .switchIfEmpty(Mono.error(new DomainException(TableErrorCode.NOT_FOUND, "Table not found")))
         .flatMap(table -> getSchemaByIdPort.findSchemaById(table.schemaId())
             .switchIfEmpty(Mono.error(new DomainException(SchemaErrorCode.NOT_FOUND, "Schema not found")))
-            .map(schema -> resolveTextMeta(table, schema)));
+            .map(schema -> resolveTextMeta(column, table, schema)));
   }
 
-  private static ResolvedColumnMeta resolveTextMeta(Table table, Schema schema) {
+  private static ResolvedColumnMeta resolveTextMeta(Column column, Table table, Schema schema) {
     return new ResolvedColumnMeta(
-        coalesce(table.charset(), schema.charset()),
-        coalesce(table.collation(), schema.collation()));
+        coalesce(column.charset(), table.charset(), schema.charset()),
+        coalesce(column.collation(), table.collation(), schema.collation()));
   }
 
   private Mono<Void> applyDerivedMetaIfNeeded(Column column, ResolvedColumnMeta targetMeta) {
@@ -249,14 +251,17 @@ public class ChangeColumnTypeService implements ChangeColumnTypeUseCase {
         null);
   }
 
-  private static String coalesce(String primary, String fallback) {
-    if (primary != null && !primary.isBlank()) {
-      return primary.trim();
-    }
-    if (fallback != null && !fallback.isBlank()) {
-      return fallback.trim();
+  private static String coalesce(String... candidates) {
+    for (String candidate : candidates) {
+      if (candidate != null && !candidate.isBlank()) {
+        return candidate.trim();
+      }
     }
     return null;
+  }
+
+  private static boolean hasText(String value) {
+    return value != null && !value.isBlank();
   }
 
   private static String toPortValue(String value) {

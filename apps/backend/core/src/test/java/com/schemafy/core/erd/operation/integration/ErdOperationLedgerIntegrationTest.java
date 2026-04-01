@@ -168,6 +168,51 @@ class ErdOperationLedgerIntegrationTest extends ErdProjectIntegrationSupport {
   }
 
   @Test
+  @DisplayName("non-text에서 text로의 컬럼 category 전환도 CHANGE_COLUMN_TYPE 한 번만 기록한다")
+  void recordsSingleOperationForNonTextToTextTransition() {
+    String projectId = createActiveProjectId("erd_operation_single_change_column_type_text");
+
+    String schemaId = createSchemaUseCase.createSchema(new CreateSchemaCommand(
+        projectId,
+        "MySQL",
+        "single_change_column_type_text_schema",
+        "utf8mb4",
+        "utf8mb4_general_ci")).block().result().id();
+
+    String tableId = createTableUseCase.createTable(new CreateTableCommand(
+        schemaId,
+        "single_change_column_type_text_table",
+        "utf8mb4",
+        "utf8mb4_general_ci",
+        null)).block().result().tableId();
+
+    String columnId = createColumnUseCase.createColumn(new CreateColumnCommand(
+        tableId,
+        "age",
+        "INT",
+        null,
+        null,
+        null,
+        false,
+        null,
+        null,
+        null)).block().result().columnId();
+
+    long beforeRevision = currentRevision(schemaId);
+    long beforeCount = operationCount(schemaId);
+
+    StepVerifier.create(changeColumnTypeUseCase.changeColumnType(
+        new ChangeColumnTypeCommand(columnId, "VARCHAR", 255, null, null)))
+        .expectNextCount(1)
+        .verifyComplete();
+
+    assertThat(currentRevision(schemaId)).isEqualTo(beforeRevision + 1);
+    assertThat(operationCount(schemaId)).isEqualTo(beforeCount + 1);
+    assertLastOperation(schemaId, "CHANGE_COLUMN_TYPE", beforeRevision + 1, List.of(tableId));
+    assertColumnMeta(columnId, "utf8mb4", "utf8mb4_general_ci");
+  }
+
+  @Test
   @DisplayName("cascade 삭제에서도 top-level delete만 한 번 기록한다")
   void logsOnlyTopLevelDeleteForCascadeDeletion() {
     String projectId = createActiveProjectId("erd_operation_delete");
