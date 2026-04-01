@@ -30,6 +30,7 @@ import reactor.test.StepVerifier;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyList;
+import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.then;
 import static org.mockito.Mockito.lenient;
@@ -100,10 +101,14 @@ class SchemaSnapshotOrchestratorTest {
         .willReturn(Mono.just(new GetSchemaWithRevisionResult(schema, 42L)));
     given(getTablesBySchemaIdUseCase.getTablesBySchemaId(any(GetTablesBySchemaIdQuery.class)))
         .willReturn(Flux.just(table1, table2));
-    given(tableSnapshotOrchestrator.getTableSnapshotsStrict(List.of(table1.id(), table2.id())))
-        .willReturn(Mono.just(Map.of(
-            table1.id(), snapshot1,
-            table2.id(), snapshot2)));
+    given(tableSnapshotOrchestrator.getTableSnapshotsStrict(anyList()))
+        .willAnswer(invocation -> {
+          List<String> tableIds = invocation.getArgument(0);
+          assertThat(tableIds).containsExactlyInAnyOrder(table1.id(), table2.id());
+          return Mono.just(Map.of(
+              table1.id(), snapshot1,
+              table2.id(), snapshot2));
+        });
 
     StepVerifier.create(sut.getSchemaSnapshots(schemaId))
         .assertNext(result -> {
@@ -118,7 +123,8 @@ class SchemaSnapshotOrchestratorTest {
     then(getTablesBySchemaIdUseCase).should()
         .getTablesBySchemaId(new GetTablesBySchemaIdQuery(schemaId));
     then(tableSnapshotOrchestrator).should()
-        .getTableSnapshotsStrict(List.of(table1.id(), table2.id()));
+        .getTableSnapshotsStrict(argThat(tableIds -> tableIds.size() == 2
+            && tableIds.containsAll(List.of(table1.id(), table2.id()))));
   }
 
   @Test
