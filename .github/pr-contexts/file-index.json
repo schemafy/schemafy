@@ -41,7 +41,8 @@
     337
   ],
   "apps/backend/api/src/main/java/com/schemafy/api/erd/controller/SchemaController.java": [
-    337
+    337,
+    342
   ],
   "apps/backend/api/src/main/java/com/schemafy/api/erd/controller/TableController.java": [
     337
@@ -77,7 +78,8 @@
     337
   ],
   "apps/backend/api/src/test/java/com/schemafy/api/erd/controller/SchemaControllerTest.java": [
-    337
+    337,
+    342
   ],
   "apps/backend/api/src/test/java/com/schemafy/api/erd/controller/TableControllerTest.java": [
     337
@@ -137,16 +139,19 @@
     337
   ],
   "apps/bff/src/erd/schema.controller.ts": [
-    337
+    337,
+    342
   ],
   "apps/bff/src/erd/schema.service.ts": [
-    337
+    337,
+    342
   ],
   "apps/bff/src/erd/table.controller.ts": [
     337
   ],
   "apps/bff/src/erd/table.service.ts": [
-    337
+    337,
+    342
   ],
   "apps/bff/src/main.ts": [
     337
@@ -159,5 +164,23 @@
   ],
   "apps/frontend/src/features/drawing/api/constraint.api.ts": [
     337
+  ],
+  "apps/backend/api/src/main/java/com/schemafy/api/erd/controller/dto/response/SchemaSnapshotsResponse.java": [
+    342
+  ],
+  "apps/backend/api/src/main/java/com/schemafy/api/erd/service/SchemaSnapshotOrchestrator.java": [
+    342
+  ],
+  "apps/backend/api/src/main/java/com/schemafy/api/erd/service/TableSnapshotOrchestrator.java": [
+    342
+  ],
+  "apps/backend/api/src/test/java/com/schemafy/api/erd/service/SchemaSnapshotOrchestratorIntegrationTest.java": [
+    342
+  ],
+  "apps/backend/api/src/test/java/com/schemafy/api/erd/service/SchemaSnapshotOrchestratorTest.java": [
+    342
+  ],
+  "apps/backend/api/src/test/java/com/schemafy/api/erd/service/TableSnapshotOrchestratorTest.java": [
+    342
   ]
 }
