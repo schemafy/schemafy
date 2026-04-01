@@ -82,7 +82,7 @@ class SchemaSnapshotOrchestratorIntegrationTest extends ProjectHttpTestSupport {
     doAnswer(invocation -> Mono.defer(() -> {
       snapshotReadStarted.countDown();
       try {
-        awaitReleased(allowSnapshotRead);
+        await(allowSnapshotRead);
         @SuppressWarnings("unchecked")
         Mono<Map<String, TableSnapshotResponse>> realCall = (Mono<Map<String, TableSnapshotResponse>>) invocation
             .callRealMethod();
@@ -132,11 +132,6 @@ class SchemaSnapshotOrchestratorIntegrationTest extends ProjectHttpTestSupport {
 
   private void await(CountDownLatch latch) throws InterruptedException {
     assertThat(latch.await(5, TimeUnit.SECONDS)).isTrue();
-  }
-
-  private void awaitReleased(CountDownLatch releaseLatch)
-      throws InterruptedException {
-    assertThat(releaseLatch.await(5, TimeUnit.SECONDS)).isTrue();
   }
 
 }

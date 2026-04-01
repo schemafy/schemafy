@@ -42,7 +42,7 @@ public class SchemaSnapshotOrchestrator {
         .getSchemaWithRevision(new GetSchemaQuery(schemaId))
         .flatMap(result -> {
           Mono<Map<String, TableSnapshotResponse>> snapshotsMono = getTablesBySchemaIdUseCase
-              .getTablesBySchemaId(new GetTablesBySchemaIdQuery(result.schema().id()))
+              .getTablesBySchemaId(new GetTablesBySchemaIdQuery(schemaId))
               .map(table -> table.id())
               .collectList()
               .flatMap(tableIds -> tableIds.isEmpty()
