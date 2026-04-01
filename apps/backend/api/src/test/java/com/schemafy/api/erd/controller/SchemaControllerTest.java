@@ -18,6 +18,10 @@ import com.schemafy.api.common.constant.ApiPath;
 import com.schemafy.api.common.security.WithMockCustomUser;
 import com.schemafy.api.erd.controller.dto.request.ChangeSchemaNameRequest;
 import com.schemafy.api.erd.controller.dto.request.CreateSchemaRequest;
+import com.schemafy.api.erd.controller.dto.response.SchemaSnapshotsResponse;
+import com.schemafy.api.erd.controller.dto.response.TableResponse;
+import com.schemafy.api.erd.controller.dto.response.TableSnapshotResponse;
+import com.schemafy.api.erd.service.SchemaSnapshotOrchestrator;
 import com.schemafy.core.common.MutationResult;
 import com.schemafy.core.common.exception.DomainException;
 import com.schemafy.core.erd.schema.application.port.in.ChangeSchemaNameCommand;
@@ -50,6 +54,7 @@ import static org.springframework.restdocs.headers.HeaderDocumentation.responseH
 import static org.springframework.restdocs.payload.PayloadDocumentation.fieldWithPath;
 import static org.springframework.restdocs.payload.PayloadDocumentation.requestFields;
 import static org.springframework.restdocs.payload.PayloadDocumentation.responseFields;
+import static org.springframework.restdocs.payload.PayloadDocumentation.subsectionWithPath;
 import static org.springframework.restdocs.request.RequestDocumentation.parameterWithName;
 import static org.springframework.restdocs.request.RequestDocumentation.pathParameters;
 import static org.springframework.restdocs.webtestclient.WebTestClientRestDocumentation.document;
@@ -85,6 +90,9 @@ class SchemaControllerTest {
 
   @MockitoBean
   private DeleteSchemaUseCase deleteSchemaUseCase;
+
+  @MockitoBean
+  private SchemaSnapshotOrchestrator schemaSnapshotOrchestrator;
 
   @Test
   @DisplayName("스키마 생성 API 문서화")
@@ -225,6 +233,54 @@ class SchemaControllerTest {
                 fieldWithPath("charset").description("문자셋"),
                 fieldWithPath("collation").description("콜레이션"),
                 fieldWithPath("currentRevision").description("현재 schema revision"))));
+  }
+
+  @Test
+  @DisplayName("스키마 스냅샷 조회 API 문서화")
+  void getSchemaSnapshots() {
+    String schemaId = "06D6W1GAHD51T5NJPK29Q6BCR8";
+    TableSnapshotResponse snapshot = new TableSnapshotResponse(
+        new TableResponse(
+            "06D6W2BAHD51T5NJPK29Q6BCR9",
+            schemaId,
+            "users",
+            "utf8mb4",
+            "utf8mb4_general_ci",
+            null),
+        java.util.List.of(),
+        java.util.List.of(),
+        java.util.List.of(),
+        java.util.List.of());
+    SchemaSnapshotsResponse response = new SchemaSnapshotsResponse(
+        42L,
+        java.util.Map.of(snapshot.table().id(), snapshot));
+
+    given(schemaSnapshotOrchestrator.getSchemaSnapshots(schemaId))
+        .willReturn(Mono.just(response));
+
+    webTestClient.get()
+        .uri(API_BASE_PATH + "/schemas/{schemaId}/snapshots", schemaId)
+        .header("Accept", "application/json")
+        .exchange()
+        .expectStatus().isOk()
+        .expectBody()
+        .jsonPath("$.currentRevision").isEqualTo(42)
+        .jsonPath("$.snapshots.%s.table.id".formatted(snapshot.table().id()))
+        .isEqualTo(snapshot.table().id())
+        .consumeWith(document("schema-snapshots-get",
+            pathParameters(
+                parameterWithName("schemaId")
+                    .description("조회할 스키마 ID")),
+            requestHeaders(
+                headerWithName("Accept")
+                    .description("응답 포맷 (application/json)")),
+            responseHeaders(
+                headerWithName("Content-Type")
+                    .description("응답 컨텐츠 타입")),
+            responseFields(
+                fieldWithPath("currentRevision").description("초기 로드 기준 schema revision"),
+                subsectionWithPath("snapshots")
+                    .description("테이블 ID keyed snapshot map. 각 value 구조는 table snapshot 응답과 동일"))));
   }
 
   @Test
