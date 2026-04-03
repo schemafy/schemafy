@@ -32,6 +32,10 @@ import com.schemafy.core.erd.index.application.port.in.CreateIndexCommand;
 import com.schemafy.core.erd.index.application.port.in.CreateIndexUseCase;
 import com.schemafy.core.erd.index.domain.type.IndexType;
 import com.schemafy.core.erd.index.domain.type.SortDirection;
+import com.schemafy.core.erd.operation.application.port.in.RedoErdOperationCommand;
+import com.schemafy.core.erd.operation.application.port.in.RedoErdOperationUseCase;
+import com.schemafy.core.erd.operation.application.port.in.UndoErdOperationCommand;
+import com.schemafy.core.erd.operation.application.port.in.UndoErdOperationUseCase;
 import com.schemafy.core.erd.operation.application.port.out.IncrementSchemaCollaborationRevisionPort;
 import com.schemafy.core.erd.operation.domain.ErdOperationDerivationKind;
 import com.schemafy.core.erd.relationship.application.port.in.ChangeRelationshipCardinalityCommand;
@@ -123,6 +127,12 @@ class ErdOperationLedgerIntegrationTest extends ErdProjectIntegrationSupport {
 
   @Autowired
   ChangeRelationshipCardinalityUseCase changeRelationshipCardinalityUseCase;
+
+  @Autowired
+  UndoErdOperationUseCase undoErdOperationUseCase;
+
+  @Autowired
+  RedoErdOperationUseCase redoErdOperationUseCase;
 
   @Autowired
   JsonCodec jsonCodec;
@@ -461,6 +471,47 @@ class ErdOperationLedgerIntegrationTest extends ErdProjectIntegrationSupport {
         new ChangeIndexTypeCommand(graph.indexId(), IndexType.BTREE));
   }
 
+  @Test
+  @DisplayName("단순 속성 변경 undo redo는 파생 operation metadata와 함께 수행된다")
+  void undoesAndRedoesSimplePropertyChangesWithDerivedMetadata() {
+    String projectId = createActiveProjectId("erd_operation_undo_redo");
+
+    String schemaId = createSchemaUseCase.createSchema(new CreateSchemaCommand(
+        projectId,
+        "MySQL",
+        "undo_redo_schema",
+        "utf8mb4",
+        "utf8mb4_general_ci")).block().result().id();
+
+    String tableId = createTableUseCase.createTable(new CreateTableCommand(
+        schemaId,
+        "orders",
+        "utf8mb4",
+        "utf8mb4_general_ci",
+        null)).block().result().tableId();
+
+    String sourceOpId = changeTableNameUseCase.changeTableName(new ChangeTableNameCommand(tableId, "orders_v2"))
+        .block()
+        .operation()
+        .opId();
+
+    StepVerifier.create(undoErdOperationUseCase.undo(
+        new UndoErdOperationCommand(sourceOpId)))
+        .assertNext(result -> assertThat(result.operation().derivationKind()).isEqualTo(ErdOperationDerivationKind.UNDO))
+        .verifyComplete();
+
+    assertThat(tableName(tableId)).isEqualTo("orders");
+    assertLatestDerivedOperation(schemaId, "CHANGE_TABLE_NAME", "UNDO", sourceOpId);
+
+    StepVerifier.create(redoErdOperationUseCase.redo(
+        new RedoErdOperationCommand(sourceOpId)))
+        .assertNext(result -> assertThat(result.operation().derivationKind()).isEqualTo(ErdOperationDerivationKind.REDO))
+        .verifyComplete();
+
+    assertThat(tableName(tableId)).isEqualTo("orders_v2");
+    assertLatestDerivedOperation(schemaId, "CHANGE_TABLE_NAME", "REDO", sourceOpId);
+  }
+
   private long currentRevision(String schemaId) {
     return databaseClient.sql("""
         SELECT current_revision
@@ -481,6 +532,18 @@ class ErdOperationLedgerIntegrationTest extends ErdProjectIntegrationSupport {
         """)
         .bind("schemaId", schemaId)
         .map((row, metadata) -> ((Number) row.get("cnt")).longValue())
+        .one()
+        .block();
+  }
+
+  private String tableName(String tableId) {
+    return databaseClient.sql("""
+        SELECT name
+        FROM db_tables
+        WHERE id = :tableId
+        """)
+        .bind("tableId", tableId)
+        .map((row, metadata) -> row.get("name", String.class))
         .one()
         .block();
   }
@@ -538,6 +601,33 @@ class ErdOperationLedgerIntegrationTest extends ErdProjectIntegrationSupport {
     assertThat(operationPayloadRow.inversePayloadJson()).isNotBlank();
     assertThat(parsePersistedValue(operationPayloadRow.inversePayloadJson(), payloadType))
         .isEqualTo(expectedPayload);
+  }
+
+  private void assertLatestDerivedOperation(
+      String schemaId,
+      String expectedOpType,
+      String expectedDerivationKind,
+      String expectedDerivedFromOpId) {
+    DerivedOperationRow operationRow = databaseClient.sql("""
+        SELECT op_type,
+               derivation_kind,
+               derived_from_op_id
+        FROM erd_operation_log
+        WHERE schema_id = :schemaId
+        ORDER BY committed_revision DESC
+        LIMIT 1
+        """)
+        .bind("schemaId", schemaId)
+        .map((row, metadata) -> new DerivedOperationRow(
+            row.get("op_type", String.class),
+            row.get("derivation_kind", String.class),
+            row.get("derived_from_op_id", String.class)))
+        .one()
+        .block();
+
+    assertThat(operationRow.opType()).isEqualTo(expectedOpType);
+    assertThat(operationRow.derivationKind()).isEqualTo(expectedDerivationKind);
+    assertThat(operationRow.derivedFromOpId()).isEqualTo(expectedDerivedFromOpId);
   }
 
   private List<String> parseStringArray(String rawJson) {
@@ -676,6 +766,11 @@ class ErdOperationLedgerIntegrationTest extends ErdProjectIntegrationSupport {
       String inversePayloadJson) {
   }
 
+  private record DerivedOperationRow(
+      String opType,
+      String derivationKind,
+      String derivedFromOpId) {
+  }
 
   private record TestGraph(
       String schemaId,

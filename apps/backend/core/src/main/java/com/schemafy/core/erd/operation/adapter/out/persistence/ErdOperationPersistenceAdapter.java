@@ -4,6 +4,7 @@ import java.util.List;
 
 import com.schemafy.core.common.PersistenceAdapter;
 import com.schemafy.core.erd.operation.application.port.out.AppendErdOperationLogPort;
+import com.schemafy.core.erd.operation.application.port.out.FindErdOperationLogPort;
 import com.schemafy.core.erd.operation.application.port.out.FindSchemaCollaborationStatePort;
 import com.schemafy.core.erd.operation.application.port.out.GetErdOperationByIdPort;
 import com.schemafy.core.erd.operation.application.port.out.GetErdOperationsBySchemaIdPort;
@@ -18,6 +19,7 @@ import reactor.core.publisher.Mono;
 @PersistenceAdapter
 @RequiredArgsConstructor
 class ErdOperationPersistenceAdapter implements
+    FindErdOperationLogPort,
     FindSchemaCollaborationStatePort,
     GetErdOperationByIdPort,
     GetErdOperationsBySchemaIdPort,
@@ -34,6 +36,12 @@ class ErdOperationPersistenceAdapter implements
   public Mono<SchemaCollaborationState> findBySchemaId(String schemaId) {
     return schemaCollaborationStateRepository.findById(schemaId)
         .map(schemaCollaborationStateMapper::toDomain);
+  }
+
+  @Override
+  public Mono<ErdOperationLog> findByOpId(String opId) {
+    return erdOperationLogRepository.findById(opId)
+        .map(erdOperationLogMapper::toDomain);
   }
 
   @Override
