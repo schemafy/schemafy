@@ -11,15 +11,35 @@ import org.junit.jupiter.api.Test;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.schemafy.core.common.json.JsonCodec;
+import com.schemafy.core.erd.column.application.port.in.ChangeColumnNameCommand;
+import com.schemafy.core.erd.column.application.port.in.ChangeColumnNameUseCase;
+import com.schemafy.core.erd.column.application.port.in.ChangeColumnTypeCommand;
+import com.schemafy.core.erd.column.application.port.in.ChangeColumnTypeUseCase;
 import com.schemafy.core.erd.column.application.port.in.CreateColumnCommand;
 import com.schemafy.core.erd.column.application.port.in.CreateColumnUseCase;
+import com.schemafy.core.erd.constraint.application.port.in.ChangeConstraintNameCommand;
+import com.schemafy.core.erd.constraint.application.port.in.ChangeConstraintNameUseCase;
 import com.schemafy.core.erd.constraint.application.port.in.CreateConstraintColumnCommand;
 import com.schemafy.core.erd.constraint.application.port.in.CreateConstraintCommand;
 import com.schemafy.core.erd.constraint.application.port.in.CreateConstraintUseCase;
 import com.schemafy.core.erd.constraint.domain.type.ConstraintKind;
+import com.schemafy.core.erd.index.application.port.in.ChangeIndexNameCommand;
+import com.schemafy.core.erd.index.application.port.in.ChangeIndexNameUseCase;
+import com.schemafy.core.erd.index.application.port.in.ChangeIndexTypeCommand;
+import com.schemafy.core.erd.index.application.port.in.ChangeIndexTypeUseCase;
+import com.schemafy.core.erd.index.application.port.in.CreateIndexColumnCommand;
+import com.schemafy.core.erd.index.application.port.in.CreateIndexCommand;
+import com.schemafy.core.erd.index.application.port.in.CreateIndexUseCase;
+import com.schemafy.core.erd.index.domain.type.IndexType;
+import com.schemafy.core.erd.index.domain.type.SortDirection;
 import com.schemafy.core.erd.operation.application.port.out.IncrementSchemaCollaborationRevisionPort;
+import com.schemafy.core.erd.operation.domain.ErdOperationDerivationKind;
+import com.schemafy.core.erd.relationship.application.port.in.ChangeRelationshipCardinalityCommand;
+import com.schemafy.core.erd.relationship.application.port.in.ChangeRelationshipCardinalityUseCase;
 import com.schemafy.core.erd.relationship.application.port.in.ChangeRelationshipKindCommand;
 import com.schemafy.core.erd.relationship.application.port.in.ChangeRelationshipKindUseCase;
+import com.schemafy.core.erd.relationship.application.port.in.ChangeRelationshipNameCommand;
+import com.schemafy.core.erd.relationship.application.port.in.ChangeRelationshipNameUseCase;
 import com.schemafy.core.erd.relationship.application.port.in.CreateRelationshipCommand;
 import com.schemafy.core.erd.relationship.application.port.in.CreateRelationshipUseCase;
 import com.schemafy.core.erd.relationship.domain.type.Cardinality;
@@ -31,6 +51,8 @@ import com.schemafy.core.erd.schema.application.port.in.CreateSchemaUseCase;
 import com.schemafy.core.erd.support.ErdProjectIntegrationSupport;
 import com.schemafy.core.erd.table.application.port.in.ChangeTableExtraCommand;
 import com.schemafy.core.erd.table.application.port.in.ChangeTableExtraUseCase;
+import com.schemafy.core.erd.table.application.port.in.ChangeTableNameCommand;
+import com.schemafy.core.erd.table.application.port.in.ChangeTableNameUseCase;
 import com.schemafy.core.erd.table.application.port.in.CreateTableCommand;
 import com.schemafy.core.erd.table.application.port.in.CreateTableUseCase;
 import com.schemafy.core.erd.table.application.port.in.DeleteTableCommand;
@@ -61,19 +83,46 @@ class ErdOperationLedgerIntegrationTest extends ErdProjectIntegrationSupport {
   ChangeTableExtraUseCase changeTableExtraUseCase;
 
   @Autowired
+  ChangeTableNameUseCase changeTableNameUseCase;
+
+  @Autowired
   DeleteTableUseCase deleteTableUseCase;
 
   @Autowired
   CreateColumnUseCase createColumnUseCase;
 
   @Autowired
+  ChangeColumnNameUseCase changeColumnNameUseCase;
+
+  @Autowired
+  ChangeColumnTypeUseCase changeColumnTypeUseCase;
+
+  @Autowired
   CreateConstraintUseCase createConstraintUseCase;
+
+  @Autowired
+  ChangeConstraintNameUseCase changeConstraintNameUseCase;
+
+  @Autowired
+  CreateIndexUseCase createIndexUseCase;
+
+  @Autowired
+  ChangeIndexNameUseCase changeIndexNameUseCase;
+
+  @Autowired
+  ChangeIndexTypeUseCase changeIndexTypeUseCase;
 
   @Autowired
   CreateRelationshipUseCase createRelationshipUseCase;
 
   @Autowired
+  ChangeRelationshipNameUseCase changeRelationshipNameUseCase;
+
+  @Autowired
   ChangeRelationshipKindUseCase changeRelationshipKindUseCase;
+
+  @Autowired
+  ChangeRelationshipCardinalityUseCase changeRelationshipCardinalityUseCase;
 
   @Autowired
   JsonCodec jsonCodec;
@@ -315,6 +364,103 @@ class ErdOperationLedgerIntegrationTest extends ErdProjectIntegrationSupport {
         .containsExactlyInAnyOrder("CHANGE_SCHEMA_NAME", "CHANGE_TABLE_EXTRA");
   }
 
+  @Test
+  @DisplayName("단순 속성 변경 연산은 inverse payload를 저장한다")
+  void storesInversePayloadForSimplePropertyChanges() {
+    TestGraph graph = createSimplePropertyGraph("erd_operation_inverse_payload");
+
+    StepVerifier.create(changeTableNameUseCase.changeTableName(
+        new ChangeTableNameCommand(graph.fkTableId(), "orders_v2")))
+        .expectNextCount(1)
+        .verifyComplete();
+
+    StepVerifier.create(changeColumnNameUseCase.changeColumnName(
+        new ChangeColumnNameCommand(graph.fkBusinessColumnId(), "status_code")))
+        .expectNextCount(1)
+        .verifyComplete();
+
+    StepVerifier.create(changeColumnTypeUseCase.changeColumnType(
+        new ChangeColumnTypeCommand(graph.fkBusinessColumnId(), "INT", null, null, null)))
+        .expectNextCount(1)
+        .verifyComplete();
+
+    StepVerifier.create(changeRelationshipNameUseCase.changeRelationshipName(
+        new ChangeRelationshipNameCommand(graph.relationshipId(), "rel_orders_v2_to_users_manual")))
+        .expectNextCount(1)
+        .verifyComplete();
+
+    StepVerifier.create(changeRelationshipKindUseCase.changeRelationshipKind(
+        new ChangeRelationshipKindCommand(graph.relationshipId(), RelationshipKind.IDENTIFYING)))
+        .expectNextCount(1)
+        .verifyComplete();
+
+    StepVerifier.create(changeRelationshipCardinalityUseCase.changeRelationshipCardinality(
+        new ChangeRelationshipCardinalityCommand(graph.relationshipId(), Cardinality.ONE_TO_ONE)))
+        .expectNextCount(1)
+        .verifyComplete();
+
+    StepVerifier.create(changeConstraintNameUseCase.changeConstraintName(
+        new ChangeConstraintNameCommand(graph.constraintId(), "uq_orders_v2_status_code")))
+        .expectNextCount(1)
+        .verifyComplete();
+
+    StepVerifier.create(changeIndexNameUseCase.changeIndexName(
+        new ChangeIndexNameCommand(graph.indexId(), "idx_orders_v2_status_code")))
+        .expectNextCount(1)
+        .verifyComplete();
+
+    StepVerifier.create(changeIndexTypeUseCase.changeIndexType(
+        new ChangeIndexTypeCommand(graph.indexId(), IndexType.HASH)))
+        .expectNextCount(1)
+        .verifyComplete();
+
+    assertInversePayload(
+        graph.schemaId(),
+        "CHANGE_TABLE_NAME",
+        ChangeTableNameCommand.class,
+        new ChangeTableNameCommand(graph.fkTableId(), "orders"));
+    assertInversePayload(
+        graph.schemaId(),
+        "CHANGE_COLUMN_NAME",
+        ChangeColumnNameCommand.class,
+        new ChangeColumnNameCommand(graph.fkBusinessColumnId(), "order_amount"));
+    assertInversePayload(
+        graph.schemaId(),
+        "CHANGE_COLUMN_TYPE",
+        ChangeColumnTypeCommand.class,
+        new ChangeColumnTypeCommand(graph.fkBusinessColumnId(), "DECIMAL", null, null, null));
+    assertInversePayload(
+        graph.schemaId(),
+        "CHANGE_RELATIONSHIP_NAME",
+        ChangeRelationshipNameCommand.class,
+        new ChangeRelationshipNameCommand(graph.relationshipId(), "rel_orders_v2_to_users"));
+    assertInversePayload(
+        graph.schemaId(),
+        "CHANGE_RELATIONSHIP_KIND",
+        ChangeRelationshipKindCommand.class,
+        new ChangeRelationshipKindCommand(graph.relationshipId(), RelationshipKind.NON_IDENTIFYING));
+    assertInversePayload(
+        graph.schemaId(),
+        "CHANGE_RELATIONSHIP_CARDINALITY",
+        ChangeRelationshipCardinalityCommand.class,
+        new ChangeRelationshipCardinalityCommand(graph.relationshipId(), Cardinality.ONE_TO_MANY));
+    assertInversePayload(
+        graph.schemaId(),
+        "CHANGE_CONSTRAINT_NAME",
+        ChangeConstraintNameCommand.class,
+        new ChangeConstraintNameCommand(graph.constraintId(), "uq_orders_status"));
+    assertInversePayload(
+        graph.schemaId(),
+        "CHANGE_INDEX_NAME",
+        ChangeIndexNameCommand.class,
+        new ChangeIndexNameCommand(graph.indexId(), "idx_orders_status"));
+    assertInversePayload(
+        graph.schemaId(),
+        "CHANGE_INDEX_TYPE",
+        ChangeIndexTypeCommand.class,
+        new ChangeIndexTypeCommand(graph.indexId(), IndexType.BTREE));
+  }
+
   private long currentRevision(String schemaId) {
     return databaseClient.sql("""
         SELECT current_revision
@@ -370,12 +516,40 @@ class ErdOperationLedgerIntegrationTest extends ErdProjectIntegrationSupport {
         .containsExactlyInAnyOrderElementsOf(expectedAffectedTableIds);
   }
 
+  private <T> void assertInversePayload(
+      String schemaId,
+      String opType,
+      Class<T> payloadType,
+      T expectedPayload) {
+    OperationPayloadRow operationPayloadRow = databaseClient.sql("""
+        SELECT CAST(inverse_payload_json AS VARCHAR) AS inverse_payload_json_text
+        FROM erd_operation_log
+        WHERE schema_id = :schemaId
+          AND op_type = :opType
+        ORDER BY committed_revision DESC
+        LIMIT 1
+        """)
+        .bind("schemaId", schemaId)
+        .bind("opType", opType)
+        .map((row, metadata) -> new OperationPayloadRow(row.get("inverse_payload_json_text", String.class)))
+        .one()
+        .block();
+
+    assertThat(operationPayloadRow.inversePayloadJson()).isNotBlank();
+    assertThat(parsePersistedValue(operationPayloadRow.inversePayloadJson(), payloadType))
+        .isEqualTo(expectedPayload);
+  }
+
   private List<String> parseStringArray(String rawJson) {
     JsonNode node = jsonCodec.parsePersistedNode(rawJson);
     assertThat(node.isArray()).isTrue();
     return java.util.stream.StreamSupport.stream(node.spliterator(), false)
         .map(JsonNode::asText)
         .toList();
+  }
+
+  private <T> T parsePersistedValue(String rawJson, Class<T> type) {
+    return jsonCodec.parsePersisted(rawJson, type);
   }
 
   private List<Long> recentOperationRevisions(String schemaId, int limit) {
@@ -411,11 +585,105 @@ class ErdOperationLedgerIntegrationTest extends ErdProjectIntegrationSupport {
         .block();
   }
 
+  private TestGraph createSimplePropertyGraph(String prefix) {
+    String projectId = createActiveProjectId(prefix);
+
+    String schemaId = createSchemaUseCase.createSchema(new CreateSchemaCommand(
+        projectId,
+        "MySQL",
+        prefix + "_schema",
+        "utf8mb4",
+        "utf8mb4_general_ci")).block().result().id();
+
+    String pkTableId = createTableUseCase.createTable(new CreateTableCommand(
+        schemaId,
+        "users",
+        "utf8mb4",
+        "utf8mb4_general_ci",
+        null)).block().result().tableId();
+
+    String fkTableId = createTableUseCase.createTable(new CreateTableCommand(
+        schemaId,
+        "orders",
+        "utf8mb4",
+        "utf8mb4_general_ci",
+        null)).block().result().tableId();
+
+    String pkColumnId = createColumnUseCase.createColumn(new CreateColumnCommand(
+        pkTableId,
+        "id",
+        "INT",
+        null,
+        null,
+        null,
+        true,
+        null,
+        null,
+        null)).block().result().columnId();
+
+    String fkBusinessColumnId = createColumnUseCase.createColumn(new CreateColumnCommand(
+        fkTableId,
+        "order_amount",
+        "DECIMAL",
+        null,
+        10,
+        2,
+        false,
+        null,
+        null,
+        null)).block().result().columnId();
+
+    createConstraintUseCase.createConstraint(new CreateConstraintCommand(
+        pkTableId,
+        "pk_users",
+        ConstraintKind.PRIMARY_KEY,
+        null,
+        null,
+        List.of(new CreateConstraintColumnCommand(pkColumnId, 0)))).block();
+
+    String constraintId = createConstraintUseCase.createConstraint(new CreateConstraintCommand(
+        fkTableId,
+        "uq_orders_status",
+        ConstraintKind.UNIQUE,
+        null,
+        null,
+        List.of(new CreateConstraintColumnCommand(fkBusinessColumnId, 0)))).block().result().constraintId();
+
+    String indexId = createIndexUseCase.createIndex(new CreateIndexCommand(
+        fkTableId,
+        "idx_orders_status",
+        IndexType.BTREE,
+        List.of(new CreateIndexColumnCommand(fkBusinessColumnId, 0, SortDirection.ASC)))).block().result().indexId();
+
+    String relationshipId = createRelationshipUseCase.createRelationship(new CreateRelationshipCommand(
+        fkTableId,
+        pkTableId,
+        RelationshipKind.NON_IDENTIFYING,
+        Cardinality.ONE_TO_MANY,
+        null)).block().result().relationshipId();
+
+    return new TestGraph(schemaId, fkTableId, fkBusinessColumnId, constraintId, indexId, relationshipId);
+  }
+
   private record OperationLogRow(
       String opType,
       long committedRevision,
       String actorUserId,
       String affectedTableIdsJson) {
+  }
+
+  private record OperationPayloadRow(
+      String inversePayloadJson) {
+  }
+
+
+  private record TestGraph(
+      String schemaId,
+      String fkTableId,
+      String fkBusinessColumnId,
+      String constraintId,
+      String indexId,
+      String relationshipId) {
   }
 
 }

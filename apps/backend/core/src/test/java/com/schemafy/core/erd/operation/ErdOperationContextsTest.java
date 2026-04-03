@@ -3,6 +3,8 @@ package com.schemafy.core.erd.operation;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
+import com.schemafy.core.erd.operation.domain.ErdOperationDerivationKind;
+
 import reactor.core.publisher.Mono;
 import reactor.test.StepVerifier;
 
@@ -23,6 +25,8 @@ class ErdOperationContextsTest {
   @DisplayName("여러 metadata writer가 순서대로 누적된다")
   void mergesMetadataAcrossMultipleContextWrites() {
     StepVerifier.create(Mono.deferContextual(ctx -> Mono.just(ErdOperationContexts.metadata(ctx)))
+        .contextWrite(ErdOperationContexts.withDerivedFromOpId("op-1"))
+        .contextWrite(ErdOperationContexts.withDerivationKind(ErdOperationDerivationKind.UNDO))
         .contextWrite(ErdOperationContexts.withActorUserId("user-1"))
         .contextWrite(ErdOperationContexts.withBaseSchemaRevision(7L))
         .contextWrite(ErdOperationContexts.withClientOperationId("client-op-1"))
@@ -31,7 +35,9 @@ class ErdOperationContextsTest {
             "session-1",
             "client-op-1",
             7L,
-            "user-1")))
+            "user-1",
+            ErdOperationDerivationKind.UNDO,
+            "op-1")))
         .verifyComplete();
   }
 
@@ -46,6 +52,8 @@ class ErdOperationContextsTest {
         .assertNext(snapshot -> {
           assertThat(snapshot.metadata()).isEqualTo(new ErdOperationMetadata(
               "session-1",
+              null,
+              null,
               null,
               null,
               null));

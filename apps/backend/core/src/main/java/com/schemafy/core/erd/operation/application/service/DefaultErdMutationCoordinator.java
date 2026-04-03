@@ -36,6 +36,7 @@ class DefaultErdMutationCoordinator implements ErdMutationCoordinator {
   private final IncrementSchemaCollaborationRevisionPort incrementSchemaCollaborationRevisionPort;
   private final SaveSchemaCollaborationStatePort saveSchemaCollaborationStatePort;
   private final AppendErdOperationLogPort appendErdOperationLogPort;
+  private final ErdOperationInversePayloadResolver erdOperationInversePayloadResolver;
   private final UlidGeneratorPort ulidGeneratorPort;
   private final JsonCodec jsonCodec;
 
@@ -55,21 +56,29 @@ class DefaultErdMutationCoordinator implements ErdMutationCoordinator {
       ErdOperationMetadata metadata = ErdOperationContexts.metadata(contextView);
 
       return erdMutationTargetResolver.resolveBefore(operationType, payload)
-          .flatMap(resolvedTarget -> preloadSchemaState(operationType, resolvedTarget)
-              .flatMap(preloadedState -> executeMutationAndCommit(
-                  operationType,
-                  payload,
-                  mutationSupplier,
-                  resolvedTarget,
-                  preloadedState,
-                  metadata))
-              .switchIfEmpty(Mono.defer(() -> executeMutationAndCommit(
-                  operationType,
-                  payload,
-                  mutationSupplier,
-                  resolvedTarget,
-                  null,
-                  metadata))));
+          .flatMap(resolvedTarget -> erdOperationInversePayloadResolver.resolveBefore(operationType, payload)
+              .map(jsonCodec::serialize)
+              .defaultIfEmpty("")
+              .flatMap(inversePayloadJson -> {
+                String resolvedInverseJson = inversePayloadJson.isEmpty() ? null : inversePayloadJson;
+                return preloadSchemaState(operationType, resolvedTarget)
+                    .flatMap(preloadedState -> executeMutationAndCommit(
+                        operationType,
+                        payload,
+                        resolvedInverseJson,
+                        mutationSupplier,
+                        resolvedTarget,
+                        preloadedState,
+                        metadata))
+                    .switchIfEmpty(Mono.defer(() -> executeMutationAndCommit(
+                        operationType,
+                        payload,
+                        resolvedInverseJson,
+                        mutationSupplier,
+                        resolvedTarget,
+                        null,
+                        metadata)));
+              }));
     }).as(transactionalOperator::transactional);
   }
 
@@ -85,6 +94,7 @@ class DefaultErdMutationCoordinator implements ErdMutationCoordinator {
   private <T> Mono<MutationResult<T>> executeMutationAndCommit(
       ErdOperationType operationType,
       Object payload,
+      String inversePayloadJson,
       Supplier<Mono<MutationResult<T>>> mutationSupplier,
       ResolvedErdMutationTarget resolvedTarget,
       SchemaCollaborationState preloadedState,
@@ -93,6 +103,7 @@ class DefaultErdMutationCoordinator implements ErdMutationCoordinator {
         .flatMap(mutationResult -> commitOperation(
             operationType,
             payload,
+            inversePayloadJson,
             mutationResult,
             resolvedTarget,
             preloadedState,
@@ -110,6 +121,7 @@ class DefaultErdMutationCoordinator implements ErdMutationCoordinator {
   private <T> Mono<MutationResult<T>> commitOperation(
       ErdOperationType operationType,
       Object payload,
+      String inversePayloadJson,
       MutationResult<T> mutationResult,
       ResolvedErdMutationTarget resolvedTarget,
       SchemaCollaborationState preloadedState,
@@ -124,6 +136,7 @@ class DefaultErdMutationCoordinator implements ErdMutationCoordinator {
             .flatMap(updatedState -> appendErdOperationLogPort.append(buildOperationLog(
                 operationType,
                 payload,
+                inversePayloadJson,
                 mutationResult,
                 finalizedTarget,
                 updatedState,
@@ -149,6 +162,7 @@ class DefaultErdMutationCoordinator implements ErdMutationCoordinator {
   private <T> ErdOperationLog buildOperationLog(
       ErdOperationType operationType,
       Object payload,
+      String inversePayloadJson,
       MutationResult<T> mutationResult,
       FinalizedErdMutationTarget finalizedTarget,
       SchemaCollaborationState updatedState,
@@ -167,11 +181,11 @@ class DefaultErdMutationCoordinator implements ErdMutationCoordinator {
         metadata.clientOperationId(),
         metadata.sessionId(),
         metadata.actorUserIdOr(SYSTEM_ACTOR_USER_ID),
-        ErdOperationDerivationKind.ORIGINAL,
-        null,
+        metadata.derivationKindOr(ErdOperationDerivationKind.ORIGINAL),
+        metadata.derivedFromOpId(),
         ErdOperationLifecycleState.COMMITTED,
         jsonCodec.serialize(payload),
-        null,
+        inversePayloadJson,
         jsonCodec.serialize(finalizedTarget.touchedEntity() == null
             ? List.of()
             : List.of(finalizedTarget.touchedEntity())),

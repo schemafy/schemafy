@@ -105,6 +105,16 @@ public final class JsonCodec {
     return objectMapper.valueToTree(value);
   }
 
+  public <T> T parsePersisted(String rawJson, Class<T> type) {
+    requireNonNull(rawJson, "rawJson");
+    requireNonNull(type, "type");
+    try {
+      return objectMapper.treeToValue(parsePersistedNode(rawJson), type);
+    } catch (IOException e) {
+      throw new IllegalArgumentException("Failed to parse persisted JSON", e);
+    }
+  }
+
   public JsonNode parsePersistedNode(String rawJson) {
     JsonNode node = parseNode(rawJson);
     if (node.isTextual()) {

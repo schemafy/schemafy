@@ -3,6 +3,8 @@ package com.schemafy.core.erd.operation;
 import java.util.function.Function;
 import java.util.function.UnaryOperator;
 
+import com.schemafy.core.erd.operation.domain.ErdOperationDerivationKind;
+
 import reactor.util.context.Context;
 import reactor.util.context.ContextView;
 
@@ -37,6 +39,14 @@ public final class ErdOperationContexts {
 
   public static Function<Context, Context> withActorUserId(String actorUserId) {
     return updateMetadata(metadata -> metadata.withActorUserId(actorUserId));
+  }
+
+  public static Function<Context, Context> withDerivationKind(ErdOperationDerivationKind derivationKind) {
+    return updateMetadata(metadata -> metadata.withDerivationKind(derivationKind));
+  }
+
+  public static Function<Context, Context> withDerivedFromOpId(String derivedFromOpId) {
+    return updateMetadata(metadata -> metadata.withDerivedFromOpId(derivedFromOpId));
   }
 
   public static Function<Context, Context> suppressNestedMutation() {
