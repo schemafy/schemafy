@@ -184,5 +184,11 @@
   ],
   ".npmrc": [
     346
+  ],
+  ".github/workflows/issue-automation.yml": [
+    353
+  ],
+  ".github/workflows/issue-project-intake.yml": [
+    353
   ]
 }
