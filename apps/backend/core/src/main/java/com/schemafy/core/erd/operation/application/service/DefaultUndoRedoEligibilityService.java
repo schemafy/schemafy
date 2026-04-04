@@ -6,6 +6,8 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
@@ -146,11 +148,16 @@ class DefaultUndoRedoEligibilityService implements UndoRedoEligibilityService {
       throw new IllegalStateException("Unsupported derivation kind: " + operation.derivationKind());
     }
 
+    Set<String> redoStackRootIds = redoStack.stream()
+        .map(ErdOperationLog::opId)
+        .collect(Collectors.toUnmodifiableSet());
+
     return new LinearHistoryState(
         rootByOperationId,
         currentChainTipByRootId,
         List.copyOf(undoStack),
         List.copyOf(redoStack),
+        redoStackRootIds,
         schemaHeadOperation);
   }
 
@@ -222,6 +229,7 @@ class DefaultUndoRedoEligibilityService implements UndoRedoEligibilityService {
       Map<String, ErdOperationLog> currentChainTipByRootId,
       List<ErdOperationLog> undoStack,
       List<ErdOperationLog> redoStack,
+      Set<String> redoStackRootIds,
       ErdOperationLog schemaHeadOperation) {
 
     ErdOperationLog currentUndoCandidate() {
@@ -230,12 +238,6 @@ class DefaultUndoRedoEligibilityService implements UndoRedoEligibilityService {
 
     ErdOperationLog currentRedoCandidate() {
       return redoStack.isEmpty() ? null : redoStack.getFirst();
-    }
-
-    List<String> redoStackRootIds() {
-      return redoStack.stream()
-          .map(ErdOperationLog::opId)
-          .toList();
     }
 
   }
