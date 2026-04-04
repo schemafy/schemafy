@@ -159,5 +159,47 @@
   ],
   "apps/frontend/src/features/drawing/api/constraint.api.ts": [
     337
+  ],
+  "apps/backend/api/src/main/java/com/schemafy/api/project/controller/ProjectController.java": [
+    354
+  ],
+  "apps/backend/api/src/main/java/com/schemafy/api/project/controller/ProjectInvitationController.java": [
+    354
+  ],
+  "apps/backend/api/src/main/java/com/schemafy/api/project/controller/WorkspaceController.java": [
+    354
+  ],
+  "apps/backend/api/src/main/java/com/schemafy/api/project/controller/WorkspaceInvitationController.java": [
+    354
+  ],
+  "apps/backend/api/src/test/java/com/schemafy/api/project/controller/ProjectControllerTest.java": [
+    354
+  ],
+  "apps/backend/api/src/test/java/com/schemafy/api/project/controller/ProjectInvitationControllerTest.java": [
+    354
+  ],
+  "apps/backend/api/src/test/java/com/schemafy/api/project/controller/WorkspaceControllerTest.java": [
+    354
+  ],
+  "apps/backend/api/src/test/java/com/schemafy/api/project/controller/WorkspaceInvitationControllerTest.java": [
+    354
+  ],
+  "apps/backend/api/src/test/java/com/schemafy/api/project/docs/ProjectApiSnippets.java": [
+    354
+  ],
+  "apps/backend/api/src/test/java/com/schemafy/api/project/docs/ProjectInvitationApiSnippets.java": [
+    354
+  ],
+  "apps/backend/api/src/test/java/com/schemafy/api/project/docs/ShareLinkApiSnippets.java": [
+    354
+  ],
+  "apps/backend/api/src/test/java/com/schemafy/api/project/docs/WorkspaceApiSnippets.java": [
+    354
+  ],
+  "apps/backend/api/src/test/java/com/schemafy/api/project/docs/WorkspaceInvitationApiSnippets.java": [
+    354
+  ],
+  "apps/backend/api/src/test/java/com/schemafy/api/testsupport/project/ProjectHttpTestSupport.java": [
+    354
   ]
 }
