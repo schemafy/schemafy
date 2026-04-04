@@ -3,12 +3,12 @@
   "private": true,
   "scripts": {
     "build": "turbo run build",
-    "build:frontend": "cd apps/frontend && npm run build",
+    "build:frontend": "cd apps/frontend && pnpm run build",
     "build:backend": "./gradlew :core:build :api:build",
     "infra": "podman compose up -d mariadb redis || true",
-    "dev": "npm run infra && turbo run dev --parallel",
-    "dev:frontend": "cd apps/frontend && npm run dev",
-    "dev:backend": "cd apps/backend && npm run dev",
+    "dev": "pnpm run infra && turbo run dev --parallel",
+    "dev:frontend": "cd apps/frontend && pnpm run dev",
+    "dev:backend": "cd apps/backend && pnpm run dev",
     "infra:up": "podman compose up -d mariadb redis",
     "infra:down": "podman compose down",
     "lint": "turbo run lint",
@@ -25,9 +25,11 @@
   "engines": {
     "node": ">=18"
   },
-  "packageManager": "npm@10.9.3",
-  "workspaces": [
-    "apps/*",
-    "packages/*"
-  ]
+  "packageManager": "pnpm@10.33.0",
+  "pnpm": {
+    "onlyBuiltDependencies": [
+      "@nestjs/core",
+      "esbuild"
+    ]
+  }
 }

@@ -8,7 +8,8 @@
   ],
   ".github/pr-contexts/file-index.json": [
     335,
-    337
+    337,
+    346
   ],
   "apps/backend/api/src/docs/asciidoc/api-guide.adoc": [
     337
@@ -159,5 +160,29 @@
   ],
   "apps/frontend/src/features/drawing/api/constraint.api.ts": [
     337
+  ],
+  ".github/workflows/lint-and-format.yml": [
+    346
+  ],
+  ".github/workflows/test.yml": [
+    346
+  ],
+  "apps/bff/package.json": [
+    346
+  ],
+  "package-lock.json": [
+    346
+  ],
+  "package.json": [
+    346
+  ],
+  "pnpm-lock.yaml": [
+    346
+  ],
+  "pnpm-workspace.yaml": [
+    346
+  ],
+  ".npmrc": [
+    346
   ]
 }
