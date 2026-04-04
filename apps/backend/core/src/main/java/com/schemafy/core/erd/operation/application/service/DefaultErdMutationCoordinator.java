@@ -36,7 +36,7 @@ class DefaultErdMutationCoordinator implements ErdMutationCoordinator {
   private final IncrementSchemaCollaborationRevisionPort incrementSchemaCollaborationRevisionPort;
   private final SaveSchemaCollaborationStatePort saveSchemaCollaborationStatePort;
   private final AppendErdOperationLogPort appendErdOperationLogPort;
-  private final ErdOperationInversePayloadResolver erdOperationInversePayloadResolver;
+  private final SameCommandInversePayloadRegistry sameCommandInversePayloadRegistry;
   private final UlidGeneratorPort ulidGeneratorPort;
   private final JsonCodec jsonCodec;
 
@@ -56,7 +56,7 @@ class DefaultErdMutationCoordinator implements ErdMutationCoordinator {
       ErdOperationMetadata metadata = ErdOperationContexts.metadata(contextView);
 
       return erdMutationTargetResolver.resolveBefore(operationType, payload)
-          .flatMap(resolvedTarget -> erdOperationInversePayloadResolver.resolveBefore(operationType, payload)
+          .flatMap(resolvedTarget -> sameCommandInversePayloadRegistry.resolve(operationType, payload)
               .map(jsonCodec::serialize)
               .defaultIfEmpty("")
               .flatMap(inversePayloadJson -> {

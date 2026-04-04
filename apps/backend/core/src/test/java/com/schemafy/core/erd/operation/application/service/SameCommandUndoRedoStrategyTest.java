@@ -5,22 +5,13 @@ import java.util.concurrent.atomic.AtomicReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.schemafy.core.common.MutationResult;
 import com.schemafy.core.common.json.JsonCodec;
-import com.schemafy.core.erd.column.application.port.in.ChangeColumnNameUseCase;
-import com.schemafy.core.erd.column.application.port.in.ChangeColumnTypeUseCase;
-import com.schemafy.core.erd.constraint.application.port.in.ChangeConstraintNameUseCase;
 import com.schemafy.core.erd.index.application.port.in.ChangeIndexNameCommand;
-import com.schemafy.core.erd.index.application.port.in.ChangeIndexNameUseCase;
-import com.schemafy.core.erd.index.application.port.in.ChangeIndexTypeUseCase;
 import com.schemafy.core.erd.operation.ErdOperationContexts;
 import com.schemafy.core.erd.operation.ErdOperationMetadata;
 import com.schemafy.core.erd.operation.domain.ErdOperationDerivationKind;
 import com.schemafy.core.erd.operation.domain.ErdOperationLifecycleState;
 import com.schemafy.core.erd.operation.domain.ErdOperationLog;
 import com.schemafy.core.erd.operation.domain.ErdOperationType;
-import com.schemafy.core.erd.relationship.application.port.in.ChangeRelationshipCardinalityUseCase;
-import com.schemafy.core.erd.relationship.application.port.in.ChangeRelationshipKindUseCase;
-import com.schemafy.core.erd.relationship.application.port.in.ChangeRelationshipNameUseCase;
-import com.schemafy.core.erd.table.application.port.in.ChangeTableNameUseCase;
 
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -42,31 +33,7 @@ import static org.mockito.BDDMockito.then;
 class SameCommandUndoRedoStrategyTest {
 
   @Mock
-  ChangeTableNameUseCase changeTableNameUseCase;
-
-  @Mock
-  ChangeColumnNameUseCase changeColumnNameUseCase;
-
-  @Mock
-  ChangeColumnTypeUseCase changeColumnTypeUseCase;
-
-  @Mock
-  ChangeRelationshipNameUseCase changeRelationshipNameUseCase;
-
-  @Mock
-  ChangeRelationshipKindUseCase changeRelationshipKindUseCase;
-
-  @Mock
-  ChangeRelationshipCardinalityUseCase changeRelationshipCardinalityUseCase;
-
-  @Mock
-  ChangeConstraintNameUseCase changeConstraintNameUseCase;
-
-  @Mock
-  ChangeIndexNameUseCase changeIndexNameUseCase;
-
-  @Mock
-  ChangeIndexTypeUseCase changeIndexTypeUseCase;
+  SameCommandReplayRegistry sameCommandReplayRegistry;
 
   @Spy
   JsonCodec jsonCodec = new JsonCodec(new ObjectMapper());
@@ -81,14 +48,18 @@ class SameCommandUndoRedoStrategyTest {
         jsonCodec.serialize(new ChangeIndexNameCommand("index-1", "idx_new")),
         jsonCodec.serialize(new ChangeIndexNameCommand("index-1", "idx_old")));
 
-    given(changeIndexNameUseCase.changeIndexName(new ChangeIndexNameCommand("index-1", "idx_old")))
+    given(sameCommandReplayRegistry.executePersisted(
+        ErdOperationType.CHANGE_INDEX_NAME,
+        jsonCodec.serialize(new ChangeIndexNameCommand("index-1", "idx_old"))))
         .willReturn(Mono.just(MutationResult.of(null, "table-1")));
 
     StepVerifier.create(sut.undo(operationLog))
         .assertNext(result -> assertThat(result.affectedTableIds()).containsExactly("table-1"))
         .verifyComplete();
 
-    then(changeIndexNameUseCase).should().changeIndexName(new ChangeIndexNameCommand("index-1", "idx_old"));
+    then(sameCommandReplayRegistry).should().executePersisted(
+        ErdOperationType.CHANGE_INDEX_NAME,
+        jsonCodec.serialize(new ChangeIndexNameCommand("index-1", "idx_old")));
   }
 
   @Test
@@ -98,14 +69,18 @@ class SameCommandUndoRedoStrategyTest {
         jsonCodec.serialize(new ChangeIndexNameCommand("index-1", "idx_new")),
         jsonCodec.serialize(new ChangeIndexNameCommand("index-1", "idx_old")));
 
-    given(changeIndexNameUseCase.changeIndexName(new ChangeIndexNameCommand("index-1", "idx_new")))
+    given(sameCommandReplayRegistry.executePersisted(
+        ErdOperationType.CHANGE_INDEX_NAME,
+        jsonCodec.serialize(new ChangeIndexNameCommand("index-1", "idx_new"))))
         .willReturn(Mono.just(MutationResult.of(null, "table-1")));
 
     StepVerifier.create(sut.redo(operationLog))
         .expectNextCount(1)
         .verifyComplete();
 
-    then(changeIndexNameUseCase).should().changeIndexName(new ChangeIndexNameCommand("index-1", "idx_new"));
+    then(sameCommandReplayRegistry).should().executePersisted(
+        ErdOperationType.CHANGE_INDEX_NAME,
+        jsonCodec.serialize(new ChangeIndexNameCommand("index-1", "idx_new")));
   }
 
   @Test
@@ -116,7 +91,9 @@ class SameCommandUndoRedoStrategyTest {
         jsonCodec.serialize(new ChangeIndexNameCommand("index-1", "idx_old")));
     AtomicReference<ErdOperationMetadata> metadataRef = new AtomicReference<>();
 
-    given(changeIndexNameUseCase.changeIndexName(new ChangeIndexNameCommand("index-1", "idx_old")))
+    given(sameCommandReplayRegistry.executePersisted(
+        ErdOperationType.CHANGE_INDEX_NAME,
+        jsonCodec.serialize(new ChangeIndexNameCommand("index-1", "idx_old"))))
         .willReturn(Mono.deferContextual(ctx -> {
           metadataRef.set(ErdOperationContexts.metadata(ctx));
           return Mono.just(MutationResult.of(null, "table-1"));
@@ -147,12 +124,35 @@ class SameCommandUndoRedoStrategyTest {
         .verify();
   }
 
+  @Test
+  @DisplayName("registry가 지원하지 않는 연산 예외를 반환하면 그대로 전달한다")
+  void propagatesUnsupportedOperationError() {
+    ErdOperationLog operationLog = operationLog(ErdOperationType.DELETE_TABLE, "{}", "{}");
+
+    given(sameCommandReplayRegistry.executePersisted(ErdOperationType.DELETE_TABLE, "{}"))
+        .willReturn(Mono.error(new IllegalArgumentException(
+            "Unsupported same-command undo/redo operation: DELETE_TABLE")));
+
+    StepVerifier.create(sut.redo(operationLog))
+        .expectErrorSatisfies(error -> assertThat(error)
+            .isInstanceOf(IllegalArgumentException.class)
+            .hasMessage("Unsupported same-command undo/redo operation: DELETE_TABLE"))
+        .verify();
+  }
+
   private ErdOperationLog operationLog(String payloadJson, String inversePayloadJson) {
+    return operationLog(ErdOperationType.CHANGE_INDEX_NAME, payloadJson, inversePayloadJson);
+  }
+
+  private ErdOperationLog operationLog(
+      ErdOperationType opType,
+      String payloadJson,
+      String inversePayloadJson) {
     return new ErdOperationLog(
         "op-1",
         "project-1",
         "schema-1",
-        ErdOperationType.CHANGE_INDEX_NAME,
+        opType,
         3L,
         null,
         null,
