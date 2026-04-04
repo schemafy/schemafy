@@ -1,7 +1,6 @@
 package com.schemafy.core.erd.operation.application.service;
 
 import java.util.EnumMap;
-import java.util.Set;
 import java.util.function.Function;
 
 import org.springframework.stereotype.Component;
@@ -34,8 +33,8 @@ import reactor.core.publisher.Mono;
 @Component
 class SameCommandInversePayloadRegistry {
 
-  private final EnumMap<ErdOperationType, SameCommandInversePayloadSpec<?>> specs =
-      new EnumMap<>(ErdOperationType.class);
+  private final EnumMap<ErdOperationType, SameCommandInversePayloadSpec<?>> specs = new EnumMap<>(
+      ErdOperationType.class);
 
   SameCommandInversePayloadRegistry(
       GetTableByIdPort getTableByIdPort,
@@ -89,14 +88,6 @@ class SameCommandInversePayloadRegistry {
       }
       return spec.resolve(payload);
     });
-  }
-
-  boolean supports(ErdOperationType opType) {
-    return opType != null && specs.containsKey(opType);
-  }
-
-  Set<ErdOperationType> supportedOperationTypes() {
-    return Set.copyOf(specs.keySet());
   }
 
   private <T> void register(
@@ -224,6 +215,7 @@ class SameCommandInversePayloadRegistry {
     private Mono<Object> resolve(Object payload) {
       return inversePayloadResolver.apply(requirePayload(payload, "Unsupported inverse payload type: "));
     }
+
   }
 
 }

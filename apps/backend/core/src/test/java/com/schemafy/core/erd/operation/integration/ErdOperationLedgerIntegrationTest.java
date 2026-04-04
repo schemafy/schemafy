@@ -497,7 +497,8 @@ class ErdOperationLedgerIntegrationTest extends ErdProjectIntegrationSupport {
 
     StepVerifier.create(undoErdOperationUseCase.undo(
         new UndoErdOperationCommand(sourceOpId)))
-        .assertNext(result -> assertThat(result.operation().derivationKind()).isEqualTo(ErdOperationDerivationKind.UNDO))
+        .assertNext(result -> assertThat(result.operation().derivationKind()).isEqualTo(
+            ErdOperationDerivationKind.UNDO))
         .verifyComplete();
 
     assertThat(tableName(tableId)).isEqualTo("orders");
@@ -505,7 +506,8 @@ class ErdOperationLedgerIntegrationTest extends ErdProjectIntegrationSupport {
 
     StepVerifier.create(redoErdOperationUseCase.redo(
         new RedoErdOperationCommand(sourceOpId)))
-        .assertNext(result -> assertThat(result.operation().derivationKind()).isEqualTo(ErdOperationDerivationKind.REDO))
+        .assertNext(result -> assertThat(result.operation().derivationKind()).isEqualTo(
+            ErdOperationDerivationKind.REDO))
         .verifyComplete();
 
     assertThat(tableName(tableId)).isEqualTo("orders_v2");

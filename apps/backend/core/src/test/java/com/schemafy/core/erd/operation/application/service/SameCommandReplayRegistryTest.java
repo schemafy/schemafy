@@ -105,9 +105,9 @@ class SameCommandReplayRegistryTest {
   }
 
   @Test
-  @DisplayName("등록되지 않은 연산 execute는 예외가 발생한다")
-  void throwsWhenExecutingUnsupportedOperation() {
-    StepVerifier.create(sut.execute(ErdOperationType.DELETE_TABLE, new Object()))
+  @DisplayName("등록되지 않은 연산 executePersisted는 예외가 발생한다")
+  void throwsWhenExecutingPersistedUnsupportedOperation() {
+    StepVerifier.create(sut.executePersisted(ErdOperationType.DELETE_TABLE, "{}"))
         .expectErrorSatisfies(error -> assertThat(error)
             .isInstanceOf(IllegalArgumentException.class)
             .hasMessage("Unsupported same-command undo/redo operation: DELETE_TABLE"))

@@ -7,8 +7,11 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
+import org.mockito.Spy;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.schemafy.core.common.json.JsonCodec;
 import com.schemafy.core.erd.column.application.port.in.ChangeColumnNameUseCase;
 import com.schemafy.core.erd.column.application.port.in.ChangeColumnTypeUseCase;
 import com.schemafy.core.erd.column.application.port.out.GetColumnByIdPort;
@@ -24,6 +27,8 @@ import com.schemafy.core.erd.relationship.application.port.in.ChangeRelationship
 import com.schemafy.core.erd.relationship.application.port.out.GetRelationshipByIdPort;
 import com.schemafy.core.erd.table.application.port.in.ChangeTableNameUseCase;
 import com.schemafy.core.erd.table.application.port.out.GetTableByIdPort;
+
+import reactor.test.StepVerifier;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -73,6 +78,9 @@ class SameCommandRegistryContractTest {
   @Mock
   GetIndexByIdPort getIndexByIdPort;
 
+  @Spy
+  JsonCodec jsonCodec = new JsonCodec(new ObjectMapper());
+
   @InjectMocks
   SameCommandReplayRegistry replayRegistry;
 
@@ -93,9 +101,23 @@ class SameCommandRegistryContractTest {
         ErdOperationType.CHANGE_INDEX_NAME,
         ErdOperationType.CHANGE_INDEX_TYPE);
 
-    assertThat(replayRegistry.supportedOperationTypes()).isEqualTo(expectedOperations);
-    assertThat(inversePayloadRegistry.supportedOperationTypes()).isEqualTo(expectedOperations);
-    assertThat(replayRegistry.supportedOperationTypes()).isEqualTo(inversePayloadRegistry.supportedOperationTypes());
+    for (ErdOperationType opType : ErdOperationType.values()) {
+      boolean supported = expectedOperations.contains(opType);
+
+      assertThat(replayRegistry.supports(opType)).isEqualTo(supported);
+
+      if (supported) {
+        StepVerifier.create(inversePayloadRegistry.resolve(opType, new Object()))
+            .expectErrorSatisfies(error -> assertThat(error)
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("Unsupported inverse payload type"))
+            .verify();
+        continue;
+      }
+
+      StepVerifier.create(inversePayloadRegistry.resolve(opType, new Object()))
+          .verifyComplete();
+    }
   }
 
 }

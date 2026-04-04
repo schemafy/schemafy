@@ -1,7 +1,6 @@
 package com.schemafy.core.erd.operation.application.service;
 
 import java.util.EnumMap;
-import java.util.Set;
 import java.util.function.Function;
 
 import org.springframework.stereotype.Component;
@@ -33,8 +32,7 @@ import reactor.core.publisher.Mono;
 @Component
 class SameCommandReplayRegistry {
 
-  private final EnumMap<ErdOperationType, SameCommandReplaySpec<?>> specs =
-      new EnumMap<>(ErdOperationType.class);
+  private final EnumMap<ErdOperationType, SameCommandReplaySpec<?>> specs = new EnumMap<>(ErdOperationType.class);
   private final JsonCodec jsonCodec;
 
   SameCommandReplayRegistry(
@@ -50,8 +48,10 @@ class SameCommandReplayRegistry {
       ChangeIndexTypeUseCase changeIndexTypeUseCase) {
     this.jsonCodec = jsonCodec;
     register(ErdOperationType.CHANGE_TABLE_NAME, ChangeTableNameCommand.class, changeTableNameUseCase::changeTableName);
-    register(ErdOperationType.CHANGE_COLUMN_NAME, ChangeColumnNameCommand.class, changeColumnNameUseCase::changeColumnName);
-    register(ErdOperationType.CHANGE_COLUMN_TYPE, ChangeColumnTypeCommand.class, changeColumnTypeUseCase::changeColumnType);
+    register(ErdOperationType.CHANGE_COLUMN_NAME, ChangeColumnNameCommand.class,
+        changeColumnNameUseCase::changeColumnName);
+    register(ErdOperationType.CHANGE_COLUMN_TYPE, ChangeColumnTypeCommand.class,
+        changeColumnTypeUseCase::changeColumnType);
     register(
         ErdOperationType.CHANGE_RELATIONSHIP_NAME,
         ChangeRelationshipNameCommand.class,
@@ -80,16 +80,8 @@ class SameCommandReplayRegistry {
     });
   }
 
-  Mono<MutationResult<Void>> execute(ErdOperationType opType, Object payload) {
-    return Mono.defer(() -> requireSpec(opType).execute(payload));
-  }
-
   boolean supports(ErdOperationType opType) {
     return opType != null && specs.containsKey(opType);
-  }
-
-  Set<ErdOperationType> supportedOperationTypes() {
-    return Set.copyOf(specs.keySet());
   }
 
   private Object parsePersistedPayload(String payloadJson, SameCommandReplaySpec<?> spec) {
@@ -118,6 +110,7 @@ class SameCommandReplayRegistry {
     private Mono<MutationResult<Void>> execute(Object payload) {
       return invoker.apply(requirePayload(payload, "Unsupported replay payload type: "));
     }
+
   }
 
 }
