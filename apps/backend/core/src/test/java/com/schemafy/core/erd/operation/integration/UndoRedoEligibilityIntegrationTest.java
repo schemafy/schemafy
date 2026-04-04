@@ -2,11 +2,12 @@ package com.schemafy.core.erd.operation.integration;
 
 import java.util.UUID;
 
-import org.junit.jupiter.api.DisplayName;
-import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.ActiveProfiles;
+
+import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Test;
 
 import com.schemafy.core.common.exception.DomainException;
 import com.schemafy.core.erd.operation.application.port.out.AppendErdOperationLogPort;
