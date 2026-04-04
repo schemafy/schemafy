@@ -161,6 +161,42 @@
   "apps/frontend/src/features/drawing/api/constraint.api.ts": [
     337
   ],
+  "apps/backend/core/src/main/java/com/schemafy/core/erd/operation/adapter/out/persistence/ErdOperationLogRepository.java": [
+    352
+  ],
+  "apps/backend/core/src/main/java/com/schemafy/core/erd/operation/adapter/out/persistence/ErdOperationPersistenceAdapter.java": [
+    352
+  ],
+  "apps/backend/core/src/main/java/com/schemafy/core/erd/operation/application/port/out/GetErdOperationByIdPort.java": [
+    352
+  ],
+  "apps/backend/core/src/main/java/com/schemafy/core/erd/operation/application/port/out/GetErdOperationsBySchemaIdPort.java": [
+    352
+  ],
+  "apps/backend/core/src/main/java/com/schemafy/core/erd/operation/application/service/DefaultUndoRedoEligibilityService.java": [
+    352
+  ],
+  "apps/backend/core/src/main/java/com/schemafy/core/erd/operation/application/service/ResolvedUndoRedoEligibility.java": [
+    352
+  ],
+  "apps/backend/core/src/main/java/com/schemafy/core/erd/operation/application/service/UndoRedoAction.java": [
+    352
+  ],
+  "apps/backend/core/src/main/java/com/schemafy/core/erd/operation/application/service/UndoRedoEligibilityService.java": [
+    352
+  ],
+  "apps/backend/core/src/main/java/com/schemafy/core/erd/operation/domain/ErdOperationDerivationKind.java": [
+    352
+  ],
+  "apps/backend/core/src/main/java/com/schemafy/core/erd/operation/domain/exception/OperationErrorCode.java": [
+    352
+  ],
+  "apps/backend/core/src/test/java/com/schemafy/core/erd/operation/application/service/DefaultUndoRedoEligibilityServiceTest.java": [
+    352
+  ],
+  "apps/backend/core/src/test/java/com/schemafy/core/erd/operation/integration/UndoRedoEligibilityIntegrationTest.java": [
+    352
+  ],
   ".github/workflows/lint-and-format.yml": [
     346
   ],
