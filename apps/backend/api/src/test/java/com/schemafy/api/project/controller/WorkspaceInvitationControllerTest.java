@@ -12,6 +12,8 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 
 import com.schemafy.api.common.constant.ApiPath;
 import com.schemafy.api.project.controller.dto.request.CreateWorkspaceInvitationRequest;
@@ -251,6 +253,22 @@ class WorkspaceInvitationControllerTest extends ProjectHttpTestSupport {
           .jsonPath("$.totalElements").isEqualTo(5);
     }
 
+    @DisplayName("초대 목록 조회는 잘못된 pagination 쿼리에 대해 400 Bad Request를 반환한다")
+    @ParameterizedTest(name = "초대 목록 조회 실패 쿼리: {0}")
+    @ValueSource(strings = {
+      "?page=-1&size=10",
+      "?page=0&size=0",
+      "?page=0&size=101"
+    })
+    void listInvitations_InvalidPagination_BadRequest(
+        String query) {
+      assertInvalidPagination(
+          webTestClient,
+          API_BASE + "/workspaces/" + testWorkspace.getId()
+              + "/invitations" + query,
+          adminToken);
+    }
+
   }
 
   @Nested
@@ -375,6 +393,21 @@ class WorkspaceInvitationControllerTest extends ProjectHttpTestSupport {
               .build())
           .exchange()
           .expectStatus().isUnauthorized();
+    }
+
+    @DisplayName("내 초대 목록 조회는 잘못된 pagination 쿼리에 대해 400 Bad Request를 반환한다")
+    @ParameterizedTest(name = "내 초대 목록 조회 실패 쿼리: {0}")
+    @ValueSource(strings = {
+      "?page=-1&size=10",
+      "?page=0&size=0",
+      "?page=0&size=101"
+    })
+    void listMyInvitations_InvalidPagination_BadRequest(
+        String query) {
+      assertInvalidPagination(
+          webTestClient,
+          API_BASE + "/users/me/invitations/workspaces" + query,
+          invitedToken);
     }
 
   }
