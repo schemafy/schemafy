@@ -9,7 +9,8 @@ import {
 } from '@nestjs/common';
 import { IndexService } from './index.service';
 import { AuthHeader } from '../common/decorators/auth-header.decorator';
-import { SessionId } from '../common/decorators/session-id.decorator';
+import { CollaborationHeaders } from '../common/decorators/collaboration-headers.decorator';
+import type { CollaborationRequestHeaders } from '../common/backend-client/backend-client.service';
 import type {
   AddIndexColumnRequest,
   ChangeIndexColumnPositionRequest,
@@ -27,9 +28,14 @@ export class IndexController {
   async createIndex(
     @Body() data: CreateIndexRequest,
     @AuthHeader() authHeader: string,
-    @SessionId() sessionId?: string,
+    @CollaborationHeaders()
+    collaborationHeaders?: CollaborationRequestHeaders,
   ) {
-    return this.indexService.createIndex(data, authHeader, sessionId);
+    return this.indexService.createIndex(
+      data,
+      authHeader,
+      collaborationHeaders,
+    );
   }
 
   @Get('indexes/:indexId')
@@ -53,13 +59,14 @@ export class IndexController {
     @Param('indexId') indexId: string,
     @Body() data: ChangeIndexNameRequest,
     @AuthHeader() authHeader: string,
-    @SessionId() sessionId?: string,
+    @CollaborationHeaders()
+    collaborationHeaders?: CollaborationRequestHeaders,
   ) {
     return this.indexService.changeIndexName(
       indexId,
       data,
       authHeader,
-      sessionId,
+      collaborationHeaders,
     );
   }
 
@@ -68,13 +75,14 @@ export class IndexController {
     @Param('indexId') indexId: string,
     @Body() data: ChangeIndexTypeRequest,
     @AuthHeader() authHeader: string,
-    @SessionId() sessionId?: string,
+    @CollaborationHeaders()
+    collaborationHeaders?: CollaborationRequestHeaders,
   ) {
     return this.indexService.changeIndexType(
       indexId,
       data,
       authHeader,
-      sessionId,
+      collaborationHeaders,
     );
   }
 
@@ -82,9 +90,14 @@ export class IndexController {
   async deleteIndex(
     @Param('indexId') indexId: string,
     @AuthHeader() authHeader: string,
-    @SessionId() sessionId?: string,
+    @CollaborationHeaders()
+    collaborationHeaders?: CollaborationRequestHeaders,
   ) {
-    return this.indexService.deleteIndex(indexId, authHeader, sessionId);
+    return this.indexService.deleteIndex(
+      indexId,
+      authHeader,
+      collaborationHeaders,
+    );
   }
 
   @Get('indexes/:indexId/columns')
@@ -100,13 +113,14 @@ export class IndexController {
     @Param('indexId') indexId: string,
     @Body() data: AddIndexColumnRequest,
     @AuthHeader() authHeader: string,
-    @SessionId() sessionId?: string,
+    @CollaborationHeaders()
+    collaborationHeaders?: CollaborationRequestHeaders,
   ) {
     return this.indexService.addIndexColumn(
       indexId,
       data,
       authHeader,
-      sessionId,
+      collaborationHeaders,
     );
   }
 
@@ -114,12 +128,13 @@ export class IndexController {
   async removeIndexColumn(
     @Param('indexColumnId') indexColumnId: string,
     @AuthHeader() authHeader: string,
-    @SessionId() sessionId?: string,
+    @CollaborationHeaders()
+    collaborationHeaders?: CollaborationRequestHeaders,
   ) {
     return this.indexService.removeIndexColumn(
       indexColumnId,
       authHeader,
-      sessionId,
+      collaborationHeaders,
     );
   }
 
@@ -136,13 +151,14 @@ export class IndexController {
     @Param('indexColumnId') indexColumnId: string,
     @Body() data: ChangeIndexColumnPositionRequest,
     @AuthHeader() authHeader: string,
-    @SessionId() sessionId?: string,
+    @CollaborationHeaders()
+    collaborationHeaders?: CollaborationRequestHeaders,
   ) {
     return this.indexService.changeIndexColumnPosition(
       indexColumnId,
       data,
       authHeader,
-      sessionId,
+      collaborationHeaders,
     );
   }
 
@@ -151,13 +167,14 @@ export class IndexController {
     @Param('indexColumnId') indexColumnId: string,
     @Body() data: ChangeIndexColumnSortDirectionRequest,
     @AuthHeader() authHeader: string,
-    @SessionId() sessionId?: string,
+    @CollaborationHeaders()
+    collaborationHeaders?: CollaborationRequestHeaders,
   ) {
     return this.indexService.changeIndexColumnSortDirection(
       indexColumnId,
       data,
       authHeader,
-      sessionId,
+      collaborationHeaders,
     );
   }
 }

@@ -6,6 +6,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.reactive.TransactionalOperator;
 
@@ -26,6 +27,8 @@ import com.schemafy.core.erd.index.domain.Index;
 import com.schemafy.core.erd.index.domain.IndexColumn;
 import com.schemafy.core.erd.index.domain.exception.IndexErrorCode;
 import com.schemafy.core.erd.index.domain.validator.IndexValidator;
+import com.schemafy.core.erd.operation.application.service.ErdMutationCoordinator;
+import com.schemafy.core.erd.operation.domain.ErdOperationType;
 import com.schemafy.core.erd.table.application.port.out.GetTableByIdPort;
 import com.schemafy.core.erd.table.domain.Table;
 import com.schemafy.core.erd.table.domain.exception.TableErrorCode;
@@ -39,19 +42,25 @@ import reactor.core.publisher.Mono;
 @RequiredArgsConstructor
 public class CreateIndexService implements CreateIndexUseCase {
 
+  private final TransactionalOperator transactionalOperator;
   private final UlidGeneratorPort ulidGeneratorPort;
   private final CreateIndexPort createIndexPort;
   private final CreateIndexColumnPort createIndexColumnPort;
-  private final TransactionalOperator transactionalOperator;
   private final IndexExistsPort indexExistsPort;
   private final GetTableByIdPort getTableByIdPort;
   private final GetColumnsByTableIdPort getColumnsByTableIdPort;
   private final GetIndexesByTableIdPort getIndexesByTableIdPort;
   private final GetIndexColumnsByIndexIdPort getIndexColumnsByIndexIdPort;
+  private ErdMutationCoordinator erdMutationCoordinator = ErdMutationCoordinator.noop();
+
+  @Autowired
+  void setErdMutationCoordinator(ErdMutationCoordinator erdMutationCoordinator) {
+    this.erdMutationCoordinator = erdMutationCoordinator;
+  }
 
   @Override
   public Mono<MutationResult<CreateIndexResult>> createIndex(CreateIndexCommand command) {
-    return Mono.defer(() -> {
+    return erdMutationCoordinator.coordinate(ErdOperationType.CREATE_INDEX, command, () -> Mono.defer(() -> {
       String normalizedName = normalizeName(command.name());
       List<CreateIndexColumnCommand> columnCommands = resolveColumnSeqNos(normalizeColumns(command.columns()));
 
@@ -82,7 +91,7 @@ public class CreateIndexService implements CreateIndexUseCase {
             return nameMono.flatMap(resolvedName -> validateAndCreate(table, command, resolvedName, columnCommands)
                 .map(result -> MutationResult.of(result, table.id())));
           });
-    }).as(transactionalOperator::transactional);
+    })).as(transactionalOperator::transactional);
   }
 
   private Mono<CreateIndexResult> validateAndCreate(

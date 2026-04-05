@@ -14,13 +14,15 @@ import type {
   ChangeColumnMetaRequest,
   ChangeColumnPositionRequest,
 } from '../api';
+import { syncCommittedRevision } from '../api/mutation-request';
 import { useErdCache } from './useErdCache';
 
 export const useCreateColumn = (schemaId: string) => {
   const { updateAffectedTables } = useErdCache(schemaId);
   return useMutation({
-    mutationFn: (data: CreateColumnRequest) => createColumn(data),
+    mutationFn: (data: CreateColumnRequest) => createColumn(data, schemaId),
     onSuccess: (result) => {
+      syncCommittedRevision(schemaId, result);
       updateAffectedTables(result.affectedTableIds);
     },
   });
@@ -35,8 +37,9 @@ export const useChangeColumnName = (schemaId: string) => {
     }: {
       columnId: string;
       data: ChangeColumnNameRequest;
-    }) => changeColumnName(columnId, data),
+    }) => changeColumnName(columnId, data, schemaId),
     onSuccess: (result) => {
+      syncCommittedRevision(schemaId, result);
       updateAffectedTables(result.affectedTableIds);
     },
   });
@@ -51,8 +54,9 @@ export const useChangeColumnType = (schemaId: string) => {
     }: {
       columnId: string;
       data: ChangeColumnTypeRequest;
-    }) => changeColumnType(columnId, data),
+    }) => changeColumnType(columnId, data, schemaId),
     onSuccess: (result) => {
+      syncCommittedRevision(schemaId, result);
       updateAffectedTables(result.affectedTableIds);
     },
   });
@@ -67,8 +71,9 @@ export const useChangeColumnMeta = (schemaId: string) => {
     }: {
       columnId: string;
       data: ChangeColumnMetaRequest;
-    }) => changeColumnMeta(columnId, data),
+    }) => changeColumnMeta(columnId, data, schemaId),
     onSuccess: (result) => {
+      syncCommittedRevision(schemaId, result);
       updateAffectedTables(result.affectedTableIds);
     },
   });
@@ -83,8 +88,9 @@ export const useChangeColumnPosition = (schemaId: string) => {
     }: {
       columnId: string;
       data: ChangeColumnPositionRequest;
-    }) => changeColumnPosition(columnId, data),
+    }) => changeColumnPosition(columnId, data, schemaId),
     onSuccess: (result) => {
+      syncCommittedRevision(schemaId, result);
       updateAffectedTables(result.affectedTableIds);
     },
   });
@@ -93,8 +99,9 @@ export const useChangeColumnPosition = (schemaId: string) => {
 export const useDeleteColumn = (schemaId: string) => {
   const { updateAffectedTables } = useErdCache(schemaId);
   return useMutation({
-    mutationFn: (columnId: string) => deleteColumn(columnId),
+    mutationFn: (columnId: string) => deleteColumn(columnId, schemaId),
     onSuccess: (result) => {
+      syncCommittedRevision(schemaId, result);
       updateAffectedTables(result.affectedTableIds);
     },
   });

@@ -4,6 +4,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.reactive.TransactionalOperator;
 
@@ -22,6 +23,8 @@ import com.schemafy.core.erd.index.domain.Index;
 import com.schemafy.core.erd.index.domain.IndexColumn;
 import com.schemafy.core.erd.index.domain.exception.IndexErrorCode;
 import com.schemafy.core.erd.index.domain.validator.IndexValidator;
+import com.schemafy.core.erd.operation.application.service.ErdMutationCoordinator;
+import com.schemafy.core.erd.operation.domain.ErdOperationType;
 import com.schemafy.core.ulid.application.port.out.UlidGeneratorPort;
 
 import lombok.RequiredArgsConstructor;
@@ -32,20 +35,27 @@ import reactor.core.publisher.Mono;
 @RequiredArgsConstructor
 public class AddIndexColumnService implements AddIndexColumnUseCase {
 
+  private final TransactionalOperator transactionalOperator;
   private final UlidGeneratorPort ulidGeneratorPort;
   private final CreateIndexColumnPort createIndexColumnPort;
   private final GetIndexByIdPort getIndexByIdPort;
   private final GetIndexColumnsByIndexIdPort getIndexColumnsByIndexIdPort;
   private final GetIndexesByTableIdPort getIndexesByTableIdPort;
   private final GetColumnsByTableIdPort getColumnsByTableIdPort;
-  private final TransactionalOperator transactionalOperator;
+  private ErdMutationCoordinator erdMutationCoordinator = ErdMutationCoordinator.noop();
+
+  @Autowired
+  void setErdMutationCoordinator(ErdMutationCoordinator erdMutationCoordinator) {
+    this.erdMutationCoordinator = erdMutationCoordinator;
+  }
 
   @Override
   public Mono<MutationResult<AddIndexColumnResult>> addIndexColumn(AddIndexColumnCommand command) {
-    return getIndexByIdPort.findIndexById(command.indexId())
+    return erdMutationCoordinator.coordinate(ErdOperationType.ADD_INDEX_COLUMN, command, () -> getIndexByIdPort
+        .findIndexById(command.indexId())
         .switchIfEmpty(Mono.error(new DomainException(IndexErrorCode.NOT_FOUND, "Index not found")))
         .flatMap(index -> validateAndAdd(index, command)
-            .map(result -> MutationResult.of(result, index.tableId())))
+            .map(result -> MutationResult.of(result, index.tableId()))))
         .as(transactionalOperator::transactional);
   }
 

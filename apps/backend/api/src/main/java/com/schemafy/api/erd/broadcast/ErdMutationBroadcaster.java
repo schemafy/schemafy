@@ -8,6 +8,7 @@ import com.schemafy.api.collaboration.constant.CollaborationConstants;
 import com.schemafy.api.collaboration.dto.event.CollaborationOutboundFactory;
 import com.schemafy.api.collaboration.service.CollaborationEventPublisher;
 import com.schemafy.api.common.config.ConditionalOnRedisEnabled;
+import com.schemafy.core.erd.operation.domain.CommittedErdOperation;
 import com.schemafy.core.erd.schema.application.port.out.GetSchemaByIdPort;
 import com.schemafy.core.erd.table.application.port.out.GetTableByIdPort;
 
@@ -28,22 +29,24 @@ public class ErdMutationBroadcaster {
   public record ResolvedContext(String projectId, String schemaId) {
   }
 
-  public Mono<Void> broadcast(Set<String> affectedTableIds) {
+  public Mono<Void> broadcast(Set<String> affectedTableIds,
+      CommittedErdOperation operation) {
     if (affectedTableIds == null || affectedTableIds.isEmpty()) {
       return Mono.empty();
     }
     String anyTableId = affectedTableIds.iterator().next();
     return resolveFromTableId(anyTableId)
-        .flatMap(ctx -> publish(ctx, affectedTableIds))
+        .flatMap(ctx -> publish(ctx, affectedTableIds, operation))
         .doOnError(e -> log.warn(
             "[ErdMutationBroadcaster] broadcast failed: {}",
             e.getMessage()))
         .onErrorResume(e -> Mono.empty());
   }
 
-  public Mono<Void> broadcastSchemaChange(String schemaId) {
+  public Mono<Void> broadcastSchemaChange(String schemaId,
+      CommittedErdOperation operation) {
     return resolveFromSchemaId(schemaId)
-        .flatMap(ctx -> publish(ctx, Set.of()))
+        .flatMap(ctx -> publish(ctx, Set.of(), operation))
         .doOnError(e -> log.warn(
             "[ErdMutationBroadcaster] broadcastSchemaChange failed: schemaId={}, error={}",
             schemaId, e.getMessage()))
@@ -51,8 +54,9 @@ public class ErdMutationBroadcaster {
   }
 
   public Mono<Void> broadcastWithContext(ResolvedContext ctx,
-      Set<String> affectedTableIds) {
-    return publish(ctx, affectedTableIds)
+      Set<String> affectedTableIds,
+      CommittedErdOperation operation) {
+    return publish(ctx, affectedTableIds, operation)
         .doOnError(e -> log.warn(
             "[ErdMutationBroadcaster] broadcastWithContext failed: {}",
             e.getMessage()))
@@ -71,13 +75,14 @@ public class ErdMutationBroadcaster {
   }
 
   private Mono<Void> publish(ResolvedContext ctx,
-      Set<String> affectedTableIds) {
+      Set<String> affectedTableIds,
+      CommittedErdOperation operation) {
     return Mono.deferContextual(reactorCtx -> {
       String sessionId = reactorCtx.getOrDefault(
           CollaborationConstants.SESSION_ID_CONTEXT_KEY, null);
       return eventPublisher.publish(ctx.projectId(),
           CollaborationOutboundFactory.erdMutated(sessionId,
-              ctx.schemaId(), affectedTableIds));
+              ctx.schemaId(), affectedTableIds, operation));
     });
   }
 

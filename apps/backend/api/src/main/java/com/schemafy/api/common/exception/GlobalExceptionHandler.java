@@ -1,5 +1,10 @@
 package com.schemafy.api.common.exception;
 
+import java.util.stream.Collectors;
+
+import jakarta.validation.ConstraintViolation;
+import jakarta.validation.ConstraintViolationException;
+
 import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.http.MediaType;
 import org.springframework.http.ProblemDetail;
@@ -58,6 +63,18 @@ public class GlobalExceptionHandler {
     DomainErrorCode errorCode = CommonErrorCode.INVALID_PARAMETER;
     log.warn("[ServerWebInputException] {}", e.getMessage());
     return buildResponse(exchange, errorCode, e.getReason());
+  }
+
+  @ExceptionHandler(ConstraintViolationException.class)
+  public ResponseEntity<ProblemDetail> handleConstraintViolationException(
+      ConstraintViolationException e, ServerWebExchange exchange) {
+    DomainErrorCode errorCode = CommonErrorCode.INVALID_PARAMETER;
+    log.warn("[ConstraintViolationException] {}", e.getMessage());
+    return buildResponse(exchange, errorCode,
+        e.getConstraintViolations().stream()
+            .map(ConstraintViolation::getMessage)
+            .distinct()
+            .collect(Collectors.joining(", ")));
   }
 
   @ExceptionHandler(Exception.class)

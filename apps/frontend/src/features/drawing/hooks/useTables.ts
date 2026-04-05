@@ -26,7 +26,8 @@ const buildTableNodes = (
 
 export const useTables = () => {
   const { selectedSchemaId } = useSelectedSchema();
-  const { data: snapshotsData } = useSchemaSnapshots(selectedSchemaId);
+  const { data: schemaSnapshots } = useSchemaSnapshots(selectedSchemaId);
+  const snapshotsData = schemaSnapshots.snapshots;
 
   const snapshotsRef = useLatest(snapshotsData);
   const previousSnapshotsRef = useRef<Record<

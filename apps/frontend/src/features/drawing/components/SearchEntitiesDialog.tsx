@@ -23,7 +23,8 @@ export const SearchEntitiesDialog = ({
   const [searchQuery, setSearchQuery] = useState('');
 
   const { selectedSchemaId } = useSelectedSchema();
-  const { data: snapshotsData } = useSchemaSnapshots(selectedSchemaId);
+  const { data: schemaSnapshots } = useSchemaSnapshots(selectedSchemaId);
+  const snapshotsData = schemaSnapshots.snapshots;
   const { fitView } = useReactFlow();
 
   const tables = Object.values(snapshotsData).map((snapshot) => ({

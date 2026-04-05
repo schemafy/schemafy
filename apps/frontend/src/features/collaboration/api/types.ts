@@ -1,3 +1,5 @@
+import type { ErdOperation } from '@/features/drawing/api/types';
+
 export type PostCursor = {
   type: 'CURSOR';
   cursor: {
@@ -68,8 +70,10 @@ export type ReceiveChat = {
 
 export type ReceiveErdMutated = {
   type: 'ERD_MUTATED';
+  sessionId?: string | null;
   schemaId: string;
   affectedTableIds: string[];
+  operation: ErdOperation;
   timestamp: number;
 };
 

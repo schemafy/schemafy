@@ -1,11 +1,15 @@
 package com.schemafy.api.project.controller;
 
 import jakarta.validation.Valid;
+import jakarta.validation.constraints.Max;
+import jakarta.validation.constraints.Positive;
+import jakarta.validation.constraints.PositiveOrZero;
 
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
+import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
 import com.schemafy.api.common.constant.ApiPath;
@@ -26,6 +30,8 @@ import com.schemafy.core.project.application.port.in.DeleteProjectCommand;
 import com.schemafy.core.project.application.port.in.DeleteProjectUseCase;
 import com.schemafy.core.project.application.port.in.DeleteShareLinkCommand;
 import com.schemafy.core.project.application.port.in.DeleteShareLinkUseCase;
+import com.schemafy.core.project.application.port.in.GetMySharedProjectsQuery;
+import com.schemafy.core.project.application.port.in.GetMySharedProjectsUseCase;
 import com.schemafy.core.project.application.port.in.GetProjectMembersQuery;
 import com.schemafy.core.project.application.port.in.GetProjectQuery;
 import com.schemafy.core.project.application.port.in.GetProjectUseCase;
@@ -49,12 +55,14 @@ import lombok.RequiredArgsConstructor;
 import reactor.core.publisher.Mono;
 
 @RestController
+@Validated
 @RequestMapping(ApiPath.API)
 @RequiredArgsConstructor
 public class ProjectController {
 
   private final CreateProjectUseCase createProjectUseCase;
   private final GetProjectsUseCase getProjectsUseCase;
+  private final GetMySharedProjectsUseCase getMySharedProjectsUseCase;
   private final GetProjectUseCase getProjectUseCase;
   private final UpdateProjectUseCase updateProjectUseCase;
   private final DeleteProjectUseCase deleteProjectUseCase;
@@ -90,8 +98,8 @@ public class ProjectController {
   @GetMapping("/workspaces/{workspaceId}/projects")
   public Mono<PageResponse<ProjectSummaryResponse>> getProjects(
       @PathVariable String workspaceId,
-      @RequestParam(defaultValue = "0") int page,
-      @RequestParam(defaultValue = "5") int size,
+      @RequestParam(defaultValue = "0") @PositiveOrZero int page,
+      @RequestParam(defaultValue = "5") @Positive @Max(100) int size,
       Authentication authentication) {
     String userId = authentication.getName();
     return getProjectsUseCase.getProjects(new GetProjectsQuery(
@@ -114,6 +122,23 @@ public class ProjectController {
     String userId = authentication.getName();
     return getProjectUseCase.getProject(new GetProjectQuery(projectId, userId))
         .map(ProjectResponse::from);
+  }
+
+  @PreAuthorize("hasAnyRole('ADMIN','EDITOR','VIEWER')")
+  @GetMapping("/projects/shared/me")
+  public Mono<PageResponse<ProjectSummaryResponse>> getMySharedProjects(
+      @RequestParam(defaultValue = "0") @PositiveOrZero int page,
+      @RequestParam(defaultValue = "5") @Positive @Max(100) int size,
+      Authentication authentication) {
+    String userId = authentication.getName();
+    return getMySharedProjectsUseCase.getMySharedProjects(
+        new GetMySharedProjectsQuery(userId, page, size))
+        .map(result -> PageResponse.of(
+            result.content().stream()
+                .map(ProjectSummaryResponse::from).toList(),
+            result.page(),
+            result.size(),
+            result.totalElements()));
   }
 
   @PreAuthorize("hasAnyRole('ADMIN')")
@@ -146,8 +171,8 @@ public class ProjectController {
   @GetMapping("/projects/{projectId}/members")
   public Mono<PageResponse<ProjectMemberResponse>> getMembers(
       @PathVariable String projectId,
-      @RequestParam(defaultValue = "0") int page,
-      @RequestParam(defaultValue = "5") int size,
+      @RequestParam(defaultValue = "0") @PositiveOrZero int page,
+      @RequestParam(defaultValue = "5") @Positive @Max(100) int size,
       Authentication authentication) {
     String userId = authentication.getName();
     return projectMemberOrchestrator.getMembers(new GetProjectMembersQuery(
@@ -217,8 +242,8 @@ public class ProjectController {
   public Mono<PageResponse<ShareLinkResponse>> getShareLinks(
       @PathVariable String version,
       @PathVariable String projectId,
-      @RequestParam(defaultValue = "0") int page,
-      @RequestParam(defaultValue = "10") int size,
+      @RequestParam(defaultValue = "0") @PositiveOrZero int page,
+      @RequestParam(defaultValue = "10") @Positive @Max(100) int size,
       Authentication authentication) {
     String userId = authentication.getName();
     return getShareLinksUseCase.getShareLinks(new GetShareLinksQuery(

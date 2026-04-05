@@ -40,6 +40,11 @@ public interface ProjectMemberPort {
       int limit,
       int offset);
 
+  Flux<String> findSharedRolesByUserIdWithPaging(
+      String userId,
+      int limit,
+      int offset);
+
   Mono<Long> countByWorkspaceIdAndUserId(String workspaceId, String userId);
 
   Mono<Long> softDeleteByWorkspaceIdAndUserId(String workspaceId,
@@ -47,5 +52,7 @@ public interface ProjectMemberPort {
 
   Flux<ProjectMember> findByWorkspaceIdAndUserId(String workspaceId,
       String userId);
+
+  Mono<Long> countSharedByUserId(String userId);
 
 }

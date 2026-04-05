@@ -1,6 +1,14 @@
+export type ErdOperation = {
+  opId: string;
+  clientOperationId: string | null;
+  committedRevision: number;
+  derivationKind: string;
+};
+
 export type MutationResponse<T = null> = {
   data: T;
   affectedTableIds: string[];
+  operation: ErdOperation;
 };
 
 export type JsonPrimitive = string | number | boolean | null;
@@ -16,6 +24,7 @@ export type SchemaResponse = {
   name: string;
   charset: string;
   collation: string;
+  currentRevision?: number;
 };
 
 export type CreateSchemaRequest = {
@@ -60,10 +69,11 @@ export type ChangeTableExtraRequest = {
   extra: JsonObject | null;
 };
 
-export type ColumnLengthScale = {
+export type ColumnTypeArguments = {
   length: number | null;
   precision: number | null;
   scale: number | null;
+  values: string[] | null;
 };
 
 export type ColumnResponse = {
@@ -71,7 +81,7 @@ export type ColumnResponse = {
   tableId: string;
   name: string;
   dataType: string;
-  lengthScale: ColumnLengthScale;
+  typeArguments: ColumnTypeArguments;
   seqNo: number;
   autoIncrement: boolean;
   charset: string;
@@ -101,6 +111,7 @@ export type ChangeColumnTypeRequest = {
   length?: number | null;
   precision?: number | null;
   scale?: number | null;
+  values?: string[] | null;
 };
 
 export type ChangeColumnMetaRequest = {
@@ -322,6 +333,11 @@ export type TableSnapshotResponse = {
   constraints: ConstraintSnapshotResponse[];
   relationships: RelationshipSnapshotResponse[];
   indexes: IndexSnapshotResponse[];
+};
+
+export type SchemaSnapshotsResponse = {
+  currentRevision: number;
+  snapshots: Record<string, TableSnapshotResponse>;
 };
 
 export type DbVendorSummary = {

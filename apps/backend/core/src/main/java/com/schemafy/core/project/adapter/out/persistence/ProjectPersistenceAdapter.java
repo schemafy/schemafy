@@ -63,6 +63,13 @@ public class ProjectPersistenceAdapter
   }
 
   @Override
+  public Flux<Project> findSharedByUserIdWithPaging(String userId,
+      int limit, int offset) {
+    return projectRepository.findSharedByUserIdWithPaging(userId, limit,
+        offset);
+  }
+
+  @Override
   public Mono<ProjectMember> save(ProjectMember projectMember) {
     return projectMemberRepository.save(projectMember);
   }
@@ -125,6 +132,13 @@ public class ProjectPersistenceAdapter
   }
 
   @Override
+  public Flux<String> findSharedRolesByUserIdWithPaging(String userId,
+      int limit, int offset) {
+    return projectMemberRepository.findSharedRolesByUserIdWithPaging(userId,
+        limit, offset);
+  }
+
+  @Override
   public Mono<Long> countByWorkspaceIdAndUserId(String workspaceId,
       String userId) {
     return projectMemberRepository.countByWorkspaceIdAndUserId(workspaceId,
@@ -143,6 +157,11 @@ public class ProjectPersistenceAdapter
       String userId) {
     return projectMemberRepository.findByWorkspaceIdAndUserId(workspaceId,
         userId);
+  }
+
+  @Override
+  public Mono<Long> countSharedByUserId(String userId) {
+    return projectMemberRepository.countSharedByUserId(userId);
   }
 
 }

@@ -10,7 +10,8 @@ import {
 } from '@nestjs/common';
 import { TableService } from './table.service';
 import { AuthHeader } from '../common/decorators/auth-header.decorator';
-import { SessionId } from '../common/decorators/session-id.decorator';
+import { CollaborationHeaders } from '../common/decorators/collaboration-headers.decorator';
+import type { CollaborationRequestHeaders } from '../common/backend-client/backend-client.service';
 import type {
   ChangeTableExtraRequest,
   ChangeTableMetaRequest,
@@ -26,9 +27,14 @@ export class TableController {
   async createTable(
     @Body() data: CreateTableRequest,
     @AuthHeader() authHeader: string,
-    @SessionId() sessionId?: string,
+    @CollaborationHeaders()
+    collaborationHeaders?: CollaborationRequestHeaders,
   ) {
-    return this.tableService.createTable(data, authHeader, sessionId);
+    return this.tableService.createTable(
+      data,
+      authHeader,
+      collaborationHeaders,
+    );
   }
 
   @Get('tables/snapshots')
@@ -68,13 +74,14 @@ export class TableController {
     @Param('tableId') tableId: string,
     @Body() data: ChangeTableNameRequest,
     @AuthHeader() authHeader: string,
-    @SessionId() sessionId?: string,
+    @CollaborationHeaders()
+    collaborationHeaders?: CollaborationRequestHeaders,
   ) {
     return this.tableService.changeTableName(
       tableId,
       data,
       authHeader,
-      sessionId,
+      collaborationHeaders,
     );
   }
 
@@ -83,13 +90,14 @@ export class TableController {
     @Param('tableId') tableId: string,
     @Body() data: ChangeTableMetaRequest,
     @AuthHeader() authHeader: string,
-    @SessionId() sessionId?: string,
+    @CollaborationHeaders()
+    collaborationHeaders?: CollaborationRequestHeaders,
   ) {
     return this.tableService.changeTableMeta(
       tableId,
       data,
       authHeader,
-      sessionId,
+      collaborationHeaders,
     );
   }
 
@@ -98,13 +106,14 @@ export class TableController {
     @Param('tableId') tableId: string,
     @Body() data: ChangeTableExtraRequest,
     @AuthHeader() authHeader: string,
-    @SessionId() sessionId?: string,
+    @CollaborationHeaders()
+    collaborationHeaders?: CollaborationRequestHeaders,
   ) {
     return this.tableService.changeTableExtra(
       tableId,
       data,
       authHeader,
-      sessionId,
+      collaborationHeaders,
     );
   }
 
@@ -112,8 +121,13 @@ export class TableController {
   async deleteTable(
     @Param('tableId') tableId: string,
     @AuthHeader() authHeader: string,
-    @SessionId() sessionId?: string,
+    @CollaborationHeaders()
+    collaborationHeaders?: CollaborationRequestHeaders,
   ) {
-    return this.tableService.deleteTable(tableId, authHeader, sessionId);
+    return this.tableService.deleteTable(
+      tableId,
+      authHeader,
+      collaborationHeaders,
+    );
   }
 }

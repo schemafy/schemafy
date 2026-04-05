@@ -146,6 +146,26 @@ class ChangeRelationshipKindServiceTest {
             .changeRelationshipKind(eq(relationship.id()), eq(RelationshipKind.NON_IDENTIFYING));
       }
 
+      @Test
+      @DisplayName("같은 kind로 다시 요청하면 변경 없이 성공한다")
+      void returnsSuccessWithoutMutationWhenKindIsUnchanged() {
+        var relationship = RelationshipFixture.identifyingRelationship();
+        var command = RelationshipFixture.changeKindCommand(RelationshipKind.IDENTIFYING);
+
+        given(getRelationshipByIdPort.findRelationshipById(any()))
+            .willReturn(Mono.just(relationship));
+
+        StepVerifier.create(sut.changeRelationshipKind(command))
+            .expectNextCount(1)
+            .verifyComplete();
+
+        then(getRelationshipByIdPort).should().findRelationshipById(eq(command.relationshipId()));
+        then(changeRelationshipKindPort).shouldHaveNoInteractions();
+        then(pkCascadeHelper).shouldHaveNoInteractions();
+        then(getTableByIdPort).shouldHaveNoInteractions();
+        then(getRelationshipsBySchemaIdPort).shouldHaveNoInteractions();
+      }
+
     }
 
     @Nested
