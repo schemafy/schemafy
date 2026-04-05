@@ -226,5 +226,62 @@
   ],
   "apps/backend/api/src/test/java/com/schemafy/api/testsupport/project/ProjectHttpTestSupport.java": [
     354
+  ],
+  "apps/frontend/src/features/drawing/components/CustomSmoothStepEdge.tsx": [
+    331
+  ],
+  "apps/frontend/src/features/drawing/components/ReactFlowCanvas.tsx": [
+    331
+  ],
+  "apps/frontend/src/features/drawing/components/SchemaSelector.tsx": [
+    331
+  ],
+  "apps/frontend/src/features/drawing/components/TableNode/index.tsx": [
+    331
+  ],
+  "apps/frontend/src/features/drawing/components/TablePreview.tsx": [
+    331
+  ],
+  "apps/frontend/src/features/drawing/components/Toolbar.tsx": [
+    331
+  ],
+  "apps/frontend/src/features/drawing/components/index.ts": [
+    331
+  ],
+  "apps/frontend/src/features/drawing/contexts/SelectedSchemaContext.tsx": [
+    331
+  ],
+  "apps/frontend/src/features/drawing/hooks/index.ts": [
+    331
+  ],
+  "apps/frontend/src/features/drawing/hooks/useCanvasController.ts": [
+    331
+  ],
+  "apps/frontend/src/features/drawing/hooks/useCanvasKeyboard.ts": [
+    331
+  ],
+  "apps/frontend/src/features/drawing/hooks/useCanvasNodes.ts": [
+    331
+  ],
+  "apps/frontend/src/features/drawing/hooks/useLatest.ts": [
+    331
+  ],
+  "apps/frontend/src/features/drawing/hooks/useMouseTrackingPreview.ts": [
+    331
+  ],
+  "apps/frontend/src/features/drawing/hooks/useRelationships.ts": [
+    331
+  ],
+  "apps/frontend/src/features/drawing/hooks/useTables.ts": [
+    331
+  ],
+  "apps/frontend/src/features/memo/components/MemoPreview.tsx": [
+    331
+  ],
+  "apps/frontend/src/features/memo/hooks/useMemoStore.ts": [
+    331
+  ],
+  "apps/frontend/src/pages/CanvasPage.tsx": [
+    331
   ]
 }
