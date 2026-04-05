@@ -41,7 +41,6 @@ class MySqlDdlGeneratorTest {
     generator = new MySqlDdlGenerator(
         new MySqlCreateTableGenerator(),
         new MySqlAlterTableGenerator(
-            new MySqlPrimaryKeyGenerator(),
             new MySqlUniqueKeyGenerator(),
             new MySqlIndexGenerator(),
             new MySqlForeignKeyGenerator()));
@@ -343,9 +342,10 @@ class MySqlDdlGeneratorTest {
       assertThat(ddl).contains("CREATE TABLE `orders`");
       assertThat(ddl).contains("`id` BIGINT AUTO_INCREMENT");
       assertThat(ddl).contains("`email` VARCHAR(255)");
-      assertThat(ddl).contains("ALTER TABLE `users` ADD PRIMARY KEY (`id`);");
+      assertThat(ddl).contains("PRIMARY KEY (`id`)");
+      assertThat(ddl).doesNotContain("ALTER TABLE `users` ADD PRIMARY KEY");
       assertThat(ddl).contains("ALTER TABLE `users` ADD UNIQUE KEY `uk_email` (`email`);");
-      assertThat(ddl).contains("ALTER TABLE `orders` ADD PRIMARY KEY (`id`);");
+      assertThat(ddl).doesNotContain("ALTER TABLE `orders` ADD PRIMARY KEY");
       assertThat(ddl).contains(
           "ALTER TABLE `orders` ADD CONSTRAINT `fk_user_id` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`);");
     }
@@ -400,12 +400,9 @@ class MySqlDdlGeneratorTest {
 
       assertThat(ddl.indexOf("CREATE TABLE `orders`"))
           .isLessThan(ddl.indexOf("CREATE TABLE `users`"));
-      assertThat(ddl.indexOf("ALTER TABLE `orders` ADD PRIMARY KEY (`id`);"))
-          .isLessThan(ddl.indexOf("ALTER TABLE `orders` ADD INDEX `idx_orders_user` (`user_id` ASC) USING BTREE;"));
+      assertThat(ddl).doesNotContain("ALTER TABLE `orders` ADD PRIMARY KEY");
+      assertThat(ddl).doesNotContain("ALTER TABLE `users` ADD PRIMARY KEY");
       assertThat(ddl.indexOf("ALTER TABLE `orders` ADD INDEX `idx_orders_user` (`user_id` ASC) USING BTREE;"))
-          .isLessThan(ddl.indexOf("ALTER TABLE `users` ADD PRIMARY KEY (`id`);"));
-      assertThat(ddl.indexOf(
-          "ALTER TABLE `users` ADD PRIMARY KEY (`id`);"))
           .isLessThan(ddl.indexOf(
               "ALTER TABLE `orders` ADD CONSTRAINT `fk_orders_user` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`);"));
     }

@@ -8,6 +8,7 @@ import java.util.stream.Collectors;
 
 import org.springframework.stereotype.Component;
 
+import com.fasterxml.jackson.databind.JsonNode;
 import com.schemafy.api.common.exception.CommonErrorCode;
 import com.schemafy.api.erd.controller.dto.response.RelationshipColumnResponse;
 import com.schemafy.api.erd.controller.dto.response.RelationshipSnapshotResponse;
@@ -19,6 +20,7 @@ import static com.schemafy.api.erd.service.util.mysql.MySqlDdlUtils.comparingNul
 import static com.schemafy.api.erd.service.util.mysql.MySqlDdlUtils.escapeIdentifier;
 import static com.schemafy.api.erd.service.util.mysql.MySqlDdlUtils.quoteColumn;
 import static com.schemafy.api.erd.service.util.mysql.MySqlDdlUtils.requireNonBlank;
+import static com.schemafy.api.erd.service.util.mysql.MySqlDdlUtils.sanitizeReferentialAction;
 
 @Component
 public class MySqlForeignKeyGenerator {
@@ -65,6 +67,8 @@ public class MySqlForeignKeyGenerator {
     sql.append(buildPkColumnList(snapshot, pkColumnIdToName));
     sql.append(")");
 
+    appendReferentialActions(sql, snapshot.relationship().extra());
+
     sql.append(";");
 
     return sql.toString();
@@ -94,6 +98,24 @@ public class MySqlForeignKeyGenerator {
         .sorted(Comparator.comparingInt(RelationshipColumnResponse::seqNo))
         .map(rc -> quoteColumn(pkColumnIdToName, rc.pkColumnId()))
         .collect(Collectors.joining(", "));
+  }
+
+  private void appendReferentialActions(StringBuilder sql, JsonNode extra) {
+    if (extra == null || extra.isNull()) {
+      return;
+    }
+
+    JsonNode onDelete = extra.get("onDelete");
+    if (onDelete != null && onDelete.isTextual()) {
+      sanitizeReferentialAction(onDelete.asText())
+          .ifPresent(action -> sql.append(" ON DELETE ").append(action));
+    }
+
+    JsonNode onUpdate = extra.get("onUpdate");
+    if (onUpdate != null && onUpdate.isTextual()) {
+      sanitizeReferentialAction(onUpdate.asText())
+          .ifPresent(action -> sql.append(" ON UPDATE ").append(action));
+    }
   }
 
   private List<RelationshipSnapshotResponse> getRelationships(

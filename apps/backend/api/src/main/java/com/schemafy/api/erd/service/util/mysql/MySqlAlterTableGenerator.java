@@ -13,13 +13,10 @@ import com.schemafy.api.erd.controller.dto.response.TableSnapshotResponse;
 
 import lombok.RequiredArgsConstructor;
 
-import static com.schemafy.api.erd.service.util.mysql.MySqlDdlUtils.normalizeTables;
-
 @Component
 @RequiredArgsConstructor
 public class MySqlAlterTableGenerator {
 
-  private final MySqlPrimaryKeyGenerator primaryKeyGenerator;
   private final MySqlUniqueKeyGenerator uniqueKeyGenerator;
   private final MySqlIndexGenerator indexGenerator;
   private final MySqlForeignKeyGenerator foreignKeyGenerator;
@@ -29,24 +26,15 @@ public class MySqlAlterTableGenerator {
       return "";
     }
 
-    List<TableSnapshotResponse> orderedTables = normalizeTables(tables);
-
-    if (orderedTables.isEmpty()) {
-      return "";
-    }
-
-    Map<String, String> tableIdToName = buildTableMap(orderedTables);
+    Map<String, String> tableIdToName = buildTableMap(tables);
     Map<String, Map<String, String>> tableColumnMaps = buildAllColumnMaps(
-        orderedTables);
+        tables);
 
     List<String> alterStatements = new ArrayList<>();
 
-    for (TableSnapshotResponse table : orderedTables) {
+    for (TableSnapshotResponse table : tables) {
       Map<String, String> columnIdToName = tableColumnMaps.getOrDefault(
           table.table().id(), Collections.emptyMap());
-
-      primaryKeyGenerator.generate(table, columnIdToName)
-          .ifPresent(alterStatements::add);
 
       alterStatements.addAll(
           uniqueKeyGenerator.generate(table, columnIdToName));
@@ -55,7 +43,7 @@ public class MySqlAlterTableGenerator {
           indexGenerator.generate(table, columnIdToName));
     }
 
-    for (TableSnapshotResponse table : orderedTables) {
+    for (TableSnapshotResponse table : tables) {
       Map<String, String> columnIdToName = tableColumnMaps.getOrDefault(
           table.table().id(), Collections.emptyMap());
 

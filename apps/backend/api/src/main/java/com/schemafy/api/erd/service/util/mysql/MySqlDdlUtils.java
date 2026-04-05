@@ -139,10 +139,10 @@ public final class MySqlDdlUtils {
     }
 
     return tables.stream()
-        .filter(table -> table != null)
+        .filter(table -> table != null && table.table() != null)
         .sorted(comparingNullableStrings(
-            table -> table.table() != null ? table.table().name() : null,
-            table -> table.table() != null ? table.table().id() : null))
+            table -> table.table().name(),
+            table -> table.table().id()))
         .toList();
   }
 

@@ -28,9 +28,10 @@ public class MySqlIndexGenerator {
     requireNonBlank(table.table().name(), "Table name");
 
     return getIndexes(table).stream()
+        .filter(idx -> idx != null && idx.index() != null)
         .sorted(comparingNullableStrings(
-            idx -> idx.index() != null ? idx.index().name() : null,
-            idx -> idx.index() != null ? idx.index().id() : null))
+            idx -> idx.index().name(),
+            idx -> idx.index().id()))
         .map(idx -> generateAlter(table.table().name(), idx, columnIdToName))
         .toList();
   }
