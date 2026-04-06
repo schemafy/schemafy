@@ -44,7 +44,7 @@ jobs:
 
           changed_files="$(
             gh api "repos/${GITHUB_REPOSITORY}/pulls/${PR_NUMBER}/files?per_page=100" \
-              | jq -r '.[].filename' | head -n 50
+              | jq -r '.[].filename' | grep -v '^\.github/pr-contexts/file-index\.json$' | head -n 50
           )"
 
           [ -z "${changed_files:-}" ] && exit 0
