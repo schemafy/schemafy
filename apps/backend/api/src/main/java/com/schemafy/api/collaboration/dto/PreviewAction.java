@@ -15,9 +15,7 @@ public enum PreviewAction {
   }
 
   @JsonValue
-  public String getValue() {
-    return value;
-  }
+  public String getValue() { return value; }
 
   @JsonCreator
   public static PreviewAction fromValue(String value) {
