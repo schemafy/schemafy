@@ -167,6 +167,42 @@ abstract class ProjectDomainIntegrationSupport {
         invitedBy.id())).block();
   }
 
+  protected Invitation acceptInvitation(Invitation invitation) {
+    databaseClient.sql("""
+        UPDATE invitations
+        SET status = 'ACCEPTED',
+            resolved_at = CURRENT_TIMESTAMP
+        WHERE id = :id
+        """)
+        .bind("id", invitation.getId())
+        .fetch()
+        .rowsUpdated()
+        .block();
+    return invitationRepository.findById(invitation.getId()).block();
+  }
+
+  protected Invitation expireInvitation(
+      Invitation invitation,
+      Instant expiresAt) {
+    databaseClient.sql("UPDATE invitations SET expires_at = :expiresAt WHERE id = :id")
+        .bind("expiresAt", expiresAt)
+        .bind("id", invitation.getId())
+        .fetch()
+        .rowsUpdated()
+        .block();
+    return invitationRepository.findById(invitation.getId()).block();
+  }
+
+  protected Invitation softDeleteInvitation(Invitation invitation) {
+    databaseClient.sql(
+        "UPDATE invitations SET deleted_at = CURRENT_TIMESTAMP WHERE id = :id")
+        .bind("id", invitation.getId())
+        .fetch()
+        .rowsUpdated()
+        .block();
+    return invitationRepository.findById(invitation.getId()).block();
+  }
+
   protected ShareLink saveShareLink(Project project) {
     return saveShareLink(project, Instant.now().plusSeconds(86400));
   }
