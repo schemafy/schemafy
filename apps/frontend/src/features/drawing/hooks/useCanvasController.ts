@@ -1,10 +1,9 @@
-import { useState, useRef, useEffect } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useReactFlow } from '@xyflow/react';
 import { useRelationships } from './useRelationships';
 import { useTables } from './useTables';
 import { useViewport } from './useViewport';
 import { useCanvasKeyboard } from './useCanvasKeyboard';
-import { useCanvasNodes } from './useCanvasNodes';
 import { useMemoContext } from '../../memo/hooks/useMemoStore';
 import { useSelectedSchema } from '../contexts';
 import { useSchemas } from './useSchemas';
@@ -27,11 +26,13 @@ export const useCanvasController = () => {
       isNonIdentifying: false,
     });
   const [activeTool, setActiveTool] = useState('pointer');
-  const [mousePosition, setMousePosition] = useState<Point | null>(null);
+  const mousePositionRef = useRef<Point | null>(null);
   const [tempMemoPosition, setTempMemoPosition] = useState<{
     flow: Point;
     screen: Point;
   } | null>(null);
+  const tempMemoPositionRef = useRef(tempMemoPosition);
+  tempMemoPositionRef.current = tempMemoPosition;
   const [chatInputPosition, setChatInputPosition] = useState<Point | null>(
     null,
   );
@@ -45,15 +46,14 @@ export const useCanvasController = () => {
 
   useCanvasKeyboard({
     chatInputPosition,
-    mousePosition,
+    mousePositionRef,
     activeTool,
     setChatInputPosition,
   });
 
-  const schemaIds = schemas?.map((s) => s.id) ?? [];
+  const schemaIds = useMemo(() => schemas?.map((s) => s.id) ?? [], [schemas]);
   const { handleMoveEnd } = useViewport(schemaIds);
-  const { tables, addTable, onTablesChange, onNodeDragStop, onNodesDelete } =
-    useTables();
+  const { tables, addTable, onNodeDragStop, onNodesDelete } = useTables();
   const { memos, onMemosChange, createMemo } = useMemoContext();
 
   const {
@@ -62,97 +62,91 @@ export const useCanvasController = () => {
     onConnect,
     onRelationshipsChange,
     onRelationshipClick,
-    onReconnectStart,
-    onReconnect,
-    onReconnectEnd,
     updateRelationshipConfig,
     deleteRelationship,
     updateRelationshipName,
     setSelectedRelationship,
   } = useRelationships(relationshipConfig);
 
-  const { nodes, handleNodesChange, handleNodeDragStop, handleNodesDelete } =
-    useCanvasNodes({
-      tables,
-      memos,
-      onTablesChange,
-      onMemosChange,
-      onTableDragStop: onNodeDragStop,
-      onTablesDelete: onNodesDelete,
-    });
-
-  const handleMemoCancel = () => {
+  const handleMemoCancel = useCallback(() => {
     setTempMemoPosition(null);
-  };
+  }, []);
 
-  const handleMemoCreate = (content: string) => {
-    if (tempMemoPosition) {
-      createMemo(tempMemoPosition.flow, content.trim());
-      setTempMemoPosition(null);
-    }
-  };
+  const handleMemoCreate = useCallback(
+    (content: string) => {
+      if (tempMemoPositionRef.current) {
+        createMemo(tempMemoPositionRef.current.flow, content.trim());
+        setTempMemoPosition(null);
+      }
+    },
+    [createMemo],
+  );
 
-  const handleChatSend = (message: string) => {
+  const handleChatSend = useCallback((message: string) => {
     collaborationStore.sendMessage(message);
     setChatInputPosition(null);
-  };
+  }, []);
 
-  const handleChatCancel = () => {
+  const handleChatCancel = useCallback(() => {
     setChatInputPosition(null);
-  };
+  }, []);
 
-  const handlePaneClick = (e: React.MouseEvent) => {
-    if (tempMemoPosition) {
-      handleMemoCancel();
-      return;
-    }
+  const handlePaneClick = useCallback(
+    (e: React.MouseEvent) => {
+      if (tempMemoPositionRef.current) {
+        handleMemoCancel();
+        return;
+      }
 
-    if (activeTool !== 'table' && activeTool !== 'memo') return;
+      if (activeTool !== 'table' && activeTool !== 'memo') return;
 
-    const flowPosition = screenToFlowPosition({
-      x: e.clientX,
-      y: e.clientY,
-    });
-
-    if (activeTool === 'table') {
-      addTable(flowPosition);
-      setActiveTool('pointer');
-      setMousePosition(null);
-    } else if (activeTool === 'memo') {
-      const target = e.currentTarget as HTMLElement;
-      const rect = target.getBoundingClientRect();
-      setTempMemoPosition({
-        flow: flowPosition,
-        screen: {
-          x: e.clientX - rect.left,
-          y: e.clientY - rect.top,
-        },
-      });
-      setActiveTool('pointer');
-      setMousePosition(null);
-    }
-  };
-
-  const handleMouseMove = (e: React.MouseEvent) => {
-    const position = { x: e.clientX, y: e.clientY };
-    setMousePosition(position);
-
-    const now = Date.now();
-    if (now - lastCursorSendTime.current >= CURSOR_THROTTLE_MS) {
-      lastCursorSendTime.current = now;
       const flowPosition = screenToFlowPosition({
-        x: position.x,
-        y: position.y,
+        x: e.clientX,
+        y: e.clientY,
       });
-      collaborationStore.sendCursor(flowPosition.x, flowPosition.y);
-    }
-  };
+
+      if (activeTool === 'table') {
+        addTable(flowPosition);
+        setActiveTool('pointer');
+      } else if (activeTool === 'memo') {
+        const target = e.currentTarget as HTMLElement;
+        const rect = target.getBoundingClientRect();
+        setTempMemoPosition({
+          flow: flowPosition,
+          screen: {
+            x: e.clientX - rect.left,
+            y: e.clientY - rect.top,
+          },
+        });
+        setActiveTool('pointer');
+      }
+    },
+    [activeTool, addTable, handleMemoCancel, screenToFlowPosition],
+  );
+
+  const handleMouseMove = useCallback(
+    (e: React.MouseEvent) => {
+      const position = { x: e.clientX, y: e.clientY };
+
+      mousePositionRef.current = position;
+
+      const now = Date.now();
+      if (now - lastCursorSendTime.current >= CURSOR_THROTTLE_MS) {
+        lastCursorSendTime.current = now;
+        const flowPosition = screenToFlowPosition({
+          x: position.x,
+          y: position.y,
+        });
+        collaborationStore.sendCursor(flowPosition.x, flowPosition.y);
+      }
+    },
+    [screenToFlowPosition],
+  );
 
   return {
     state: {
       relationshipConfig,
       activeTool,
-      mousePosition,
       tempMemoPosition,
       chatInputPosition,
       selectedRelationship,
@@ -165,20 +159,18 @@ export const useCanvasController = () => {
       setSelectedRelationship,
     },
     data: {
-      nodes,
+      tables,
+      memos,
       relationships,
     },
     handlers: {
-      handleNodesChange,
-      handleNodeDragStop,
-      handleNodesDelete,
+      onTableDragStop: onNodeDragStop,
+      onTablesDelete: onNodesDelete,
+      onMemosChange,
       onRelationshipsChange,
       handleMoveEnd,
       onConnect,
       onRelationshipClick,
-      onReconnect,
-      onReconnectStart,
-      onReconnectEnd,
       updateRelationshipConfig,
       updateRelationshipName,
       deleteRelationship,

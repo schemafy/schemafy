@@ -1,10 +1,14 @@
 package com.schemafy.api.project.controller;
 
 import jakarta.validation.Valid;
+import jakarta.validation.constraints.Max;
+import jakarta.validation.constraints.Positive;
+import jakarta.validation.constraints.PositiveOrZero;
 
 import org.springframework.http.HttpStatus;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
+import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
 import com.schemafy.api.common.constant.ApiPath;
@@ -28,6 +32,7 @@ import lombok.RequiredArgsConstructor;
 import reactor.core.publisher.Mono;
 
 @RestController
+@Validated
 @RequestMapping(ApiPath.API)
 @RequiredArgsConstructor
 public class ProjectInvitationController {
@@ -59,8 +64,8 @@ public class ProjectInvitationController {
   @GetMapping("/projects/{projectId}/invitations")
   public Mono<PageResponse<ProjectInvitationResponse>> listInvitations(
       @PathVariable String projectId,
-      @RequestParam(defaultValue = "0") int page,
-      @RequestParam(defaultValue = "10") int size,
+      @RequestParam(defaultValue = "0") @PositiveOrZero int page,
+      @RequestParam(defaultValue = "10") @Positive @Max(100) int size,
       Authentication auth) {
     String currentUserId = auth.getName();
     return getProjectInvitationsUseCase.getProjectInvitations(
@@ -78,8 +83,8 @@ public class ProjectInvitationController {
 
   @GetMapping("/users/me/invitations/projects")
   public Mono<PageResponse<ProjectInvitationResponse>> listMyInvitations(
-      @RequestParam(defaultValue = "0") int page,
-      @RequestParam(defaultValue = "10") int size,
+      @RequestParam(defaultValue = "0") @PositiveOrZero int page,
+      @RequestParam(defaultValue = "10") @Positive @Max(100) int size,
       Authentication auth) {
     String currentUserId = auth.getName();
     return getMyProjectInvitationsUseCase.getMyProjectInvitations(

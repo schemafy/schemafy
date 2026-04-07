@@ -1,4 +1,4 @@
-import { useCallback, useState } from 'react';
+import { memo, useCallback, useState } from 'react';
 import { toast } from 'sonner';
 import type { TableProps } from '../../types';
 import { ColumnRow } from '../Column';
@@ -198,4 +198,4 @@ const TableNodeComponent = ({ data, id }: TableProps) => {
   );
 };
 
-export const TableNode = TableNodeComponent;
+export const TableNode = memo(TableNodeComponent);
