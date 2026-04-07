@@ -185,6 +185,11 @@
   ".npmrc": [
     346
   ],
+  ".github/workflows/issue-automation.yml": [
+    353
+  ],
+  ".github/workflows/issue-project-intake.yml": [
+    353
   "apps/backend/api/src/main/java/com/schemafy/api/project/controller/ProjectController.java": [
     354
   ],
