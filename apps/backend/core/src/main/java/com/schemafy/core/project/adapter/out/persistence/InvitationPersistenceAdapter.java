@@ -51,6 +51,20 @@ public class InvitationPersistenceAdapter implements InvitationPort {
   }
 
   @Override
+  public Flux<Invitation> findMyInvitationsByEmailAndStatus(String email,
+      String status, int limit) {
+    return invitationRepository.findMyInvitationsByEmailAndStatus(email, status,
+        limit);
+  }
+
+  @Override
+  public Flux<Invitation> findMyInvitationsByEmailAndStatusBeforeId(String email,
+      String status, String cursorId, int limit) {
+    return invitationRepository.findMyInvitationsByEmailAndStatusBeforeId(email,
+        status, cursorId, limit);
+  }
+
+  @Override
   public Mono<Long> countByEmailAndTypeAndStatus(String email,
       String targetType, String status) {
     return invitationRepository.countByEmailAndTypeAndStatus(email, targetType,

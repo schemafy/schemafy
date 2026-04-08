@@ -9,10 +9,12 @@
   ".github/pr-contexts/file-index.json": [
     335,
     337,
-    346
+    346,
+    358
   ],
   "apps/backend/api/src/docs/asciidoc/api-guide.adoc": [
-    337
+    337,
+    358
   ],
   "apps/backend/api/src/main/java/com/schemafy/api/collaboration/dto/event/CollaborationOutboundFactory.java": [
     337
@@ -230,7 +232,8 @@
     354
   ],
   "apps/backend/api/src/test/java/com/schemafy/api/testsupport/project/ProjectHttpTestSupport.java": [
-    354
+    354,
+    358
   ],
   "apps/frontend/src/features/drawing/components/CustomSmoothStepEdge.tsx": [
     331
@@ -288,5 +291,47 @@
   ],
   "apps/frontend/src/pages/CanvasPage.tsx": [
     331
+  ],
+  "apps/backend/api/src/main/java/com/schemafy/api/common/type/CursorResponse.java": [
+    358
+  ],
+  "apps/backend/api/src/main/java/com/schemafy/api/project/controller/InvitationController.java": [
+    358
+  ],
+  "apps/backend/api/src/main/java/com/schemafy/api/project/controller/dto/response/MyInvitationResponse.java": [
+    358
+  ],
+  "apps/backend/api/src/test/java/com/schemafy/api/project/controller/InvitationControllerTest.java": [
+    358
+  ],
+  "apps/backend/api/src/test/java/com/schemafy/api/project/docs/MyInvitationApiSnippets.java": [
+    358
+  ],
+  "apps/backend/core/src/main/java/com/schemafy/core/common/CursorResult.java": [
+    358
+  ],
+  "apps/backend/core/src/main/java/com/schemafy/core/project/adapter/out/persistence/InvitationPersistenceAdapter.java": [
+    358
+  ],
+  "apps/backend/core/src/main/java/com/schemafy/core/project/adapter/out/persistence/InvitationRepository.java": [
+    358
+  ],
+  "apps/backend/core/src/main/java/com/schemafy/core/project/application/port/in/GetMyInvitationsQuery.java": [
+    358
+  ],
+  "apps/backend/core/src/main/java/com/schemafy/core/project/application/port/in/GetMyInvitationsUseCase.java": [
+    358
+  ],
+  "apps/backend/core/src/main/java/com/schemafy/core/project/application/port/out/InvitationPort.java": [
+    358
+  ],
+  "apps/backend/core/src/main/java/com/schemafy/core/project/application/service/GetMyInvitationsService.java": [
+    358
+  ],
+  "apps/backend/core/src/test/java/com/schemafy/core/project/integration/MyInvitationUseCaseIntegrationTest.java": [
+    358
+  ],
+  "apps/backend/core/src/test/java/com/schemafy/core/project/integration/ProjectDomainIntegrationSupport.java": [
+    358
   ]
 }

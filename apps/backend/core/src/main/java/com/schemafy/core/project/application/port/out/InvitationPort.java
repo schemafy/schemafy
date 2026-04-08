@@ -32,6 +32,17 @@ public interface InvitationPort {
       int limit,
       int offset);
 
+  Flux<Invitation> findMyInvitationsByEmailAndStatus(
+      String email,
+      String status,
+      int limit);
+
+  Flux<Invitation> findMyInvitationsByEmailAndStatusBeforeId(
+      String email,
+      String status,
+      String cursorId,
+      int limit);
+
   Mono<Long> countByEmailAndTypeAndStatus(
       String email,
       String targetType,

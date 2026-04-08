@@ -3,6 +3,7 @@ package com.schemafy.api.testsupport.project;
 import java.time.Instant;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.r2dbc.core.DatabaseClient;
 import org.springframework.test.web.reactive.server.WebTestClient;
 
 import com.schemafy.api.common.exception.CommonErrorCode;
@@ -28,6 +29,9 @@ import reactor.core.publisher.Mono;
 import static org.assertj.core.api.Assertions.assertThat;
 
 public abstract class ProjectHttpTestSupport extends UserHttpTestSupport {
+
+  @Autowired
+  protected DatabaseClient databaseClient;
 
   @Autowired
   protected WorkspaceRepository workspaceRepository;
@@ -132,6 +136,42 @@ public abstract class ProjectHttpTestSupport extends UserHttpTestSupport {
 
   protected Invitation saveInvitation(Invitation invitation) {
     return invitationRepository.save(invitation).block();
+  }
+
+  protected Invitation acceptInvitation(Invitation invitation) {
+    databaseClient.sql("""
+        UPDATE invitations
+        SET status = 'ACCEPTED',
+            resolved_at = CURRENT_TIMESTAMP
+        WHERE id = :id
+        """)
+        .bind("id", invitation.getId())
+        .fetch()
+        .rowsUpdated()
+        .block();
+    return invitationRepository.findById(invitation.getId()).block();
+  }
+
+  protected Invitation expireInvitation(
+      Invitation invitation,
+      Instant expiresAt) {
+    databaseClient.sql("UPDATE invitations SET expires_at = :expiresAt WHERE id = :id")
+        .bind("expiresAt", expiresAt)
+        .bind("id", invitation.getId())
+        .fetch()
+        .rowsUpdated()
+        .block();
+    return invitationRepository.findById(invitation.getId()).block();
+  }
+
+  protected Invitation softDeleteInvitation(Invitation invitation) {
+    databaseClient.sql(
+        "UPDATE invitations SET deleted_at = CURRENT_TIMESTAMP WHERE id = :id")
+        .bind("id", invitation.getId())
+        .fetch()
+        .rowsUpdated()
+        .block();
+    return invitationRepository.findById(invitation.getId()).block();
   }
 
   protected ShareLink saveShareLink(String projectId, String code) {

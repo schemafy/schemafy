@@ -76,6 +76,36 @@ public interface InvitationRepository
       int offset);
 
   @Query("""
+      SELECT * FROM invitations
+      WHERE invited_email = :email
+        AND status = :status
+        AND deleted_at IS NULL
+        AND expires_at > NOW()
+      ORDER BY id DESC
+      LIMIT :limit
+      """)
+  Flux<Invitation> findMyInvitationsByEmailAndStatus(
+      String email,
+      String status,
+      int limit);
+
+  @Query("""
+      SELECT * FROM invitations
+      WHERE invited_email = :email
+        AND status = :status
+        AND deleted_at IS NULL
+        AND expires_at > NOW()
+        AND id < :cursorId
+      ORDER BY id DESC
+      LIMIT :limit
+      """)
+  Flux<Invitation> findMyInvitationsByEmailAndStatusBeforeId(
+      String email,
+      String status,
+      String cursorId,
+      int limit);
+
+  @Query("""
       SELECT COUNT(*) FROM invitations
       WHERE target_type = :targetType
         AND invited_email = :email
