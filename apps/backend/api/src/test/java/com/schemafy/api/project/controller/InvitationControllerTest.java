@@ -17,6 +17,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
 
+import com.jayway.jsonpath.JsonPath;
 import com.schemafy.api.common.constant.ApiPath;
 import com.schemafy.api.common.exception.CommonErrorCode;
 import com.schemafy.api.project.docs.MyInvitationApiSnippets;
@@ -194,7 +195,7 @@ class InvitationControllerTest extends ProjectHttpTestSupport {
             invitee.email(), WorkspaceRole.MEMBER, adminUserId);
       }
 
-      String nextCursorId = webTestClient.get()
+      byte[] firstPageResponseBody = webTestClient.get()
           .uri(API_BASE + "/users/me/invitations?size=3")
           .header("Authorization", "Bearer " + inviteeToken)
           .exchange()
@@ -204,8 +205,13 @@ class InvitationControllerTest extends ProjectHttpTestSupport {
           .jsonPath("$.content[1].id").isEqualTo(invitations[4].getId())
           .jsonPath("$.content[2].id").isEqualTo(invitations[3].getId())
           .jsonPath("$.hasNext").isEqualTo(true)
+          .jsonPath("$.nextCursorId").isEqualTo(invitations[3].getId())
           .returnResult()
-          .getResponseBodyContent() == null ? null : invitations[3].getId();
+          .getResponseBodyContent();
+
+      assertThat(firstPageResponseBody).isNotNull();
+      String nextCursorId = JsonPath.read(new String(firstPageResponseBody),
+          "$.nextCursorId");
 
       webTestClient.get()
           .uri(API_BASE + "/users/me/invitations?size=3&cursorId="
@@ -370,7 +376,7 @@ class InvitationControllerTest extends ProjectHttpTestSupport {
         }
       }
 
-      String nextCursorId = webTestClient.get()
+      byte[] firstPageResponseBody = webTestClient.get()
           .uri(API_BASE + "/users/me/invitations?size=4")
           .header("Authorization", "Bearer " + inviteeToken)
           .exchange()
@@ -382,8 +388,13 @@ class InvitationControllerTest extends ProjectHttpTestSupport {
           .jsonPath("$.content[2].id").isEqualTo(invitations[3].getId())
           .jsonPath("$.content[3].id").isEqualTo(invitations[2].getId())
           .jsonPath("$.hasNext").isEqualTo(true)
+          .jsonPath("$.nextCursorId").isEqualTo(invitations[2].getId())
           .returnResult()
-          .getResponseBodyContent() == null ? null : invitations[2].getId();
+          .getResponseBodyContent();
+
+      assertThat(firstPageResponseBody).isNotNull();
+      String nextCursorId = JsonPath.read(new String(firstPageResponseBody),
+          "$.nextCursorId");
 
       webTestClient.get()
           .uri(API_BASE + "/users/me/invitations?size=4&cursorId="
@@ -494,5 +505,4 @@ class InvitationControllerTest extends ProjectHttpTestSupport {
     }
 
   }
-
 }
