@@ -505,4 +505,5 @@ class InvitationControllerTest extends ProjectHttpTestSupport {
     }
 
   }
+
 }
