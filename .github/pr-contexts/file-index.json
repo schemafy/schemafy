@@ -1,16 +1,31 @@
 {
-  ".github/workflows/cursor-pr-review.yml": [
-    317,
-    335
-  ],
-  ".github/workflows/save-pr-context.yml": [
-    317
-  ],
   ".github/pr-contexts/file-index.json": [
     335,
     337,
     346,
     352
+  ],
+  ".github/workflows/cursor-pr-review.yml": [
+    317,
+    335
+  ],
+  ".github/workflows/issue-automation.yml": [
+    353
+  ],
+  ".github/workflows/issue-project-intake.yml": [
+    353
+  ],
+  ".github/workflows/lint-and-format.yml": [
+    346
+  ],
+  ".github/workflows/save-pr-context.yml": [
+    317
+  ],
+  ".github/workflows/test.yml": [
+    346
+  ],
+  ".npmrc": [
+    346
   ],
   "apps/backend/api/src/docs/asciidoc/api-guide.adoc": [
     337
@@ -51,6 +66,18 @@
   "apps/backend/api/src/main/java/com/schemafy/api/erd/controller/dto/response/SchemaResponse.java": [
     337
   ],
+  "apps/backend/api/src/main/java/com/schemafy/api/project/controller/ProjectController.java": [
+    354
+  ],
+  "apps/backend/api/src/main/java/com/schemafy/api/project/controller/ProjectInvitationController.java": [
+    354
+  ],
+  "apps/backend/api/src/main/java/com/schemafy/api/project/controller/WorkspaceController.java": [
+    354
+  ],
+  "apps/backend/api/src/main/java/com/schemafy/api/project/controller/WorkspaceInvitationController.java": [
+    354
+  ],
   "apps/backend/api/src/test/java/com/schemafy/api/collaboration/dto/event/ErdMutatedEventTest.java": [
     337
   ],
@@ -59,6 +86,9 @@
   ],
   "apps/backend/api/src/test/java/com/schemafy/api/common/docs/RestDocsSnippets.java": [
     337
+  ],
+  "apps/backend/api/src/test/java/com/schemafy/api/common/exception/DomainErrorCodeUniquenessTest.java": [
+    352
   ],
   "apps/backend/api/src/test/java/com/schemafy/api/erd/broadcast/ErdMutationBroadcasterTest.java": [
     337
@@ -84,14 +114,74 @@
   "apps/backend/api/src/test/java/com/schemafy/api/erd/controller/TableControllerTest.java": [
     337
   ],
+  "apps/backend/api/src/test/java/com/schemafy/api/project/controller/ProjectControllerTest.java": [
+    354
+  ],
+  "apps/backend/api/src/test/java/com/schemafy/api/project/controller/ProjectInvitationControllerTest.java": [
+    354
+  ],
+  "apps/backend/api/src/test/java/com/schemafy/api/project/controller/WorkspaceControllerTest.java": [
+    354
+  ],
+  "apps/backend/api/src/test/java/com/schemafy/api/project/controller/WorkspaceInvitationControllerTest.java": [
+    354
+  ],
+  "apps/backend/api/src/test/java/com/schemafy/api/project/docs/ProjectApiSnippets.java": [
+    354
+  ],
+  "apps/backend/api/src/test/java/com/schemafy/api/project/docs/ProjectInvitationApiSnippets.java": [
+    354
+  ],
+  "apps/backend/api/src/test/java/com/schemafy/api/project/docs/ShareLinkApiSnippets.java": [
+    354
+  ],
+  "apps/backend/api/src/test/java/com/schemafy/api/project/docs/WorkspaceApiSnippets.java": [
+    354
+  ],
+  "apps/backend/api/src/test/java/com/schemafy/api/project/docs/WorkspaceInvitationApiSnippets.java": [
+    354
+  ],
+  "apps/backend/api/src/test/java/com/schemafy/api/testsupport/project/ProjectHttpTestSupport.java": [
+    354
+  ],
   "apps/backend/core/src/main/java/com/schemafy/core/common/MutationResult.java": [
     337
+  ],
+  "apps/backend/core/src/main/java/com/schemafy/core/erd/operation/adapter/out/persistence/ErdOperationLogRepository.java": [
+    352
+  ],
+  "apps/backend/core/src/main/java/com/schemafy/core/erd/operation/adapter/out/persistence/ErdOperationPersistenceAdapter.java": [
+    352
+  ],
+  "apps/backend/core/src/main/java/com/schemafy/core/erd/operation/application/port/out/GetErdOperationByIdPort.java": [
+    352
+  ],
+  "apps/backend/core/src/main/java/com/schemafy/core/erd/operation/application/port/out/GetErdOperationsBySchemaIdPort.java": [
+    352
   ],
   "apps/backend/core/src/main/java/com/schemafy/core/erd/operation/application/service/DefaultErdMutationCoordinator.java": [
     337
   ],
+  "apps/backend/core/src/main/java/com/schemafy/core/erd/operation/application/service/DefaultUndoRedoEligibilityService.java": [
+    352
+  ],
+  "apps/backend/core/src/main/java/com/schemafy/core/erd/operation/application/service/ResolvedUndoRedoEligibility.java": [
+    352
+  ],
+  "apps/backend/core/src/main/java/com/schemafy/core/erd/operation/application/service/UndoRedoAction.java": [
+    352
+  ],
+  "apps/backend/core/src/main/java/com/schemafy/core/erd/operation/application/service/UndoRedoEligibilityService.java": [
+    352
+  ],
   "apps/backend/core/src/main/java/com/schemafy/core/erd/operation/domain/CommittedErdOperation.java": [
     337
+  ],
+  "apps/backend/core/src/main/java/com/schemafy/core/erd/operation/domain/ErdOperationDerivationKind.java": [
+    352
+  ],
+  "apps/backend/core/src/main/java/com/schemafy/core/erd/operation/domain/exception/OperationErrorCode.java": [
+    352
   ],
   "apps/backend/core/src/main/java/com/schemafy/core/erd/schema/application/port/in/GetSchemaWithRevisionResult.java": [
     337
@@ -102,8 +192,17 @@
   "apps/backend/core/src/main/java/com/schemafy/core/erd/schema/application/service/GetSchemaWithRevisionService.java": [
     337
   ],
+  "apps/backend/core/src/test/java/com/schemafy/core/erd/operation/application/service/DefaultUndoRedoEligibilityServiceTest.java": [
+    352
+  ],
+  "apps/backend/core/src/test/java/com/schemafy/core/erd/operation/integration/UndoRedoEligibilityIntegrationTest.java": [
+    352
+  ],
   "apps/backend/core/src/test/java/com/schemafy/core/erd/schema/application/service/GetSchemaWithRevisionServiceTest.java": [
     337
+  ],
+  "apps/bff/package.json": [
+    346
   ],
   "apps/bff/src/common/backend-client/backend-client.service.ts": [
     337
@@ -162,50 +261,62 @@
   "apps/frontend/src/features/drawing/api/constraint.api.ts": [
     337
   ],
-  "apps/backend/core/src/main/java/com/schemafy/core/erd/operation/adapter/out/persistence/ErdOperationLogRepository.java": [
-    352
+  "apps/frontend/src/features/drawing/components/CustomSmoothStepEdge.tsx": [
+    331
   ],
-  "apps/backend/core/src/main/java/com/schemafy/core/erd/operation/adapter/out/persistence/ErdOperationPersistenceAdapter.java": [
-    352
+  "apps/frontend/src/features/drawing/components/ReactFlowCanvas.tsx": [
+    331
   ],
-  "apps/backend/core/src/main/java/com/schemafy/core/erd/operation/application/port/out/GetErdOperationByIdPort.java": [
-    352
+  "apps/frontend/src/features/drawing/components/SchemaSelector.tsx": [
+    331
   ],
-  "apps/backend/core/src/main/java/com/schemafy/core/erd/operation/application/port/out/GetErdOperationsBySchemaIdPort.java": [
-    352
+  "apps/frontend/src/features/drawing/components/TableNode/index.tsx": [
+    331
   ],
-  "apps/backend/core/src/main/java/com/schemafy/core/erd/operation/application/service/DefaultUndoRedoEligibilityService.java": [
-    352
+  "apps/frontend/src/features/drawing/components/TablePreview.tsx": [
+    331
   ],
-  "apps/backend/core/src/main/java/com/schemafy/core/erd/operation/application/service/ResolvedUndoRedoEligibility.java": [
-    352
+  "apps/frontend/src/features/drawing/components/Toolbar.tsx": [
+    331
   ],
-  "apps/backend/core/src/main/java/com/schemafy/core/erd/operation/application/service/UndoRedoAction.java": [
-    352
+  "apps/frontend/src/features/drawing/components/index.ts": [
+    331
   ],
-  "apps/backend/core/src/main/java/com/schemafy/core/erd/operation/application/service/UndoRedoEligibilityService.java": [
-    352
+  "apps/frontend/src/features/drawing/contexts/SelectedSchemaContext.tsx": [
+    331
   ],
-  "apps/backend/core/src/main/java/com/schemafy/core/erd/operation/domain/ErdOperationDerivationKind.java": [
-    352
+  "apps/frontend/src/features/drawing/hooks/index.ts": [
+    331
   ],
-  "apps/backend/core/src/main/java/com/schemafy/core/erd/operation/domain/exception/OperationErrorCode.java": [
-    352
+  "apps/frontend/src/features/drawing/hooks/useCanvasController.ts": [
+    331
   ],
-  "apps/backend/core/src/test/java/com/schemafy/core/erd/operation/application/service/DefaultUndoRedoEligibilityServiceTest.java": [
-    352
+  "apps/frontend/src/features/drawing/hooks/useCanvasKeyboard.ts": [
+    331
   ],
-  "apps/backend/core/src/test/java/com/schemafy/core/erd/operation/integration/UndoRedoEligibilityIntegrationTest.java": [
-    352
+  "apps/frontend/src/features/drawing/hooks/useCanvasNodes.ts": [
+    331
   ],
-  ".github/workflows/lint-and-format.yml": [
-    346
+  "apps/frontend/src/features/drawing/hooks/useLatest.ts": [
+    331
   ],
-  ".github/workflows/test.yml": [
-    346
+  "apps/frontend/src/features/drawing/hooks/useMouseTrackingPreview.ts": [
+    331
   ],
-  "apps/bff/package.json": [
-    346
+  "apps/frontend/src/features/drawing/hooks/useRelationships.ts": [
+    331
+  ],
+  "apps/frontend/src/features/drawing/hooks/useTables.ts": [
+    331
+  ],
+  "apps/frontend/src/features/memo/components/MemoPreview.tsx": [
+    331
+  ],
+  "apps/frontend/src/features/memo/hooks/useMemoStore.ts": [
+    331
+  ],
+  "apps/frontend/src/pages/CanvasPage.tsx": [
+    331
   ],
   "package-lock.json": [
     346
@@ -218,11 +329,5 @@
   ],
   "pnpm-workspace.yaml": [
     346
-  ],
-  ".npmrc": [
-    346
-  ],
-  "apps/backend/api/src/test/java/com/schemafy/api/common/exception/DomainErrorCodeUniquenessTest.java": [
-    352
   ]
 }

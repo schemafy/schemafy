@@ -1,16 +1,16 @@
-import { useEffect } from 'react';
+import { useEffect, type RefObject } from 'react';
 import type { Point } from '../types';
 
 interface UseCanvasKeyboardParams {
   chatInputPosition: Point | null;
-  mousePosition: Point | null;
+  mousePositionRef: RefObject<Point | null>;
   activeTool: string;
   setChatInputPosition: (pos: Point | null) => void;
 }
 
 export const useCanvasKeyboard = ({
   chatInputPosition,
-  mousePosition,
+  mousePositionRef,
   activeTool,
   setChatInputPosition,
 }: UseCanvasKeyboardParams) => {
@@ -28,16 +28,16 @@ export const useCanvasKeyboard = ({
       if (e.key === '/' && !chatInputPosition && activeTool === 'pointer') {
         e.preventDefault();
 
-        if (!mousePosition) return;
+        if (!mousePositionRef.current) return;
 
         setChatInputPosition({
-          x: mousePosition.x,
-          y: mousePosition.y,
+          x: mousePositionRef.current.x,
+          y: mousePositionRef.current.y,
         });
       }
     };
 
     window.addEventListener('keydown', handleKeyPress);
     return () => window.removeEventListener('keydown', handleKeyPress);
-  }, [chatInputPosition, mousePosition, activeTool, setChatInputPosition]);
+  }, [chatInputPosition, activeTool, setChatInputPosition, mousePositionRef]);
 };
