@@ -1,5 +1,7 @@
 package com.schemafy.api.erd.controller;
 
+import java.util.Set;
+
 import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -53,7 +55,7 @@ public class OperationController {
         .thenReturn(result);
   }
 
-  private Mono<Void> broadcast(java.util.Set<String> affectedTableIds,
+  private Mono<Void> broadcast(Set<String> affectedTableIds,
       CommittedErdOperation operation) {
     ErdMutationBroadcaster broadcaster = broadcasterProvider.getIfAvailable();
     if (broadcaster == null) {
