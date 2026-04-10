@@ -221,5 +221,8 @@
   ],
   ".npmrc": [
     346
+  ],
+  "apps/backend/api/src/test/java/com/schemafy/api/common/exception/DomainErrorCodeUniquenessTest.java": [
+    352
   ]
 }
