@@ -5,9 +5,9 @@ import java.util.Set;
 
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.EnumSource;
-import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
@@ -83,10 +83,10 @@ class UndoRedoErdOperationServiceTest {
 
   @ParameterizedTest
   @EnumSource(value = OperationErrorCode.class, names = {
-      "NOT_FOUND",
-      "SUPERSEDED",
-      "ALREADY_UNDONE",
-      "REDO_NOT_ELIGIBLE"
+    "NOT_FOUND",
+    "SUPERSEDED",
+    "ALREADY_UNDONE",
+    "REDO_NOT_ELIGIBLE"
   })
   @DisplayName("eligibility 서비스의 DomainException은 그대로 전달한다")
   void propagatesEligibilityDomainExceptions(OperationErrorCode errorCode) {
