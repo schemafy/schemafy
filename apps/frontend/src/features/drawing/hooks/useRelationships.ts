@@ -20,7 +20,10 @@ import {
 import type { Point, RelationshipConfig, RelationshipExtra } from '../types';
 import { RELATIONSHIP_TYPES } from '../types';
 import { useLatest } from './useLatest';
-import type { RelationshipSnapshotResponse, TableSnapshotResponse, } from '../api';
+import type {
+  RelationshipSnapshotResponse,
+  TableSnapshotResponse,
+} from '../api';
 
 const attachControlPointHandler = (
   edge: Edge,
@@ -56,8 +59,8 @@ const collectRelationshipSnapshots = (
 };
 
 export const useRelationships = (relationshipConfig: RelationshipConfig) => {
-  const {selectedSchemaId} = useSelectedSchema();
-  const {data: schemaSnapshots} = useSchemaSnapshots(selectedSchemaId);
+  const { selectedSchemaId } = useSelectedSchema();
+  const { data: schemaSnapshots } = useSchemaSnapshots(selectedSchemaId);
   const snapshotsData = schemaSnapshots.snapshots;
   const snapshotsRef = useLatest(snapshotsData);
   const relationshipConfigRef = useLatest(relationshipConfig);
@@ -67,17 +70,17 @@ export const useRelationships = (relationshipConfig: RelationshipConfig) => {
   > | null>(null);
   const previousSchemaIdRef = useRef(selectedSchemaId);
 
-  const {mutate: createRelationshipWithExtra} =
+  const { mutate: createRelationshipWithExtra } =
     useCreateRelationshipWithExtra(selectedSchemaId);
-  const {mutate: changeRelationshipName} =
+  const { mutate: changeRelationshipName } =
     useChangeRelationshipName(selectedSchemaId);
-  const {mutate: changeRelationshipExtra} =
+  const { mutate: changeRelationshipExtra } =
     useChangeRelationshipExtra(selectedSchemaId);
-  const {mutate: changeRelationshipKind} =
+  const { mutate: changeRelationshipKind } =
     useChangeRelationshipKind(selectedSchemaId);
-  const {mutate: changeRelationshipCardinality} =
+  const { mutate: changeRelationshipCardinality } =
     useChangeRelationshipCardinality(selectedSchemaId);
-  const {mutate: deleteRelationshipMutation} =
+  const { mutate: deleteRelationshipMutation } =
     useDeleteRelationship(selectedSchemaId);
 
   const [selectedRelationship, setSelectedRelationship] = useState<
@@ -99,7 +102,7 @@ export const useRelationships = (relationshipConfig: RelationshipConfig) => {
       const currentExtra = parseRelationshipExtra(snapshot.relationship.extra);
       changeRelationshipExtra({
         relationshipId,
-        data: {extra: updater(currentExtra)},
+        data: { extra: updater(currentExtra) },
       });
     },
     [changeRelationshipExtra, snapshotsRef],
@@ -289,7 +292,7 @@ export const useRelationships = (relationshipConfig: RelationshipConfig) => {
         return;
       }
 
-      const {relationship} = relationshipSnapshot;
+      const { relationship } = relationshipSnapshot;
       const typeConfig = RELATIONSHIP_TYPES[config.type];
       const newKind = config.isNonIdentifying
         ? 'NON_IDENTIFYING'
@@ -301,13 +304,13 @@ export const useRelationships = (relationshipConfig: RelationshipConfig) => {
 
       if (needsKindUpdate) {
         changeRelationshipKind(
-          {relationshipId, data: {kind: newKind}},
+          { relationshipId, data: { kind: newKind } },
           {
             onSuccess: () => {
               if (needsCardinalityUpdate) {
                 changeRelationshipCardinality({
                   relationshipId,
-                  data: {cardinality: typeConfig.cardinality},
+                  data: { cardinality: typeConfig.cardinality },
                 });
               }
             },
@@ -316,7 +319,7 @@ export const useRelationships = (relationshipConfig: RelationshipConfig) => {
       } else if (needsCardinalityUpdate) {
         changeRelationshipCardinality({
           relationshipId,
-          data: {cardinality: typeConfig.cardinality},
+          data: { cardinality: typeConfig.cardinality },
         });
       }
     },
@@ -335,7 +338,7 @@ export const useRelationships = (relationshipConfig: RelationshipConfig) => {
     (relationshipId: string, newName: string) => {
       changeRelationshipName({
         relationshipId,
-        data: {newName},
+        data: { newName },
       });
     },
     [changeRelationshipName],

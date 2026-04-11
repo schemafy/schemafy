@@ -30,7 +30,7 @@ const CanvasContent = observer(() => {
       setSelectedRelationship,
       setIsShortcutPanelOpen,
     },
-    data: {tables, memos, relationships},
+    data: { tables, memos, relationships },
     handlers: {
       onTableDragStop,
       onTablesDelete,
@@ -63,7 +63,7 @@ const CanvasContent = observer(() => {
 
         <div className="flex-1 bg-schemafy-secondary relative">
           <div className="absolute top-4 right-4 z-10">
-            <SchemaSelector/>
+            <SchemaSelector />
           </div>
 
           <ReactFlowCanvas
@@ -116,9 +116,9 @@ const CanvasContent = observer(() => {
         onHelpClick={() => setIsShortcutPanelOpen((prev) => !prev)}
       />
       {isShortcutPanelOpen && (
-        <ShortcutPanel onClose={() => setIsShortcutPanelOpen(false)}/>
+        <ShortcutPanel onClose={() => setIsShortcutPanelOpen(false)} />
       )}
-      <RemoteCursors/>
+      <RemoteCursors />
     </>
   );
 });
@@ -129,7 +129,7 @@ export const CanvasPage = () => {
   return (
     <SelectedSchemaProvider projectId={projectId}>
       <MemoProvider>
-        <CanvasContent/>
+        <CanvasContent />
       </MemoProvider>
     </SelectedSchemaProvider>
   );
