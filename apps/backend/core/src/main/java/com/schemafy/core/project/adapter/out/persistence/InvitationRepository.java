@@ -79,49 +79,57 @@ public interface InvitationRepository
   @Query("""
       SELECT *
       FROM (
-        SELECT
-          i.id AS id,
-          i.target_type AS target_type,
-          i.target_id AS target_id,
-          w.name AS target_name,
-          w.description AS target_description,
-          i.invited_email AS invited_email,
-          i.invited_role AS invited_role,
-          i.invited_by AS invited_by,
-          i.status AS status,
-          i.expires_at AS expires_at,
-          i.created_at AS created_at
-        FROM invitations i
-        JOIN workspaces w
-          ON i.target_type = 'WORKSPACE'
-         AND i.target_id = w.id
-         AND w.deleted_at IS NULL
-        WHERE i.invited_email = :email
-          AND i.status = :status
-          AND i.deleted_at IS NULL
-          AND i.expires_at > NOW()
+        SELECT * FROM (
+          SELECT
+            i.id AS id,
+            i.target_type AS target_type,
+            i.target_id AS target_id,
+            w.name AS target_name,
+            w.description AS target_description,
+            i.invited_email AS invited_email,
+            i.invited_role AS invited_role,
+            i.invited_by AS invited_by,
+            i.status AS status,
+            i.expires_at AS expires_at,
+            i.created_at AS created_at
+          FROM invitations i
+          JOIN workspaces w
+            ON i.target_type = 'WORKSPACE'
+           AND i.target_id = w.id
+           AND w.deleted_at IS NULL
+          WHERE i.invited_email = :email
+            AND i.status = :status
+            AND i.deleted_at IS NULL
+            AND i.expires_at > NOW()
+          ORDER BY i.id DESC
+          LIMIT :limit
+        ) workspace_invitations
         UNION ALL
-        SELECT
-          i.id AS id,
-          i.target_type AS target_type,
-          i.target_id AS target_id,
-          p.name AS target_name,
-          p.description AS target_description,
-          i.invited_email AS invited_email,
-          i.invited_role AS invited_role,
-          i.invited_by AS invited_by,
-          i.status AS status,
-          i.expires_at AS expires_at,
-          i.created_at AS created_at
-        FROM invitations i
-        JOIN projects p
-          ON i.target_type = 'PROJECT'
-         AND i.target_id = p.id
-         AND p.deleted_at IS NULL
-        WHERE i.invited_email = :email
-          AND i.status = :status
-          AND i.deleted_at IS NULL
-          AND i.expires_at > NOW()
+        SELECT * FROM (
+          SELECT
+            i.id AS id,
+            i.target_type AS target_type,
+            i.target_id AS target_id,
+            p.name AS target_name,
+            p.description AS target_description,
+            i.invited_email AS invited_email,
+            i.invited_role AS invited_role,
+            i.invited_by AS invited_by,
+            i.status AS status,
+            i.expires_at AS expires_at,
+            i.created_at AS created_at
+          FROM invitations i
+          JOIN projects p
+            ON i.target_type = 'PROJECT'
+           AND i.target_id = p.id
+           AND p.deleted_at IS NULL
+          WHERE i.invited_email = :email
+            AND i.status = :status
+            AND i.deleted_at IS NULL
+            AND i.expires_at > NOW()
+          ORDER BY i.id DESC
+          LIMIT :limit
+        ) project_invitations
       ) my_invitations
       ORDER BY id DESC
       LIMIT :limit
@@ -134,51 +142,59 @@ public interface InvitationRepository
   @Query("""
       SELECT *
       FROM (
-        SELECT
-          i.id AS id,
-          i.target_type AS target_type,
-          i.target_id AS target_id,
-          w.name AS target_name,
-          w.description AS target_description,
-          i.invited_email AS invited_email,
-          i.invited_role AS invited_role,
-          i.invited_by AS invited_by,
-          i.status AS status,
-          i.expires_at AS expires_at,
-          i.created_at AS created_at
-        FROM invitations i
-        JOIN workspaces w
-          ON i.target_type = 'WORKSPACE'
-         AND i.target_id = w.id
-         AND w.deleted_at IS NULL
-        WHERE i.invited_email = :email
-          AND i.status = :status
-          AND i.deleted_at IS NULL
-          AND i.expires_at > NOW()
-          AND i.id < :cursorId
+        SELECT * FROM (
+          SELECT
+            i.id AS id,
+            i.target_type AS target_type,
+            i.target_id AS target_id,
+            w.name AS target_name,
+            w.description AS target_description,
+            i.invited_email AS invited_email,
+            i.invited_role AS invited_role,
+            i.invited_by AS invited_by,
+            i.status AS status,
+            i.expires_at AS expires_at,
+            i.created_at AS created_at
+          FROM invitations i
+          JOIN workspaces w
+            ON i.target_type = 'WORKSPACE'
+           AND i.target_id = w.id
+           AND w.deleted_at IS NULL
+          WHERE i.invited_email = :email
+            AND i.status = :status
+            AND i.deleted_at IS NULL
+            AND i.expires_at > NOW()
+            AND i.id < :cursorId
+          ORDER BY i.id DESC
+          LIMIT :limit
+        ) workspace_invitations
         UNION ALL
-        SELECT
-          i.id AS id,
-          i.target_type AS target_type,
-          i.target_id AS target_id,
-          p.name AS target_name,
-          p.description AS target_description,
-          i.invited_email AS invited_email,
-          i.invited_role AS invited_role,
-          i.invited_by AS invited_by,
-          i.status AS status,
-          i.expires_at AS expires_at,
-          i.created_at AS created_at
-        FROM invitations i
-        JOIN projects p
-          ON i.target_type = 'PROJECT'
-         AND i.target_id = p.id
-         AND p.deleted_at IS NULL
-        WHERE i.invited_email = :email
-          AND i.status = :status
-          AND i.deleted_at IS NULL
-          AND i.expires_at > NOW()
-          AND i.id < :cursorId
+        SELECT * FROM (
+          SELECT
+            i.id AS id,
+            i.target_type AS target_type,
+            i.target_id AS target_id,
+            p.name AS target_name,
+            p.description AS target_description,
+            i.invited_email AS invited_email,
+            i.invited_role AS invited_role,
+            i.invited_by AS invited_by,
+            i.status AS status,
+            i.expires_at AS expires_at,
+            i.created_at AS created_at
+          FROM invitations i
+          JOIN projects p
+            ON i.target_type = 'PROJECT'
+           AND i.target_id = p.id
+           AND p.deleted_at IS NULL
+          WHERE i.invited_email = :email
+            AND i.status = :status
+            AND i.deleted_at IS NULL
+            AND i.expires_at > NOW()
+            AND i.id < :cursorId
+          ORDER BY i.id DESC
+          LIMIT :limit
+        ) project_invitations
       ) my_invitations
       ORDER BY id DESC
       LIMIT :limit
