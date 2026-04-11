@@ -4,6 +4,7 @@ import { logoImg } from '@/assets';
 import { authStore } from '@/store/auth.store';
 import { useMemo } from 'react';
 import { observer } from 'mobx-react-lite';
+import { LoadingSpinner } from '@/components';
 import { CanvasHeader } from './CanvasHeader';
 import { DashboardHeader } from './DashboardHeader';
 import { LandingHeader } from './LandingHeader';
@@ -15,9 +16,7 @@ export const Header = observer(
     const contents = useMemo(() => {
       if (isCanvasPage) return <CanvasHeader />;
       if (isAuthLoading || !isInitialized)
-        return (
-          <div className="h-5 w-5 border-2 border-schemafy-light-gray border-t-black rounded-full animate-spin" />
-        );
+        return <LoadingSpinner className="h-5 w-5" />;
       if (accessToken && user) return <DashboardHeader />;
       return <LandingHeader />;
     }, [isCanvasPage, isAuthLoading, accessToken, user, isInitialized]);

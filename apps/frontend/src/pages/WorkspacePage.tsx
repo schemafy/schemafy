@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { cn } from '@/lib';
-import { Button } from '@/components';
+import { Button, QueryStateBoundary } from '@/components';
 import {
   ConfirmDialog,
   InviteDialog,
@@ -26,7 +26,12 @@ export const WorkspacePage = () => {
   const [isInviteDialogOpen, setIsInviteDialogOpen] = useState(false);
   const [isLeaveConfirmOpen, setIsLeaveConfirmOpen] = useState(false);
 
-  const { data: workspacesData } = useGetWorkspaces();
+  const {
+    data: workspacesData,
+    isPending: isWorkspacesPending,
+    isError: isWorkspacesError,
+    refetch: refetchWorkspaces,
+  } = useGetWorkspaces();
   const { data: selectedWorkspace } = useGetWorkspace(selectedWorkspaceId);
   const { mutate: leaveWorkspace } = useLeaveWorkspace();
 
@@ -54,118 +59,130 @@ export const WorkspacePage = () => {
   ];
 
   return (
-    <div className="flex w-full min-h-full">
-      <WorkspaceSidebar
-        workspaces={workspaces}
-        selectedId={selectedWorkspaceId}
-        onSelect={handleWorkspaceSelect}
-        onAdd={() => setIsCreateDialogOpen(true)}
-        isOpen={isSidebarOpen}
-        onToggle={() => setIsSidebarOpen((prev) => !prev)}
-      />
+    <QueryStateBoundary
+      data={workspacesData}
+      isPending={isWorkspacesPending}
+      isError={isWorkspacesError}
+      onRetry={() => void refetchWorkspaces()}
+    >
+      {(loadedWorkspacesData) => (
+        <div className="flex w-full min-h-full">
+          <WorkspaceSidebar
+            workspaces={workspaces}
+            selectedId={selectedWorkspaceId}
+            onSelect={handleWorkspaceSelect}
+            onAdd={() => setIsCreateDialogOpen(true)}
+            isOpen={isSidebarOpen}
+            onToggle={() => setIsSidebarOpen((prev) => !prev)}
+          />
 
-      {workspacesData?.totalElements === 0 ? (
-        <div className="flex w-full min-h-full justify-center items-center">
-          워크스페이스를 추가해 주세요
-        </div>
-      ) : (
-        <div className="flex-1 flex justify-center py-6 px-8 overflow-hidden">
-          <div
-            className={cn(
-              'w-full max-w-2xl flex flex-col gap-6 transition-transform duration-300',
-              isSidebarOpen ? '-translate-x-32' : '-translate-x-6',
-            )}
-          >
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-3">
-                <h1 className="font-heading-xl text-schemafy-text">
-                  {selectedWorkspace?.name}
-                </h1>
-                <span className="px-3 py-1 bg-schemafy-button-bg text-schemafy-button-text font-caption-md rounded-full">
-                  {currentUserRole}
-                </span>
-              </div>
-              <div className="flex items-center gap-2">
-                {currentUserRole === 'ADMIN' && (
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => setIsEditDialogOpen(true)}
-                  >
-                    Edit
-                  </Button>
+          {loadedWorkspacesData.totalElements === 0 ? (
+            <div className="flex w-full min-h-full justify-center items-center">
+              워크스페이스를 추가해 주세요
+            </div>
+          ) : (
+            <div className="flex-1 flex justify-center py-6 px-8 overflow-hidden">
+              <div
+                className={cn(
+                  'w-full max-w-2xl flex flex-col gap-6 transition-transform duration-300',
+                  isSidebarOpen ? '-translate-x-32' : '-translate-x-6',
                 )}
-                <Button size="sm" onClick={() => setIsInviteDialogOpen(true)}>
-                  Invite
-                </Button>
+              >
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-3">
+                    <h1 className="font-heading-xl text-schemafy-text">
+                      {selectedWorkspace?.name}
+                    </h1>
+                    <span className="px-3 py-1 bg-schemafy-button-bg text-schemafy-button-text font-caption-md rounded-full">
+                      {currentUserRole}
+                    </span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    {currentUserRole === 'ADMIN' && (
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => setIsEditDialogOpen(true)}
+                      >
+                        Edit
+                      </Button>
+                    )}
+                    <Button
+                      size="sm"
+                      onClick={() => setIsInviteDialogOpen(true)}
+                    >
+                      Invite
+                    </Button>
+                  </div>
+                </div>
+
+                <div className="flex gap-6 border-b border-schemafy-light-gray">
+                  {tabs.map((tab) => (
+                    <button
+                      key={tab.key}
+                      onClick={() => setActiveTab(tab.key)}
+                      className={cn(
+                        'pb-3 font-overline-sm flex items-center gap-1.5 border-b-2 -mb-px transition-colors',
+                        activeTab === tab.key
+                          ? 'border-schemafy-text text-schemafy-text'
+                          : 'border-transparent text-schemafy-dark-gray hover:text-schemafy-text',
+                      )}
+                    >
+                      {tab.label}
+                    </button>
+                  ))}
+                </div>
+
+                <div className="flex-1">
+                  {activeTab === 'projects' ? (
+                    <WorkspaceProjectsTab />
+                  ) : (
+                    <WorkspaceMembersTab
+                      workspaceId={selectedWorkspaceId}
+                      currentUserRole={currentUserRole}
+                    />
+                  )}
+                </div>
+
+                <LeaveWarningComponent
+                  setIsLeaveConfirmOpen={setIsLeaveConfirmOpen}
+                />
               </div>
             </div>
+          )}
+          <WorkspaceFormDialog
+            open={isCreateDialogOpen}
+            onOpenChange={setIsCreateDialogOpen}
+            mode="create"
+          />
 
-            <div className="flex gap-6 border-b border-schemafy-light-gray">
-              {tabs.map((tab) => (
-                <button
-                  key={tab.key}
-                  onClick={() => setActiveTab(tab.key)}
-                  className={cn(
-                    'pb-3 font-overline-sm flex items-center gap-1.5 border-b-2 -mb-px transition-colors',
-                    activeTab === tab.key
-                      ? 'border-schemafy-text text-schemafy-text'
-                      : 'border-transparent text-schemafy-dark-gray hover:text-schemafy-text',
-                  )}
-                >
-                  {tab.label}
-                </button>
-              ))}
-            </div>
+          <WorkspaceFormDialog
+            open={isEditDialogOpen}
+            onOpenChange={setIsEditDialogOpen}
+            mode="edit"
+            workspaceId={selectedWorkspaceId}
+            initialName={selectedWorkspace?.name ?? ''}
+            initialDescription={selectedWorkspace?.description ?? ''}
+          />
 
-            <div className="flex-1">
-              {activeTab === 'projects' ? (
-                <WorkspaceProjectsTab />
-              ) : (
-                <WorkspaceMembersTab
-                  workspaceId={selectedWorkspaceId}
-                  currentUserRole={currentUserRole}
-                />
-              )}
-            </div>
+          <InviteDialog
+            open={isInviteDialogOpen}
+            onOpenChange={setIsInviteDialogOpen}
+            workspaceId={selectedWorkspaceId}
+            currentUserRole={currentUserRole}
+          />
 
-            <LeaveWarningComponent
-              setIsLeaveConfirmOpen={setIsLeaveConfirmOpen}
-            />
-          </div>
+          <ConfirmDialog
+            open={isLeaveConfirmOpen}
+            onOpenChange={setIsLeaveConfirmOpen}
+            title="Leave Workspace"
+            description="If you leave the workspace, you will lose access to all projects and resources. Are you sure you want to leave?"
+            confirmLabel="Leave"
+            onConfirm={() => leaveWorkspace(selectedWorkspaceId)}
+          />
         </div>
       )}
-      <WorkspaceFormDialog
-        open={isCreateDialogOpen}
-        onOpenChange={setIsCreateDialogOpen}
-        mode="create"
-      />
-
-      <WorkspaceFormDialog
-        open={isEditDialogOpen}
-        onOpenChange={setIsEditDialogOpen}
-        mode="edit"
-        workspaceId={selectedWorkspaceId}
-        initialName={selectedWorkspace?.name ?? ''}
-        initialDescription={selectedWorkspace?.description ?? ''}
-      />
-
-      <InviteDialog
-        open={isInviteDialogOpen}
-        onOpenChange={setIsInviteDialogOpen}
-        workspaceId={selectedWorkspaceId}
-        currentUserRole={currentUserRole}
-      />
-
-      <ConfirmDialog
-        open={isLeaveConfirmOpen}
-        onOpenChange={setIsLeaveConfirmOpen}
-        title="Leave Workspace"
-        description="If you leave the workspace, you will lose access to all projects and resources. Are you sure you want to leave?"
-        confirmLabel="Leave"
-        onConfirm={() => leaveWorkspace(selectedWorkspaceId)}
-      />
-    </div>
+    </QueryStateBoundary>
   );
 };
 
