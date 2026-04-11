@@ -3,6 +3,7 @@ import {
   createRoute,
   createRouter,
   Outlet,
+  redirect,
   useRouterState,
 } from '@tanstack/react-router';
 import type { QueryClient } from '@tanstack/react-query';
@@ -19,6 +20,7 @@ import {
   WorkspacePage,
 } from '@/pages';
 import type { authStore } from '@/store/auth.store';
+import { ensureAuthInitialized } from '@/features/auth/lib/auth-bootstrap';
 
 export interface RouterContext {
   queryClient: QueryClient;
@@ -84,15 +86,28 @@ const oauthCallbackRoute = createRoute({
   component: OAuthCallbackPage,
 });
 
+const requireAuth = async () => {
+  const authenticated = await ensureAuthInitialized();
+
+  if (!authenticated) {
+    throw redirect({
+      to: '/signin',
+      replace: true,
+    });
+  }
+};
+
 const workspaceRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: '/workspace',
+  beforeLoad: requireAuth,
   component: WorkspacePage,
 });
 
 const projectRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: '/project/$projectId',
+  beforeLoad: requireAuth,
   component: CanvasPage,
 });
 
