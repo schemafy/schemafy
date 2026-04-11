@@ -1,10 +1,15 @@
 import { Button } from '@/components';
 import { SignInForm } from '@/features/auth';
-import { useLocation } from 'react-router-dom';
+import { useSearch } from '@tanstack/react-router';
 
 export const SignInPage = () => {
-  const location = useLocation();
-  const oauthError = location.state?.oauthError as string | null;
+  const oauthError = useSearch({
+    strict: false,
+    select: (search) => {
+      const value = (search as { oauthError?: unknown }).oauthError;
+      return typeof value === 'string' ? value : null;
+    },
+  });
 
   return (
     <div className="py-5 flex flex-col justify-center items-center w-full">

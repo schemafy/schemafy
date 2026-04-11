@@ -6,7 +6,7 @@ import {
 } from 'react';
 import { type VariantProps, cva } from 'class-variance-authority';
 import { cn } from '@/lib';
-import { Link } from 'react-router-dom';
+import { Link } from '@tanstack/react-router';
 
 const buttonVariants = cva(
   `inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-lg transition-all duration-200 

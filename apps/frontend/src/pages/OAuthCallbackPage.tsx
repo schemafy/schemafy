@@ -1,28 +1,37 @@
 import { useEffect } from 'react';
-import { useNavigate, useSearchParams } from 'react-router-dom';
+import { useNavigate, useSearch } from '@tanstack/react-router';
 import { observer } from 'mobx-react-lite';
 import { authStore } from '@/store/auth.store';
 
 export const OAuthCallbackPage = observer(() => {
   const navigate = useNavigate();
-  const [searchParams] = useSearchParams();
-  const oAuthError = searchParams.get('error');
+  const oAuthError = useSearch({
+    strict: false,
+    select: (search) => {
+      const value = (search as { error?: unknown }).error;
+      return typeof value === 'string' ? value : null;
+    },
+  });
 
   const { isInitialized, isAuthLoading, user } = authStore;
 
   useEffect(() => {
     if (oAuthError) {
-      navigate('/signin', { replace: true, state: { oauthError: oAuthError } });
+      navigate({
+        to: '/signin',
+        replace: true,
+        search: { oauthError: oAuthError },
+      });
       return;
     }
     if (!isInitialized || isAuthLoading) return;
 
     if (user) {
-      navigate('/', { replace: true });
+      navigate({ to: '/', replace: true });
     } else {
-      navigate('/signin', { replace: true });
+      navigate({ to: '/signin', replace: true });
     }
-  }, [isInitialized, isAuthLoading, user, navigate]);
+  }, [isInitialized, isAuthLoading, user, navigate, oAuthError]);
 
   return (
     <div className="flex flex-col items-center justify-center py-16 gap-4">
