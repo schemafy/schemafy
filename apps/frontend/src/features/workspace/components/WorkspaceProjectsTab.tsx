@@ -62,11 +62,11 @@ export const WorkspaceProjectsTab = () => {
           placeholder="Search project"
           value={searchQuery}
           onChange={(e) => setSearchQuery(e.target.value)}
-          className="w-full pl-10 pr-4 py-3 border border-schemafy-light-gray rounded-[12px] font-body-sm placeholder-schemafy-dark-gray bg-schemafy-bg focus:outline-none"
+          className="w-full pl-10 pr-4 py-3 border border-schemafy-light-gray rounded-xl font-body-sm placeholder-schemafy-dark-gray bg-schemafy-bg focus:outline-none"
         />
       </div>
 
-      <div className="border border-schemafy-light-gray rounded-[12px] overflow-hidden">
+      <div className="border border-schemafy-light-gray rounded-xl overflow-hidden">
         <table className="w-full">
           <thead>
             <tr className="border-b border-schemafy-light-gray">
@@ -117,7 +117,7 @@ export const WorkspaceProjectsTab = () => {
                     <DropdownMenuContent
                       sideOffset={4}
                       align="end"
-                      className="!p-1.5 !min-w-0"
+                      className="p-1.5! min-w-0!"
                     >
                       <Button
                         variant="none"

@@ -2,18 +2,14 @@ import {
   createRootRouteWithContext,
   createRoute,
   createRouter,
-  Outlet,
   redirect,
-  useRouterState,
 } from '@tanstack/react-router';
 import type { QueryClient } from '@tanstack/react-query';
-import { cn } from '@/lib';
-import { Header } from '@/components/Header';
-import { Footer } from '@/components/Footer';
-import { Toaster } from '@/components/Toaster';
+import { Layout } from '@/components';
 import {
   CanvasPage,
   LandingPage,
+  NotFoundPage,
   OAuthCallbackPage,
   SignInPage,
   SignUpPage,
@@ -27,39 +23,9 @@ export interface RouterContext {
   auth: typeof authStore;
 }
 
-// 루트 레이아웃
-const RootLayout = () => {
-  const pathname = useRouterState({
-    select: (s) => s.location.pathname,
-  });
-  const isCanvasPage = pathname.startsWith('/project/');
-  const isWorkspacePage = pathname.startsWith('/workspace');
-
-  return (
-    <div className="layout flex flex-col min-h-screen bg-schemafy-bg w-full items-center">
-      <Header isCanvasPage={isCanvasPage} />
-      <main
-        className={cn(
-          'flex-grow w-full flex',
-          !isCanvasPage && !isWorkspacePage && 'max-w-[960px]',
-        )}
-      >
-        <Outlet />
-      </main>
-      {!isCanvasPage && !isWorkspacePage && <Footer />}
-      <Toaster />
-    </div>
-  );
-};
-
 const rootRoute = createRootRouteWithContext<RouterContext>()({
-  component: RootLayout,
-  notFoundComponent: () => (
-    <div className="flex flex-col items-center justify-center py-16 gap-4">
-      <h1 className="font-heading-xl">404</h1>
-      <p className="text-schemafy-dark-gray">페이지를 찾을 수 없습니다.</p>
-    </div>
-  ),
+  component: Layout,
+  notFoundComponent: NotFoundPage,
 });
 
 const indexRoute = createRoute({

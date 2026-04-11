@@ -101,7 +101,7 @@ export const SignUpForm = () => {
   return (
     <form
       noValidate
-      className="flex flex-col w-full max-w-[480px]"
+      className="flex flex-col w-full max-w-120"
       onSubmit={handleSubmit}
     >
       {formFields.map((field) => (

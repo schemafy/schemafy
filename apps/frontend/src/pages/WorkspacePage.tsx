@@ -192,7 +192,7 @@ const LeaveWarningComponent = ({
   setIsLeaveConfirmOpen: (value: boolean) => void;
 }) => {
   return (
-    <div className="border border-schemafy-yellow/30 bg-schemafy-yellow/10 rounded-[12px] px-6 py-5 flex items-center justify-between gap-6">
+    <div className="border border-schemafy-yellow/30 bg-schemafy-yellow/10 rounded-xl px-6 py-5 flex items-center justify-between gap-6">
       <div className="flex flex-col gap-1">
         <span className="font-heading-xs text-schemafy-yellow">
           Leave Workspace

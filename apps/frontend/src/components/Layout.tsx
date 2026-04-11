@@ -1,11 +1,10 @@
-import type { PropsWithChildren } from 'react';
-import { useRouterState } from '@tanstack/react-router';
+import { Outlet, useRouterState } from '@tanstack/react-router';
 import { cn } from '@/lib';
 import { Header } from './Header';
 import { Footer } from './Footer';
 import { Toaster } from './Toaster';
 
-export const Layout = ({ children }: PropsWithChildren) => {
+export const Layout = () => {
   const pathname = useRouterState({
     select: (state) => state.location.pathname,
   });
@@ -17,11 +16,11 @@ export const Layout = ({ children }: PropsWithChildren) => {
       <Header isCanvasPage={isCanvasPage} />
       <main
         className={cn(
-          'flex-grow w-full flex',
-          !isCanvasPage && !isWorkspacePage && 'max-w-[960px]',
+          'grow w-full flex',
+          !isCanvasPage && !isWorkspacePage && 'max-w-240',
         )}
       >
-        {children}
+        <Outlet />
       </main>
       {!isCanvasPage && !isWorkspacePage && <Footer />}
       <Toaster />
