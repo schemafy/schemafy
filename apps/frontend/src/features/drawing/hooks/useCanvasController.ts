@@ -12,6 +12,7 @@ import type { Point, RelationshipConfig } from '../types';
 import { collaborationStore } from '@/store/collaboration.store';
 
 const CURSOR_THROTTLE_MS = 50;
+const CHAT_EXIT_ANIMATION_MS = 200;
 
 export const useCanvasController = () => {
   const { projectId, selectedSchemaId } = useSelectedSchema();
@@ -38,6 +39,8 @@ export const useCanvasController = () => {
     null,
   );
   const [isChatOpen, setIsChatOpen] = useState(false);
+  const [isChatExiting, setIsChatExiting] = useState(false);
+  const chatExitTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [isShortcutPanelOpen, setIsShortcutPanelOpen] = useState(false);
 
   useEffect(() => {
@@ -46,6 +49,41 @@ export const useCanvasController = () => {
       collaborationStore.disconnect();
     };
   }, [projectId]);
+
+  useEffect(() => {
+    const handleGlobalMouseMove = (e: MouseEvent) => {
+      mousePositionRef.current = { x: e.clientX, y: e.clientY };
+    };
+    window.addEventListener('mousemove', handleGlobalMouseMove);
+    return () => window.removeEventListener('mousemove', handleGlobalMouseMove);
+  }, []);
+
+  useEffect(() => {
+    return () => {
+      if (chatExitTimerRef.current) clearTimeout(chatExitTimerRef.current);
+    };
+  }, []);
+
+  const closeChatInput = useCallback(() => {
+    if (chatExitTimerRef.current) return;
+    setIsChatOpen(false);
+    setIsChatExiting(true);
+    chatExitTimerRef.current = setTimeout(() => {
+      setChatInputPosition(null);
+      setIsChatExiting(false);
+      chatExitTimerRef.current = null;
+    }, CHAT_EXIT_ANIMATION_MS);
+  }, []);
+
+  const openChatInput = useCallback((position: Point) => {
+    if (chatExitTimerRef.current) {
+      clearTimeout(chatExitTimerRef.current);
+      chatExitTimerRef.current = null;
+    }
+    setIsChatExiting(false);
+    setChatInputPosition(position);
+    setIsChatOpen(true);
+  }, []);
 
   useEffect(() => {
     if (!isChatOpen) return;
@@ -58,15 +96,13 @@ export const useCanvasController = () => {
     };
 
     const handleMouseLeave = () => {
-      setChatInputPosition(null);
-      setIsChatOpen(false);
+      closeChatInput();
     };
 
     const handleClickOutside = (e: MouseEvent) => {
       const chatInputEl = document.querySelector('[data-chat-input]');
       if (!chatInputEl || !chatInputEl.contains(e.target as Node)) {
-        setChatInputPosition(null);
-        setIsChatOpen(false);
+        closeChatInput();
       }
     };
 
@@ -79,15 +115,14 @@ export const useCanvasController = () => {
       document.removeEventListener('mouseleave', handleMouseLeave);
       window.removeEventListener('mousedown', handleClickOutside, true);
     };
-  }, [isChatOpen]);
+  }, [isChatOpen, closeChatInput]);
 
   useCanvasKeyboard({
     mousePositionRef,
     isChatOpen,
     isShortcutPanelOpen,
     activeTool,
-    setChatInputPosition,
-    setIsChatOpen,
+    openChatInput,
     setActiveTool,
   });
 
@@ -124,11 +159,6 @@ export const useCanvasController = () => {
 
   const handleChatSend = useCallback((message: string) => {
     collaborationStore.sendMessage(message);
-    setChatInputPosition(null);
-  }, []);
-
-  const handleChatCancel = useCallback(() => {
-    setChatInputPosition(null);
   }, []);
 
   const handlePaneClick = useCallback(
@@ -189,6 +219,7 @@ export const useCanvasController = () => {
       activeTool,
       tempMemoPosition,
       chatInputPosition,
+      isChatExiting,
       selectedRelationship,
       isShortcutPanelOpen,
     },
@@ -219,7 +250,7 @@ export const useCanvasController = () => {
       handleMemoCancel,
       handleMemoCreate,
       handleChatSend,
-      handleChatCancel,
+      closeChatInput,
       handlePaneClick,
       handleMouseMove,
     },

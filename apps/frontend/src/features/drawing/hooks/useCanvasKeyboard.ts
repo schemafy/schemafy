@@ -6,8 +6,7 @@ interface UseCanvasKeyboardParams {
   isShortcutPanelOpen: boolean;
   mousePositionRef: RefObject<Point | null>;
   activeTool: string;
-  setChatInputPosition: (pos: Point | null) => void;
-  setIsChatOpen: (open: boolean) => void;
+  openChatInput: (position: Point) => void;
   setActiveTool: (tool: string) => void;
 }
 
@@ -23,8 +22,7 @@ export const useCanvasKeyboard = ({
   isShortcutPanelOpen,
   mousePositionRef,
   activeTool,
-  setChatInputPosition,
-  setIsChatOpen,
+  openChatInput,
   setActiveTool,
 }: UseCanvasKeyboardParams) => {
   useEffect(() => {
@@ -61,11 +59,10 @@ export const useCanvasKeyboard = ({
 
         if (!mousePositionRef.current) return;
 
-        setChatInputPosition({
-          x: mousePositionRef.current.x,
-          y: mousePositionRef.current.y,
+        openChatInput({
+          x: mousePositionRef.current.x + 16,
+          y: mousePositionRef.current.y + 16,
         });
-        setIsChatOpen(true);
       }
     };
 
@@ -74,11 +71,9 @@ export const useCanvasKeyboard = ({
   }, [
     isChatOpen,
     isShortcutPanelOpen,
-
     activeTool,
-    setChatInputPosition,
     mousePositionRef,
-    setIsChatOpen,
+    openChatInput,
     setActiveTool,
   ]);
 };

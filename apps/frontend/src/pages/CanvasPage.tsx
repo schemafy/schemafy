@@ -4,13 +4,13 @@ import {
   RelationshipEditor,
   SchemaSelector,
   SelectedSchemaProvider,
+  ShortcutPanel,
   TempMemoPreview,
   Toolbar,
-  ShortcutPanel,
   useCanvasController,
 } from '@/features/drawing';
 import { MemoProvider } from '@/features/memo/context';
-import { RemoteCursors, ChatInput } from '@/features/collaboration/components';
+import { ChatInput, RemoteCursors } from '@/features/collaboration/components';
 import { observer } from 'mobx-react-lite';
 
 const CanvasContent = observer(() => {
@@ -20,6 +20,7 @@ const CanvasContent = observer(() => {
       activeTool,
       tempMemoPosition,
       chatInputPosition,
+      isChatExiting,
       selectedRelationship,
       isShortcutPanelOpen,
     },
@@ -29,7 +30,7 @@ const CanvasContent = observer(() => {
       setSelectedRelationship,
       setIsShortcutPanelOpen,
     },
-    data: { tables, memos, relationships },
+    data: {tables, memos, relationships},
     handlers: {
       onTableDragStop,
       onTablesDelete,
@@ -44,7 +45,7 @@ const CanvasContent = observer(() => {
       handleMemoCancel,
       handleMemoCreate,
       handleChatSend,
-      handleChatCancel,
+      closeChatInput,
       handlePaneClick,
       handleMouseMove,
     },
@@ -62,7 +63,7 @@ const CanvasContent = observer(() => {
 
         <div className="flex-1 bg-schemafy-secondary relative">
           <div className="absolute top-4 right-4 z-10">
-            <SchemaSelector />
+            <SchemaSelector/>
           </div>
 
           <ReactFlowCanvas
@@ -103,8 +104,9 @@ const CanvasContent = observer(() => {
           {chatInputPosition && (
             <ChatInput
               position={chatInputPosition}
+              isExiting={isChatExiting}
               onSend={handleChatSend}
-              onCancel={handleChatCancel}
+              onCancel={closeChatInput}
             />
           )}
         </div>
@@ -114,20 +116,20 @@ const CanvasContent = observer(() => {
         onHelpClick={() => setIsShortcutPanelOpen((prev) => !prev)}
       />
       {isShortcutPanelOpen && (
-        <ShortcutPanel onClose={() => setIsShortcutPanelOpen(false)} />
+        <ShortcutPanel onClose={() => setIsShortcutPanelOpen(false)}/>
       )}
-      <RemoteCursors />
+      <RemoteCursors/>
     </>
   );
 });
 
 export const CanvasPage = () => {
-  const projectId = '06DS8JSJ7Y112MC87X0AB2CE8M';
+  const projectId = '06EF3RWHVWADZEMACHXTSGA3Q0';
 
   return (
     <SelectedSchemaProvider projectId={projectId}>
       <MemoProvider>
-        <CanvasContent />
+        <CanvasContent/>
       </MemoProvider>
     </SelectedSchemaProvider>
   );

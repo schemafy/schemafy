@@ -16,18 +16,28 @@ const SLIDE_STYLES = `
     from { transform: translateY(0);     opacity: 1; }
     to   { transform: translateY(-120%); opacity: 0; }
   }
+  @keyframes chat-container-in {
+    from { transform: scale(0.9); opacity: 0; }
+    to   { transform: scale(1);   opacity: 1; }
+  }
+  @keyframes chat-container-out {
+    from { transform: scale(1);   opacity: 1; }
+    to   { transform: scale(0.9); opacity: 0; }
+  }
 `;
 
 const ANIMATION_MS = 250;
+const CONTAINER_ANIMATION_MS = 200;
 
 interface ChatInputProps {
   position: { x: number; y: number };
+  isExiting: boolean;
   onSend: (message: string) => void;
   onCancel: () => void;
 }
 
 export const ChatInput = observer(
-  ({position, onSend, onCancel}: ChatInputProps) => {
+  ({position, isExiting, onSend, onCancel}: ChatInputProps) => {
     const [message, setMessage] = useState('');
     const inputRef = useRef<HTMLInputElement>(null);
 
@@ -80,7 +90,12 @@ export const ChatInput = observer(
         >
           <div
             className="rounded-lg shadow-lg overflow-hidden min-w-[180px] max-w-xs"
-            style={{backgroundColor: color}}
+            style={{
+              backgroundColor: color,
+              animation: isExiting
+                ? `chat-container-out ${CONTAINER_ANIMATION_MS}ms ease forwards`
+                : `chat-container-in ${CONTAINER_ANIMATION_MS}ms ease forwards`,
+            }}
           >
             {hasMessage && (
               <div
