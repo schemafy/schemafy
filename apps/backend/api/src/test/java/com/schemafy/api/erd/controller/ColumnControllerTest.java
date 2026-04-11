@@ -45,6 +45,8 @@ import com.schemafy.core.erd.column.domain.ColumnTypeArguments;
 
 import reactor.core.publisher.Mono;
 
+import static com.schemafy.api.erd.controller.ErdOperationFixtures.OP_ID;
+import static com.schemafy.api.erd.controller.ErdOperationFixtures.committedOperation;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
 import static org.springframework.restdocs.webtestclient.WebTestClientRestDocumentation.document;
@@ -121,7 +123,9 @@ class ColumnControllerTest {
         "사용자 ID");
 
     given(createColumnUseCase.createColumn(any(CreateColumnCommand.class)))
-        .willReturn(Mono.just(MutationResult.of(result, tableId)));
+        .willReturn(Mono.just(
+            MutationResult.of(result, tableId)
+                .withOperation(committedOperation())));
 
     webTestClient.post()
         .uri(API_BASE_PATH + "/columns")
@@ -132,6 +136,7 @@ class ColumnControllerTest {
         .expectStatus().isOk()
         .expectBody()
         .jsonPath("$.affectedTableIds").isArray()
+        .jsonPath("$.operation.opId").isEqualTo(OP_ID)
         .jsonPath("$.data.id").isEqualTo(columnId)
         .consumeWith(document("column-create",
             ColumnApiSnippets.createColumnRequestHeaders(),
@@ -214,7 +219,9 @@ class ColumnControllerTest {
     ChangeColumnNameRequest request = new ChangeColumnNameRequest("new_user_id");
 
     given(changeColumnNameUseCase.changeColumnName(any(ChangeColumnNameCommand.class)))
-        .willReturn(Mono.just(MutationResult.<Void>of(null, tableId)));
+        .willReturn(Mono.just(
+            MutationResult.<Void>of(null, tableId)
+                .withOperation(committedOperation())));
 
     webTestClient.patch()
         .uri(API_BASE_PATH + "/columns/{columnId}/name", columnId)
@@ -225,6 +232,7 @@ class ColumnControllerTest {
         .expectStatus().isOk()
         .expectBody()
         .jsonPath("$.affectedTableIds").isArray()
+        .jsonPath("$.operation.opId").isEqualTo(OP_ID)
         .consumeWith(document("column-change-name",
             ColumnApiSnippets.changeColumnNamePathParameters(),
             ColumnApiSnippets.changeColumnNameRequestHeaders(),
@@ -242,7 +250,9 @@ class ColumnControllerTest {
     ChangeColumnTypeRequest request = new ChangeColumnTypeRequest("VARCHAR", 100, null, null, null);
 
     given(changeColumnTypeUseCase.changeColumnType(any(ChangeColumnTypeCommand.class)))
-        .willReturn(Mono.just(MutationResult.<Void>of(null, tableId)));
+        .willReturn(Mono.just(
+            MutationResult.<Void>of(null, tableId)
+                .withOperation(committedOperation())));
 
     webTestClient.patch()
         .uri(API_BASE_PATH + "/columns/{columnId}/type", columnId)
@@ -253,6 +263,7 @@ class ColumnControllerTest {
         .expectStatus().isOk()
         .expectBody()
         .jsonPath("$.affectedTableIds").isArray()
+        .jsonPath("$.operation.opId").isEqualTo(OP_ID)
         .consumeWith(document("column-change-type",
             ColumnApiSnippets.changeColumnTypePathParameters(),
             ColumnApiSnippets.changeColumnTypeRequestHeaders(),
@@ -268,7 +279,9 @@ class ColumnControllerTest {
     String tableId = "06D6W2BAHD51T5NJPK29Q6BCR9";
 
     given(changeColumnMetaUseCase.changeColumnMeta(any(ChangeColumnMetaCommand.class)))
-        .willReturn(Mono.just(MutationResult.<Void>of(null, tableId)));
+        .willReturn(Mono.just(
+            MutationResult.<Void>of(null, tableId)
+                .withOperation(committedOperation())));
 
     webTestClient.patch()
         .uri(API_BASE_PATH + "/columns/{columnId}/meta", columnId)
@@ -281,6 +294,7 @@ class ColumnControllerTest {
         .expectStatus().isOk()
         .expectBody()
         .jsonPath("$.affectedTableIds").isArray()
+        .jsonPath("$.operation.opId").isEqualTo(OP_ID)
         .consumeWith(document("column-change-meta",
             ColumnApiSnippets.changeColumnMetaPathParameters(),
             ColumnApiSnippets.changeColumnMetaRequestHeaders(),
@@ -296,7 +310,9 @@ class ColumnControllerTest {
     String tableId = "06D6W2BAHD51T5NJPK29Q6BCR9";
 
     given(changeColumnMetaUseCase.changeColumnMeta(any(ChangeColumnMetaCommand.class)))
-        .willReturn(Mono.just(MutationResult.<Void>of(null, tableId)));
+        .willReturn(Mono.just(
+            MutationResult.<Void>of(null, tableId)
+                .withOperation(committedOperation())));
 
     webTestClient.patch()
         .uri(API_BASE_PATH + "/columns/{columnId}/meta", columnId)
@@ -308,7 +324,8 @@ class ColumnControllerTest {
         .exchange()
         .expectStatus().isOk()
         .expectBody()
-        .jsonPath("$.affectedTableIds").isArray();
+        .jsonPath("$.affectedTableIds").isArray()
+        .jsonPath("$.operation.opId").isEqualTo(OP_ID);
   }
 
   @Test
@@ -318,7 +335,9 @@ class ColumnControllerTest {
     String tableId = "06D6W2BAHD51T5NJPK29Q6BCR9";
 
     given(changeColumnMetaUseCase.changeColumnMeta(any(ChangeColumnMetaCommand.class)))
-        .willReturn(Mono.just(MutationResult.<Void>of(null, tableId)));
+        .willReturn(Mono.just(
+            MutationResult.<Void>of(null, tableId)
+                .withOperation(committedOperation())));
 
     webTestClient.patch()
         .uri(API_BASE_PATH + "/columns/{columnId}/meta", columnId)
@@ -330,7 +349,8 @@ class ColumnControllerTest {
         .exchange()
         .expectStatus().isOk()
         .expectBody()
-        .jsonPath("$.affectedTableIds").isArray();
+        .jsonPath("$.affectedTableIds").isArray()
+        .jsonPath("$.operation.opId").isEqualTo(OP_ID);
   }
 
   @Test
@@ -342,7 +362,9 @@ class ColumnControllerTest {
     ChangeColumnPositionRequest request = new ChangeColumnPositionRequest(3);
 
     given(changeColumnPositionUseCase.changeColumnPosition(any(ChangeColumnPositionCommand.class)))
-        .willReturn(Mono.just(MutationResult.<Void>of(null, tableId)));
+        .willReturn(Mono.just(
+            MutationResult.<Void>of(null, tableId)
+                .withOperation(committedOperation())));
 
     webTestClient.patch()
         .uri(API_BASE_PATH + "/columns/{columnId}/position", columnId)
@@ -353,6 +375,7 @@ class ColumnControllerTest {
         .expectStatus().isOk()
         .expectBody()
         .jsonPath("$.affectedTableIds").isArray()
+        .jsonPath("$.operation.opId").isEqualTo(OP_ID)
         .consumeWith(document("column-change-position",
             ColumnApiSnippets.changeColumnPositionPathParameters(),
             ColumnApiSnippets.changeColumnPositionRequestHeaders(),
@@ -369,7 +392,9 @@ class ColumnControllerTest {
     String tableId = "06D6W2BAHD51T5NJPK29Q6BCR9";
 
     given(deleteColumnUseCase.deleteColumn(any(DeleteColumnCommand.class)))
-        .willReturn(Mono.just(MutationResult.<Void>of(null, tableId)));
+        .willReturn(Mono.just(
+            MutationResult.<Void>of(null, tableId)
+                .withOperation(committedOperation())));
 
     webTestClient.delete()
         .uri(API_BASE_PATH + "/columns/{columnId}", columnId)
@@ -378,6 +403,7 @@ class ColumnControllerTest {
         .expectStatus().isOk()
         .expectBody()
         .jsonPath("$.affectedTableIds").isArray()
+        .jsonPath("$.operation.opId").isEqualTo(OP_ID)
         .consumeWith(document("column-delete",
             ColumnApiSnippets.deleteColumnPathParameters(),
             ColumnApiSnippets.deleteColumnRequestHeaders(),

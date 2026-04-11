@@ -14,7 +14,7 @@ export const ViewModeColumn = ({ column }: ViewModeColumnProps) => {
         <div className="flex items-center gap-2">
           <span className={`text-sm ${nameClassName}`}>{column.name}</span>
           <span className="text-xs text-schemafy-dark-gray font-mono">
-            ({formatTypeDisplay(column.type, column.lengthScale)})
+            ({formatTypeDisplay(column.type, column.typeArguments)})
           </span>
         </div>
 

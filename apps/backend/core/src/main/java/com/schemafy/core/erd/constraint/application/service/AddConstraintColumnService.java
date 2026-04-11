@@ -6,6 +6,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.reactive.TransactionalOperator;
 
@@ -27,6 +28,8 @@ import com.schemafy.core.erd.constraint.domain.ConstraintColumn;
 import com.schemafy.core.erd.constraint.domain.exception.ConstraintErrorCode;
 import com.schemafy.core.erd.constraint.domain.type.ConstraintKind;
 import com.schemafy.core.erd.constraint.domain.validator.ConstraintValidator;
+import com.schemafy.core.erd.operation.application.service.ErdMutationCoordinator;
+import com.schemafy.core.erd.operation.domain.ErdOperationType;
 import com.schemafy.core.ulid.application.port.out.UlidGeneratorPort;
 
 import lombok.RequiredArgsConstructor;
@@ -37,20 +40,26 @@ import reactor.core.publisher.Mono;
 @RequiredArgsConstructor
 public class AddConstraintColumnService implements AddConstraintColumnUseCase {
 
+  private final TransactionalOperator transactionalOperator;
   private final UlidGeneratorPort ulidGeneratorPort;
   private final CreateConstraintColumnPort createConstraintColumnPort;
-  private final TransactionalOperator transactionalOperator;
   private final GetConstraintByIdPort getConstraintByIdPort;
   private final GetConstraintsByTableIdPort getConstraintsByTableIdPort;
   private final GetConstraintColumnsByConstraintIdPort getConstraintColumnsByConstraintIdPort;
   private final GetColumnsByTableIdPort getColumnsByTableIdPort;
   private final GetColumnByIdPort getColumnByIdPort;
   private final PkCascadeHelper pkCascadeHelper;
+  private ErdMutationCoordinator erdMutationCoordinator = ErdMutationCoordinator.noop();
+
+  @Autowired
+  void setErdMutationCoordinator(ErdMutationCoordinator erdMutationCoordinator) {
+    this.erdMutationCoordinator = erdMutationCoordinator;
+  }
 
   @Override
   public Mono<MutationResult<AddConstraintColumnResult>> addConstraintColumn(
       AddConstraintColumnCommand command) {
-    return Mono.defer(() -> {
+    return erdMutationCoordinator.coordinate(ErdOperationType.ADD_CONSTRAINT_COLUMN, command, () -> Mono.defer(() -> {
       return getConstraintByIdPort.findConstraintById(command.constraintId())
           .switchIfEmpty(Mono.error(new DomainException(ConstraintErrorCode.NOT_FOUND, "Constraint not found")))
           .flatMap(constraint -> {
@@ -63,7 +72,7 @@ public class AddConstraintColumnService implements AddConstraintColumnUseCase {
                     command,
                     affectedTableIds));
           });
-    }).as(transactionalOperator::transactional);
+    })).as(transactionalOperator::transactional);
   }
 
   private Mono<MutationResult<AddConstraintColumnResult>> addColumn(

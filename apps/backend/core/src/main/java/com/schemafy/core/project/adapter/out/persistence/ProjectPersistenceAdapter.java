@@ -1,6 +1,7 @@
 package com.schemafy.core.project.adapter.out.persistence;
 
 import com.schemafy.core.common.PersistenceAdapter;
+import com.schemafy.core.erd.schema.application.port.out.ActiveProjectExistsPort;
 import com.schemafy.core.project.application.port.out.ProjectMemberPort;
 import com.schemafy.core.project.application.port.out.ProjectPort;
 import com.schemafy.core.project.domain.Project;
@@ -12,10 +13,11 @@ import reactor.core.publisher.Mono;
 
 @PersistenceAdapter
 @RequiredArgsConstructor
-public class ProjectPersistenceAdapter implements ProjectPort, ProjectMemberPort {
+public class ProjectPersistenceAdapter
+    implements ProjectPort, ProjectMemberPort, ActiveProjectExistsPort {
 
-  private final DomainProjectRepository projectRepository;
-  private final DomainProjectMemberRepository projectMemberRepository;
+  private final ProjectRepository projectRepository;
+  private final ProjectMemberRepository projectMemberRepository;
 
   @Override
   public Mono<Project> save(Project project) {
@@ -30,6 +32,12 @@ public class ProjectPersistenceAdapter implements ProjectPort, ProjectMemberPort
   @Override
   public Mono<Project> findByIdAndNotDeleted(String projectId) {
     return projectRepository.findByIdAndNotDeleted(projectId);
+  }
+
+  @Override
+  public Mono<Boolean> existsActiveProjectById(String projectId) {
+    return projectRepository.findByIdAndNotDeleted(projectId)
+        .hasElement();
   }
 
   @Override
@@ -52,6 +60,13 @@ public class ProjectPersistenceAdapter implements ProjectPort, ProjectMemberPort
       String userId, int limit, int offset) {
     return projectRepository.findByWorkspaceIdAndUserIdWithPaging(workspaceId,
         userId, limit, offset);
+  }
+
+  @Override
+  public Flux<Project> findSharedByUserIdWithPaging(String userId,
+      int limit, int offset) {
+    return projectRepository.findSharedByUserIdWithPaging(userId, limit,
+        offset);
   }
 
   @Override
@@ -117,6 +132,13 @@ public class ProjectPersistenceAdapter implements ProjectPort, ProjectMemberPort
   }
 
   @Override
+  public Flux<String> findSharedRolesByUserIdWithPaging(String userId,
+      int limit, int offset) {
+    return projectMemberRepository.findSharedRolesByUserIdWithPaging(userId,
+        limit, offset);
+  }
+
+  @Override
   public Mono<Long> countByWorkspaceIdAndUserId(String workspaceId,
       String userId) {
     return projectMemberRepository.countByWorkspaceIdAndUserId(workspaceId,
@@ -135,6 +157,11 @@ public class ProjectPersistenceAdapter implements ProjectPort, ProjectMemberPort
       String userId) {
     return projectMemberRepository.findByWorkspaceIdAndUserId(workspaceId,
         userId);
+  }
+
+  @Override
+  public Mono<Long> countSharedByUserId(String userId) {
+    return projectMemberRepository.countSharedByUserId(userId);
   }
 
 }

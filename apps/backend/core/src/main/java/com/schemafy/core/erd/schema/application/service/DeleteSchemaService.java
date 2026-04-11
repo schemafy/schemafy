@@ -3,11 +3,15 @@ package com.schemafy.core.erd.schema.application.service;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.reactive.TransactionalOperator;
 
 import com.schemafy.core.common.MutationResult;
 import com.schemafy.core.common.exception.DomainException;
+import com.schemafy.core.erd.operation.ErdOperationContexts;
+import com.schemafy.core.erd.operation.application.service.ErdMutationCoordinator;
+import com.schemafy.core.erd.operation.domain.ErdOperationType;
 import com.schemafy.core.erd.schema.application.port.in.DeleteSchemaCommand;
 import com.schemafy.core.erd.schema.application.port.in.DeleteSchemaUseCase;
 import com.schemafy.core.erd.schema.application.port.out.DeleteSchemaPort;
@@ -30,6 +34,12 @@ public class DeleteSchemaService implements DeleteSchemaUseCase {
   private final GetSchemaByIdPort getSchemaByIdPort;
   private final GetTablesBySchemaIdPort getTablesBySchemaIdPort;
   private final DeleteTableUseCase deleteTableUseCase;
+  private ErdMutationCoordinator erdMutationCoordinator = ErdMutationCoordinator.noop();
+
+  @Autowired
+  void setErdMutationCoordinator(ErdMutationCoordinator erdMutationCoordinator) {
+    this.erdMutationCoordinator = erdMutationCoordinator;
+  }
 
   @Override
   public Mono<MutationResult<Void>> deleteSchema(DeleteSchemaCommand command) {
@@ -38,18 +48,19 @@ public class DeleteSchemaService implements DeleteSchemaUseCase {
     Mono<Void> ensureExists = getSchemaByIdPort.findSchemaById(schemaId)
         .switchIfEmpty(Mono.error(new DomainException(SchemaErrorCode.NOT_FOUND, "Schema not found: " + schemaId)))
         .then();
-    return ensureExists
+    return erdMutationCoordinator.coordinate(ErdOperationType.DELETE_SCHEMA, command, () -> ensureExists
         .then(getTablesBySchemaIdPort.findTablesBySchemaId(schemaId)
             .collectList())
         .flatMapMany(Flux::fromIterable)
         .concatMap(table -> {
           affectedTableIds.add(table.id());
           return deleteTableUseCase.deleteTable(new DeleteTableCommand(table.id()))
+              .contextWrite(ErdOperationContexts.suppressNestedMutation())
               .doOnNext(result -> affectedTableIds.addAll(result.affectedTableIds()))
               .then();
         })
         .then(Mono.defer(() -> deleteSchemaPort.deleteSchema(schemaId)))
-        .then(Mono.fromCallable(() -> MutationResult.<Void>of(null, affectedTableIds)))
+        .then(Mono.fromCallable(() -> MutationResult.<Void>of(null, affectedTableIds))))
         .as(transactionalOperator::transactional);
   }
 

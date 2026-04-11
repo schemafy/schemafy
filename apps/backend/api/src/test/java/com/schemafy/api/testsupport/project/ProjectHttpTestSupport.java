@@ -3,14 +3,16 @@ package com.schemafy.api.testsupport.project;
 import java.time.Instant;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.test.web.reactive.server.WebTestClient;
 
+import com.schemafy.api.common.exception.CommonErrorCode;
 import com.schemafy.api.testsupport.user.UserHttpTestSupport;
-import com.schemafy.core.project.adapter.out.persistence.DomainInvitationRepository;
-import com.schemafy.core.project.adapter.out.persistence.DomainProjectMemberRepository;
-import com.schemafy.core.project.adapter.out.persistence.DomainProjectRepository;
-import com.schemafy.core.project.adapter.out.persistence.DomainShareLinkRepository;
-import com.schemafy.core.project.adapter.out.persistence.DomainWorkspaceMemberRepository;
-import com.schemafy.core.project.adapter.out.persistence.DomainWorkspaceRepository;
+import com.schemafy.core.project.adapter.out.persistence.InvitationRepository;
+import com.schemafy.core.project.adapter.out.persistence.ProjectMemberRepository;
+import com.schemafy.core.project.adapter.out.persistence.ProjectRepository;
+import com.schemafy.core.project.adapter.out.persistence.ShareLinkRepository;
+import com.schemafy.core.project.adapter.out.persistence.WorkspaceMemberRepository;
+import com.schemafy.core.project.adapter.out.persistence.WorkspaceRepository;
 import com.schemafy.core.project.domain.Invitation;
 import com.schemafy.core.project.domain.Project;
 import com.schemafy.core.project.domain.ProjectMember;
@@ -23,25 +25,27 @@ import com.schemafy.core.project.domain.WorkspaceRole;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
+import static org.assertj.core.api.Assertions.assertThat;
+
 public abstract class ProjectHttpTestSupport extends UserHttpTestSupport {
 
   @Autowired
-  protected DomainWorkspaceRepository workspaceRepository;
+  protected WorkspaceRepository workspaceRepository;
 
   @Autowired
-  protected DomainWorkspaceMemberRepository workspaceMemberRepository;
+  protected WorkspaceMemberRepository workspaceMemberRepository;
 
   @Autowired
-  protected DomainProjectRepository projectRepository;
+  protected ProjectRepository projectRepository;
 
   @Autowired
-  protected DomainProjectMemberRepository projectMemberRepository;
+  protected ProjectMemberRepository projectMemberRepository;
 
   @Autowired
-  protected DomainInvitationRepository invitationRepository;
+  protected InvitationRepository invitationRepository;
 
   @Autowired
-  protected DomainShareLinkRepository shareLinkRepository;
+  protected ShareLinkRepository shareLinkRepository;
 
   protected Mono<Void> cleanupProjectFixtures() {
     return Mono.when(
@@ -146,6 +150,21 @@ public abstract class ProjectHttpTestSupport extends UserHttpTestSupport {
 
   protected ShareLink saveShareLink(ShareLink shareLink) {
     return shareLinkRepository.save(shareLink).block();
+  }
+
+  protected void assertInvalidPagination(
+      WebTestClient webTestClient,
+      String uri,
+      String token) {
+    webTestClient.get()
+        .uri(uri)
+        .header("Authorization", "Bearer " + token)
+        .exchange()
+        .expectStatus().isBadRequest()
+        .expectBody()
+        .jsonPath("$.reason").isEqualTo(CommonErrorCode.INVALID_PARAMETER.code())
+        .jsonPath("$.detail").value(detail -> assertThat((String) detail)
+            .isNotBlank());
   }
 
 }

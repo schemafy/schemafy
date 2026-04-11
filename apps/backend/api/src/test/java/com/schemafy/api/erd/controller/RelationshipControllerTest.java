@@ -62,6 +62,8 @@ import com.schemafy.core.erd.relationship.domain.type.RelationshipKind;
 
 import reactor.core.publisher.Mono;
 
+import static com.schemafy.api.erd.controller.ErdOperationFixtures.OP_ID;
+import static com.schemafy.api.erd.controller.ErdOperationFixtures.committedOperation;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.then;
@@ -147,7 +149,9 @@ class RelationshipControllerTest {
         null);
 
     given(createRelationshipUseCase.createRelationship(any(CreateRelationshipCommand.class)))
-        .willReturn(Mono.just(MutationResult.of(result, Set.of(fkTableId, pkTableId))));
+        .willReturn(Mono.just(
+            MutationResult.of(result, Set.of(fkTableId, pkTableId))
+                .withOperation(committedOperation())));
 
     webTestClient.post()
         .uri(API_BASE_PATH + "/relationships")
@@ -157,6 +161,7 @@ class RelationshipControllerTest {
         .exchange()
         .expectStatus().isOk()
         .expectBody()
+        .jsonPath("$.operation.opId").isEqualTo(OP_ID)
         .jsonPath("$.data.id").isEqualTo(relationshipId)
         .consumeWith(document("relationship-create",
             RelationshipApiSnippets.createRelationshipRequestHeaders(),
@@ -182,7 +187,9 @@ class RelationshipControllerTest {
         "{\"fkHandle\":\"left\",\"pkHandle\":\"right\"}");
 
     given(createRelationshipUseCase.createRelationship(any(CreateRelationshipCommand.class)))
-        .willReturn(Mono.just(MutationResult.of(result, Set.of(fkTableId, pkTableId))));
+        .willReturn(Mono.just(
+            MutationResult.of(result, Set.of(fkTableId, pkTableId))
+                .withOperation(committedOperation())));
 
     webTestClient.post()
         .uri(API_BASE_PATH + "/relationships")
@@ -391,7 +398,9 @@ class RelationshipControllerTest {
     ChangeRelationshipNameRequest request = new ChangeRelationshipNameRequest("fk_orders_users_new");
 
     given(changeRelationshipNameUseCase.changeRelationshipName(any(ChangeRelationshipNameCommand.class)))
-        .willReturn(Mono.just(MutationResult.<Void>of(null, Set.of(fkTableId, pkTableId))));
+        .willReturn(Mono.just(
+            MutationResult.<Void>of(null, Set.of(fkTableId, pkTableId))
+                .withOperation(committedOperation())));
 
     webTestClient.patch()
         .uri(API_BASE_PATH + "/relationships/{relationshipId}/name", relationshipId)
@@ -402,6 +411,7 @@ class RelationshipControllerTest {
         .expectStatus().isOk()
         .expectBody()
         .jsonPath("$.affectedTableIds").isArray()
+        .jsonPath("$.operation.opId").isEqualTo(OP_ID)
         .consumeWith(document("relationship-change-name",
             RelationshipApiSnippets.changeRelationshipNamePathParameters(),
             RelationshipApiSnippets.changeRelationshipNameRequestHeaders(),
@@ -420,7 +430,9 @@ class RelationshipControllerTest {
     ChangeRelationshipKindRequest request = new ChangeRelationshipKindRequest(RelationshipKind.IDENTIFYING);
 
     given(changeRelationshipKindUseCase.changeRelationshipKind(any(ChangeRelationshipKindCommand.class)))
-        .willReturn(Mono.just(MutationResult.<Void>of(null, Set.of(fkTableId, pkTableId))));
+        .willReturn(Mono.just(
+            MutationResult.<Void>of(null, Set.of(fkTableId, pkTableId))
+                .withOperation(committedOperation())));
 
     webTestClient.patch()
         .uri(API_BASE_PATH + "/relationships/{relationshipId}/kind", relationshipId)
@@ -431,6 +443,7 @@ class RelationshipControllerTest {
         .expectStatus().isOk()
         .expectBody()
         .jsonPath("$.affectedTableIds").isArray()
+        .jsonPath("$.operation.opId").isEqualTo(OP_ID)
         .consumeWith(document("relationship-change-kind",
             RelationshipApiSnippets.changeRelationshipKindPathParameters(),
             RelationshipApiSnippets.changeRelationshipKindRequestHeaders(),
@@ -450,7 +463,9 @@ class RelationshipControllerTest {
 
     given(changeRelationshipCardinalityUseCase.changeRelationshipCardinality(
         any(ChangeRelationshipCardinalityCommand.class)))
-        .willReturn(Mono.just(MutationResult.<Void>of(null, Set.of(fkTableId, pkTableId))));
+        .willReturn(Mono.just(
+            MutationResult.<Void>of(null, Set.of(fkTableId, pkTableId))
+                .withOperation(committedOperation())));
 
     webTestClient.patch()
         .uri(API_BASE_PATH + "/relationships/{relationshipId}/cardinality", relationshipId)
@@ -461,6 +476,7 @@ class RelationshipControllerTest {
         .expectStatus().isOk()
         .expectBody()
         .jsonPath("$.affectedTableIds").isArray()
+        .jsonPath("$.operation.opId").isEqualTo(OP_ID)
         .consumeWith(document("relationship-change-cardinality",
             RelationshipApiSnippets.changeRelationshipCardinalityPathParameters(),
             RelationshipApiSnippets.changeRelationshipCardinalityRequestHeaders(),
@@ -477,7 +493,9 @@ class RelationshipControllerTest {
     String pkTableId = "06D6W2CAHD51T5NJPK29Q6BCRA";
 
     given(changeRelationshipExtraUseCase.changeRelationshipExtra(any(ChangeRelationshipExtraCommand.class)))
-        .willReturn(Mono.just(MutationResult.<Void>of(null, Set.of(fkTableId, pkTableId))));
+        .willReturn(Mono.just(
+            MutationResult.<Void>of(null, Set.of(fkTableId, pkTableId))
+                .withOperation(committedOperation())));
 
     webTestClient.patch()
         .uri(API_BASE_PATH + "/relationships/{relationshipId}/extra", relationshipId)
@@ -490,6 +508,7 @@ class RelationshipControllerTest {
         .expectStatus().isOk()
         .expectBody()
         .jsonPath("$.affectedTableIds").isArray()
+        .jsonPath("$.operation.opId").isEqualTo(OP_ID)
         .consumeWith(document("relationship-change-extra",
             RelationshipApiSnippets.changeRelationshipExtraPathParameters(),
             RelationshipApiSnippets.changeRelationshipExtraRequestHeaders(),
@@ -506,7 +525,9 @@ class RelationshipControllerTest {
     String pkTableId = "06D6W2CAHD51T5NJPK29Q6BCRA";
 
     given(changeRelationshipExtraUseCase.changeRelationshipExtra(any(ChangeRelationshipExtraCommand.class)))
-        .willReturn(Mono.just(MutationResult.<Void>of(null, Set.of(fkTableId, pkTableId))));
+        .willReturn(Mono.just(
+            MutationResult.<Void>of(null, Set.of(fkTableId, pkTableId))
+                .withOperation(committedOperation())));
 
     webTestClient.patch()
         .uri(API_BASE_PATH + "/relationships/{relationshipId}/extra", relationshipId)
@@ -518,7 +539,8 @@ class RelationshipControllerTest {
         .exchange()
         .expectStatus().isOk()
         .expectBody()
-        .jsonPath("$.affectedTableIds").isArray();
+        .jsonPath("$.affectedTableIds").isArray()
+        .jsonPath("$.operation.opId").isEqualTo(OP_ID);
 
     then(changeRelationshipExtraUseCase).should().changeRelationshipExtra(
         new ChangeRelationshipExtraCommand(relationshipId, "{\"position\":{\"x\":60,\"y\":90},\"color\":\"#6366f1\"}"));
@@ -554,7 +576,9 @@ class RelationshipControllerTest {
     String pkTableId = "06D6W2CAHD51T5NJPK29Q6BCRA";
 
     given(deleteRelationshipUseCase.deleteRelationship(any(DeleteRelationshipCommand.class)))
-        .willReturn(Mono.just(MutationResult.<Void>of(null, Set.of(fkTableId, pkTableId))));
+        .willReturn(Mono.just(
+            MutationResult.<Void>of(null, Set.of(fkTableId, pkTableId))
+                .withOperation(committedOperation())));
 
     webTestClient.delete()
         .uri(API_BASE_PATH + "/relationships/{relationshipId}", relationshipId)
@@ -563,6 +587,7 @@ class RelationshipControllerTest {
         .expectStatus().isOk()
         .expectBody()
         .jsonPath("$.affectedTableIds").isArray()
+        .jsonPath("$.operation.opId").isEqualTo(OP_ID)
         .consumeWith(document("relationship-delete",
             RelationshipApiSnippets.deleteRelationshipPathParameters(),
             RelationshipApiSnippets.deleteRelationshipRequestHeaders(),
@@ -623,7 +648,9 @@ class RelationshipControllerTest {
         1);
 
     given(addRelationshipColumnUseCase.addRelationshipColumn(any(AddRelationshipColumnCommand.class)))
-        .willReturn(Mono.just(MutationResult.of(result, Set.of(fkTableId, pkTableId))));
+        .willReturn(Mono.just(
+            MutationResult.of(result, Set.of(fkTableId, pkTableId))
+                .withOperation(committedOperation())));
 
     webTestClient.post()
         .uri(API_BASE_PATH + "/relationships/{relationshipId}/columns", relationshipId)
@@ -633,6 +660,7 @@ class RelationshipControllerTest {
         .exchange()
         .expectStatus().isOk()
         .expectBody()
+        .jsonPath("$.operation.opId").isEqualTo(OP_ID)
         .jsonPath("$.data.id").isEqualTo(relationshipColumnId)
         .consumeWith(document("relationship-column-add",
             RelationshipApiSnippets.addRelationshipColumnPathParameters(),
@@ -650,7 +678,9 @@ class RelationshipControllerTest {
     String pkTableId = "06D6W2CAHD51T5NJPK29Q6BCRA";
 
     given(removeRelationshipColumnUseCase.removeRelationshipColumn(any(RemoveRelationshipColumnCommand.class)))
-        .willReturn(Mono.just(MutationResult.<Void>of(null, Set.of(fkTableId, pkTableId))));
+        .willReturn(Mono.just(
+            MutationResult.<Void>of(null, Set.of(fkTableId, pkTableId))
+                .withOperation(committedOperation())));
 
     webTestClient.delete()
         .uri(API_BASE_PATH + "/relationship-columns/{relationshipColumnId}", relationshipColumnId)
@@ -659,6 +689,7 @@ class RelationshipControllerTest {
         .expectStatus().isOk()
         .expectBody()
         .jsonPath("$.affectedTableIds").isArray()
+        .jsonPath("$.operation.opId").isEqualTo(OP_ID)
         .consumeWith(document("relationship-column-remove",
             RelationshipApiSnippets.removeRelationshipColumnPathParameters(),
             RelationshipApiSnippets.removeRelationshipColumnRequestHeaders(),
@@ -705,7 +736,9 @@ class RelationshipControllerTest {
 
     given(changeRelationshipColumnPositionUseCase.changeRelationshipColumnPosition(
         any(ChangeRelationshipColumnPositionCommand.class)))
-        .willReturn(Mono.just(MutationResult.<Void>of(null, Set.of(fkTableId, pkTableId))));
+        .willReturn(Mono.just(
+            MutationResult.<Void>of(null, Set.of(fkTableId, pkTableId))
+                .withOperation(committedOperation())));
 
     webTestClient.patch()
         .uri(API_BASE_PATH + "/relationship-columns/{relationshipColumnId}/position", relationshipColumnId)
@@ -716,6 +749,7 @@ class RelationshipControllerTest {
         .expectStatus().isOk()
         .expectBody()
         .jsonPath("$.affectedTableIds").isArray()
+        .jsonPath("$.operation.opId").isEqualTo(OP_ID)
         .consumeWith(document("relationship-column-change-position",
             RelationshipApiSnippets.changeRelationshipColumnPositionPathParameters(),
             RelationshipApiSnippets.changeRelationshipColumnPositionRequestHeaders(),

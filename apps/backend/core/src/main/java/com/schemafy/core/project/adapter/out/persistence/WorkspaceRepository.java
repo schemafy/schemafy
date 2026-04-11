@@ -8,7 +8,7 @@ import com.schemafy.core.project.domain.Workspace;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
-public interface DomainWorkspaceRepository
+public interface WorkspaceRepository
     extends ReactiveCrudRepository<Workspace, String> {
 
   @Query("""

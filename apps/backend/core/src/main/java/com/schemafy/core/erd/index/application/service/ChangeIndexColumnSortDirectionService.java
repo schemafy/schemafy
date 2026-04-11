@@ -4,6 +4,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.reactive.TransactionalOperator;
 
@@ -20,6 +21,8 @@ import com.schemafy.core.erd.index.domain.Index;
 import com.schemafy.core.erd.index.domain.IndexColumn;
 import com.schemafy.core.erd.index.domain.exception.IndexErrorCode;
 import com.schemafy.core.erd.index.domain.validator.IndexValidator;
+import com.schemafy.core.erd.operation.application.service.ErdMutationCoordinator;
+import com.schemafy.core.erd.operation.domain.ErdOperationType;
 
 import lombok.RequiredArgsConstructor;
 import reactor.core.publisher.Flux;
@@ -30,12 +33,18 @@ import reactor.core.publisher.Mono;
 public class ChangeIndexColumnSortDirectionService
     implements ChangeIndexColumnSortDirectionUseCase {
 
+  private final TransactionalOperator transactionalOperator;
   private final ChangeIndexColumnSortDirectionPort changeIndexColumnSortDirectionPort;
   private final GetIndexColumnByIdPort getIndexColumnByIdPort;
   private final GetIndexByIdPort getIndexByIdPort;
   private final GetIndexColumnsByIndexIdPort getIndexColumnsByIndexIdPort;
   private final GetIndexesByTableIdPort getIndexesByTableIdPort;
-  private final TransactionalOperator transactionalOperator;
+  private ErdMutationCoordinator erdMutationCoordinator = ErdMutationCoordinator.noop();
+
+  @Autowired
+  void setErdMutationCoordinator(ErdMutationCoordinator erdMutationCoordinator) {
+    this.erdMutationCoordinator = erdMutationCoordinator;
+  }
 
   @Override
   public Mono<MutationResult<Void>> changeIndexColumnSortDirection(
@@ -45,13 +54,14 @@ public class ChangeIndexColumnSortDirectionService
           IndexErrorCode.COLUMN_SORT_DIRECTION_INVALID,
           "Sort direction is invalid for index column"));
     }
-    return getIndexColumnByIdPort.findIndexColumnById(command.indexColumnId())
-        .switchIfEmpty(Mono.error(new DomainException(
-            IndexErrorCode.COLUMN_NOT_FOUND, "Index column not found")))
-        .flatMap(indexColumn -> getIndexByIdPort.findIndexById(indexColumn.indexId())
-            .switchIfEmpty(Mono.error(new DomainException(IndexErrorCode.NOT_FOUND, "Index not found")))
-            .flatMap(index -> validateAndChange(index, indexColumn, command)
-                .thenReturn(MutationResult.<Void>of(null, index.tableId()))))
+    return erdMutationCoordinator.coordinate(ErdOperationType.CHANGE_INDEX_COLUMN_SORT_DIRECTION, command,
+        () -> getIndexColumnByIdPort.findIndexColumnById(command.indexColumnId())
+            .switchIfEmpty(Mono.error(new DomainException(
+                IndexErrorCode.COLUMN_NOT_FOUND, "Index column not found")))
+            .flatMap(indexColumn -> getIndexByIdPort.findIndexById(indexColumn.indexId())
+                .switchIfEmpty(Mono.error(new DomainException(IndexErrorCode.NOT_FOUND, "Index not found")))
+                .flatMap(index -> validateAndChange(index, indexColumn, command)
+                    .thenReturn(MutationResult.<Void>of(null, index.tableId())))))
         .as(transactionalOperator::transactional);
   }
 

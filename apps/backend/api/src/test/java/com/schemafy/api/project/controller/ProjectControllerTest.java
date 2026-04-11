@@ -13,6 +13,8 @@ import org.springframework.test.web.reactive.server.WebTestClient;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 
 import com.schemafy.api.common.constant.ApiPath;
 import com.schemafy.api.project.controller.dto.request.CreateProjectRequest;
@@ -26,6 +28,7 @@ import com.schemafy.core.project.domain.ProjectMember;
 import com.schemafy.core.project.domain.ProjectRole;
 import com.schemafy.core.project.domain.ShareLink;
 import com.schemafy.core.project.domain.Workspace;
+import com.schemafy.core.project.domain.WorkspaceMember;
 import com.schemafy.core.project.domain.WorkspaceRole;
 import com.schemafy.core.user.domain.User;
 
@@ -156,6 +159,22 @@ class ProjectControllerTest extends ProjectHttpTestSupport {
         .jsonPath("$.totalElements").isEqualTo(1);
   }
 
+  @DisplayName("프로젝트 목록 조회는 잘못된 pagination 쿼리에 대해 400 Bad Request를 반환한다")
+  @ParameterizedTest(name = "프로젝트 목록 조회 실패 쿼리: {0}")
+  @ValueSource(strings = {
+    "?page=-1&size=10",
+    "?page=0&size=0",
+    "?page=0&size=101"
+  })
+  void getProjectsFailWhenPaginationIsInvalid(
+      String query) {
+    assertInvalidPagination(
+        webTestClient,
+        ApiPath.API.replace("{version}", "v1.0")
+            + "/workspaces/" + testWorkspaceId + "/projects" + query,
+        accessToken);
+  }
+
   @Test
   @DisplayName("워크스페이스 멤버가 아니면 워크스페이스 내의 프로젝트 목록 조회에 실패한다")
   void getProjectsFailWhenNotWorkspaceMember() {
@@ -174,6 +193,94 @@ class ProjectControllerTest extends ProjectHttpTestSupport {
         .header("Authorization", "Bearer " + accessToken2)
         .exchange()
         .expectStatus().isForbidden();
+  }
+
+  @Test
+  @DisplayName("프로젝트 전용 멤버는 공유 프로젝트 목록 조회에 성공한다")
+  void getMySharedProjectsSuccessForProjectOnlyMember() {
+    Workspace sharedWorkspace = saveWorkspace("Shared Workspace", "Description");
+    addWorkspaceMember(sharedWorkspace.getId(), testUserId, WorkspaceRole.ADMIN);
+
+    Project sharedProject = saveProject(sharedWorkspace.getId(), "Shared Project", "Description");
+    Project newerSharedProject = saveProject(sharedWorkspace.getId(), "Newer Shared Project", "Description");
+    addProjectMember(sharedProject.getId(), testUserId, ProjectRole.ADMIN);
+    addProjectMember(newerSharedProject.getId(), testUserId, ProjectRole.ADMIN);
+    addProjectMember(sharedProject.getId(), testUser2Id, ProjectRole.VIEWER);
+    addProjectMember(newerSharedProject.getId(), testUser2Id, ProjectRole.EDITOR);
+
+    webTestClient.get()
+        .uri(ApiPath.API.replace("{version}", "v1.0")
+            + "/projects/shared/me?page=0&size=10")
+        .header("Authorization", "Bearer " + accessToken2)
+        .exchange()
+        .expectStatus().isOk()
+        .expectBody()
+        .consumeWith(document("project-my-shared-list",
+            ProjectApiSnippets.getMySharedProjectsRequestHeaders(),
+            ProjectApiSnippets.getMySharedProjectsQueryParameters(),
+            ProjectApiSnippets.getMySharedProjectsResponseHeaders(),
+            ProjectApiSnippets.getMySharedProjectsResponse()))
+        .jsonPath("$.content[0].id").isEqualTo(newerSharedProject.getId())
+        .jsonPath("$.content[0].workspaceId").isEqualTo(sharedWorkspace.getId())
+        .jsonPath("$.content[0].myRole").isEqualTo(ProjectRole.EDITOR.name())
+        .jsonPath("$.content[1].id").isEqualTo(sharedProject.getId())
+        .jsonPath("$.content[1].myRole").isEqualTo(ProjectRole.VIEWER.name())
+        .jsonPath("$.size").isEqualTo(10)
+        .jsonPath("$.totalElements").isEqualTo(2);
+  }
+
+  @Test
+  @DisplayName("활성 워크스페이스 멤버인 프로젝트는 공유 프로젝트 목록에서 제외된다")
+  void getMySharedProjectsExcludesActiveWorkspaceMembership() {
+    Project project = saveProject(testWorkspaceId, "Workspace Project", "Description");
+    addProjectMember(project.getId(), testUser2Id, ProjectRole.VIEWER);
+
+    webTestClient.get()
+        .uri(ApiPath.API.replace("{version}", "v1.0")
+            + "/projects/shared/me?page=0&size=5")
+        .header("Authorization", "Bearer " + accessToken2)
+        .exchange()
+        .expectStatus().isOk()
+        .expectBody()
+        .jsonPath("$.content").isArray()
+        .jsonPath("$.content").isEmpty()
+        .jsonPath("$.totalElements").isEqualTo(0);
+  }
+
+  @DisplayName("공유 프로젝트 목록 조회는 잘못된 pagination 쿼리에 대해 400 Bad Request를 반환한다")
+  @ParameterizedTest(name = "공유 프로젝트 목록 조회 실패 쿼리: {0}")
+  @ValueSource(strings = {
+    "?page=-1&size=10",
+    "?page=0&size=0",
+    "?page=0&size=101"
+  })
+  void getMySharedProjectsFailWhenPaginationIsInvalid(
+      String query) {
+    assertInvalidPagination(
+        webTestClient,
+        ApiPath.API.replace("{version}", "v1.0")
+            + "/projects/shared/me" + query,
+        accessToken2);
+  }
+
+  @Test
+  @DisplayName("공유 프로젝트 목록 조회 시 size 최대값은 100까지 허용한다")
+  void getMySharedProjectsSuccessWhenSizeAtMax() {
+    Workspace sharedWorkspace = saveWorkspace("Shared Workspace", "Description");
+    addWorkspaceMember(sharedWorkspace.getId(), testUserId, WorkspaceRole.ADMIN);
+
+    Project sharedProject = saveProject(sharedWorkspace.getId(), "Shared Project", "Description");
+    addProjectMember(sharedProject.getId(), testUser2Id, ProjectRole.VIEWER);
+
+    webTestClient.get()
+        .uri(ApiPath.API.replace("{version}", "v1.0")
+            + "/projects/shared/me?page=0&size=100")
+        .header("Authorization", "Bearer " + accessToken2)
+        .exchange()
+        .expectStatus().isOk()
+        .expectBody()
+        .jsonPath("$.size").isEqualTo(100)
+        .jsonPath("$.totalElements").isEqualTo(1);
   }
 
   @Test
@@ -311,6 +418,24 @@ class ProjectControllerTest extends ProjectHttpTestSupport {
         .isEqualTo(1);
   }
 
+  @DisplayName("프로젝트 멤버 목록 조회는 잘못된 pagination 쿼리에 대해 400 Bad Request를 반환한다")
+  @ParameterizedTest(name = "프로젝트 멤버 목록 조회 실패 쿼리: {0}")
+  @ValueSource(strings = {
+    "?page=-1&size=20",
+    "?page=0&size=0",
+    "?page=0&size=101"
+  })
+  void getMembersFailWhenPaginationIsInvalid(
+      String query) {
+    Project project = saveProject(testWorkspaceId, "Test Project", "Description");
+    addProjectMember(project.getId(), testUserId, ProjectRole.ADMIN);
+
+    assertInvalidPagination(
+        webTestClient,
+        projectBasePath + "/" + project.getId() + "/members" + query,
+        accessToken);
+  }
+
   @Test
   @DisplayName("ADMIN 멤버는 다른 멤버의 역할을 변경할 수 있다")
   void updateMemberRole_Success() {
@@ -390,6 +515,30 @@ class ProjectControllerTest extends ProjectHttpTestSupport {
         .header("Authorization", "Bearer " + accessToken)
         .contentType(MediaType.APPLICATION_JSON).bodyValue(request)
         .exchange().expectStatus().is4xxClientError();
+  }
+
+  @Test
+  @DisplayName("같은 역할로의 변경 요청은 거부한다")
+  void updateMemberRole_SameRoleChange_BadRequest() {
+    Project project = saveProject(testWorkspaceId, "Test Project", "Description");
+
+    addProjectMember(project.getId(), testUserId, ProjectRole.ADMIN);
+    ProjectMember viewerMember = addProjectMember(project.getId(), testUser2Id, ProjectRole.VIEWER);
+
+    UpdateProjectMemberRoleRequest request = updateProjectMemberRoleRequest(
+        ProjectRole.VIEWER.name());
+
+    webTestClient.patch()
+        .uri(ApiPath.API.replace("{version}", "v1.0")
+            + "/projects/{projectId}/members/{userId}/role",
+            project.getId(), testUser2Id)
+        .header("Authorization", "Bearer " + accessToken)
+        .contentType(MediaType.APPLICATION_JSON).bodyValue(request)
+        .exchange().expectStatus().isBadRequest();
+
+    ProjectMember persistedMember = projectMemberRepository.findById(viewerMember.getId()).block();
+    assertThat(persistedMember).isNotNull();
+    assertThat(persistedMember.getRole()).isEqualTo(ProjectRole.VIEWER.name());
   }
 
   @Test
@@ -479,6 +628,54 @@ class ProjectControllerTest extends ProjectHttpTestSupport {
   }
 
   @Test
+  @DisplayName("워크스페이스 관리자이기도 한 프로젝트 ADMIN은 제거할 수 없다")
+  void removeMember_DualAdminTarget_Forbidden() {
+    Project project = saveProject(testWorkspaceId, "Test Project", "Description");
+
+    addProjectMember(project.getId(), testUserId, ProjectRole.ADMIN);
+    addProjectMember(project.getId(), testUser2Id, ProjectRole.ADMIN);
+
+    WorkspaceMember targetWorkspaceMember = workspaceMemberRepository
+        .findByWorkspaceIdAndUserIdAndNotDeleted(testWorkspaceId, testUser2Id)
+        .block();
+    targetWorkspaceMember.updateRole(WorkspaceRole.ADMIN);
+    workspaceMemberRepository.save(targetWorkspaceMember).block();
+
+    webTestClient.delete()
+        .uri(ApiPath.API.replace("{version}", "v1.0")
+            + "/projects/{projectId}/members/{userId}",
+            project.getId(), testUser2Id)
+        .header("Authorization", "Bearer " + accessToken).exchange()
+        .expectStatus().isForbidden();
+  }
+
+  @Test
+  @DisplayName("워크스페이스 관리자이기도 한 프로젝트 ADMIN은 등급을 낮출 수 없다")
+  void updateMemberRole_DualAdminTarget_Forbidden() {
+    Project project = saveProject(testWorkspaceId, "Test Project", "Description");
+
+    addProjectMember(project.getId(), testUserId, ProjectRole.ADMIN);
+    addProjectMember(project.getId(), testUser2Id, ProjectRole.ADMIN);
+
+    WorkspaceMember targetWorkspaceMember = workspaceMemberRepository
+        .findByWorkspaceIdAndUserIdAndNotDeleted(testWorkspaceId, testUser2Id)
+        .block();
+    targetWorkspaceMember.updateRole(WorkspaceRole.ADMIN);
+    workspaceMemberRepository.save(targetWorkspaceMember).block();
+
+    UpdateProjectMemberRoleRequest request = updateProjectMemberRoleRequest(
+        "EDITOR");
+
+    webTestClient.patch()
+        .uri(ApiPath.API.replace("{version}", "v1.0")
+            + "/projects/{projectId}/members/{userId}/role",
+            project.getId(), testUser2Id)
+        .header("Authorization", "Bearer " + accessToken)
+        .contentType(MediaType.APPLICATION_JSON).bodyValue(request)
+        .exchange().expectStatus().isForbidden();
+  }
+
+  @Test
   @DisplayName("ADMIN 권한 없이 멤버 제거할 수 없다")
   void removeMember_NoAdminAccess_Forbidden() {
     Project project = saveProject(testWorkspaceId, "Test Project", "Description");
@@ -541,13 +738,14 @@ class ProjectControllerTest extends ProjectHttpTestSupport {
   void leaveProject_LastMember_ProjectDeleted() {
     Project project = saveProject(testWorkspaceId, "Test Project", "Description");
 
-    ProjectMember member = addProjectMember(project.getId(), testUserId, ProjectRole.VIEWER);
+    ProjectMember loneProjectMember = addProjectMember(project.getId(), testUser2Id,
+        ProjectRole.VIEWER);
 
     webTestClient.delete()
         .uri(ApiPath.API.replace("{version}", "v1.0")
             + "/projects/{projectId}/members/me",
             project.getId())
-        .header("Authorization", "Bearer " + accessToken).exchange()
+        .header("Authorization", "Bearer " + accessToken2).exchange()
         .expectStatus().isNoContent();
 
     Project deletedProject = projectRepository
@@ -560,28 +758,47 @@ class ProjectControllerTest extends ProjectHttpTestSupport {
   void leaveProject_LastAdmin_Allowed() {
     Project project = saveProject(testWorkspaceId, "Test Project", "Description");
 
-    ProjectMember adminMember = addProjectMember(project.getId(), testUserId, ProjectRole.ADMIN);
+    ProjectMember projectAdmin = addProjectMember(project.getId(), testUser2Id,
+        ProjectRole.ADMIN);
 
-    ProjectMember viewerMember = addProjectMember(project.getId(), testUser2Id, ProjectRole.VIEWER);
+    ProjectMember projectViewer = addProjectMember(project.getId(), testUserId,
+        ProjectRole.VIEWER);
 
     webTestClient.delete()
         .uri(ApiPath.API.replace("{version}", "v1.0")
             + "/projects/{projectId}/members/me",
             project.getId())
-        .header("Authorization", "Bearer " + accessToken).exchange()
+        .header("Authorization", "Bearer " + accessToken2).exchange()
         .expectStatus().isNoContent();
 
-    ProjectMember deletedAdmin = projectMemberRepository.findById(adminMember.getId()).block();
-    assertThat(deletedAdmin).isNotNull();
-    assertThat(deletedAdmin.isDeleted()).isTrue();
+    ProjectMember deletedProjectAdmin = projectMemberRepository
+        .findById(projectAdmin.getId()).block();
+    assertThat(deletedProjectAdmin).isNotNull();
+    assertThat(deletedProjectAdmin.isDeleted()).isTrue();
 
-    ProjectMember remainedViewer = projectMemberRepository
-        .findByProjectIdAndUserIdAndNotDeleted(project.getId(), testUser2Id)
+    ProjectMember remainedProjectViewer = projectMemberRepository
+        .findByProjectIdAndUserIdAndNotDeleted(project.getId(), testUserId)
         .block();
-    assertThat(remainedViewer).isNotNull();
+    assertThat(remainedProjectViewer).isNotNull();
 
     Project remainedProject = projectRepository.findByIdAndNotDeleted(project.getId()).block();
     assertThat(remainedProject).isNotNull();
+  }
+
+  @Test
+  @DisplayName("워크스페이스 관리자는 프로젝트를 직접 나갈 수 없다")
+  void leaveProject_WorkspaceAdmin_Forbidden() {
+    Project project = saveProject(testWorkspaceId, "Test Project", "Description");
+
+    addProjectMember(project.getId(), testUserId, ProjectRole.ADMIN);
+    addProjectMember(project.getId(), testUser2Id, ProjectRole.VIEWER);
+
+    webTestClient.delete()
+        .uri(ApiPath.API.replace("{version}", "v1.0")
+            + "/projects/{projectId}/members/me",
+            project.getId())
+        .header("Authorization", "Bearer " + accessToken)
+        .exchange().expectStatus().isForbidden();
   }
 
   @Test
@@ -651,6 +868,25 @@ class ProjectControllerTest extends ProjectHttpTestSupport {
         .jsonPath("$.content").isArray()
         .jsonPath("$.content[0].url").value(url -> assertThat(url.toString()).contains(PUBLIC_API_PREFIX + "/share/"))
         .jsonPath("$.totalElements").isEqualTo(1);
+  }
+
+  @DisplayName("공유 링크 목록 조회는 잘못된 pagination 쿼리에 대해 400 Bad Request를 반환한다")
+  @ParameterizedTest(name = "공유 링크 목록 조회 실패 쿼리: {0}")
+  @ValueSource(strings = {
+    "?page=-1&size=10",
+    "?page=0&size=0",
+    "?page=0&size=101"
+  })
+  void getShareLinksFailWhenPaginationIsInvalid(
+      String query) {
+    Project project = saveProject(testWorkspaceId, "Test Project", "Description");
+    addProjectMember(project.getId(), testUserId, ProjectRole.ADMIN);
+
+    assertInvalidPagination(
+        webTestClient,
+        ApiPath.API.replace("{version}", "v1.0")
+            + "/projects/" + project.getId() + "/share-links" + query,
+        accessToken);
   }
 
   @Test

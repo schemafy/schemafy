@@ -7,6 +7,7 @@ import com.schemafy.core.project.application.port.in.LeaveProjectCommand;
 import com.schemafy.core.project.application.port.in.LeaveProjectUseCase;
 import com.schemafy.core.project.application.port.out.ProjectMemberPort;
 import com.schemafy.core.project.application.port.out.ProjectPort;
+import com.schemafy.core.project.domain.Project;
 
 import lombok.RequiredArgsConstructor;
 import reactor.core.publisher.Mono;
@@ -25,13 +26,16 @@ class LeaveProjectService implements LeaveProjectUseCase {
   public Mono<Void> leaveProject(LeaveProjectCommand command) {
     return projectAccessHelper.findProjectMember(command.requesterId(),
         command.projectId())
-        .flatMap(member -> projectMemberPort.countByProjectIdAndNotDeleted(
-            command.projectId())
+        .flatMap(member -> projectAccessHelper.validateWorkspaceAdminGuard(command.projectId(), member)
+            .thenReturn(member))
+        .flatMap(member -> projectMemberPort.countByProjectIdAndNotDeleted(command.projectId())
             .flatMap(memberCount -> {
               if (memberCount <= 1) {
                 return projectPort.findById(command.projectId())
-                    .flatMap(projectCascadeHelper::softDeleteProjectCascade)
-                    .switchIfEmpty(projectAccessHelper.softDeleteMember(member))
+                    .flatMap(project -> projectCascadeHelper.softDeleteProjectCascade(project)
+                        .thenReturn(project))
+                    .switchIfEmpty(Mono.defer(() -> projectAccessHelper.softDeleteMember(member)
+                        .then(Mono.<Project>empty())))
                     .then();
               }
               return projectAccessHelper.softDeleteMember(member);

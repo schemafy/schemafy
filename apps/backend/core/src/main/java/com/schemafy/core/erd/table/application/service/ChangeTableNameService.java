@@ -4,6 +4,7 @@ import java.util.List;
 import java.util.Optional;
 import java.util.OptionalInt;
 
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.reactive.TransactionalOperator;
 
@@ -14,6 +15,8 @@ import com.schemafy.core.erd.constraint.application.port.out.ConstraintExistsPor
 import com.schemafy.core.erd.constraint.application.port.out.GetConstraintsByTableIdPort;
 import com.schemafy.core.erd.constraint.domain.Constraint;
 import com.schemafy.core.erd.constraint.domain.type.ConstraintKind;
+import com.schemafy.core.erd.operation.application.service.ErdMutationCoordinator;
+import com.schemafy.core.erd.operation.domain.ErdOperationType;
 import com.schemafy.core.erd.relationship.application.port.out.ChangeRelationshipNamePort;
 import com.schemafy.core.erd.relationship.application.port.out.GetRelationshipsByTableIdPort;
 import com.schemafy.core.erd.relationship.application.port.out.RelationshipExistsPort;
@@ -45,26 +48,33 @@ public class ChangeTableNameService implements ChangeTableNameUseCase {
   private final GetRelationshipsByTableIdPort getRelationshipsByTableIdPort;
   private final ChangeRelationshipNamePort changeRelationshipNamePort;
   private final RelationshipExistsPort relationshipExistsPort;
+  private ErdMutationCoordinator erdMutationCoordinator = ErdMutationCoordinator.noop();
+
+  @Autowired
+  void setErdMutationCoordinator(ErdMutationCoordinator erdMutationCoordinator) {
+    this.erdMutationCoordinator = erdMutationCoordinator;
+  }
 
   @Override
   public Mono<MutationResult<Void>> changeTableName(ChangeTableNameCommand command) {
-    return getTableByIdPort.findTableById(command.tableId())
-        .switchIfEmpty(Mono.error(
-            new DomainException(TableErrorCode.NOT_FOUND, "Table not found: " + command.tableId())))
-        .flatMap(table -> tableExistsPort.existsBySchemaIdAndName(table.schemaId(), command.newName())
-            .flatMap(exists -> {
-              if (exists) {
-                return Mono.error(new DomainException(TableErrorCode.NAME_DUPLICATE,
-                    "A table with the name '" + command.newName() + "' already exists in the schema."));
-              }
+    return erdMutationCoordinator.coordinate(ErdOperationType.CHANGE_TABLE_NAME, command,
+        () -> getTableByIdPort.findTableById(command.tableId())
+            .switchIfEmpty(Mono.error(
+                new DomainException(TableErrorCode.NOT_FOUND, "Table not found: " + command.tableId())))
+            .flatMap(table -> tableExistsPort.existsBySchemaIdAndName(table.schemaId(), command.newName())
+                .flatMap(exists -> {
+                  if (exists) {
+                    return Mono.error(new DomainException(TableErrorCode.NAME_DUPLICATE,
+                        "A table with the name '" + command.newName() + "' already exists in the schema."));
+                  }
 
-              return changeTableNamePort.changeTableName(
-                  command.tableId(),
-                  command.newName())
-                  .then(renamePkConstraint(table.schemaId(), command.tableId(), command.newName()))
-                  .then(renameAutoRelationshipNames(table, command.newName()))
-                  .thenReturn(MutationResult.<Void>of(null, table.id()));
-            }))
+                  return changeTableNamePort.changeTableName(
+                      command.tableId(),
+                      command.newName())
+                      .then(renamePkConstraint(table.schemaId(), command.tableId(), command.newName()))
+                      .then(renameAutoRelationshipNames(table, command.newName()))
+                      .thenReturn(MutationResult.<Void>of(null, table.id()));
+                })))
         .as(transactionalOperator::transactional);
   }
 

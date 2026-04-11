@@ -15,14 +15,14 @@ class UserAuthProviderPersistenceAdapter implements
     FindUserAuthProviderPort,
     CreateUserAuthProviderPort {
 
-  private final DomainUserAuthProviderRepository domainUserAuthProviderRepository;
+  private final UserAuthProviderRepository userAuthProviderRepository;
   private final UserAuthProviderMapper userAuthProviderMapper;
 
   @Override
   public Mono<UserAuthProvider> findUserAuthProvider(
       AuthProvider provider,
       String providerUserId) {
-    return domainUserAuthProviderRepository
+    return userAuthProviderRepository
         .findByProviderAndProviderUserId(provider.name(), providerUserId)
         .map(userAuthProviderMapper::toDomain);
   }
@@ -30,7 +30,7 @@ class UserAuthProviderPersistenceAdapter implements
   @Override
   public Mono<UserAuthProvider> createUserAuthProvider(
       UserAuthProvider userAuthProvider) {
-    return domainUserAuthProviderRepository
+    return userAuthProviderRepository
         .save(userAuthProviderMapper.toEntity(userAuthProvider))
         .map(userAuthProviderMapper::toDomain);
   }

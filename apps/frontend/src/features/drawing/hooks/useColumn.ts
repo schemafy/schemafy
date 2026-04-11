@@ -1,7 +1,10 @@
 import { type ColumnType, CONSTRAINT_PREFIX_MAP } from '../types';
 import type { Constraint } from '@/types';
-import { useChangeColumnName, useChangeColumnType } from './useColumnMutations';
-import { changeColumnMeta } from '../api';
+import {
+  useChangeColumnMeta,
+  useChangeColumnName,
+  useChangeColumnType,
+} from './useColumnMutations';
 import {
   useCreateConstraint,
   useDeleteConstraint,
@@ -20,6 +23,7 @@ export const useColumn = (
   const debouncedChangeColumnName = useDebouncedMutation(
     changeColumnNameMutation,
   );
+  const changeColumnMetaMutation = useChangeColumnMeta(schemaId);
   const changeColumnTypeMutation = useChangeColumnType(schemaId);
   const createConstraintMutation = useCreateConstraint(schemaId);
   const deleteConstraintMutation = useDeleteConstraint(schemaId);
@@ -34,12 +38,30 @@ export const useColumn = (
   };
 
   const saveColumnType = async (columnId: string, typeData: string) => {
-    const { dataType, lengthScale, category, prevCategory } =
-      JSON.parse(typeData);
-    const params = JSON.parse(lengthScale || '{}') as Record<
-      string,
-      number | null
-    >;
+    let parsed;
+    try {
+      parsed = JSON.parse(typeData);
+    } catch {
+      return;
+    }
+    const {
+      dataType,
+      typeArguments: typeArgsStr,
+      category,
+      prevCategory,
+    } = parsed;
+
+    let params: {
+      length?: number | null;
+      precision?: number | null;
+      scale?: number | null;
+      values?: string[] | null;
+    };
+    try {
+      params = JSON.parse(typeArgsStr || '{}');
+    } catch {
+      params = {};
+    }
 
     const typePayload = {
       columnId,
@@ -48,6 +70,7 @@ export const useColumn = (
         length: params.length ?? null,
         precision: params.precision ?? null,
         scale: params.scale ?? null,
+        values: params.values ?? null,
       },
     };
 
@@ -56,7 +79,10 @@ export const useColumn = (
 
     if (isTextToNonText) {
       try {
-        await changeColumnMeta(columnId, { charset: '', collation: '' });
+        await changeColumnMetaMutation.mutateAsync({
+          columnId,
+          data: { charset: '', collation: '' },
+        });
       } catch {
         return;
       }
@@ -64,9 +90,12 @@ export const useColumn = (
     } else if (isNonTextToText) {
       try {
         await changeColumnTypeMutation.mutateAsync(typePayload);
-        await changeColumnMeta(columnId, {
-          charset: 'utf8mb4',
-          collation: 'utf8mb4_general_ci',
+        await changeColumnMetaMutation.mutateAsync({
+          columnId,
+          data: {
+            charset: 'utf8mb4',
+            collation: 'utf8mb4_general_ci',
+          },
         });
       } catch {}
     } else {

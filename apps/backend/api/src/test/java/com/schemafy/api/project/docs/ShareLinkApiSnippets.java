@@ -103,7 +103,7 @@ public class ShareLinkApiSnippets extends RestDocsSnippets {
         parameterWithName("page").description("페이지 번호 (0부터 시작, 기본값: 0)")
             .optional(),
         parameterWithName("size")
-            .description("페이지 크기 (기본값: 10)").optional());
+            .description("페이지 크기 (기본값: 10, 범위: 1-100)").optional());
   }
 
   /** 공유 링크 목록 조회 응답 헤더 */

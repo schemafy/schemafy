@@ -2,6 +2,7 @@ package com.schemafy.core.erd.column.application.service;
 
 import java.util.List;
 
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.reactive.TransactionalOperator;
 
@@ -15,6 +16,8 @@ import com.schemafy.core.erd.column.application.port.out.GetColumnsByTableIdPort
 import com.schemafy.core.erd.column.domain.Column;
 import com.schemafy.core.erd.column.domain.ColumnTypeArguments;
 import com.schemafy.core.erd.column.domain.validator.ColumnValidator;
+import com.schemafy.core.erd.operation.application.service.ErdMutationCoordinator;
+import com.schemafy.core.erd.operation.domain.ErdOperationType;
 import com.schemafy.core.erd.schema.application.port.out.GetSchemaByIdPort;
 import com.schemafy.core.erd.schema.domain.Schema;
 import com.schemafy.core.erd.schema.domain.exception.SchemaErrorCode;
@@ -37,6 +40,12 @@ public class CreateColumnService implements CreateColumnUseCase {
   private final GetSchemaByIdPort getSchemaByIdPort;
   private final GetColumnsByTableIdPort getColumnsByTableIdPort;
   private final TransactionalOperator transactionalOperator;
+  private ErdMutationCoordinator erdMutationCoordinator = ErdMutationCoordinator.noop();
+
+  @Autowired
+  void setErdMutationCoordinator(ErdMutationCoordinator erdMutationCoordinator) {
+    this.erdMutationCoordinator = erdMutationCoordinator;
+  }
 
   @Override
   public Mono<MutationResult<CreateColumnResult>> createColumn(CreateColumnCommand command) {
@@ -46,11 +55,12 @@ public class CreateColumnService implements CreateColumnUseCase {
         command.scale(),
         command.values());
 
-    return getTableByIdPort.findTableById(command.tableId())
-        .switchIfEmpty(Mono.error(new DomainException(TableErrorCode.NOT_FOUND, "Table not found")))
-        .flatMap(table -> fetchSchemaAndColumns(table)
-            .flatMap(tuple -> createColumn(table, tuple, command, typeArguments))
-            .map(result -> MutationResult.of(result, table.id())))
+    return erdMutationCoordinator.coordinate(ErdOperationType.CREATE_COLUMN, command,
+        () -> getTableByIdPort.findTableById(command.tableId())
+            .switchIfEmpty(Mono.error(new DomainException(TableErrorCode.NOT_FOUND, "Table not found")))
+            .flatMap(table -> fetchSchemaAndColumns(table)
+                .flatMap(tuple -> createColumn(table, tuple, command, typeArguments))
+                .map(result -> MutationResult.of(result, table.id()))))
         .as(transactionalOperator::transactional);
   }
 

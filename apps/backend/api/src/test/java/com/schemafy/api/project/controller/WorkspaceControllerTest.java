@@ -11,6 +11,8 @@ import org.springframework.test.web.reactive.server.WebTestClient;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 
 import com.schemafy.api.common.constant.ApiPath;
 import com.schemafy.api.project.controller.dto.request.AddWorkspaceMemberRequest;
@@ -114,6 +116,34 @@ class WorkspaceControllerTest extends ProjectHttpTestSupport {
         .jsonPath("$.content[0].name")
         .isEqualTo("Test Workspace").jsonPath("$.totalElements")
         .isEqualTo(1);
+  }
+
+  @Test
+  @DisplayName("워크스페이스 목록 조회 시 size는 최댓값 100까지 허용한다")
+  void getWorkspacesSuccessWhenSizeAtMax() {
+    Workspace workspace = saveWorkspace("Test Workspace", "Description");
+    addWorkspaceMember(workspace.getId(), testUserId, WorkspaceRole.ADMIN);
+
+    webTestClient.get().uri(API_BASE_PATH + "?page=0&size=100")
+        .header("Authorization", "Bearer " + accessToken)
+        .exchange()
+        .expectStatus().isOk()
+        .expectBody()
+        .jsonPath("$.size").isEqualTo(100)
+        .jsonPath("$.totalElements").isEqualTo(1);
+  }
+
+  @DisplayName("워크스페이스 목록 조회는 잘못된 pagination 쿼리에 대해 400 Bad Request를 반환한다")
+  @ParameterizedTest(name = "워크스페이스 목록 조회 실패 쿼리: {0}")
+  @ValueSource(strings = {
+    "?page=-1&size=10",
+    "?page=0&size=0",
+    "?page=0&size=101"
+  })
+  void getWorkspacesFailWhenPaginationIsInvalid(
+      String query) {
+    assertInvalidPagination(webTestClient, API_BASE_PATH + query,
+        accessToken);
   }
 
   @Test
@@ -247,6 +277,24 @@ class WorkspaceControllerTest extends ProjectHttpTestSupport {
   }
 
   @Test
+  @DisplayName("워크스페이스 멤버 목록 조회 시 size 최소값 1을 허용한다")
+  void getMembersSuccessWhenSizeAtMin() {
+    Workspace workspace = saveWorkspace("Test Workspace", "Description");
+    addWorkspaceMember(workspace.getId(), testUserId, WorkspaceRole.ADMIN);
+
+    webTestClient.get()
+        .uri(ApiPath.API.replace("{version}", "v1.0")
+            + "/workspaces/{id}/members?page=0&size=1",
+            workspace.getId())
+        .header("Authorization", "Bearer " + accessToken)
+        .exchange()
+        .expectStatus().isOk()
+        .expectBody()
+        .jsonPath("$.size").isEqualTo(1)
+        .jsonPath("$.totalElements").isEqualTo(1);
+  }
+
+  @Test
   @DisplayName("MEMBER도 멤버 목록을 조회할 수 있다")
   void getMembersSuccessWithMemberRole() {
     Workspace workspace = saveWorkspace("Test Workspace", "Description");
@@ -257,6 +305,25 @@ class WorkspaceControllerTest extends ProjectHttpTestSupport {
         + "/members?page=0&size=20")
         .header("Authorization", "Bearer " + accessToken2).exchange()
         .expectStatus().isOk();
+  }
+
+  @DisplayName("워크스페이스 멤버 목록 조회는 잘못된 pagination 쿼리에 대해 400 Bad Request를 반환한다")
+  @ParameterizedTest(name = "워크스페이스 멤버 목록 조회 실패 쿼리: {0}")
+  @ValueSource(strings = {
+    "?page=-1&size=10",
+    "?page=0&size=0",
+    "?page=0&size=101"
+  })
+  void getMembersFailWhenPaginationIsInvalid(
+      String query) {
+    Workspace workspace = saveWorkspace("Test Workspace", "Description");
+    addWorkspaceMember(workspace.getId(), testUserId, WorkspaceRole.ADMIN);
+
+    assertInvalidPagination(
+        webTestClient,
+        ApiPath.API.replace("{version}", "v1.0")
+            + "/workspaces/" + workspace.getId() + "/members" + query,
+        accessToken);
   }
 
   @Test
@@ -438,6 +505,50 @@ class WorkspaceControllerTest extends ProjectHttpTestSupport {
             WorkspaceApiSnippets.updateMemberRoleResponse()))
         .jsonPath("$.role")
         .isEqualTo(WorkspaceRole.ADMIN.name());
+  }
+
+  @Test
+  @DisplayName("프로젝트 관리자여도 워크스페이스에서는 관리자 등급을 내릴 수 있다")
+  void updateMemberRole_ProjectAdminTarget_Success() {
+    Workspace workspace = saveWorkspace("Test Workspace", "Description");
+    addWorkspaceMember(workspace.getId(), testUserId, WorkspaceRole.ADMIN);
+    addWorkspaceMember(workspace.getId(), testUser2Id, WorkspaceRole.ADMIN);
+    Project project = saveProject(workspace.getId(), "Project", "Description");
+    addProjectMember(project.getId(), testUser2Id, ProjectRole.ADMIN);
+
+    UpdateMemberRoleRequest request = updateMemberRoleRequest("MEMBER");
+
+    webTestClient.patch()
+        .uri(ApiPath.API.replace("{version}", "v1.0")
+            + "/workspaces/{workspaceId}/members/{userId}/role",
+            workspace.getId(), testUser2Id)
+        .header("Authorization", "Bearer " + accessToken)
+        .contentType(MediaType.APPLICATION_JSON).bodyValue(request)
+        .exchange().expectStatus().isOk().expectBody()
+        .jsonPath("$.role")
+        .isEqualTo(WorkspaceRole.MEMBER.name());
+  }
+
+  @Test
+  @DisplayName("프로젝트 관리자여도 워크스페이스에서는 멤버를 추방할 수 있다")
+  void removeMember_ProjectAdminTarget_Success() {
+    Workspace workspace = saveWorkspace("Test Workspace", "Description");
+    addWorkspaceMember(workspace.getId(), testUserId, WorkspaceRole.ADMIN);
+    WorkspaceMember target = addWorkspaceMember(workspace.getId(), testUser2Id,
+        WorkspaceRole.ADMIN);
+    Project project = saveProject(workspace.getId(), "Project", "Description");
+    addProjectMember(project.getId(), testUser2Id, ProjectRole.ADMIN);
+
+    webTestClient.delete()
+        .uri(ApiPath.API.replace("{version}", "v1.0")
+            + "/workspaces/{workspaceId}/members/{userId}",
+            workspace.getId(), testUser2Id)
+        .header("Authorization", "Bearer " + accessToken)
+        .exchange().expectStatus().isNoContent();
+
+    WorkspaceMember deleted = workspaceMemberRepository.findById(target.getId()).block();
+    assertThat(deleted).isNotNull();
+    assertThat(deleted.isDeleted()).isTrue();
   }
 
   private AddWorkspaceMemberRequest addWorkspaceMemberRequest(

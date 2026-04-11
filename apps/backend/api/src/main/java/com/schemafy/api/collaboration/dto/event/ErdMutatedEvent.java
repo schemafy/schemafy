@@ -4,6 +4,7 @@ import java.util.Set;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.schemafy.api.collaboration.dto.CollaborationEventType;
+import com.schemafy.core.erd.operation.domain.CommittedErdOperation;
 
 public final class ErdMutatedEvent {
 
@@ -14,17 +15,14 @@ public final class ErdMutatedEvent {
       String sessionId,
       String schemaId,
       Set<String> affectedTableIds,
+      CommittedErdOperation operation,
       long timestamp) implements CollaborationOutbound {
 
     public static Outbound of(String sessionId, String schemaId,
-        Set<String> affectedTableIds) {
+        Set<String> affectedTableIds,
+        CommittedErdOperation operation) {
       return new Outbound(sessionId, schemaId, affectedTableIds,
-          System.currentTimeMillis());
-    }
-
-    public static Outbound of(String schemaId,
-        Set<String> affectedTableIds) {
-      return of(null, schemaId, affectedTableIds);
+          operation, System.currentTimeMillis());
     }
 
     @Override

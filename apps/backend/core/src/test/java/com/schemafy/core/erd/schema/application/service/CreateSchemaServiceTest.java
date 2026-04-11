@@ -12,11 +12,13 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import com.schemafy.core.common.exception.DomainException;
+import com.schemafy.core.erd.schema.application.port.out.ActiveProjectExistsPort;
 import com.schemafy.core.erd.schema.application.port.out.CreateSchemaPort;
 import com.schemafy.core.erd.schema.application.port.out.SchemaExistsPort;
 import com.schemafy.core.erd.schema.domain.Schema;
 import com.schemafy.core.erd.schema.domain.exception.SchemaErrorCode;
 import com.schemafy.core.erd.schema.fixture.SchemaFixture;
+import com.schemafy.core.project.domain.exception.ProjectErrorCode;
 import com.schemafy.core.ulid.application.port.out.UlidGeneratorPort;
 
 import reactor.core.publisher.Mono;
@@ -30,6 +32,9 @@ import static org.mockito.BDDMockito.then;
 @ExtendWith(MockitoExtension.class)
 @DisplayName("CreateSchemaService")
 class CreateSchemaServiceTest {
+
+  @Mock
+  ActiveProjectExistsPort activeProjectExistsPort;
 
   @Mock
   UlidGeneratorPort ulidGeneratorPort;
@@ -66,6 +71,8 @@ class CreateSchemaServiceTest {
         var command = SchemaFixture.createCommand();
         var schema = SchemaFixture.defaultSchema();
 
+        given(activeProjectExistsPort.existsActiveProjectById(any()))
+            .willReturn(Mono.just(true));
         given(schemaExistsPort.existsActiveByProjectIdAndName(any(), any()))
             .willReturn(Mono.just(false));
         given(ulidGeneratorPort.generate())
@@ -85,6 +92,8 @@ class CreateSchemaServiceTest {
             })
             .verifyComplete();
 
+        then(activeProjectExistsPort).should()
+            .existsActiveProjectById(command.projectId());
         then(schemaExistsPort).should()
             .existsActiveByProjectIdAndName(command.projectId(), command.name());
         then(createSchemaPort).should().createSchema(any(Schema.class));
@@ -101,6 +110,8 @@ class CreateSchemaServiceTest {
       void throwsSchemaNameDuplicateException() {
         var command = SchemaFixture.createCommand();
 
+        given(activeProjectExistsPort.existsActiveProjectById(any()))
+            .willReturn(Mono.just(true));
         given(schemaExistsPort.existsActiveByProjectIdAndName(any(), any()))
             .willReturn(Mono.just(true));
 
@@ -108,6 +119,56 @@ class CreateSchemaServiceTest {
             .expectErrorMatches(DomainException.hasErrorCode(SchemaErrorCode.NAME_DUPLICATE))
             .verify();
 
+        then(createSchemaPort).shouldHaveNoInteractions();
+        then(ulidGeneratorPort).shouldHaveNoInteractions();
+      }
+
+    }
+
+    @Nested
+    @DisplayName("프로젝트가 존재하지 않으면")
+    class WithoutProject {
+
+      @Test
+      @DisplayName("ProjectNotFoundException을 발생시킨다")
+      void throwsProjectNotFoundException() {
+        var command = SchemaFixture.createCommand();
+
+        given(activeProjectExistsPort.existsActiveProjectById(any()))
+            .willReturn(Mono.just(false));
+
+        StepVerifier.create(sut.createSchema(command))
+            .expectErrorMatches(DomainException.hasErrorCode(ProjectErrorCode.NOT_FOUND))
+            .verify();
+
+        then(activeProjectExistsPort).should()
+            .existsActiveProjectById(command.projectId());
+        then(schemaExistsPort).shouldHaveNoInteractions();
+        then(createSchemaPort).shouldHaveNoInteractions();
+        then(ulidGeneratorPort).shouldHaveNoInteractions();
+      }
+
+    }
+
+    @Nested
+    @DisplayName("프로젝트가 삭제된 상태이면")
+    class WithDeletedProject {
+
+      @Test
+      @DisplayName("ProjectNotFoundException을 발생시킨다")
+      void throwsProjectNotFoundException() {
+        var command = SchemaFixture.createCommand();
+
+        given(activeProjectExistsPort.existsActiveProjectById(any()))
+            .willReturn(Mono.just(false));
+
+        StepVerifier.create(sut.createSchema(command))
+            .expectErrorMatches(DomainException.hasErrorCode(ProjectErrorCode.NOT_FOUND))
+            .verify();
+
+        then(activeProjectExistsPort).should()
+            .existsActiveProjectById(command.projectId());
+        then(schemaExistsPort).shouldHaveNoInteractions();
         then(createSchemaPort).shouldHaveNoInteractions();
         then(ulidGeneratorPort).shouldHaveNoInteractions();
       }

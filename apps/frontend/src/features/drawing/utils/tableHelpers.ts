@@ -11,7 +11,7 @@ import type {
 } from '../types';
 import type {
   TableSnapshotResponse,
-  ColumnLengthScale,
+  ColumnTypeArguments,
   TableResponse,
 } from '../api';
 
@@ -62,7 +62,7 @@ const transformColumnWithMap = (
   columnId: string,
   columnName: string,
   dataType: string,
-  lengthScale: ColumnLengthScale,
+  typeArguments: ColumnTypeArguments,
   constraintMap: ConstraintMap,
   foreignKeyColumnIds: Set<string>,
 ): ColumnType => {
@@ -75,7 +75,7 @@ const transformColumnWithMap = (
     id: columnId,
     name: columnName,
     type: dataType || 'VARCHAR',
-    lengthScale: JSON.stringify(lengthScale),
+    typeArguments: JSON.stringify(typeArguments),
     isPrimaryKey,
     isForeignKey,
     isNotNull,
@@ -111,7 +111,7 @@ export const transformSnapshotToNode = (
       col.id,
       col.name,
       col.dataType,
-      col.lengthScale,
+      col.typeArguments,
       constraintMap,
       foreignKeyColumnIds,
     ),

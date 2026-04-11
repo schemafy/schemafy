@@ -15,6 +15,7 @@ import org.springframework.web.server.WebFilterChain;
 import com.schemafy.api.common.exception.AuthErrorCode;
 import com.schemafy.api.common.security.principal.AuthenticatedUser;
 import com.schemafy.core.common.exception.DomainErrorCode;
+import com.schemafy.core.erd.operation.ErdOperationContexts;
 
 import io.jsonwebtoken.ExpiredJwtException;
 import io.jsonwebtoken.JwtException;
@@ -53,8 +54,8 @@ public class JwtAuthenticationFilter implements WebFilter {
         .flatMap(result -> {
           if (result.valid()) {
             return chain.filter(exchange)
-                .contextWrite(ReactiveSecurityContextHolder
-                    .withAuthentication(result.authentication()));
+                .contextWrite(context -> ErdOperationContexts.withActorUserId(result.authentication().getName())
+                    .apply(context.putAll(ReactiveSecurityContextHolder.withAuthentication(result.authentication()))));
           }
 
           if (publicPath) {

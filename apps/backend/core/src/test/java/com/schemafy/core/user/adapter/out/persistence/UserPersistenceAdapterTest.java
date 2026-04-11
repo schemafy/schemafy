@@ -41,15 +41,15 @@ class UserPersistenceAdapterTest {
   UserAuthProviderPersistenceAdapter userAuthProviderPersistenceAdapter;
 
   @Autowired
-  DomainUserRepository domainUserRepository;
+  UserRepository userRepository;
 
   @Autowired
-  DomainUserAuthProviderRepository domainUserAuthProviderRepository;
+  UserAuthProviderRepository userAuthProviderRepository;
 
   @BeforeEach
   void setUp() {
-    domainUserAuthProviderRepository.deleteAll().block();
-    domainUserRepository.deleteAll().block();
+    userAuthProviderRepository.deleteAll().block();
+    userRepository.deleteAll().block();
   }
 
   @Nested

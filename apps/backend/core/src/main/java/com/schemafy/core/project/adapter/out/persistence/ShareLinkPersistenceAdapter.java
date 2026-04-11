@@ -12,7 +12,7 @@ import reactor.core.publisher.Mono;
 @RequiredArgsConstructor
 public class ShareLinkPersistenceAdapter implements ShareLinkPort {
 
-  private final DomainShareLinkRepository shareLinkRepository;
+  private final ShareLinkRepository shareLinkRepository;
 
   @Override
   public Mono<ShareLink> save(ShareLink shareLink) {

@@ -12,7 +12,7 @@ import reactor.core.publisher.Mono;
 @RequiredArgsConstructor
 public class InvitationPersistenceAdapter implements InvitationPort {
 
-  private final DomainInvitationRepository invitationRepository;
+  private final InvitationRepository invitationRepository;
 
   @Override
   public Mono<Invitation> save(Invitation invitation) {

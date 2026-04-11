@@ -14,6 +14,14 @@ async function bootstrap() {
   app.enableCors({
     origin: process.env.FRONTEND_URL || 'http://localhost:3001',
     credentials: true,
+    allowedHeaders: [
+      'Content-Type',
+      'Accept',
+      'Authorization',
+      'X-Session-Id',
+      'X-Client-Op-Id',
+      'X-Base-Schema-Revision',
+    ],
   });
 
   app.useGlobalInterceptors(new LoggingInterceptor());

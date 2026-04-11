@@ -10,8 +10,13 @@ import {
 import { SchemaService } from './schema.service';
 import { TableService } from './table.service';
 import { AuthHeader } from '../common/decorators/auth-header.decorator';
-import { SessionId } from '../common/decorators/session-id.decorator';
-import type { ChangeSchemaNameRequest, CreateSchemaRequest } from './erd.types';
+import { CollaborationHeaders } from '../common/decorators/collaboration-headers.decorator';
+import type { CollaborationRequestHeaders } from '../common/backend-client/backend-client.service';
+import type {
+  ChangeSchemaNameRequest,
+  CreateSchemaRequest,
+  SchemaSnapshotsResponse,
+} from './erd.types';
 
 @Controller('api/v1.0')
 export class SchemaController {
@@ -24,9 +29,14 @@ export class SchemaController {
   async createSchema(
     @Body() data: CreateSchemaRequest,
     @AuthHeader() authHeader: string,
-    @SessionId() sessionId?: string,
+    @CollaborationHeaders()
+    collaborationHeaders?: CollaborationRequestHeaders,
   ) {
-    return this.schemaService.createSchema(data, authHeader, sessionId);
+    return this.schemaService.createSchema(
+      data,
+      authHeader,
+      collaborationHeaders,
+    );
   }
 
   @Get('projects/:projectId/schemas')
@@ -50,13 +60,14 @@ export class SchemaController {
     @Param('schemaId') schemaId: string,
     @Body() data: ChangeSchemaNameRequest,
     @AuthHeader() authHeader: string,
-    @SessionId() sessionId?: string,
+    @CollaborationHeaders()
+    collaborationHeaders?: CollaborationRequestHeaders,
   ) {
     return this.schemaService.changeSchemaName(
       schemaId,
       data,
       authHeader,
-      sessionId,
+      collaborationHeaders,
     );
   }
 
@@ -64,16 +75,29 @@ export class SchemaController {
   async deleteSchema(
     @Param('schemaId') schemaId: string,
     @AuthHeader() authHeader: string,
-    @SessionId() sessionId?: string,
+    @CollaborationHeaders()
+    collaborationHeaders?: CollaborationRequestHeaders,
   ) {
-    return this.schemaService.deleteSchema(schemaId, authHeader, sessionId);
+    return this.schemaService.deleteSchema(
+      schemaId,
+      authHeader,
+      collaborationHeaders,
+    );
   }
 
   @Get('schemas/:schemaId/snapshots')
   async getSchemaWithSnapshots(
     @Param('schemaId') schemaId: string,
     @AuthHeader() authHeader: string,
-  ) {
-    return this.tableService.getSchemaWithSnapshots(schemaId, authHeader);
+  ): Promise<SchemaSnapshotsResponse> {
+    const [schema, snapshots] = await Promise.all([
+      this.schemaService.getSchema(schemaId, authHeader),
+      this.tableService.getSchemaWithSnapshots(schemaId, authHeader),
+    ]);
+
+    return {
+      currentRevision: schema.currentRevision ?? 0,
+      snapshots,
+    };
   }
 }

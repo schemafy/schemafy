@@ -1,5 +1,8 @@
 import { Injectable } from '@nestjs/common';
-import { BackendClientService } from '../common/backend-client/backend-client.service';
+import {
+  BackendClientService,
+  type CollaborationRequestHeaders,
+} from '../common/backend-client/backend-client.service';
 import type {
   AddConstraintColumnRequest,
   AddConstraintColumnResponse,
@@ -20,14 +23,14 @@ export class ConstraintService {
   async createConstraint(
     data: CreateConstraintRequest,
     authHeader: string,
-    sessionId?: string,
+    collaborationHeaders?: CollaborationRequestHeaders,
   ): Promise<MutationResponse<ConstraintResponse>> {
     const response = await this.backendClient.client.post<
       MutationResponse<ConstraintResponse>
     >(
       '/api/v1.0/constraints',
       data,
-      this.backendClient.getAuthConfig(authHeader, sessionId),
+      this.backendClient.getAuthConfig(authHeader, collaborationHeaders),
     );
     return response.data;
   }
@@ -58,12 +61,12 @@ export class ConstraintService {
     constraintId: string,
     data: ChangeConstraintNameRequest,
     authHeader: string,
-    sessionId?: string,
+    collaborationHeaders?: CollaborationRequestHeaders,
   ): Promise<MutationResponse> {
     const response = await this.backendClient.client.patch<MutationResponse>(
       `/api/v1.0/constraints/${constraintId}/name`,
       data,
-      this.backendClient.getAuthConfig(authHeader, sessionId),
+      this.backendClient.getAuthConfig(authHeader, collaborationHeaders),
     );
     return response.data;
   }
@@ -72,12 +75,12 @@ export class ConstraintService {
     constraintId: string,
     data: ChangeConstraintCheckExprRequest,
     authHeader: string,
-    sessionId?: string,
+    collaborationHeaders?: CollaborationRequestHeaders,
   ): Promise<MutationResponse> {
     const response = await this.backendClient.client.patch<MutationResponse>(
       `/api/v1.0/constraints/${constraintId}/check-expr`,
       data,
-      this.backendClient.getAuthConfig(authHeader, sessionId),
+      this.backendClient.getAuthConfig(authHeader, collaborationHeaders),
     );
     return response.data;
   }
@@ -86,12 +89,12 @@ export class ConstraintService {
     constraintId: string,
     data: ChangeConstraintDefaultExprRequest,
     authHeader: string,
-    sessionId?: string,
+    collaborationHeaders?: CollaborationRequestHeaders,
   ): Promise<MutationResponse> {
     const response = await this.backendClient.client.patch<MutationResponse>(
       `/api/v1.0/constraints/${constraintId}/default-expr`,
       data,
-      this.backendClient.getAuthConfig(authHeader, sessionId),
+      this.backendClient.getAuthConfig(authHeader, collaborationHeaders),
     );
     return response.data;
   }
@@ -99,11 +102,11 @@ export class ConstraintService {
   async deleteConstraint(
     constraintId: string,
     authHeader: string,
-    sessionId?: string,
+    collaborationHeaders?: CollaborationRequestHeaders,
   ): Promise<MutationResponse> {
     const response = await this.backendClient.client.delete<MutationResponse>(
       `/api/v1.0/constraints/${constraintId}`,
-      this.backendClient.getAuthConfig(authHeader, sessionId),
+      this.backendClient.getAuthConfig(authHeader, collaborationHeaders),
     );
     return response.data;
   }
@@ -125,14 +128,14 @@ export class ConstraintService {
     constraintId: string,
     data: AddConstraintColumnRequest,
     authHeader: string,
-    sessionId?: string,
+    collaborationHeaders?: CollaborationRequestHeaders,
   ): Promise<MutationResponse<AddConstraintColumnResponse>> {
     const response = await this.backendClient.client.post<
       MutationResponse<AddConstraintColumnResponse>
     >(
       `/api/v1.0/constraints/${constraintId}/columns`,
       data,
-      this.backendClient.getAuthConfig(authHeader, sessionId),
+      this.backendClient.getAuthConfig(authHeader, collaborationHeaders),
     );
     return response.data;
   }
@@ -140,11 +143,11 @@ export class ConstraintService {
   async removeConstraintColumn(
     constraintColumnId: string,
     authHeader: string,
-    sessionId?: string,
+    collaborationHeaders?: CollaborationRequestHeaders,
   ): Promise<MutationResponse> {
     const response = await this.backendClient.client.delete<MutationResponse>(
       `/api/v1.0/constraint-columns/${constraintColumnId}`,
-      this.backendClient.getAuthConfig(authHeader, sessionId),
+      this.backendClient.getAuthConfig(authHeader, collaborationHeaders),
     );
     return response.data;
   }
@@ -165,12 +168,12 @@ export class ConstraintService {
     constraintColumnId: string,
     data: ChangeConstraintColumnPositionRequest,
     authHeader: string,
-    sessionId?: string,
+    collaborationHeaders?: CollaborationRequestHeaders,
   ): Promise<MutationResponse> {
     const response = await this.backendClient.client.patch<MutationResponse>(
       `/api/v1.0/constraint-columns/${constraintColumnId}/position`,
       data,
-      this.backendClient.getAuthConfig(authHeader, sessionId),
+      this.backendClient.getAuthConfig(authHeader, collaborationHeaders),
     );
     return response.data;
   }

@@ -1,4 +1,5 @@
 import { apiClient } from '@/lib/api';
+import { createErdMutationConfig } from './mutation-request';
 import type {
   MutationResponse,
   ConstraintResponse,
@@ -14,10 +15,11 @@ import type {
 
 export const createConstraint = async (
   data: CreateConstraintRequest,
+  schemaId: string,
 ): Promise<MutationResponse<ConstraintResponse>> => {
   const { data: res } = await apiClient.post<
     MutationResponse<ConstraintResponse>
-  >('/constraints', data);
+  >('/constraints', data, createErdMutationConfig(schemaId));
   return res;
 };
 
@@ -42,10 +44,12 @@ export const getConstraintsByTableId = async (
 export const changeConstraintName = async (
   constraintId: string,
   data: ChangeConstraintNameRequest,
+  schemaId: string,
 ): Promise<MutationResponse> => {
   const { data: res } = await apiClient.patch<MutationResponse>(
     `/constraints/${constraintId}/name`,
     data,
+    createErdMutationConfig(schemaId),
   );
   return res;
 };
@@ -53,10 +57,12 @@ export const changeConstraintName = async (
 export const changeConstraintCheckExpr = async (
   constraintId: string,
   data: ChangeConstraintCheckExprRequest,
+  schemaId: string,
 ): Promise<MutationResponse> => {
   const { data: res } = await apiClient.patch<MutationResponse>(
     `/constraints/${constraintId}/check-expr`,
     data,
+    createErdMutationConfig(schemaId),
   );
   return res;
 };
@@ -64,19 +70,23 @@ export const changeConstraintCheckExpr = async (
 export const changeConstraintDefaultExpr = async (
   constraintId: string,
   data: ChangeConstraintDefaultExprRequest,
+  schemaId: string,
 ): Promise<MutationResponse> => {
   const { data: res } = await apiClient.patch<MutationResponse>(
     `/constraints/${constraintId}/default-expr`,
     data,
+    createErdMutationConfig(schemaId),
   );
   return res;
 };
 
 export const deleteConstraint = async (
   constraintId: string,
+  schemaId: string,
 ): Promise<MutationResponse> => {
   const { data: res } = await apiClient.delete<MutationResponse>(
     `/constraints/${constraintId}`,
+    createErdMutationConfig(schemaId),
   );
   return res;
 };
@@ -93,18 +103,25 @@ export const getConstraintColumns = async (
 export const addConstraintColumn = async (
   constraintId: string,
   data: AddConstraintColumnRequest,
+  schemaId: string,
 ): Promise<MutationResponse<AddConstraintColumnResponse>> => {
   const { data: res } = await apiClient.post<
     MutationResponse<AddConstraintColumnResponse>
-  >(`/constraints/${constraintId}/columns`, data);
+  >(
+    `/constraints/${constraintId}/columns`,
+    data,
+    createErdMutationConfig(schemaId),
+  );
   return res;
 };
 
 export const removeConstraintColumn = async (
   constraintColumnId: string,
+  schemaId: string,
 ): Promise<MutationResponse> => {
   const { data: res } = await apiClient.delete<MutationResponse>(
     `/constraint-columns/${constraintColumnId}`,
+    createErdMutationConfig(schemaId),
   );
   return res;
 };
@@ -121,10 +138,12 @@ export const getConstraintColumn = async (
 export const changeConstraintColumnPosition = async (
   constraintColumnId: string,
   data: ChangeConstraintColumnPositionRequest,
+  schemaId: string,
 ): Promise<MutationResponse> => {
   const { data: res } = await apiClient.patch<MutationResponse>(
     `/constraint-columns/${constraintColumnId}/position`,
     data,
+    createErdMutationConfig(schemaId),
   );
   return res;
 };
