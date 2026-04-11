@@ -22,6 +22,19 @@ public record CursorResult<T>(
     return new CursorResult<>(content, size, hasNext, nextCursorId);
   }
 
+  public static <T> CursorResult<T> fromFetchedPage(
+      List<T> fetchedContents,
+      int size,
+      Function<T, String> cursorExtractor) {
+    boolean hasNext = fetchedContents.size() > size;
+    List<T> content = hasNext ? fetchedContents.subList(0, size)
+        : fetchedContents;
+    String nextCursorId = hasNext && !content.isEmpty()
+        ? cursorExtractor.apply(content.getLast())
+        : null;
+    return CursorResult.of(content, size, hasNext, nextCursorId);
+  }
+
   public static <T> CursorResult<T> empty(int size) {
     return new CursorResult<>(List.of(), size, false, null);
   }

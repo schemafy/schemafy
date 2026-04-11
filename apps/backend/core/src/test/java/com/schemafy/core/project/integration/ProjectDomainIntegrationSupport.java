@@ -242,6 +242,11 @@ abstract class ProjectDomainIntegrationSupport {
         projectId);
   }
 
+  protected void softDeleteWorkspace(String workspaceId) {
+    update("UPDATE workspaces SET deleted_at = CURRENT_TIMESTAMP WHERE id = :id",
+        workspaceId);
+  }
+
   protected void softDeleteProjectMember(String memberId) {
     update("UPDATE project_members SET deleted_at = CURRENT_TIMESTAMP WHERE id = :id",
         memberId);

@@ -174,6 +174,24 @@ public abstract class ProjectHttpTestSupport extends UserHttpTestSupport {
     return invitationRepository.findById(invitation.getId()).block();
   }
 
+  protected void softDeleteWorkspace(String workspaceId) {
+    databaseClient.sql(
+        "UPDATE workspaces SET deleted_at = CURRENT_TIMESTAMP WHERE id = :id")
+        .bind("id", workspaceId)
+        .fetch()
+        .rowsUpdated()
+        .block();
+  }
+
+  protected void softDeleteProject(String projectId) {
+    databaseClient.sql(
+        "UPDATE projects SET deleted_at = CURRENT_TIMESTAMP WHERE id = :id")
+        .bind("id", projectId)
+        .fetch()
+        .rowsUpdated()
+        .block();
+  }
+
   protected ShareLink saveShareLink(String projectId, String code) {
     return saveShareLink(projectId, code, null);
   }

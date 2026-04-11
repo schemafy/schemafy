@@ -2,12 +2,14 @@ package com.schemafy.api.project.controller.dto.response;
 
 import java.time.Instant;
 
-import com.schemafy.core.project.domain.Invitation;
+import com.schemafy.core.project.application.port.in.InvitationSummary;
 
 public record MyInvitationResponse(
     String id,
     String type,
     String targetId,
+    String targetName,
+    String targetDescription,
     String invitedEmail,
     String invitedRole,
     String invitedBy,
@@ -15,17 +17,19 @@ public record MyInvitationResponse(
     Instant expiresAt,
     Instant createdAt) {
 
-  public static MyInvitationResponse of(Invitation invitation) {
+  public static MyInvitationResponse of(InvitationSummary invitation) {
     return new MyInvitationResponse(
-        invitation.getId(),
-        invitation.getTargetType(),
-        invitation.getTargetId(),
-        invitation.getInvitedEmail(),
-        invitation.getInvitedRole(),
-        invitation.getInvitedBy(),
-        invitation.getStatus(),
-        invitation.getExpiresAt(),
-        invitation.getCreatedAt());
+        invitation.id(),
+        invitation.targetType(),
+        invitation.targetId(),
+        invitation.targetName(),
+        invitation.targetDescription(),
+        invitation.invitedEmail(),
+        invitation.invitedRole(),
+        invitation.invitedBy(),
+        invitation.status(),
+        invitation.expiresAt(),
+        invitation.createdAt());
   }
 
 }

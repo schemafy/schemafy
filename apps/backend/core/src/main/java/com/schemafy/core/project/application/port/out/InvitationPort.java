@@ -1,5 +1,6 @@
 package com.schemafy.core.project.application.port.out;
 
+import com.schemafy.core.project.application.port.in.InvitationSummary;
 import com.schemafy.core.project.domain.Invitation;
 
 import reactor.core.publisher.Flux;
@@ -32,14 +33,8 @@ public interface InvitationPort {
       int limit,
       int offset);
 
-  Flux<Invitation> findMyInvitationsByEmailAndStatus(
+  Flux<InvitationSummary> findMyPendingInvitationSummaries(
       String email,
-      String status,
-      int limit);
-
-  Flux<Invitation> findMyInvitationsByEmailAndStatusBeforeId(
-      String email,
-      String status,
       String cursorId,
       int limit);
 

@@ -101,9 +101,15 @@ class InvitationControllerTest extends ProjectHttpTestSupport {
           .jsonPath("$.content[0].id").isEqualTo(projectInvitation.getId())
           .jsonPath("$.content[0].type").isEqualTo("PROJECT")
           .jsonPath("$.content[0].targetId").isEqualTo(testProject.getId())
+          .jsonPath("$.content[0].targetName").isEqualTo(testProject.getName())
+          .jsonPath("$.content[0].targetDescription")
+          .isEqualTo(testProject.getDescription())
           .jsonPath("$.content[1].id").isEqualTo(workspaceInvitation.getId())
           .jsonPath("$.content[1].type").isEqualTo("WORKSPACE")
           .jsonPath("$.content[1].targetId").isEqualTo(testWorkspace.getId())
+          .jsonPath("$.content[1].targetName").isEqualTo(testWorkspace.getName())
+          .jsonPath("$.content[1].targetDescription")
+          .isEqualTo(testWorkspace.getDescription())
           .jsonPath("$.size").isEqualTo(10)
           .jsonPath("$.hasNext").isEqualTo(false)
           .jsonPath("$.nextCursorId").value(value -> assertThat(value).isNull());
@@ -176,6 +182,9 @@ class InvitationControllerTest extends ProjectHttpTestSupport {
           .expectBody()
           .jsonPath("$.content.length()").isEqualTo(1)
           .jsonPath("$.content[0].id").isEqualTo(invitation.getId())
+          .jsonPath("$.content[0].targetName").isEqualTo(testWorkspace.getName())
+          .jsonPath("$.content[0].targetDescription")
+          .isEqualTo(testWorkspace.getDescription())
           .jsonPath("$.size").isEqualTo(100)
           .jsonPath("$.hasNext").isEqualTo(false)
           .jsonPath("$.nextCursorId").value(value -> assertThat(value).isNull());
@@ -224,6 +233,9 @@ class InvitationControllerTest extends ProjectHttpTestSupport {
           .jsonPath("$.content[0].id").isEqualTo(invitations[2].getId())
           .jsonPath("$.content[1].id").isEqualTo(invitations[1].getId())
           .jsonPath("$.content[2].id").isEqualTo(invitations[0].getId())
+          .jsonPath("$.content[0].targetName").isEqualTo("Paged Workspace 2")
+          .jsonPath("$.content[1].targetName").isEqualTo("Paged Workspace 1")
+          .jsonPath("$.content[2].targetName").isEqualTo("Paged Workspace 0")
           .jsonPath("$.hasNext").isEqualTo(false)
           .jsonPath("$.nextCursorId").value(value -> assertThat(value).isNull());
     }
@@ -352,6 +364,66 @@ class InvitationControllerTest extends ProjectHttpTestSupport {
     }
 
     @Test
+    @DisplayName("target description이 null이면 null로 반환한다")
+    void getMyInvitations_NullTargetDescription_ReturnsNull() {
+      User invitee = getUser(inviteeUserId);
+      Workspace workspace = saveWorkspace("Null Description Workspace", null);
+      addWorkspaceMember(workspace.getId(), adminUserId, WorkspaceRole.ADMIN);
+      Invitation invitation = saveWorkspaceInvitation(workspace.getId(),
+          invitee.email(), WorkspaceRole.MEMBER, adminUserId);
+
+      webTestClient.get()
+          .uri(API_BASE + "/users/me/invitations?size=10")
+          .header("Authorization", "Bearer " + inviteeToken)
+          .exchange()
+          .expectStatus().isOk()
+          .expectBody()
+          .jsonPath("$.content.length()").isEqualTo(1)
+          .jsonPath("$.content[0].id").isEqualTo(invitation.getId())
+          .jsonPath("$.content[0].targetName").isEqualTo(workspace.getName())
+          .jsonPath("$.content[0].targetDescription")
+          .value(value -> assertThat(value).isNull());
+    }
+
+    @Test
+    @DisplayName("target만 soft delete 된 초대는 제외한다")
+    void getMyInvitations_DeletedTarget_Excluded() {
+      User invitee = getUser(inviteeUserId);
+      Invitation activeInvitation = saveWorkspaceInvitation(
+          testWorkspace.getId(), invitee.email(), WorkspaceRole.MEMBER,
+          adminUserId);
+
+      Workspace deletedWorkspace = saveWorkspace("Deleted Target Workspace",
+          "Description");
+      addWorkspaceMember(deletedWorkspace.getId(), adminUserId,
+          WorkspaceRole.ADMIN);
+      saveWorkspaceInvitation(deletedWorkspace.getId(), invitee.email(),
+          WorkspaceRole.MEMBER, adminUserId);
+      softDeleteWorkspace(deletedWorkspace.getId());
+
+      Workspace projectWorkspace = saveWorkspace("Deleted Target Project WS",
+          "Description");
+      addWorkspaceMember(projectWorkspace.getId(), adminUserId,
+          WorkspaceRole.ADMIN);
+      Project deletedProject = saveProject(projectWorkspace.getId(),
+          "Deleted Target Project", "Description");
+      addProjectMember(deletedProject.getId(), adminUserId, ProjectRole.ADMIN);
+      saveProjectInvitation(deletedProject.getId(), projectWorkspace.getId(),
+          invitee.email(), ProjectRole.VIEWER, adminUserId);
+      softDeleteProject(deletedProject.getId());
+
+      webTestClient.get()
+          .uri(API_BASE + "/users/me/invitations?size=10")
+          .header("Authorization", "Bearer " + inviteeToken)
+          .exchange()
+          .expectStatus().isOk()
+          .expectBody()
+          .jsonPath("$.content.length()").isEqualTo(1)
+          .jsonPath("$.content[0].id").isEqualTo(activeInvitation.getId())
+          .jsonPath("$.content[0].targetName").isEqualTo(testWorkspace.getName());
+    }
+
+    @Test
     @DisplayName("워크스페이스와 프로젝트 초대가 섞여 있어도 다음 페이지를 이어서 조회한다")
     void getMyInvitations_MixedInvitations_NextPage() {
       User invitee = getUser(inviteeUserId);
@@ -406,6 +478,8 @@ class InvitationControllerTest extends ProjectHttpTestSupport {
           .jsonPath("$.content.length()").isEqualTo(2)
           .jsonPath("$.content[0].id").isEqualTo(invitations[1].getId())
           .jsonPath("$.content[1].id").isEqualTo(invitations[0].getId())
+          .jsonPath("$.content[0].targetName").isEqualTo("Mixed Project 1")
+          .jsonPath("$.content[1].targetName").isEqualTo("Mixed Workspace 0")
           .jsonPath("$.hasNext").isEqualTo(false)
           .jsonPath("$.nextCursorId").value(value -> assertThat(value).isNull());
     }

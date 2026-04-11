@@ -11,6 +11,7 @@ import org.junit.jupiter.api.Test;
 import com.schemafy.core.common.CursorResult;
 import com.schemafy.core.project.application.port.in.GetMyInvitationsQuery;
 import com.schemafy.core.project.application.port.in.GetMyInvitationsUseCase;
+import com.schemafy.core.project.application.port.in.InvitationSummary;
 import com.schemafy.core.project.domain.Invitation;
 import com.schemafy.core.project.domain.Project;
 import com.schemafy.core.project.domain.ProjectRole;
@@ -42,12 +43,16 @@ class MyInvitationUseCaseIntegrationTest extends ProjectDomainIntegrationSupport
     Invitation projectInvitation = saveProjectInvitation(project, workspace,
         invitee.email(), ProjectRole.EDITOR, admin);
 
-    CursorResult<Invitation> result = getMyInvitationsUseCase.getMyInvitations(
+    CursorResult<InvitationSummary> result = getMyInvitationsUseCase.getMyInvitations(
         new GetMyInvitationsQuery(invitee.id(), null, 5))
         .block();
 
-    assertThat(result.content()).extracting(Invitation::getId)
+    assertThat(result.content()).extracting(InvitationSummary::id)
         .containsExactly(projectInvitation.getId(), workspaceInvitation.getId());
+    assertThat(result.content()).extracting(InvitationSummary::targetName)
+        .containsExactly("Invitation Project", "Invitation Workspace");
+    assertThat(result.content()).extracting(InvitationSummary::targetDescription)
+        .containsExactly("description", "Description");
     assertThat(result.size()).isEqualTo(5);
     assertThat(result.hasNext()).isFalse();
     assertThat(result.nextCursorId()).isNull();
@@ -70,15 +75,15 @@ class MyInvitationUseCaseIntegrationTest extends ProjectDomainIntegrationSupport
           invitee.email(), WorkspaceRole.MEMBER, admin);
     }
 
-    CursorResult<Invitation> firstPage = getMyInvitationsUseCase
+    CursorResult<InvitationSummary> firstPage = getMyInvitationsUseCase
         .getMyInvitations(new GetMyInvitationsQuery(invitee.id(), null, 3))
         .block();
-    CursorResult<Invitation> secondPage = getMyInvitationsUseCase
+    CursorResult<InvitationSummary> secondPage = getMyInvitationsUseCase
         .getMyInvitations(new GetMyInvitationsQuery(invitee.id(),
             firstPage.nextCursorId(), 3))
         .block();
 
-    assertThat(firstPage.content()).extracting(Invitation::getId)
+    assertThat(firstPage.content()).extracting(InvitationSummary::id)
         .containsExactly(
             invitations[5].getId(),
             invitations[4].getId(),
@@ -86,7 +91,7 @@ class MyInvitationUseCaseIntegrationTest extends ProjectDomainIntegrationSupport
     assertThat(firstPage.hasNext()).isTrue();
     assertThat(firstPage.nextCursorId()).isEqualTo(invitations[3].getId());
 
-    assertThat(secondPage.content()).extracting(Invitation::getId)
+    assertThat(secondPage.content()).extracting(InvitationSummary::id)
         .containsExactly(
             invitations[2].getId(),
             invitations[1].getId(),
@@ -113,12 +118,12 @@ class MyInvitationUseCaseIntegrationTest extends ProjectDomainIntegrationSupport
           invitee.email(), WorkspaceRole.MEMBER, admin);
     }
 
-    CursorResult<Invitation> result = getMyInvitationsUseCase
+    CursorResult<InvitationSummary> result = getMyInvitationsUseCase
         .getMyInvitations(new GetMyInvitationsQuery(invitee.id(),
             invitations[3].getId().toLowerCase(Locale.ROOT), 3))
         .block();
 
-    assertThat(result.content()).extracting(Invitation::getId)
+    assertThat(result.content()).extracting(InvitationSummary::id)
         .containsExactly(
             invitations[2].getId(),
             invitations[1].getId(),
@@ -145,12 +150,12 @@ class MyInvitationUseCaseIntegrationTest extends ProjectDomainIntegrationSupport
           invitee.email(), WorkspaceRole.MEMBER, admin);
     }
 
-    CursorResult<Invitation> result = getMyInvitationsUseCase
+    CursorResult<InvitationSummary> result = getMyInvitationsUseCase
         .getMyInvitations(new GetMyInvitationsQuery(invitee.id(),
             "  " + invitations[3].getId() + "  ", 3))
         .block();
 
-    assertThat(result.content()).extracting(Invitation::getId)
+    assertThat(result.content()).extracting(InvitationSummary::id)
         .containsExactly(
             invitations[2].getId(),
             invitations[1].getId(),
@@ -184,15 +189,15 @@ class MyInvitationUseCaseIntegrationTest extends ProjectDomainIntegrationSupport
       }
     }
 
-    CursorResult<Invitation> firstPage = getMyInvitationsUseCase
+    CursorResult<InvitationSummary> firstPage = getMyInvitationsUseCase
         .getMyInvitations(new GetMyInvitationsQuery(invitee.id(), null, 4))
         .block();
-    CursorResult<Invitation> secondPage = getMyInvitationsUseCase
+    CursorResult<InvitationSummary> secondPage = getMyInvitationsUseCase
         .getMyInvitations(new GetMyInvitationsQuery(invitee.id(),
             firstPage.nextCursorId(), 4))
         .block();
 
-    assertThat(firstPage.content()).extracting(Invitation::getId)
+    assertThat(firstPage.content()).extracting(InvitationSummary::id)
         .containsExactly(
             invitations[5].getId(),
             invitations[4].getId(),
@@ -201,7 +206,11 @@ class MyInvitationUseCaseIntegrationTest extends ProjectDomainIntegrationSupport
     assertThat(firstPage.hasNext()).isTrue();
     assertThat(firstPage.nextCursorId()).isEqualTo(invitations[2].getId());
 
-    assertThat(secondPage.content()).extracting(Invitation::getId)
+    assertThat(firstPage.content()).extracting(InvitationSummary::targetName)
+        .containsExactly("Mixed Project 5", "Mixed WS 4", "Mixed Project 3",
+            "Mixed WS 2");
+
+    assertThat(secondPage.content()).extracting(InvitationSummary::id)
         .containsExactly(
             invitations[1].getId(),
             invitations[0].getId());
@@ -232,12 +241,50 @@ class MyInvitationUseCaseIntegrationTest extends ProjectDomainIntegrationSupport
         "Deleted Workspace", "Description"), invitee.email(),
         WorkspaceRole.MEMBER, admin));
 
-    CursorResult<Invitation> result = getMyInvitationsUseCase.getMyInvitations(
+    CursorResult<InvitationSummary> result = getMyInvitationsUseCase.getMyInvitations(
         new GetMyInvitationsQuery(invitee.id(), UlidGenerator.generate(), 10))
         .block();
 
-    assertThat(result.content()).extracting(Invitation::getId)
+    assertThat(result.content()).extracting(InvitationSummary::id)
         .containsExactly(pendingInvitation.getId());
+  }
+
+  @Test
+  @DisplayName("target만 soft delete 된 초대는 조회에서 제외한다")
+  void getMyInvitations_excludesInvitationsWithDeletedTarget() {
+    User admin = signUpUser("admin-mi-deleted-target@test.com", "Admin");
+    User invitee = signUpUser("invitee-mi-deleted-target@test.com", "Invitee");
+
+    Workspace activeWorkspace = saveWorkspace("Active Target Workspace",
+        "Description");
+    saveWorkspaceMember(activeWorkspace, admin, WorkspaceRole.ADMIN);
+    Invitation activeInvitation = saveWorkspaceInvitation(activeWorkspace,
+        invitee.email(), WorkspaceRole.MEMBER, admin);
+
+    Workspace deletedWorkspace = saveWorkspace("Deleted Target Workspace",
+        "Description");
+    saveWorkspaceMember(deletedWorkspace, admin, WorkspaceRole.ADMIN);
+    saveWorkspaceInvitation(deletedWorkspace, invitee.email(), WorkspaceRole.MEMBER,
+        admin);
+    softDeleteWorkspace(deletedWorkspace.getId());
+
+    Workspace projectWorkspace = saveWorkspace("Deleted Target Project Workspace",
+        "Description");
+    saveWorkspaceMember(projectWorkspace, admin, WorkspaceRole.ADMIN);
+    Project deletedProject = saveProject(projectWorkspace, "Deleted Target Project");
+    saveProjectMember(deletedProject, admin, ProjectRole.ADMIN);
+    saveProjectInvitation(deletedProject, projectWorkspace, invitee.email(),
+        ProjectRole.VIEWER, admin);
+    softDeleteProject(deletedProject.getId());
+
+    CursorResult<InvitationSummary> result = getMyInvitationsUseCase.getMyInvitations(
+        new GetMyInvitationsQuery(invitee.id(), null, 10))
+        .block();
+
+    assertThat(result.content()).extracting(InvitationSummary::id)
+        .containsExactly(activeInvitation.getId());
+    assertThat(result.content()).extracting(InvitationSummary::targetName)
+        .containsExactly("Active Target Workspace");
   }
 
 }

@@ -20,6 +20,10 @@ public class MyInvitationApiSnippets extends RestDocsSnippets {
           .description("초대 대상 타입 (WORKSPACE/PROJECT)"),
       fieldWithPath(prefix + "targetId").type(JsonFieldType.STRING)
           .description("초대 대상 ID. WORKSPACE면 workspaceId, PROJECT면 projectId"),
+      fieldWithPath(prefix + "targetName").type(JsonFieldType.STRING)
+          .description("초대 대상 이름"),
+      fieldWithPath(prefix + "targetDescription").type(JsonFieldType.VARIES)
+          .description("초대 대상 설명 (nullable)"),
       fieldWithPath(prefix + "invitedEmail").type(JsonFieldType.STRING)
           .description("초대된 사용자 이메일"),
       fieldWithPath(prefix + "invitedRole").type(JsonFieldType.STRING)
