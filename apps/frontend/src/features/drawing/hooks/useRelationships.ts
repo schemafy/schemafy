@@ -60,7 +60,8 @@ const collectRelationshipSnapshots = (
 
 export const useRelationships = (relationshipConfig: RelationshipConfig) => {
   const { selectedSchemaId } = useSelectedSchema();
-  const { data: snapshotsData } = useSchemaSnapshots(selectedSchemaId);
+  const { data: schemaSnapshotsData } = useSchemaSnapshots(selectedSchemaId);
+  const snapshotsData = schemaSnapshotsData.snapshots;
   const snapshotsRef = useLatest(snapshotsData);
   const relationshipConfigRef = useLatest(relationshipConfig);
   const previousSnapshotsRef = useRef<Record<
