@@ -119,7 +119,7 @@ const CanvasContent = observer(() => {
       <RemoteCursors />
     </>
   );
-};
+});
 
 export const CanvasPage = () => {
   const projectId = '06DS8JSJ7Y112MC87X0AB2CE8M';
@@ -128,7 +128,6 @@ export const CanvasPage = () => {
     <SelectedSchemaProvider projectId={projectId}>
       <MemoProvider>
         <CanvasContent />
-        <FloatingButtons />
       </MemoProvider>
     </SelectedSchemaProvider>
   );
