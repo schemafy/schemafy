@@ -9,7 +9,8 @@ import {
 } from '@nestjs/common';
 import { ColumnService } from './column.service';
 import { AuthHeader } from '../common/decorators/auth-header.decorator';
-import { SessionId } from '../common/decorators/session-id.decorator';
+import { CollaborationHeaders } from '../common/decorators/collaboration-headers.decorator';
+import type { CollaborationRequestHeaders } from '../common/backend-client/backend-client.service';
 import type {
   ChangeColumnMetaRequest,
   ChangeColumnNameRequest,
@@ -26,9 +27,14 @@ export class ColumnController {
   async createColumn(
     @Body() data: CreateColumnRequest,
     @AuthHeader() authHeader: string,
-    @SessionId() sessionId?: string,
+    @CollaborationHeaders()
+    collaborationHeaders?: CollaborationRequestHeaders,
   ) {
-    return this.columnService.createColumn(data, authHeader, sessionId);
+    return this.columnService.createColumn(
+      data,
+      authHeader,
+      collaborationHeaders,
+    );
   }
 
   @Get('columns/:columnId')
@@ -52,13 +58,14 @@ export class ColumnController {
     @Param('columnId') columnId: string,
     @Body() data: ChangeColumnNameRequest,
     @AuthHeader() authHeader: string,
-    @SessionId() sessionId?: string,
+    @CollaborationHeaders()
+    collaborationHeaders?: CollaborationRequestHeaders,
   ) {
     return this.columnService.changeColumnName(
       columnId,
       data,
       authHeader,
-      sessionId,
+      collaborationHeaders,
     );
   }
 
@@ -67,13 +74,14 @@ export class ColumnController {
     @Param('columnId') columnId: string,
     @Body() data: ChangeColumnTypeRequest,
     @AuthHeader() authHeader: string,
-    @SessionId() sessionId?: string,
+    @CollaborationHeaders()
+    collaborationHeaders?: CollaborationRequestHeaders,
   ) {
     return this.columnService.changeColumnType(
       columnId,
       data,
       authHeader,
-      sessionId,
+      collaborationHeaders,
     );
   }
 
@@ -82,13 +90,14 @@ export class ColumnController {
     @Param('columnId') columnId: string,
     @Body() data: ChangeColumnMetaRequest,
     @AuthHeader() authHeader: string,
-    @SessionId() sessionId?: string,
+    @CollaborationHeaders()
+    collaborationHeaders?: CollaborationRequestHeaders,
   ) {
     return this.columnService.changeColumnMeta(
       columnId,
       data,
       authHeader,
-      sessionId,
+      collaborationHeaders,
     );
   }
 
@@ -97,13 +106,14 @@ export class ColumnController {
     @Param('columnId') columnId: string,
     @Body() data: ChangeColumnPositionRequest,
     @AuthHeader() authHeader: string,
-    @SessionId() sessionId?: string,
+    @CollaborationHeaders()
+    collaborationHeaders?: CollaborationRequestHeaders,
   ) {
     return this.columnService.changeColumnPosition(
       columnId,
       data,
       authHeader,
-      sessionId,
+      collaborationHeaders,
     );
   }
 
@@ -111,8 +121,13 @@ export class ColumnController {
   async deleteColumn(
     @Param('columnId') columnId: string,
     @AuthHeader() authHeader: string,
-    @SessionId() sessionId?: string,
+    @CollaborationHeaders()
+    collaborationHeaders?: CollaborationRequestHeaders,
   ) {
-    return this.columnService.deleteColumn(columnId, authHeader, sessionId);
+    return this.columnService.deleteColumn(
+      columnId,
+      authHeader,
+      collaborationHeaders,
+    );
   }
 }

@@ -41,6 +41,7 @@ import com.schemafy.core.erd.column.application.port.in.GetColumnQuery;
 import com.schemafy.core.erd.column.application.port.in.GetColumnUseCase;
 import com.schemafy.core.erd.column.application.port.in.GetColumnsByTableIdQuery;
 import com.schemafy.core.erd.column.application.port.in.GetColumnsByTableIdUseCase;
+import com.schemafy.core.erd.operation.domain.CommittedErdOperation;
 
 import lombok.RequiredArgsConstructor;
 import reactor.core.publisher.Mono;
@@ -80,11 +81,13 @@ public class ColumnController {
         request.comment(),
         request.values());
     return createColumnUseCase.createColumn(command)
-        .flatMap(result -> broadcastMutation(result.affectedTableIds())
+        .flatMap(result -> broadcastMutation(result.affectedTableIds(),
+            result.operation())
             .thenReturn(result))
         .map(result -> MutationResponse.of(
             ColumnResponse.from(result.result(), request.tableId()),
-            result.affectedTableIds()));
+            result.affectedTableIds(),
+            result.operation()));
   }
 
   @PreAuthorize("hasAnyRole('OWNER','ADMIN','EDITOR','COMMENTER','VIEWER')")
@@ -116,9 +119,11 @@ public class ColumnController {
         columnId,
         request.newName());
     return changeColumnNameUseCase.changeColumnName(command)
-        .flatMap(result -> broadcastMutation(result.affectedTableIds())
+        .flatMap(result -> broadcastMutation(result.affectedTableIds(),
+            result.operation())
             .thenReturn(result))
-        .map(result -> MutationResponse.<Void>of(null, result.affectedTableIds()));
+        .map(result -> MutationResponse.<Void>of(null,
+            result.affectedTableIds(), result.operation()));
   }
 
   @PreAuthorize("hasAnyRole('OWNER','ADMIN','EDITOR')")
@@ -134,9 +139,11 @@ public class ColumnController {
         request.scale(),
         request.values());
     return changeColumnTypeUseCase.changeColumnType(command)
-        .flatMap(result -> broadcastMutation(result.affectedTableIds())
+        .flatMap(result -> broadcastMutation(result.affectedTableIds(),
+            result.operation())
             .thenReturn(result))
-        .map(result -> MutationResponse.<Void>of(null, result.affectedTableIds()));
+        .map(result -> MutationResponse.<Void>of(null,
+            result.affectedTableIds(), result.operation()));
   }
 
   @PreAuthorize("hasAnyRole('OWNER','ADMIN','EDITOR')")
@@ -151,9 +158,11 @@ public class ColumnController {
         toPatchField(request.collation()),
         toPatchField(request.comment()));
     return changeColumnMetaUseCase.changeColumnMeta(command)
-        .flatMap(result -> broadcastMutation(result.affectedTableIds())
+        .flatMap(result -> broadcastMutation(result.affectedTableIds(),
+            result.operation())
             .thenReturn(result))
-        .map(result -> MutationResponse.<Void>of(null, result.affectedTableIds()));
+        .map(result -> MutationResponse.<Void>of(null,
+            result.affectedTableIds(), result.operation()));
   }
 
   @PreAuthorize("hasAnyRole('OWNER','ADMIN','EDITOR')")
@@ -165,9 +174,11 @@ public class ColumnController {
         columnId,
         request.seqNo());
     return changeColumnPositionUseCase.changeColumnPosition(command)
-        .flatMap(result -> broadcastMutation(result.affectedTableIds())
+        .flatMap(result -> broadcastMutation(result.affectedTableIds(),
+            result.operation())
             .thenReturn(result))
-        .map(result -> MutationResponse.<Void>of(null, result.affectedTableIds()));
+        .map(result -> MutationResponse.<Void>of(null,
+            result.affectedTableIds(), result.operation()));
   }
 
   @PreAuthorize("hasAnyRole('OWNER','ADMIN')")
@@ -176,17 +187,20 @@ public class ColumnController {
       @PathVariable String columnId) {
     DeleteColumnCommand command = new DeleteColumnCommand(columnId);
     return deleteColumnUseCase.deleteColumn(command)
-        .flatMap(result -> broadcastMutation(result.affectedTableIds())
+        .flatMap(result -> broadcastMutation(result.affectedTableIds(),
+            result.operation())
             .thenReturn(result))
-        .map(result -> MutationResponse.<Void>of(null, result.affectedTableIds()));
+        .map(result -> MutationResponse.<Void>of(null,
+            result.affectedTableIds(), result.operation()));
   }
 
-  private Mono<Void> broadcastMutation(Set<String> affectedTableIds) {
+  private Mono<Void> broadcastMutation(Set<String> affectedTableIds,
+      CommittedErdOperation operation) {
     ErdMutationBroadcaster broadcaster = broadcasterProvider.getIfAvailable();
     if (broadcaster == null) {
       return Mono.empty();
     }
-    return broadcaster.broadcast(affectedTableIds);
+    return broadcaster.broadcast(affectedTableIds, operation);
   }
 
 }

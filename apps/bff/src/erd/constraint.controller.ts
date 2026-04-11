@@ -9,7 +9,8 @@ import {
 } from '@nestjs/common';
 import { ConstraintService } from './constraint.service';
 import { AuthHeader } from '../common/decorators/auth-header.decorator';
-import { SessionId } from '../common/decorators/session-id.decorator';
+import { CollaborationHeaders } from '../common/decorators/collaboration-headers.decorator';
+import type { CollaborationRequestHeaders } from '../common/backend-client/backend-client.service';
 import type {
   AddConstraintColumnRequest,
   ChangeConstraintCheckExprRequest,
@@ -27,9 +28,14 @@ export class ConstraintController {
   async createConstraint(
     @Body() data: CreateConstraintRequest,
     @AuthHeader() authHeader: string,
-    @SessionId() sessionId?: string,
+    @CollaborationHeaders()
+    collaborationHeaders?: CollaborationRequestHeaders,
   ) {
-    return this.constraintService.createConstraint(data, authHeader, sessionId);
+    return this.constraintService.createConstraint(
+      data,
+      authHeader,
+      collaborationHeaders,
+    );
   }
 
   @Get('constraints/:constraintId')
@@ -53,13 +59,14 @@ export class ConstraintController {
     @Param('constraintId') constraintId: string,
     @Body() data: ChangeConstraintNameRequest,
     @AuthHeader() authHeader: string,
-    @SessionId() sessionId?: string,
+    @CollaborationHeaders()
+    collaborationHeaders?: CollaborationRequestHeaders,
   ) {
     return this.constraintService.changeConstraintName(
       constraintId,
       data,
       authHeader,
-      sessionId,
+      collaborationHeaders,
     );
   }
 
@@ -68,13 +75,14 @@ export class ConstraintController {
     @Param('constraintId') constraintId: string,
     @Body() data: ChangeConstraintCheckExprRequest,
     @AuthHeader() authHeader: string,
-    @SessionId() sessionId?: string,
+    @CollaborationHeaders()
+    collaborationHeaders?: CollaborationRequestHeaders,
   ) {
     return this.constraintService.changeConstraintCheckExpr(
       constraintId,
       data,
       authHeader,
-      sessionId,
+      collaborationHeaders,
     );
   }
 
@@ -83,13 +91,14 @@ export class ConstraintController {
     @Param('constraintId') constraintId: string,
     @Body() data: ChangeConstraintDefaultExprRequest,
     @AuthHeader() authHeader: string,
-    @SessionId() sessionId?: string,
+    @CollaborationHeaders()
+    collaborationHeaders?: CollaborationRequestHeaders,
   ) {
     return this.constraintService.changeConstraintDefaultExpr(
       constraintId,
       data,
       authHeader,
-      sessionId,
+      collaborationHeaders,
     );
   }
 
@@ -97,12 +106,13 @@ export class ConstraintController {
   async deleteConstraint(
     @Param('constraintId') constraintId: string,
     @AuthHeader() authHeader: string,
-    @SessionId() sessionId?: string,
+    @CollaborationHeaders()
+    collaborationHeaders?: CollaborationRequestHeaders,
   ) {
     return this.constraintService.deleteConstraint(
       constraintId,
       authHeader,
-      sessionId,
+      collaborationHeaders,
     );
   }
 
@@ -122,13 +132,14 @@ export class ConstraintController {
     @Param('constraintId') constraintId: string,
     @Body() data: AddConstraintColumnRequest,
     @AuthHeader() authHeader: string,
-    @SessionId() sessionId?: string,
+    @CollaborationHeaders()
+    collaborationHeaders?: CollaborationRequestHeaders,
   ) {
     return this.constraintService.addConstraintColumn(
       constraintId,
       data,
       authHeader,
-      sessionId,
+      collaborationHeaders,
     );
   }
 
@@ -136,12 +147,13 @@ export class ConstraintController {
   async removeConstraintColumn(
     @Param('constraintColumnId') constraintColumnId: string,
     @AuthHeader() authHeader: string,
-    @SessionId() sessionId?: string,
+    @CollaborationHeaders()
+    collaborationHeaders?: CollaborationRequestHeaders,
   ) {
     return this.constraintService.removeConstraintColumn(
       constraintColumnId,
       authHeader,
-      sessionId,
+      collaborationHeaders,
     );
   }
 
@@ -161,13 +173,14 @@ export class ConstraintController {
     @Param('constraintColumnId') constraintColumnId: string,
     @Body() data: ChangeConstraintColumnPositionRequest,
     @AuthHeader() authHeader: string,
-    @SessionId() sessionId?: string,
+    @CollaborationHeaders()
+    collaborationHeaders?: CollaborationRequestHeaders,
   ) {
     return this.constraintService.changeConstraintColumnPosition(
       constraintColumnId,
       data,
       authHeader,
-      sessionId,
+      collaborationHeaders,
     );
   }
 }

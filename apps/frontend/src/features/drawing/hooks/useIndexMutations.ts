@@ -17,13 +17,15 @@ import type {
   ChangeIndexColumnPositionRequest,
   ChangeIndexColumnSortDirectionRequest,
 } from '../api';
+import { syncCommittedRevision } from '../api/mutation-request';
 import { useErdCache } from './useErdCache';
 
 export const useCreateIndex = (schemaId: string) => {
   const { updateAffectedTables } = useErdCache(schemaId);
   return useMutation({
-    mutationFn: (data: CreateIndexRequest) => createIndex(data),
+    mutationFn: (data: CreateIndexRequest) => createIndex(data, schemaId),
     onSuccess: (result) => {
+      syncCommittedRevision(schemaId, result);
       updateAffectedTables(result.affectedTableIds);
     },
   });
@@ -38,8 +40,9 @@ export const useChangeIndexName = (schemaId: string) => {
     }: {
       indexId: string;
       data: ChangeIndexNameRequest;
-    }) => changeIndexName(indexId, data),
+    }) => changeIndexName(indexId, data, schemaId),
     onSuccess: (result) => {
+      syncCommittedRevision(schemaId, result);
       updateAffectedTables(result.affectedTableIds);
     },
   });
@@ -54,8 +57,9 @@ export const useChangeIndexType = (schemaId: string) => {
     }: {
       indexId: string;
       data: ChangeIndexTypeRequest;
-    }) => changeIndexType(indexId, data),
+    }) => changeIndexType(indexId, data, schemaId),
     onSuccess: (result) => {
+      syncCommittedRevision(schemaId, result);
       updateAffectedTables(result.affectedTableIds);
     },
   });
@@ -64,8 +68,9 @@ export const useChangeIndexType = (schemaId: string) => {
 export const useDeleteIndex = (schemaId: string) => {
   const { updateAffectedTables } = useErdCache(schemaId);
   return useMutation({
-    mutationFn: (indexId: string) => deleteIndex(indexId),
+    mutationFn: (indexId: string) => deleteIndex(indexId, schemaId),
     onSuccess: (result) => {
+      syncCommittedRevision(schemaId, result);
       updateAffectedTables(result.affectedTableIds);
     },
   });
@@ -80,8 +85,9 @@ export const useAddIndexColumn = (schemaId: string) => {
     }: {
       indexId: string;
       data: AddIndexColumnRequest;
-    }) => addIndexColumn(indexId, data),
+    }) => addIndexColumn(indexId, data, schemaId),
     onSuccess: (result) => {
+      syncCommittedRevision(schemaId, result);
       updateAffectedTables(result.affectedTableIds);
     },
   });
@@ -90,8 +96,10 @@ export const useAddIndexColumn = (schemaId: string) => {
 export const useRemoveIndexColumn = (schemaId: string) => {
   const { updateAffectedTables } = useErdCache(schemaId);
   return useMutation({
-    mutationFn: (indexColumnId: string) => removeIndexColumn(indexColumnId),
+    mutationFn: (indexColumnId: string) =>
+      removeIndexColumn(indexColumnId, schemaId),
     onSuccess: (result) => {
+      syncCommittedRevision(schemaId, result);
       updateAffectedTables(result.affectedTableIds);
     },
   });
@@ -106,8 +114,9 @@ export const useChangeIndexColumnPosition = (schemaId: string) => {
     }: {
       indexColumnId: string;
       data: ChangeIndexColumnPositionRequest;
-    }) => changeIndexColumnPosition(indexColumnId, data),
+    }) => changeIndexColumnPosition(indexColumnId, data, schemaId),
     onSuccess: (result) => {
+      syncCommittedRevision(schemaId, result);
       updateAffectedTables(result.affectedTableIds);
     },
   });
@@ -122,8 +131,9 @@ export const useChangeIndexColumnSortDirection = (schemaId: string) => {
     }: {
       indexColumnId: string;
       data: ChangeIndexColumnSortDirectionRequest;
-    }) => changeIndexColumnSortDirection(indexColumnId, data),
+    }) => changeIndexColumnSortDirection(indexColumnId, data, schemaId),
     onSuccess: (result) => {
+      syncCommittedRevision(schemaId, result);
       updateAffectedTables(result.affectedTableIds);
     },
   });

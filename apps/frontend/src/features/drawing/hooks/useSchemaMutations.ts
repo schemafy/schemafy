@@ -1,6 +1,7 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { createSchema, changeSchemaName, deleteSchema } from '../api';
 import type { CreateSchemaRequest, ChangeSchemaNameRequest } from '../api';
+import { collaborationStore } from '@/store/collaboration.store';
 import { erdKeys } from './query-keys';
 
 export const useCreateSchema = (projectId: string) => {
@@ -8,7 +9,11 @@ export const useCreateSchema = (projectId: string) => {
 
   return useMutation({
     mutationFn: (data: CreateSchemaRequest) => createSchema(data),
-    onSuccess: () => {
+    onSuccess: (result) => {
+      collaborationStore.setSchemaRevision(
+        result.data.id,
+        result.operation.committedRevision,
+      );
       queryClient.invalidateQueries({
         queryKey: erdKeys.schemas(projectId),
       });
@@ -27,7 +32,11 @@ export const useChangeSchemaName = (projectId: string) => {
       schemaId: string;
       data: ChangeSchemaNameRequest;
     }) => changeSchemaName(schemaId, data),
-    onSuccess: () => {
+    onSuccess: (result, { schemaId }) => {
+      collaborationStore.setSchemaRevision(
+        schemaId,
+        result.operation.committedRevision,
+      );
       queryClient.invalidateQueries({
         queryKey: erdKeys.schemas(projectId),
       });
@@ -47,6 +56,7 @@ export const useDeleteSchema = (projectId: string) => {
       queryClient.invalidateQueries({
         queryKey: erdKeys.schemas(projectId),
       });
+      collaborationStore.clearSchemaRevision(deletedSchemaId);
     },
   });
 };

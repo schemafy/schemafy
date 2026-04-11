@@ -19,6 +19,7 @@ import type {
   AddRelationshipColumnRequest,
   ChangeRelationshipColumnPositionRequest,
 } from '../api';
+import { syncCommittedRevision } from '../api/mutation-request';
 import { useErdCache } from './useErdCache';
 
 export const useCreateRelationshipWithExtra = (schemaId: string) => {
@@ -27,8 +28,9 @@ export const useCreateRelationshipWithExtra = (schemaId: string) => {
     mutationFn: (data: {
       request: CreateRelationshipRequest;
       extra: NonNullable<CreateRelationshipRequest['extra']>;
-    }) => createRelationship({ ...data.request, extra: data.extra }),
+    }) => createRelationship({ ...data.request, extra: data.extra }, schemaId),
     onSuccess: (result) => {
+      syncCommittedRevision(schemaId, result);
       updateAffectedTables(result.affectedTableIds);
     },
   });
@@ -43,8 +45,9 @@ export const useChangeRelationshipName = (schemaId: string) => {
     }: {
       relationshipId: string;
       data: ChangeRelationshipNameRequest;
-    }) => changeRelationshipName(relationshipId, data),
+    }) => changeRelationshipName(relationshipId, data, schemaId),
     onSuccess: (result) => {
+      syncCommittedRevision(schemaId, result);
       updateAffectedTables(result.affectedTableIds);
     },
   });
@@ -59,8 +62,9 @@ export const useChangeRelationshipKind = (schemaId: string) => {
     }: {
       relationshipId: string;
       data: ChangeRelationshipKindRequest;
-    }) => changeRelationshipKind(relationshipId, data),
+    }) => changeRelationshipKind(relationshipId, data, schemaId),
     onSuccess: (result) => {
+      syncCommittedRevision(schemaId, result);
       updateAffectedTables(result.affectedTableIds);
     },
   });
@@ -75,8 +79,9 @@ export const useChangeRelationshipCardinality = (schemaId: string) => {
     }: {
       relationshipId: string;
       data: ChangeRelationshipCardinalityRequest;
-    }) => changeRelationshipCardinality(relationshipId, data),
+    }) => changeRelationshipCardinality(relationshipId, data, schemaId),
     onSuccess: (result) => {
+      syncCommittedRevision(schemaId, result);
       updateAffectedTables(result.affectedTableIds);
     },
   });
@@ -91,8 +96,9 @@ export const useChangeRelationshipExtra = (schemaId: string) => {
     }: {
       relationshipId: string;
       data: ChangeRelationshipExtraRequest;
-    }) => changeRelationshipExtra(relationshipId, data),
+    }) => changeRelationshipExtra(relationshipId, data, schemaId),
     onSuccess: (result) => {
+      syncCommittedRevision(schemaId, result);
       updateAffectedTables(result.affectedTableIds);
     },
   });
@@ -101,8 +107,10 @@ export const useChangeRelationshipExtra = (schemaId: string) => {
 export const useDeleteRelationship = (schemaId: string) => {
   const { updateAffectedTables } = useErdCache(schemaId);
   return useMutation({
-    mutationFn: (relationshipId: string) => deleteRelationship(relationshipId),
+    mutationFn: (relationshipId: string) =>
+      deleteRelationship(relationshipId, schemaId),
     onSuccess: (result) => {
+      syncCommittedRevision(schemaId, result);
       updateAffectedTables(result.affectedTableIds);
     },
   });
@@ -117,8 +125,9 @@ export const useAddRelationshipColumn = (schemaId: string) => {
     }: {
       relationshipId: string;
       data: AddRelationshipColumnRequest;
-    }) => addRelationshipColumn(relationshipId, data),
+    }) => addRelationshipColumn(relationshipId, data, schemaId),
     onSuccess: (result) => {
+      syncCommittedRevision(schemaId, result);
       updateAffectedTables(result.affectedTableIds);
     },
   });
@@ -128,8 +137,9 @@ export const useRemoveRelationshipColumn = (schemaId: string) => {
   const { updateAffectedTables } = useErdCache(schemaId);
   return useMutation({
     mutationFn: (relationshipColumnId: string) =>
-      removeRelationshipColumn(relationshipColumnId),
+      removeRelationshipColumn(relationshipColumnId, schemaId),
     onSuccess: (result) => {
+      syncCommittedRevision(schemaId, result);
       updateAffectedTables(result.affectedTableIds);
     },
   });
@@ -144,8 +154,10 @@ export const useChangeRelationshipColumnPosition = (schemaId: string) => {
     }: {
       relationshipColumnId: string;
       data: ChangeRelationshipColumnPositionRequest;
-    }) => changeRelationshipColumnPosition(relationshipColumnId, data),
+    }) =>
+      changeRelationshipColumnPosition(relationshipColumnId, data, schemaId),
     onSuccess: (result) => {
+      syncCommittedRevision(schemaId, result);
       updateAffectedTables(result.affectedTableIds);
     },
   });

@@ -1,5 +1,8 @@
 import { Injectable } from '@nestjs/common';
-import { BackendClientService } from '../common/backend-client/backend-client.service';
+import {
+  BackendClientService,
+  type CollaborationRequestHeaders,
+} from '../common/backend-client/backend-client.service';
 import type {
   ChangeSchemaNameRequest,
   CreateSchemaRequest,
@@ -14,14 +17,14 @@ export class SchemaService {
   async createSchema(
     data: CreateSchemaRequest,
     authHeader: string,
-    sessionId?: string,
+    collaborationHeaders?: CollaborationRequestHeaders,
   ): Promise<MutationResponse<SchemaResponse>> {
     const response = await this.backendClient.client.post<
       MutationResponse<SchemaResponse>
     >(
       '/api/v1.0/schemas',
       data,
-      this.backendClient.getAuthConfig(authHeader, sessionId),
+      this.backendClient.getAuthConfig(authHeader, collaborationHeaders),
     );
     return response.data;
   }
@@ -52,12 +55,12 @@ export class SchemaService {
     schemaId: string,
     data: ChangeSchemaNameRequest,
     authHeader: string,
-    sessionId?: string,
+    collaborationHeaders?: CollaborationRequestHeaders,
   ): Promise<MutationResponse> {
     const response = await this.backendClient.client.patch<MutationResponse>(
       `/api/v1.0/schemas/${schemaId}/name`,
       data,
-      this.backendClient.getAuthConfig(authHeader, sessionId),
+      this.backendClient.getAuthConfig(authHeader, collaborationHeaders),
     );
     return response.data;
   }
@@ -65,11 +68,11 @@ export class SchemaService {
   async deleteSchema(
     schemaId: string,
     authHeader: string,
-    sessionId?: string,
+    collaborationHeaders?: CollaborationRequestHeaders,
   ): Promise<MutationResponse> {
     const response = await this.backendClient.client.delete<MutationResponse>(
       `/api/v1.0/schemas/${schemaId}`,
-      this.backendClient.getAuthConfig(authHeader, sessionId),
+      this.backendClient.getAuthConfig(authHeader, collaborationHeaders),
     );
     return response.data;
   }

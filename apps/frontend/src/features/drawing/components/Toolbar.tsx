@@ -1,4 +1,4 @@
-import { type ComponentType, useState } from 'react';
+import { memo, type ComponentType, useState } from 'react';
 import { RelationshipSelector } from './RelationshipSelector';
 import { SearchEntitiesDialog } from './SearchEntitiesDialog';
 import type { RelationshipConfig } from '../types';
@@ -39,64 +39,66 @@ const TOOLS = [
   { id: 'search', name: 'Search', icon: Search },
 ];
 
-export const Toolbar = ({
-  setActiveTool,
-  activeTool,
-  relationshipConfig,
-  onRelationshipConfigChange,
-}: ToolbarProps) => {
-  const [isSearchDialogOpen, setIsSearchDialogOpen] = useState(false);
+export const Toolbar = memo(
+  ({
+    setActiveTool,
+    activeTool,
+    relationshipConfig,
+    onRelationshipConfigChange,
+  }: ToolbarProps) => {
+    const [isSearchDialogOpen, setIsSearchDialogOpen] = useState(false);
 
-  const handleToolClick = (toolId: string) => {
-    if (toolId === 'search') {
-      setIsSearchDialogOpen(true);
-      return;
-    }
-    if (activeTool === toolId) {
-      setActiveTool('pointer');
-    } else {
-      setActiveTool(toolId);
-    }
-  };
+    const handleToolClick = (toolId: string) => {
+      if (toolId === 'search') {
+        setIsSearchDialogOpen(true);
+        return;
+      }
+      if (activeTool === toolId) {
+        setActiveTool('pointer');
+      } else {
+        setActiveTool(toolId);
+      }
+    };
 
-  return (
-    <>
-      <div
-        className="flex items-center gap-3 py-2 px-6 absolute bottom-4 left-1/2 -translate-x-1/2 z-20 bg-schemafy-bg rounded-lg"
-        style={{
-          boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)',
-        }}
-      >
-        {TOOLS.map((tool) => (
-          <Tool
-            key={tool.id}
-            id={tool.id}
-            onClick={() => handleToolClick(tool.id)}
-            Icon={tool.icon}
-            name={tool.name}
-            shortcut={tool.shortcut}
-            isActive={activeTool === tool.id}
-          />
-        ))}
+    return (
+      <>
+        <div
+          className="flex items-center gap-3 py-2 px-6 absolute bottom-4 left-1/2 -translate-x-1/2 z-20 bg-schemafy-bg rounded-lg"
+          style={{
+            boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)',
+          }}
+        >
+          {TOOLS.map((tool) => (
+            <Tool
+              key={tool.id}
+              id={tool.id}
+              onClick={() => handleToolClick(tool.id)}
+              Icon={tool.icon}
+              name={tool.name}
+              shortcut={tool.shortcut}
+              isActive={activeTool === tool.id}
+            />
+          ))}
 
-        {activeTool &&
-          TOOLS.find((t) => t.id === activeTool)?.isRelationship && (
-            <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2">
-              <RelationshipSelector
-                config={relationshipConfig}
-                onChange={onRelationshipConfigChange}
-              />
-            </div>
-          )}
-      </div>
+          {activeTool &&
+            TOOLS.find((t) => t.id === activeTool)?.isRelationship && (
+              <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2">
+                <RelationshipSelector
+                  config={relationshipConfig}
+                  onChange={onRelationshipConfigChange}
+                />
+              </div>
+            )}
+        </div>
 
-      <SearchEntitiesDialog
-        open={isSearchDialogOpen}
-        onOpenChange={setIsSearchDialogOpen}
-      />
-    </>
-  );
-};
+        <SearchEntitiesDialog
+          open={isSearchDialogOpen}
+          onOpenChange={setIsSearchDialogOpen}
+        />
+      </>
+    );
+  },
+);
 
 const Tool = ({
   onClick,

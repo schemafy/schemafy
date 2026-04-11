@@ -1519,6 +1519,36 @@ ERD mutation API를 호출할 때 `X-Session-Id` 헤더를 함께 전송하면, 
 
 NOTE: `X-Session-Id`를 전송하지 않으면 모든 접속자에게 이벤트가 브로드캐스트됩니다.
 
+==== X-Client-Op-Id 헤더
+
+ERD mutation API를 호출할 때 `X-Client-Op-Id` 헤더를 함께 전송하면, 서버는 해당 값을 커밋된 operation metadata에 기록합니다. 이 값은 HTTP mutation 응답의 `operation.clientOperationId`와 `ERD_MUTATED.operation.clientOperationId`로 다시 전달됩니다.
+
+[cols="1,2,1"]
+|===
+|헤더 |설명 |필수
+
+|`X-Client-Op-Id`
+|클라이언트가 생성한 operation 상관관계 ID
+|선택
+|===
+
+TIP: 클라이언트는 재시도 중인 동일 요청에 같은 `X-Client-Op-Id`를 재사용하여 HTTP 응답과 WebSocket 이벤트를 안전하게 매칭할 수 있습니다.
+
+==== X-Base-Schema-Revision 헤더
+
+ERD mutation API를 호출할 때 `X-Base-Schema-Revision` 헤더를 함께 전송하면, 서버는 요청 시점에 클라이언트가 알고 있던 schema revision을 함께 수신합니다.
+
+[cols="1,2,1"]
+|===
+|헤더 |설명 |필수
+
+|`X-Base-Schema-Revision`
+|클라이언트가 요청 생성 시점에 알고 있던 schema revision
+|선택
+|===
+
+NOTE: mutation 성공 후 실제 커밋 revision은 HTTP mutation 응답의 `operation.committedRevision`과 `ERD_MUTATED.operation.committedRevision`으로 확인할 수 있습니다.
+
 ==== 대상 API
 
 다음 API들이 mutation 수행 후 `ERD_MUTATED` 이벤트를 발생시킵니다.
@@ -4089,6 +4119,12 @@ ERD가 변경(생성, 수정, 삭제)되었을 때 브로드캐스트됩니다. 
   "sessionId": "session-uuid",
   "schemaId": "01HNQD...",
   "affectedTableIds": ["01HNQE...", "01HNQF..."],
+  "operation": {
+    "opId": "01HNQG...",
+    "clientOperationId": "client-op-123",
+    "committedRevision": 42,
+    "derivationKind": "ORIGINAL"
+  },
   "timestamp": 1703577600000
 }
 ----
@@ -4114,6 +4150,26 @@ ERD가 변경(생성, 수정, 삭제)되었을 때 브로드캐스트됩니다. 
 |`affectedTableIds`
 |변경의 영향을 받은 테이블 ID 목록 (ULID). 스키마 수준 변경(스키마 생성/삭제 등)에서는 빈 배열일 수 있습니다.
 |Array<String>
+
+|`operation`
+|커밋된 ERD operation 메타데이터
+|Object
+
+|`operation.opId`
+|커밋된 operation ID
+|String
+
+|`operation.clientOperationId`
+|클라이언트가 보낸 operation ID. 헤더를 보내지 않은 경우 `null`일 수 있습니다.
+|String|null
+
+|`operation.committedRevision`
+|커밋 완료 후 schema revision
+|Number
+
+|`operation.derivationKind`
+|operation derivation kind
+|String
 
 |`timestamp`
 |이벤트 발생 시간 (Unix milliseconds)

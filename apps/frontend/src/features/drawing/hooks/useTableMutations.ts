@@ -12,6 +12,7 @@ import type {
   ChangeTableMetaRequest,
   ChangeTableExtraRequest,
 } from '../api';
+import { syncCommittedRevision } from '../api/mutation-request';
 import { useErdCache } from './useErdCache';
 
 export const useCreateTableWithExtra = (schemaId: string) => {
@@ -22,6 +23,7 @@ export const useCreateTableWithExtra = (schemaId: string) => {
       extra: NonNullable<CreateTableRequest['extra']>;
     }) => createTable({ ...data.request, extra: data.extra }),
     onSuccess: (result) => {
+      syncCommittedRevision(schemaId, result);
       updateAffectedTables(result.affectedTableIds);
     },
   });
@@ -36,8 +38,9 @@ export const useChangeTableName = (schemaId: string) => {
     }: {
       tableId: string;
       data: ChangeTableNameRequest;
-    }) => changeTableName(tableId, data),
+    }) => changeTableName(tableId, data, schemaId),
     onSuccess: (result) => {
+      syncCommittedRevision(schemaId, result);
       updateAffectedTables(result.affectedTableIds);
     },
   });
@@ -52,8 +55,9 @@ export const useChangeTableMeta = (schemaId: string) => {
     }: {
       tableId: string;
       data: ChangeTableMetaRequest;
-    }) => changeTableMeta(tableId, data),
+    }) => changeTableMeta(tableId, data, schemaId),
     onSuccess: (result) => {
+      syncCommittedRevision(schemaId, result);
       updateAffectedTables(result.affectedTableIds);
     },
   });
@@ -68,8 +72,9 @@ export const useChangeTableExtra = (schemaId: string) => {
     }: {
       tableId: string;
       data: ChangeTableExtraRequest;
-    }) => changeTableExtra(tableId, data),
+    }) => changeTableExtra(tableId, data, schemaId),
     onSuccess: (result) => {
+      syncCommittedRevision(schemaId, result);
       updateAffectedTables(result.affectedTableIds);
     },
   });
@@ -78,8 +83,9 @@ export const useChangeTableExtra = (schemaId: string) => {
 export const useDeleteTable = (schemaId: string) => {
   const { removeAndUpdate } = useErdCache(schemaId);
   return useMutation({
-    mutationFn: (tableId: string) => deleteTable(tableId),
+    mutationFn: (tableId: string) => deleteTable(tableId, schemaId),
     onSuccess: (result, tableId) => {
+      syncCommittedRevision(schemaId, result);
       removeAndUpdate(tableId, result.affectedTableIds);
     },
   });

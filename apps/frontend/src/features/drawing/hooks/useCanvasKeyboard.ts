@@ -1,10 +1,10 @@
-import { useEffect } from 'react';
+import { useEffect, type RefObject } from 'react';
 import type { Point } from '../types';
 
 interface UseCanvasKeyboardParams {
   isChatOpen: boolean;
   isShortcutPanelOpen: boolean;
-  mousePosition: Point | null;
+  mousePositionRef: RefObject<Point | null>;
   activeTool: string;
   setChatInputPosition: (pos: Point | null) => void;
   setIsChatOpen: (open: boolean) => void;
@@ -21,7 +21,7 @@ const TOOL_SHORTCUTS: Record<string, string> = {
 export const useCanvasKeyboard = ({
   isChatOpen,
   isShortcutPanelOpen,
-  mousePosition,
+  mousePositionRef,
   activeTool,
   setChatInputPosition,
   setIsChatOpen,
@@ -59,11 +59,11 @@ export const useCanvasKeyboard = ({
       ) {
         e.preventDefault();
 
-        if (!mousePosition) return;
+        if (!mousePositionRef.current) return;
 
         setChatInputPosition({
-          x: mousePosition.x + 16,
-          y: mousePosition.y + 16,
+          x: mousePositionRef.current.x,
+          y: mousePositionRef.current.y,
         });
         setIsChatOpen(true);
       }
@@ -74,9 +74,10 @@ export const useCanvasKeyboard = ({
   }, [
     isChatOpen,
     isShortcutPanelOpen,
-    mousePosition,
+
     activeTool,
     setChatInputPosition,
+    mousePositionRef,
     setIsChatOpen,
     setActiveTool,
   ]);

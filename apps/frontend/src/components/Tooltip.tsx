@@ -11,8 +11,9 @@ const TooltipTrigger = TooltipPrimitive.Trigger;
 
 type Direction = 'top' | 'bottom' | 'left' | 'right';
 
-interface TooltipContentProps
-  extends React.ComponentPropsWithoutRef<typeof TooltipPrimitive.Content> {
+interface TooltipContentProps extends React.ComponentPropsWithoutRef<
+  typeof TooltipPrimitive.Content
+> {
   ref?: React.Ref<React.ElementRef<typeof TooltipPrimitive.Content>>;
   direction?: Direction;
 }
