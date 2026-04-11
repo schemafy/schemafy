@@ -1,14 +1,11 @@
 import { useEffect, useRef, useState } from 'react';
 import { observer } from 'mobx-react-lite';
-import {
-  CURSOR_TRANSITION_MS,
-  getCursorColor,
-} from '@/features/collaboration/utils';
+import { CURSOR_TRANSITION_MS, getCursorColor, } from '@/features/collaboration/utils';
 import { collaborationStore } from '@/store/collaboration.store';
 import { useChatAnimation } from '@/features/collaboration/hooks/useChatAnimation';
 import { useInactivityTimer } from '@/features/collaboration/hooks/useInactivityTimer';
 
-const INACTIVITY_CLOSE_MS = 4000;
+const INACTIVITY_CLOSE_MS = 3500;
 
 const SLIDE_STYLES = `
   @keyframes chat-slide-in {
@@ -30,7 +27,7 @@ interface ChatInputProps {
 }
 
 export const ChatInput = observer(
-  ({ position, onSend, onCancel }: ChatInputProps) => {
+  ({position, onSend, onCancel}: ChatInputProps) => {
     const [message, setMessage] = useState('');
     const inputRef = useRef<HTMLInputElement>(null);
 
@@ -38,7 +35,7 @@ export const ChatInput = observer(
     const activeMessage = collaborationStore.activeChatMessages.get(sessionId);
     const color = getCursorColor(sessionId);
 
-    const { displayedMessage, exitingMessage, isEntering } =
+    const {displayedMessage, exitingMessage, isEntering} =
       useChatAnimation(activeMessage);
     const resetInactivityTimer = useInactivityTimer(
       onCancel,
@@ -83,12 +80,12 @@ export const ChatInput = observer(
         >
           <div
             className="rounded-lg shadow-lg overflow-hidden min-w-[180px] max-w-xs"
-            style={{ backgroundColor: color }}
+            style={{backgroundColor: color}}
           >
             {hasMessage && (
               <div
                 className="relative overflow-hidden border-b border-white/20"
-                style={{ height: '2rem' }}
+                style={{height: '2rem'}}
               >
                 {exitingMessage && (
                   <div
