@@ -1,18 +1,11 @@
 import { queryClient, ThemeProvider } from '@/lib';
 import { QueryClientProvider } from '@tanstack/react-query';
+import { RouterProvider } from '@tanstack/react-router';
 import { ReactFlowProvider } from '@xyflow/react';
-import { Layout } from './components';
-import { BrowserRouter as Router, Route, Routes } from 'react-router-dom';
 import { TooltipProvider } from '@/components';
-import {
-  CanvasPage,
-  LandingPage,
-  OAuthCallbackPage,
-  SignInPage,
-  SignUpPage,
-  WorkspacePage,
-} from '@/pages';
-import { RequireAuth, useAuthBootstrap } from '@/features/auth';
+import { useAuthBootstrap } from '@/features/auth';
+import { authStore } from '@/store/auth.store';
+import { router } from '@/router';
 
 function App() {
   useAuthBootstrap();
@@ -22,35 +15,10 @@ function App() {
       <ThemeProvider defaultTheme="system" storageKey="schemafy-theme">
         <TooltipProvider>
           <ReactFlowProvider>
-            <Router>
-              <Layout>
-                <Routes>
-                  <Route path="/" element={<LandingPage />} />
-                  <Route path="/signup" element={<SignUpPage />} />
-                  <Route path="/signin" element={<SignInPage />} />
-                  <Route
-                    path="/oauth/callback"
-                    element={<OAuthCallbackPage />}
-                  />
-                  <Route
-                    path="/canvas"
-                    element={
-                      <RequireAuth>
-                        <CanvasPage />
-                      </RequireAuth>
-                    }
-                  />
-                  <Route
-                    path="/workspace"
-                    element={
-                      <RequireAuth>
-                        <WorkspacePage />
-                      </RequireAuth>
-                    }
-                  />
-                </Routes>
-              </Layout>
-            </Router>
+            <RouterProvider
+              router={router}
+              context={{ queryClient, auth: authStore }}
+            />
           </ReactFlowProvider>
         </TooltipProvider>
       </ThemeProvider>
