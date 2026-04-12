@@ -3,7 +3,8 @@
     335,
     337,
     346,
-    352
+    352,
+    361
   ],
   ".github/workflows/cursor-pr-review.yml": [
     317,
@@ -409,6 +410,9 @@
     361
   ],
   "apps/frontend/tsconfig.json": [
+    361
+  ],
+  "apps/frontend/src/components/Header/LandingHeader.tsx": [
     361
   ]
 }
