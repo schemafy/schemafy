@@ -63,12 +63,7 @@ export interface TypeSelectorProps {
   typeArguments: string;
   vendorTypes: VendorDatatype[];
   disabled?: boolean;
-  onChange: (
-    dataType: string,
-    typeArguments: string,
-    category: string,
-    prevCategory: string,
-  ) => void;
+  onChange: (dataType: string, typeArguments: string) => void;
   onPendingChange?: (isPending: boolean) => void;
 }
 

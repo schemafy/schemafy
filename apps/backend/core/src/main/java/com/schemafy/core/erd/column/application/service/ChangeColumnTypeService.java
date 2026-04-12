@@ -2,6 +2,7 @@ package com.schemafy.core.erd.column.application.service;
 
 import java.util.HashSet;
 import java.util.List;
+import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 
@@ -29,6 +30,12 @@ import com.schemafy.core.erd.operation.domain.ErdOperationType;
 import com.schemafy.core.erd.relationship.application.port.out.GetRelationshipColumnsByColumnIdPort;
 import com.schemafy.core.erd.relationship.application.port.out.GetRelationshipColumnsByRelationshipIdPort;
 import com.schemafy.core.erd.relationship.application.port.out.GetRelationshipsByPkTableIdPort;
+import com.schemafy.core.erd.schema.application.port.out.GetSchemaByIdPort;
+import com.schemafy.core.erd.schema.domain.Schema;
+import com.schemafy.core.erd.schema.domain.exception.SchemaErrorCode;
+import com.schemafy.core.erd.table.application.port.out.GetTableByIdPort;
+import com.schemafy.core.erd.table.domain.Table;
+import com.schemafy.core.erd.table.domain.exception.TableErrorCode;
 
 import lombok.RequiredArgsConstructor;
 import reactor.core.publisher.Flux;
@@ -48,6 +55,8 @@ public class ChangeColumnTypeService implements ChangeColumnTypeUseCase {
   private final GetRelationshipColumnsByColumnIdPort getRelationshipColumnsByColumnIdPort;
   private final GetRelationshipsByPkTableIdPort getRelationshipsByPkTableIdPort;
   private final GetRelationshipColumnsByRelationshipIdPort getRelationshipColumnsByRelationshipIdPort;
+  private final GetTableByIdPort getTableByIdPort;
+  private final GetSchemaByIdPort getSchemaByIdPort;
   private ErdMutationCoordinator erdMutationCoordinator = ErdMutationCoordinator.noop();
 
   @Autowired
@@ -110,24 +119,31 @@ public class ChangeColumnTypeService implements ChangeColumnTypeUseCase {
         column.autoIncrement(),
         columns,
         column.id());
-    ColumnValidator.validateCharsetAndCollation(
-        normalizedDataType,
-        column.charset(),
-        column.collation());
 
-    return changeColumnTypePort.changeColumnType(column.id(), normalizedDataType, typeArguments)
-        .then(cascadeTypeToFkColumns(
-            column,
-            normalizedDataType,
-            typeArguments,
-            new HashSet<>(),
-            affectedTableIds));
+    return resolveTargetMeta(column, normalizedDataType)
+        .flatMap(targetMeta -> {
+          ColumnValidator.validateCharsetAndCollation(
+              normalizedDataType,
+              targetMeta.charset(),
+              targetMeta.collation());
+
+          return changeColumnTypePort.changeColumnType(column.id(), normalizedDataType, typeArguments)
+              .then(applyDerivedMetaIfNeeded(column, targetMeta))
+              .then(cascadeTypeToFkColumns(
+                  column,
+                  normalizedDataType,
+                  typeArguments,
+                  targetMeta,
+                  new HashSet<>(),
+                  affectedTableIds));
+        });
   }
 
   private Mono<Void> cascadeTypeToFkColumns(
       Column pkColumn,
       String dataType,
       ColumnTypeArguments typeArguments,
+      ResolvedColumnMeta targetMeta,
       Set<String> visited,
       Set<String> affectedTableIds) {
     if (!visited.add(pkColumn.id())) {
@@ -143,6 +159,7 @@ public class ChangeColumnTypeService implements ChangeColumnTypeUseCase {
                 pkColumn,
                 dataType,
                 typeArguments,
+                targetMeta,
                 visited,
                 affectedTableIds)));
   }
@@ -151,6 +168,7 @@ public class ChangeColumnTypeService implements ChangeColumnTypeUseCase {
       Column pkColumn,
       String dataType,
       ColumnTypeArguments typeArguments,
+      ResolvedColumnMeta targetMeta,
       Set<String> visited,
       Set<String> affectedTableIds) {
     return getRelationshipsByPkTableIdPort.findRelationshipsByPkTableId(pkColumn.tableId())
@@ -163,30 +181,99 @@ public class ChangeColumnTypeService implements ChangeColumnTypeUseCase {
               .defaultIfEmpty(List.of())
               .flatMapMany(Flux::fromIterable)
               .filter(rc -> rc.pkColumnId().equals(pkColumn.id()))
-              .flatMap(rc -> {
-                Mono<Void> changeType = changeColumnTypePort.changeColumnType(
-                    rc.fkColumnId(), dataType, typeArguments);
-                Mono<Void> clearCharsetCollation = ColumnValidator.isTextType(dataType)
-                    ? Mono.empty()
-                    : changeColumnMetaPort.changeColumnMeta(
-                        rc.fkColumnId(),
-                        null,
-                        "",
-                        "",
-                        null);
+              .flatMap(rc -> getColumnByIdPort.findColumnById(rc.fkColumnId())
+                  .switchIfEmpty(Mono.error(
+                      new DomainException(ColumnErrorCode.NOT_FOUND, "Column not found")))
+                  .flatMap(fkColumn -> {
+                    Mono<Void> changeType = changeColumnTypePort.changeColumnType(
+                        rc.fkColumnId(), dataType, typeArguments);
+                    Mono<Void> syncCharsetCollation = applyDerivedMetaIfNeeded(fkColumn, targetMeta);
+                    Column fkColumnForCascade = new Column(
+                        fkColumn.id(),
+                        fkColumn.tableId(),
+                        fkColumn.name(),
+                        dataType,
+                        typeArguments,
+                        fkColumn.seqNo(),
+                        fkColumn.autoIncrement(),
+                        targetMeta.charset(),
+                        targetMeta.collation(),
+                        fkColumn.comment());
 
-                return changeType
-                    .then(clearCharsetCollation)
-                    .then(getColumnByIdPort.findColumnById(rc.fkColumnId())
-                        .flatMap(fkCol -> cascadeTypeToFkColumns(
-                            fkCol,
+                    return changeType
+                        .then(syncCharsetCollation)
+                        .then(cascadeTypeToFkColumns(
+                            fkColumnForCascade,
                             dataType,
                             typeArguments,
+                            targetMeta,
                             visited,
-                            affectedTableIds)));
-              });
+                            affectedTableIds));
+                  }));
         })
         .then();
+  }
+
+  private Mono<ResolvedColumnMeta> resolveTargetMeta(Column column, String targetDataType) {
+    if (!ColumnValidator.isTextType(targetDataType)) {
+      return Mono.just(ResolvedColumnMeta.cleared());
+    }
+    if (ColumnValidator.isTextType(column.dataType())
+        && hasText(column.charset())
+        && hasText(column.collation())) {
+      return Mono.just(new ResolvedColumnMeta(column.charset(), column.collation()));
+    }
+
+    return getTableByIdPort.findTableById(column.tableId())
+        .switchIfEmpty(Mono.error(new DomainException(TableErrorCode.NOT_FOUND, "Table not found")))
+        .flatMap(table -> getSchemaByIdPort.findSchemaById(table.schemaId())
+            .switchIfEmpty(Mono.error(new DomainException(SchemaErrorCode.NOT_FOUND, "Schema not found")))
+            .map(schema -> resolveTextMeta(column, table, schema)));
+  }
+
+  private static ResolvedColumnMeta resolveTextMeta(Column column, Table table, Schema schema) {
+    return new ResolvedColumnMeta(
+        coalesce(column.charset(), table.charset(), schema.charset()),
+        coalesce(column.collation(), table.collation(), schema.collation()));
+  }
+
+  private Mono<Void> applyDerivedMetaIfNeeded(Column column, ResolvedColumnMeta targetMeta) {
+    if (Objects.equals(column.charset(), targetMeta.charset())
+        && Objects.equals(column.collation(), targetMeta.collation())) {
+      return Mono.empty();
+    }
+
+    return changeColumnMetaPort.changeColumnMeta(
+        column.id(),
+        null,
+        toPortValue(targetMeta.charset()),
+        toPortValue(targetMeta.collation()),
+        null);
+  }
+
+  private static String coalesce(String... candidates) {
+    for (String candidate : candidates) {
+      if (candidate != null && !candidate.isBlank()) {
+        return candidate.trim();
+      }
+    }
+    return null;
+  }
+
+  private static boolean hasText(String value) {
+    return value != null && !value.isBlank();
+  }
+
+  private static String toPortValue(String value) {
+    return value == null ? "" : value;
+  }
+
+  private record ResolvedColumnMeta(String charset, String collation) {
+
+    static ResolvedColumnMeta cleared() {
+      return new ResolvedColumnMeta(null, null);
+    }
+
   }
 
 }

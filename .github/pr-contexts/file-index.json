@@ -3,7 +3,8 @@
     335,
     337,
     346,
-    352
+    352,
+    341
   ],
   ".github/workflows/cursor-pr-review.yml": [
     317,
@@ -329,5 +330,26 @@
   ],
   "pnpm-workspace.yaml": [
     346
+  ],
+  "apps/backend/core/src/main/java/com/schemafy/core/erd/column/application/service/ChangeColumnTypeService.java": [
+    341
+  ],
+  "apps/backend/core/src/test/java/com/schemafy/core/erd/column/application/service/ChangeColumnTypeServiceTest.java": [
+    341
+  ],
+  "apps/backend/core/src/test/java/com/schemafy/core/erd/operation/integration/ErdOperationLedgerIntegrationTest.java": [
+    341
+  ],
+  "apps/frontend/src/features/drawing/components/Column/EditModeColumn.tsx": [
+    341
+  ],
+  "apps/frontend/src/features/drawing/components/Column/TypeSelector.tsx": [
+    341
+  ],
+  "apps/frontend/src/features/drawing/hooks/useColumn.ts": [
+    341
+  ],
+  "apps/frontend/src/features/drawing/types/column.ts": [
+    341
   ]
 }

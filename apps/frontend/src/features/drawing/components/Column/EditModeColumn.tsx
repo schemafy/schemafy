@@ -29,16 +29,11 @@ export const EditModeColumn = ({
     onUpdateColumn(column.id, 'name', value);
   };
 
-  const handleTypeChange = (
-    dataType: string,
-    typeArguments: string,
-    category: string,
-    prevCategory: string,
-  ) => {
+  const handleTypeChange = (dataType: string, typeArguments: string) => {
     onUpdateColumn(
       column.id,
       'type',
-      JSON.stringify({ dataType, typeArguments, category, prevCategory }),
+      JSON.stringify({ dataType, typeArguments }),
     );
   };
 
