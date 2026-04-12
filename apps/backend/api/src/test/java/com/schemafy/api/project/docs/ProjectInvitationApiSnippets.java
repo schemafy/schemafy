@@ -78,7 +78,7 @@ public class ProjectInvitationApiSnippets extends RestDocsSnippets {
   public static Snippet listMyInvitationsQueryParameters() {
     return queryParameters(
         parameterWithName("page").description("페이지 번호 (0부터 시작, 기본값: 0)").optional(),
-        parameterWithName("size").description("페이지 크기 (기본값: 20)").optional());
+        parameterWithName("size").description("페이지 크기 (기본값: 10, 범위: 1-100)").optional());
   }
 
   /** 내 초대 목록 조회 응답 본문 */
@@ -158,7 +158,7 @@ public class ProjectInvitationApiSnippets extends RestDocsSnippets {
   public static Snippet listInvitationsQueryParameters() {
     return queryParameters(
         parameterWithName("page").description("페이지 번호 (0부터 시작, 기본값: 0)").optional(),
-        parameterWithName("size").description("페이지 크기 (기본값: 10)").optional());
+        parameterWithName("size").description("페이지 크기 (기본값: 10, 범위: 1-100)").optional());
   }
 
   /** 초대 목록 조회 응답 본문 */
