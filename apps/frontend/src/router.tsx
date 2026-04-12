@@ -39,7 +39,8 @@ const signinRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: '/signin',
   validateSearch: (search: Record<string, unknown>) => ({
-    oauthError: typeof search.oauthError === 'string' ? search.oauthError : null,
+    oauthError:
+      typeof search.oauthError === 'string' ? search.oauthError : null,
   }),
   component: SignInPage,
 });
