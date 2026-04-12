@@ -2,7 +2,6 @@ import { Outlet, useRouterState } from '@tanstack/react-router';
 import { cn } from '@/lib';
 import { Header } from './Header';
 import { Footer } from './Footer';
-import { Toaster } from './Toaster';
 
 export const Layout = () => {
   const pathname = useRouterState({
@@ -23,7 +22,6 @@ export const Layout = () => {
         <Outlet />
       </main>
       {!isCanvasPage && !isWorkspacePage && <Footer />}
-      <Toaster />
     </div>
   );
 };
