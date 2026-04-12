@@ -17,6 +17,7 @@ import {
 } from '@/pages';
 import type { authStore } from '@/store/auth.store';
 import { ensureAuthInitialized } from '@/features/auth/lib/auth-bootstrap';
+import { toast } from 'sonner';
 
 export interface RouterContext {
   queryClient: QueryClient;
@@ -62,6 +63,7 @@ const requireAuth = async () => {
   const authenticated = await ensureAuthInitialized();
 
   if (!authenticated) {
+    toast.error('Please sign in to continue.');
     throw redirect({
       to: '/signin',
       replace: true,

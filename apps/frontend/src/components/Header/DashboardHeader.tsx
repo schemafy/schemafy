@@ -4,6 +4,7 @@ import { Avatar } from '../Avatar';
 import { NotificationContents } from './contents/NotificationContents';
 import { logout } from '@/features/auth/api';
 import { useNavigate, useRouteContext } from '@tanstack/react-router';
+import { toast } from 'sonner';
 
 export const DashboardHeader = () => {
   const navigate = useNavigate();
@@ -15,8 +16,8 @@ export const DashboardHeader = () => {
       authStore.clearAuth();
       queryClient.clear();
       await navigate({ to: '/signin', search: { oauthError: null } });
-    } catch (error) {
-      console.error('Failed to sign out', error);
+    } catch {
+      toast.error('Failed to sign out. Please try again.');
     }
   };
 
