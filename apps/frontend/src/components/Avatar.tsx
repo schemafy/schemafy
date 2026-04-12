@@ -19,7 +19,8 @@ const avatarVariants = cva(`rounded-full`, {
 });
 
 interface CustomAvatarProps
-  extends React.ComponentPropsWithoutRef<typeof AvatarPrimitive.Root>,
+  extends
+    React.ComponentPropsWithoutRef<typeof AvatarPrimitive.Root>,
     VariantProps<typeof avatarVariants> {
   src?: string;
   alt?: string;

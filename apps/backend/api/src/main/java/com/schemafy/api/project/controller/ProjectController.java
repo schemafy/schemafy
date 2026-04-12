@@ -1,6 +1,8 @@
 package com.schemafy.api.project.controller;
 
 import jakarta.validation.Valid;
+import jakarta.validation.constraints.Max;
+import jakarta.validation.constraints.Positive;
 import jakarta.validation.constraints.PositiveOrZero;
 
 import org.springframework.beans.factory.annotation.Value;
@@ -96,8 +98,8 @@ public class ProjectController {
   @GetMapping("/workspaces/{workspaceId}/projects")
   public Mono<PageResponse<ProjectSummaryResponse>> getProjects(
       @PathVariable String workspaceId,
-      @RequestParam(defaultValue = "0") int page,
-      @RequestParam(defaultValue = "5") int size,
+      @RequestParam(defaultValue = "0") @PositiveOrZero int page,
+      @RequestParam(defaultValue = "5") @Positive @Max(100) int size,
       Authentication authentication) {
     String userId = authentication.getName();
     return getProjectsUseCase.getProjects(new GetProjectsQuery(
@@ -126,8 +128,8 @@ public class ProjectController {
   @GetMapping("/projects/shared/me")
   public Mono<PageResponse<ProjectSummaryResponse>> getMySharedProjects(
       @RequestParam(defaultValue = "0") @PositiveOrZero int page,
+      @RequestParam(defaultValue = "5") @Positive @Max(100) int size,
       Authentication authentication) {
-    int size = 5;
     String userId = authentication.getName();
     return getMySharedProjectsUseCase.getMySharedProjects(
         new GetMySharedProjectsQuery(userId, page, size))
@@ -169,8 +171,8 @@ public class ProjectController {
   @GetMapping("/projects/{projectId}/members")
   public Mono<PageResponse<ProjectMemberResponse>> getMembers(
       @PathVariable String projectId,
-      @RequestParam(defaultValue = "0") int page,
-      @RequestParam(defaultValue = "5") int size,
+      @RequestParam(defaultValue = "0") @PositiveOrZero int page,
+      @RequestParam(defaultValue = "5") @Positive @Max(100) int size,
       Authentication authentication) {
     String userId = authentication.getName();
     return projectMemberOrchestrator.getMembers(new GetProjectMembersQuery(
@@ -240,8 +242,8 @@ public class ProjectController {
   public Mono<PageResponse<ShareLinkResponse>> getShareLinks(
       @PathVariable String version,
       @PathVariable String projectId,
-      @RequestParam(defaultValue = "0") int page,
-      @RequestParam(defaultValue = "10") int size,
+      @RequestParam(defaultValue = "0") @PositiveOrZero int page,
+      @RequestParam(defaultValue = "10") @Positive @Max(100) int size,
       Authentication authentication) {
     String userId = authentication.getName();
     return getShareLinksUseCase.getShareLinks(new GetShareLinksQuery(

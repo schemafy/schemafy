@@ -1,0 +1,406 @@
+name: Issue Project Intake
+
+on:
+  issues:
+    types: [opened]
+
+permissions:
+  contents: read
+  issues: read
+  repository-projects: write
+
+env:
+  PROJECT_NUMBER: ${{ secrets.PROJECT_NUMBER }}
+  PROJECT_OWNER: ${{ vars.PROJECT_OWNER || github.repository_owner }}
+  PROJECT_STATUS_FIELD_NAME: ${{ vars.PROJECT_STATUS_FIELD_NAME || 'Status' }}
+  PROJECT_SPRINT_FIELD_NAME: ${{ vars.PROJECT_SPRINT_FIELD_NAME || 'Sprint' }}
+  PROJECT_PRIORITY_FIELD_NAME: ${{ vars.PROJECT_PRIORITY_FIELD_NAME || 'Priority' }}
+  STATUS_OPTION_TODO: ${{ vars.STATUS_OPTION_TODO || 'Todo' }}
+  PROJECT_PRIORITY_DEFAULT_OPTION: ${{ vars.PROJECT_PRIORITY_DEFAULT_OPTION || 'P2' }}
+  PROJECT_TIMEZONE: ${{ vars.PROJECT_TIMEZONE || 'Asia/Seoul' }}
+
+jobs:
+  intake_issue_into_project:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Create GitHub App token
+        uses: actions/create-github-app-token@v1
+        id: app-token
+        with:
+          app-id: ${{ secrets.APP_ID }}
+          private-key: ${{ secrets.APP_PRIVATE_KEY }}
+          owner: ${{ env.PROJECT_OWNER || github.repository_owner }}
+
+      - name: Add issue to project and fill default fields
+        uses: actions/github-script@v7
+        with:
+          github-token: ${{ steps.app-token.outputs.token }}
+          script: |
+            const { owner, repo } = context.repo;
+            const issueNumber = context.payload.issue?.number;
+            const issueNodeId = context.payload.issue?.node_id;
+
+            if (!issueNumber || !issueNodeId) {
+              core.setFailed('Opened issue payload is missing number or node_id.');
+              return;
+            }
+
+            const projectNumber = process.env.PROJECT_NUMBER;
+            if (!projectNumber) {
+              core.setFailed('PROJECT_NUMBER secret is not set. Define it in repository secrets.');
+              return;
+            }
+
+            const ownerLogin = process.env.PROJECT_OWNER || owner;
+            const statusFieldName = process.env.PROJECT_STATUS_FIELD_NAME;
+            const sprintFieldName = process.env.PROJECT_SPRINT_FIELD_NAME;
+            const priorityFieldName = process.env.PROJECT_PRIORITY_FIELD_NAME;
+            const todoOptionName = process.env.STATUS_OPTION_TODO;
+            const defaultPriorityOptionName = process.env.PROJECT_PRIORITY_DEFAULT_OPTION;
+            const projectTimeZone = process.env.PROJECT_TIMEZONE;
+            const graph = github.graphql;
+
+            function getCurrentDateInTimeZone(timeZone) {
+              const formatter = new Intl.DateTimeFormat('en-CA', {
+                timeZone,
+                year: 'numeric',
+                month: '2-digit',
+                day: '2-digit',
+              });
+              const parts = Object.fromEntries(
+                formatter
+                  .formatToParts(new Date())
+                  .filter(part => part.type !== 'literal')
+                  .map(part => [part.type, part.value])
+              );
+
+              return `${parts.year}-${parts.month}-${parts.day}`;
+            }
+
+            function addDays(dateString, days) {
+              const date = new Date(`${dateString}T00:00:00Z`);
+              date.setUTCDate(date.getUTCDate() + days);
+              return date.toISOString().slice(0, 10);
+            }
+
+            function resolveCurrentSprint(sprintField, timeZone) {
+              const allIterations = [
+                ...(sprintField.configuration?.completedIterations || []),
+                ...(sprintField.configuration?.iterations || []),
+              ]
+                .map(iteration => ({
+                  ...iteration,
+                  duration: iteration.duration ?? sprintField.configuration?.duration,
+                }))
+                .sort((a, b) => a.startDate.localeCompare(b.startDate));
+
+              if (allIterations.length === 0) {
+                throw new Error(`'${sprintField.name}' field does not have any iterations.`);
+              }
+
+              const today = getCurrentDateInTimeZone(timeZone);
+              const currentSprint = allIterations.find(iteration => {
+                const endExclusive = addDays(iteration.startDate, iteration.duration);
+                return iteration.startDate <= today && today < endExclusive;
+              });
+
+              if (!currentSprint) {
+                throw new Error(`Could not find the current sprint for '${today}' (${timeZone}).`);
+              }
+
+              return { currentSprint, today };
+            }
+
+            async function getProject() {
+              const number = Number(projectNumber);
+              let project = null;
+
+              try {
+                const orgData = await graph(`
+                  query($login:String!, $number:Int!){
+                    organization(login:$login){
+                      projectV2(number:$number){
+                        id
+                        title
+                        fields(first:100){
+                          nodes {
+                            __typename
+                            ... on ProjectV2FieldCommon { id name }
+                            ... on ProjectV2SingleSelectField {
+                              id
+                              name
+                              options { id name }
+                            }
+                            ... on ProjectV2IterationField {
+                              id
+                              name
+                              configuration {
+                                duration
+                                startDay
+                                iterations { id title startDate duration }
+                                completedIterations { id title startDate duration }
+                              }
+                            }
+                          }
+                        }
+                      }
+                    }
+                  }`, { login: ownerLogin, number });
+                project = orgData?.organization?.projectV2;
+              } catch (error) {
+                core.info('Organization-owned project not found. Falling back to user-owned project lookup.');
+              }
+
+              if (!project) {
+                const userData = await graph(`
+                  query($login:String!, $number:Int!){
+                    user(login:$login){
+                      projectV2(number:$number){
+                        id
+                        title
+                        fields(first:100){
+                          nodes {
+                            __typename
+                            ... on ProjectV2FieldCommon { id name }
+                            ... on ProjectV2SingleSelectField {
+                              id
+                              name
+                              options { id name }
+                            }
+                            ... on ProjectV2IterationField {
+                              id
+                              name
+                              configuration {
+                                duration
+                                startDay
+                                iterations { id title startDate duration }
+                                completedIterations { id title startDate duration }
+                              }
+                            }
+                          }
+                        }
+                      }
+                    }
+                  }`, { login: ownerLogin, number });
+                project = userData?.user?.projectV2;
+              }
+
+              if (!project) {
+                throw new Error(`ProjectV2 #${projectNumber} not found under ${ownerLogin}.`);
+              }
+
+              return project;
+            }
+
+            async function findExistingItem(projectId, contentId) {
+              let cursor = null;
+              let hasNextPage = true;
+
+              while (hasNextPage) {
+                const data = await graph(`
+                  query($projectId:ID!, $cursor:String){
+                    node(id:$projectId){
+                      ... on ProjectV2 {
+                        items(first:100, after:$cursor) {
+                          pageInfo { endCursor hasNextPage }
+                          nodes {
+                            id
+                            content {
+                              __typename
+                              ... on Issue { id }
+                              ... on PullRequest { id }
+                            }
+                          }
+                        }
+                      }
+                    }
+                  }`, { projectId, cursor });
+
+                const projectNode = data?.node;
+                const items = projectNode?.items?.nodes || [];
+                const found = items.find(item => item?.content?.id === contentId);
+                if (found) {
+                  return found;
+                }
+
+                hasNextPage = projectNode?.items?.pageInfo?.hasNextPage || false;
+                cursor = projectNode?.items?.pageInfo?.endCursor || null;
+              }
+
+              return null;
+            }
+
+            async function addToProject(projectId, contentId) {
+              const add = await graph(
+                `mutation($projectId:ID!,$contentId:ID!){
+                  addProjectV2ItemById(input:{projectId:$projectId, contentId:$contentId}){
+                    item { id }
+                  }
+                }`,
+                { projectId, contentId }
+              );
+              return add?.addProjectV2ItemById?.item?.id || null;
+            }
+
+            async function findOrCreateItemId(projectId, contentId) {
+              try {
+                const createdItemId = await addToProject(projectId, contentId);
+                if (createdItemId) {
+                  return createdItemId;
+                }
+              } catch (error) {
+                core.info(`Project item add returned '${error.message}'. Checking whether the item already exists.`);
+              }
+
+              const existing = await findExistingItem(projectId, contentId);
+              if (existing?.id) {
+                return existing.id;
+              }
+
+              throw new Error(`Could not resolve a ProjectV2Item for issue #${issueNumber}.`);
+            }
+
+            async function getItemFieldValues(itemId) {
+              const data = await graph(`
+                query($itemId:ID!){
+                  node(id:$itemId){
+                    ... on ProjectV2Item {
+                      id
+                      fieldValues(first:100){
+                        nodes {
+                          __typename
+                          ... on ProjectV2ItemFieldSingleSelectValue {
+                            field { ... on ProjectV2FieldCommon { id name } }
+                            optionId
+                            name
+                          }
+                          ... on ProjectV2ItemFieldIterationValue {
+                            field { ... on ProjectV2IterationField { id name } }
+                            iterationId
+                            title
+                          }
+                        }
+                      }
+                    }
+                  }
+                }`, { itemId });
+
+              return data?.node?.fieldValues?.nodes || [];
+            }
+
+            async function updateSingleSelectField(projectId, itemId, fieldId, optionId) {
+              await graph(
+                `mutation($projectId:ID!, $itemId:ID!, $fieldId:ID!, $optionId:String!){
+                  updateProjectV2ItemFieldValue(input:{
+                    projectId:$projectId,
+                    itemId:$itemId,
+                    fieldId:$fieldId,
+                    value:{ singleSelectOptionId:$optionId }
+                  }) { projectV2Item { id } }
+                }`,
+                { projectId, itemId, fieldId, optionId }
+              );
+            }
+
+            async function updateIterationField(projectId, itemId, fieldId, iterationId) {
+              await graph(
+                `mutation($projectId:ID!, $itemId:ID!, $fieldId:ID!, $iterationId:String!){
+                  updateProjectV2ItemFieldValue(input:{
+                    projectId:$projectId,
+                    itemId:$itemId,
+                    fieldId:$fieldId,
+                    value:{ iterationId:$iterationId }
+                  }) { projectV2Item { id } }
+                }`,
+                { projectId, itemId, fieldId, iterationId }
+              );
+            }
+
+            try {
+              const project = await getProject();
+              const projectFields = project.fields.nodes || [];
+
+              const statusField = projectFields.find(
+                field => field.__typename === 'ProjectV2SingleSelectField' && field.name === statusFieldName
+              );
+              if (!statusField) {
+                throw new Error(`Status field '${statusFieldName}' not found in project '${project.title}'.`);
+              }
+
+              const sprintField = projectFields.find(
+                field => field.__typename === 'ProjectV2IterationField' && field.name === sprintFieldName
+              );
+              if (!sprintField) {
+                throw new Error(`Sprint field '${sprintFieldName}' not found in project '${project.title}'.`);
+              }
+
+              const priorityField = projectFields.find(
+                field => field.__typename === 'ProjectV2SingleSelectField' && field.name === priorityFieldName
+              );
+              if (!priorityField) {
+                throw new Error(`Priority field '${priorityFieldName}' not found in project '${project.title}'.`);
+              }
+
+              const todoOption = (statusField.options || []).find(option => option.name === todoOptionName);
+              if (!todoOption) {
+                throw new Error(`Option '${todoOptionName}' not found in field '${statusFieldName}'.`);
+              }
+
+              const defaultPriorityOption = (priorityField.options || []).find(
+                option => option.name === defaultPriorityOptionName
+              );
+              if (!defaultPriorityOption) {
+                throw new Error(`Option '${defaultPriorityOptionName}' not found in field '${priorityFieldName}'.`);
+              }
+
+              const { currentSprint, today } = resolveCurrentSprint(sprintField, projectTimeZone);
+              core.info(
+                `Resolved sprint '${currentSprint.title}' for issue #${issueNumber} using ${today} (${projectTimeZone}).`
+              );
+
+              const itemId = await findOrCreateItemId(project.id, issueNodeId);
+              const fieldValues = await getItemFieldValues(itemId);
+
+              const statusValue = fieldValues.find(
+                value => value.__typename === 'ProjectV2ItemFieldSingleSelectValue' && value.field?.id === statusField.id
+              );
+              const sprintValue = fieldValues.find(
+                value => value.__typename === 'ProjectV2ItemFieldIterationValue' && value.field?.id === sprintField.id
+              );
+              const priorityValue = fieldValues.find(
+                value => value.__typename === 'ProjectV2ItemFieldSingleSelectValue' && value.field?.id === priorityField.id
+              );
+
+              const updates = [];
+
+              if (!statusValue?.optionId) {
+                updates.push(
+                  updateSingleSelectField(project.id, itemId, statusField.id, todoOption.id)
+                    .then(() => core.info(`Set '${statusFieldName}' to '${todoOptionName}' on project item ${itemId}.`))
+                );
+              } else {
+                core.info(`Keeping existing '${statusFieldName}' value on project item ${itemId}.`);
+              }
+
+              if (!sprintValue?.iterationId) {
+                updates.push(
+                  updateIterationField(project.id, itemId, sprintField.id, currentSprint.id)
+                    .then(() => core.info(`Set '${sprintFieldName}' to '${currentSprint.title}' on project item ${itemId}.`))
+                );
+              } else {
+                core.info(`Keeping existing '${sprintFieldName}' value on project item ${itemId}.`);
+              }
+
+              if (!priorityValue?.optionId) {
+                updates.push(
+                  updateSingleSelectField(project.id, itemId, priorityField.id, defaultPriorityOption.id)
+                    .then(() => core.info(`Set '${priorityFieldName}' to '${defaultPriorityOptionName}' on project item ${itemId}.`))
+                );
+              } else {
+                core.info(`Keeping existing '${priorityFieldName}' value on project item ${itemId}.`);
+              }
+
+              await Promise.all(updates);
+            } catch (error) {
+              core.setFailed(error instanceof Error ? error.message : String(error));
+            }
