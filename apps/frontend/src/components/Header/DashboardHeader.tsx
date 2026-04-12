@@ -1,23 +1,22 @@
 import { authStore } from '@/store/auth.store';
-import { queryClient } from '@/lib';
 import { Button } from '../Button';
 import { Avatar } from '../Avatar';
 import { NotificationContents } from './contents/NotificationContents';
 import { logout } from '@/features/auth/api';
-import { useNavigate } from '@tanstack/react-router';
+import { useNavigate, useRouteContext } from '@tanstack/react-router';
 
 export const DashboardHeader = () => {
   const navigate = useNavigate();
+  const { queryClient } = useRouteContext({ from: '__root__' });
 
   const handleLogout = async () => {
     try {
       await logout();
-    } catch (error) {
-      console.error('Failed to sign out', error);
-    } finally {
       authStore.clearAuth();
       queryClient.clear();
-      await navigate({ to: '/signin' });
+      await navigate({ to: '/signin', search: { oauthError: null } });
+    } catch (error) {
+      console.error('Failed to sign out', error);
     }
   };
 

@@ -37,6 +37,9 @@ const indexRoute = createRoute({
 const signinRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: '/signin',
+  validateSearch: (search: Record<string, unknown>) => ({
+    oauthError: typeof search.oauthError === 'string' ? search.oauthError : null,
+  }),
   component: SignInPage,
 });
 
@@ -49,6 +52,9 @@ const signupRoute = createRoute({
 const oauthCallbackRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: '/oauth/callback',
+  validateSearch: (search: Record<string, unknown>) => ({
+    error: typeof search.error === 'string' ? search.error : null,
+  }),
   component: OAuthCallbackPage,
 });
 
@@ -59,6 +65,7 @@ const requireAuth = async () => {
     throw redirect({
       to: '/signin',
       replace: true,
+      search: { oauthError: null },
     });
   }
 };

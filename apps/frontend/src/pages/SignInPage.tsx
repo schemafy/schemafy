@@ -3,13 +3,7 @@ import { SignInForm } from '@/features/auth';
 import { useSearch } from '@tanstack/react-router';
 
 export const SignInPage = () => {
-  const oauthError = useSearch({
-    strict: false,
-    select: (search) => {
-      const value = (search as { oauthError?: unknown }).oauthError;
-      return typeof value === 'string' ? value : null;
-    },
-  });
+  const { oauthError } = useSearch({ from: '/signin' });
 
   return (
     <div className="py-5 flex flex-col justify-center items-center w-full">

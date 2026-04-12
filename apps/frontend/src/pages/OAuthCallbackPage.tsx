@@ -6,13 +6,7 @@ import { LoadingState } from '@/components';
 
 export const OAuthCallbackPage = observer(() => {
   const navigate = useNavigate();
-  const oAuthError = useSearch({
-    strict: false,
-    select: (search) => {
-      const value = (search as { error?: unknown }).error;
-      return typeof value === 'string' ? value : null;
-    },
-  });
+  const { error: oAuthError } = useSearch({ from: '/oauth/callback' });
 
   const { isInitialized, isAuthLoading, user } = authStore;
 
@@ -30,7 +24,7 @@ export const OAuthCallbackPage = observer(() => {
     if (user) {
       navigate({ to: '/', replace: true });
     } else {
-      navigate({ to: '/signin', replace: true });
+      navigate({ to: '/signin', replace: true, search: { oauthError: null } });
     }
   }, [isInitialized, isAuthLoading, user, navigate, oAuthError]);
 

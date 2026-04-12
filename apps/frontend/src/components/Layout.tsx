@@ -16,8 +16,8 @@ export const Layout = () => {
       <Header isCanvasPage={isCanvasPage} />
       <main
         className={cn(
-          'grow w-full flex',
-          !isCanvasPage && !isWorkspacePage && 'max-w-240',
+          'flex-grow w-full flex',
+          !isCanvasPage && !isWorkspacePage && 'max-w-[960px]',
         )}
       >
         <Outlet />
