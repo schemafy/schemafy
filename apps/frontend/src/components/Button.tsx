@@ -1,12 +1,13 @@
 import {
+  type AnchorHTMLAttributes,
   type ButtonHTMLAttributes,
-  type ComponentType,
+  forwardRef,
+  type MouseEventHandler,
   type ReactNode,
-  type Ref,
 } from 'react';
 import { type VariantProps, cva } from 'class-variance-authority';
 import { cn } from '@/lib';
-import { Link } from '@tanstack/react-router';
+import { Link, type LinkProps } from '@tanstack/react-router';
 
 const buttonVariants = cva(
   `inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-lg transition-all duration-200 
@@ -40,15 +41,22 @@ const buttonVariants = cva(
   },
 );
 
-interface ButtonProps
-  extends
-    ButtonHTMLAttributes<HTMLButtonElement>,
-    VariantProps<typeof buttonVariants> {
-  children?: ReactNode;
-  to?: string;
-}
+type ButtonVariantProps = VariantProps<typeof buttonVariants>;
 
-export const Button = ((
+type ButtonBaseProps = ButtonVariantProps & {
+  children?: ReactNode;
+  className?: string;
+  disabled?: boolean;
+};
+
+type ButtonProps = ButtonBaseProps &
+  Omit<ButtonHTMLAttributes<HTMLButtonElement>, keyof ButtonBaseProps>;
+
+type ButtonLinkProps = ButtonBaseProps &
+  Omit<AnchorHTMLAttributes<HTMLAnchorElement>, keyof ButtonBaseProps | 'href'> &
+  Pick<LinkProps, 'hash' | 'params' | 'search' | 'to'>;
+
+export const Button = forwardRef<HTMLButtonElement, ButtonProps>((
   {
     className,
     variant = 'default',
@@ -57,28 +65,10 @@ export const Button = ((
     disabled = false,
     fullWidth = false,
     round = false,
-    to,
     ...props
   }: ButtonProps,
-  ref: Ref<HTMLButtonElement>,
+  ref,
 ) => {
-  if (to) {
-    return (
-      <Link to={to}>
-        <button
-          className={cn(
-            buttonVariants({ variant, size, fullWidth, round, className }),
-          )}
-          disabled={disabled}
-          ref={ref}
-          {...props}
-        >
-          {children}
-        </button>
-      </Link>
-    );
-  }
-
   return (
     <button
       className={cn(
@@ -91,4 +81,49 @@ export const Button = ((
       {children}
     </button>
   );
-}) as ComponentType<ButtonProps>;
+});
+
+Button.displayName = 'Button';
+
+export const ButtonLink = forwardRef<HTMLAnchorElement, ButtonLinkProps>((
+  {
+    className,
+    variant = 'default',
+    size = 'default',
+    children,
+    disabled = false,
+    fullWidth = false,
+    round = false,
+    onClick,
+    to,
+    ...props
+  },
+  ref,
+) => {
+  const handleClick: MouseEventHandler<HTMLAnchorElement> = (event) => {
+    if (disabled) {
+      event.preventDefault();
+      return;
+    }
+
+    onClick?.(event);
+  };
+
+  return (
+    <Link
+      aria-disabled={disabled}
+      className={cn(
+        buttonVariants({ variant, size, fullWidth, round, className }),
+        disabled && 'pointer-events-none opacity-50',
+      )}
+      onClick={handleClick}
+      ref={ref}
+      to={to}
+      {...props}
+    >
+      {children}
+    </Link>
+  );
+});
+
+ButtonLink.displayName = 'ButtonLink';

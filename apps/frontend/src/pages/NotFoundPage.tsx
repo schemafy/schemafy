@@ -1,4 +1,4 @@
-import { Button } from '@/components';
+import { ButtonLink } from '@/components';
 
 export const NotFoundPage = () => {
   return (
@@ -14,12 +14,12 @@ export const NotFoundPage = () => {
       </div>
 
       <div className="flex gap-3">
-        <Button to="/" round>
+        <ButtonLink to="/" round>
           Go Home
-        </Button>
-        <Button to="/workspace" variant="secondary" round>
+        </ButtonLink>
+        <ButtonLink to="/workspace" variant="secondary" round>
           Open Workspace
-        </Button>
+        </ButtonLink>
       </div>
     </div>
   );

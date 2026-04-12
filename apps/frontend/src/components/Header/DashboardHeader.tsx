@@ -1,5 +1,5 @@
 import { authStore } from '@/store/auth.store';
-import { Button } from '../Button';
+import { Button, ButtonLink } from '../Button';
 import { Avatar } from '../Avatar';
 import { NotificationContents } from './contents/NotificationContents';
 import { logout } from '@/features/auth/api';
@@ -24,9 +24,9 @@ export const DashboardHeader = () => {
   return (
     <div className="flex items-center justify-end gap-5 w-full">
       <div className="flex items-center gap-9 ml-8">
-        <Button to="/workspace" variant={'none'} size={'none'}>
+        <ButtonLink to="/workspace" variant={'none'} size={'none'}>
           Projects
-        </Button>
+        </ButtonLink>
         <Button variant={'none'} size={'none'}>
           Settings
         </Button>
@@ -34,9 +34,9 @@ export const DashboardHeader = () => {
       </div>
       <div className="flex items-center gap-4">
         <div className="flex gap-2">
-          <Button round to="/workspace">
+          <ButtonLink round to="/workspace">
             New Project
-          </Button>
+          </ButtonLink>
           <Button variant={'secondary'} round onClick={handleLogout}>
             Sign Out
           </Button>

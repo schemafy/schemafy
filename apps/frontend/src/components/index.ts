@@ -1,4 +1,4 @@
-export { Button } from './Button';
+export { Button, ButtonLink } from './Button';
 export { Pagination } from './Pagination';
 export { ErrorBoundary } from './ErrorBoundary';
 export { Layout } from './Layout';

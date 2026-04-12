@@ -17,12 +17,16 @@ import {
 } from '@/pages';
 import type { authStore } from '@/store/auth.store';
 import { ensureAuthInitialized } from '@/features/auth/lib/auth-bootstrap';
-import { notifyAuthRequired } from '@/lib/api/error-handler';
 
 export interface RouterContext {
   queryClient: QueryClient;
   auth: typeof authStore;
 }
+
+type SignInSearch = {
+  oauthError: string | null;
+  authRequired?: boolean;
+};
 
 const rootRoute = createRootRouteWithContext<RouterContext>()({
   component: Layout,
@@ -38,9 +42,13 @@ const indexRoute = createRoute({
 const signinRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: '/signin',
-  validateSearch: (search: Record<string, unknown>) => ({
+  validateSearch: (search: Record<string, unknown>): SignInSearch => ({
     oauthError:
       typeof search.oauthError === 'string' ? search.oauthError : null,
+    authRequired:
+      search.authRequired === true || search.authRequired === 'true'
+        ? true
+        : undefined,
   }),
   component: SignInPage,
 });
@@ -64,11 +72,10 @@ const requireAuth = async () => {
   const authenticated = await ensureAuthInitialized();
 
   if (!authenticated) {
-    notifyAuthRequired();
     throw redirect({
       to: '/signin',
       replace: true,
-      search: { oauthError: null },
+      search: { oauthError: null, authRequired: true },
     });
   }
 };

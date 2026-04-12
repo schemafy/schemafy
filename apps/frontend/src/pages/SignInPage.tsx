@@ -1,9 +1,25 @@
-import { Button } from '@/components';
+import { useEffect, useRef } from 'react';
+import { ButtonLink } from '@/components';
 import { SignInForm } from '@/features/auth';
-import { useSearch } from '@tanstack/react-router';
+import { useNavigate, useSearch } from '@tanstack/react-router';
+import { notifyAuthRequired } from '@/lib/api/error-handler';
 
 export const SignInPage = () => {
-  const { oauthError } = useSearch({ from: '/signin' });
+  const navigate = useNavigate();
+  const { oauthError, authRequired } = useSearch({ from: '/signin' });
+  const hasHandledAuthRequired = useRef(false);
+
+  useEffect(() => {
+    if (!authRequired || hasHandledAuthRequired.current) return;
+
+    hasHandledAuthRequired.current = true;
+    notifyAuthRequired();
+    void navigate({
+      to: '/signin',
+      replace: true,
+      search: { oauthError },
+    });
+  }, [authRequired, navigate, oauthError]);
 
   return (
     <div className="py-5 flex flex-col justify-center items-center w-full">
@@ -13,14 +29,14 @@ export const SignInPage = () => {
         <p className="font-body-sm text-schemafy-dark-gray">
           Don't have an account?
         </p>
-        <Button
+        <ButtonLink
           variant={'none'}
           size={'none'}
           className="text-schemafy-dark-gray"
           to="/signup"
         >
           Sign Up
-        </Button>
+        </ButtonLink>
       </div>
     </div>
   );

@@ -22,7 +22,6 @@ export const notifyAuthRequired = () => {
 
 const notifyAutoHandledError = (code: string | undefined, message: string) => {
   if (code && AUTH_REQUIRED_CODES.has(code)) {
-    notifyAuthRequired();
     return;
   }
 
