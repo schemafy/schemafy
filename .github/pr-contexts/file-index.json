@@ -283,7 +283,8 @@
     331
   ],
   "apps/frontend/src/features/drawing/contexts/SelectedSchemaContext.tsx": [
-    331
+    331,
+    361
   ],
   "apps/frontend/src/features/drawing/hooks/index.ts": [
     331
@@ -304,7 +305,8 @@
     331
   ],
   "apps/frontend/src/features/drawing/hooks/useRelationships.ts": [
-    331
+    331,
+    361
   ],
   "apps/frontend/src/features/drawing/hooks/useTables.ts": [
     331
@@ -325,9 +327,88 @@
     346
   ],
   "pnpm-lock.yaml": [
-    346
+    346,
+    361
   ],
   "pnpm-workspace.yaml": [
     346
+  ],
+  "apps/bff/tsconfig.json": [
+    361
+  ],
+  "apps/frontend/package.json": [
+    361
+  ],
+  "apps/frontend/src/App.tsx": [
+    361
+  ],
+  "apps/frontend/src/components/Button.tsx": [
+    361
+  ],
+  "apps/frontend/src/components/Header/DashboardHeader.tsx": [
+    361
+  ],
+  "apps/frontend/src/components/Header/Header.tsx": [
+    361
+  ],
+  "apps/frontend/src/components/Layout.tsx": [
+    361
+  ],
+  "apps/frontend/src/components/Loading.tsx": [
+    361
+  ],
+  "apps/frontend/src/components/QueryStateBoundary.tsx": [
+    361
+  ],
+  "apps/frontend/src/components/index.ts": [
+    361
+  ],
+  "apps/frontend/src/features/auth/RequireAuth.tsx": [
+    361
+  ],
+  "apps/frontend/src/features/auth/components/SignInForm.tsx": [
+    361
+  ],
+  "apps/frontend/src/features/auth/components/SignUpForm.tsx": [
+    361
+  ],
+  "apps/frontend/src/features/auth/hooks/useAuthBootstrap.ts": [
+    361
+  ],
+  "apps/frontend/src/features/auth/index.ts": [
+    361
+  ],
+  "apps/frontend/src/features/auth/lib/auth-bootstrap.ts": [
+    361
+  ],
+  "apps/frontend/src/lib/api/error-handler.ts": [
+    361
+  ],
+  "apps/frontend/src/lib/query/query-client.ts": [
+    361
+  ],
+  "apps/frontend/src/pages/NotFoundPage.tsx": [
+    361
+  ],
+  "apps/frontend/src/pages/OAuthCallbackPage.tsx": [
+    361
+  ],
+  "apps/frontend/src/pages/SignInPage.tsx": [
+    361
+  ],
+  "apps/frontend/src/pages/WorkspacePage.tsx": [
+    361
+  ],
+  "apps/frontend/src/pages/index.ts": [
+    361
+  ],
+  "apps/frontend/src/router.tsx": [
+    361
+  ],
+  "apps/frontend/tsconfig.app.json": [
+    361
+  ],
+  "apps/frontend/tsconfig.json": [
+    361
   ]
 }
