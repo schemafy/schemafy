@@ -2,8 +2,14 @@ package com.schemafy.core.project.domain;
 
 public enum WorkspaceRole {
 
-  ADMIN,
-  MEMBER;
+  ADMIN(2),
+  MEMBER(1);
+
+  private final int level;
+
+  WorkspaceRole(int level) {
+    this.level = level;
+  }
 
   public static WorkspaceRole fromString(String value) {
     for (WorkspaceRole role : WorkspaceRole.values()) {
@@ -14,10 +20,16 @@ public enum WorkspaceRole {
     throw new IllegalArgumentException("Unknown role: " + value);
   }
 
-  public boolean isAdmin() { return this == ADMIN; }
+  public int getLevel() { return level; }
+
+  public boolean isAdmin() { return this.level >= ADMIN.level; }
+
+  public boolean isHigherOrEqualThan(WorkspaceRole other) {
+    return this.level >= other.level;
+  }
 
   public ProjectRole toProjectRole() {
-    return this == ADMIN ? ProjectRole.ADMIN : ProjectRole.VIEWER;
+    return isAdmin() ? ProjectRole.ADMIN : ProjectRole.VIEWER;
   }
 
 }
