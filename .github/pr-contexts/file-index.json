@@ -1,7 +1,11 @@
 {
   ".github/pr-contexts/file-index.json": [
     291,
-    335
+    335,
+    337,
+    346,
+    352,
+    318
   ],
   "apps/frontend/src/features/collaboration/components/ChatBubble.tsx": [
     291
@@ -31,12 +35,10 @@
     291
   ],
   "apps/frontend/src/features/drawing/components/Toolbar.tsx": [
-    331,
-    291
+    331
   ],
   "apps/frontend/src/features/drawing/components/index.ts": [
-    331,
-    291
+    331
   ],
   ".github/workflows/cursor-pr-review.yml": [
     317,
@@ -55,19 +57,17 @@
     317
   ],
   "apps/frontend/src/features/drawing/hooks/useCanvasController.ts": [
-    331,
-    291
+    331
   ],
   "apps/frontend/src/features/drawing/hooks/useCanvasKeyboard.ts": [
-    331,
-    291
+    331
   ],
   "apps/frontend/src/hooks/useChatMessages.ts": [
     291
   ],
   "apps/frontend/src/pages/CanvasPage.tsx": [
     331,
-    291
+    318
   ],
   "apps/frontend/src/store/collaboration.store.ts": [
     291
@@ -368,5 +368,101 @@
   ],
   "pnpm-workspace.yaml": [
     346
+  ],
+  "apps/bff/src/app.module.ts": [
+    318
+  ],
+  "apps/bff/src/common/types/api-response.types.ts": [
+    318
+  ],
+  "apps/bff/src/project/project.controller.ts": [
+    318
+  ],
+  "apps/bff/src/project/project.module.ts": [
+    318
+  ],
+  "apps/bff/src/project/project.service.ts": [
+    318
+  ],
+  "apps/bff/src/project/project.types.ts": [
+    318
+  ],
+  "apps/bff/src/workspace/workspace.service.ts": [
+    318
+  ],
+  "apps/bff/src/workspace/workspace.types.ts": [
+    318
+  ],
+  "apps/frontend/src/App.tsx": [
+    318
+  ],
+  "apps/frontend/src/components/EntityFormDialog.tsx": [
+    318
+  ],
+  "apps/frontend/src/components/Header/CanvasHeader.tsx": [
+    318
+  ],
+  "apps/frontend/src/components/Header/contents/NotificationContents.tsx": [
+    318
+  ],
+  "apps/frontend/src/components/Header/contents/ShareContents.tsx": [
+    318
+  ],
+  "apps/frontend/src/components/Layout.tsx": [
+    318
+  ],
+  "apps/frontend/src/components/index.ts": [
+    318
+  ],
+  "apps/frontend/src/features/project/api/api.ts": [
+    318
+  ],
+  "apps/frontend/src/features/project/api/index.ts": [
+    318
+  ],
+  "apps/frontend/src/features/project/api/types.ts": [
+    318
+  ],
+  "apps/frontend/src/features/project/components/ProjectFormDialog.tsx": [
+    318
+  ],
+  "apps/frontend/src/features/project/hooks/query-keys.ts": [
+    318
+  ],
+  "apps/frontend/src/features/project/hooks/useProjects.ts": [
+    318
+  ],
+  "apps/frontend/src/features/project/utils/role.ts": [
+    318
+  ],
+  "apps/frontend/src/features/workspace/api/api.ts": [
+    318
+  ],
+  "apps/frontend/src/features/workspace/api/types.ts": [
+    318
+  ],
+  "apps/frontend/src/features/workspace/components/WorkspaceFormDialog.tsx": [
+    318
+  ],
+  "apps/frontend/src/features/workspace/components/WorkspaceMembersTab.tsx": [
+    318
+  ],
+  "apps/frontend/src/features/workspace/components/WorkspaceProjectsTab.tsx": [
+    318
+  ],
+  "apps/frontend/src/features/workspace/hooks/useWorkspaces.ts": [
+    318
+  ],
+  "apps/frontend/src/lib/api/types.ts": [
+    318
+  ],
+  "apps/frontend/src/pages/NotFoundPage.tsx": [
+    318
+  ],
+  "apps/frontend/src/pages/WorkspacePage.tsx": [
+    318
+  ],
+  "apps/frontend/src/pages/index.ts": [
+    318
   ]
 }

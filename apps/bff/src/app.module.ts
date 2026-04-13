@@ -9,6 +9,7 @@ import { HealthController } from './health/health.controller.js';
 import { MemoModule } from './memo/memo.module.js';
 import { AuthModule } from './auth/auth.module';
 import { WorkspaceModule } from './workspace/workspace.module';
+import { ProjectModule } from './project/project.module';
 import { HttpExceptionFilter } from './common/filters/http-exception.filter.js';
 
 @Module({
@@ -22,6 +23,7 @@ import { HttpExceptionFilter } from './common/filters/http-exception.filter.js';
     MemoModule,
     AuthModule,
     WorkspaceModule,
+    ProjectModule,
   ],
   controllers: [HealthController],
   providers: [

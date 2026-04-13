@@ -1,33 +1,37 @@
 import { EntityFormDialog } from '@/components';
-import { useCreateWorkspace, useUpdateWorkspace } from '../hooks/useWorkspaces';
+import { useCreateProject, useUpdateProject } from '../hooks/useProjects';
 
-interface WorkspaceFormDialogProps {
+interface ProjectFormDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   mode: 'create' | 'edit';
-  workspaceId?: string;
+  workspaceId: string;
+  projectId?: string;
   initialName?: string;
   initialDescription?: string;
 }
 
-export const WorkspaceFormDialog = ({
+export const ProjectFormDialog = ({
   open,
   onOpenChange,
   mode,
-  workspaceId = '',
+  workspaceId,
+  projectId = '',
   initialName = '',
   initialDescription = '',
-}: WorkspaceFormDialogProps) => {
-  const { mutate: createWorkspace, isPending: isCreating } =
-    useCreateWorkspace();
-  const { mutate: updateWorkspace, isPending: isUpdating } =
-    useUpdateWorkspace(workspaceId);
+}: ProjectFormDialogProps) => {
+  const { mutate: createProject, isPending: isCreating } =
+    useCreateProject(workspaceId);
+  const { mutate: updateProject, isPending: isUpdating } = useUpdateProject(
+    projectId,
+    workspaceId,
+  );
 
   const handleSubmit = (data: { name: string; description: string }) => {
     if (mode === 'create') {
-      createWorkspace(data, { onSuccess: () => onOpenChange(false) });
+      createProject(data, { onSuccess: () => onOpenChange(false) });
     } else {
-      updateWorkspace(data, { onSuccess: () => onOpenChange(false) });
+      updateProject(data, { onSuccess: () => onOpenChange(false) });
     }
   };
 
@@ -35,13 +39,13 @@ export const WorkspaceFormDialog = ({
     <EntityFormDialog
       open={open}
       onOpenChange={onOpenChange}
-      title={mode === 'create' ? 'Create Workspace' : 'Edit Workspace'}
+      title={mode === 'create' ? 'Create Project' : 'Edit Project'}
       submitLabel={mode === 'create' ? 'Create' : 'Save'}
       initialName={initialName}
       initialDescription={initialDescription}
       isPending={isCreating || isUpdating}
       onSubmit={handleSubmit}
-      namePlaceholder="Workspace name"
+      namePlaceholder="Project name"
     />
   );
 };

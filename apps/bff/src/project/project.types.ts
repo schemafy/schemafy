@@ -1,23 +1,25 @@
-export type WorkspaceResponse = {
+export type ProjectResponse = {
   id: string;
+  workspaceId: string;
   name: string;
   description?: string;
   createdAt: string;
   updatedAt: string;
-  projectCount: number;
   currentUserRole: string;
 };
 
-export type WorkspaceSummaryResponse = {
+export type ProjectSummaryResponse = {
   id: string;
+  workspaceId: string;
   name: string;
   description?: string;
+  myRole: string;
   createdAt: string;
   updatedAt: string;
 };
 
-export type WorkspaceMemberResponse = {
-  workspaceId: string;
+export type ProjectMemberResponse = {
+  projectId: string;
   userId: string;
   userName: string;
   userEmail: string;
@@ -25,9 +27,10 @@ export type WorkspaceMemberResponse = {
   joinedAt: string;
 };
 
-export type WorkspaceInvitationResponse = {
+export type ProjectInvitationResponse = {
   id: string;
   workspaceId: string;
+  projectId: string;
   invitedEmail: string;
   invitedRole: string;
   invitedBy: string;
@@ -37,8 +40,9 @@ export type WorkspaceInvitationResponse = {
   createdAt: string;
 };
 
-export type WorkspaceInvitationCreateResponse = {
+export type ProjectInvitationCreateResponse = {
   id: string;
+  projectId: string;
   workspaceId: string;
   invitedEmail: string;
   invitedRole: string;
@@ -48,21 +52,21 @@ export type WorkspaceInvitationCreateResponse = {
   createdAt: string;
 };
 
-export type CreateWorkspaceRequest = {
+export type CreateProjectRequest = {
   name: string;
   description?: string;
 };
 
-export type UpdateWorkspaceRequest = {
+export type UpdateProjectRequest = {
   name: string;
   description?: string;
 };
 
-export type UpdateMemberRoleRequest = {
+export type CreateProjectInvitationRequest = {
+  email: string;
   role: string;
 };
 
-export type CreateWorkspaceInvitationRequest = {
-  email: string;
+export type UpdateProjectMemberRoleRequest = {
   role: string;
 };

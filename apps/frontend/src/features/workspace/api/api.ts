@@ -1,8 +1,7 @@
-import { apiClient } from '@/lib/api';
+import { apiClient, type PageResponse } from '@/lib/api';
 import type {
   CreateWorkspaceInvitationRequest,
   CreateWorkspaceRequest,
-  PageResponse,
   UpdateMemberRoleRequest,
   UpdateWorkspaceRequest,
   WorkspaceInvitationCreateResponse,

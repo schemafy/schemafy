@@ -5,13 +5,16 @@ import { ExportContents } from './contents/ExportContents';
 import { ShareContents } from './contents/ShareContents';
 import { VersionsContents } from './contents/VersionContents';
 import { SettingsContents } from './contents/SettingsContents';
+import { useParams } from 'react-router-dom';
 
 export const CanvasHeader = () => {
+  const { projectId = '' } = useParams();
+
   return (
     <div className="flex items-center gap-9">
       <ImportContents />
       <ExportContents />
-      <ShareContents />
+      <ShareContents projectId={projectId} />
       <VersionsContents />
       <SettingsContents />
       <Button variant={'secondary'} round>

@@ -7,7 +7,7 @@ import { Toaster } from './Toaster';
 
 export const Layout = ({ children }: PropsWithChildren) => {
   const location = useLocation();
-  const isCanvasPage = location.pathname === '/canvas';
+  const isCanvasPage = location.pathname.startsWith('/canvas');
   const isWorkspacePage = location.pathname.startsWith('/workspace');
 
   return (
