@@ -4,7 +4,8 @@
     335,
     337,
     346,
-    352
+    352,
+    318
   ],
   "apps/frontend/src/features/collaboration/components/ChatBubble.tsx": [
     291
@@ -34,12 +35,10 @@
     291
   ],
   "apps/frontend/src/features/drawing/components/Toolbar.tsx": [
-    331,
-    291
+    331
   ],
   "apps/frontend/src/features/drawing/components/index.ts": [
-    331,
-    291
+    331
   ],
   ".github/workflows/cursor-pr-review.yml": [
     317,
@@ -58,19 +57,17 @@
     317
   ],
   "apps/frontend/src/features/drawing/hooks/useCanvasController.ts": [
-    331,
-    291
+    331
   ],
   "apps/frontend/src/features/drawing/hooks/useCanvasKeyboard.ts": [
-    331,
-    291
+    331
   ],
   "apps/frontend/src/hooks/useChatMessages.ts": [
     291
   ],
   "apps/frontend/src/pages/CanvasPage.tsx": [
     331,
-    291
+    318
   ],
   "apps/frontend/src/store/collaboration.store.ts": [
     291
@@ -331,22 +328,10 @@
   "apps/frontend/src/features/drawing/components/TablePreview.tsx": [
     331
   ],
-  "apps/frontend/src/features/drawing/components/Toolbar.tsx": [
-    331
-  ],
-  "apps/frontend/src/features/drawing/components/index.ts": [
-    331
-  ],
   "apps/frontend/src/features/drawing/contexts/SelectedSchemaContext.tsx": [
     331
   ],
   "apps/frontend/src/features/drawing/hooks/index.ts": [
-    331
-  ],
-  "apps/frontend/src/features/drawing/hooks/useCanvasController.ts": [
-    331
-  ],
-  "apps/frontend/src/features/drawing/hooks/useCanvasKeyboard.ts": [
     331
   ],
   "apps/frontend/src/features/drawing/hooks/useCanvasNodes.ts": [
@@ -370,10 +355,6 @@
   ],
   "apps/frontend/src/features/memo/hooks/useMemoStore.ts": [
     331
-  ],
-  "apps/frontend/src/pages/CanvasPage.tsx": [
-    331,
-    318
   ],
   "package-lock.json": [
     346
