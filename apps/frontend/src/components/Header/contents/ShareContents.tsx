@@ -77,7 +77,6 @@ export const ShareContents = ({projectId}: { projectId: string }) => {
         align="end"
         className="flex flex-col gap-2.5 font-body-xs"
       >
-        a{' '}
         {currentUserRole === 'ADMIN' && (
           <div className="flex gap-4">
             <input

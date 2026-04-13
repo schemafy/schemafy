@@ -1,17 +1,8 @@
 import { MoreHorizontal, Search } from 'lucide-react';
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import {
-  Button,
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuTrigger,
-  Pagination,
-} from '@/components';
-import {
-  useGetProjects,
-  useLeaveProject,
-} from '@/features/project/hooks/useProjects';
+import { Button, DropdownMenu, DropdownMenuContent, DropdownMenuTrigger, Pagination, } from '@/components';
+import { useGetProjects, useLeaveProject, } from '@/features/project/hooks/useProjects';
 import { ProjectFormDialog } from '@/features/project/components/ProjectFormDialog';
 import { ConfirmDialog } from './ConfirmDialog';
 import type { ProjectSummaryResponse } from '@/features/project/api';
@@ -22,9 +13,9 @@ interface WorkspaceProjectsTabProps {
 }
 
 export const WorkspaceProjectsTab = ({
-  workspaceId,
-  currentUserRole,
-}: WorkspaceProjectsTabProps) => {
+                                       workspaceId,
+                                       currentUserRole,
+                                     }: WorkspaceProjectsTabProps) => {
   const navigate = useNavigate();
   const [searchQuery, setSearchQuery] = useState('');
   const [currentPage, setCurrentPage] = useState(1);
@@ -37,9 +28,9 @@ export const WorkspaceProjectsTab = ({
     null,
   );
 
-  const { data: projects } = useGetProjects(workspaceId, currentPage - 1);
+  const {data: projects} = useGetProjects(workspaceId, currentPage - 1);
 
-  const { mutate: leaveProject } = useLeaveProject();
+  const {mutate: leaveProject} = useLeaveProject();
 
   const filtered = projects?.content.filter((p) =>
     p.name.toLowerCase().includes(searchQuery.toLowerCase()),
@@ -72,56 +63,56 @@ export const WorkspaceProjectsTab = ({
       <div className="border border-schemafy-light-gray rounded-[12px] overflow-hidden">
         <table className="w-full">
           <thead>
-            <tr className="border-b border-schemafy-light-gray">
-              <th className="text-left px-6 py-4 font-overline-sm text-schemafy-text w-[40%]">
-                Name
-              </th>
-              <th className="text-left px-6 py-4 font-overline-sm text-schemafy-text whitespace-nowrap">
-                Last Modified
-              </th>
-              <th className="text-left px-6 py-4 font-overline-sm text-schemafy-text">
-                Access
-              </th>
-              <th className="px-6 py-4 w-10" />
-            </tr>
+          <tr className="border-b border-schemafy-light-gray">
+            <th className="text-left px-6 py-4 font-overline-sm text-schemafy-text w-[40%]">
+              Name
+            </th>
+            <th className="text-left px-6 py-4 font-overline-sm text-schemafy-text whitespace-nowrap">
+              Last Modified
+            </th>
+            <th className="text-left px-6 py-4 font-overline-sm text-schemafy-text">
+              Access
+            </th>
+            <th className="px-6 py-4 w-10"/>
+          </tr>
           </thead>
           <tbody>
-            {filtered &&
-              filtered.map((project) => (
-                <tr
-                  key={project.id}
-                  className="border-b border-schemafy-light-gray last:border-b-0 hover:bg-schemafy-secondary transition-colors cursor-pointer"
-                  onClick={() => navigate(`/canvas/${project.id}`)}
-                >
-                  <td className="px-6 py-4 font-body-sm text-schemafy-text">
-                    {project.name}
-                  </td>
-                  <td className="px-6 py-4 font-body-sm text-schemafy-dark-gray">
-                    {project.updatedAt}
-                  </td>
-                  <td className="px-6 py-4">
+          {filtered &&
+            filtered.map((project) => (
+              <tr
+                key={project.id}
+                className="border-b border-schemafy-light-gray last:border-b-0 hover:bg-schemafy-secondary transition-colors cursor-pointer"
+                onClick={() => navigate(`/canvas/${project.id}`)}
+              >
+                <td className="px-6 py-4 font-body-sm text-schemafy-text">
+                  {project.name}
+                </td>
+                <td className="px-6 py-4 font-body-sm text-schemafy-dark-gray">
+                  {project.updatedAt}
+                </td>
+                <td className="px-6 py-4">
                     <span className="px-3 py-1 bg-schemafy-secondary text-schemafy-dark-gray font-body-sm rounded-full">
                       {project.myRole.toUpperCase()}
                     </span>
-                  </td>
-                  <ProjectOption
-                    project={project}
-                    onEditClick={setEditTarget}
-                    onLeaveClick={setLeaveTarget}
-                  />
-                </tr>
-              ))}
-            <tr>
-              <td colSpan={5} className="py-2">
-                <div className="flex justify-center">
-                  <Pagination
-                    currentPage={currentPage}
-                    totalPages={projects?.totalPages ?? 1}
-                    onPageChange={setCurrentPage}
-                  />
-                </div>
-              </td>
-            </tr>
+                </td>
+                <ProjectOption
+                  project={project}
+                  onEditClick={setEditTarget}
+                  onLeaveClick={setLeaveTarget}
+                />
+              </tr>
+            ))}
+          <tr>
+            <td colSpan={4} className="py-2">
+              <div className="flex justify-center">
+                <Pagination
+                  currentPage={currentPage}
+                  totalPages={projects?.totalPages ?? 1}
+                  onPageChange={setCurrentPage}
+                />
+              </div>
+            </td>
+          </tr>
           </tbody>
         </table>
       </div>
@@ -156,10 +147,10 @@ export const WorkspaceProjectsTab = ({
 };
 
 const ProjectOption = ({
-  project,
-  onEditClick,
-  onLeaveClick,
-}: {
+                         project,
+                         onEditClick,
+                         onLeaveClick,
+                       }: {
   project: ProjectSummaryResponse;
   onEditClick: (project: ProjectSummaryResponse) => void;
   onLeaveClick: (project: ProjectSummaryResponse) => void;
@@ -169,7 +160,7 @@ const ProjectOption = ({
       <DropdownMenu>
         <DropdownMenuTrigger asChild>
           <button className="text-schemafy-dark-gray hover:text-schemafy-text transition-colors">
-            <MoreHorizontal size={16} />
+            <MoreHorizontal size={16}/>
           </button>
         </DropdownMenuTrigger>
         <DropdownMenuContent
