@@ -4,15 +4,16 @@ on:
   pull_request:
     types: [ opened, reopened, synchronize, ready_for_review ]
     branches: [ main ]
-    paths-ignore:
-      - '.github/pr-contexts/**'
 
 permissions:
   contents: write
 
 concurrency:
-  group: save-pr-context-${{ github.event.pull_request.number }}
-  cancel-in-progress: true
+  group: save-pr-context
+  cancel-in-progress: false
+
+env:
+  CONTEXT_BRANCH: pr-contexts
 
 jobs:
   save-context:
@@ -20,27 +21,25 @@ jobs:
     if: ${{ github.actor != 'github-actions[bot]' && !github.event.pull_request.draft }}
 
     steps:
-      - name: Check commit message guard
-        id: commit_guard
-        env:
-          GH_TOKEN: ${{ github.token }}
-        run: |
-          commit_msg="$(gh api "repos/${GITHUB_REPOSITORY}/commits/${{ github.event.pull_request.head.sha }}" \
-            --jq '.commit.message' 2>/dev/null || echo '')"
-          if printf '%s' "${commit_msg}" | grep -qE 'chore: (add|update) file-index for PR #[0-9]+|\[skip ci\]'; then
-            echo "::notice::Skipping: automated commit detected (loop guard)."
-            echo "skip=true" >> "$GITHUB_OUTPUT"
-          fi
-
-      - name: Update file-index.json on PR branch
-        if: ${{ steps.commit_guard.outputs.skip != 'true' }}
+      - name: Update file-index.json on dedicated branch
         env:
           GH_TOKEN: ${{ github.token }}
           PR_NUMBER: ${{ github.event.pull_request.number }}
-          PR_HEAD_REF: ${{ github.event.pull_request.head.ref }}
         run: |
           set +e
           [ -z "${PR_NUMBER:-}" ] && exit 0
+
+          if ! gh api "repos/${GITHUB_REPOSITORY}/branches/${CONTEXT_BRANCH}" >/dev/null 2>&1; then
+            main_sha="$(gh api "repos/${GITHUB_REPOSITORY}/git/refs/heads/main" --jq '.object.sha' 2>/dev/null || true)"
+            if [ -z "${main_sha:-}" ]; then
+              echo "ERROR: failed to resolve main SHA to seed ${CONTEXT_BRANCH}."
+              exit 1
+            fi
+            gh api "repos/${GITHUB_REPOSITORY}/git/refs" \
+              --method POST \
+              -f ref="refs/heads/${CONTEXT_BRANCH}" \
+              -f sha="${main_sha}" >/dev/null 2>&1 || true
+          fi
 
           changed_files="$(
             gh api "repos/${GITHUB_REPOSITORY}/pulls/${PR_NUMBER}/files?per_page=100" \
@@ -49,8 +48,7 @@ jobs:
 
           [ -z "${changed_files:-}" ] && exit 0
 
-          ref_encoded="${PR_HEAD_REF//#/%23}"
-          index_response="$(gh api "repos/${GITHUB_REPOSITORY}/contents/.github/pr-contexts/file-index.json?ref=${ref_encoded}" 2>/dev/null || true)"
+          index_response="$(gh api "repos/${GITHUB_REPOSITORY}/contents/.github/pr-contexts/file-index.json?ref=${CONTEXT_BRANCH}" 2>/dev/null || true)"
           existing_sha=""
           existing_content="{}"
           if [ -n "${index_response:-}" ]; then
@@ -98,14 +96,14 @@ jobs:
               --method PUT \
               -f message="chore: update file-index for PR #${PR_NUMBER}" \
               -f content="${new_content}" \
-              -f branch="${PR_HEAD_REF}" \
+              -f branch="${CONTEXT_BRANCH}" \
               -f sha="${existing_sha}" >/dev/null
           else
             gh api "repos/${GITHUB_REPOSITORY}/contents/.github/pr-contexts/file-index.json" \
               --method PUT \
               -f message="chore: add file-index for PR #${PR_NUMBER}" \
               -f content="${new_content}" \
-              -f branch="${PR_HEAD_REF}" >/dev/null
+              -f branch="${CONTEXT_BRANCH}" >/dev/null
           fi
 
-          echo "file-index.json updated for PR #${PR_NUMBER} on ${PR_HEAD_REF}"
+          echo "file-index.json updated for PR #${PR_NUMBER} on ${CONTEXT_BRANCH}"
