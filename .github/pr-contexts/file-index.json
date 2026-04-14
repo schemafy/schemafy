@@ -40,7 +40,8 @@
   ],
   ".github/workflows/cursor-pr-review.yml": [
     317,
-    335
+    335,
+    356
   ],
   ".github/workflows/issue-automation.yml": [
     353
@@ -52,7 +53,8 @@
     346
   ],
   ".github/workflows/save-pr-context.yml": [
-    317
+    317,
+    356
   ],
   "apps/frontend/src/features/drawing/hooks/useCanvasController.ts": [
     331,
