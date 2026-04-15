@@ -19,11 +19,13 @@ class DeleteProjectService implements DeleteProjectUseCase {
 
   @Override
   public Mono<Void> deleteProject(DeleteProjectCommand command) {
-    return projectAccessHelper.validateProjectAdmin(command.projectId(),
-        command.requesterId())
+    return projectAccessHelper.validateProjectAdmin(command.projectId(), command.requesterId())
         .then(projectAccessHelper.findProjectById(command.projectId()))
-        .flatMap(projectCascadeHelper::softDeleteProjectCascade)
-        .as(transactionalOperator::transactional);
+        .flatMap(project -> Mono.defer(() -> projectAccessHelper
+            .requireProjectWithinWorkspaceForWrite(
+                project.getWorkspaceId(), command.projectId())
+            .flatMap(projectCascadeHelper::softDeleteProjectCascade)
+            .as(transactionalOperator::transactional)));
   }
 
 }

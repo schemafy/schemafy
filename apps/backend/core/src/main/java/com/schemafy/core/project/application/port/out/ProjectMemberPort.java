@@ -1,5 +1,7 @@
 package com.schemafy.core.project.application.port.out;
 
+import java.util.Collection;
+
 import com.schemafy.core.project.domain.ProjectMember;
 
 import reactor.core.publisher.Flux;
@@ -8,6 +10,16 @@ import reactor.core.publisher.Mono;
 public interface ProjectMemberPort {
 
   Mono<ProjectMember> save(ProjectMember projectMember);
+
+  /** 하나의 프로젝트에 여러 사용자의 프로젝트 멤버십을 맞춘다.
+   * 프로젝트 생성 후 워크스페이스 멤버를 새 프로젝트로 전파할 때 사용한다. */
+  Mono<Void> upsertAllForProject(String projectId,
+      Collection<ProjectMember> projectMembers);
+
+  /** 하나의 사용자를 여러 프로젝트의 멤버십으로 맞춘다.
+   * 워크스페이스 멤버 추가, 초대 수락, 역할 변경을 프로젝트들에 전파할 때 사용한다. */
+  Mono<Void> upsertAllForUser(String userId,
+      Collection<ProjectMember> projectMembers);
 
   Mono<ProjectMember> findByProjectIdAndUserIdAndNotDeleted(
       String projectId,

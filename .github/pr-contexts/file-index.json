@@ -368,5 +368,143 @@
   ],
   "pnpm-workspace.yaml": [
     346
+  ],
+  "apps/backend/core/src/main/java/com/schemafy/core/project/adapter/out/persistence/InvitationPersistenceAdapter.java": [
+    367
+  ],
+  "apps/backend/core/src/main/java/com/schemafy/core/project/adapter/out/persistence/InvitationRepository.java": [
+    367
+  ],
+  "apps/backend/core/src/main/java/com/schemafy/core/project/adapter/out/persistence/ProjectMemberRepository.java": [
+    367
+  ],
+  "apps/backend/core/src/main/java/com/schemafy/core/project/adapter/out/persistence/ProjectPersistenceAdapter.java": [
+    367
+  ],
+  "apps/backend/core/src/main/java/com/schemafy/core/project/adapter/out/persistence/ProjectRepository.java": [
+    367
+  ],
+  "apps/backend/core/src/main/java/com/schemafy/core/project/adapter/out/persistence/ShareLinkRepository.java": [
+    367
+  ],
+  "apps/backend/core/src/main/java/com/schemafy/core/project/adapter/out/persistence/WorkspaceMemberRepository.java": [
+    367
+  ],
+  "apps/backend/core/src/main/java/com/schemafy/core/project/adapter/out/persistence/WorkspacePersistenceAdapter.java": [
+    367
+  ],
+  "apps/backend/core/src/main/java/com/schemafy/core/project/adapter/out/persistence/WorkspaceRepository.java": [
+    367
+  ],
+  "apps/backend/core/src/main/java/com/schemafy/core/project/application/port/out/InvitationPort.java": [
+    367
+  ],
+  "apps/backend/core/src/main/java/com/schemafy/core/project/application/port/out/ProjectMemberPort.java": [
+    367
+  ],
+  "apps/backend/core/src/main/java/com/schemafy/core/project/application/port/out/ProjectPort.java": [
+    367
+  ],
+  "apps/backend/core/src/main/java/com/schemafy/core/project/application/port/out/WorkspaceMemberPort.java": [
+    367
+  ],
+  "apps/backend/core/src/main/java/com/schemafy/core/project/application/port/out/WorkspacePort.java": [
+    367
+  ],
+  "apps/backend/core/src/main/java/com/schemafy/core/project/application/service/AcceptProjectInvitationService.java": [
+    367
+  ],
+  "apps/backend/core/src/main/java/com/schemafy/core/project/application/service/AcceptWorkspaceInvitationService.java": [
+    367
+  ],
+  "apps/backend/core/src/main/java/com/schemafy/core/project/application/service/AddWorkspaceMemberService.java": [
+    367
+  ],
+  "apps/backend/core/src/main/java/com/schemafy/core/project/application/service/CreateProjectInvitationService.java": [
+    367
+  ],
+  "apps/backend/core/src/main/java/com/schemafy/core/project/application/service/CreateProjectService.java": [
+    367
+  ],
+  "apps/backend/core/src/main/java/com/schemafy/core/project/application/service/CreateShareLinkService.java": [
+    367
+  ],
+  "apps/backend/core/src/main/java/com/schemafy/core/project/application/service/CreateWorkspaceInvitationService.java": [
+    367
+  ],
+  "apps/backend/core/src/main/java/com/schemafy/core/project/application/service/DeleteProjectService.java": [
+    367
+  ],
+  "apps/backend/core/src/main/java/com/schemafy/core/project/application/service/DeleteShareLinkService.java": [
+    367
+  ],
+  "apps/backend/core/src/main/java/com/schemafy/core/project/application/service/DeleteWorkspaceService.java": [
+    367
+  ],
+  "apps/backend/core/src/main/java/com/schemafy/core/project/application/service/LeaveProjectService.java": [
+    367
+  ],
+  "apps/backend/core/src/main/java/com/schemafy/core/project/application/service/LeaveWorkspaceService.java": [
+    367
+  ],
+  "apps/backend/core/src/main/java/com/schemafy/core/project/application/service/ProjectAccessHelper.java": [
+    367
+  ],
+  "apps/backend/core/src/main/java/com/schemafy/core/project/application/service/ProjectInvitationHelper.java": [
+    367
+  ],
+  "apps/backend/core/src/main/java/com/schemafy/core/project/application/service/ProjectMembershipPropagationHelper.java": [
+    367
+  ],
+  "apps/backend/core/src/main/java/com/schemafy/core/project/application/service/RemoveProjectMemberService.java": [
+    367
+  ],
+  "apps/backend/core/src/main/java/com/schemafy/core/project/application/service/RemoveWorkspaceMemberService.java": [
+    367
+  ],
+  "apps/backend/core/src/main/java/com/schemafy/core/project/application/service/RevokeShareLinkService.java": [
+    367
+  ],
+  "apps/backend/core/src/main/java/com/schemafy/core/project/application/service/UpdateProjectMemberRoleService.java": [
+    367
+  ],
+  "apps/backend/core/src/main/java/com/schemafy/core/project/application/service/UpdateProjectService.java": [
+    367
+  ],
+  "apps/backend/core/src/main/java/com/schemafy/core/project/application/service/UpdateWorkspaceMemberRoleService.java": [
+    367
+  ],
+  "apps/backend/core/src/main/java/com/schemafy/core/project/application/service/UpdateWorkspaceService.java": [
+    367
+  ],
+  "apps/backend/core/src/main/java/com/schemafy/core/project/application/service/WorkspaceAccessHelper.java": [
+    367
+  ],
+  "apps/backend/core/src/main/java/com/schemafy/core/project/application/service/WorkspaceInvitationHelper.java": [
+    367
+  ],
+  "apps/backend/core/src/test/java/com/schemafy/core/project/application/service/LeaveProjectServiceTest.java": [
+    367
+  ],
+  "apps/backend/core/src/test/java/com/schemafy/core/project/application/service/ProjectMembershipPropagationHelperTest.java": [
+    367
+  ],
+  "apps/backend/core/src/test/java/com/schemafy/core/project/integration/ProjectInvitationConcurrencyIntegrationTest.java": [
+    367
+  ],
+  "apps/backend/core/src/test/java/com/schemafy/core/project/integration/ProjectInvitationUseCaseIntegrationTest.java": [
+    367
+  ],
+  "apps/backend/core/src/test/java/com/schemafy/core/project/integration/ShareLinkUseCaseIntegrationTest.java": [
+    367
+  ],
+  "apps/backend/core/src/test/java/com/schemafy/core/project/integration/WorkspaceInvitationUseCaseIntegrationTest.java": [
+    367
+  ],
+  "apps/backend/core/src/test/java/com/schemafy/core/project/integration/WorkspaceProjectRaceConditionIntegrationTest.java": [
+    367
+  ],
+  "apps/backend/core/src/test/java/com/schemafy/core/project/integration/WorkspaceUseCaseIntegrationTest.java": [
+    367
   ]
 }

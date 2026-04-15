@@ -66,6 +66,24 @@ public class InvitationPersistenceAdapter implements InvitationPort {
   }
 
   @Override
+  public Mono<Long> cancelExpiredPendingInvitationsByTargetAndEmail(
+      String targetType,
+      String targetId,
+      String email) {
+    return invitationRepository.cancelExpiredPendingInvitationsByTargetAndEmail(
+        targetType, targetId, email);
+  }
+
+  @Override
+  public Mono<Long> cancelPendingProjectInvitationsByWorkspaceIdAndEmail(
+      String workspaceId,
+      String email) {
+    return invitationRepository
+        .cancelPendingProjectInvitationsByWorkspaceIdAndEmail(
+            workspaceId, email);
+  }
+
+  @Override
   public Mono<Long> softDeleteByTarget(String targetType, String targetId) {
     return invitationRepository.softDeleteByTarget(targetType, targetId);
   }

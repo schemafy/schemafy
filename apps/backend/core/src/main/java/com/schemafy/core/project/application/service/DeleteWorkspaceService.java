@@ -28,14 +28,13 @@ class DeleteWorkspaceService implements DeleteWorkspaceUseCase {
 
   @Override
   public Mono<Void> deleteWorkspace(DeleteWorkspaceCommand command) {
-    return workspaceAccessHelper.validateAdminAccess(command.workspaceId(),
-        command.requesterId())
-        .then(doDeleteWorkspace(command.workspaceId()))
-        .as(transactionalOperator::transactional);
+    return workspaceAccessHelper.validateAdminAccess(command.workspaceId(), command.requesterId())
+        .then(Mono.defer(() -> doDeleteWorkspace(command.workspaceId())
+            .as(transactionalOperator::transactional)));
   }
 
   private Mono<Void> doDeleteWorkspace(String workspaceId) {
-    return workspaceAccessHelper.findWorkspaceOrThrow(workspaceId)
+    return workspaceAccessHelper.requireWorkspaceForWrite(workspaceId)
         .flatMap(workspace -> {
           workspace.delete();
           return workspacePort.save(workspace)
@@ -47,9 +46,7 @@ class DeleteWorkspaceService implements DeleteWorkspaceUseCase {
     return projectPort.findByWorkspaceId(workspaceId)
         .concatMap(projectCascadeHelper::softDeleteProjectCascade)
         .then(workspaceMemberPort.softDeleteByWorkspaceId(workspaceId))
-        .then(invitationPort.softDeleteByTarget(
-            InvitationType.WORKSPACE.name(),
-            workspaceId))
+        .then(invitationPort.softDeleteByTarget(InvitationType.WORKSPACE.name(), workspaceId))
         .then();
   }
 

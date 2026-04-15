@@ -13,6 +13,8 @@ public interface ProjectPort {
 
   Mono<Project> findByIdAndNotDeleted(String projectId);
 
+  Mono<Project> findByIdAndNotDeletedForUpdate(String projectId);
+
   Flux<Project> findByWorkspaceIdAndNotDeleted(String workspaceId);
 
   Flux<Project> findByWorkspaceId(String workspaceId);

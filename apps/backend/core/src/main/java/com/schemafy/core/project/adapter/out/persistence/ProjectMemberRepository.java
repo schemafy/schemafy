@@ -1,5 +1,7 @@
 package com.schemafy.core.project.adapter.out.persistence;
 
+import java.util.Collection;
+
 import org.springframework.data.r2dbc.repository.Query;
 import org.springframework.data.repository.reactive.ReactiveCrudRepository;
 
@@ -28,6 +30,54 @@ public interface ProjectMemberRepository
 
   @Query("UPDATE project_members SET deleted_at = CURRENT_TIMESTAMP, updated_at = CURRENT_TIMESTAMP WHERE project_id = :projectId AND deleted_at IS NULL")
   Mono<Void> softDeleteByProjectId(String projectId);
+
+  @Query("""
+      UPDATE project_members
+      SET role = :role,
+          deleted_at = NULL,
+          updated_at = CURRENT_TIMESTAMP
+      WHERE project_id = :projectId
+        AND user_id IN (:userIds)
+        AND deleted_at IS NOT NULL
+      """)
+  Mono<Long> restoreDeletedByProjectIdAndUserIds(String role, String projectId,
+      Collection<String> userIds);
+
+  @Query("""
+      UPDATE project_members
+      SET role = :role,
+          deleted_at = NULL,
+          updated_at = CURRENT_TIMESTAMP
+      WHERE project_id IN (:projectIds)
+        AND user_id = :userId
+        AND deleted_at IS NOT NULL
+      """)
+  Mono<Long> restoreDeletedByProjectIdsAndUserId(String role,
+      Collection<String> projectIds, String userId);
+
+  @Query("""
+      UPDATE project_members
+      SET role = 'ADMIN',
+          updated_at = CURRENT_TIMESTAMP
+      WHERE project_id = :projectId
+        AND user_id IN (:userIds)
+        AND deleted_at IS NULL
+        AND role <> 'ADMIN'
+      """)
+  Mono<Long> setAdminForActiveMembersByProjectIdAndUserIds(String projectId,
+      Collection<String> userIds);
+
+  @Query("""
+      UPDATE project_members
+      SET role = 'ADMIN',
+          updated_at = CURRENT_TIMESTAMP
+      WHERE project_id IN (:projectIds)
+        AND user_id = :userId
+        AND deleted_at IS NULL
+        AND role <> 'ADMIN'
+      """)
+  Mono<Long> setAdminForActiveMembersByProjectIdsAndUserId(
+      Collection<String> projectIds, String userId);
 
   @Query("SELECT COUNT(*) FROM project_members WHERE project_id = :projectId AND role = :role AND deleted_at IS NULL")
   Mono<Long> countByProjectIdAndRoleAndNotDeleted(String projectId,

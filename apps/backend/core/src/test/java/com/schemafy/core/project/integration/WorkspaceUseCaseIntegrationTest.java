@@ -1,5 +1,7 @@
 package com.schemafy.core.project.integration;
 
+import java.util.List;
+
 import org.springframework.beans.factory.annotation.Autowired;
 
 import org.junit.jupiter.api.DisplayName;
@@ -19,7 +21,10 @@ import com.schemafy.core.project.application.port.in.RemoveWorkspaceMemberUseCas
 import com.schemafy.core.project.application.port.in.UpdateWorkspaceMemberRoleCommand;
 import com.schemafy.core.project.application.port.in.UpdateWorkspaceMemberRoleUseCase;
 import com.schemafy.core.project.application.port.in.WorkspaceDetail;
+import com.schemafy.core.project.application.port.out.ProjectMemberPort;
 import com.schemafy.core.project.domain.Invitation;
+import com.schemafy.core.project.domain.InvitationStatus;
+import com.schemafy.core.project.domain.Project;
 import com.schemafy.core.project.domain.ProjectMember;
 import com.schemafy.core.project.domain.ProjectRole;
 import com.schemafy.core.project.domain.ShareLink;
@@ -27,6 +32,7 @@ import com.schemafy.core.project.domain.Workspace;
 import com.schemafy.core.project.domain.WorkspaceMember;
 import com.schemafy.core.project.domain.WorkspaceRole;
 import com.schemafy.core.project.domain.exception.WorkspaceErrorCode;
+import com.schemafy.core.ulid.application.service.UlidGenerator;
 import com.schemafy.core.user.domain.User;
 
 import reactor.test.StepVerifier;
@@ -53,6 +59,9 @@ class WorkspaceUseCaseIntegrationTest extends ProjectDomainIntegrationSupport {
 
   @Autowired
   private LeaveWorkspaceUseCase leaveWorkspaceUseCase;
+
+  @Autowired
+  private ProjectMemberPort projectMemberPort;
 
   @Test
   @DisplayName("워크스페이스 생성 시 상세 정보와 관리자 멤버십을 함께 만든다")
@@ -204,6 +213,37 @@ class WorkspaceUseCaseIntegrationTest extends ProjectDomainIntegrationSupport {
   }
 
   @Test
+  @DisplayName("워크스페이스 멤버 추가 시 같은 워크스페이스의 pending 프로젝트 초대를 취소한다")
+  void addWorkspaceMember_cancelsPendingProjectInvitationsInSameWorkspace() {
+    User admin = signUpUser("admin-add-cancel-project-inv@test.com", "Admin");
+    User target = signUpUser("target-add-cancel-project-inv@test.com", "Target");
+    Workspace workspace = saveWorkspace("Add Cancel Project Invitation WS",
+        "Description");
+    saveWorkspaceMember(workspace, admin, WorkspaceRole.ADMIN);
+    Project project = saveProject(workspace, "Add Cancel Project Invitation");
+    saveProjectMember(project, admin, ProjectRole.ADMIN);
+    Invitation projectInvitation = saveProjectInvitation(project, workspace,
+        target.email(), ProjectRole.EDITOR, admin);
+
+    addWorkspaceMemberUseCase.addWorkspaceMember(new AddWorkspaceMemberCommand(
+        workspace.getId(), target.email(), WorkspaceRole.MEMBER, admin.id()))
+        .block();
+
+    Invitation cancelledInvitation = invitationRepository
+        .findById(projectInvitation.getId())
+        .block();
+    ProjectMember materializedMember = projectMemberRepository
+        .findByProjectIdAndUserIdAndNotDeleted(project.getId(), target.id())
+        .block();
+
+    assertThat(cancelledInvitation).isNotNull();
+    assertThat(cancelledInvitation.getStatusAsEnum())
+        .isEqualTo(InvitationStatus.CANCELLED);
+    assertThat(materializedMember).isNotNull();
+    assertThat(materializedMember.getRoleAsEnum()).isEqualTo(ProjectRole.VIEWER);
+  }
+
+  @Test
   @DisplayName("워크스페이스 역할을 낮춰도 프로젝트 편집자 역할은 유지한다")
   void updateWorkspaceMemberRole_preservesEditorMembership() {
     User requester = signUpUser("requester-role@test.com", "Requester");
@@ -267,6 +307,53 @@ class WorkspaceUseCaseIntegrationTest extends ProjectDomainIntegrationSupport {
     assertThat(restoredProjectMember.getRoleAsEnum()).isEqualTo(ProjectRole.ADMIN);
     assertThat(createdProjectMember).isNotNull();
     assertThat(createdProjectMember.getRoleAsEnum()).isEqualTo(ProjectRole.ADMIN);
+  }
+
+  @Test
+  @DisplayName("프로젝트 멤버 batch upsert는 여러 row를 생성, 복원, 승격하고 기존 EDITOR를 강등하지 않는다")
+  void projectMemberBatchUpsert_materializesMultipleRowsWithRolePolicy() {
+    User admin = signUpUser("admin-project-member-upsert@test.com", "Admin");
+    User target = signUpUser("target-project-member-upsert@test.com", "Target");
+    User editor = signUpUser("editor-project-member-upsert@test.com", "Editor");
+    User promoted = signUpUser("promoted-project-member-upsert@test.com", "Promoted");
+    User missing = signUpUser("missing-project-member-upsert@test.com", "Missing");
+    Workspace workspace = saveWorkspace("Project Member Upsert WS", "Description");
+    saveWorkspaceMember(workspace, admin, WorkspaceRole.ADMIN);
+    Project project = saveProject(workspace, "Project Member Upsert Project");
+    ProjectMember deletedMember = saveProjectMember(project, target, ProjectRole.VIEWER);
+    ProjectMember editorMember = saveProjectMember(project, editor, ProjectRole.EDITOR);
+    ProjectMember promotedMember = saveProjectMember(project, promoted,
+        ProjectRole.VIEWER);
+    softDeleteProjectMember(deletedMember.getId());
+
+    projectMemberPort.upsertAllForProject(project.getId(), List.of(
+        ProjectMember.create(UlidGenerator.generate(), project.getId(), target.id(),
+            ProjectRole.VIEWER),
+        ProjectMember.create(UlidGenerator.generate(), project.getId(), editor.id(),
+            ProjectRole.VIEWER),
+        ProjectMember.create(UlidGenerator.generate(), project.getId(), missing.id(),
+            ProjectRole.VIEWER),
+        ProjectMember.create(UlidGenerator.generate(), project.getId(), promoted.id(),
+            ProjectRole.ADMIN)))
+        .block();
+
+    ProjectMember restoredMember = projectMemberRepository.findById(
+        deletedMember.getId()).block();
+    ProjectMember unchangedEditorMember = projectMemberRepository.findById(
+        editorMember.getId()).block();
+    ProjectMember adminMember = projectMemberRepository.findById(
+        promotedMember.getId()).block();
+    ProjectMember createdMember = projectMemberRepository
+        .findByProjectIdAndUserIdAndNotDeleted(project.getId(), missing.id())
+        .block();
+
+    assertThat(restoredMember.isDeleted()).isFalse();
+    assertThat(restoredMember.getRoleAsEnum()).isEqualTo(ProjectRole.VIEWER);
+    assertThat(unchangedEditorMember.getRoleAsEnum()).isEqualTo(
+        ProjectRole.EDITOR);
+    assertThat(adminMember.getRoleAsEnum()).isEqualTo(ProjectRole.ADMIN);
+    assertThat(createdMember).isNotNull();
+    assertThat(createdMember.getRoleAsEnum()).isEqualTo(ProjectRole.VIEWER);
   }
 
   @Test

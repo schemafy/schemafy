@@ -20,22 +20,27 @@ class RevokeShareLinkService implements RevokeShareLinkUseCase {
   private final TransactionalOperator transactionalOperator;
   private final ShareLinkPort shareLinkPort;
   private final ShareLinkHelper shareLinkHelper;
+  private final ProjectAccessHelper projectAccessHelper;
 
   @Override
   public Mono<ShareLink> revokeShareLink(RevokeShareLinkCommand command) {
     return shareLinkHelper.validateAdminAccess(command.projectId(),
         command.requesterId())
-        .then(shareLinkHelper.findShareLinkById(command.shareLinkId(),
-            command.projectId()))
-        .flatMap(shareLink -> {
-          if (Boolean.TRUE.equals(shareLink.getIsRevoked())) {
-            return Mono.error(
-                new DomainException(ShareLinkErrorCode.NOT_FOUND));
-          }
-          shareLink.revoke();
-          return shareLinkPort.save(shareLink);
-        })
-        .as(transactionalOperator::transactional);
+        .then(projectAccessHelper.findProjectById(command.projectId()))
+        .flatMap(project -> Mono.defer(() -> projectAccessHelper
+            .requireProjectWithinWorkspaceForWrite(
+                project.getWorkspaceId(), command.projectId())
+            .then(shareLinkHelper.findShareLinkById(command.shareLinkId(),
+                command.projectId()))
+            .flatMap(shareLink -> {
+              if (Boolean.TRUE.equals(shareLink.getIsRevoked())) {
+                return Mono.error(
+                    new DomainException(ShareLinkErrorCode.NOT_FOUND));
+              }
+              shareLink.revoke();
+              return shareLinkPort.save(shareLink);
+            })
+            .as(transactionalOperator::transactional)));
   }
 
 }

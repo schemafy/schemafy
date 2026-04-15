@@ -17,18 +17,22 @@ class DeleteShareLinkService implements DeleteShareLinkUseCase {
   private final TransactionalOperator transactionalOperator;
   private final ShareLinkPort shareLinkPort;
   private final ShareLinkHelper shareLinkHelper;
+  private final ProjectAccessHelper projectAccessHelper;
 
   @Override
   public Mono<Void> deleteShareLink(DeleteShareLinkCommand command) {
-    return shareLinkHelper.validateAdminAccess(command.projectId(),
-        command.requesterId())
-        .then(shareLinkHelper.findShareLinkById(command.shareLinkId(),
-            command.projectId()))
-        .flatMap(link -> {
-          link.delete();
-          return shareLinkPort.save(link).then();
-        })
-        .as(transactionalOperator::transactional);
+    return shareLinkHelper.validateAdminAccess(command.projectId(), command.requesterId())
+        .then(projectAccessHelper.findProjectById(command.projectId()))
+        .flatMap(project -> Mono.defer(() -> projectAccessHelper
+            .requireProjectWithinWorkspaceForWrite(
+                project.getWorkspaceId(), command.projectId())
+            .then(shareLinkHelper.findShareLinkById(command.shareLinkId(),
+                command.projectId()))
+            .flatMap(link -> {
+              link.delete();
+              return shareLinkPort.save(link).then();
+            })
+            .as(transactionalOperator::transactional)));
   }
 
 }

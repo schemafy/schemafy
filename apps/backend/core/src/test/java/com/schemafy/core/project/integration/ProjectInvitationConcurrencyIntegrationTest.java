@@ -14,6 +14,8 @@ import org.junit.jupiter.api.Test;
 import com.schemafy.core.common.exception.DomainException;
 import com.schemafy.core.project.application.port.in.AcceptProjectInvitationCommand;
 import com.schemafy.core.project.application.port.in.AcceptProjectInvitationUseCase;
+import com.schemafy.core.project.application.port.in.CreateProjectInvitationCommand;
+import com.schemafy.core.project.application.port.in.CreateProjectInvitationUseCase;
 import com.schemafy.core.project.domain.Invitation;
 import com.schemafy.core.project.domain.InvitationStatus;
 import com.schemafy.core.project.domain.ProjectRole;
@@ -30,6 +32,70 @@ class ProjectInvitationConcurrencyIntegrationTest
 
   @Autowired
   private AcceptProjectInvitationUseCase acceptProjectInvitationUseCase;
+
+  @Autowired
+  private CreateProjectInvitationUseCase createProjectInvitationUseCase;
+
+  @Test
+  @DisplayName("같은 프로젝트와 이메일로 초대를 동시에 생성해도 pending 초대는 하나만 남는다")
+  void concurrentCreate_sameProjectAndEmailLeavesSinglePending()
+      throws InterruptedException {
+    User admin = signUpUser("admin-pic-create@test.com", "Admin");
+    User invitee = signUpUser("invitee-pic-create@test.com", "Invitee");
+    var workspace = saveWorkspace("Project Create Concurrency WS",
+        "Description");
+    saveWorkspaceMember(workspace, admin, WorkspaceRole.ADMIN);
+    saveWorkspaceMember(workspace, invitee, WorkspaceRole.MEMBER);
+    var project = saveProject(workspace, "Project Create Concurrency");
+    saveProjectMember(project, admin, ProjectRole.ADMIN);
+
+    AtomicInteger successCount = new AtomicInteger();
+    AtomicInteger duplicateCount = new AtomicInteger();
+    CountDownLatch readyLatch = new CountDownLatch(5);
+    CountDownLatch startLatch = new CountDownLatch(1);
+    CountDownLatch doneLatch = new CountDownLatch(5);
+    ConcurrentLinkedQueue<Throwable> unexpectedErrors = new ConcurrentLinkedQueue<>();
+
+    try (ExecutorService executor = Executors.newFixedThreadPool(5)) {
+      for (int i = 0; i < 5; i++) {
+        executor.submit(() -> {
+          readyLatch.countDown();
+          await(startLatch);
+
+          try {
+            createProjectInvitationUseCase.createProjectInvitation(
+                new CreateProjectInvitationCommand(project.getId(),
+                    invitee.email(), ProjectRole.EDITOR, admin.id()))
+                .block();
+            successCount.incrementAndGet();
+          } catch (DomainException error) {
+            if (error.getErrorCode() == ProjectErrorCode.INVITATION_ALREADY_EXISTS) {
+              duplicateCount.incrementAndGet();
+            } else {
+              unexpectedErrors.add(error);
+            }
+          } catch (Throwable error) {
+            unexpectedErrors.add(error);
+          } finally {
+            doneLatch.countDown();
+          }
+        });
+      }
+
+      readyLatch.await();
+      startLatch.countDown();
+      doneLatch.await();
+    }
+
+    if (!unexpectedErrors.isEmpty()) {
+      fail("Unexpected errors: " + unexpectedErrors);
+    }
+
+    assertThat(successCount.get()).isEqualTo(1);
+    assertThat(duplicateCount.get()).isEqualTo(4);
+    assertThat(countPendingProjectInvitations(project.getId(), invitee.email()))
+        .isEqualTo(1);
+  }
 
   @Test
   @DisplayName("concurrent project invitation accept succeeds exactly once")
@@ -92,6 +158,23 @@ class ProjectInvitationConcurrencyIntegrationTest
     assertThat(successCount.get()).isEqualTo(1);
     assertThat(failureCount.get()).isEqualTo(4);
     assertThat(updatedInvitation.getStatusAsEnum()).isEqualTo(InvitationStatus.ACCEPTED);
+  }
+
+  private long countPendingProjectInvitations(String projectId, String email) {
+    return databaseClient.sql("""
+        SELECT COUNT(*) FROM invitations
+        WHERE target_type = 'PROJECT'
+          AND target_id = :projectId
+          AND invited_email = :email
+          AND status = 'PENDING'
+          AND expires_at > CURRENT_TIMESTAMP
+          AND deleted_at IS NULL
+        """)
+        .bind("projectId", projectId)
+        .bind("email", email)
+        .map(row -> row.get(0, Long.class))
+        .one()
+        .block();
   }
 
   private void await(CountDownLatch latch) {

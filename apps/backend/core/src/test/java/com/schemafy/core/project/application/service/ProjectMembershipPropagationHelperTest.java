@@ -1,5 +1,7 @@
 package com.schemafy.core.project.application.service;
 
+import java.util.Collection;
+
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -22,10 +24,10 @@ import reactor.test.StepVerifier;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.then;
 import static org.mockito.Mockito.never;
-import static org.mockito.Mockito.times;
 
 @ExtendWith(MockitoExtension.class)
 @DisplayName("ProjectMembershipPropagationHelper")
@@ -47,13 +49,11 @@ class ProjectMembershipPropagationHelperTest {
   UlidGeneratorPort ulidGeneratorPort;
 
   @Test
-  @DisplayName("워크스페이스 ADMIN 합류 시 기존 활성 프로젝트 멤버십도 ADMIN으로 올리고 누락된 프로젝트 멤버십을 생성한다")
+  @DisplayName("워크스페이스 ADMIN 합류 시 모든 프로젝트 멤버십을 ADMIN upsert로 보정한다")
   void syncProjectMembershipsForWorkspaceRole_upgradesExistingActiveMembershipForWorkspaceAdmin() {
     Project joinedProject = Project.create("project-1", WORKSPACE_ID, "Joined Project",
         "Description");
     Project newProject = Project.create("project-2", WORKSPACE_ID, "New Project", "Description");
-    ProjectMember existingMember = ProjectMember.create("member-1", joinedProject.getId(), USER_ID,
-        ProjectRole.VIEWER);
     ProjectMembershipPropagationHelper sut = new ProjectMembershipPropagationHelper(
         projectPort,
         projectMemberPort,
@@ -62,24 +62,20 @@ class ProjectMembershipPropagationHelperTest {
 
     given(projectPort.findByWorkspaceIdAndNotDeleted(WORKSPACE_ID))
         .willReturn(Flux.just(joinedProject, newProject));
-    given(projectMemberPort.findLatestByProjectIdAndUserId(joinedProject.getId(), USER_ID))
-        .willReturn(Mono.just(existingMember));
-    given(projectMemberPort.findLatestByProjectIdAndUserId(newProject.getId(), USER_ID))
-        .willReturn(Mono.empty());
     given(ulidGeneratorPort.generate())
-        .willReturn("member-2");
-    given(projectMemberPort.save(any(ProjectMember.class)))
-        .willAnswer(invocation -> Mono.just(invocation.getArgument(0)));
+        .willReturn("member-1", "member-2");
+    given(projectMemberPort.upsertAllForUser(eq(USER_ID), any()))
+        .willReturn(Mono.empty());
 
     StepVerifier.create(sut.syncProjectMembershipsForWorkspaceRole(WORKSPACE_ID, USER_ID,
         WorkspaceRole.ADMIN))
         .verifyComplete();
 
-    assertThat(existingMember.getRoleAsEnum()).isEqualTo(ProjectRole.ADMIN);
-
-    ArgumentCaptor<ProjectMember> savedMemberCaptor = ArgumentCaptor.forClass(ProjectMember.class);
-    then(projectMemberPort).should(times(2)).save(savedMemberCaptor.capture());
-    assertThat(savedMemberCaptor.getAllValues())
+    @SuppressWarnings("unchecked")
+    ArgumentCaptor<Collection<ProjectMember>> upsertCaptor = ArgumentCaptor.forClass(Collection.class);
+    then(projectMemberPort).should().upsertAllForUser(eq(USER_ID),
+        upsertCaptor.capture());
+    assertThat(upsertCaptor.getValue())
         .extracting(ProjectMember::getProjectId, ProjectMember::getUserId, ProjectMember::getRole)
         .containsExactlyInAnyOrder(
             org.assertj.core.groups.Tuple.tuple(joinedProject.getId(), USER_ID,
@@ -89,11 +85,9 @@ class ProjectMembershipPropagationHelperTest {
   }
 
   @Test
-  @DisplayName("워크스페이스 MEMBER 합류 시 기존 활성 프로젝트 역할은 유지한다")
+  @DisplayName("워크스페이스 MEMBER 합류 시 VIEWER upsert를 요청하되 기존 활성 프로젝트 역할은 DB upsert 정책으로 유지한다")
   void syncProjectMembershipsForWorkspaceRole_preservesExistingActiveMembershipForWorkspaceMember() {
     Project project = Project.create("project-1", WORKSPACE_ID, "Project", "Description");
-    ProjectMember existingMember = ProjectMember.create("member-1", project.getId(), USER_ID,
-        ProjectRole.EDITOR);
     ProjectMembershipPropagationHelper sut = new ProjectMembershipPropagationHelper(
         projectPort,
         projectMemberPort,
@@ -102,26 +96,33 @@ class ProjectMembershipPropagationHelperTest {
 
     given(projectPort.findByWorkspaceIdAndNotDeleted(WORKSPACE_ID))
         .willReturn(Flux.just(project));
-    given(projectMemberPort.findLatestByProjectIdAndUserId(project.getId(), USER_ID))
-        .willReturn(Mono.just(existingMember));
+    given(ulidGeneratorPort.generate())
+        .willReturn("member-1");
+    given(projectMemberPort.upsertAllForUser(eq(USER_ID), any()))
+        .willReturn(Mono.empty());
 
     StepVerifier.create(sut.syncProjectMembershipsForWorkspaceRole(WORKSPACE_ID, USER_ID,
         WorkspaceRole.MEMBER))
         .verifyComplete();
 
-    assertThat(existingMember.getRoleAsEnum()).isEqualTo(ProjectRole.EDITOR);
-    then(projectMemberPort).should().findLatestByProjectIdAndUserId(project.getId(), USER_ID);
+    @SuppressWarnings("unchecked")
+    ArgumentCaptor<Collection<ProjectMember>> upsertCaptor = ArgumentCaptor.forClass(Collection.class);
+    then(projectMemberPort).should().upsertAllForUser(eq(USER_ID),
+        upsertCaptor.capture());
+    assertThat(upsertCaptor.getValue())
+        .singleElement()
+        .satisfies(member -> {
+          assertThat(member.getProjectId()).isEqualTo(project.getId());
+          assertThat(member.getUserId()).isEqualTo(USER_ID);
+          assertThat(member.getRoleAsEnum()).isEqualTo(ProjectRole.VIEWER);
+        });
     then(projectMemberPort).should(never()).save(any(ProjectMember.class));
-    then(ulidGeneratorPort).shouldHaveNoInteractions();
   }
 
   @Test
-  @DisplayName("워크스페이스 ADMIN 승격 시 삭제된 프로젝트 멤버십은 복원하고 ADMIN으로 보정한다")
+  @DisplayName("워크스페이스 ADMIN 승격 시 삭제된 프로젝트 멤버십 복원도 ADMIN upsert에 맡긴다")
   void syncProjectMembershipsForWorkspaceRole_restoresDeletedMembershipForWorkspaceAdmin() {
     Project project = Project.create("project-1", WORKSPACE_ID, "Project", "Description");
-    ProjectMember deletedMember = ProjectMember.create("member-1", project.getId(), USER_ID,
-        ProjectRole.VIEWER);
-    deletedMember.delete();
     ProjectMembershipPropagationHelper sut = new ProjectMembershipPropagationHelper(
         projectPort,
         projectMemberPort,
@@ -130,19 +131,26 @@ class ProjectMembershipPropagationHelperTest {
 
     given(projectPort.findByWorkspaceIdAndNotDeleted(WORKSPACE_ID))
         .willReturn(Flux.just(project));
-    given(projectMemberPort.findLatestByProjectIdAndUserId(project.getId(), USER_ID))
-        .willReturn(Mono.just(deletedMember));
-    given(projectMemberPort.save(deletedMember))
-        .willReturn(Mono.just(deletedMember));
+    given(ulidGeneratorPort.generate())
+        .willReturn("member-1");
+    given(projectMemberPort.upsertAllForUser(eq(USER_ID), any()))
+        .willReturn(Mono.empty());
 
     StepVerifier.create(sut.syncProjectMembershipsForWorkspaceRole(WORKSPACE_ID, USER_ID,
         WorkspaceRole.ADMIN))
         .verifyComplete();
 
-    assertThat(deletedMember.isDeleted()).isFalse();
-    assertThat(deletedMember.getRoleAsEnum()).isEqualTo(ProjectRole.ADMIN);
-    then(projectMemberPort).should().save(deletedMember);
-    then(ulidGeneratorPort).shouldHaveNoInteractions();
+    @SuppressWarnings("unchecked")
+    ArgumentCaptor<Collection<ProjectMember>> upsertCaptor = ArgumentCaptor.forClass(Collection.class);
+    then(projectMemberPort).should().upsertAllForUser(eq(USER_ID),
+        upsertCaptor.capture());
+    assertThat(upsertCaptor.getValue())
+        .singleElement()
+        .satisfies(member -> {
+          assertThat(member.getProjectId()).isEqualTo(project.getId());
+          assertThat(member.getUserId()).isEqualTo(USER_ID);
+          assertThat(member.getRoleAsEnum()).isEqualTo(ProjectRole.ADMIN);
+        });
   }
 
   @Test

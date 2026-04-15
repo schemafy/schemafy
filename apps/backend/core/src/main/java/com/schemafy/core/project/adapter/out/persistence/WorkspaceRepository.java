@@ -18,6 +18,13 @@ public interface WorkspaceRepository
   Mono<Workspace> findByIdAndNotDeleted(String id);
 
   @Query("""
+      SELECT * FROM workspaces
+      WHERE id = :id AND deleted_at IS NULL
+      FOR UPDATE
+      """)
+  Mono<Workspace> findByIdAndNotDeletedForUpdate(String id);
+
+  @Query("""
       SELECT w.* FROM workspaces w
       INNER JOIN workspace_members wm ON w.id = wm.workspace_id
       WHERE wm.user_id = :userId

@@ -35,6 +35,7 @@ class AcceptWorkspaceInvitationService
   private final WorkspaceInvitationHelper workspaceInvitationHelper;
   private final ProjectMembershipPropagationHelper projectMembershipPropagationHelper;
   private final FindUserByIdPort findUserByIdPort;
+  private final WorkspaceAccessHelper workspaceAccessHelper;
 
   @Override
   public Mono<WorkspaceMember> acceptWorkspaceInvitation(
@@ -44,50 +45,9 @@ class AcceptWorkspaceInvitationService
             new DomainException(UserErrorCode.NOT_FOUND)))
         .flatMap(user -> workspaceInvitationHelper.findInvitationOrThrow(
             command.invitationId())
-            .flatMap(invitation -> {
-              if (!invitation.getTargetTypeAsEnum().isWorkspace()) {
-                return Mono.error(new DomainException(
-                    ProjectErrorCode.INVITATION_TYPE_MISMATCH));
-              }
-
-              invitation.validateInvitedEmailMatches(user.email());
-              return workspaceInvitationHelper.findWorkspaceOrThrow(
-                  invitation.getWorkspaceId())
-                  .then(workspaceInvitationHelper.checkNotAlreadyMember(
-                      invitation.getWorkspaceId(), command.requesterId()))
-                  .then(Mono.defer(() -> {
-                    invitation.accept();
-
-                    return invitationPort.save(invitation)
-                        .then(invitationPort.updateStatusByTargetAndEmail(
-                            invitation.getTargetType(),
-                            invitation.getTargetId(),
-                            invitation.getInvitedEmail(),
-                            InvitationStatus.CANCELLED.name(),
-                            InvitationStatus.PENDING.name(),
-                            invitation.getId()))
-                        .then(workspaceInvitationHelper
-                            .saveOrRestoreWorkspaceMember(
-                                invitation.getWorkspaceId(),
-                                command.requesterId(),
-                                invitation.getWorkspaceRole()))
-                        .onErrorResume(DataIntegrityViolationException.class,
-                            error -> {
-                              log.warn(
-                                  "Concurrent member creation on invitation accept: invitationId={}",
-                                  command.invitationId());
-                              return Mono.error(new DomainException(
-                                  ProjectErrorCode.INVITATION_DUPLICATE_WORKSPACE_MEMBER));
-                            })
-                        .flatMap(savedMember -> projectMembershipPropagationHelper
-                            .syncProjectMembershipsForWorkspaceRole(
-                                invitation.getWorkspaceId(),
-                                command.requesterId(),
-                                invitation.getWorkspaceRole())
-                            .thenReturn(savedMember));
-                  }));
-            }))
-        .as(transactionalOperator::transactional)
+            .flatMap(invitation -> Mono.defer(() -> acceptWorkspaceInvitationWithinWriteScope(
+                command, invitation.getWorkspaceId(), user.email())
+                .as(transactionalOperator::transactional))))
         .retryWhen(Retry.max(3)
             .filter(OptimisticLockingFailureException.class::isInstance)
             .doBeforeRetry(signal -> log.warn(
@@ -96,6 +56,60 @@ class AcceptWorkspaceInvitationService
         .onErrorMap(OptimisticLockingFailureException.class,
             error -> new DomainException(
                 ProjectErrorCode.INVITATION_CONCURRENT_PROCESSED));
+  }
+
+  private Mono<WorkspaceMember> acceptWorkspaceInvitationWithinWriteScope(
+      AcceptWorkspaceInvitationCommand command,
+      String workspaceId,
+      String requesterEmail) {
+    return workspaceAccessHelper.requireWorkspaceForWrite(workspaceId)
+        .then(workspaceInvitationHelper.findInvitationOrThrow(
+            command.invitationId()))
+        .flatMap(invitation -> {
+          if (!invitation.getTargetTypeAsEnum().isWorkspace()) {
+            return Mono.error(new DomainException(
+                ProjectErrorCode.INVITATION_TYPE_MISMATCH));
+          }
+
+          invitation.validateInvitedEmailMatches(requesterEmail);
+          return workspaceInvitationHelper.checkNotAlreadyMember(
+              invitation.getWorkspaceId(), command.requesterId())
+              .then(Mono.defer(() -> {
+                invitation.accept();
+
+                return invitationPort.save(invitation)
+                    .then(invitationPort.updateStatusByTargetAndEmail(
+                        invitation.getTargetType(),
+                        invitation.getTargetId(),
+                        invitation.getInvitedEmail(),
+                        InvitationStatus.CANCELLED.name(),
+                        InvitationStatus.PENDING.name(),
+                        invitation.getId()))
+                    .then(workspaceInvitationHelper
+                        .saveOrRestoreWorkspaceMember(
+                            invitation.getWorkspaceId(),
+                            command.requesterId(),
+                            invitation.getWorkspaceRole()))
+                    .onErrorResume(DataIntegrityViolationException.class,
+                        error -> {
+                          log.warn(
+                              "Concurrent member creation on invitation accept: invitationId={}",
+                              command.invitationId());
+                          return Mono.error(new DomainException(
+                              ProjectErrorCode.INVITATION_DUPLICATE_WORKSPACE_MEMBER));
+                        })
+                    .flatMap(savedMember -> projectMembershipPropagationHelper
+                        .syncProjectMembershipsForWorkspaceRole(
+                            invitation.getWorkspaceId(),
+                            command.requesterId(),
+                            invitation.getWorkspaceRole())
+                        .then(invitationPort
+                            .cancelPendingProjectInvitationsByWorkspaceIdAndEmail(
+                                invitation.getWorkspaceId(),
+                                invitation.getInvitedEmail()))
+                        .thenReturn(savedMember));
+              }));
+        });
   }
 
 }

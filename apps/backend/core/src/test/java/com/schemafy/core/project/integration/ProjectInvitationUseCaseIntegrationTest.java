@@ -122,7 +122,47 @@ class ProjectInvitationUseCaseIntegrationTest extends ProjectDomainIntegrationSu
   }
 
   @Test
-  @DisplayName("프로젝트 초대 수락 시 soft delete 된 멤버십을 복원하고 형제 초대를 취소한다")
+  @DisplayName("프로젝트 중복 pending 초대는 하나를 수락하면 나머지가 cancelled로 수렴한다")
+  void acceptProjectInvitation_duplicatePendingFixtures_convergeOnAccept() {
+    User admin = signUpUser("admin-pi-duplicate-accept@test.com", "Admin");
+    User invitee = signUpUser("invitee-pi-duplicate-accept@test.com", "Invitee");
+    var workspace = saveWorkspace("Duplicate Accept Project WS", "Description");
+    saveWorkspaceMember(workspace, admin, WorkspaceRole.ADMIN);
+    saveWorkspaceMember(workspace, invitee, WorkspaceRole.MEMBER);
+    var project = saveProject(workspace, "Duplicate Accept Project");
+    saveProjectMember(project, admin, ProjectRole.ADMIN);
+
+    Invitation acceptedInvitation = saveProjectInvitation(project, workspace, invitee.email(),
+        ProjectRole.EDITOR, admin);
+    Invitation siblingInvitation = saveProjectInvitation(project, workspace, invitee.email(),
+        ProjectRole.EDITOR, admin);
+
+    ProjectMember restoredMember = acceptProjectInvitationUseCase.acceptProjectInvitation(
+        new AcceptProjectInvitationCommand(acceptedInvitation.getId(), invitee.id()))
+        .block();
+
+    Invitation accepted = invitationRepository.findById(acceptedInvitation.getId()).block();
+    Invitation sibling = invitationRepository.findById(siblingInvitation.getId()).block();
+
+    assertThat(accepted).isNotNull();
+    assertThat(accepted.getStatusAsEnum()).isEqualTo(InvitationStatus.ACCEPTED);
+    assertThat(sibling).isNotNull();
+    assertThat(sibling.getStatusAsEnum()).isEqualTo(InvitationStatus.CANCELLED);
+    assertThat(restoredMember).isNotNull();
+    assertThat(restoredMember.getRoleAsEnum()).isEqualTo(ProjectRole.EDITOR);
+    assertThat(countActiveProjectMemberRows(project.getId(), invitee.id())).isEqualTo(1);
+
+    StepVerifier.create(acceptProjectInvitationUseCase.acceptProjectInvitation(
+        new AcceptProjectInvitationCommand(siblingInvitation.getId(), invitee.id())))
+        .expectErrorMatches(error -> error instanceof DomainException de
+            && (de.getErrorCode() == ProjectErrorCode.INVITATION_DUPLICATE_MEMBERSHIP_PROJECT
+                || de.getErrorCode() == ProjectErrorCode.PROJECT_INVITATION_ALREADY_PROCESSED))
+        .verify();
+    assertThat(countActiveProjectMemberRows(project.getId(), invitee.id())).isEqualTo(1);
+  }
+
+  @Test
+  @DisplayName("프로젝트 초대 수락 시 soft delete 된 멤버십을 복원한다")
   void acceptProjectInvitation_restoresMembership() {
     User admin = signUpUser("admin-pi-restore@test.com", "Admin");
     User invitee = signUpUser("invitee-pi-restore@test.com", "Invitee");
@@ -137,18 +177,13 @@ class ProjectInvitationUseCaseIntegrationTest extends ProjectDomainIntegrationSu
 
     Invitation acceptedInvitation = saveProjectInvitation(project, workspace, invitee.email(),
         ProjectRole.EDITOR, admin);
-    Invitation siblingInvitation = saveProjectInvitation(project, workspace, invitee.email(),
-        ProjectRole.VIEWER, admin);
 
     ProjectMember restoredMember = acceptProjectInvitationUseCase.acceptProjectInvitation(
         new AcceptProjectInvitationCommand(acceptedInvitation.getId(), invitee.id()))
         .block();
 
-    Invitation cancelledSibling = invitationRepository.findById(siblingInvitation.getId()).block();
-
     assertThat(restoredMember.getId()).isEqualTo(deletedMember.getId());
     assertThat(restoredMember.getRoleAsEnum()).isEqualTo(ProjectRole.EDITOR);
-    assertThat(cancelledSibling.getStatusAsEnum()).isEqualTo(InvitationStatus.CANCELLED);
   }
 
   @Test
@@ -171,6 +206,20 @@ class ProjectInvitationUseCaseIntegrationTest extends ProjectDomainIntegrationSu
     Invitation rejected = invitationRepository.findById(invitation.getId()).block();
     assertThat(rejected.getStatusAsEnum()).isEqualTo(InvitationStatus.REJECTED);
     assertThat(rejected.getResolvedAt()).isNotNull();
+  }
+
+  private long countActiveProjectMemberRows(String projectId, String userId) {
+    return databaseClient.sql("""
+        SELECT COUNT(*) FROM project_members
+        WHERE project_id = :projectId
+          AND user_id = :userId
+          AND deleted_at IS NULL
+        """)
+        .bind("projectId", projectId)
+        .bind("userId", userId)
+        .map(row -> row.get(0, Long.class))
+        .one()
+        .block();
   }
 
 }

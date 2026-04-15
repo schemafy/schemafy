@@ -22,19 +22,22 @@ class CreateShareLinkService implements CreateShareLinkUseCase {
   private final UlidGeneratorPort ulidGeneratorPort;
   private final ShareLinkPort shareLinkPort;
   private final ShareLinkHelper shareLinkHelper;
+  private final ProjectAccessHelper projectAccessHelper;
 
   @Override
   public Mono<ShareLink> createShareLink(CreateShareLinkCommand command) {
-    return shareLinkHelper.validateAdminAccess(command.projectId(),
-        command.requesterId())
-        .then(shareLinkHelper.findProjectById(command.projectId()))
-        .flatMap(project -> Mono.fromCallable(ulidGeneratorPort::generate)
-            .flatMap(id -> {
-              String code = UUID.randomUUID().toString().replace("-", "");
-              return shareLinkPort.save(
-                  ShareLink.create(id, command.projectId(), code));
-            }))
-        .as(transactionalOperator::transactional);
+    return shareLinkHelper.validateAdminAccess(command.projectId(), command.requesterId())
+        .then(projectAccessHelper.findProjectById(command.projectId()))
+        .flatMap(project -> Mono.defer(() -> projectAccessHelper
+            .requireProjectWithinWorkspaceForWrite(
+                project.getWorkspaceId(), command.projectId())
+            .then(Mono.fromCallable(ulidGeneratorPort::generate)
+                .flatMap(id -> {
+                  String code = UUID.randomUUID().toString().replace("-", "");
+                  return shareLinkPort.save(
+                      ShareLink.create(id, command.projectId(), code));
+                }))
+            .as(transactionalOperator::transactional)));
   }
 
 }

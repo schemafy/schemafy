@@ -113,6 +113,45 @@ class WorkspaceInvitationUseCaseIntegrationTest
   }
 
   @Test
+  @DisplayName("워크스페이스 중복 pending 초대는 하나를 수락하면 나머지가 cancelled로 수렴한다")
+  void acceptWorkspaceInvitation_duplicatePendingFixtures_convergeOnAccept() {
+    User admin = signUpUser("admin-wi-duplicate-accept@test.com", "Admin");
+    User invitee = signUpUser("invitee-wi-duplicate-accept@test.com", "Invitee");
+    var workspace = saveWorkspace("Duplicate Accept WS", "Description");
+    saveWorkspaceMember(workspace, admin, WorkspaceRole.ADMIN);
+    var project = saveProject(workspace, "Duplicate Accept Project");
+
+    Invitation acceptedInvitation = saveWorkspaceInvitation(workspace, invitee.email(),
+        WorkspaceRole.MEMBER, admin);
+    Invitation siblingInvitation = saveWorkspaceInvitation(workspace, invitee.email(),
+        WorkspaceRole.MEMBER, admin);
+
+    WorkspaceMember restoredMember = acceptWorkspaceInvitationUseCase.acceptWorkspaceInvitation(
+        new AcceptWorkspaceInvitationCommand(acceptedInvitation.getId(), invitee.id()))
+        .block();
+
+    Invitation accepted = invitationRepository.findById(acceptedInvitation.getId()).block();
+    Invitation sibling = invitationRepository.findById(siblingInvitation.getId()).block();
+
+    assertThat(accepted).isNotNull();
+    assertThat(accepted.getStatusAsEnum()).isEqualTo(InvitationStatus.ACCEPTED);
+    assertThat(sibling).isNotNull();
+    assertThat(sibling.getStatusAsEnum()).isEqualTo(InvitationStatus.CANCELLED);
+    assertThat(restoredMember).isNotNull();
+    assertThat(countActiveWorkspaceMemberRows(workspace.getId(), invitee.id())).isEqualTo(1);
+    assertThat(countActiveProjectMemberRows(project.getId(), invitee.id())).isEqualTo(1);
+
+    StepVerifier.create(acceptWorkspaceInvitationUseCase.acceptWorkspaceInvitation(
+        new AcceptWorkspaceInvitationCommand(siblingInvitation.getId(), invitee.id())))
+        .expectErrorMatches(error -> error instanceof DomainException de
+            && (de.getErrorCode() == ProjectErrorCode.INVITATION_DUPLICATE_WORKSPACE_MEMBER
+                || de.getErrorCode() == ProjectErrorCode.WORKSPACE_INVITATION_ALREADY_PROCESSED))
+        .verify();
+    assertThat(countActiveWorkspaceMemberRows(workspace.getId(), invitee.id())).isEqualTo(1);
+    assertThat(countActiveProjectMemberRows(project.getId(), invitee.id())).isEqualTo(1);
+  }
+
+  @Test
   @DisplayName("워크스페이스 초대 수락 시 soft delete 된 워크스페이스와 프로젝트 멤버십을 복원한다")
   void acceptWorkspaceInvitation_restoresMemberships() {
     User admin = signUpUser("admin-wi-restore@test.com", "Admin");
@@ -130,8 +169,6 @@ class WorkspaceInvitationUseCaseIntegrationTest
 
     Invitation acceptedInvitation = saveWorkspaceInvitation(workspace, invitee.email(),
         WorkspaceRole.ADMIN, admin);
-    Invitation siblingInvitation = saveWorkspaceInvitation(workspace, invitee.email(),
-        WorkspaceRole.MEMBER, admin);
 
     WorkspaceMember restoredMember = acceptWorkspaceInvitationUseCase.acceptWorkspaceInvitation(
         new AcceptWorkspaceInvitationCommand(acceptedInvitation.getId(), invitee.id()))
@@ -140,13 +177,47 @@ class WorkspaceInvitationUseCaseIntegrationTest
     ProjectMember restoredProjectMember = projectMemberRepository
         .findByProjectIdAndUserIdAndNotDeleted(project.getId(), invitee.id())
         .block();
-    Invitation cancelledSibling = invitationRepository.findById(siblingInvitation.getId()).block();
 
     assertThat(restoredMember.getId()).isEqualTo(deletedWorkspaceMember.getId());
     assertThat(restoredMember.getRoleAsEnum()).isEqualTo(WorkspaceRole.ADMIN);
     assertThat(restoredProjectMember.getId()).isEqualTo(deletedProjectMember.getId());
     assertThat(restoredProjectMember.getRoleAsEnum()).isEqualTo(ProjectRole.ADMIN);
-    assertThat(cancelledSibling.getStatusAsEnum()).isEqualTo(InvitationStatus.CANCELLED);
+  }
+
+  @Test
+  @DisplayName("워크스페이스 초대 수락 시 같은 워크스페이스의 pending 프로젝트 초대를 취소한다")
+  void acceptWorkspaceInvitation_cancelsPendingProjectInvitationsInSameWorkspace() {
+    User admin = signUpUser("admin-wi-cancel-project-inv@test.com", "Admin");
+    User invitee = signUpUser("invitee-wi-cancel-project-inv@test.com",
+        "Invitee");
+    var workspace = saveWorkspace("Accept Cancel Project Invitation WS",
+        "Description");
+    saveWorkspaceMember(workspace, admin, WorkspaceRole.ADMIN);
+    var project = saveProject(workspace, "Accept Cancel Project Invitation");
+    saveProjectMember(project, admin, ProjectRole.ADMIN);
+    Invitation workspaceInvitation = saveWorkspaceInvitation(workspace,
+        invitee.email(), WorkspaceRole.MEMBER, admin);
+    Invitation projectInvitation = saveProjectInvitation(project, workspace,
+        invitee.email(), ProjectRole.EDITOR, admin);
+
+    WorkspaceMember acceptedMember = acceptWorkspaceInvitationUseCase
+        .acceptWorkspaceInvitation(new AcceptWorkspaceInvitationCommand(
+            workspaceInvitation.getId(), invitee.id()))
+        .block();
+
+    Invitation cancelledInvitation = invitationRepository
+        .findById(projectInvitation.getId())
+        .block();
+    ProjectMember materializedMember = projectMemberRepository
+        .findByProjectIdAndUserIdAndNotDeleted(project.getId(), invitee.id())
+        .block();
+
+    assertThat(acceptedMember).isNotNull();
+    assertThat(cancelledInvitation).isNotNull();
+    assertThat(cancelledInvitation.getStatusAsEnum())
+        .isEqualTo(InvitationStatus.CANCELLED);
+    assertThat(materializedMember).isNotNull();
+    assertThat(materializedMember.getRoleAsEnum()).isEqualTo(ProjectRole.VIEWER);
   }
 
   @Test
@@ -185,6 +256,34 @@ class WorkspaceInvitationUseCaseIntegrationTest
         .expectErrorMatches(DomainException.hasErrorCode(
             ProjectErrorCode.INVITATION_TYPE_MISMATCH))
         .verify();
+  }
+
+  private long countActiveWorkspaceMemberRows(String workspaceId, String userId) {
+    return databaseClient.sql("""
+        SELECT COUNT(*) FROM workspace_members
+        WHERE workspace_id = :workspaceId
+          AND user_id = :userId
+          AND deleted_at IS NULL
+        """)
+        .bind("workspaceId", workspaceId)
+        .bind("userId", userId)
+        .map(row -> row.get(0, Long.class))
+        .one()
+        .block();
+  }
+
+  private long countActiveProjectMemberRows(String projectId, String userId) {
+    return databaseClient.sql("""
+        SELECT COUNT(*) FROM project_members
+        WHERE project_id = :projectId
+          AND user_id = :userId
+          AND deleted_at IS NULL
+        """)
+        .bind("projectId", projectId)
+        .bind("userId", userId)
+        .map(row -> row.get(0, Long.class))
+        .one()
+        .block();
   }
 
 }

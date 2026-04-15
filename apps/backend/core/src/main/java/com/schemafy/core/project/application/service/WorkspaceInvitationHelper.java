@@ -112,7 +112,7 @@ class WorkspaceInvitationHelper {
       String workspaceId,
       String userId,
       WorkspaceRole role) {
-    return workspaceMemberPort.findLatestByWorkspaceIdAndUserId(workspaceId,
+    return workspaceMemberPort.findByWorkspaceIdAndUserId(workspaceId,
         userId)
         .flatMap(existing -> {
           if (!existing.isDeleted()) {
@@ -125,8 +125,8 @@ class WorkspaceInvitationHelper {
         })
         .switchIfEmpty(Mono.defer(() -> Mono
             .fromCallable(ulidGeneratorPort::generate)
-            .flatMap(id -> workspaceMemberPort.save(
-                WorkspaceMember.create(id, workspaceId, userId, role)))));
+            .map(id -> WorkspaceMember.create(id, workspaceId, userId, role))
+            .flatMap(workspaceMemberPort::save)));
   }
 
 }
