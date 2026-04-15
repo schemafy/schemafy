@@ -14,7 +14,12 @@ public interface ShareLinkRepository
   @Query("SELECT * FROM share_links WHERE code = :code AND deleted_at IS NULL")
   Mono<ShareLink> findByCodeAndNotDeleted(String code);
 
-  @Query("UPDATE share_links SET last_accessed_at = CURRENT_TIMESTAMP, access_count = access_count + 1 WHERE id = :id")
+  @Query("""
+      UPDATE share_links
+      SET last_accessed_at = CURRENT_TIMESTAMP, access_count = access_count + 1
+      WHERE id = :id
+        AND deleted_at IS NULL
+      """)
   Mono<Void> incrementAccessCount(String id);
 
   @Query("SELECT * FROM share_links WHERE project_id = :projectId AND deleted_at IS NULL ORDER BY created_at DESC LIMIT :limit OFFSET :offset")
