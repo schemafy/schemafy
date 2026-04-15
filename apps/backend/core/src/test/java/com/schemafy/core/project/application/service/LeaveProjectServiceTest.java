@@ -36,10 +36,10 @@ class LeaveProjectServiceTest {
   TransactionalOperator transactionalOperator;
 
   @Mock
-  ProjectPort projectPort;
+  ProjectMemberPort projectMemberPort;
 
   @Mock
-  ProjectMemberPort projectMemberPort;
+  ProjectPort projectPort;
 
   @Mock
   ProjectAccessHelper projectAccessHelper;
@@ -54,17 +54,21 @@ class LeaveProjectServiceTest {
   @DisplayName("마지막 멤버이고 프로젝트가 존재하면 cascade만 수행하고 fallback 멤버 삭제는 호출하지 않는다")
   void leaveProject_lastMemberSkipsFallbackWhenProjectExists() {
     LeaveProjectCommand command = new LeaveProjectCommand(PROJECT_ID, USER_ID);
-    ProjectMember member = ProjectMember.create("member-id", PROJECT_ID, USER_ID, ProjectRole.VIEWER);
+    ProjectMember member = ProjectMember.create("member-id", PROJECT_ID,
+        USER_ID, ProjectRole.VIEWER);
     Project project = Project.create(PROJECT_ID, WORKSPACE_ID, "Project", "Description");
 
+    given(projectPort.findById(PROJECT_ID))
+        .willReturn(Mono.just(project));
+    given(projectAccessHelper
+        .lockProjectWithinWorkspaceForWrite(WORKSPACE_ID, PROJECT_ID))
+        .willReturn(Mono.just(project));
     given(projectAccessHelper.findProjectMember(USER_ID, PROJECT_ID))
         .willReturn(Mono.just(member));
     given(projectAccessHelper.validateWorkspaceAdminGuard(PROJECT_ID, member))
         .willReturn(Mono.empty());
     given(projectMemberPort.countByProjectIdAndNotDeleted(PROJECT_ID))
         .willReturn(Mono.just(1L));
-    given(projectPort.findById(PROJECT_ID))
-        .willReturn(Mono.just(project));
     given(projectCascadeHelper.softDeleteProjectCascade(project))
         .willReturn(Mono.empty());
     given(transactionalOperator.transactional(any(Mono.class)))
@@ -80,19 +84,45 @@ class LeaveProjectServiceTest {
   }
 
   @Test
+  @DisplayName("프로젝트가 이미 삭제되었으면 fallback 멤버 삭제만 수행한다")
+  void leaveProject_fallsBackWhenProjectAlreadyDeleted() {
+    LeaveProjectCommand command = new LeaveProjectCommand(PROJECT_ID, USER_ID);
+    ProjectMember member = ProjectMember.create("member-id", PROJECT_ID,
+        USER_ID, ProjectRole.VIEWER);
+    Project project = Project.create(PROJECT_ID, WORKSPACE_ID, "Project",
+        "Description");
+    project.delete();
+
+    given(projectPort.findById(PROJECT_ID))
+        .willReturn(Mono.just(project));
+    given(projectAccessHelper.findProjectMember(USER_ID, PROJECT_ID))
+        .willReturn(Mono.just(member));
+    given(projectAccessHelper.softDeleteMember(member))
+        .willReturn(Mono.empty());
+    given(transactionalOperator.transactional(any(Mono.class)))
+        .willAnswer(invocation -> invocation.getArgument(0));
+
+    StepVerifier.create(sut.leaveProject(command))
+        .verifyComplete();
+
+    then(projectAccessHelper).should()
+        .softDeleteMember(member);
+    then(projectAccessHelper).should(never())
+        .lockProjectWithinWorkspaceForWrite(WORKSPACE_ID, PROJECT_ID);
+    then(projectCascadeHelper).shouldHaveNoInteractions();
+  }
+
+  @Test
   @DisplayName("마지막 멤버이지만 프로젝트가 없으면 fallback 멤버 삭제를 수행한다")
   void leaveProject_lastMemberFallsBackWhenProjectMissing() {
     LeaveProjectCommand command = new LeaveProjectCommand(PROJECT_ID, USER_ID);
-    ProjectMember member = ProjectMember.create("member-id", PROJECT_ID, USER_ID, ProjectRole.VIEWER);
+    ProjectMember member = ProjectMember.create("member-id", PROJECT_ID,
+        USER_ID, ProjectRole.VIEWER);
 
-    given(projectAccessHelper.findProjectMember(USER_ID, PROJECT_ID))
-        .willReturn(Mono.just(member));
-    given(projectAccessHelper.validateWorkspaceAdminGuard(PROJECT_ID, member))
-        .willReturn(Mono.empty());
-    given(projectMemberPort.countByProjectIdAndNotDeleted(PROJECT_ID))
-        .willReturn(Mono.just(1L));
     given(projectPort.findById(PROJECT_ID))
         .willReturn(Mono.empty());
+    given(projectAccessHelper.findProjectMember(USER_ID, PROJECT_ID))
+        .willReturn(Mono.just(member));
     given(projectAccessHelper.softDeleteMember(member))
         .willReturn(Mono.empty());
     given(transactionalOperator.transactional(any(Mono.class)))
