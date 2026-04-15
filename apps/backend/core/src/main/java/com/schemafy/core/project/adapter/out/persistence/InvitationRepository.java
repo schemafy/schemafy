@@ -111,6 +111,37 @@ public interface InvitationRepository
   @Modifying
   @Query("""
       UPDATE invitations
+      SET status = 'CANCELLED', resolved_at = NOW(), updated_at = NOW(), version = version + 1
+      WHERE target_type = :targetType
+        AND target_id = :targetId
+        AND invited_email = :email
+        AND status = 'PENDING'
+        AND expires_at <= NOW()
+        AND deleted_at IS NULL
+      """)
+  Mono<Long> cancelExpiredPendingInvitationsByTargetAndEmail(
+      String targetType,
+      String targetId,
+      String email);
+
+  @Modifying
+  @Query("""
+      UPDATE invitations
+      SET status = 'CANCELLED', resolved_at = NOW(), updated_at = NOW(), version = version + 1
+      WHERE target_type = 'PROJECT'
+        AND parent_id = :workspaceId
+        AND invited_email = :email
+        AND status = 'PENDING'
+        AND expires_at > NOW()
+        AND deleted_at IS NULL
+      """)
+  Mono<Long> cancelPendingProjectInvitationsByWorkspaceIdAndEmail(
+      String workspaceId,
+      String email);
+
+  @Modifying
+  @Query("""
+      UPDATE invitations
       SET deleted_at = NOW(), updated_at = NOW(), version = version + 1
       WHERE target_type = :targetType
         AND target_id = :targetId

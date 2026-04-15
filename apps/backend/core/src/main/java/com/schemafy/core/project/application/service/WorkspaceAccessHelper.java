@@ -78,6 +78,12 @@ class WorkspaceAccessHelper {
             new DomainException(WorkspaceErrorCode.NOT_FOUND)));
   }
 
+  Mono<Workspace> requireWorkspaceForWrite(String workspaceId) {
+    return workspacePort.findByIdAndNotDeletedForUpdate(workspaceId)
+        .switchIfEmpty(Mono.error(
+            new DomainException(WorkspaceErrorCode.NOT_FOUND)));
+  }
+
   Mono<WorkspaceMember> modifyMemberWithAdminGuard(
       String workspaceId,
       WorkspaceMember member,

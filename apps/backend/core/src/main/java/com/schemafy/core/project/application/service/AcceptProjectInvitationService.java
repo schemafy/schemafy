@@ -33,6 +33,7 @@ class AcceptProjectInvitationService implements AcceptProjectInvitationUseCase {
   private final InvitationPort invitationPort;
   private final ProjectInvitationHelper projectInvitationHelper;
   private final FindUserByIdPort findUserByIdPort;
+  private final ProjectAccessHelper projectAccessHelper;
 
   @Override
   public Mono<ProjectMember> acceptProjectInvitation(
@@ -42,44 +43,12 @@ class AcceptProjectInvitationService implements AcceptProjectInvitationUseCase {
             new DomainException(UserErrorCode.NOT_FOUND)))
         .flatMap(user -> projectInvitationHelper.findInvitationOrThrow(
             command.invitationId())
-            .flatMap(invitation -> {
-              if (!invitation.getTargetTypeAsEnum().isProject()) {
-                return Mono.error(new DomainException(
-                    ProjectErrorCode.INVITATION_TYPE_MISMATCH));
-              }
-
-              invitation.validateInvitedEmailMatches(user.email());
-              return projectInvitationHelper.findProjectOrThrow(
-                  invitation.getProjectId())
-                  .then(projectInvitationHelper.checkNotAlreadyProjectMember(
-                      invitation.getProjectId(),
-                      command.requesterId()))
-                  .then(Mono.defer(() -> {
-                    invitation.accept();
-
-                    return invitationPort.save(invitation)
-                        .then(invitationPort.updateStatusByTargetAndEmail(
-                            invitation.getTargetType(),
-                            invitation.getTargetId(),
-                            invitation.getInvitedEmail(),
-                            InvitationStatus.CANCELLED.name(),
-                            InvitationStatus.PENDING.name(),
-                            invitation.getId()))
-                        .then(projectInvitationHelper.saveOrRestoreProjectMember(
-                            invitation.getProjectId(),
-                            command.requesterId(),
-                            invitation.getProjectRole()))
-                        .onErrorResume(DataIntegrityViolationException.class,
-                            error -> {
-                              log.warn(
-                                  "Concurrent member creation on invitation accept: invitationId={}",
-                                  command.invitationId());
-                              return Mono.error(new DomainException(
-                                  ProjectErrorCode.INVITATION_DUPLICATE_MEMBERSHIP_PROJECT));
-                            });
-                  }));
-            }))
-        .as(transactionalOperator::transactional)
+            .flatMap(invitation -> projectAccessHelper
+                .findProjectById(invitation.getProjectId())
+                .flatMap(project -> Mono.defer(() -> acceptProjectInvitationWithinWriteScope(
+                    command, project.getWorkspaceId(),
+                    invitation.getProjectId(), user.email())
+                    .as(transactionalOperator::transactional)))))
         .retryWhen(Retry.max(3)
             .filter(OptimisticLockingFailureException.class::isInstance)
             .doBeforeRetry(signal -> log.warn(
@@ -88,6 +57,51 @@ class AcceptProjectInvitationService implements AcceptProjectInvitationUseCase {
         .onErrorMap(OptimisticLockingFailureException.class,
             error -> new DomainException(
                 ProjectErrorCode.INVITATION_CONCURRENT_PROCESSED));
+  }
+
+  private Mono<ProjectMember> acceptProjectInvitationWithinWriteScope(
+      AcceptProjectInvitationCommand command,
+      String workspaceId,
+      String projectId,
+      String requesterEmail) {
+    return projectAccessHelper.requireProjectWithinWorkspaceForWrite(
+        workspaceId, projectId)
+        .then(projectInvitationHelper.findInvitationOrThrow(command.invitationId()))
+        .flatMap(invitation -> {
+          if (!invitation.getTargetTypeAsEnum().isProject()) {
+            return Mono.error(new DomainException(
+                ProjectErrorCode.INVITATION_TYPE_MISMATCH));
+          }
+
+          invitation.validateInvitedEmailMatches(requesterEmail);
+          return projectInvitationHelper.checkNotAlreadyProjectMember(
+              projectId,
+              command.requesterId())
+              .then(Mono.defer(() -> {
+                invitation.accept();
+
+                return invitationPort.save(invitation)
+                    .then(invitationPort.updateStatusByTargetAndEmail(
+                        invitation.getTargetType(),
+                        invitation.getTargetId(),
+                        invitation.getInvitedEmail(),
+                        InvitationStatus.CANCELLED.name(),
+                        InvitationStatus.PENDING.name(),
+                        invitation.getId()))
+                    .then(projectInvitationHelper.saveOrRestoreProjectMember(
+                        projectId,
+                        command.requesterId(),
+                        invitation.getProjectRole()))
+                    .onErrorResume(DataIntegrityViolationException.class,
+                        error -> {
+                          log.warn(
+                              "Concurrent member creation on invitation accept: invitationId={}",
+                              command.invitationId());
+                          return Mono.error(new DomainException(
+                              ProjectErrorCode.INVITATION_DUPLICATE_MEMBERSHIP_PROJECT));
+                        });
+              }));
+        });
   }
 
 }

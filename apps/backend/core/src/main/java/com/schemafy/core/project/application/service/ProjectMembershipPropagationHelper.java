@@ -1,6 +1,5 @@
 package com.schemafy.core.project.application.service;
 
-import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Component;
 
 import org.slf4j.Logger;
@@ -21,8 +20,8 @@ import reactor.core.publisher.Mono;
 @RequiredArgsConstructor
 class ProjectMembershipPropagationHelper {
 
-  private static final Logger log = LoggerFactory.getLogger(
-      ProjectMembershipPropagationHelper.class);
+  private static final Logger log = LoggerFactory.getLogger(ProjectMembershipPropagationHelper.class);
+  private static final int PROJECT_MEMBER_UPSERT_BATCH_SIZE = 100;
 
   private final ProjectPort projectPort;
   private final ProjectMemberPort projectMemberPort;
@@ -35,30 +34,15 @@ class ProjectMembershipPropagationHelper {
       String creatorUserId) {
     return workspaceMemberPort.findAllByWorkspaceIdAndNotDeleted(workspaceId)
         .filter(wsMember -> !wsMember.getUserId().equals(creatorUserId))
-        .flatMap(wsMember -> projectMemberPort
-            .existsByProjectIdAndUserIdAndNotDeleted(projectId,
-                wsMember.getUserId())
-            .flatMap(exists -> {
-              if (exists) {
-                return Mono.empty();
-              }
-              return Mono.fromCallable(ulidGeneratorPort::generate)
-                  .flatMap(id -> {
-                    ProjectRole projectRole = wsMember.getRoleAsEnum()
-                        .toProjectRole();
-                    ProjectMember newMember = ProjectMember.create(
-                        id,
-                        projectId,
-                        wsMember.getUserId(),
-                        projectRole);
-                    return projectMemberPort.save(newMember).then();
-                  });
-            })
-            .onErrorResume(DataIntegrityViolationException.class, error -> {
-              log.warn("Duplicate key on auto-add user {} to project {}: {}",
-                  wsMember.getUserId(), projectId, error.getMessage());
-              return Mono.empty();
-            }))
+        .concatMap(wsMember -> Mono.fromCallable(ulidGeneratorPort::generate)
+            .map(id -> ProjectMember.create(
+                id,
+                projectId,
+                wsMember.getUserId(),
+                wsMember.getRoleAsEnum().toProjectRole())))
+        .buffer(PROJECT_MEMBER_UPSERT_BATCH_SIZE)
+        .concatMap(members -> projectMemberPort.upsertAllForProject(projectId,
+            members))
         .then();
   }
 
@@ -107,27 +91,11 @@ class ProjectMembershipPropagationHelper {
     ProjectRole projectRole = workspaceRole.toProjectRole();
 
     return projectPort.findByWorkspaceIdAndNotDeleted(workspaceId)
-        .concatMap(project -> projectMemberPort
-            .findLatestByProjectIdAndUserId(project.getId(), userId)
-            .flatMap(existing -> {
-              if (!existing.isDeleted()) {
-                if (workspaceRole.isAdmin()
-                    && existing.getRoleAsEnum() != projectRole) {
-                  existing.updateRole(projectRole);
-                  return projectMemberPort.save(existing);
-                }
-                return Mono.just(existing);
-              }
-              existing.restore();
-              existing.updateRole(projectRole);
-              return projectMemberPort.save(existing);
-            })
-            .switchIfEmpty(Mono.defer(() -> Mono
-                .fromCallable(ulidGeneratorPort::generate)
-                .flatMap(id -> projectMemberPort
-                    .save(ProjectMember.create(id, project.getId(), userId,
-                        projectRole)))))
-            .then())
+        .concatMap(project -> Mono.fromCallable(ulidGeneratorPort::generate)
+            .map(id -> ProjectMember.create(id, project.getId(), userId, projectRole)))
+        .buffer(PROJECT_MEMBER_UPSERT_BATCH_SIZE)
+        .concatMap(members -> projectMemberPort.upsertAllForUser(userId,
+            members))
         .then();
   }
 

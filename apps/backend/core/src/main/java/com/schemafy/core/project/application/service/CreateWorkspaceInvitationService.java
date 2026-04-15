@@ -7,6 +7,7 @@ import com.schemafy.core.project.application.port.in.CreateWorkspaceInvitationCo
 import com.schemafy.core.project.application.port.in.CreateWorkspaceInvitationUseCase;
 import com.schemafy.core.project.application.port.out.InvitationPort;
 import com.schemafy.core.project.domain.Invitation;
+import com.schemafy.core.project.domain.InvitationType;
 import com.schemafy.core.ulid.application.port.out.UlidGeneratorPort;
 import com.schemafy.core.user.domain.Email;
 
@@ -31,12 +32,15 @@ class CreateWorkspaceInvitationService
             command.workspaceId(), command.requesterId())
             .then(workspaceInvitationHelper.findWorkspaceOrThrow(
                 command.workspaceId()))
-            .flatMap(workspace -> workspaceInvitationHelper
+            .then(invitationPort.cancelExpiredPendingInvitationsByTargetAndEmail(
+                InvitationType.WORKSPACE.name(),
+                command.workspaceId(),
+                email.address()))
+            .then(workspaceInvitationHelper
                 .checkNotAlreadyMemberByEmail(command.workspaceId(), email)
                 .then(workspaceInvitationHelper.checkDuplicatePendingInvitation(
-                    command.workspaceId(), email))
-                .thenReturn(workspace))
-            .flatMap(workspace -> Mono.fromCallable(ulidGeneratorPort::generate)
+                    command.workspaceId(), email)))
+            .then(Mono.fromCallable(ulidGeneratorPort::generate)
                 .flatMap(id -> invitationPort.save(
                     Invitation.createWorkspaceInvitation(
                         id,

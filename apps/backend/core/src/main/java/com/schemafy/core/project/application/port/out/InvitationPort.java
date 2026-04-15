@@ -45,6 +45,15 @@ public interface InvitationPort {
       String currentStatus,
       String excludeId);
 
+  Mono<Long> cancelExpiredPendingInvitationsByTargetAndEmail(
+      String targetType,
+      String targetId,
+      String email);
+
+  Mono<Long> cancelPendingProjectInvitationsByWorkspaceIdAndEmail(
+      String workspaceId,
+      String email);
+
   Mono<Long> softDeleteByTarget(String targetType, String targetId);
 
 }

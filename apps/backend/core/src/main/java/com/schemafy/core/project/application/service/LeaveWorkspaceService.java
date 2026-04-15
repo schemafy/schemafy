@@ -3,6 +3,7 @@ package com.schemafy.core.project.application.service;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.reactive.TransactionalOperator;
 
+import com.schemafy.core.common.BaseEntity;
 import com.schemafy.core.project.application.port.in.LeaveWorkspaceCommand;
 import com.schemafy.core.project.application.port.in.LeaveWorkspaceUseCase;
 import com.schemafy.core.project.application.port.out.InvitationPort;
@@ -29,8 +30,9 @@ class LeaveWorkspaceService implements LeaveWorkspaceUseCase {
 
   @Override
   public Mono<Void> leaveWorkspace(LeaveWorkspaceCommand command) {
-    return workspaceAccessHelper.findWorkspaceMember(command.requesterId(),
-        command.workspaceId())
+    return workspaceAccessHelper.requireWorkspaceForWrite(command.workspaceId())
+        .then(workspaceAccessHelper.findWorkspaceMember(command.requesterId(),
+            command.workspaceId()))
         .flatMap(member -> workspaceMemberPort
             .countByWorkspaceIdAndNotDeleted(command.workspaceId())
             .flatMap(totalMembers -> {
@@ -39,9 +41,7 @@ class LeaveWorkspaceService implements LeaveWorkspaceUseCase {
               }
 
               return workspaceAccessHelper.modifyMemberWithAdminGuard(
-                  command.workspaceId(), member, workspaceMember -> {
-                    workspaceMember.delete();
-                  })
+                  command.workspaceId(), member, BaseEntity::delete)
                   .then(projectMembershipPropagationHelper.removeFromAllProjects(
                       command.workspaceId(),
                       command.requesterId()));
