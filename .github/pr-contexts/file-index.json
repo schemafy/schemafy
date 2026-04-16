@@ -5,7 +5,8 @@
     337,
     346,
     347,
-    352
+    352,
+    357
   ],
   "apps/frontend/src/features/collaboration/components/ChatBubble.tsx": [
     291
@@ -374,9 +375,6 @@
     291
   ],
   "pnpm-workspace.yaml": [
-    346
-  ],
-  ".npmrc": [
     346
   ],
   ".env.example": [
