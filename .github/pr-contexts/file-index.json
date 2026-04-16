@@ -79,7 +79,8 @@
     346
   ],
   "apps/backend/api/src/docs/asciidoc/api-guide.adoc": [
-    337
+    337,
+    362
   ],
   "apps/backend/api/src/main/java/com/schemafy/api/collaboration/dto/event/CollaborationOutboundFactory.java": [
     337
