@@ -1,7 +1,11 @@
 {
   ".github/pr-contexts/file-index.json": [
     291,
-    335
+    335,
+    337,
+    346,
+    347,
+    352
   ],
   "apps/frontend/src/features/collaboration/components/ChatBubble.tsx": [
     291
@@ -369,5 +373,8 @@
   ],
   "pnpm-workspace.yaml": [
     346
+  ],
+  ".env.example": [
+    347
   ]
 }
