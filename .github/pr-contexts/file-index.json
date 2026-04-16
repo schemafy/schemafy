@@ -84,10 +84,12 @@
   ],
   "apps/backend/api/src/docs/asciidoc/api-guide.adoc": [
     337,
+    357,
     362
   ],
   "apps/backend/api/src/main/java/com/schemafy/api/collaboration/dto/event/CollaborationOutboundFactory.java": [
-    337
+    337,
+    357
   ],
   "apps/backend/api/src/main/java/com/schemafy/api/collaboration/dto/event/ErdMutatedEvent.java": [
     337
@@ -374,7 +376,49 @@
   "pnpm-workspace.yaml": [
     346
   ],
+  ".npmrc": [
+    346
+  ],
   ".env.example": [
     347
+  ],
+  "apps/backend/api/src/main/java/com/schemafy/api/collaboration/dto/CollaborationEventType.java": [
+    357
+  ],
+  "apps/backend/api/src/main/java/com/schemafy/api/collaboration/dto/PreviewAction.java": [
+    357
+  ],
+  "apps/backend/api/src/main/java/com/schemafy/api/collaboration/dto/event/CollaborationInbound.java": [
+    357
+  ],
+  "apps/backend/api/src/main/java/com/schemafy/api/collaboration/dto/event/CollaborationOutbound.java": [
+    357
+  ],
+  "apps/backend/api/src/main/java/com/schemafy/api/collaboration/dto/event/RelationshipExtraPreviewEvent.java": [
+    357
+  ],
+  "apps/backend/api/src/main/java/com/schemafy/api/collaboration/dto/event/TablePositionPreviewEvent.java": [
+    357
+  ],
+  "apps/backend/api/src/main/java/com/schemafy/api/collaboration/service/handler/RelationshipExtraPreviewMessageHandler.java": [
+    357
+  ],
+  "apps/backend/api/src/main/java/com/schemafy/api/collaboration/service/handler/TablePositionPreviewMessageHandler.java": [
+    357
+  ],
+  "apps/backend/api/src/test/java/com/schemafy/api/collaboration/dto/event/RelationshipExtraPreviewEventTest.java": [
+    357
+  ],
+  "apps/backend/api/src/test/java/com/schemafy/api/collaboration/dto/event/TablePositionPreviewEventTest.java": [
+    357
+  ],
+  "apps/backend/api/src/test/java/com/schemafy/api/collaboration/service/CollaborationServiceTest.java": [
+    357
+  ],
+  "apps/backend/api/src/test/java/com/schemafy/api/collaboration/service/handler/RelationshipExtraPreviewMessageHandlerTest.java": [
+    357
+  ],
+  "apps/backend/api/src/test/java/com/schemafy/api/collaboration/service/handler/TablePositionPreviewMessageHandlerTest.java": [
+    357
   ]
 }
