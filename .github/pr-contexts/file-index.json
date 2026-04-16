@@ -1,10 +1,46 @@
 {
   ".github/pr-contexts/file-index.json": [
+    291,
     335,
     337,
     346,
-    352,
-    347
+    347,
+    352
+  ],
+  "apps/frontend/src/features/collaboration/components/ChatBubble.tsx": [
+    291
+  ],
+  "apps/frontend/src/features/collaboration/components/ChatInput.tsx": [
+    291
+  ],
+  "apps/frontend/src/features/collaboration/components/ChatOverlay.tsx": [
+    291
+  ],
+  "apps/frontend/src/features/collaboration/components/RemoteCursors.tsx": [
+    291
+  ],
+  "apps/frontend/src/features/collaboration/components/index.ts": [
+    291
+  ],
+  "apps/frontend/src/features/collaboration/hooks/useChatAnimation.ts": [
+    291
+  ],
+  "apps/frontend/src/features/collaboration/hooks/useInactivityTimer.ts": [
+    291
+  ],
+  "apps/frontend/src/features/drawing/components/FloatingButtons.tsx": [
+    291
+  ],
+  "apps/frontend/src/features/drawing/components/ShortcutPanel.tsx": [
+    291
+  ],
+  "apps/frontend/src/features/drawing/components/Toolbar.tsx": [
+    331,
+    291
+  ],
+  "apps/frontend/src/features/drawing/components/index.ts": [
+    331,
+    291
   ],
   ".github/workflows/cursor-pr-review.yml": [
     317,
@@ -22,6 +58,24 @@
   ".github/workflows/save-pr-context.yml": [
     317
   ],
+  "apps/frontend/src/features/drawing/hooks/useCanvasController.ts": [
+    331,
+    291
+  ],
+  "apps/frontend/src/features/drawing/hooks/useCanvasKeyboard.ts": [
+    331,
+    291
+  ],
+  "apps/frontend/src/hooks/useChatMessages.ts": [
+    291
+  ],
+  "apps/frontend/src/pages/CanvasPage.tsx": [
+    331,
+    291
+  ],
+  "apps/frontend/src/store/collaboration.store.ts": [
+    291
+  ],
   ".github/workflows/test.yml": [
     346
   ],
@@ -29,7 +83,8 @@
     346
   ],
   "apps/backend/api/src/docs/asciidoc/api-guide.adoc": [
-    337
+    337,
+    362
   ],
   "apps/backend/api/src/main/java/com/schemafy/api/collaboration/dto/event/CollaborationOutboundFactory.java": [
     337
@@ -203,7 +258,8 @@
     337
   ],
   "apps/bff/package.json": [
-    346
+    346,
+    291
   ],
   "apps/bff/src/common/backend-client/backend-client.service.ts": [
     337
@@ -277,22 +333,10 @@
   "apps/frontend/src/features/drawing/components/TablePreview.tsx": [
     331
   ],
-  "apps/frontend/src/features/drawing/components/Toolbar.tsx": [
-    331
-  ],
-  "apps/frontend/src/features/drawing/components/index.ts": [
-    331
-  ],
   "apps/frontend/src/features/drawing/contexts/SelectedSchemaContext.tsx": [
     331
   ],
   "apps/frontend/src/features/drawing/hooks/index.ts": [
-    331
-  ],
-  "apps/frontend/src/features/drawing/hooks/useCanvasController.ts": [
-    331
-  ],
-  "apps/frontend/src/features/drawing/hooks/useCanvasKeyboard.ts": [
     331
   ],
   "apps/frontend/src/features/drawing/hooks/useCanvasNodes.ts": [
@@ -305,7 +349,8 @@
     331
   ],
   "apps/frontend/src/features/drawing/hooks/useRelationships.ts": [
-    331
+    331,
+    291
   ],
   "apps/frontend/src/features/drawing/hooks/useTables.ts": [
     331
@@ -316,9 +361,6 @@
   "apps/frontend/src/features/memo/hooks/useMemoStore.ts": [
     331
   ],
-  "apps/frontend/src/pages/CanvasPage.tsx": [
-    331
-  ],
   "package-lock.json": [
     346
   ],
@@ -326,7 +368,8 @@
     346
   ],
   "pnpm-lock.yaml": [
-    346
+    346,
+    291
   ],
   "pnpm-workspace.yaml": [
     346
