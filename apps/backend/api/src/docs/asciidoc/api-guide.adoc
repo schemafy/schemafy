@@ -7,6 +7,7 @@
 :highlightjs-theme: github
 :icons: font
 :imagesdir: images
+ifndef::snippets[:snippets: ../../../build/generated-snippets]
 
 == 개요
 
@@ -1358,14 +1359,8 @@ include::{snippets}/memo-delete/curl-request.adoc[]
 [discrete]
 ==== 응답
 
-include::{snippets}/memo-delete/response-headers.adoc[]
 include::{snippets}/memo-delete/response-body.adoc[]
 include::{snippets}/memo-delete/http-response.adoc[]
-
-[discrete]
-==== 응답 필드
-
-include::{snippets}/memo-delete/response-fields.adoc[]
 
 ---
 
@@ -1484,14 +1479,8 @@ include::{snippets}/memo-comment-delete/curl-request.adoc[]
 [discrete]
 ==== 응답
 
-include::{snippets}/memo-comment-delete/response-headers.adoc[]
 include::{snippets}/memo-comment-delete/response-body.adoc[]
 include::{snippets}/memo-comment-delete/http-response.adoc[]
-
-[discrete]
-==== 응답 필드
-
-include::{snippets}/memo-comment-delete/response-fields.adoc[]
 
 ---
 
@@ -3637,7 +3626,6 @@ include::{snippets}/user-refresh/curl-request.adoc[]
 include::{snippets}/user-refresh/response-headers.adoc[]
 include::{snippets}/user-refresh/response-body.adoc[]
 include::{snippets}/user-refresh/http-response.adoc[]
-include::{snippets}/user-refresh/response-fields.adoc[]
 
 ---
 

@@ -1,8 +1,12 @@
 package com.schemafy.core.erd.operation.adapter.out.persistence;
 
+import java.util.List;
+
 import com.schemafy.core.common.PersistenceAdapter;
 import com.schemafy.core.erd.operation.application.port.out.AppendErdOperationLogPort;
 import com.schemafy.core.erd.operation.application.port.out.FindSchemaCollaborationStatePort;
+import com.schemafy.core.erd.operation.application.port.out.GetErdOperationByIdPort;
+import com.schemafy.core.erd.operation.application.port.out.GetErdOperationsBySchemaIdPort;
 import com.schemafy.core.erd.operation.application.port.out.IncrementSchemaCollaborationRevisionPort;
 import com.schemafy.core.erd.operation.application.port.out.SaveSchemaCollaborationStatePort;
 import com.schemafy.core.erd.operation.domain.ErdOperationLog;
@@ -15,6 +19,8 @@ import reactor.core.publisher.Mono;
 @RequiredArgsConstructor
 class ErdOperationPersistenceAdapter implements
     FindSchemaCollaborationStatePort,
+    GetErdOperationByIdPort,
+    GetErdOperationsBySchemaIdPort,
     IncrementSchemaCollaborationRevisionPort,
     SaveSchemaCollaborationStatePort,
     AppendErdOperationLogPort {
@@ -35,6 +41,20 @@ class ErdOperationPersistenceAdapter implements
     return schemaCollaborationStateRepository.save(
         schemaCollaborationStateMapper.toEntity(schemaCollaborationState))
         .map(schemaCollaborationStateMapper::toDomain);
+  }
+
+  @Override
+  public Mono<ErdOperationLog> findOperationById(String opId) {
+    return erdOperationLogRepository.findById(opId)
+        .map(erdOperationLogMapper::toDomain);
+  }
+
+  @Override
+  public Mono<List<ErdOperationLog>> findOperationsBySchemaIdOrderByCommittedRevisionAsc(
+      String schemaId) {
+    return erdOperationLogRepository.findAllBySchemaIdOrderByCommittedRevisionAsc(schemaId)
+        .map(erdOperationLogMapper::toDomain)
+        .collectList();
   }
 
   @Override

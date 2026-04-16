@@ -13,9 +13,10 @@ import org.springframework.test.web.reactive.server.WebTestClient;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 
 import com.schemafy.api.common.constant.ApiPath;
-import com.schemafy.api.common.exception.CommonErrorCode;
 import com.schemafy.api.project.controller.dto.request.CreateProjectRequest;
 import com.schemafy.api.project.controller.dto.request.UpdateProjectMemberRoleRequest;
 import com.schemafy.api.project.controller.dto.request.UpdateProjectRequest;
@@ -158,6 +159,22 @@ class ProjectControllerTest extends ProjectHttpTestSupport {
         .jsonPath("$.totalElements").isEqualTo(1);
   }
 
+  @DisplayName("프로젝트 목록 조회는 잘못된 pagination 쿼리에 대해 400 Bad Request를 반환한다")
+  @ParameterizedTest(name = "프로젝트 목록 조회 실패 쿼리: {0}")
+  @ValueSource(strings = {
+    "?page=-1&size=10",
+    "?page=0&size=0",
+    "?page=0&size=101"
+  })
+  void getProjectsFailWhenPaginationIsInvalid(
+      String query) {
+    assertInvalidPagination(
+        webTestClient,
+        ApiPath.API.replace("{version}", "v1.0")
+            + "/workspaces/" + testWorkspaceId + "/projects" + query,
+        accessToken);
+  }
+
   @Test
   @DisplayName("워크스페이스 멤버가 아니면 워크스페이스 내의 프로젝트 목록 조회에 실패한다")
   void getProjectsFailWhenNotWorkspaceMember() {
@@ -193,7 +210,7 @@ class ProjectControllerTest extends ProjectHttpTestSupport {
 
     webTestClient.get()
         .uri(ApiPath.API.replace("{version}", "v1.0")
-            + "/projects/shared/me?page=0")
+            + "/projects/shared/me?page=0&size=10")
         .header("Authorization", "Bearer " + accessToken2)
         .exchange()
         .expectStatus().isOk()
@@ -208,6 +225,7 @@ class ProjectControllerTest extends ProjectHttpTestSupport {
         .jsonPath("$.content[0].myRole").isEqualTo(ProjectRole.EDITOR.name())
         .jsonPath("$.content[1].id").isEqualTo(sharedProject.getId())
         .jsonPath("$.content[1].myRole").isEqualTo(ProjectRole.VIEWER.name())
+        .jsonPath("$.size").isEqualTo(10)
         .jsonPath("$.totalElements").isEqualTo(2);
   }
 
@@ -219,7 +237,7 @@ class ProjectControllerTest extends ProjectHttpTestSupport {
 
     webTestClient.get()
         .uri(ApiPath.API.replace("{version}", "v1.0")
-            + "/projects/shared/me?page=0")
+            + "/projects/shared/me?page=0&size=5")
         .header("Authorization", "Bearer " + accessToken2)
         .exchange()
         .expectStatus().isOk()
@@ -229,20 +247,40 @@ class ProjectControllerTest extends ProjectHttpTestSupport {
         .jsonPath("$.totalElements").isEqualTo(0);
   }
 
+  @DisplayName("공유 프로젝트 목록 조회는 잘못된 pagination 쿼리에 대해 400 Bad Request를 반환한다")
+  @ParameterizedTest(name = "공유 프로젝트 목록 조회 실패 쿼리: {0}")
+  @ValueSource(strings = {
+    "?page=-1&size=10",
+    "?page=0&size=0",
+    "?page=0&size=101"
+  })
+  void getMySharedProjectsFailWhenPaginationIsInvalid(
+      String query) {
+    assertInvalidPagination(
+        webTestClient,
+        ApiPath.API.replace("{version}", "v1.0")
+            + "/projects/shared/me" + query,
+        accessToken2);
+  }
+
   @Test
-  @DisplayName("공유 프로젝트 목록 조회 시 page가 0 미만이면 400 Bad Request를 반환한다")
-  void getMySharedProjectsFailWhenPageIsInvalid() {
+  @DisplayName("공유 프로젝트 목록 조회 시 size 최대값은 100까지 허용한다")
+  void getMySharedProjectsSuccessWhenSizeAtMax() {
+    Workspace sharedWorkspace = saveWorkspace("Shared Workspace", "Description");
+    addWorkspaceMember(sharedWorkspace.getId(), testUserId, WorkspaceRole.ADMIN);
+
+    Project sharedProject = saveProject(sharedWorkspace.getId(), "Shared Project", "Description");
+    addProjectMember(sharedProject.getId(), testUser2Id, ProjectRole.VIEWER);
+
     webTestClient.get()
         .uri(ApiPath.API.replace("{version}", "v1.0")
-            + "/projects/shared/me?page=-1")
+            + "/projects/shared/me?page=0&size=100")
         .header("Authorization", "Bearer " + accessToken2)
         .exchange()
-        .expectStatus().isBadRequest()
+        .expectStatus().isOk()
         .expectBody()
-        .jsonPath("$.reason").isEqualTo(CommonErrorCode.INVALID_PARAMETER.code())
-        .jsonPath("$.detail").value(detail -> assertThat((String) detail)
-            .isNotBlank()
-            .doesNotContain("getMySharedProjects"));
+        .jsonPath("$.size").isEqualTo(100)
+        .jsonPath("$.totalElements").isEqualTo(1);
   }
 
   @Test
@@ -378,6 +416,24 @@ class ProjectControllerTest extends ProjectHttpTestSupport {
             ProjectApiSnippets.getProjectMembersResponse()))
         .jsonPath("$.totalElements")
         .isEqualTo(1);
+  }
+
+  @DisplayName("프로젝트 멤버 목록 조회는 잘못된 pagination 쿼리에 대해 400 Bad Request를 반환한다")
+  @ParameterizedTest(name = "프로젝트 멤버 목록 조회 실패 쿼리: {0}")
+  @ValueSource(strings = {
+    "?page=-1&size=20",
+    "?page=0&size=0",
+    "?page=0&size=101"
+  })
+  void getMembersFailWhenPaginationIsInvalid(
+      String query) {
+    Project project = saveProject(testWorkspaceId, "Test Project", "Description");
+    addProjectMember(project.getId(), testUserId, ProjectRole.ADMIN);
+
+    assertInvalidPagination(
+        webTestClient,
+        projectBasePath + "/" + project.getId() + "/members" + query,
+        accessToken);
   }
 
   @Test
@@ -812,6 +868,25 @@ class ProjectControllerTest extends ProjectHttpTestSupport {
         .jsonPath("$.content").isArray()
         .jsonPath("$.content[0].url").value(url -> assertThat(url.toString()).contains(PUBLIC_API_PREFIX + "/share/"))
         .jsonPath("$.totalElements").isEqualTo(1);
+  }
+
+  @DisplayName("공유 링크 목록 조회는 잘못된 pagination 쿼리에 대해 400 Bad Request를 반환한다")
+  @ParameterizedTest(name = "공유 링크 목록 조회 실패 쿼리: {0}")
+  @ValueSource(strings = {
+    "?page=-1&size=10",
+    "?page=0&size=0",
+    "?page=0&size=101"
+  })
+  void getShareLinksFailWhenPaginationIsInvalid(
+      String query) {
+    Project project = saveProject(testWorkspaceId, "Test Project", "Description");
+    addProjectMember(project.getId(), testUserId, ProjectRole.ADMIN);
+
+    assertInvalidPagination(
+        webTestClient,
+        ApiPath.API.replace("{version}", "v1.0")
+            + "/projects/" + project.getId() + "/share-links" + query,
+        accessToken);
   }
 
   @Test
