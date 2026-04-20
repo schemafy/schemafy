@@ -5,7 +5,8 @@
     337,
     346,
     347,
-    352
+    352,
+    364
   ],
   "apps/frontend/src/features/collaboration/components/ChatBubble.tsx": [
     291
@@ -376,9 +377,6 @@
   "pnpm-workspace.yaml": [
     346
   ],
-  ".npmrc": [
-    346
-  ],
   ".env.example": [
     347
   ],
@@ -420,5 +418,62 @@
   ],
   "apps/backend/api/src/test/java/com/schemafy/api/collaboration/service/handler/TablePositionPreviewMessageHandlerTest.java": [
     357
+  ],
+  "apps/backend/core/build.gradle": [
+    364
+  ],
+  "apps/backend/core/src/main/java/com/schemafy/core/project/application/access/AccessAnnotationValidator.java": [
+    364
+  ],
+  "apps/backend/core/src/main/java/com/schemafy/core/project/application/access/AccessVerificationAspect.java": [
+    364
+  ],
+  "apps/backend/core/src/main/java/com/schemafy/core/project/application/access/AccessVerifier.java": [
+    364
+  ],
+  "apps/backend/core/src/main/java/com/schemafy/core/project/application/access/RequireProjectAccess.java": [
+    364
+  ],
+  "apps/backend/core/src/main/java/com/schemafy/core/project/application/access/RequireWorkspaceAccess.java": [
+    364
+  ],
+  "apps/backend/core/src/main/java/com/schemafy/core/project/application/service/DeleteProjectService.java": [
+    364
+  ],
+  "apps/backend/core/src/main/java/com/schemafy/core/project/application/service/GetProjectMembersService.java": [
+    364
+  ],
+  "apps/backend/core/src/main/java/com/schemafy/core/project/application/service/GetProjectService.java": [
+    364
+  ],
+  "apps/backend/core/src/main/java/com/schemafy/core/project/application/service/ProjectAccessHelper.java": [
+    364
+  ],
+  "apps/backend/core/src/main/java/com/schemafy/core/project/application/service/UpdateProjectService.java": [
+    364
+  ],
+  "apps/backend/core/src/main/java/com/schemafy/core/project/application/service/WorkspaceAccessHelper.java": [
+    364
+  ],
+  "apps/backend/core/src/main/java/com/schemafy/core/project/domain/WorkspaceRole.java": [
+    364
+  ],
+  "apps/backend/core/src/test/java/com/schemafy/core/project/application/access/AccessAnnotationValidatorTest.java": [
+    364
+  ],
+  "apps/backend/core/src/test/java/com/schemafy/core/project/application/access/AccessVerificationAspectSpringContextTest.java": [
+    364
+  ],
+  "apps/backend/core/src/test/java/com/schemafy/core/project/application/access/AccessVerificationAspectTest.java": [
+    364
+  ],
+  "apps/backend/core/src/test/java/com/schemafy/core/project/application/access/AccessVerifierTest.java": [
+    364
+  ],
+  "apps/backend/core/src/test/java/com/schemafy/core/project/domain/EnumDbContractTest.java": [
+    364
+  ],
+  "apps/backend/core/src/test/java/com/schemafy/core/project/integration/ProjectUseCaseIntegrationTest.java": [
+    364
   ]
 }
