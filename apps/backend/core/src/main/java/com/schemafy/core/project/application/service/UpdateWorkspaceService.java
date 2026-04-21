@@ -3,10 +3,12 @@ package com.schemafy.core.project.application.service;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.reactive.TransactionalOperator;
 
+import com.schemafy.core.project.application.access.RequireWorkspaceAccess;
 import com.schemafy.core.project.application.port.in.UpdateWorkspaceCommand;
 import com.schemafy.core.project.application.port.in.UpdateWorkspaceUseCase;
 import com.schemafy.core.project.application.port.in.WorkspaceDetail;
 import com.schemafy.core.project.application.port.out.WorkspacePort;
+import com.schemafy.core.project.domain.WorkspaceRole;
 
 import lombok.RequiredArgsConstructor;
 import reactor.core.publisher.Mono;
@@ -20,10 +22,9 @@ class UpdateWorkspaceService implements UpdateWorkspaceUseCase {
   private final WorkspaceAccessHelper workspaceAccessHelper;
 
   @Override
+  @RequireWorkspaceAccess(role = WorkspaceRole.ADMIN)
   public Mono<WorkspaceDetail> updateWorkspace(UpdateWorkspaceCommand command) {
-    return workspaceAccessHelper.validateAdminAccess(command.workspaceId(),
-        command.requesterId())
-        .then(workspaceAccessHelper.findWorkspaceOrThrow(command.workspaceId()))
+    return workspaceAccessHelper.findWorkspaceOrThrow(command.workspaceId())
         .flatMap(workspace -> {
           workspace.update(command.name(), command.description());
           return workspacePort.save(workspace);
