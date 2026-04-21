@@ -49,20 +49,6 @@ class ProjectInvitationHelper {
             new DomainException(ProjectErrorCode.NOT_FOUND)));
   }
 
-  Mono<Void> validateProjectAdmin(String projectId, String userId) {
-    return projectMemberPort
-        .findByProjectIdAndUserIdAndNotDeleted(projectId, userId)
-        .switchIfEmpty(Mono.error(
-            new DomainException(ProjectErrorCode.ACCESS_DENIED)))
-        .flatMap(member -> {
-          if (!member.isAdmin()) {
-            return Mono.error(
-                new DomainException(ProjectErrorCode.ADMIN_REQUIRED));
-          }
-          return Mono.empty();
-        });
-  }
-
   Mono<Void> checkDuplicatePendingInvitation(String projectId, Email email) {
     return invitationPort.countByTargetAndEmailAndStatus(
         InvitationType.PROJECT.name(),

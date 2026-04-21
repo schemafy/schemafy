@@ -3,10 +3,12 @@ package com.schemafy.core.project.application.service;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.reactive.TransactionalOperator;
 
+import com.schemafy.core.project.application.access.RequireWorkspaceAccess;
 import com.schemafy.core.project.application.port.in.CreateWorkspaceInvitationCommand;
 import com.schemafy.core.project.application.port.in.CreateWorkspaceInvitationUseCase;
 import com.schemafy.core.project.application.port.out.InvitationPort;
 import com.schemafy.core.project.domain.Invitation;
+import com.schemafy.core.project.domain.WorkspaceRole;
 import com.schemafy.core.ulid.application.port.out.UlidGeneratorPort;
 import com.schemafy.core.user.domain.Email;
 
@@ -24,13 +26,12 @@ class CreateWorkspaceInvitationService
   private final WorkspaceInvitationHelper workspaceInvitationHelper;
 
   @Override
+  @RequireWorkspaceAccess(role = WorkspaceRole.ADMIN)
   public Mono<Invitation> createWorkspaceInvitation(
       CreateWorkspaceInvitationCommand command) {
     return Mono.fromSupplier(() -> Email.from(command.email()))
-        .flatMap(email -> workspaceInvitationHelper.validateAdmin(
-            command.workspaceId(), command.requesterId())
-            .then(workspaceInvitationHelper.findWorkspaceOrThrow(
-                command.workspaceId()))
+        .flatMap(email -> workspaceInvitationHelper
+            .findWorkspaceOrThrow(command.workspaceId())
             .flatMap(workspace -> workspaceInvitationHelper
                 .checkNotAlreadyMemberByEmail(command.workspaceId(), email)
                 .then(workspaceInvitationHelper.checkDuplicatePendingInvitation(

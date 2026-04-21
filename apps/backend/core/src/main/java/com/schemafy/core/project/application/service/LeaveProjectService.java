@@ -3,11 +3,13 @@ package com.schemafy.core.project.application.service;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.reactive.TransactionalOperator;
 
+import com.schemafy.core.project.application.access.RequireProjectAccess;
 import com.schemafy.core.project.application.port.in.LeaveProjectCommand;
 import com.schemafy.core.project.application.port.in.LeaveProjectUseCase;
 import com.schemafy.core.project.application.port.out.ProjectMemberPort;
 import com.schemafy.core.project.application.port.out.ProjectPort;
 import com.schemafy.core.project.domain.Project;
+import com.schemafy.core.project.domain.ProjectRole;
 
 import lombok.RequiredArgsConstructor;
 import reactor.core.publisher.Mono;
@@ -23,6 +25,7 @@ class LeaveProjectService implements LeaveProjectUseCase {
   private final ProjectCascadeHelper projectCascadeHelper;
 
   @Override
+  @RequireProjectAccess(role = ProjectRole.VIEWER)
   public Mono<Void> leaveProject(LeaveProjectCommand command) {
     return projectAccessHelper.findProjectMember(command.requesterId(),
         command.projectId())
