@@ -85,6 +85,7 @@
   "apps/backend/api/src/docs/asciidoc/api-guide.adoc": [
     337,
     357,
+    359,
     362
   ],
   "apps/backend/api/src/main/java/com/schemafy/api/collaboration/dto/event/CollaborationOutboundFactory.java": [
@@ -158,7 +159,8 @@
     337
   ],
   "apps/backend/api/src/test/java/com/schemafy/api/erd/controller/ErdOperationFixtures.java": [
-    337
+    337,
+    359
   ],
   "apps/backend/api/src/test/java/com/schemafy/api/erd/controller/IndexControllerTest.java": [
     337
@@ -239,7 +241,8 @@
     352
   ],
   "apps/backend/core/src/main/java/com/schemafy/core/erd/operation/domain/exception/OperationErrorCode.java": [
-    352
+    352,
+    359
   ],
   "apps/backend/core/src/main/java/com/schemafy/core/erd/schema/application/port/in/GetSchemaWithRevisionResult.java": [
     337
@@ -376,8 +379,35 @@
   "pnpm-workspace.yaml": [
     346
   ],
-  ".npmrc": [
-    346
+  "apps/backend/api/src/main/java/com/schemafy/api/erd/controller/OperationController.java": [
+    359
+  ],
+  "apps/backend/api/src/test/java/com/schemafy/api/erd/controller/OperationControllerTest.java": [
+    359
+  ],
+  "apps/backend/api/src/test/java/com/schemafy/api/erd/docs/OperationApiSnippets.java": [
+    359
+  ],
+  "apps/backend/core/src/main/java/com/schemafy/core/erd/operation/application/port/in/RedoErdOperationCommand.java": [
+    359
+  ],
+  "apps/backend/core/src/main/java/com/schemafy/core/erd/operation/application/port/in/RedoErdOperationUseCase.java": [
+    359
+  ],
+  "apps/backend/core/src/main/java/com/schemafy/core/erd/operation/application/port/in/UndoErdOperationCommand.java": [
+    359
+  ],
+  "apps/backend/core/src/main/java/com/schemafy/core/erd/operation/application/port/in/UndoErdOperationUseCase.java": [
+    359
+  ],
+  "apps/backend/core/src/main/java/com/schemafy/core/erd/operation/application/service/UndoRedoErdOperationHandler.java": [
+    359
+  ],
+  "apps/backend/core/src/main/java/com/schemafy/core/erd/operation/application/service/UndoRedoErdOperationService.java": [
+    359
+  ],
+  "apps/backend/core/src/test/java/com/schemafy/core/erd/operation/application/service/UndoRedoErdOperationServiceTest.java": [
+    359
   ],
   ".env.example": [
     347

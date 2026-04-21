@@ -1563,6 +1563,9 @@ NOTE: mutation 성공 후 실제 커밋 revision은 HTTP mutation 응답의 `ope
 
 |Relationship
 |생성, 이름 변경, 종류 변경, 카디널리티 변경, 추가정보 변경, 삭제, 컬럼 추가/제거/위치 변경
+
+|Operation
+|undo, redo (성공 시)
 |===
 
 NOTE: 조회(GET) API는 이벤트를 발생시키지 않습니다.
@@ -1787,6 +1790,118 @@ include::{snippets}/schema-list-by-project/http-response.adoc[]
 ==== 응답 필드
 
 include::{snippets}/schema-list-by-project/response-fields.adoc[]
+
+---
+
+=== Operation API
+
+==== Operation undo
+
+커밋된 operation ID를 기준으로 undo를 요청합니다. 현재 undo 대상이 유효하고 지원되는 연산군인 경우 mutation이 수행됩니다.
+
+[source]
+----
+POST /api/v1.0/operations/{opId}/undo
+----
+
+[discrete]
+==== 요청
+
+include::{snippets}/operation-undo/http-request.adoc[]
+include::{snippets}/operation-undo/request-headers.adoc[]
+include::{snippets}/operation-undo/path-parameters.adoc[]
+include::{snippets}/operation-undo/curl-request.adoc[]
+
+[discrete]
+==== 응답
+
+include::{snippets}/operation-undo/response-headers.adoc[]
+include::{snippets}/operation-undo/response-body.adoc[]
+include::{snippets}/operation-undo/http-response.adoc[]
+
+[discrete]
+==== 응답 필드
+
+include::{snippets}/operation-undo/response-fields.adoc[]
+
+[discrete]
+==== 실패 사유
+
+에러 응답 형식은 문서 상단의 RFC 9457 Problem Details 형식을 따릅니다.
+
+[cols="2,1,3"]
+|===
+|reason |status |설명
+
+|`OPERATION_NOT_FOUND`
+|404
+|`opId`에 해당하는 operation이 존재하지 않는 경우
+
+|`OPERATION_SUPERSEDED`
+|409
+|현재 undo frontier가 아닌 더 오래된 operation을 undo하려는 경우
+
+|`OPERATION_ALREADY_UNDONE`
+|409
+|이미 undone 상태인 operation을 다시 undo하려는 경우
+
+|`OPERATION_UNSUPPORTED`
+|409
+|현재 서버에 해당 연산군의 undo executor가 아직 연결되지 않은 경우
+|===
+
+---
+
+==== Operation redo
+
+커밋된 operation ID를 기준으로 redo를 요청합니다. 현재 redo 대상이 유효하고 지원되는 연산군인 경우 mutation이 수행됩니다.
+
+[source]
+----
+POST /api/v1.0/operations/{opId}/redo
+----
+
+[discrete]
+==== 요청
+
+include::{snippets}/operation-redo/http-request.adoc[]
+include::{snippets}/operation-redo/request-headers.adoc[]
+include::{snippets}/operation-redo/path-parameters.adoc[]
+include::{snippets}/operation-redo/curl-request.adoc[]
+
+[discrete]
+==== 응답
+
+include::{snippets}/operation-redo/response-headers.adoc[]
+include::{snippets}/operation-redo/response-body.adoc[]
+include::{snippets}/operation-redo/http-response.adoc[]
+
+[discrete]
+==== 응답 필드
+
+include::{snippets}/operation-redo/response-fields.adoc[]
+
+[discrete]
+==== 실패 사유
+
+에러 응답 형식은 문서 상단의 RFC 9457 Problem Details 형식을 따릅니다.
+
+[cols="2,1,3"]
+|===
+|reason |status |설명
+
+|`OPERATION_NOT_FOUND`
+|404
+|`opId`에 해당하는 operation이 존재하지 않는 경우
+
+|`OPERATION_REDO_NOT_ELIGIBLE`
+|409
+|현재 redo frontier가 아니거나 redo 가능 이력이 아닌 operation을 redo하려는 경우
+
+|`OPERATION_UNSUPPORTED`
+|409
+|현재 서버에 해당 연산군의 redo executor가 아직 연결되지 않은 경우
+|===
 
 ---
 
