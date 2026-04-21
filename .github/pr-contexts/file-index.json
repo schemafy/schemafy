@@ -376,9 +376,6 @@
   "pnpm-workspace.yaml": [
     346
   ],
-  ".npmrc": [
-    346
-  ],
   ".env.example": [
     347
   ],
@@ -420,5 +417,101 @@
   ],
   "apps/backend/api/src/test/java/com/schemafy/api/collaboration/service/handler/TablePositionPreviewMessageHandlerTest.java": [
     357
+  ],
+  "apps/backend/core/src/main/java/com/schemafy/core/project/application/service/AddWorkspaceMemberService.java": [
+    369
+  ],
+  "apps/backend/core/src/main/java/com/schemafy/core/project/application/service/CreateProjectInvitationService.java": [
+    369
+  ],
+  "apps/backend/core/src/main/java/com/schemafy/core/project/application/service/CreateProjectService.java": [
+    369
+  ],
+  "apps/backend/core/src/main/java/com/schemafy/core/project/application/service/CreateShareLinkService.java": [
+    369
+  ],
+  "apps/backend/core/src/main/java/com/schemafy/core/project/application/service/CreateWorkspaceInvitationService.java": [
+    369
+  ],
+  "apps/backend/core/src/main/java/com/schemafy/core/project/application/service/DeleteShareLinkService.java": [
+    369
+  ],
+  "apps/backend/core/src/main/java/com/schemafy/core/project/application/service/DeleteWorkspaceService.java": [
+    369
+  ],
+  "apps/backend/core/src/main/java/com/schemafy/core/project/application/service/GetProjectInvitationsService.java": [
+    369
+  ],
+  "apps/backend/core/src/main/java/com/schemafy/core/project/application/service/GetProjectsService.java": [
+    369
+  ],
+  "apps/backend/core/src/main/java/com/schemafy/core/project/application/service/GetShareLinkService.java": [
+    369
+  ],
+  "apps/backend/core/src/main/java/com/schemafy/core/project/application/service/GetShareLinksService.java": [
+    369
+  ],
+  "apps/backend/core/src/main/java/com/schemafy/core/project/application/service/GetWorkspaceInvitationsService.java": [
+    369
+  ],
+  "apps/backend/core/src/main/java/com/schemafy/core/project/application/service/GetWorkspaceMembersService.java": [
+    369
+  ],
+  "apps/backend/core/src/main/java/com/schemafy/core/project/application/service/GetWorkspaceService.java": [
+    369
+  ],
+  "apps/backend/core/src/main/java/com/schemafy/core/project/application/service/LeaveProjectService.java": [
+    369
+  ],
+  "apps/backend/core/src/main/java/com/schemafy/core/project/application/service/LeaveWorkspaceService.java": [
+    369
+  ],
+  "apps/backend/core/src/main/java/com/schemafy/core/project/application/service/ProjectAccessHelper.java": [
+    369
+  ],
+  "apps/backend/core/src/main/java/com/schemafy/core/project/application/service/ProjectInvitationHelper.java": [
+    369
+  ],
+  "apps/backend/core/src/main/java/com/schemafy/core/project/application/service/RemoveProjectMemberService.java": [
+    369
+  ],
+  "apps/backend/core/src/main/java/com/schemafy/core/project/application/service/RemoveWorkspaceMemberService.java": [
+    369
+  ],
+  "apps/backend/core/src/main/java/com/schemafy/core/project/application/service/RevokeShareLinkService.java": [
+    369
+  ],
+  "apps/backend/core/src/main/java/com/schemafy/core/project/application/service/ShareLinkHelper.java": [
+    369
+  ],
+  "apps/backend/core/src/main/java/com/schemafy/core/project/application/service/UpdateProjectMemberRoleService.java": [
+    369
+  ],
+  "apps/backend/core/src/main/java/com/schemafy/core/project/application/service/UpdateWorkspaceMemberRoleService.java": [
+    369
+  ],
+  "apps/backend/core/src/main/java/com/schemafy/core/project/application/service/UpdateWorkspaceService.java": [
+    369
+  ],
+  "apps/backend/core/src/main/java/com/schemafy/core/project/application/service/WorkspaceAccessHelper.java": [
+    369
+  ],
+  "apps/backend/core/src/main/java/com/schemafy/core/project/application/service/WorkspaceInvitationHelper.java": [
+    369
+  ],
+  "apps/backend/core/src/test/java/com/schemafy/core/project/integration/ProjectInvitationUseCaseIntegrationTest.java": [
+    369
+  ],
+  "apps/backend/core/src/test/java/com/schemafy/core/project/integration/ProjectUseCaseIntegrationTest.java": [
+    369
+  ],
+  "apps/backend/core/src/test/java/com/schemafy/core/project/integration/ShareLinkUseCaseIntegrationTest.java": [
+    369
+  ],
+  "apps/backend/core/src/test/java/com/schemafy/core/project/integration/WorkspaceInvitationUseCaseIntegrationTest.java": [
+    369
+  ],
+  "apps/backend/core/src/test/java/com/schemafy/core/project/integration/WorkspaceUseCaseIntegrationTest.java": [
+    369
   ]
 }
