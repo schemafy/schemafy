@@ -24,6 +24,7 @@ import com.schemafy.core.project.domain.ProjectRole;
 import com.schemafy.core.project.domain.WorkspaceMember;
 import com.schemafy.core.project.domain.WorkspaceRole;
 import com.schemafy.core.project.domain.exception.ProjectErrorCode;
+import com.schemafy.core.project.domain.exception.WorkspaceErrorCode;
 import com.schemafy.core.user.domain.User;
 import com.schemafy.core.user.domain.exception.UserErrorCode;
 
@@ -113,6 +114,37 @@ class WorkspaceInvitationUseCaseIntegrationTest
   }
 
   @Test
+  @DisplayName("워크스페이스 초대 생성 시 관리자가 아닌 요청자는 이메일 형식 검증보다 먼저 거부한다")
+  void createWorkspaceInvitation_rejectsNonAdminRequesterBeforeInvalidEmail() {
+    User admin = signUpUser("admin-wi-auth-order@test.com", "Admin");
+    User requester = signUpUser("requester-wi-auth-order@test.com", "Requester");
+    var workspace = saveWorkspace("Auth Order WS", "Description");
+    saveWorkspaceMember(workspace, admin, WorkspaceRole.ADMIN);
+    saveWorkspaceMember(workspace, requester, WorkspaceRole.MEMBER);
+
+    StepVerifier.create(createWorkspaceInvitationUseCase.createWorkspaceInvitation(
+        new CreateWorkspaceInvitationCommand(workspace.getId(), "not-an-email",
+            WorkspaceRole.MEMBER, requester.id())))
+        .expectErrorMatches(DomainException.hasErrorCode(WorkspaceErrorCode.ADMIN_REQUIRED))
+        .verify();
+  }
+
+  @Test
+  @DisplayName("워크스페이스 초대 목록 조회 시 관리자가 아닌 요청자는 거부한다")
+  void getWorkspaceInvitations_rejectsNonAdminRequester() {
+    User admin = signUpUser("admin-wi-list-auth@test.com", "Admin");
+    User requester = signUpUser("requester-wi-list-auth@test.com", "Requester");
+    var workspace = saveWorkspace("List Auth WS", "Description");
+    saveWorkspaceMember(workspace, admin, WorkspaceRole.ADMIN);
+    saveWorkspaceMember(workspace, requester, WorkspaceRole.MEMBER);
+
+    StepVerifier.create(getWorkspaceInvitationsUseCase.getWorkspaceInvitations(
+        new GetWorkspaceInvitationsQuery(workspace.getId(), requester.id(), 0, 10)))
+        .expectErrorMatches(DomainException.hasErrorCode(WorkspaceErrorCode.ADMIN_REQUIRED))
+        .verify();
+  }
+
+  @Test
   @DisplayName("워크스페이스 초대 수락 시 soft delete 된 워크스페이스와 프로젝트 멤버십을 복원한다")
   void acceptWorkspaceInvitation_restoresMemberships() {
     User admin = signUpUser("admin-wi-restore@test.com", "Admin");
@@ -150,6 +182,24 @@ class WorkspaceInvitationUseCaseIntegrationTest
   }
 
   @Test
+  @DisplayName("워크스페이스 초대 수락 시 초대 이메일과 다른 요청자는 거부한다")
+  void acceptWorkspaceInvitation_rejectsRequesterWithDifferentEmail() {
+    User admin = signUpUser("admin-wi-accept-owner@test.com", "Admin");
+    User invitee = signUpUser("invitee-wi-accept-owner@test.com", "Invitee");
+    User requester = signUpUser("requester-wi-accept-owner@test.com", "Requester");
+    var workspace = saveWorkspace("Accept Owner WS", "Description");
+    saveWorkspaceMember(workspace, admin, WorkspaceRole.ADMIN);
+    Invitation invitation = saveWorkspaceInvitation(workspace, invitee.email(),
+        WorkspaceRole.MEMBER, admin);
+
+    StepVerifier.create(acceptWorkspaceInvitationUseCase.acceptWorkspaceInvitation(
+        new AcceptWorkspaceInvitationCommand(invitation.getId(), requester.id())))
+        .expectErrorMatches(DomainException.hasErrorCode(
+            ProjectErrorCode.INVITATION_EMAIL_MISMATCH))
+        .verify();
+  }
+
+  @Test
   @DisplayName("워크스페이스 초대 거절 시 초대 상태를 rejected로 바꾼다")
   void rejectWorkspaceInvitation_marksResolved() {
     User admin = signUpUser("admin-wi-reject@test.com", "Admin");
@@ -166,6 +216,24 @@ class WorkspaceInvitationUseCaseIntegrationTest
     Invitation rejected = invitationRepository.findById(invitation.getId()).block();
     assertThat(rejected.getStatusAsEnum()).isEqualTo(InvitationStatus.REJECTED);
     assertThat(rejected.getResolvedAt()).isNotNull();
+  }
+
+  @Test
+  @DisplayName("워크스페이스 초대 거절 시 초대 이메일과 다른 요청자는 거부한다")
+  void rejectWorkspaceInvitation_rejectsRequesterWithDifferentEmail() {
+    User admin = signUpUser("admin-wi-reject-owner@test.com", "Admin");
+    User invitee = signUpUser("invitee-wi-reject-owner@test.com", "Invitee");
+    User requester = signUpUser("requester-wi-reject-owner@test.com", "Requester");
+    var workspace = saveWorkspace("Reject Owner WS", "Description");
+    saveWorkspaceMember(workspace, admin, WorkspaceRole.ADMIN);
+    Invitation invitation = saveWorkspaceInvitation(workspace, invitee.email(),
+        WorkspaceRole.MEMBER, admin);
+
+    StepVerifier.create(rejectWorkspaceInvitationUseCase.rejectWorkspaceInvitation(
+        new RejectWorkspaceInvitationCommand(invitation.getId(), requester.id())))
+        .expectErrorMatches(DomainException.hasErrorCode(
+            ProjectErrorCode.INVITATION_EMAIL_MISMATCH))
+        .verify();
   }
 
   @Test

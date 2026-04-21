@@ -12,12 +12,20 @@ import com.schemafy.core.project.application.port.in.CreateWorkspaceCommand;
 import com.schemafy.core.project.application.port.in.CreateWorkspaceUseCase;
 import com.schemafy.core.project.application.port.in.DeleteWorkspaceCommand;
 import com.schemafy.core.project.application.port.in.DeleteWorkspaceUseCase;
+import com.schemafy.core.project.application.port.in.GetProjectsQuery;
+import com.schemafy.core.project.application.port.in.GetProjectsUseCase;
+import com.schemafy.core.project.application.port.in.GetWorkspaceMembersQuery;
+import com.schemafy.core.project.application.port.in.GetWorkspaceMembersUseCase;
+import com.schemafy.core.project.application.port.in.GetWorkspaceQuery;
+import com.schemafy.core.project.application.port.in.GetWorkspaceUseCase;
 import com.schemafy.core.project.application.port.in.LeaveWorkspaceCommand;
 import com.schemafy.core.project.application.port.in.LeaveWorkspaceUseCase;
 import com.schemafy.core.project.application.port.in.RemoveWorkspaceMemberCommand;
 import com.schemafy.core.project.application.port.in.RemoveWorkspaceMemberUseCase;
+import com.schemafy.core.project.application.port.in.UpdateWorkspaceCommand;
 import com.schemafy.core.project.application.port.in.UpdateWorkspaceMemberRoleCommand;
 import com.schemafy.core.project.application.port.in.UpdateWorkspaceMemberRoleUseCase;
+import com.schemafy.core.project.application.port.in.UpdateWorkspaceUseCase;
 import com.schemafy.core.project.application.port.in.WorkspaceDetail;
 import com.schemafy.core.project.domain.Invitation;
 import com.schemafy.core.project.domain.ProjectMember;
@@ -41,6 +49,18 @@ class WorkspaceUseCaseIntegrationTest extends ProjectDomainIntegrationSupport {
 
   @Autowired
   private DeleteWorkspaceUseCase deleteWorkspaceUseCase;
+
+  @Autowired
+  private GetWorkspaceUseCase getWorkspaceUseCase;
+
+  @Autowired
+  private GetWorkspaceMembersUseCase getWorkspaceMembersUseCase;
+
+  @Autowired
+  private GetProjectsUseCase getProjectsUseCase;
+
+  @Autowired
+  private UpdateWorkspaceUseCase updateWorkspaceUseCase;
 
   @Autowired
   private AddWorkspaceMemberUseCase addWorkspaceMemberUseCase;
@@ -120,6 +140,95 @@ class WorkspaceUseCaseIntegrationTest extends ProjectDomainIntegrationSupport {
     assertThat(deletedWorkspaceInvitation.isDeleted()).isTrue();
     assertThat(deletedProjectInvitation.isDeleted()).isTrue();
     assertThat(deletedShareLink.isDeleted()).isTrue();
+  }
+
+  @Test
+  @DisplayName("워크스페이스 삭제는 비관리자면 거부된다")
+  void deleteWorkspace_deniesNonAdmin() {
+    User member = signUpUser("member-delete-workspace-denied@test.com", "Member");
+    Workspace workspace = saveWorkspace("Delete Workspace Denied WS", "Description");
+    saveWorkspaceMember(workspace, member, WorkspaceRole.MEMBER);
+
+    StepVerifier.create(deleteWorkspaceUseCase.deleteWorkspace(new DeleteWorkspaceCommand(
+        workspace.getId(),
+        member.id())))
+        .expectErrorMatches(DomainException.hasErrorCode(WorkspaceErrorCode.ADMIN_REQUIRED))
+        .verify();
+  }
+
+  @Test
+  @DisplayName("워크스페이스 삭제는 비회원이면 거부된다")
+  void deleteWorkspace_deniesNonMember() {
+    User requester = signUpUser("non-member-delete-workspace@test.com", "Requester");
+    Workspace workspace = saveWorkspace("Delete Workspace Non Member WS", "Description");
+
+    StepVerifier.create(deleteWorkspaceUseCase.deleteWorkspace(new DeleteWorkspaceCommand(
+        workspace.getId(),
+        requester.id())))
+        .expectErrorMatches(DomainException.hasErrorCode(WorkspaceErrorCode.ACCESS_DENIED))
+        .verify();
+  }
+
+  @Test
+  @DisplayName("워크스페이스 조회는 비회원이면 거부된다")
+  void getWorkspace_deniesNonMember() {
+    User requester = signUpUser("non-member-get-workspace@test.com", "Requester");
+    Workspace workspace = saveWorkspace("Get Workspace Non Member WS", "Description");
+
+    StepVerifier.create(getWorkspaceUseCase.getWorkspace(new GetWorkspaceQuery(
+        workspace.getId(),
+        requester.id())))
+        .expectErrorMatches(DomainException.hasErrorCode(WorkspaceErrorCode.ACCESS_DENIED))
+        .verify();
+  }
+
+  @Test
+  @DisplayName("워크스페이스 멤버 조회는 비회원이면 거부된다")
+  void getWorkspaceMembers_deniesNonMember() {
+    User requester = signUpUser("non-member-get-workspace-members@test.com", "Requester");
+    Workspace workspace = saveWorkspace("Get Workspace Members Non Member WS", "Description");
+
+    StepVerifier.create(getWorkspaceMembersUseCase.getWorkspaceMembers(
+        new GetWorkspaceMembersQuery(workspace.getId(), requester.id(), 0, 10)))
+        .expectErrorMatches(DomainException.hasErrorCode(WorkspaceErrorCode.ACCESS_DENIED))
+        .verify();
+  }
+
+  @Test
+  @DisplayName("프로젝트 목록 조회는 워크스페이스 비회원이면 거부된다")
+  void getProjects_deniesWorkspaceNonMember() {
+    User requester = signUpUser("non-member-get-projects@test.com", "Requester");
+    Workspace workspace = saveWorkspace("Get Projects Non Member WS", "Description");
+
+    StepVerifier.create(getProjectsUseCase.getProjects(
+        new GetProjectsQuery(workspace.getId(), requester.id(), 0, 10)))
+        .expectErrorMatches(DomainException.hasErrorCode(WorkspaceErrorCode.ACCESS_DENIED))
+        .verify();
+  }
+
+  @Test
+  @DisplayName("워크스페이스 수정은 요청자가 비관리자면 거부된다")
+  void updateWorkspace_deniesNonAdminRequester() {
+    User member = signUpUser("member-update-workspace-denied@test.com", "Member");
+    Workspace workspace = saveWorkspace("Update Workspace Denied WS", "Description");
+    saveWorkspaceMember(workspace, member, WorkspaceRole.MEMBER);
+
+    StepVerifier.create(updateWorkspaceUseCase.updateWorkspace(
+        new UpdateWorkspaceCommand(workspace.getId(), "Forbidden", "Forbidden", member.id())))
+        .expectErrorMatches(DomainException.hasErrorCode(WorkspaceErrorCode.ADMIN_REQUIRED))
+        .verify();
+  }
+
+  @Test
+  @DisplayName("워크스페이스 수정은 요청자가 비회원이면 거부된다")
+  void updateWorkspace_deniesNonMemberRequester() {
+    User requester = signUpUser("non-member-update-workspace@test.com", "Requester");
+    Workspace workspace = saveWorkspace("Update Workspace Non Member WS", "Description");
+
+    StepVerifier.create(updateWorkspaceUseCase.updateWorkspace(
+        new UpdateWorkspaceCommand(workspace.getId(), "Forbidden", "Forbidden", requester.id())))
+        .expectErrorMatches(DomainException.hasErrorCode(WorkspaceErrorCode.ACCESS_DENIED))
+        .verify();
   }
 
   @Test
@@ -204,6 +313,35 @@ class WorkspaceUseCaseIntegrationTest extends ProjectDomainIntegrationSupport {
   }
 
   @Test
+  @DisplayName("워크스페이스 멤버 추가는 요청자가 비관리자면 거부된다")
+  void addWorkspaceMember_deniesNonAdminRequester() {
+    User member = signUpUser("member-add-workspace-denied@test.com", "Member");
+    User target = signUpUser("target-add-workspace-denied@test.com", "Target");
+    Workspace workspace = saveWorkspace("Add Workspace Denied WS", "Description");
+    saveWorkspaceMember(workspace, member, WorkspaceRole.MEMBER);
+
+    StepVerifier.create(addWorkspaceMemberUseCase.addWorkspaceMember(
+        new AddWorkspaceMemberCommand(workspace.getId(), target.email(), WorkspaceRole.MEMBER,
+            member.id())))
+        .expectErrorMatches(DomainException.hasErrorCode(WorkspaceErrorCode.ADMIN_REQUIRED))
+        .verify();
+  }
+
+  @Test
+  @DisplayName("워크스페이스 멤버 추가는 요청자가 비회원이면 거부된다")
+  void addWorkspaceMember_deniesNonMemberRequester() {
+    User requester = signUpUser("non-member-add-workspace-denied@test.com", "Requester");
+    User target = signUpUser("target-add-workspace-non-member-denied@test.com", "Target");
+    Workspace workspace = saveWorkspace("Add Workspace Non Member Denied WS", "Description");
+
+    StepVerifier.create(addWorkspaceMemberUseCase.addWorkspaceMember(
+        new AddWorkspaceMemberCommand(workspace.getId(), target.email(), WorkspaceRole.MEMBER,
+            requester.id())))
+        .expectErrorMatches(DomainException.hasErrorCode(WorkspaceErrorCode.ACCESS_DENIED))
+        .verify();
+  }
+
+  @Test
   @DisplayName("워크스페이스 역할을 낮춰도 프로젝트 편집자 역할은 유지한다")
   void updateWorkspaceMemberRole_preservesEditorMembership() {
     User requester = signUpUser("requester-role@test.com", "Requester");
@@ -226,6 +364,37 @@ class WorkspaceUseCaseIntegrationTest extends ProjectDomainIntegrationSupport {
     assertThat(updatedMember.getId()).isEqualTo(targetWorkspaceMember.getId());
     assertThat(updatedMember.getRoleAsEnum()).isEqualTo(WorkspaceRole.MEMBER);
     assertThat(updatedProjectMember.getRoleAsEnum()).isEqualTo(ProjectRole.EDITOR);
+  }
+
+  @Test
+  @DisplayName("워크스페이스 역할 변경은 요청자가 비관리자면 거부된다")
+  void updateWorkspaceMemberRole_deniesNonAdminRequester() {
+    User member = signUpUser("member-workspace-role-denied@test.com", "Member");
+    User target = signUpUser("target-workspace-role-denied@test.com", "Target");
+    Workspace workspace = saveWorkspace("Workspace Role Denied WS", "Description");
+    saveWorkspaceMember(workspace, member, WorkspaceRole.MEMBER);
+    saveWorkspaceMember(workspace, target, WorkspaceRole.MEMBER);
+
+    StepVerifier.create(updateWorkspaceMemberRoleUseCase.updateWorkspaceMemberRole(
+        new UpdateWorkspaceMemberRoleCommand(workspace.getId(), target.id(), WorkspaceRole.ADMIN,
+            member.id())))
+        .expectErrorMatches(DomainException.hasErrorCode(WorkspaceErrorCode.ADMIN_REQUIRED))
+        .verify();
+  }
+
+  @Test
+  @DisplayName("워크스페이스 역할 변경은 요청자가 비회원이면 거부된다")
+  void updateWorkspaceMemberRole_deniesNonMemberRequester() {
+    User requester = signUpUser("non-member-workspace-role-denied@test.com", "Requester");
+    User target = signUpUser("target-workspace-role-non-member-denied@test.com", "Target");
+    Workspace workspace = saveWorkspace("Workspace Role Non Member Denied WS", "Description");
+    saveWorkspaceMember(workspace, target, WorkspaceRole.MEMBER);
+
+    StepVerifier.create(updateWorkspaceMemberRoleUseCase.updateWorkspaceMemberRole(
+        new UpdateWorkspaceMemberRoleCommand(workspace.getId(), target.id(), WorkspaceRole.ADMIN,
+            requester.id())))
+        .expectErrorMatches(DomainException.hasErrorCode(WorkspaceErrorCode.ACCESS_DENIED))
+        .verify();
   }
 
   @Test
@@ -313,6 +482,35 @@ class WorkspaceUseCaseIntegrationTest extends ProjectDomainIntegrationSupport {
         .block();
     assertThat(deletedMember).isNotNull();
     assertThat(deletedMember.isDeleted()).isTrue();
+  }
+
+  @Test
+  @DisplayName("워크스페이스 멤버 제거는 요청자가 비관리자면 거부된다")
+  void removeWorkspaceMember_deniesNonAdminRequester() {
+    User member = signUpUser("member-workspace-remove-denied@test.com", "Member");
+    User target = signUpUser("target-workspace-remove-denied@test.com", "Target");
+    Workspace workspace = saveWorkspace("Workspace Remove Denied WS", "Description");
+    saveWorkspaceMember(workspace, member, WorkspaceRole.MEMBER);
+    saveWorkspaceMember(workspace, target, WorkspaceRole.MEMBER);
+
+    StepVerifier.create(removeWorkspaceMemberUseCase.removeWorkspaceMember(
+        new RemoveWorkspaceMemberCommand(workspace.getId(), target.id(), member.id())))
+        .expectErrorMatches(DomainException.hasErrorCode(WorkspaceErrorCode.ADMIN_REQUIRED))
+        .verify();
+  }
+
+  @Test
+  @DisplayName("워크스페이스 멤버 제거는 요청자가 비회원이면 거부된다")
+  void removeWorkspaceMember_deniesNonMemberRequester() {
+    User requester = signUpUser("non-member-workspace-remove-denied@test.com", "Requester");
+    User target = signUpUser("target-workspace-remove-non-member-denied@test.com", "Target");
+    Workspace workspace = saveWorkspace("Workspace Remove Non Member Denied WS", "Description");
+    saveWorkspaceMember(workspace, target, WorkspaceRole.MEMBER);
+
+    StepVerifier.create(removeWorkspaceMemberUseCase.removeWorkspaceMember(
+        new RemoveWorkspaceMemberCommand(workspace.getId(), target.id(), requester.id())))
+        .expectErrorMatches(DomainException.hasErrorCode(WorkspaceErrorCode.ACCESS_DENIED))
+        .verify();
   }
 
   @Test
@@ -419,6 +617,23 @@ class WorkspaceUseCaseIntegrationTest extends ProjectDomainIntegrationSupport {
     assertThat(deletedFirstProjectMember.isDeleted()).isTrue();
     assertThat(deletedSecondProjectMember).isNotNull();
     assertThat(deletedSecondProjectMember.isDeleted()).isTrue();
+  }
+
+  @Test
+  @DisplayName("워크스페이스 탈퇴는 비회원이면 거부된다")
+  void leaveWorkspace_deniesNonMember() {
+    User requester = signUpUser("non-member-workspace-leave@test.com", "Requester");
+    User member = signUpUser("member-workspace-leave-non-member@test.com", "Member");
+    Workspace workspace = saveWorkspace("Workspace Leave Non Member WS", "Description");
+    saveWorkspaceMember(workspace, member, WorkspaceRole.ADMIN);
+
+    StepVerifier.create(leaveWorkspaceUseCase.leaveWorkspace(new LeaveWorkspaceCommand(
+        workspace.getId(),
+        requester.id())))
+        .expectErrorMatches(DomainException.hasErrorCode(WorkspaceErrorCode.ACCESS_DENIED))
+        .verify();
+
+    assertThat(workspaceRepository.findByIdAndNotDeleted(workspace.getId()).block()).isNotNull();
   }
 
 }
