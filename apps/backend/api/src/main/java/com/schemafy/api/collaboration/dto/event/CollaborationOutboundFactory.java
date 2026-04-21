@@ -2,7 +2,9 @@ package com.schemafy.api.collaboration.dto.event;
 
 import java.util.Set;
 
+import com.fasterxml.jackson.databind.JsonNode;
 import com.schemafy.api.collaboration.dto.CursorPosition;
+import com.schemafy.api.collaboration.dto.PreviewAction;
 import com.schemafy.core.erd.operation.domain.CommittedErdOperation;
 
 public final class CollaborationOutboundFactory {
@@ -27,6 +29,20 @@ public final class CollaborationOutboundFactory {
       CursorEvent.UserInfo userInfo,
       CursorPosition cursor) {
     return CursorEvent.Outbound.of(sessionId, userInfo, cursor);
+  }
+
+  public static TablePositionPreviewEvent.Outbound tablePositionPreview(
+      String sessionId, PreviewAction action, String schemaId, String tableId,
+      JsonNode position) {
+    return TablePositionPreviewEvent.Outbound.of(sessionId, action, schemaId,
+        tableId, position);
+  }
+
+  public static RelationshipExtraPreviewEvent.Outbound relationshipExtraPreview(
+      String sessionId, PreviewAction action, String schemaId,
+      String relationshipId, JsonNode extra) {
+    return RelationshipExtraPreviewEvent.Outbound.of(sessionId, action,
+        schemaId, relationshipId, extra);
   }
 
   public static SchemaFocusEvent.Outbound schemaFocus(String sessionId,
