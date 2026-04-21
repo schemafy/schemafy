@@ -9,8 +9,10 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.schemafy.api.collaboration.dto.BroadcastMessage;
 import com.schemafy.api.collaboration.dto.CursorPosition;
+import com.schemafy.api.collaboration.dto.PreviewAction;
 import com.schemafy.api.collaboration.dto.event.CollaborationOutboundFactory;
 import com.schemafy.api.collaboration.dto.event.CursorEvent;
 import com.schemafy.core.common.json.JsonCodec;
@@ -69,6 +71,57 @@ class CollaborationServiceTest {
         .contains("\"type\":\"CURSOR\"");
     assertThat(captor.getValue().message())
         .contains("\"sessionId\":\"session-1\"");
+  }
+
+  @Test
+  @DisplayName("TABLE_POSITION_PREVIEW 이벤트는 sender를 제외하고 브로드캐스트한다")
+  void handleRedisMessage_excludes_sender_for_table_position_preview()
+      throws Exception {
+    ObjectNode position = objectMapper.createObjectNode()
+        .put("x", 120)
+        .put("y", 80);
+    String message = objectMapper.writeValueAsString(
+        CollaborationOutboundFactory.tablePositionPreview("session-1",
+            PreviewAction.UPDATE, "schema-1", "table-1", position));
+
+    StepVerifier.create(
+        collaborationService.handleRedisMessage("project-1", message))
+        .verifyComplete();
+
+    ArgumentCaptor<BroadcastMessage> captor = ArgumentCaptor.forClass(
+        BroadcastMessage.class);
+    verify(sessionRegistry).broadcast(captor.capture());
+    assertThat(captor.getValue().excludeSessionId())
+        .isEqualTo("session-1");
+    assertThat(captor.getValue().message())
+        .contains("\"type\":\"TABLE_POSITION_PREVIEW\"");
+    assertThat(captor.getValue().message())
+        .contains("\"action\":\"UPDATE\"");
+  }
+
+  @Test
+  @DisplayName("RELATIONSHIP_EXTRA_PREVIEW 이벤트는 sender를 제외하고 브로드캐스트한다")
+  void handleRedisMessage_excludes_sender_for_relationship_extra_preview()
+      throws Exception {
+    ObjectNode extra = objectMapper.createObjectNode()
+        .put("fkHandle", "right");
+    String message = objectMapper.writeValueAsString(
+        CollaborationOutboundFactory.relationshipExtraPreview("session-1",
+            PreviewAction.UPDATE, "schema-1", "rel-1", extra));
+
+    StepVerifier.create(
+        collaborationService.handleRedisMessage("project-1", message))
+        .verifyComplete();
+
+    ArgumentCaptor<BroadcastMessage> captor = ArgumentCaptor.forClass(
+        BroadcastMessage.class);
+    verify(sessionRegistry).broadcast(captor.capture());
+    assertThat(captor.getValue().excludeSessionId())
+        .isEqualTo("session-1");
+    assertThat(captor.getValue().message())
+        .contains("\"type\":\"RELATIONSHIP_EXTRA_PREVIEW\"");
+    assertThat(captor.getValue().message())
+        .contains("\"action\":\"UPDATE\"");
   }
 
   @Test

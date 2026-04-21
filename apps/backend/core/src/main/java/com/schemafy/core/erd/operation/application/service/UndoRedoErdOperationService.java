@@ -2,59 +2,56 @@ package com.schemafy.core.erd.operation.application.service;
 
 import java.util.List;
 import java.util.Objects;
-import java.util.function.BiFunction;
+import java.util.function.Function;
 
 import org.springframework.stereotype.Service;
 
 import com.schemafy.core.common.MutationResult;
+import com.schemafy.core.common.exception.DomainException;
 import com.schemafy.core.erd.operation.application.port.in.RedoErdOperationCommand;
 import com.schemafy.core.erd.operation.application.port.in.RedoErdOperationUseCase;
 import com.schemafy.core.erd.operation.application.port.in.UndoErdOperationCommand;
 import com.schemafy.core.erd.operation.application.port.in.UndoErdOperationUseCase;
-import com.schemafy.core.erd.operation.application.port.out.FindErdOperationLogPort;
-import com.schemafy.core.erd.operation.domain.ErdOperationLog;
+import com.schemafy.core.erd.operation.domain.ErdOperationType;
+import com.schemafy.core.erd.operation.domain.exception.OperationErrorCode;
 
 import lombok.RequiredArgsConstructor;
 import reactor.core.publisher.Mono;
 
 @Service
 @RequiredArgsConstructor
-public class UndoRedoErdOperationService implements UndoErdOperationUseCase, RedoErdOperationUseCase {
+public class UndoRedoErdOperationService implements UndoErdOperationUseCase,
+    RedoErdOperationUseCase {
 
-  private final FindErdOperationLogPort findErdOperationLogPort;
-  private final List<UndoRedoErdOperationStrategy> strategies;
+  private final UndoRedoEligibilityService undoRedoEligibilityService;
+  private final List<UndoRedoErdOperationHandler> handlers;
 
   @Override
   public Mono<MutationResult<Void>> undo(UndoErdOperationCommand command) {
     Objects.requireNonNull(command, "command");
-    return execute(command.opId(), UndoRedoErdOperationStrategy::undo);
+    return undoRedoEligibilityService.resolve(UndoRedoAction.UNDO, command.opId())
+        .flatMap(resolved -> execute(resolved, handler -> handler.undo(resolved)));
   }
 
   @Override
   public Mono<MutationResult<Void>> redo(RedoErdOperationCommand command) {
     Objects.requireNonNull(command, "command");
-    return execute(command.opId(), UndoRedoErdOperationStrategy::redo);
+    return undoRedoEligibilityService.resolve(UndoRedoAction.REDO, command.opId())
+        .flatMap(resolved -> execute(resolved, handler -> handler.redo(resolved)));
   }
 
   private Mono<MutationResult<Void>> execute(
-      String opId,
-      BiFunction<UndoRedoErdOperationStrategy, ErdOperationLog, Mono<MutationResult<Void>>> executor) {
-    if (opId == null || opId.isBlank()) {
-      return Mono.error(new IllegalArgumentException("opId must not be blank"));
-    }
-
-    return findErdOperationLogPort.findByOpId(opId)
-        .switchIfEmpty(Mono.error(new IllegalArgumentException("Operation not found: " + opId)))
-        .flatMap(operationLog -> resolveStrategy(operationLog)
-            .flatMap(strategy -> executor.apply(strategy, operationLog)));
-  }
-
-  private Mono<UndoRedoErdOperationStrategy> resolveStrategy(ErdOperationLog operationLog) {
-    return Mono.justOrEmpty(strategies.stream()
-        .filter(strategy -> strategy.supports(operationLog.opType()))
+      ResolvedUndoRedoEligibility resolved,
+      Function<UndoRedoErdOperationHandler, Mono<MutationResult<Void>>> executor) {
+    ErdOperationType rootOriginalOpType = resolved.targetRootOriginalOperation()
+        .opType();
+    return Mono.justOrEmpty(handlers.stream()
+        .filter(handler -> handler.supports(rootOriginalOpType))
         .findFirst())
-        .switchIfEmpty(Mono.error(new IllegalArgumentException(
-            "Unsupported undo/redo operation: " + operationLog.opType())));
+        .switchIfEmpty(Mono.error(new DomainException(
+            OperationErrorCode.UNSUPPORTED,
+            "Undo/redo is not supported for operation type: " + rootOriginalOpType)))
+        .flatMap(executor);
   }
 
 }

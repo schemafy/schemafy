@@ -3,8 +3,10 @@ package com.schemafy.core.project.application.service;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.reactive.TransactionalOperator;
 
+import com.schemafy.core.project.application.access.RequireProjectAccess;
 import com.schemafy.core.project.application.port.in.DeleteProjectCommand;
 import com.schemafy.core.project.application.port.in.DeleteProjectUseCase;
+import com.schemafy.core.project.domain.ProjectRole;
 
 import lombok.RequiredArgsConstructor;
 import reactor.core.publisher.Mono;
@@ -18,10 +20,9 @@ class DeleteProjectService implements DeleteProjectUseCase {
   private final ProjectCascadeHelper projectCascadeHelper;
 
   @Override
+  @RequireProjectAccess(role = ProjectRole.ADMIN)
   public Mono<Void> deleteProject(DeleteProjectCommand command) {
-    return projectAccessHelper.validateProjectAdmin(command.projectId(),
-        command.requesterId())
-        .then(projectAccessHelper.findProjectById(command.projectId()))
+    return projectAccessHelper.findProjectById(command.projectId())
         .flatMap(projectCascadeHelper::softDeleteProjectCascade)
         .as(transactionalOperator::transactional);
   }
