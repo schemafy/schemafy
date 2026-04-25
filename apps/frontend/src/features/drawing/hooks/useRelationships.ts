@@ -4,20 +4,20 @@ import { toast } from 'sonner';
 import { useSelectedSchema } from '../contexts';
 import { useSchemaSnapshots } from './useSchemaSnapshots';
 import {
-  useCreateRelationshipWithExtra,
-  useChangeRelationshipName,
-  useChangeRelationshipKind,
   useChangeRelationshipCardinality,
   useChangeRelationshipExtra,
+  useChangeRelationshipKind,
+  useChangeRelationshipName,
+  useCreateRelationshipWithExtra,
   useDeleteRelationship,
 } from './useRelationshipMutations';
 import {
   convertSnapshotsToEdges,
-  validateConnection,
   findRelationshipById,
   parseRelationshipExtra,
+  validateConnection,
 } from '../utils/relationshipHelpers';
-import type { RelationshipConfig, RelationshipExtra, Point } from '../types';
+import type { Point, RelationshipConfig, RelationshipExtra } from '../types';
 import { RELATIONSHIP_TYPES } from '../types';
 import { useLatest } from './useLatest';
 import type {
@@ -60,8 +60,8 @@ const collectRelationshipSnapshots = (
 
 export const useRelationships = (relationshipConfig: RelationshipConfig) => {
   const { selectedSchemaId } = useSelectedSchema();
-  const { data: schemaSnapshotsData } = useSchemaSnapshots(selectedSchemaId);
-  const snapshotsData = schemaSnapshotsData.snapshots;
+  const { data: schemaSnapshots } = useSchemaSnapshots(selectedSchemaId);
+  const snapshotsData = schemaSnapshots.snapshots;
   const snapshotsRef = useLatest(snapshotsData);
   const relationshipConfigRef = useLatest(relationshipConfig);
   const previousSnapshotsRef = useRef<Record<
