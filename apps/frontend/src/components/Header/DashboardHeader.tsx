@@ -3,6 +3,7 @@ import { Button } from '../Button';
 import { Avatar } from '../Avatar';
 import { NotificationContents } from './contents/NotificationContents';
 import { logout } from '@/features/auth/api';
+import { reportUnexpectedError } from '@/lib';
 
 export const DashboardHeader = () => {
   const handleLogout = async () => {
@@ -10,7 +11,9 @@ export const DashboardHeader = () => {
       await logout();
       authStore.clearAuth();
     } catch (error) {
-      console.error('Failed to sign out', error);
+      reportUnexpectedError(error, {
+        userMessage: 'Failed to sign out. Please try again.',
+      });
     }
   };
 

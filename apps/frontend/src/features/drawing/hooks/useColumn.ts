@@ -12,6 +12,9 @@ import {
   useRemoveConstraintColumn,
 } from './useConstraintMutations';
 import { useDebouncedMutation } from './useDebouncedMutation';
+import { useQueryClient } from '@tanstack/react-query';
+import { erdKeys } from './query-keys';
+import { reportUnexpectedError } from '@/lib';
 
 export const useColumn = (
   schemaId: string,
@@ -19,6 +22,7 @@ export const useColumn = (
   tableName: string,
   tableConstraints: Constraint[],
 ) => {
+  const queryClient = useQueryClient();
   const changeColumnNameMutation = useChangeColumnName(schemaId);
   const debouncedChangeColumnName = useDebouncedMutation(
     changeColumnNameMutation,
@@ -83,7 +87,13 @@ export const useColumn = (
           columnId,
           data: { charset: '', collation: '' },
         });
-      } catch {
+      } catch (error) {
+        reportUnexpectedError(error, {
+          userMessage: 'Failed to update the column type. Please try again.',
+        });
+        void queryClient.invalidateQueries({
+          queryKey: erdKeys.schemaSnapshots(schemaId),
+        });
         return;
       }
       changeColumnTypeMutation.mutate(typePayload);
@@ -97,7 +107,14 @@ export const useColumn = (
             collation: 'utf8mb4_general_ci',
           },
         });
-      } catch {}
+      } catch (error) {
+        reportUnexpectedError(error, {
+          userMessage: 'Failed to update the column type. Please try again.',
+        });
+        void queryClient.invalidateQueries({
+          queryKey: erdKeys.schemaSnapshots(schemaId),
+        });
+      }
     } else {
       changeColumnTypeMutation.mutate(typePayload);
     }

@@ -87,3 +87,4 @@ apiClient.interceptors.response.use(
 );
 
 apiClient.interceptors.response.use((response) => response, handleApiError);
+publicClient.interceptors.response.use((response) => response, handleApiError);

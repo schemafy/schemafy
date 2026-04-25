@@ -13,6 +13,7 @@ import { ErrorBoundary } from '@/components';
 import { SelectedSchemaContext } from './useSelectedSchema';
 import { useSchemas } from '../hooks/useSchemas';
 import { useCreateSchema } from '../hooks/useSchemaMutations';
+import { reportUnexpectedError } from '@/lib';
 
 const getStorageKey = (projectId: string) => `selectedSchemaId_${projectId}`;
 
@@ -60,7 +61,10 @@ export const SelectedSchemaProvider = ({
       try {
         const stored = localStorage.getItem(storageKey);
         return stored;
-      } catch {
+      } catch (error) {
+        reportUnexpectedError(error, {
+          context: `Failed to read localStorage key "${storageKey}".`,
+        });
         return null;
       }
     },
@@ -78,10 +82,16 @@ export const SelectedSchemaProvider = ({
   const setSelectedSchemaId = useCallback(
     (schemaId: string | null) => {
       setSelectedSchemaIdState(schemaId);
-      if (schemaId) {
-        localStorage.setItem(storageKey, schemaId);
-      } else {
-        localStorage.removeItem(storageKey);
+      try {
+        if (schemaId) {
+          localStorage.setItem(storageKey, schemaId);
+        } else {
+          localStorage.removeItem(storageKey);
+        }
+      } catch (error) {
+        reportUnexpectedError(error, {
+          context: `Failed to write localStorage key "${storageKey}".`,
+        });
       }
     },
     [storageKey],

@@ -2,6 +2,7 @@ import { isAxiosError } from 'axios';
 import { toast } from 'sonner';
 import { ErrorCategory, type ApiError, type ErrorResponseData } from './types';
 import { getErrorMessage } from './error-messages';
+import { reportUnexpectedError } from '@/lib';
 
 const isApiError = (data: ErrorResponseData): data is ApiError =>
   'category' in data && typeof data.category === 'string';
@@ -33,7 +34,10 @@ export const handleApiError = (error: unknown): Promise<never> => {
 
   switch (category) {
     case ErrorCategory.SILENT:
-      console.error('[Silent Error]', errorData);
+      reportUnexpectedError(error, {
+        allowAxios: true,
+        context: '[Silent API Error]',
+      });
       break;
 
     case ErrorCategory.USER_FEEDBACK:

@@ -6,6 +6,7 @@ import { useNavigate } from 'react-router-dom';
 import { signIn } from '@/features/auth/api';
 import { authStore } from '@/store/auth.store';
 import { gitHubLogin } from '@/features/auth/lib/oauth';
+import { reportUnexpectedError } from '@/lib';
 
 const formFields = [
   {
@@ -76,7 +77,10 @@ export const SignInForm = ({ oauthError }: SignInFormProps) => {
       authStore.setUser(user);
       resetForm();
       navigate('/');
-    } catch {
+    } catch (error) {
+      reportUnexpectedError(error, {
+        userMessage: 'Failed to sign in. Please try again.',
+      });
     } finally {
       setIsSubmitting(false);
     }

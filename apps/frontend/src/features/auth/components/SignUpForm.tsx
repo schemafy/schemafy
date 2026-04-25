@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { signUp } from '@/features/auth/api';
 import type { ValidationRules, SignUpFormValues } from '../types';
+import { reportUnexpectedError } from '@/lib';
 
 const formFields = [
   {
@@ -92,7 +93,10 @@ export const SignUpForm = () => {
 
       resetForm();
       navigate('/');
-    } catch {
+    } catch (error) {
+      reportUnexpectedError(error, {
+        userMessage: 'Failed to create your account. Please try again.',
+      });
     } finally {
       setIsSubmitting(false);
     }

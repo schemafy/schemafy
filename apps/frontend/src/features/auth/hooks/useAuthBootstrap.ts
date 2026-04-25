@@ -1,6 +1,7 @@
 import { useEffect } from 'react';
 import { authStore } from '@/store/auth.store';
 import { getMyInfo, refreshToken } from '@/features/auth/api';
+import { reportUnexpectedError } from '@/lib';
 
 export const useAuthBootstrap = () => {
   useEffect(() => {
@@ -11,8 +12,11 @@ export const useAuthBootstrap = () => {
 
         const user = await getMyInfo();
         authStore.setUser(user);
-      } catch {
+      } catch (error) {
         authStore.clearAuth();
+        reportUnexpectedError(error, {
+          userMessage: 'Failed to restore your session. Please sign in again.',
+        });
       } finally {
         authStore.setAuthLoading(false);
         authStore.setInitialized(true);

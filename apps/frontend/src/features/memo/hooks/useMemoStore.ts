@@ -12,6 +12,7 @@ import type { Memo } from '../api/types';
 import { type MemoData, transformApiMemoToNode } from './memo.helper';
 import { useSelectedSchema } from '@/features';
 import { useLatest } from '@/features/drawing/hooks/useLatest';
+import { reportUnexpectedError } from '@/lib';
 
 export const useMemoStore = () => {
   const [storedMemos, setStoredMemos] = useState<Memo[]>([]);
@@ -42,7 +43,9 @@ export const useMemoStore = () => {
         }
       })
       .catch((error) => {
-        console.error('Failed to fetch memos:', error);
+        reportUnexpectedError(error, {
+          userMessage: 'Failed to load memos. Please try again.',
+        });
       });
 
     return () => {
@@ -62,7 +65,11 @@ export const useMemoStore = () => {
           body: content,
         });
         setStoredMemos((prev) => [memo, ...prev]);
-      } catch {}
+      } catch (error) {
+        reportUnexpectedError(error, {
+          userMessage: 'Failed to create the memo. Please try again.',
+        });
+      }
     },
     [selectedSchemaIdRef],
   );
@@ -76,7 +83,11 @@ export const useMemoStore = () => {
             m.id === id ? { ...updated, comments: m.comments } : m,
           ),
         );
-      } catch {}
+      } catch (error) {
+        reportUnexpectedError(error, {
+          userMessage: 'Failed to save the memo position. Please try again.',
+        });
+      }
     },
     [],
   );
@@ -85,7 +96,11 @@ export const useMemoStore = () => {
     try {
       await memoApi.deleteMemo(id);
       setStoredMemos((prev) => prev.filter((m) => m.id !== id));
-    } catch {}
+    } catch (error) {
+      reportUnexpectedError(error, {
+        userMessage: 'Failed to delete the memo. Please try again.',
+      });
+    }
   }, []);
 
   const onMemosChange = useCallback(
@@ -115,7 +130,11 @@ export const useMemoStore = () => {
           m.id === memoId ? { ...m, comments: [...m.comments, comment] } : m,
         ),
       );
-    } catch {}
+    } catch (error) {
+      reportUnexpectedError(error, {
+        userMessage: 'Failed to add the comment. Please try again.',
+      });
+    }
   }, []);
 
   const updateComment = useCallback(
@@ -136,7 +155,11 @@ export const useMemoStore = () => {
               : m,
           ),
         );
-      } catch {}
+      } catch (error) {
+        reportUnexpectedError(error, {
+          userMessage: 'Failed to update the comment. Please try again.',
+        });
+      }
     },
     [],
   );
@@ -155,7 +178,11 @@ export const useMemoStore = () => {
             (m) => m.id !== memoId || m.comments.length > 0,
           );
         });
-      } catch {}
+      } catch (error) {
+        reportUnexpectedError(error, {
+          userMessage: 'Failed to delete the comment. Please try again.',
+        });
+      }
     },
     [],
   );

@@ -4,6 +4,7 @@ import { getTableSnapshots } from '../api';
 import type { SchemaSnapshotsResponse } from '../api';
 import { erdKeys } from './query-keys';
 import { collaborationStore } from '@/store/collaboration.store';
+import { reportUnexpectedError } from '@/lib';
 
 export const useErdCache = (schemaId: string) => {
   const queryClient = useQueryClient();
@@ -43,7 +44,10 @@ export const useErdCache = (schemaId: string) => {
             };
           },
         );
-      } catch {
+      } catch (error) {
+        reportUnexpectedError(error, {
+          userMessage: 'Failed to refresh the diagram. Retrying...',
+        });
         queryClient.invalidateQueries({
           queryKey: erdKeys.schemaSnapshots(schemaId),
         });
