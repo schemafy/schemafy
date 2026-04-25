@@ -2,17 +2,28 @@ import { useEffect, type RefObject } from 'react';
 import type { Point } from '../types';
 
 interface UseCanvasKeyboardParams {
-  chatInputPosition: Point | null;
+  isChatOpen: boolean;
+  isShortcutPanelOpen: boolean;
   mousePositionRef: RefObject<Point | null>;
   activeTool: string;
-  setChatInputPosition: (pos: Point | null) => void;
+  openChatInput: (position: Point) => void;
+  setActiveTool: (tool: string) => void;
 }
 
+const TOOL_SHORTCUTS: Record<string, string> = {
+  KeyP: 'pointer',
+  KeyH: 'hand',
+  KeyE: 'table',
+  KeyM: 'memo',
+};
+
 export const useCanvasKeyboard = ({
-  chatInputPosition,
+  isChatOpen,
+  isShortcutPanelOpen,
   mousePositionRef,
   activeTool,
-  setChatInputPosition,
+  openChatInput,
+  setActiveTool,
 }: UseCanvasKeyboardParams) => {
   useEffect(() => {
     const handleKeyPress = (e: KeyboardEvent) => {
@@ -25,19 +36,44 @@ export const useCanvasKeyboard = ({
       )
         return;
 
-      if (e.key === '/' && !chatInputPosition && activeTool === 'pointer') {
+      if (
+        TOOL_SHORTCUTS[e.code] &&
+        !isChatOpen &&
+        !isShortcutPanelOpen &&
+        !e.metaKey &&
+        !e.ctrlKey &&
+        !e.altKey &&
+        !e.shiftKey
+      ) {
+        e.preventDefault();
+        setActiveTool(TOOL_SHORTCUTS[e.code]);
+        return;
+      }
+
+      if (
+        e.key === '/' &&
+        !isChatOpen &&
+        (activeTool === 'pointer' || activeTool === 'hand')
+      ) {
         e.preventDefault();
 
         if (!mousePositionRef.current) return;
 
-        setChatInputPosition({
-          x: mousePositionRef.current.x,
-          y: mousePositionRef.current.y,
+        openChatInput({
+          x: mousePositionRef.current.x + 16,
+          y: mousePositionRef.current.y + 16,
         });
       }
     };
 
-    window.addEventListener('keydown', handleKeyPress);
-    return () => window.removeEventListener('keydown', handleKeyPress);
-  }, [chatInputPosition, activeTool, setChatInputPosition, mousePositionRef]);
+    window.addEventListener('keydown', handleKeyPress, true);
+    return () => window.removeEventListener('keydown', handleKeyPress, true);
+  }, [
+    isChatOpen,
+    isShortcutPanelOpen,
+    activeTool,
+    mousePositionRef,
+    openChatInput,
+    setActiveTool,
+  ]);
 };
