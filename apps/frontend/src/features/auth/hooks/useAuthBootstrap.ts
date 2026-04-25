@@ -8,14 +8,14 @@ export const useAuthBootstrap = () => {
     const bootstrapAuth = async () => {
       try {
         authStore.setAuthLoading(true);
-        await refreshToken();
+        await refreshToken({ silent: true });
 
         const user = await getMyInfo();
         authStore.setUser(user);
       } catch (error) {
         authStore.clearAuth();
         reportUnexpectedError(error, {
-          userMessage: 'Failed to restore your session. Please sign in again.',
+          context: 'Failed to restore the auth session during app bootstrap.',
         });
       } finally {
         authStore.setAuthLoading(false);

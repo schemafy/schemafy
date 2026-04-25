@@ -12,7 +12,7 @@ export const DashboardHeader = () => {
       authStore.clearAuth();
     } catch (error) {
       reportUnexpectedError(error, {
-        userMessage: 'Failed to sign out. Please try again.',
+        context: 'Unexpected sign-out failure.',
       });
     }
   };

@@ -46,7 +46,7 @@ export const useErdCache = (schemaId: string) => {
         );
       } catch (error) {
         reportUnexpectedError(error, {
-          userMessage: 'Failed to refresh the diagram. Retrying...',
+          context: 'Unexpected diagram cache refresh failure.',
         });
         queryClient.invalidateQueries({
           queryKey: erdKeys.schemaSnapshots(schemaId),

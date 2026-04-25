@@ -89,7 +89,7 @@ export const useColumn = (
         });
       } catch (error) {
         reportUnexpectedError(error, {
-          userMessage: 'Failed to update the column type. Please try again.',
+          context: 'Unexpected non-text column type update failure.',
         });
         void queryClient.invalidateQueries({
           queryKey: erdKeys.schemaSnapshots(schemaId),
@@ -109,7 +109,7 @@ export const useColumn = (
         });
       } catch (error) {
         reportUnexpectedError(error, {
-          userMessage: 'Failed to update the column type. Please try again.',
+          context: 'Unexpected text column type update failure.',
         });
         void queryClient.invalidateQueries({
           queryKey: erdKeys.schemaSnapshots(schemaId),

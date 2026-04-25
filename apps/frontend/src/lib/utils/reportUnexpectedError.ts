@@ -5,7 +5,12 @@ interface ReportUnexpectedErrorOptions {
   allowAxios?: boolean;
   context?: string;
   userMessage?: string;
+  toastForUnhandledAxios?: boolean;
 }
+
+type HandledAxiosError = {
+  __handledByApiError?: boolean;
+};
 
 const toError = (error: unknown, context?: string) => {
   if (error instanceof Error) {
@@ -30,9 +35,20 @@ export const reportUnexpectedError = (
   error: unknown,
   options: ReportUnexpectedErrorOptions = {},
 ) => {
-  const { allowAxios = false, context, userMessage } = options;
+  const {
+    allowAxios = false,
+    context,
+    userMessage,
+    toastForUnhandledAxios = false,
+  } = options;
 
   if (isAxiosError(error) && !allowAxios) {
+    const handledByApiError = (error as HandledAxiosError).__handledByApiError;
+
+    if (!handledByApiError && toastForUnhandledAxios && userMessage) {
+      toast.error(userMessage);
+    }
+
     return;
   }
 

@@ -4,6 +4,10 @@ import { ErrorCategory, type ApiError, type ErrorResponseData } from './types';
 import { getErrorMessage } from './error-messages';
 import { reportUnexpectedError } from '@/lib';
 
+type HandledAxiosError = {
+  __handledByApiError?: boolean;
+};
+
 const isApiError = (data: ErrorResponseData): data is ApiError =>
   'category' in data && typeof data.category === 'string';
 
@@ -16,6 +20,8 @@ export const handleApiError = (error: unknown): Promise<never> => {
   if (!isAxiosError<ErrorResponseData>(error)) {
     return Promise.reject(error);
   }
+
+  (error as HandledAxiosError).__handledByApiError = true;
 
   const errorData = error.response?.data;
 

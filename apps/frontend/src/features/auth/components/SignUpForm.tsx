@@ -95,7 +95,7 @@ export const SignUpForm = () => {
       navigate('/');
     } catch (error) {
       reportUnexpectedError(error, {
-        userMessage: 'Failed to create your account. Please try again.',
+        context: 'Unexpected sign-up form failure.',
       });
     } finally {
       setIsSubmitting(false);

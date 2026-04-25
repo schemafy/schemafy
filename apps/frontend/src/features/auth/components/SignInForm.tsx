@@ -79,7 +79,7 @@ export const SignInForm = ({ oauthError }: SignInFormProps) => {
       navigate('/');
     } catch (error) {
       reportUnexpectedError(error, {
-        userMessage: 'Failed to sign in. Please try again.',
+        context: 'Unexpected sign-in form failure.',
       });
     } finally {
       setIsSubmitting(false);

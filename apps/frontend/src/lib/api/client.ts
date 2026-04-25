@@ -1,4 +1,7 @@
-import axios, { type AxiosError, type InternalAxiosRequestConfig } from 'axios';
+import axios, {
+  type AxiosError,
+  type AxiosRequestConfig,
+} from 'axios';
 import { authStore } from '../../store/auth.store';
 import { refreshToken } from '@/features/auth/api';
 import { handleApiError } from './error-handler';
@@ -39,9 +42,10 @@ export const publicClient = axios.create({
   baseURL: PUBLIC_BASE_URL,
 });
 
-type RequestConfigWithMeta = InternalAxiosRequestConfig & {
+export type RequestConfigWithMeta = AxiosRequestConfig & {
   _retry?: boolean;
   _skipAuth?: boolean;
+  _skipErrorHandler?: boolean;
 };
 
 apiClient.interceptors.request.use(async (config: RequestConfigWithMeta) => {
@@ -86,5 +90,20 @@ apiClient.interceptors.response.use(
   },
 );
 
-apiClient.interceptors.response.use((response) => response, handleApiError);
-publicClient.interceptors.response.use((response) => response, handleApiError);
+apiClient.interceptors.response.use((response) => response, (error) => {
+  const config = error.config as RequestConfigWithMeta | undefined;
+  if (config?._skipErrorHandler) {
+    return Promise.reject(error);
+  }
+
+  return handleApiError(error);
+});
+
+publicClient.interceptors.response.use((response) => response, (error) => {
+  const config = error.config as RequestConfigWithMeta | undefined;
+  if (config?._skipErrorHandler) {
+    return Promise.reject(error);
+  }
+
+  return handleApiError(error);
+});

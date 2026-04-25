@@ -44,7 +44,7 @@ export const useMemoStore = () => {
       })
       .catch((error) => {
         reportUnexpectedError(error, {
-          userMessage: 'Failed to load memos. Please try again.',
+          context: 'Unexpected memo loading failure.',
         });
       });
 
@@ -67,7 +67,7 @@ export const useMemoStore = () => {
         setStoredMemos((prev) => [memo, ...prev]);
       } catch (error) {
         reportUnexpectedError(error, {
-          userMessage: 'Failed to create the memo. Please try again.',
+          context: 'Unexpected memo creation failure.',
         });
       }
     },
@@ -85,7 +85,7 @@ export const useMemoStore = () => {
         );
       } catch (error) {
         reportUnexpectedError(error, {
-          userMessage: 'Failed to save the memo position. Please try again.',
+          context: 'Unexpected memo position update failure.',
         });
       }
     },
@@ -98,7 +98,7 @@ export const useMemoStore = () => {
       setStoredMemos((prev) => prev.filter((m) => m.id !== id));
     } catch (error) {
       reportUnexpectedError(error, {
-        userMessage: 'Failed to delete the memo. Please try again.',
+        context: 'Unexpected memo deletion failure.',
       });
     }
   }, []);
@@ -132,7 +132,7 @@ export const useMemoStore = () => {
       );
     } catch (error) {
       reportUnexpectedError(error, {
-        userMessage: 'Failed to add the comment. Please try again.',
+        context: 'Unexpected memo comment creation failure.',
       });
     }
   }, []);
@@ -157,7 +157,7 @@ export const useMemoStore = () => {
         );
       } catch (error) {
         reportUnexpectedError(error, {
-          userMessage: 'Failed to update the comment. Please try again.',
+          context: 'Unexpected memo comment update failure.',
         });
       }
     },
@@ -180,7 +180,7 @@ export const useMemoStore = () => {
         });
       } catch (error) {
         reportUnexpectedError(error, {
-          userMessage: 'Failed to delete the comment. Please try again.',
+          context: 'Unexpected memo comment deletion failure.',
         });
       }
     },
