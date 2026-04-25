@@ -12,6 +12,7 @@ import {
 import { MemoProvider } from '@/features/memo/context';
 import { ChatInput, RemoteCursors } from '@/features/collaboration/components';
 import { observer } from 'mobx-react-lite';
+import { useParams } from '@tanstack/react-router';
 
 const CanvasContent = observer(() => {
   const {
@@ -124,7 +125,7 @@ const CanvasContent = observer(() => {
 });
 
 export const CanvasPage = () => {
-  const projectId = '06EF3RWHVWADZEMACHXTSGA3Q0';
+  const { projectId } = useParams({ from: '/project/$projectId' });
 
   return (
     <SelectedSchemaProvider projectId={projectId}>

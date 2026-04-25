@@ -1,14 +1,14 @@
-import { Button } from '../Button';
+import { ButtonLink } from '../Button';
 
 export const LandingHeader = () => {
   return (
     <div className="flex items-center gap-2">
-      <Button round to="/signup">
+      <ButtonLink round to="/signup">
         Get Started
-      </Button>
-      <Button variant={'secondary'} round to="/signin">
+      </ButtonLink>
+      <ButtonLink variant={'secondary'} round to="/signin">
         Sign In
-      </Button>
+      </ButtonLink>
     </div>
   );
 };

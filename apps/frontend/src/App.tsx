@@ -1,56 +1,59 @@
 import { queryClient, ThemeProvider } from '@/lib';
 import { QueryClientProvider } from '@tanstack/react-query';
+import { RouterProvider } from '@tanstack/react-router';
 import { ReactFlowProvider } from '@xyflow/react';
-import { Layout } from './components';
-import { BrowserRouter as Router, Route, Routes } from 'react-router-dom';
-import { TooltipProvider } from '@/components';
-import {
-  CanvasPage,
-  LandingPage,
-  OAuthCallbackPage,
-  SignInPage,
-  SignUpPage,
-  WorkspacePage,
-} from '@/pages';
-import { RequireAuth, useAuthBootstrap } from '@/features/auth';
+import { Toaster, TooltipProvider } from '@/components';
+import { useAuthBootstrap } from '@/features/auth';
+import { authStore } from '@/store/auth.store';
+import { router } from '@/router';
+import { reaction } from 'mobx';
+import { useEffect } from 'react';
+
+const isProtectedPath = (pathname: string) => {
+  return pathname === '/workspace' || pathname.startsWith('/project/');
+};
 
 function App() {
   useAuthBootstrap();
+
+  useEffect(() => {
+    const dispose = reaction(
+      () => ({
+        isInitialized: authStore.isInitialized,
+        isAuthLoading: authStore.isAuthLoading,
+        isAuthenticated: Boolean(authStore.accessToken && authStore.user),
+      }),
+      async ({ isInitialized, isAuthLoading, isAuthenticated }) => {
+        if (!isInitialized || isAuthLoading || isAuthenticated) {
+          return;
+        }
+
+        const { pathname } = router.state.location;
+        if (!isProtectedPath(pathname)) {
+          return;
+        }
+
+        await router.navigate({
+          to: '/signin',
+          replace: true,
+          search: { oauthError: null, authRequired: true },
+        });
+      },
+    );
+
+    return dispose;
+  }, []);
 
   return (
     <QueryClientProvider client={queryClient}>
       <ThemeProvider defaultTheme="system" storageKey="schemafy-theme">
         <TooltipProvider>
           <ReactFlowProvider>
-            <Router>
-              <Layout>
-                <Routes>
-                  <Route path="/" element={<LandingPage />} />
-                  <Route path="/signup" element={<SignUpPage />} />
-                  <Route path="/signin" element={<SignInPage />} />
-                  <Route
-                    path="/oauth/callback"
-                    element={<OAuthCallbackPage />}
-                  />
-                  <Route
-                    path="/canvas"
-                    element={
-                      <RequireAuth>
-                        <CanvasPage />
-                      </RequireAuth>
-                    }
-                  />
-                  <Route
-                    path="/workspace"
-                    element={
-                      <RequireAuth>
-                        <WorkspacePage />
-                      </RequireAuth>
-                    }
-                  />
-                </Routes>
-              </Layout>
-            </Router>
+            <RouterProvider
+              router={router}
+              context={{ queryClient, auth: authStore }}
+            />
+            <Toaster />
           </ReactFlowProvider>
         </TooltipProvider>
       </ThemeProvider>
