@@ -14,6 +14,7 @@ import {
   ChatInput,
   ChatOverlay,
 } from '@/features/collaboration/components';
+import { useParams } from '@tanstack/react-router';
 
 const CanvasContent = () => {
   const {
@@ -112,7 +113,7 @@ const CanvasContent = () => {
 };
 
 export const CanvasPage = () => {
-  const projectId = '06DS8JSJ7Y112MC87X0AB2CE8M';
+  const { projectId } = useParams({ from: '/project/$projectId' });
 
   return (
     <SelectedSchemaProvider projectId={projectId}>

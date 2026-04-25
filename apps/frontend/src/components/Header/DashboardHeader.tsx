@@ -3,18 +3,17 @@ import { Button, ButtonLink } from '../Button';
 import { Avatar } from '../Avatar';
 import { NotificationContents } from './contents/NotificationContents';
 import { logout } from '@/features/auth/api';
-import { useNavigate, useRouteContext } from '@tanstack/react-router';
+import { clearAuthSession } from '@/features/auth/lib/auth-session';
+import { useNavigate } from '@tanstack/react-router';
 import { toast } from 'sonner';
 
 export const DashboardHeader = () => {
   const navigate = useNavigate();
-  const { queryClient } = useRouteContext({ from: '__root__' });
 
   const handleLogout = async () => {
     try {
       await logout();
-      authStore.clearAuth();
-      queryClient.clear();
+      clearAuthSession();
       await navigate({ to: '/signin', search: { oauthError: null } });
     } catch {
       toast.error('Failed to sign out. Please try again.');

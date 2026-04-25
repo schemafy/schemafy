@@ -1,5 +1,6 @@
 import { getMyInfo, refreshToken } from '@/features/auth/api';
 import { authStore } from '@/store/auth.store';
+import { clearAuthSession } from './auth-session';
 
 let authBootstrapPromise: Promise<boolean> | null = null;
 
@@ -23,7 +24,7 @@ export const ensureAuthInitialized = async () => {
 
         return true;
       } catch {
-        authStore.clearAuth();
+        clearAuthSession();
         return false;
       } finally {
         authStore.setAuthLoading(false);

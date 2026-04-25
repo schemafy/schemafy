@@ -19,7 +19,6 @@ export const SignUpPage = () => {
           variant={'none'}
           size={'none'}
           className="text-schemafy-dark-gray"
-          to="/signin"
         >
           Sign In
         </Button>
