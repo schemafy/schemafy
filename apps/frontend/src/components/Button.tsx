@@ -53,77 +53,84 @@ type ButtonProps = ButtonBaseProps &
   Omit<ButtonHTMLAttributes<HTMLButtonElement>, keyof ButtonBaseProps>;
 
 type ButtonLinkProps = ButtonBaseProps &
-  Omit<AnchorHTMLAttributes<HTMLAnchorElement>, keyof ButtonBaseProps | 'href'> &
+  Omit<
+    AnchorHTMLAttributes<HTMLAnchorElement>,
+    keyof ButtonBaseProps | 'href'
+  > &
   Pick<LinkProps, 'hash' | 'params' | 'search' | 'to'>;
 
-export const Button = forwardRef<HTMLButtonElement, ButtonProps>((
-  {
-    className,
-    variant = 'default',
-    size = 'default',
-    children,
-    disabled = false,
-    fullWidth = false,
-    round = false,
-    ...props
-  }: ButtonProps,
-  ref,
-) => {
-  return (
-    <button
-      className={cn(
-        buttonVariants({ variant, size, fullWidth, round, className }),
-      )}
-      disabled={disabled}
-      ref={ref}
-      {...props}
-    >
-      {children}
-    </button>
-  );
-});
+export const Button = forwardRef<HTMLButtonElement, ButtonProps>(
+  (
+    {
+      className,
+      variant = 'default',
+      size = 'default',
+      children,
+      disabled = false,
+      fullWidth = false,
+      round = false,
+      ...props
+    }: ButtonProps,
+    ref,
+  ) => {
+    return (
+      <button
+        className={cn(
+          buttonVariants({ variant, size, fullWidth, round, className }),
+        )}
+        disabled={disabled}
+        ref={ref}
+        {...props}
+      >
+        {children}
+      </button>
+    );
+  },
+);
 
 Button.displayName = 'Button';
 
-export const ButtonLink = forwardRef<HTMLAnchorElement, ButtonLinkProps>((
-  {
-    className,
-    variant = 'default',
-    size = 'default',
-    children,
-    disabled = false,
-    fullWidth = false,
-    round = false,
-    onClick,
-    to,
-    ...props
+export const ButtonLink = forwardRef<HTMLAnchorElement, ButtonLinkProps>(
+  (
+    {
+      className,
+      variant = 'default',
+      size = 'default',
+      children,
+      disabled = false,
+      fullWidth = false,
+      round = false,
+      onClick,
+      to,
+      ...props
+    },
+    ref,
+  ) => {
+    const handleClick: MouseEventHandler<HTMLAnchorElement> = (event) => {
+      if (disabled) {
+        event.preventDefault();
+        return;
+      }
+
+      onClick?.(event);
+    };
+
+    return (
+      <Link
+        aria-disabled={disabled}
+        className={cn(
+          buttonVariants({ variant, size, fullWidth, round, className }),
+          disabled && 'pointer-events-none opacity-50',
+        )}
+        onClick={handleClick}
+        ref={ref}
+        to={to}
+        {...props}
+      >
+        {children}
+      </Link>
+    );
   },
-  ref,
-) => {
-  const handleClick: MouseEventHandler<HTMLAnchorElement> = (event) => {
-    if (disabled) {
-      event.preventDefault();
-      return;
-    }
-
-    onClick?.(event);
-  };
-
-  return (
-    <Link
-      aria-disabled={disabled}
-      className={cn(
-        buttonVariants({ variant, size, fullWidth, round, className }),
-        disabled && 'pointer-events-none opacity-50',
-      )}
-      onClick={handleClick}
-      ref={ref}
-      to={to}
-      {...props}
-    >
-      {children}
-    </Link>
-  );
-});
+);
 
 ButtonLink.displayName = 'ButtonLink';
