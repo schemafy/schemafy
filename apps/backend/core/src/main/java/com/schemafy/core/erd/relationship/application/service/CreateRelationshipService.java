@@ -32,6 +32,7 @@ import com.schemafy.core.erd.relationship.application.port.out.CreateRelationshi
 import com.schemafy.core.erd.relationship.application.port.out.CreateRelationshipPort;
 import com.schemafy.core.erd.relationship.application.port.out.GetRelationshipsBySchemaIdPort;
 import com.schemafy.core.erd.relationship.application.port.out.RelationshipExistsPort;
+import com.schemafy.core.erd.relationship.domain.AutoRelationshipNaming;
 import com.schemafy.core.erd.relationship.domain.Relationship;
 import com.schemafy.core.erd.relationship.domain.RelationshipColumn;
 import com.schemafy.core.erd.relationship.domain.exception.RelationshipErrorCode;
@@ -242,12 +243,8 @@ public class CreateRelationshipService implements CreateRelationshipUseCase {
         .then();
   }
 
-  private static String normalizeName(String name) {
-    return name == null ? null : name.trim();
-  }
-
   private Mono<String> resolveAutoRelationshipName(Table fkTable, Table pkTable) {
-    String baseName = normalizeName("rel_" + fkTable.name() + "_to_" + pkTable.name());
+    String baseName = AutoRelationshipNaming.buildBaseName(fkTable.name(), pkTable.name());
     return ensureUniqueRelationshipName(fkTable.id(), baseName, 0)
         .doOnNext(RelationshipValidator::validateName);
   }

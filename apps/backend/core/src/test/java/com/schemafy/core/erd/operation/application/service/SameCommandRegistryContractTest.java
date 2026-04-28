@@ -16,15 +16,18 @@ import com.schemafy.core.erd.column.application.port.in.ChangeColumnNameUseCase;
 import com.schemafy.core.erd.column.application.port.in.ChangeColumnTypeUseCase;
 import com.schemafy.core.erd.column.application.port.out.GetColumnByIdPort;
 import com.schemafy.core.erd.constraint.application.port.in.ChangeConstraintNameUseCase;
+import com.schemafy.core.erd.constraint.application.port.out.ChangeConstraintNamePort;
 import com.schemafy.core.erd.constraint.application.port.out.GetConstraintByIdPort;
+import com.schemafy.core.erd.constraint.application.port.out.GetConstraintsByTableIdPort;
 import com.schemafy.core.erd.index.application.port.in.ChangeIndexNameUseCase;
 import com.schemafy.core.erd.index.application.port.in.ChangeIndexTypeUseCase;
 import com.schemafy.core.erd.index.application.port.out.GetIndexByIdPort;
 import com.schemafy.core.erd.operation.domain.ErdOperationType;
 import com.schemafy.core.erd.relationship.application.port.in.ChangeRelationshipCardinalityUseCase;
-import com.schemafy.core.erd.relationship.application.port.in.ChangeRelationshipKindUseCase;
 import com.schemafy.core.erd.relationship.application.port.in.ChangeRelationshipNameUseCase;
+import com.schemafy.core.erd.relationship.application.port.out.ChangeRelationshipNamePort;
 import com.schemafy.core.erd.relationship.application.port.out.GetRelationshipByIdPort;
+import com.schemafy.core.erd.relationship.application.port.out.GetRelationshipsByTableIdPort;
 import com.schemafy.core.erd.table.application.port.in.ChangeTableNameUseCase;
 import com.schemafy.core.erd.table.application.port.out.GetTableByIdPort;
 
@@ -40,6 +43,12 @@ class SameCommandRegistryContractTest {
   ChangeTableNameUseCase changeTableNameUseCase;
 
   @Mock
+  ChangeConstraintNamePort changeConstraintNamePort;
+
+  @Mock
+  ChangeRelationshipNamePort changeRelationshipNamePort;
+
+  @Mock
   ChangeColumnNameUseCase changeColumnNameUseCase;
 
   @Mock
@@ -47,9 +56,6 @@ class SameCommandRegistryContractTest {
 
   @Mock
   ChangeRelationshipNameUseCase changeRelationshipNameUseCase;
-
-  @Mock
-  ChangeRelationshipKindUseCase changeRelationshipKindUseCase;
 
   @Mock
   ChangeRelationshipCardinalityUseCase changeRelationshipCardinalityUseCase;
@@ -65,6 +71,12 @@ class SameCommandRegistryContractTest {
 
   @Mock
   GetTableByIdPort getTableByIdPort;
+
+  @Mock
+  GetConstraintsByTableIdPort getConstraintsByTableIdPort;
+
+  @Mock
+  GetRelationshipsByTableIdPort getRelationshipsByTableIdPort;
 
   @Mock
   GetColumnByIdPort getColumnByIdPort;
@@ -95,7 +107,6 @@ class SameCommandRegistryContractTest {
         ErdOperationType.CHANGE_COLUMN_NAME,
         ErdOperationType.CHANGE_COLUMN_TYPE,
         ErdOperationType.CHANGE_RELATIONSHIP_NAME,
-        ErdOperationType.CHANGE_RELATIONSHIP_KIND,
         ErdOperationType.CHANGE_RELATIONSHIP_CARDINALITY,
         ErdOperationType.CHANGE_CONSTRAINT_NAME,
         ErdOperationType.CHANGE_INDEX_NAME,

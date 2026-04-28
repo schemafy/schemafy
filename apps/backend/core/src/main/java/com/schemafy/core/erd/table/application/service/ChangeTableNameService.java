@@ -20,6 +20,7 @@ import com.schemafy.core.erd.operation.domain.ErdOperationType;
 import com.schemafy.core.erd.relationship.application.port.out.ChangeRelationshipNamePort;
 import com.schemafy.core.erd.relationship.application.port.out.GetRelationshipsByTableIdPort;
 import com.schemafy.core.erd.relationship.application.port.out.RelationshipExistsPort;
+import com.schemafy.core.erd.relationship.domain.AutoRelationshipNaming;
 import com.schemafy.core.erd.relationship.domain.Relationship;
 import com.schemafy.core.erd.relationship.domain.validator.RelationshipValidator;
 import com.schemafy.core.erd.table.application.port.in.ChangeTableNameCommand;
@@ -156,12 +157,12 @@ public class ChangeTableNameService implements ChangeTableNameUseCase {
       String oldPkName,
       String newFkName,
       String newPkName) {
-    String oldBaseName = normalizeName("rel_" + oldFkName + "_to_" + oldPkName);
-    OptionalInt suffixOpt = parseAutoRelationshipSuffix(relationship.name(), oldBaseName);
+    String oldBaseName = AutoRelationshipNaming.buildBaseName(oldFkName, oldPkName);
+    OptionalInt suffixOpt = AutoRelationshipNaming.parseAutoSuffix(relationship.name(), oldBaseName);
     if (suffixOpt.isEmpty()) {
       return Mono.empty();
     }
-    String newBaseName = normalizeName("rel_" + newFkName + "_to_" + newPkName);
+    String newBaseName = AutoRelationshipNaming.buildBaseName(newFkName, newPkName);
     int suffix = suffixOpt.getAsInt();
     return resolveUniqueRelationshipName(
         relationship.fkTableId(),
@@ -193,37 +194,6 @@ public class ChangeTableNameService implements ChangeTableNameUseCase {
           }
           return Mono.just(candidate);
         });
-  }
-
-  private static OptionalInt parseAutoRelationshipSuffix(String relationshipName, String baseName) {
-    if (relationshipName == null || baseName == null) {
-      return OptionalInt.empty();
-    }
-    if (relationshipName.equals(baseName)) {
-      return OptionalInt.of(0);
-    }
-    String prefix = baseName + "_";
-    if (!relationshipName.startsWith(prefix)) {
-      return OptionalInt.empty();
-    }
-    String suffix = relationshipName.substring(prefix.length());
-    if (suffix.isEmpty()) {
-      return OptionalInt.empty();
-    }
-    for (int index = 0; index < suffix.length(); index++) {
-      if (!Character.isDigit(suffix.charAt(index))) {
-        return OptionalInt.empty();
-      }
-    }
-    try {
-      return OptionalInt.of(Integer.parseInt(suffix));
-    } catch (NumberFormatException exception) {
-      return OptionalInt.empty();
-    }
-  }
-
-  private static String normalizeName(String name) {
-    return name == null ? null : name.trim();
   }
 
   private static boolean isValidRelationshipName(String name) {

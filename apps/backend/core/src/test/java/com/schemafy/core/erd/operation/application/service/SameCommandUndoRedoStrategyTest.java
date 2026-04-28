@@ -12,6 +12,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.schemafy.core.common.MutationResult;
+import com.schemafy.core.common.exception.DomainException;
 import com.schemafy.core.common.json.JsonCodec;
 import com.schemafy.core.erd.index.application.port.in.ChangeIndexNameCommand;
 import com.schemafy.core.erd.operation.ErdOperationContexts;
@@ -20,6 +21,7 @@ import com.schemafy.core.erd.operation.domain.ErdOperationDerivationKind;
 import com.schemafy.core.erd.operation.domain.ErdOperationLifecycleState;
 import com.schemafy.core.erd.operation.domain.ErdOperationLog;
 import com.schemafy.core.erd.operation.domain.ErdOperationType;
+import com.schemafy.core.erd.operation.domain.exception.OperationErrorCode;
 
 import reactor.core.publisher.Mono;
 import reactor.test.StepVerifier;
@@ -119,7 +121,8 @@ class SameCommandUndoRedoStrategyTest {
 
     StepVerifier.create(sut.undo(operationLog(payloadJson, null)))
         .expectErrorSatisfies(error -> assertThat(error)
-            .isInstanceOf(IllegalStateException.class)
+            .isInstanceOf(DomainException.class)
+            .matches(DomainException.hasErrorCode(OperationErrorCode.UNSUPPORTED))
             .hasMessageContaining("Undo payload is missing"))
         .verify();
   }

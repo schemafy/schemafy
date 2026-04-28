@@ -10,6 +10,7 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
 import com.fasterxml.jackson.databind.JsonNode;
+import com.schemafy.core.common.exception.DomainException;
 import com.schemafy.core.common.json.JsonCodec;
 import com.schemafy.core.erd.column.application.port.in.ChangeColumnNameCommand;
 import com.schemafy.core.erd.column.application.port.in.ChangeColumnNameUseCase;
@@ -17,6 +18,7 @@ import com.schemafy.core.erd.column.application.port.in.ChangeColumnTypeCommand;
 import com.schemafy.core.erd.column.application.port.in.ChangeColumnTypeUseCase;
 import com.schemafy.core.erd.column.application.port.in.CreateColumnCommand;
 import com.schemafy.core.erd.column.application.port.in.CreateColumnUseCase;
+import com.schemafy.core.erd.column.domain.ColumnTypeArguments;
 import com.schemafy.core.erd.constraint.application.port.in.ChangeConstraintNameCommand;
 import com.schemafy.core.erd.constraint.application.port.in.ChangeConstraintNameUseCase;
 import com.schemafy.core.erd.constraint.application.port.in.CreateConstraintColumnCommand;
@@ -37,7 +39,9 @@ import com.schemafy.core.erd.operation.application.port.in.RedoErdOperationUseCa
 import com.schemafy.core.erd.operation.application.port.in.UndoErdOperationCommand;
 import com.schemafy.core.erd.operation.application.port.in.UndoErdOperationUseCase;
 import com.schemafy.core.erd.operation.application.port.out.IncrementSchemaCollaborationRevisionPort;
+import com.schemafy.core.erd.operation.application.service.ChangeTableNameReplayPayload;
 import com.schemafy.core.erd.operation.domain.ErdOperationDerivationKind;
+import com.schemafy.core.erd.operation.domain.exception.OperationErrorCode;
 import com.schemafy.core.erd.relationship.application.port.in.ChangeRelationshipCardinalityCommand;
 import com.schemafy.core.erd.relationship.application.port.in.ChangeRelationshipCardinalityUseCase;
 import com.schemafy.core.erd.relationship.application.port.in.ChangeRelationshipKindCommand;
@@ -399,11 +403,6 @@ class ErdOperationLedgerIntegrationTest extends ErdProjectIntegrationSupport {
         .expectNextCount(1)
         .verifyComplete();
 
-    StepVerifier.create(changeRelationshipKindUseCase.changeRelationshipKind(
-        new ChangeRelationshipKindCommand(graph.relationshipId(), RelationshipKind.IDENTIFYING)))
-        .expectNextCount(1)
-        .verifyComplete();
-
     StepVerifier.create(changeRelationshipCardinalityUseCase.changeRelationshipCardinality(
         new ChangeRelationshipCardinalityCommand(graph.relationshipId(), Cardinality.ONE_TO_ONE)))
         .expectNextCount(1)
@@ -427,8 +426,14 @@ class ErdOperationLedgerIntegrationTest extends ErdProjectIntegrationSupport {
     assertInversePayload(
         graph.schemaId(),
         "CHANGE_TABLE_NAME",
-        ChangeTableNameCommand.class,
-        new ChangeTableNameCommand(graph.fkTableId(), "orders"));
+        ChangeTableNameReplayPayload.class,
+        new ChangeTableNameReplayPayload(
+            graph.fkTableId(),
+            "orders",
+            List.of(),
+            List.of(new ChangeTableNameReplayPayload.NameRestore(
+                graph.relationshipId(),
+                "rel_orders_to_users"))));
     assertInversePayload(
         graph.schemaId(),
         "CHANGE_COLUMN_NAME",
@@ -444,11 +449,6 @@ class ErdOperationLedgerIntegrationTest extends ErdProjectIntegrationSupport {
         "CHANGE_RELATIONSHIP_NAME",
         ChangeRelationshipNameCommand.class,
         new ChangeRelationshipNameCommand(graph.relationshipId(), "rel_orders_v2_to_users"));
-    assertInversePayload(
-        graph.schemaId(),
-        "CHANGE_RELATIONSHIP_KIND",
-        ChangeRelationshipKindCommand.class,
-        new ChangeRelationshipKindCommand(graph.relationshipId(), RelationshipKind.NON_IDENTIFYING));
     assertInversePayload(
         graph.schemaId(),
         "CHANGE_RELATIONSHIP_CARDINALITY",
@@ -514,6 +514,97 @@ class ErdOperationLedgerIntegrationTest extends ErdProjectIntegrationSupport {
     assertLatestDerivedOperation(schemaId, "CHANGE_TABLE_NAME", "REDO", sourceOpId);
   }
 
+  @Test
+  @DisplayName("relationship kind 변경은 same-command undo 대상이 아니다")
+  void doesNotUndoRelationshipKindWithSameCommand() {
+    TestGraph graph = createSimplePropertyGraph("erd_operation_relationship_kind_unsupported");
+
+    String sourceOpId = changeRelationshipKindUseCase.changeRelationshipKind(
+        new ChangeRelationshipKindCommand(graph.relationshipId(), RelationshipKind.IDENTIFYING))
+        .block()
+        .operation()
+        .opId();
+
+    StepVerifier.create(undoErdOperationUseCase.undo(
+        new UndoErdOperationCommand(sourceOpId)))
+        .expectErrorMatches(DomainException.hasErrorCode(OperationErrorCode.UNSUPPORTED))
+        .verify();
+  }
+
+  @Test
+  @DisplayName("table name undo redo는 자동 변경된 PK와 관계 이름까지 복원한다")
+  void undoesAndRedoesTableNameWithSideEffectNameRestores() {
+    TableNameSideEffectGraph graph = createTableNameSideEffectGraph("erd_operation_undo_redo_table_name");
+
+    String sourceOpId = changeTableNameUseCase.changeTableName(
+        new ChangeTableNameCommand(graph.ordersTableId(), "orders_v2"))
+        .block()
+        .operation()
+        .opId();
+
+    assertThat(tableName(graph.ordersTableId())).isEqualTo("orders_v2");
+    assertThat(constraintName(graph.ordersPrimaryKeyId())).isEqualTo("pk_orders_v2");
+    assertThat(relationshipName(graph.relationshipId())).isEqualTo("rel_orders_v2_to_users");
+
+    StepVerifier.create(undoErdOperationUseCase.undo(
+        new UndoErdOperationCommand(sourceOpId)))
+        .assertNext(result -> assertThat(result.operation().derivationKind()).isEqualTo(
+            ErdOperationDerivationKind.UNDO))
+        .verifyComplete();
+
+    assertThat(tableName(graph.ordersTableId())).isEqualTo("orders");
+    assertThat(constraintName(graph.ordersPrimaryKeyId())).isEqualTo("primary_orders");
+    assertThat(relationshipName(graph.relationshipId())).isEqualTo("rel_orders_to_users");
+    assertLatestDerivedOperation(graph.schemaId(), "CHANGE_TABLE_NAME", "UNDO", sourceOpId);
+
+    StepVerifier.create(redoErdOperationUseCase.redo(
+        new RedoErdOperationCommand(sourceOpId)))
+        .assertNext(result -> assertThat(result.operation().derivationKind()).isEqualTo(
+            ErdOperationDerivationKind.REDO))
+        .verifyComplete();
+
+    assertThat(tableName(graph.ordersTableId())).isEqualTo("orders_v2");
+    assertThat(constraintName(graph.ordersPrimaryKeyId())).isEqualTo("pk_orders_v2");
+    assertThat(relationshipName(graph.relationshipId())).isEqualTo("rel_orders_v2_to_users");
+    assertLatestDerivedOperation(graph.schemaId(), "CHANGE_TABLE_NAME", "REDO", sourceOpId);
+  }
+
+  @Test
+  @DisplayName("column type 변경 undo redo는 type arguments까지 복원한다")
+  void undoesAndRedoesColumnTypeWithTypeArguments() {
+    TestGraph graph = createSimplePropertyGraph("erd_operation_undo_redo_column_type");
+
+    String sourceOpId = changeColumnTypeUseCase.changeColumnType(
+        new ChangeColumnTypeCommand(graph.fkBusinessColumnId(), "INT", null, null, null))
+        .block()
+        .operation()
+        .opId();
+
+    assertThat(columnType(graph.fkBusinessColumnId())).isEqualTo("INT");
+    assertThat(columnTypeArguments(graph.fkBusinessColumnId())).isNull();
+
+    StepVerifier.create(undoErdOperationUseCase.undo(
+        new UndoErdOperationCommand(sourceOpId)))
+        .assertNext(result -> assertThat(result.operation().derivationKind()).isEqualTo(
+            ErdOperationDerivationKind.UNDO))
+        .verifyComplete();
+
+    assertThat(columnType(graph.fkBusinessColumnId())).isEqualTo("DECIMAL");
+    assertThat(columnTypeArguments(graph.fkBusinessColumnId()))
+        .isEqualTo(new ColumnTypeArguments(null, 10, 2, null));
+    assertLatestDerivedOperation(graph.schemaId(), "CHANGE_COLUMN_TYPE", "UNDO", sourceOpId);
+
+    StepVerifier.create(redoErdOperationUseCase.redo(
+        new RedoErdOperationCommand(sourceOpId)))
+        .assertNext(result -> assertThat(result.operation().derivationKind()).isEqualTo(
+            ErdOperationDerivationKind.REDO))
+        .verifyComplete();
+
+    assertThat(columnType(graph.fkBusinessColumnId())).isEqualTo("INT");
+    assertThat(columnTypeArguments(graph.fkBusinessColumnId())).isNull();
+    assertLatestDerivedOperation(graph.schemaId(), "CHANGE_COLUMN_TYPE", "REDO", sourceOpId);
+  }
+
   private long currentRevision(String schemaId) {
     return databaseClient.sql("""
         SELECT current_revision
@@ -545,6 +636,59 @@ class ErdOperationLedgerIntegrationTest extends ErdProjectIntegrationSupport {
         WHERE id = :tableId
         """)
         .bind("tableId", tableId)
+        .map((row, metadata) -> row.get("name", String.class))
+        .one()
+        .block();
+  }
+
+  private String columnType(String columnId) {
+    return databaseClient.sql("""
+        SELECT data_type
+        FROM db_columns
+        WHERE id = :columnId
+        """)
+        .bind("columnId", columnId)
+        .map((row, metadata) -> row.get("data_type", String.class))
+        .one()
+        .block();
+  }
+
+  private ColumnTypeArguments columnTypeArguments(String columnId) {
+    String rawJson = databaseClient.sql("""
+        SELECT COALESCE(CAST(type_arguments AS VARCHAR), '') AS type_arguments_text
+        FROM db_columns
+        WHERE id = :columnId
+        """)
+        .bind("columnId", columnId)
+        .map((row, metadata) -> row.get("type_arguments_text", String.class))
+        .one()
+        .block();
+
+    if (rawJson == null || rawJson.isBlank()) {
+      return null;
+    }
+    return parsePersistedValue(rawJson, ColumnTypeArguments.class);
+  }
+
+  private String constraintName(String constraintId) {
+    return databaseClient.sql("""
+        SELECT name
+        FROM db_constraints
+        WHERE id = :constraintId
+        """)
+        .bind("constraintId", constraintId)
+        .map((row, metadata) -> row.get("name", String.class))
+        .one()
+        .block();
+  }
+
+  private String relationshipName(String relationshipId) {
+    return databaseClient.sql("""
+        SELECT name
+        FROM db_relationships
+        WHERE id = :relationshipId
+        """)
+        .bind("relationshipId", relationshipId)
         .map((row, metadata) -> row.get("name", String.class))
         .one()
         .block();
@@ -757,6 +901,80 @@ class ErdOperationLedgerIntegrationTest extends ErdProjectIntegrationSupport {
     return new TestGraph(schemaId, fkTableId, fkBusinessColumnId, constraintId, indexId, relationshipId);
   }
 
+  private TableNameSideEffectGraph createTableNameSideEffectGraph(String prefix) {
+    String projectId = createActiveProjectId(prefix);
+
+    String schemaId = createSchemaUseCase.createSchema(new CreateSchemaCommand(
+        projectId,
+        "MySQL",
+        prefix + "_schema",
+        "utf8mb4",
+        "utf8mb4_general_ci")).block().result().id();
+
+    String usersTableId = createTableUseCase.createTable(new CreateTableCommand(
+        schemaId,
+        "users",
+        "utf8mb4",
+        "utf8mb4_general_ci",
+        null)).block().result().tableId();
+
+    String ordersTableId = createTableUseCase.createTable(new CreateTableCommand(
+        schemaId,
+        "orders",
+        "utf8mb4",
+        "utf8mb4_general_ci",
+        null)).block().result().tableId();
+
+    String usersIdColumnId = createColumnUseCase.createColumn(new CreateColumnCommand(
+        usersTableId,
+        "id",
+        "INT",
+        null,
+        null,
+        null,
+        true,
+        null,
+        null,
+        null)).block().result().columnId();
+
+    createConstraintUseCase.createConstraint(new CreateConstraintCommand(
+        usersTableId,
+        "pk_users",
+        ConstraintKind.PRIMARY_KEY,
+        null,
+        null,
+        List.of(new CreateConstraintColumnCommand(usersIdColumnId, 0)))).block();
+
+    String ordersIdColumnId = createColumnUseCase.createColumn(new CreateColumnCommand(
+        ordersTableId,
+        "id",
+        "INT",
+        null,
+        null,
+        null,
+        true,
+        null,
+        null,
+        null)).block().result().columnId();
+
+    String ordersPrimaryKeyId = createConstraintUseCase.createConstraint(new CreateConstraintCommand(
+        ordersTableId,
+        "primary_orders",
+        ConstraintKind.PRIMARY_KEY,
+        null,
+        null,
+        List.of(new CreateConstraintColumnCommand(ordersIdColumnId, 0)))).block().result().constraintId();
+
+    String relationshipId = createRelationshipUseCase.createRelationship(new CreateRelationshipCommand(
+        ordersTableId,
+        usersTableId,
+        RelationshipKind.NON_IDENTIFYING,
+        Cardinality.ONE_TO_MANY,
+        null)).block().result().relationshipId();
+
+    return new TableNameSideEffectGraph(schemaId, ordersTableId, ordersPrimaryKeyId, relationshipId);
+  }
+
   private record OperationLogRow(
       String opType,
       long committedRevision,
@@ -780,6 +998,13 @@ class ErdOperationLedgerIntegrationTest extends ErdProjectIntegrationSupport {
       String fkBusinessColumnId,
       String constraintId,
       String indexId,
+      String relationshipId) {
+  }
+
+  private record TableNameSideEffectGraph(
+      String schemaId,
+      String ordersTableId,
+      String ordersPrimaryKeyId,
       String relationshipId) {
   }
 

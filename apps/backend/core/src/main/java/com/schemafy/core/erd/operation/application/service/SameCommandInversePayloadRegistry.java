@@ -1,6 +1,7 @@
 package com.schemafy.core.erd.operation.application.service;
 
 import java.util.EnumMap;
+import java.util.List;
 import java.util.function.Function;
 
 import org.springframework.stereotype.Component;
@@ -13,21 +14,28 @@ import com.schemafy.core.erd.column.domain.ColumnTypeArguments;
 import com.schemafy.core.erd.column.domain.exception.ColumnErrorCode;
 import com.schemafy.core.erd.constraint.application.port.in.ChangeConstraintNameCommand;
 import com.schemafy.core.erd.constraint.application.port.out.GetConstraintByIdPort;
+import com.schemafy.core.erd.constraint.application.port.out.GetConstraintsByTableIdPort;
+import com.schemafy.core.erd.constraint.domain.Constraint;
 import com.schemafy.core.erd.constraint.domain.exception.ConstraintErrorCode;
+import com.schemafy.core.erd.constraint.domain.type.ConstraintKind;
 import com.schemafy.core.erd.index.application.port.in.ChangeIndexNameCommand;
 import com.schemafy.core.erd.index.application.port.in.ChangeIndexTypeCommand;
 import com.schemafy.core.erd.index.application.port.out.GetIndexByIdPort;
 import com.schemafy.core.erd.index.domain.exception.IndexErrorCode;
 import com.schemafy.core.erd.operation.domain.ErdOperationType;
 import com.schemafy.core.erd.relationship.application.port.in.ChangeRelationshipCardinalityCommand;
-import com.schemafy.core.erd.relationship.application.port.in.ChangeRelationshipKindCommand;
 import com.schemafy.core.erd.relationship.application.port.in.ChangeRelationshipNameCommand;
 import com.schemafy.core.erd.relationship.application.port.out.GetRelationshipByIdPort;
+import com.schemafy.core.erd.relationship.application.port.out.GetRelationshipsByTableIdPort;
+import com.schemafy.core.erd.relationship.domain.AutoRelationshipNaming;
+import com.schemafy.core.erd.relationship.domain.Relationship;
 import com.schemafy.core.erd.relationship.domain.exception.RelationshipErrorCode;
 import com.schemafy.core.erd.table.application.port.in.ChangeTableNameCommand;
 import com.schemafy.core.erd.table.application.port.out.GetTableByIdPort;
+import com.schemafy.core.erd.table.domain.Table;
 import com.schemafy.core.erd.table.domain.exception.TableErrorCode;
 
+import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
 @Component
@@ -38,6 +46,8 @@ class SameCommandInversePayloadRegistry {
 
   SameCommandInversePayloadRegistry(
       GetTableByIdPort getTableByIdPort,
+      GetConstraintsByTableIdPort getConstraintsByTableIdPort,
+      GetRelationshipsByTableIdPort getRelationshipsByTableIdPort,
       GetColumnByIdPort getColumnByIdPort,
       GetRelationshipByIdPort getRelationshipByIdPort,
       GetConstraintByIdPort getConstraintByIdPort,
@@ -45,7 +55,11 @@ class SameCommandInversePayloadRegistry {
     register(
         ErdOperationType.CHANGE_TABLE_NAME,
         ChangeTableNameCommand.class,
-        command -> resolveTableNameInverse(command, getTableByIdPort));
+        command -> resolveTableNameInverse(
+            command,
+            getTableByIdPort,
+            getConstraintsByTableIdPort,
+            getRelationshipsByTableIdPort));
     register(
         ErdOperationType.CHANGE_COLUMN_NAME,
         ChangeColumnNameCommand.class,
@@ -58,10 +72,6 @@ class SameCommandInversePayloadRegistry {
         ErdOperationType.CHANGE_RELATIONSHIP_NAME,
         ChangeRelationshipNameCommand.class,
         command -> resolveRelationshipNameInverse(command, getRelationshipByIdPort));
-    register(
-        ErdOperationType.CHANGE_RELATIONSHIP_KIND,
-        ChangeRelationshipKindCommand.class,
-        command -> resolveRelationshipKindInverse(command, getRelationshipByIdPort));
     register(
         ErdOperationType.CHANGE_RELATIONSHIP_CARDINALITY,
         ChangeRelationshipCardinalityCommand.class,
@@ -99,10 +109,86 @@ class SameCommandInversePayloadRegistry {
 
   private static Mono<Object> resolveTableNameInverse(
       ChangeTableNameCommand command,
-      GetTableByIdPort getTableByIdPort) {
+      GetTableByIdPort getTableByIdPort,
+      GetConstraintsByTableIdPort getConstraintsByTableIdPort,
+      GetRelationshipsByTableIdPort getRelationshipsByTableIdPort) {
     return getTableByIdPort.findTableById(command.tableId())
         .switchIfEmpty(Mono.error(new DomainException(TableErrorCode.NOT_FOUND, tableNotFound(command.tableId()))))
-        .map(table -> (Object) new ChangeTableNameCommand(table.id(), table.name()));
+        .flatMap(table -> Mono.zip(
+            resolveConstraintNameRestores(table, getConstraintsByTableIdPort),
+            resolveRelationshipNameRestores(table, getTableByIdPort, getRelationshipsByTableIdPort))
+            .map(tuple -> (Object) new ChangeTableNameReplayPayload(
+                table.id(),
+                table.name(),
+                tuple.getT1(),
+                tuple.getT2())));
+  }
+
+  private static Mono<List<ChangeTableNameReplayPayload.NameRestore>> resolveConstraintNameRestores(
+      Table table,
+      GetConstraintsByTableIdPort getConstraintsByTableIdPort) {
+    return getConstraintsByTableIdPort.findConstraintsByTableId(table.id())
+        .defaultIfEmpty(List.of())
+        .map(constraints -> constraints.stream()
+            .filter(constraint -> constraint.kind() == ConstraintKind.PRIMARY_KEY)
+            .findFirst()
+            .map(SameCommandInversePayloadRegistry::toNameRestore)
+            .stream()
+            .toList());
+  }
+
+  private static Mono<List<ChangeTableNameReplayPayload.NameRestore>> resolveRelationshipNameRestores(
+      Table table,
+      GetTableByIdPort getTableByIdPort,
+      GetRelationshipsByTableIdPort getRelationshipsByTableIdPort) {
+    return getRelationshipsByTableIdPort.findRelationshipsByTableId(table.id())
+        .defaultIfEmpty(List.of())
+        .flatMapMany(Flux::fromIterable)
+        .concatMap(relationship -> resolveRelationshipNameRestore(relationship, table, getTableByIdPort))
+        .collectList();
+  }
+
+  private static Mono<ChangeTableNameReplayPayload.NameRestore> resolveRelationshipNameRestore(
+      Relationship relationship,
+      Table renamedTable,
+      GetTableByIdPort getTableByIdPort) {
+    boolean isFkRenamed = relationship.fkTableId().equals(renamedTable.id());
+    boolean isPkRenamed = relationship.pkTableId().equals(renamedTable.id());
+    if (!isFkRenamed && !isPkRenamed) {
+      return Mono.empty();
+    }
+    if (isFkRenamed && isPkRenamed) {
+      return Mono.justOrEmpty(toAutoRelationshipNameRestore(
+          relationship,
+          renamedTable.name(),
+          renamedTable.name()));
+    }
+
+    String otherTableId = isFkRenamed ? relationship.pkTableId() : relationship.fkTableId();
+    return getTableByIdPort.findTableById(otherTableId)
+        .flatMap(otherTable -> Mono.justOrEmpty(toAutoRelationshipNameRestore(
+            relationship,
+            isFkRenamed ? renamedTable.name() : otherTable.name(),
+            isPkRenamed ? renamedTable.name() : otherTable.name())));
+  }
+
+  private static ChangeTableNameReplayPayload.NameRestore toAutoRelationshipNameRestore(
+      Relationship relationship,
+      String oldFkName,
+      String oldPkName) {
+    String oldBaseName = AutoRelationshipNaming.buildBaseName(oldFkName, oldPkName);
+    if (!AutoRelationshipNaming.matches(relationship.name(), oldBaseName)) {
+      return null;
+    }
+    return toNameRestore(relationship);
+  }
+
+  private static ChangeTableNameReplayPayload.NameRestore toNameRestore(Constraint constraint) {
+    return new ChangeTableNameReplayPayload.NameRestore(constraint.id(), constraint.name());
+  }
+
+  private static ChangeTableNameReplayPayload.NameRestore toNameRestore(Relationship relationship) {
+    return new ChangeTableNameReplayPayload.NameRestore(relationship.id(), relationship.name());
   }
 
   private static Mono<Object> resolveColumnNameInverse(
@@ -138,16 +224,6 @@ class SameCommandInversePayloadRegistry {
             RelationshipErrorCode.NOT_FOUND,
             relationshipNotFound(command.relationshipId()))))
         .map(relationship -> (Object) new ChangeRelationshipNameCommand(relationship.id(), relationship.name()));
-  }
-
-  private static Mono<Object> resolveRelationshipKindInverse(
-      ChangeRelationshipKindCommand command,
-      GetRelationshipByIdPort getRelationshipByIdPort) {
-    return getRelationshipByIdPort.findRelationshipById(command.relationshipId())
-        .switchIfEmpty(Mono.error(new DomainException(
-            RelationshipErrorCode.NOT_FOUND,
-            relationshipNotFound(command.relationshipId()))))
-        .map(relationship -> (Object) new ChangeRelationshipKindCommand(relationship.id(), relationship.kind()));
   }
 
   private static Mono<Object> resolveRelationshipCardinalityInverse(

@@ -5,10 +5,12 @@ import java.util.Objects;
 import org.springframework.stereotype.Component;
 
 import com.schemafy.core.common.MutationResult;
+import com.schemafy.core.common.exception.DomainException;
 import com.schemafy.core.erd.operation.ErdOperationContexts;
 import com.schemafy.core.erd.operation.domain.ErdOperationDerivationKind;
 import com.schemafy.core.erd.operation.domain.ErdOperationLog;
 import com.schemafy.core.erd.operation.domain.ErdOperationType;
+import com.schemafy.core.erd.operation.domain.exception.OperationErrorCode;
 
 import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
@@ -51,7 +53,7 @@ class SameCommandUndoRedoStrategy implements UndoRedoErdOperationStrategy {
       ErdOperationDerivationKind derivationKind,
       String missingPayloadMessage) {
     if (payloadJson == null || payloadJson.isBlank()) {
-      return Mono.error(new IllegalStateException(missingPayloadMessage));
+      return Mono.error(new DomainException(OperationErrorCode.UNSUPPORTED, missingPayloadMessage));
     }
 
     return sameCommandReplayRegistry.executePersisted(operationLog.opType(), payloadJson)
