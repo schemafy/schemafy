@@ -35,6 +35,7 @@ import com.schemafy.core.erd.table.fixture.TableFixture;
 import reactor.core.publisher.Mono;
 import reactor.test.StepVerifier;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.given;
@@ -116,6 +117,62 @@ class ChangeTableNameServiceTest {
             .existsBySchemaIdAndName(TableFixture.DEFAULT_SCHEMA_ID, command.newName());
         then(changeTableNamePort).should()
             .changeTableName(command.tableId(), command.newName());
+      }
+
+      @Test
+      @DisplayName("PK 쪽 테이블 rename으로 관계 이름이 바뀌면 FK 테이블도 affectedTableIds에 포함한다")
+      void includesRelatedTableWhenPkSideRelationshipNameChanges() {
+        var oldTable = new Table(
+            "table-1",
+            "schema-1",
+            "users",
+            TableFixture.DEFAULT_CHARSET,
+            TableFixture.DEFAULT_COLLATION);
+        var fkTable = new Table(
+            "table-2",
+            "schema-1",
+            "orders",
+            TableFixture.DEFAULT_CHARSET,
+            TableFixture.DEFAULT_COLLATION);
+        var relationship = new Relationship(
+            "rel-1",
+            oldTable.id(),
+            fkTable.id(),
+            "rel_orders_to_users",
+            RelationshipKind.NON_IDENTIFYING,
+            Cardinality.ONE_TO_MANY,
+            null);
+        var command = new com.schemafy.core.erd.table.application.port.in.ChangeTableNameCommand(
+            oldTable.id(),
+            "accounts");
+
+        given(tableExistsPort.existsBySchemaIdAndName(any(), any()))
+            .willReturn(Mono.just(false));
+        given(getTableByIdPort.findTableById(oldTable.id()))
+            .willReturn(Mono.just(oldTable));
+        given(getTableByIdPort.findTableById(fkTable.id()))
+            .willReturn(Mono.just(fkTable));
+        given(changeTableNamePort.changeTableName(any(), any()))
+            .willReturn(Mono.empty());
+        given(getConstraintsByTableIdPort.findConstraintsByTableId(any()))
+            .willReturn(Mono.just(List.of()));
+        given(getRelationshipsByTableIdPort.findRelationshipsByTableId(oldTable.id()))
+            .willReturn(Mono.just(List.of(relationship)));
+        given(relationshipExistsPort.existsByFkTableIdAndNameExcludingId(
+            relationship.fkTableId(),
+            "rel_orders_to_accounts",
+            relationship.id()))
+            .willReturn(Mono.just(false));
+        given(changeRelationshipNamePort.changeRelationshipName(any(), any()))
+            .willReturn(Mono.empty());
+
+        StepVerifier.create(sut.changeTableName(command))
+            .assertNext(result -> assertThat(result.affectedTableIds())
+                .containsExactlyInAnyOrder(oldTable.id(), fkTable.id()))
+            .verifyComplete();
+
+        then(changeRelationshipNamePort).should()
+            .changeRelationshipName(relationship.id(), "rel_orders_to_accounts");
       }
 
     }
@@ -210,8 +267,8 @@ class ChangeTableNameServiceTest {
     class WithAutoRelationshipNames {
 
       @Test
-      @DisplayName("테이블 rename에 맞춰 관계 이름을 갱신한다")
-      void updatesAutoRelationshipName() {
+      @DisplayName("FK 쪽 테이블 rename으로 관계 이름이 바뀌면 PK 테이블도 affectedTableIds에 포함한다")
+      void includesRelatedTableWhenFkSideRelationshipNameChanges() {
         var oldTable = new Table(
             "table-1",
             "schema-1",
@@ -257,7 +314,8 @@ class ChangeTableNameServiceTest {
             .willReturn(Mono.empty());
 
         StepVerifier.create(sut.changeTableName(command))
-            .expectNextCount(1)
+            .assertNext(result -> assertThat(result.affectedTableIds())
+                .containsExactlyInAnyOrder(oldTable.id(), pkTable.id()))
             .verifyComplete();
 
         then(changeRelationshipNamePort).should()

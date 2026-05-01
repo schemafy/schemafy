@@ -78,7 +78,7 @@ public class ChangeTableNameService implements ChangeTableNameUseCase {
                                   command.newName())
                               .then(applyConstraintRenames(plan.constraintRenames()))
                               .then(applyRelationshipRenames(plan.relationshipRenames()))
-                              .thenReturn(MutationResult.<Void>of(null, table.id())
+                              .thenReturn(MutationResult.<Void>of(null, plan.affectedTableIds(table.id()))
                                   .withInverse(plan.toInverse(table))));
                     })))
         .as(transactionalOperator::transactional);
@@ -258,7 +258,12 @@ public class ChangeTableNameService implements ChangeTableNameUseCase {
             return Mono.empty();
           }
           reservedRelationshipNames.add(relationshipNameKey(relationship.fkTableId(), newName));
-          return Mono.just(new RelationshipRenamePlan(relationship.id(), relationship.name(), newName));
+          return Mono.just(new RelationshipRenamePlan(
+              relationship.id(),
+              relationship.fkTableId(),
+              relationship.pkTableId(),
+              relationship.name(),
+              newName));
         });
   }
 
@@ -358,6 +363,16 @@ public class ChangeTableNameService implements ChangeTableNameUseCase {
       List<ConstraintRenamePlan> constraintRenames,
       List<RelationshipRenamePlan> relationshipRenames) {
 
+    Set<String> affectedTableIds(String tableId) {
+      Set<String> affectedTableIds = new HashSet<>();
+      affectedTableIds.add(tableId);
+      relationshipRenames.forEach(rename -> {
+        affectedTableIds.add(rename.fkTableId());
+        affectedTableIds.add(rename.pkTableId());
+      });
+      return affectedTableIds;
+    }
+
     ChangeTableNameInverse toInverse(Table oldTable) {
       ConstraintRenamePlan pkRename = firstPrimaryKeyRename();
       return new ChangeTableNameInverse(
@@ -369,7 +384,11 @@ public class ChangeTableNameService implements ChangeTableNameUseCase {
               .map(rename -> new ConstraintRename(rename.constraintId(), rename.oldName()))
               .toList(),
           relationshipRenames.stream()
-              .map(rename -> new RelationshipRename(rename.relationshipId(), rename.oldName()))
+              .map(rename -> new RelationshipRename(
+                  rename.relationshipId(),
+                  rename.oldName(),
+                  rename.fkTableId(),
+                  rename.pkTableId()))
               .toList());
     }
 
@@ -394,6 +413,8 @@ public class ChangeTableNameService implements ChangeTableNameUseCase {
 
   private record RelationshipRenamePlan(
       String relationshipId,
+      String fkTableId,
+      String pkTableId,
       String oldName,
       String newName) {
 

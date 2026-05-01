@@ -1,6 +1,9 @@
 package com.schemafy.core.erd.operation.application.service;
 
 import java.util.List;
+import java.util.Set;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import org.springframework.stereotype.Component;
 
@@ -66,7 +69,7 @@ class ChangeTableNameUndoRedoHandler
         .flatMap(table -> captureForwardSnapshot(table, inversePayload)
             .flatMap(forwardSnapshot -> coordinate(resolved, inversePayload,
                 () -> applyTableInverse(inversePayload)
-                    .thenReturn(MutationResult.<Void>of(null, table.id())
+                    .thenReturn(MutationResult.<Void>of(null, affectedTableIds(table.id(), forwardSnapshot))
                         .withInverse(forwardSnapshot)))));
   }
 
@@ -82,7 +85,11 @@ class ChangeTableNameUndoRedoHandler
             .switchIfEmpty(Mono.error(new DomainException(
                 RelationshipErrorCode.NOT_FOUND,
                 "Relationship not found: " + rename.relationshipId())))
-            .map(relationship -> new RelationshipRename(relationship.id(), relationship.name())))
+            .map(relationship -> new RelationshipRename(
+                relationship.id(),
+                relationship.name(),
+                relationship.fkTableId(),
+                relationship.pkTableId())))
         .collectList();
 
     return Mono.zip(constraintRenames, relationshipRenames)
@@ -113,6 +120,16 @@ class ChangeTableNameUndoRedoHandler
         .map(ConstraintRename::oldName)
         .findFirst()
         .orElse(null);
+  }
+
+  private static Set<String> affectedTableIds(
+      String tableId,
+      ChangeTableNameInverse forwardSnapshot) {
+    return Stream.concat(
+        Stream.of(tableId),
+        forwardSnapshot.relationshipRenames().stream()
+            .flatMap(rename -> Stream.of(rename.fkTableId(), rename.pkTableId())))
+        .collect(Collectors.toUnmodifiableSet());
   }
 
   private Mono<Void> applyTableInverse(ChangeTableNameInverse inversePayload) {

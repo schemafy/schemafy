@@ -20,21 +20,6 @@ public record ChangeTableNameInverse(
         : List.copyOf(relationshipRenames);
   }
 
-  public ChangeTableNameInverse(
-      String tableId,
-      String oldName,
-      String oldPkConstraintId,
-      String oldPkConstraintName,
-      List<RelationshipRename> relationshipRenames) {
-    this(
-        tableId,
-        oldName,
-        oldPkConstraintId,
-        oldPkConstraintName,
-        null,
-        relationshipRenames);
-  }
-
   private static List<ConstraintRename> normalizeConstraintRenames(
       List<ConstraintRename> constraintRenames,
       String oldPkConstraintId,
@@ -52,7 +37,15 @@ public record ChangeTableNameInverse(
 
   }
 
-  public record RelationshipRename(String relationshipId, String oldName) {
+  public record RelationshipRename(
+      String relationshipId,
+      String oldName,
+      String fkTableId,
+      String pkTableId) {
+
+    public RelationshipRename(String relationshipId, String oldName) {
+      this(relationshipId, oldName, null, null);
+    }
 
   }
 

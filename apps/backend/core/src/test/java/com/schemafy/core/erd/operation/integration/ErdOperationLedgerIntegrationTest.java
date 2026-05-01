@@ -20,6 +20,10 @@ import com.schemafy.core.erd.constraint.application.port.in.CreateConstraintComm
 import com.schemafy.core.erd.constraint.application.port.in.CreateConstraintUseCase;
 import com.schemafy.core.erd.constraint.domain.type.ConstraintKind;
 import com.schemafy.core.erd.operation.ErdOperationContexts;
+import com.schemafy.core.erd.operation.application.port.in.RedoErdOperationCommand;
+import com.schemafy.core.erd.operation.application.port.in.RedoErdOperationUseCase;
+import com.schemafy.core.erd.operation.application.port.in.UndoErdOperationCommand;
+import com.schemafy.core.erd.operation.application.port.in.UndoErdOperationUseCase;
 import com.schemafy.core.erd.operation.application.port.out.IncrementSchemaCollaborationRevisionPort;
 import com.schemafy.core.erd.operation.domain.ErdOperationDerivationKind;
 import com.schemafy.core.erd.operation.domain.exception.OperationErrorCode;
@@ -36,6 +40,8 @@ import com.schemafy.core.erd.schema.application.port.in.CreateSchemaUseCase;
 import com.schemafy.core.erd.support.ErdProjectIntegrationSupport;
 import com.schemafy.core.erd.table.application.port.in.ChangeTableExtraCommand;
 import com.schemafy.core.erd.table.application.port.in.ChangeTableExtraUseCase;
+import com.schemafy.core.erd.table.application.port.in.ChangeTableNameCommand;
+import com.schemafy.core.erd.table.application.port.in.ChangeTableNameUseCase;
 import com.schemafy.core.erd.table.application.port.in.CreateTableCommand;
 import com.schemafy.core.erd.table.application.port.in.CreateTableUseCase;
 import com.schemafy.core.erd.table.application.port.in.DeleteTableCommand;
@@ -67,6 +73,9 @@ class ErdOperationLedgerIntegrationTest extends ErdProjectIntegrationSupport {
   ChangeTableExtraUseCase changeTableExtraUseCase;
 
   @Autowired
+  ChangeTableNameUseCase changeTableNameUseCase;
+
+  @Autowired
   DeleteTableUseCase deleteTableUseCase;
 
   @Autowired
@@ -86,6 +95,12 @@ class ErdOperationLedgerIntegrationTest extends ErdProjectIntegrationSupport {
 
   @Autowired
   IncrementSchemaCollaborationRevisionPort incrementSchemaCollaborationRevisionPort;
+
+  @Autowired
+  UndoErdOperationUseCase undoErdOperationUseCase;
+
+  @Autowired
+  RedoErdOperationUseCase redoErdOperationUseCase;
 
   @Test
   @DisplayName("schema revision과 operation log를 순서대로 기록한다")
@@ -252,6 +267,91 @@ class ErdOperationLedgerIntegrationTest extends ErdProjectIntegrationSupport {
 
     assertThat(operationCount(schemaId)).isEqualTo(beforeChangeCount);
     assertThat(currentRevision(schemaId)).isEqualTo(beforeChangeRevision);
+  }
+
+  @Test
+  @DisplayName("PK 쪽 table rename으로 관계 이름이 함께 바뀌면 undo/redo affectedTableIds에 양쪽 테이블을 포함한다")
+  void tableRenameUndoRedoIncludesRelationshipTablesWhenPkSideNameChanges() {
+    assertTableRenameUndoRedoIncludesRelationshipTables(true);
+  }
+
+  @Test
+  @DisplayName("FK 쪽 table rename으로 관계 이름이 함께 바뀌면 undo/redo affectedTableIds에 양쪽 테이블을 포함한다")
+  void tableRenameUndoRedoIncludesRelationshipTablesWhenFkSideNameChanges() {
+    assertTableRenameUndoRedoIncludesRelationshipTables(false);
+  }
+
+  private void assertTableRenameUndoRedoIncludesRelationshipTables(boolean renamePkSide) {
+    String sidePrefix = renamePkSide ? "pk" : "fk";
+    String projectId = createActiveProjectId("erd_operation_table_rename_" + sidePrefix + "_relationship_affected");
+
+    String schemaId = createSchemaUseCase.createSchema(new CreateSchemaCommand(
+        projectId,
+        "MySQL",
+        "table_rename_" + sidePrefix + "_relationship_affected_schema",
+        "utf8mb4",
+        "utf8mb4_general_ci")).block().result().id();
+
+    String pkTableId = createTableUseCase.createTable(new CreateTableCommand(
+        schemaId,
+        "users",
+        "utf8mb4",
+        "utf8mb4_general_ci",
+        null)).block().result().tableId();
+
+    String fkTableId = createTableUseCase.createTable(new CreateTableCommand(
+        schemaId,
+        "orders",
+        "utf8mb4",
+        "utf8mb4_general_ci",
+        null)).block().result().tableId();
+
+    String pkColumnId = createColumnUseCase.createColumn(new CreateColumnCommand(
+        pkTableId,
+        "id",
+        "INT",
+        null,
+        null,
+        null,
+        true,
+        null,
+        null,
+        "pk column")).block().result().columnId();
+
+    createConstraintUseCase.createConstraint(new CreateConstraintCommand(
+        pkTableId,
+        "pk_users",
+        ConstraintKind.PRIMARY_KEY,
+        null,
+        null,
+        List.of(new CreateConstraintColumnCommand(pkColumnId, 0)))).block();
+
+    createRelationshipUseCase.createRelationship(new CreateRelationshipCommand(
+        fkTableId,
+        pkTableId,
+        RelationshipKind.NON_IDENTIFYING,
+        Cardinality.ONE_TO_MANY,
+        null)).block();
+
+    String targetTableId = renamePkSide ? pkTableId : fkTableId;
+    String newTableName = renamePkSide ? "accounts" : "orders_v2";
+    var renameResult = changeTableNameUseCase.changeTableName(new ChangeTableNameCommand(
+        targetTableId,
+        newTableName)).block();
+
+    assertThat(renameResult.affectedTableIds())
+        .containsExactlyInAnyOrder(pkTableId, fkTableId);
+
+    String renameOpId = renameResult.operation().opId();
+
+    var undoResult = undoErdOperationUseCase.undo(new UndoErdOperationCommand(renameOpId)).block();
+    assertThat(undoResult.affectedTableIds())
+        .containsExactlyInAnyOrder(pkTableId, fkTableId);
+
+    var redoResult = redoErdOperationUseCase.redo(new RedoErdOperationCommand(renameOpId)).block();
+    assertThat(redoResult.affectedTableIds())
+        .containsExactlyInAnyOrder(pkTableId, fkTableId);
+    assertLastOperation(schemaId, "CHANGE_TABLE_NAME", currentRevision(schemaId), List.of(pkTableId, fkTableId));
   }
 
   @Test
