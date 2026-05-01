@@ -34,6 +34,11 @@ import com.schemafy.core.erd.relationship.domain.Relationship;
 import com.schemafy.core.erd.relationship.domain.RelationshipColumn;
 import com.schemafy.core.erd.relationship.domain.type.Cardinality;
 import com.schemafy.core.erd.relationship.domain.type.RelationshipKind;
+import com.schemafy.core.erd.schema.application.port.out.GetSchemaByIdPort;
+import com.schemafy.core.erd.schema.fixture.SchemaFixture;
+import com.schemafy.core.erd.table.application.port.out.GetTableByIdPort;
+import com.schemafy.core.erd.table.domain.Table;
+import com.schemafy.core.erd.table.fixture.TableFixture;
 
 import reactor.core.publisher.Mono;
 import reactor.test.StepVerifier;
@@ -75,6 +80,12 @@ class ChangeColumnTypeServiceTest {
 
   @Mock
   GetRelationshipColumnsByRelationshipIdPort getRelationshipColumnsByRelationshipIdPort;
+
+  @Mock
+  GetTableByIdPort getTableByIdPort;
+
+  @Mock
+  GetSchemaByIdPort getSchemaByIdPort;
 
   @Mock
   TransactionalOperator transactionalOperator;
@@ -129,7 +140,8 @@ class ChangeColumnTypeServiceTest {
       @DisplayName("VARCHAR에서 TEXT로 변경한다")
       void changesVarcharToText() {
         var command = ColumnFixture.changeTypeCommand("TEXT", null, null, null);
-        var column = ColumnFixture.defaultColumn();
+        var column = ColumnFixture.varcharColumnWithCharset(
+            "utf8mb4", "utf8mb4_general_ci");
 
         given(getColumnByIdPort.findColumnById(any()))
             .willReturn(Mono.just(column));
@@ -158,7 +170,8 @@ class ChangeColumnTypeServiceTest {
             null,
             null,
             List.of("ACTIVE", "INACTIVE"));
-        var column = ColumnFixture.defaultColumn();
+        var column = ColumnFixture.varcharColumnWithCharset(
+            "utf8mb4", "utf8mb4_general_ci");
 
         given(getColumnByIdPort.findColumnById(any()))
             .willReturn(Mono.just(column));
@@ -277,8 +290,8 @@ class ChangeColumnTypeServiceTest {
     class WhenCharsetColumnToInt {
 
       @Test
-      @DisplayName("ColumnCharsetNotAllowedException이 발생한다")
-      void throwsColumnCharsetNotAllowedException() {
+      @DisplayName("같은 mutation 안에서 charset/collation을 제거한다")
+      void clearsCharsetCollationWithinSameMutation() {
         var command = ColumnFixture.changeTypeCommand("INT", null, null, null);
         var column = new Column(
             ColumnFixture.DEFAULT_ID,
@@ -296,12 +309,64 @@ class ChangeColumnTypeServiceTest {
             .willReturn(Mono.just(column));
         given(getColumnsByTableIdPort.findColumnsByTableId(any()))
             .willReturn(Mono.just(List.of(column)));
+        given(changeColumnTypePort.changeColumnType(any(), any(), any()))
+            .willReturn(Mono.empty());
+        given(changeColumnMetaPort.changeColumnMeta(any(), any(), any(), any(), any()))
+            .willReturn(Mono.empty());
+        given(getConstraintColumnsByColumnIdPort.findConstraintColumnsByColumnId(any()))
+            .willReturn(Mono.just(List.of()));
 
         StepVerifier.create(sut.changeColumnType(command))
-            .expectErrorMatches(DomainException.hasErrorCode(ColumnErrorCode.CHARSET_NOT_ALLOWED))
-            .verify();
+            .expectNextCount(1)
+            .verifyComplete();
 
-        then(changeColumnTypePort).shouldHaveNoInteractions();
+        then(changeColumnTypePort).should()
+            .changeColumnType(eq(command.columnId()), eq("INT"), any());
+        then(changeColumnMetaPort).should()
+            .changeColumnMeta(eq(command.columnId()), eq(null), eq(""), eq(""), eq(null));
+      }
+
+    }
+
+    @Nested
+    @DisplayName("non-text 컬럼을 text 타입으로 변경하면")
+    class WhenNonTextColumnToText {
+
+      @Test
+      @DisplayName("table/schema 기본 charset/collation을 같은 mutation 안에서 채운다")
+      void resolvesCharsetCollationFromTableAndSchemaDefaults() {
+        var command = ColumnFixture.changeTypeCommand("VARCHAR", 255, null, null);
+        var column = ColumnFixture.intColumn();
+        Table table = new Table(column.tableId(), TableFixture.DEFAULT_SCHEMA_ID, "test_table", null, null);
+
+        given(getColumnByIdPort.findColumnById(any()))
+            .willReturn(Mono.just(column));
+        given(getColumnsByTableIdPort.findColumnsByTableId(any()))
+            .willReturn(Mono.just(List.of(column)));
+        given(getTableByIdPort.findTableById(column.tableId()))
+            .willReturn(Mono.just(table));
+        given(getSchemaByIdPort.findSchemaById(table.schemaId()))
+            .willReturn(Mono.just(SchemaFixture.defaultSchema()));
+        given(changeColumnTypePort.changeColumnType(any(), any(), any()))
+            .willReturn(Mono.empty());
+        given(changeColumnMetaPort.changeColumnMeta(any(), any(), any(), any(), any()))
+            .willReturn(Mono.empty());
+        given(getConstraintColumnsByColumnIdPort.findConstraintColumnsByColumnId(any()))
+            .willReturn(Mono.just(List.of()));
+
+        StepVerifier.create(sut.changeColumnType(command))
+            .expectNextCount(1)
+            .verifyComplete();
+
+        then(changeColumnTypePort).should()
+            .changeColumnType(eq(command.columnId()), eq("VARCHAR"), any());
+        then(changeColumnMetaPort).should()
+            .changeColumnMeta(
+                eq(command.columnId()),
+                eq(null),
+                eq(SchemaFixture.DEFAULT_CHARSET),
+                eq(SchemaFixture.DEFAULT_COLLATION),
+                eq(null));
       }
 
     }
@@ -318,6 +383,17 @@ class ChangeColumnTypeServiceTest {
         var constraintId = "constraint-1";
         var relationshipId = "relationship-1";
         var fkColumnId = "fk-column-1";
+        var fkColumn = new Column(
+            fkColumnId,
+            "fk-table-1",
+            "fk_name",
+            "INT",
+            null,
+            0,
+            false,
+            null,
+            null,
+            null);
 
         var constraintColumn = new ConstraintColumn("cc-1", constraintId, pkColumn.id(), 0);
         var constraint = new Constraint(constraintId, pkColumn.tableId(), "pk_constraint",
@@ -327,16 +403,18 @@ class ChangeColumnTypeServiceTest {
         var relationshipColumn = new RelationshipColumn("rc-1", relationshipId, pkColumn.id(),
             fkColumnId, 0);
 
-        given(getColumnByIdPort.findColumnById(any()))
+        given(getColumnByIdPort.findColumnById(pkColumn.id()))
             .willReturn(Mono.just(pkColumn));
+        given(getColumnByIdPort.findColumnById(fkColumnId))
+            .willReturn(Mono.just(fkColumn));
         given(getColumnsByTableIdPort.findColumnsByTableId(any()))
             .willReturn(Mono.just(List.of(pkColumn)));
         given(changeColumnTypePort.changeColumnType(any(), any(), any()))
             .willReturn(Mono.empty());
-        given(changeColumnMetaPort.changeColumnMeta(any(), any(), any(), any(), any()))
-            .willReturn(Mono.empty());
         given(getConstraintColumnsByColumnIdPort.findConstraintColumnsByColumnId(pkColumn.id()))
             .willReturn(Mono.just(List.of(constraintColumn)));
+        given(getConstraintColumnsByColumnIdPort.findConstraintColumnsByColumnId(fkColumnId))
+            .willReturn(Mono.just(List.of()));
         given(getConstraintByIdPort.findConstraintById(constraintId))
             .willReturn(Mono.just(constraint));
         given(getRelationshipsByPkTableIdPort.findRelationshipsByPkTableId(pkColumn.tableId()))
@@ -353,6 +431,7 @@ class ChangeColumnTypeServiceTest {
             .changeColumnType(eq(pkColumn.id()), eq("BIGINT"), any());
         then(changeColumnTypePort).should()
             .changeColumnType(eq(fkColumnId), eq("BIGINT"), any());
+        then(changeColumnMetaPort).shouldHaveNoInteractions();
       }
 
       @Test
@@ -365,6 +444,28 @@ class ChangeColumnTypeServiceTest {
         var rel2Id = "relationship-2";
         var fkCol1 = "fk-column-1";
         var fkCol2 = "fk-column-2";
+        var fkColumn1 = new Column(
+            fkCol1,
+            "fk-table-1",
+            "fk_name_1",
+            "INT",
+            null,
+            0,
+            false,
+            null,
+            null,
+            null);
+        var fkColumn2 = new Column(
+            fkCol2,
+            "fk-table-2",
+            "fk_name_2",
+            "INT",
+            null,
+            0,
+            false,
+            null,
+            null,
+            null);
 
         var constraintColumn = new ConstraintColumn("cc-1", constraintId, pkColumn.id(), 0);
         var constraint = new Constraint(constraintId, pkColumn.tableId(), "pk_constraint",
@@ -376,16 +477,22 @@ class ChangeColumnTypeServiceTest {
         var rc1 = new RelationshipColumn("rc-1", rel1Id, pkColumn.id(), fkCol1, 0);
         var rc2 = new RelationshipColumn("rc-2", rel2Id, pkColumn.id(), fkCol2, 0);
 
-        given(getColumnByIdPort.findColumnById(any()))
+        given(getColumnByIdPort.findColumnById(pkColumn.id()))
             .willReturn(Mono.just(pkColumn));
+        given(getColumnByIdPort.findColumnById(fkCol1))
+            .willReturn(Mono.just(fkColumn1));
+        given(getColumnByIdPort.findColumnById(fkCol2))
+            .willReturn(Mono.just(fkColumn2));
         given(getColumnsByTableIdPort.findColumnsByTableId(any()))
             .willReturn(Mono.just(List.of(pkColumn)));
         given(changeColumnTypePort.changeColumnType(any(), any(), any()))
             .willReturn(Mono.empty());
-        given(changeColumnMetaPort.changeColumnMeta(any(), any(), any(), any(), any()))
-            .willReturn(Mono.empty());
         given(getConstraintColumnsByColumnIdPort.findConstraintColumnsByColumnId(pkColumn.id()))
             .willReturn(Mono.just(List.of(constraintColumn)));
+        given(getConstraintColumnsByColumnIdPort.findConstraintColumnsByColumnId(fkCol1))
+            .willReturn(Mono.just(List.of()));
+        given(getConstraintColumnsByColumnIdPort.findConstraintColumnsByColumnId(fkCol2))
+            .willReturn(Mono.just(List.of()));
         given(getConstraintByIdPort.findConstraintById(constraintId))
             .willReturn(Mono.just(constraint));
         given(getRelationshipsByPkTableIdPort.findRelationshipsByPkTableId(pkColumn.tableId()))
@@ -404,6 +511,7 @@ class ChangeColumnTypeServiceTest {
         then(changeColumnTypePort).should(times(3)).changeColumnType(any(), any(), any());
         then(changeColumnTypePort).should().changeColumnType(eq(fkCol1), eq("BIGINT"), any());
         then(changeColumnTypePort).should().changeColumnType(eq(fkCol2), eq("BIGINT"), any());
+        then(changeColumnMetaPort).shouldHaveNoInteractions();
       }
 
       @Test
@@ -459,7 +567,8 @@ class ChangeColumnTypeServiceTest {
       @DisplayName("VARCHAR에서 TEXT로 변경하면 FK 컬럼의 charset/collation이 유지된다")
       void keepsCharsetCollationOnFkColumnsWhenChangingToTextType() {
         var command = ColumnFixture.changeTypeCommand("TEXT", null, null, null);
-        var pkColumn = ColumnFixture.defaultColumn(); // VARCHAR column
+        var pkColumn = ColumnFixture.varcharColumnWithCharset(
+            "utf8mb4", "utf8mb4_general_ci");
         var constraintId = "constraint-1";
         var relationshipId = "relationship-1";
         var fkColumnId = "fk-column-1";
@@ -501,6 +610,131 @@ class ChangeColumnTypeServiceTest {
         then(changeColumnMetaPort).shouldHaveNoInteractions();
       }
 
+      @Test
+      @DisplayName("meta가 비어 있는 text 컬럼을 text 타입으로 변경하면 기본 charset/collation을 전파한다")
+      void resolvesMissingTextMetaFromDefaultsDuringCascade() {
+        var command = ColumnFixture.changeTypeCommand("TEXT", null, null, null);
+        var pkColumn = ColumnFixture.defaultColumn();
+        var fkColumnId = "fk-column-1";
+        var fkColumn = ColumnFixture.varcharColumnWithIdAndCharset(
+            fkColumnId, "latin1", "latin1_swedish_ci");
+        var constraintId = "constraint-1";
+        var relationshipId = "relationship-1";
+        Table table = new Table(pkColumn.tableId(), TableFixture.DEFAULT_SCHEMA_ID, "test_table", null, null);
+
+        var constraintColumn = new ConstraintColumn("cc-1", constraintId, pkColumn.id(), 0);
+        var constraint = new Constraint(constraintId, pkColumn.tableId(), "pk_constraint",
+            ConstraintKind.PRIMARY_KEY, null, null);
+        var relationship = new Relationship(relationshipId, pkColumn.tableId(), "fk-table-1",
+            "rel_name", RelationshipKind.NON_IDENTIFYING, Cardinality.ONE_TO_MANY, null);
+        var relationshipColumn = new RelationshipColumn("rc-1", relationshipId, pkColumn.id(),
+            fkColumnId, 0);
+
+        given(getColumnByIdPort.findColumnById(pkColumn.id()))
+            .willReturn(Mono.just(pkColumn));
+        given(getColumnByIdPort.findColumnById(fkColumnId))
+            .willReturn(Mono.just(fkColumn));
+        given(getColumnsByTableIdPort.findColumnsByTableId(any()))
+            .willReturn(Mono.just(List.of(pkColumn)));
+        given(getTableByIdPort.findTableById(pkColumn.tableId()))
+            .willReturn(Mono.just(table));
+        given(getSchemaByIdPort.findSchemaById(table.schemaId()))
+            .willReturn(Mono.just(SchemaFixture.defaultSchema()));
+        given(changeColumnTypePort.changeColumnType(any(), any(), any()))
+            .willReturn(Mono.empty());
+        given(changeColumnMetaPort.changeColumnMeta(any(), any(), any(), any(), any()))
+            .willReturn(Mono.empty());
+        given(getConstraintColumnsByColumnIdPort.findConstraintColumnsByColumnId(pkColumn.id()))
+            .willReturn(Mono.just(List.of(constraintColumn)));
+        given(getConstraintColumnsByColumnIdPort.findConstraintColumnsByColumnId(fkColumnId))
+            .willReturn(Mono.just(List.of()));
+        given(getConstraintByIdPort.findConstraintById(constraintId))
+            .willReturn(Mono.just(constraint));
+        given(getRelationshipsByPkTableIdPort.findRelationshipsByPkTableId(pkColumn.tableId()))
+            .willReturn(Mono.just(List.of(relationship)));
+        given(getRelationshipColumnsByRelationshipIdPort
+            .findRelationshipColumnsByRelationshipId(relationshipId))
+            .willReturn(Mono.just(List.of(relationshipColumn)));
+
+        StepVerifier.create(sut.changeColumnType(command))
+            .expectNextCount(1)
+            .verifyComplete();
+
+        then(changeColumnMetaPort).should()
+            .changeColumnMeta(eq(pkColumn.id()), eq(null),
+                eq(SchemaFixture.DEFAULT_CHARSET), eq(SchemaFixture.DEFAULT_COLLATION), eq(null));
+        then(changeColumnMetaPort).should()
+            .changeColumnMeta(eq(fkColumnId), eq(null),
+                eq(SchemaFixture.DEFAULT_CHARSET), eq(SchemaFixture.DEFAULT_COLLATION), eq(null));
+      }
+
+      @Test
+      @DisplayName("INT에서 VARCHAR로 변경하면 FK 컬럼에도 해석된 charset/collation이 전파된다")
+      void propagatesResolvedCharsetCollationOnTextTarget() {
+        var command = ColumnFixture.changeTypeCommand("VARCHAR", 255, null, null);
+        var pkColumn = ColumnFixture.intColumn();
+        var fkColumnId = "fk-column-1";
+        var fkColumn = new Column(
+            fkColumnId,
+            "fk-table-1",
+            "fk_name",
+            "INT",
+            null,
+            0,
+            false,
+            null,
+            null,
+            null);
+        var constraintId = "constraint-1";
+        var relationshipId = "relationship-1";
+        Table table = new Table(pkColumn.tableId(), TableFixture.DEFAULT_SCHEMA_ID, "test_table", null, null);
+
+        var constraintColumn = new ConstraintColumn("cc-1", constraintId, pkColumn.id(), 0);
+        var constraint = new Constraint(constraintId, pkColumn.tableId(), "pk_constraint",
+            ConstraintKind.PRIMARY_KEY, null, null);
+        var relationship = new Relationship(relationshipId, pkColumn.tableId(), "fk-table-1",
+            "rel_name", RelationshipKind.NON_IDENTIFYING, Cardinality.ONE_TO_MANY, null);
+        var relationshipColumn = new RelationshipColumn("rc-1", relationshipId, pkColumn.id(),
+            fkColumnId, 0);
+
+        given(getColumnByIdPort.findColumnById(pkColumn.id()))
+            .willReturn(Mono.just(pkColumn));
+        given(getColumnByIdPort.findColumnById(fkColumnId))
+            .willReturn(Mono.just(fkColumn));
+        given(getColumnsByTableIdPort.findColumnsByTableId(any()))
+            .willReturn(Mono.just(List.of(pkColumn)));
+        given(getTableByIdPort.findTableById(pkColumn.tableId()))
+            .willReturn(Mono.just(table));
+        given(getSchemaByIdPort.findSchemaById(table.schemaId()))
+            .willReturn(Mono.just(SchemaFixture.defaultSchema()));
+        given(changeColumnTypePort.changeColumnType(any(), any(), any()))
+            .willReturn(Mono.empty());
+        given(changeColumnMetaPort.changeColumnMeta(any(), any(), any(), any(), any()))
+            .willReturn(Mono.empty());
+        given(getConstraintColumnsByColumnIdPort.findConstraintColumnsByColumnId(pkColumn.id()))
+            .willReturn(Mono.just(List.of(constraintColumn)));
+        given(getConstraintColumnsByColumnIdPort.findConstraintColumnsByColumnId(fkColumnId))
+            .willReturn(Mono.just(List.of()));
+        given(getConstraintByIdPort.findConstraintById(constraintId))
+            .willReturn(Mono.just(constraint));
+        given(getRelationshipsByPkTableIdPort.findRelationshipsByPkTableId(pkColumn.tableId()))
+            .willReturn(Mono.just(List.of(relationship)));
+        given(getRelationshipColumnsByRelationshipIdPort
+            .findRelationshipColumnsByRelationshipId(relationshipId))
+            .willReturn(Mono.just(List.of(relationshipColumn)));
+
+        StepVerifier.create(sut.changeColumnType(command))
+            .expectNextCount(1)
+            .verifyComplete();
+
+        then(changeColumnMetaPort).should()
+            .changeColumnMeta(eq(pkColumn.id()), eq(null),
+                eq(SchemaFixture.DEFAULT_CHARSET), eq(SchemaFixture.DEFAULT_COLLATION), eq(null));
+        then(changeColumnMetaPort).should()
+            .changeColumnMeta(eq(fkColumnId), eq(null),
+                eq(SchemaFixture.DEFAULT_CHARSET), eq(SchemaFixture.DEFAULT_COLLATION), eq(null));
+      }
+
     }
 
     @Nested
@@ -535,8 +769,6 @@ class ChangeColumnTypeServiceTest {
         given(getColumnsByTableIdPort.findColumnsByTableId("table-a"))
             .willReturn(Mono.just(List.of(colA)));
         given(changeColumnTypePort.changeColumnType(any(), any(), any()))
-            .willReturn(Mono.empty());
-        given(changeColumnMetaPort.changeColumnMeta(any(), any(), any(), any(), any()))
             .willReturn(Mono.empty());
 
         given(getConstraintColumnsByColumnIdPort.findConstraintColumnsByColumnId(colAId))
