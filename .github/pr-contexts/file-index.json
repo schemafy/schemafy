@@ -578,5 +578,14 @@
   ],
   "apps/backend/sql-resources/ddl/mariadb/erd_operation_log.sql": [
     372
+  ],
+  ".agents/skills/perf-audit-canvas-ops/SKILL.md": [
+    373
+  ],
+  ".agents/skills/perf-audit-canvas-scale/SKILL.md": [
+    373
+  ],
+  ".agents/skills/perf-audit/SKILL.md": [
+    373
   ]
 }
