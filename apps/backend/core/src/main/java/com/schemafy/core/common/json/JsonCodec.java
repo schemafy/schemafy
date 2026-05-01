@@ -90,6 +90,15 @@ public final class JsonCodec {
       throw new IllegalArgumentException("Failed to serialize JSON", e);
     }
   }
+  public String serialize(Object value, Class<?> type) {
+    requireNonNull(value, "value");
+    requireNonNull(type, "type");
+    try {
+      return objectMapper.writerFor(type).writeValueAsString(value);
+    } catch (IOException e) {
+      throw new IllegalArgumentException("Failed to serialize JSON", e);
+    }
+  }
 
   public byte[] serializeBytes(Object value) {
     requireNonNull(value, "value");

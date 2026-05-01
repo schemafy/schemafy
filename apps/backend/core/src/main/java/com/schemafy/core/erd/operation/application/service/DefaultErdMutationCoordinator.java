@@ -12,6 +12,7 @@ import com.schemafy.core.common.MutationResult;
 import com.schemafy.core.common.json.JsonCodec;
 import com.schemafy.core.erd.operation.ErdOperationContexts;
 import com.schemafy.core.erd.operation.ErdOperationMetadata;
+import com.schemafy.core.erd.operation.application.inverse.InversePayload;
 import com.schemafy.core.erd.operation.application.port.out.AppendErdOperationLogPort;
 import com.schemafy.core.erd.operation.application.port.out.FindSchemaCollaborationStatePort;
 import com.schemafy.core.erd.operation.application.port.out.IncrementSchemaCollaborationRevisionPort;
@@ -23,7 +24,6 @@ import com.schemafy.core.ulid.application.port.out.UlidGeneratorPort;
 
 import lombok.RequiredArgsConstructor;
 import reactor.core.publisher.Mono;
-
 @Component
 @RequiredArgsConstructor
 class DefaultErdMutationCoordinator implements ErdMutationCoordinator {
@@ -167,15 +167,24 @@ class DefaultErdMutationCoordinator implements ErdMutationCoordinator {
         metadata.clientOperationId(),
         metadata.sessionId(),
         metadata.actorUserIdOr(SYSTEM_ACTOR_USER_ID),
-        ErdOperationDerivationKind.ORIGINAL,
-        null,
+        metadata.derivationKindOrDefault(),
+        metadata.derivedFromOpId(),
         ErdOperationLifecycleState.COMMITTED,
-        jsonCodec.serialize(payload),
-        null,
+        serializePayload(payload),
+        mutationResult.inversePayload() == null
+            ? null
+            : jsonCodec.serialize(mutationResult.inversePayload(), InversePayload.class),
         jsonCodec.serialize(finalizedTarget.touchedEntity() == null
             ? List.of()
             : List.of(finalizedTarget.touchedEntity())),
         jsonCodec.serialize(affectedTableIds));
+  }
+
+  private String serializePayload(Object payload) {
+    if (payload instanceof InversePayload inversePayload) {
+      return jsonCodec.serialize(inversePayload, InversePayload.class);
+    }
+    return jsonCodec.serialize(payload);
   }
 
 }

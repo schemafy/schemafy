@@ -12,6 +12,7 @@ import com.schemafy.core.erd.constraint.application.port.out.ConstraintExistsPor
 import com.schemafy.core.erd.constraint.application.port.out.GetConstraintByIdPort;
 import com.schemafy.core.erd.constraint.domain.exception.ConstraintErrorCode;
 import com.schemafy.core.erd.constraint.domain.validator.ConstraintValidator;
+import com.schemafy.core.erd.operation.application.inverse.ChangeConstraintNameInverse;
 import com.schemafy.core.erd.operation.application.service.ErdMutationCoordinator;
 import com.schemafy.core.erd.operation.domain.ErdOperationType;
 import com.schemafy.core.erd.table.application.port.out.GetTableByIdPort;
@@ -46,9 +47,9 @@ public class ChangeConstraintNameService implements ChangeConstraintNameUseCase 
               .flatMap(constraint -> getTableByIdPort.findTableById(constraint.tableId())
                   .switchIfEmpty(Mono.error(new DomainException(TableErrorCode.NOT_FOUND, "Table not found")))
                   .flatMap(table -> constraintExistsPort.existsBySchemaIdAndNameExcludingId(
-                      table.schemaId(),
-                      normalizedName,
-                      constraint.id())
+                          table.schemaId(),
+                          normalizedName,
+                          constraint.id())
                       .flatMap(exists -> {
                         if (exists) {
                           return Mono.error(new DomainException(ConstraintErrorCode.NAME_DUPLICATE,
@@ -56,7 +57,10 @@ public class ChangeConstraintNameService implements ChangeConstraintNameUseCase 
                         }
                         return changeConstraintNamePort
                             .changeConstraintName(constraint.id(), normalizedName)
-                            .thenReturn(MutationResult.<Void>of(null, constraint.tableId()));
+                            .thenReturn(MutationResult.<Void>of(null, constraint.tableId())
+                                .withInverse(new ChangeConstraintNameInverse(
+                                    constraint.id(),
+                                    constraint.name())));
                       })));
         }));
   }

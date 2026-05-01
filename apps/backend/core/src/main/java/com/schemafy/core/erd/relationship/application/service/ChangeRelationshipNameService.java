@@ -8,6 +8,7 @@ import org.springframework.stereotype.Service;
 
 import com.schemafy.core.common.MutationResult;
 import com.schemafy.core.common.exception.DomainException;
+import com.schemafy.core.erd.operation.application.inverse.ChangeRelationshipNameInverse;
 import com.schemafy.core.erd.operation.application.service.ErdMutationCoordinator;
 import com.schemafy.core.erd.operation.domain.ErdOperationType;
 import com.schemafy.core.erd.relationship.application.port.in.ChangeRelationshipNameCommand;
@@ -44,9 +45,9 @@ public class ChangeRelationshipNameService implements ChangeRelationshipNameUseC
           return getRelationshipByIdPort.findRelationshipById(command.relationshipId())
               .switchIfEmpty(Mono.error(new DomainException(RelationshipErrorCode.NOT_FOUND, "Relationship not found")))
               .flatMap(relationship -> relationshipExistsPort.existsByFkTableIdAndNameExcludingId(
-                  relationship.fkTableId(),
-                  normalizedName,
-                  relationship.id())
+                      relationship.fkTableId(),
+                      normalizedName,
+                      relationship.id())
                   .flatMap(exists -> {
                     if (exists) {
                       return Mono.error(new DomainException(RelationshipErrorCode.NAME_DUPLICATE,
@@ -57,7 +58,10 @@ public class ChangeRelationshipNameService implements ChangeRelationshipNameUseC
                     affectedTableIds.add(relationship.pkTableId());
                     return changeRelationshipNamePort
                         .changeRelationshipName(relationship.id(), normalizedName)
-                        .thenReturn(MutationResult.<Void>of(null, affectedTableIds));
+                        .thenReturn(MutationResult.<Void>of(null, affectedTableIds)
+                            .withInverse(new ChangeRelationshipNameInverse(
+                                relationship.id(),
+                                relationship.name())));
                   }));
         }));
   }
