@@ -84,9 +84,9 @@ class ChangeColumnTypeUndoRedoHandler
 
   private Mono<Void> applyColumnTypeInverse(ChangeColumnTypeInverse inversePayload) {
     return changeColumnTypePort.changeColumnType(
-            inversePayload.columnId(),
-            inversePayload.oldDataType(),
-            inversePayload.oldTypeArguments())
+        inversePayload.columnId(),
+        inversePayload.oldDataType(),
+        inversePayload.oldTypeArguments())
         .then(Flux.fromIterable(inversePayload.fkRevertList())
             .concatMap(this::applyFkColumnTypeInverse)
             .then());
@@ -94,9 +94,9 @@ class ChangeColumnTypeUndoRedoHandler
 
   private Mono<Void> applyFkColumnTypeInverse(FkColumnTypeRevert revert) {
     return changeColumnTypePort.changeColumnType(
-            revert.columnId(),
-            revert.oldDataType(),
-            revert.oldTypeArguments())
+        revert.columnId(),
+        revert.oldDataType(),
+        revert.oldTypeArguments())
         .then(changeColumnMetaPort.changeColumnMeta(
             revert.columnId(),
             null,

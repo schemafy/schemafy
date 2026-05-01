@@ -47,9 +47,9 @@ public class ChangeConstraintNameService implements ChangeConstraintNameUseCase 
               .flatMap(constraint -> getTableByIdPort.findTableById(constraint.tableId())
                   .switchIfEmpty(Mono.error(new DomainException(TableErrorCode.NOT_FOUND, "Table not found")))
                   .flatMap(table -> constraintExistsPort.existsBySchemaIdAndNameExcludingId(
-                          table.schemaId(),
-                          normalizedName,
-                          constraint.id())
+                      table.schemaId(),
+                      normalizedName,
+                      constraint.id())
                       .flatMap(exists -> {
                         if (exists) {
                           return Mono.error(new DomainException(ConstraintErrorCode.NAME_DUPLICATE,

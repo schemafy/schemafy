@@ -69,28 +69,28 @@ public class ChangeColumnTypeService implements ChangeColumnTypeUseCase {
     List<FkColumnTypeRevert> fkRevertList = new ArrayList<>();
 
     return erdMutationCoordinator.coordinate(ErdOperationType.CHANGE_COLUMN_TYPE, command,
-            () -> rejectIfForeignKeyColumn(command.columnId())
-                .then(getColumnByIdPort.findColumnById(command.columnId()))
-                .switchIfEmpty(Mono.error(new DomainException(ColumnErrorCode.NOT_FOUND, "Column not found")))
-                .flatMap(column -> {
-                  affectedTableIds.add(column.tableId());
-                  return getColumnsByTableIdPort.findColumnsByTableId(column.tableId())
-                      .defaultIfEmpty(List.of())
-                      .flatMap(columns -> applyChange(
-                          column,
-                          columns,
-                          command.dataType(),
-                          typeArguments,
-                          affectedTableIds,
-                          fkRevertList,
-                          capturedFkColumnIds)
-                          .then(Mono.fromCallable(() -> MutationResult.<Void>of(null, affectedTableIds)
-                              .withInverse(new ChangeColumnTypeInverse(
-                                  column.id(),
-                                  column.dataType(),
-                                  column.typeArguments(),
-                                  fkRevertList)))));
-                }))
+        () -> rejectIfForeignKeyColumn(command.columnId())
+            .then(getColumnByIdPort.findColumnById(command.columnId()))
+            .switchIfEmpty(Mono.error(new DomainException(ColumnErrorCode.NOT_FOUND, "Column not found")))
+            .flatMap(column -> {
+              affectedTableIds.add(column.tableId());
+              return getColumnsByTableIdPort.findColumnsByTableId(column.tableId())
+                  .defaultIfEmpty(List.of())
+                  .flatMap(columns -> applyChange(
+                      column,
+                      columns,
+                      command.dataType(),
+                      typeArguments,
+                      affectedTableIds,
+                      fkRevertList,
+                      capturedFkColumnIds)
+                      .then(Mono.fromCallable(() -> MutationResult.<Void>of(null, affectedTableIds)
+                          .withInverse(new ChangeColumnTypeInverse(
+                              column.id(),
+                              column.dataType(),
+                              column.typeArguments(),
+                              fkRevertList)))));
+            }))
         .as(transactionalOperator::transactional);
   }
 

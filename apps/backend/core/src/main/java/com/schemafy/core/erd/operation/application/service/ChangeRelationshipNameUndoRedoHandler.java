@@ -48,8 +48,8 @@ class ChangeRelationshipNameUndoRedoHandler
               affectedTableIds.add(relationship.fkTableId());
               affectedTableIds.add(relationship.pkTableId());
               return changeRelationshipNamePort.changeRelationshipName(
-                      inversePayload.relationshipId(),
-                      inversePayload.oldName())
+                  inversePayload.relationshipId(),
+                  inversePayload.oldName())
                   .thenReturn(MutationResult.<Void>of(null, affectedTableIds)
                       .withInverse(new ChangeRelationshipNameInverse(
                           relationship.id(),

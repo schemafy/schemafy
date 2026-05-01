@@ -62,25 +62,25 @@ public class ChangeTableNameService implements ChangeTableNameUseCase {
   @Override
   public Mono<MutationResult<Void>> changeTableName(ChangeTableNameCommand command) {
     return erdMutationCoordinator.coordinate(ErdOperationType.CHANGE_TABLE_NAME, command,
-            () -> getTableByIdPort.findTableById(command.tableId())
-                .switchIfEmpty(Mono.error(
-                    new DomainException(TableErrorCode.NOT_FOUND, "Table not found: " + command.tableId())))
-                .flatMap(table -> tableExistsPort.existsBySchemaIdAndName(table.schemaId(), command.newName())
-                    .flatMap(exists -> {
-                      if (exists) {
-                        return Mono.error(new DomainException(TableErrorCode.NAME_DUPLICATE,
-                            "A table with the name '" + command.newName() + "' already exists in the schema."));
-                      }
+        () -> getTableByIdPort.findTableById(command.tableId())
+            .switchIfEmpty(Mono.error(
+                new DomainException(TableErrorCode.NOT_FOUND, "Table not found: " + command.tableId())))
+            .flatMap(table -> tableExistsPort.existsBySchemaIdAndName(table.schemaId(), command.newName())
+                .flatMap(exists -> {
+                  if (exists) {
+                    return Mono.error(new DomainException(TableErrorCode.NAME_DUPLICATE,
+                        "A table with the name '" + command.newName() + "' already exists in the schema."));
+                  }
 
-                      return buildRenamePlan(table, command.newName())
-                          .flatMap(plan -> changeTableNamePort.changeTableName(
-                                  command.tableId(),
-                                  command.newName())
-                              .then(applyConstraintRenames(plan.constraintRenames()))
-                              .then(applyRelationshipRenames(plan.relationshipRenames()))
-                              .thenReturn(MutationResult.<Void>of(null, plan.affectedTableIds(table.id()))
-                                  .withInverse(plan.toInverse(table))));
-                    })))
+                  return buildRenamePlan(table, command.newName())
+                      .flatMap(plan -> changeTableNamePort.changeTableName(
+                          command.tableId(),
+                          command.newName())
+                          .then(applyConstraintRenames(plan.constraintRenames()))
+                          .then(applyRelationshipRenames(plan.relationshipRenames()))
+                          .thenReturn(MutationResult.<Void>of(null, plan.affectedTableIds(table.id()))
+                              .withInverse(plan.toInverse(table))));
+                })))
         .as(transactionalOperator::transactional);
   }
 
@@ -338,11 +338,11 @@ public class ChangeTableNameService implements ChangeTableNameUseCase {
 
   private static String constraintKindPrefix(ConstraintKind kind) {
     return switch (kind) {
-      case PRIMARY_KEY -> "pk_";
-      case UNIQUE -> "uq_";
-      case CHECK -> "ck_";
-      case DEFAULT -> "df_";
-      case NOT_NULL -> "nn_";
+    case PRIMARY_KEY -> "pk_";
+    case UNIQUE -> "uq_";
+    case CHECK -> "ck_";
+    case DEFAULT -> "df_";
+    case NOT_NULL -> "nn_";
     };
   }
 

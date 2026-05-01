@@ -13,8 +13,7 @@ public final class ErdOperationContexts {
   private static final Object METADATA_CONTEXT_KEY = new Object();
   private static final Object SUPPRESS_NESTED_MUTATION_CONTEXT_KEY = new Object();
 
-  private ErdOperationContexts() {
-  }
+  private ErdOperationContexts() {}
 
   public static ErdOperationMetadata metadata(ContextView contextView) {
     Object typedValue = contextView.getOrDefault(METADATA_CONTEXT_KEY, null);

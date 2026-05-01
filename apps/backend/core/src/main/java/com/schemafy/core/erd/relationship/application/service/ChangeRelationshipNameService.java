@@ -45,9 +45,9 @@ public class ChangeRelationshipNameService implements ChangeRelationshipNameUseC
           return getRelationshipByIdPort.findRelationshipById(command.relationshipId())
               .switchIfEmpty(Mono.error(new DomainException(RelationshipErrorCode.NOT_FOUND, "Relationship not found")))
               .flatMap(relationship -> relationshipExistsPort.existsByFkTableIdAndNameExcludingId(
-                      relationship.fkTableId(),
-                      normalizedName,
-                      relationship.id())
+                  relationship.fkTableId(),
+                  normalizedName,
+                  relationship.id())
                   .flatMap(exists -> {
                     if (exists) {
                       return Mono.error(new DomainException(RelationshipErrorCode.NAME_DUPLICATE,

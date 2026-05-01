@@ -41,8 +41,8 @@ class ChangeConstraintNameUndoRedoHandler
             "Constraint not found: " + inversePayload.constraintId())))
         .flatMap(constraint -> coordinate(resolved, inversePayload,
             () -> changeConstraintNamePort.changeConstraintName(
-                    inversePayload.constraintId(),
-                    inversePayload.oldName())
+                inversePayload.constraintId(),
+                inversePayload.oldName())
                 .thenReturn(MutationResult.<Void>of(null, constraint.tableId())
                     .withInverse(new ChangeConstraintNameInverse(
                         constraint.id(),
