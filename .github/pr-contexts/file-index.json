@@ -199,13 +199,15 @@
     354
   ],
   "apps/backend/core/src/main/java/com/schemafy/core/common/MutationResult.java": [
-    337
+    337,
+    372
   ],
   "apps/backend/core/src/main/java/com/schemafy/core/erd/operation/adapter/out/persistence/ErdOperationLogRepository.java": [
     352
   ],
   "apps/backend/core/src/main/java/com/schemafy/core/erd/operation/adapter/out/persistence/ErdOperationPersistenceAdapter.java": [
-    352
+    352,
+    372
   ],
   "apps/backend/core/src/main/java/com/schemafy/core/erd/operation/application/port/out/GetErdOperationByIdPort.java": [
     352
@@ -214,13 +216,15 @@
     352
   ],
   "apps/backend/core/src/main/java/com/schemafy/core/erd/operation/application/service/DefaultErdMutationCoordinator.java": [
-    337
+    337,
+    372
   ],
   "apps/backend/core/src/main/java/com/schemafy/core/erd/operation/application/service/DefaultUndoRedoEligibilityService.java": [
     352
   ],
   "apps/backend/core/src/main/java/com/schemafy/core/erd/operation/application/service/ResolvedUndoRedoEligibility.java": [
-    352
+    352,
+    372
   ],
   "apps/backend/core/src/main/java/com/schemafy/core/erd/operation/application/service/UndoRedoAction.java": [
     352
@@ -235,7 +239,8 @@
     352
   ],
   "apps/backend/core/src/main/java/com/schemafy/core/erd/operation/domain/exception/OperationErrorCode.java": [
-    352
+    352,
+    372
   ],
   "apps/backend/core/src/main/java/com/schemafy/core/erd/schema/application/port/in/GetSchemaWithRevisionResult.java": [
     337
@@ -247,10 +252,12 @@
     337
   ],
   "apps/backend/core/src/test/java/com/schemafy/core/erd/operation/application/service/DefaultUndoRedoEligibilityServiceTest.java": [
-    352
+    352,
+    372
   ],
   "apps/backend/core/src/test/java/com/schemafy/core/erd/operation/integration/UndoRedoEligibilityIntegrationTest.java": [
-    352
+    352,
+    372
   ],
   "apps/backend/core/src/test/java/com/schemafy/core/erd/schema/application/service/GetSchemaWithRevisionServiceTest.java": [
     337
@@ -463,5 +470,113 @@
   ],
   "apps/frontend/tsconfig.json": [
     361
+  ],
+  "apps/backend/core/src/main/java/com/schemafy/core/common/json/JsonCodec.java": [
+    372
+  ],
+  "apps/backend/core/src/main/java/com/schemafy/core/erd/column/application/service/ChangeColumnNameService.java": [
+    372
+  ],
+  "apps/backend/core/src/main/java/com/schemafy/core/erd/column/application/service/ChangeColumnTypeService.java": [
+    372
+  ],
+  "apps/backend/core/src/main/java/com/schemafy/core/erd/constraint/application/service/ChangeConstraintNameService.java": [
+    372
+  ],
+  "apps/backend/core/src/main/java/com/schemafy/core/erd/index/application/service/ChangeIndexNameService.java": [
+    372
+  ],
+  "apps/backend/core/src/main/java/com/schemafy/core/erd/index/application/service/ChangeIndexTypeService.java": [
+    372
+  ],
+  "apps/backend/core/src/main/java/com/schemafy/core/erd/operation/ErdOperationContexts.java": [
+    372
+  ],
+  "apps/backend/core/src/main/java/com/schemafy/core/erd/operation/ErdOperationMetadata.java": [
+    372
+  ],
+  "apps/backend/core/src/main/java/com/schemafy/core/erd/operation/adapter/out/persistence/SchemaCollaborationStateRepository.java": [
+    372
+  ],
+  "apps/backend/core/src/main/java/com/schemafy/core/erd/operation/application/inverse/ChangeColumnNameInverse.java": [
+    372
+  ],
+  "apps/backend/core/src/main/java/com/schemafy/core/erd/operation/application/inverse/ChangeColumnTypeInverse.java": [
+    372
+  ],
+  "apps/backend/core/src/main/java/com/schemafy/core/erd/operation/application/inverse/ChangeConstraintNameInverse.java": [
+    372
+  ],
+  "apps/backend/core/src/main/java/com/schemafy/core/erd/operation/application/inverse/ChangeIndexNameInverse.java": [
+    372
+  ],
+  "apps/backend/core/src/main/java/com/schemafy/core/erd/operation/application/inverse/ChangeIndexTypeInverse.java": [
+    372
+  ],
+  "apps/backend/core/src/main/java/com/schemafy/core/erd/operation/application/inverse/ChangeRelationshipCardinalityInverse.java": [
+    372
+  ],
+  "apps/backend/core/src/main/java/com/schemafy/core/erd/operation/application/inverse/ChangeRelationshipNameInverse.java": [
+    372
+  ],
+  "apps/backend/core/src/main/java/com/schemafy/core/erd/operation/application/inverse/ChangeTableNameInverse.java": [
+    372
+  ],
+  "apps/backend/core/src/main/java/com/schemafy/core/erd/operation/application/inverse/InversePayload.java": [
+    372
+  ],
+  "apps/backend/core/src/main/java/com/schemafy/core/erd/operation/application/port/out/IncrementSchemaCollaborationRevisionPort.java": [
+    372
+  ],
+  "apps/backend/core/src/main/java/com/schemafy/core/erd/operation/application/service/AbstractUndoRedoErdOperationHandler.java": [
+    372
+  ],
+  "apps/backend/core/src/main/java/com/schemafy/core/erd/operation/application/service/ChangeColumnNameUndoRedoHandler.java": [
+    372
+  ],
+  "apps/backend/core/src/main/java/com/schemafy/core/erd/operation/application/service/ChangeColumnTypeUndoRedoHandler.java": [
+    372
+  ],
+  "apps/backend/core/src/main/java/com/schemafy/core/erd/operation/application/service/ChangeConstraintNameUndoRedoHandler.java": [
+    372
+  ],
+  "apps/backend/core/src/main/java/com/schemafy/core/erd/operation/application/service/ChangeIndexNameUndoRedoHandler.java": [
+    372
+  ],
+  "apps/backend/core/src/main/java/com/schemafy/core/erd/operation/application/service/ChangeIndexTypeUndoRedoHandler.java": [
+    372
+  ],
+  "apps/backend/core/src/main/java/com/schemafy/core/erd/operation/application/service/ChangeRelationshipCardinalityUndoRedoHandler.java": [
+    372
+  ],
+  "apps/backend/core/src/main/java/com/schemafy/core/erd/operation/application/service/ChangeRelationshipNameUndoRedoHandler.java": [
+    372
+  ],
+  "apps/backend/core/src/main/java/com/schemafy/core/erd/operation/application/service/ChangeTableNameUndoRedoHandler.java": [
+    372
+  ],
+  "apps/backend/core/src/main/java/com/schemafy/core/erd/operation/application/service/ErdMutationTargetResolver.java": [
+    372
+  ],
+  "apps/backend/core/src/main/java/com/schemafy/core/erd/relationship/application/service/ChangeRelationshipCardinalityService.java": [
+    372
+  ],
+  "apps/backend/core/src/main/java/com/schemafy/core/erd/relationship/application/service/ChangeRelationshipNameService.java": [
+    372
+  ],
+  "apps/backend/core/src/main/java/com/schemafy/core/erd/table/application/service/ChangeTableNameService.java": [
+    372
+  ],
+  "apps/backend/core/src/test/java/com/schemafy/core/erd/operation/integration/ErdOperationLedgerIntegrationTest.java": [
+    372
+  ],
+  "apps/backend/core/src/test/java/com/schemafy/core/erd/table/application/service/ChangeTableNameServiceTest.java": [
+    372
+  ],
+  "apps/backend/sql-resources/ddl/h2/erd_operation_log.sql": [
+    372
+  ],
+  "apps/backend/sql-resources/ddl/mariadb/erd_operation_log.sql": [
+    372
   ]
 }
