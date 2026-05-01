@@ -4,6 +4,7 @@ import java.util.List;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.test.context.ActiveProfiles;
 
 import org.junit.jupiter.api.DisplayName;
@@ -39,6 +40,7 @@ import com.schemafy.core.erd.table.application.port.in.CreateTableCommand;
 import com.schemafy.core.erd.table.application.port.in.CreateTableUseCase;
 import com.schemafy.core.erd.table.application.port.in.DeleteTableCommand;
 import com.schemafy.core.erd.table.application.port.in.DeleteTableUseCase;
+import com.schemafy.core.ulid.application.service.UlidGenerator;
 
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
@@ -354,6 +356,47 @@ class ErdOperationLedgerIntegrationTest extends ErdProjectIntegrationSupport {
     assertThat(tableExtraIsNull(tableId)).isTrue();
   }
 
+  @Test
+  @DisplayName("같은 operation을 부모로 하는 파생 operation log는 중복 기록할 수 없다")
+  void enforcesUniqueDerivedFromOperationId() {
+    String projectId = createActiveProjectId("erd_operation_unique_derived_from");
+
+    String schemaId = createSchemaUseCase.createSchema(new CreateSchemaCommand(
+        projectId,
+        "MySQL",
+        "unique_derived_from_schema",
+        "utf8mb4",
+        "utf8mb4_general_ci")).block().result().id();
+
+    String tableId = createTableUseCase.createTable(new CreateTableCommand(
+        schemaId,
+        "unique_derived_from_table",
+        "utf8mb4",
+        "utf8mb4_general_ci",
+        null)).block().result().tableId();
+
+    long committedRevision = currentRevision(schemaId) + 10;
+    String parentOpId = latestOperationId(schemaId);
+
+    StepVerifier.create(insertDerivedOperationLog(
+        UlidGenerator.generate(),
+        projectId,
+        schemaId,
+        committedRevision,
+        parentOpId))
+        .expectNext(1L)
+        .verifyComplete();
+
+    StepVerifier.create(insertDerivedOperationLog(
+        UlidGenerator.generate(),
+        projectId,
+        schemaId,
+        committedRevision + 1,
+        parentOpId))
+        .expectError(DataIntegrityViolationException.class)
+        .verify();
+  }
+
   private long currentRevision(String schemaId) {
     return databaseClient.sql("""
         SELECT current_revision
@@ -377,6 +420,73 @@ class ErdOperationLedgerIntegrationTest extends ErdProjectIntegrationSupport {
         .map((row, metadata) -> ((Number) row.get("cnt")).longValue() == 1)
         .one()
         .block();
+  }
+
+  private String latestOperationId(String schemaId) {
+    return databaseClient.sql("""
+        SELECT op_id
+        FROM erd_operation_log
+        WHERE schema_id = :schemaId
+        ORDER BY committed_revision DESC
+        LIMIT 1
+        """)
+        .bind("schemaId", schemaId)
+        .map((row, metadata) -> row.get("op_id", String.class))
+        .one()
+        .block();
+  }
+
+  private Mono<Long> insertDerivedOperationLog(
+      String opId,
+      String projectId,
+      String schemaId,
+      long committedRevision,
+      String derivedFromOpId) {
+    return databaseClient.sql("""
+        INSERT INTO erd_operation_log (
+            op_id,
+            project_id,
+            schema_id,
+            op_type,
+            committed_revision,
+            base_schema_revision,
+            client_operation_id,
+            collab_session_id,
+            actor_user_id,
+            derivation_kind,
+            derived_from_op_id,
+            lifecycle_state,
+            payload_json,
+            inverse_payload_json,
+            touched_entities_json,
+            affected_table_ids_json
+        ) VALUES (
+            :opId,
+            :projectId,
+            :schemaId,
+            'CHANGE_TABLE_EXTRA',
+            :committedRevision,
+            :baseSchemaRevision,
+            NULL,
+            NULL,
+            'system',
+            'UNDO',
+            :derivedFromOpId,
+            'COMMITTED',
+            '{}',
+            NULL,
+            '[]',
+            '[]'
+        )
+        """)
+        .bind("opId", opId)
+        .bind("projectId", projectId)
+        .bind("schemaId", schemaId)
+        .bind("committedRevision", committedRevision)
+        .bind("baseSchemaRevision", committedRevision - 1)
+        .bind("derivedFromOpId", derivedFromOpId)
+        .fetch()
+        .rowsUpdated();
   }
 
   private long operationCount(String schemaId) {
