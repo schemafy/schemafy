@@ -11,6 +11,7 @@ import com.schemafy.core.erd.column.domain.exception.ColumnErrorCode;
 import com.schemafy.core.erd.constraint.domain.exception.ConstraintErrorCode;
 import com.schemafy.core.erd.index.domain.exception.IndexErrorCode;
 import com.schemafy.core.erd.memo.domain.exception.MemoErrorCode;
+import com.schemafy.core.erd.operation.domain.exception.OperationErrorCode;
 import com.schemafy.core.erd.relationship.domain.exception.RelationshipErrorCode;
 import com.schemafy.core.erd.schema.domain.exception.SchemaErrorCode;
 import com.schemafy.core.erd.table.domain.exception.TableErrorCode;
@@ -43,7 +44,8 @@ class DomainErrorCodeUniquenessTest {
       IndexErrorCode.class,
       RelationshipErrorCode.class,
       VendorErrorCode.class,
-      UlidErrorCode.class);
+      UlidErrorCode.class,
+      OperationErrorCode.class);
 
   @Test
   void codesMustBeGloballyUnique() {

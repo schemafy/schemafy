@@ -253,7 +253,7 @@ jobs:
             echo "## 연관 PR 컨텍스트 (변경 파일 기반)"
 
             file_index_json="$(
-              gh api "repos/${GITHUB_REPOSITORY}/contents/.github/pr-contexts/file-index.json?ref=main" \
+              gh api "repos/${GITHUB_REPOSITORY}/contents/.github/pr-contexts/file-index.json?ref=pr-contexts" \
                 --jq '.content' 2>/dev/null | tr -d '\n' | base64 -d 2>/dev/null || echo '{}'
             )"
 

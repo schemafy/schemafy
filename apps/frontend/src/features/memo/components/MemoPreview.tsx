@@ -1,25 +1,32 @@
+import { useEffect, useRef } from 'react';
 import { useStore } from '@xyflow/react';
-import type { Point } from '@/features/drawing/types';
+import { useMouseTrackingPreview } from '@/features/drawing/hooks/useMouseTrackingPreview';
 
-interface MemoPreviewProps {
-  mousePosition: Point | null;
-}
-export const MemoPreview = ({ mousePosition }: MemoPreviewProps) => {
-  const zoom = useStore((state) => state.transform[2]);
+export const MemoPreview = () => {
+  const zoom = useStore((s) => s.transform[2]);
+  const zoomRef = useRef(zoom);
 
-  if (!mousePosition) return null;
+  useEffect(() => {
+    zoomRef.current = zoom;
+  }, [zoom]);
+
+  const divRef = useMouseTrackingPreview(
+    (position) =>
+      `translate3d(${position.x}px, ${position.y - 48}px, 0) scale(${zoomRef.current})`,
+  );
 
   return (
     <div
+      ref={divRef}
       className="bg-schemafy-button-bg rounded-br-full rounded-t-full"
       style={{
+        display: 'none',
         position: 'absolute',
         pointerEvents: 'none',
         zIndex: 999,
         opacity: 0.4,
         width: '24px',
         height: '24px',
-        transform: `translate3d(${mousePosition.x}px, ${mousePosition.y - 48}px, 0) scale(${zoom})`,
         transformOrigin: 'top left',
         willChange: 'transform',
       }}

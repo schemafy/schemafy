@@ -1,74 +1,51 @@
-import { observer } from 'mobx-react-lite';
 import {
-  Background,
-  BackgroundVariant,
-  ConnectionMode,
-  MiniMap,
-  ReactFlow,
-} from '@xyflow/react';
-import '@xyflow/react/dist/style.css';
-import {
-  CustomConnectionLine,
-  CustomControls,
-  CustomSmoothStepEdge,
   FloatingButtons,
+  ReactFlowCanvas,
   RelationshipEditor,
-  RelationshipMarker,
   SchemaSelector,
   SelectedSchemaProvider,
-  TableNode,
-  TablePreview,
+  ShortcutPanel,
   TempMemoPreview,
   Toolbar,
   useCanvasController,
 } from '@/features/drawing';
-import { Memo, MemoPreview } from '@/features/memo/components';
 import { MemoProvider } from '@/features/memo/context';
-import {
-  RemoteCursors,
-  ChatInput,
-  ChatOverlay,
-} from '@/features/collaboration/components';
-
-const NODE_TYPES = {
-  table: TableNode,
-  memo: Memo,
-};
-
-const EDGE_TYPES = {
-  customSmoothStep: CustomSmoothStepEdge,
-};
+import { ChatInput, RemoteCursors } from '@/features/collaboration/components';
+import { observer } from 'mobx-react-lite';
 
 const CanvasContent = observer(() => {
   const {
     state: {
       relationshipConfig,
       activeTool,
-      mousePosition,
       tempMemoPosition,
       chatInputPosition,
+      isChatExiting,
       selectedRelationship,
+      isShortcutPanelOpen,
     },
-    setter: { setRelationshipConfig, setActiveTool, setSelectedRelationship },
-    data: { nodes, relationships },
+    setter: {
+      setRelationshipConfig,
+      setActiveTool,
+      setSelectedRelationship,
+      setIsShortcutPanelOpen,
+    },
+    data: { tables, memos, relationships },
     handlers: {
-      handleNodesChange,
-      handleNodeDragStop,
-      handleNodesDelete,
+      onTableDragStop,
+      onTablesDelete,
+      onMemosChange,
       onRelationshipsChange,
       handleMoveEnd,
       onConnect,
       onRelationshipClick,
-      onReconnect,
-      onReconnectStart,
-      onReconnectEnd,
       updateRelationshipConfig,
       updateRelationshipName,
       deleteRelationship,
       handleMemoCancel,
       handleMemoCreate,
       handleChatSend,
-      handleChatCancel,
+      closeChatInput,
       handlePaneClick,
       handleMouseMove,
     },
@@ -76,7 +53,6 @@ const CanvasContent = observer(() => {
 
   return (
     <>
-      <RelationshipMarker />
       <div className="flex flex-1">
         <Toolbar
           setActiveTool={setActiveTool}
@@ -90,66 +66,21 @@ const CanvasContent = observer(() => {
             <SchemaSelector />
           </div>
 
-          <div
-            style={{
-              cursor: activeTool === 'hand' ? 'grab' : 'default',
-            }}
-            className="w-full h-full"
-          >
-            <ReactFlow
-              nodes={nodes}
-              edges={relationships}
-              onNodesChange={handleNodesChange}
-              onNodeDragStop={handleNodeDragStop}
-              onNodesDelete={handleNodesDelete}
-              onEdgesChange={onRelationshipsChange}
-              onPaneClick={handlePaneClick}
-              onPaneMouseMove={handleMouseMove}
-              onMoveEnd={handleMoveEnd}
-              nodesDraggable={activeTool !== 'hand'}
-              elementsSelectable={activeTool !== 'hand'}
-              panOnDrag={activeTool === 'hand'}
-              onConnect={onConnect}
-              onEdgeClick={onRelationshipClick}
-              onReconnect={onReconnect}
-              onReconnectStart={onReconnectStart}
-              onReconnectEnd={onReconnectEnd}
-              nodeTypes={NODE_TYPES}
-              edgeTypes={EDGE_TYPES}
-              connectionLineComponent={CustomConnectionLine}
-              proOptions={{ hideAttribution: true }}
-              connectionMode={ConnectionMode.Loose}
-              fitView={false}
-              minZoom={0.1}
-              maxZoom={4}
-            >
-              <MiniMap
-                nodeColor={() => 'var(--color-schemafy-text)'}
-                maskColor="var(--color-schemafy-bg-80)"
-                style={{
-                  backgroundColor: 'var(--color-schemafy-bg-80)',
-                  boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)',
-                  borderRadius: '10px',
-                  overflow: 'hidden',
-                  position: 'absolute',
-                  bottom: '1rem',
-                  right: '1rem',
-                  margin: '0',
-                }}
-                zoomable
-                pannable
-              />
-              <CustomControls />
-              <Background variant={BackgroundVariant.Dots} />
-
-              {activeTool === 'table' && (
-                <TablePreview mousePosition={mousePosition} />
-              )}
-              {activeTool === 'memo' && (
-                <MemoPreview mousePosition={mousePosition} />
-              )}
-            </ReactFlow>
-          </div>
+          <ReactFlowCanvas
+            tables={tables}
+            memos={memos}
+            relationships={relationships}
+            activeTool={activeTool}
+            onTableDragStop={onTableDragStop}
+            onTablesDelete={onTablesDelete}
+            onMemosChange={onMemosChange}
+            onRelationshipsChange={onRelationshipsChange}
+            onConnect={onConnect}
+            onRelationshipClick={onRelationshipClick}
+            handleMoveEnd={handleMoveEnd}
+            handlePaneClick={handlePaneClick}
+            handleMouseMove={handleMouseMove}
+          />
 
           {selectedRelationship && (
             <RelationshipEditor
@@ -173,21 +104,27 @@ const CanvasContent = observer(() => {
           {chatInputPosition && (
             <ChatInput
               position={chatInputPosition}
+              isExiting={isChatExiting}
               onSend={handleChatSend}
-              onCancel={handleChatCancel}
+              onCancel={closeChatInput}
             />
           )}
         </div>
       </div>
-      <FloatingButtons />
-      <ChatOverlay />
+      <FloatingButtons
+        isShortcutPanelOpen={isShortcutPanelOpen}
+        onHelpClick={() => setIsShortcutPanelOpen((prev) => !prev)}
+      />
+      {isShortcutPanelOpen && (
+        <ShortcutPanel onClose={() => setIsShortcutPanelOpen(false)} />
+      )}
       <RemoteCursors />
     </>
   );
 });
 
 export const CanvasPage = () => {
-  const projectId = '06DS8JSJ7Y112MC87X0AB2CE8M';
+  const projectId = '06EF3RWHVWADZEMACHXTSGA3Q0';
 
   return (
     <SelectedSchemaProvider projectId={projectId}>

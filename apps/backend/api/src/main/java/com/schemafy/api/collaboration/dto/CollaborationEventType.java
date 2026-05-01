@@ -9,6 +9,8 @@ public enum CollaborationEventType {
   JOIN("JOIN", false),
   LEAVE("LEAVE", false),
   CURSOR("CURSOR", false),
+  TABLE_POSITION_PREVIEW("TABLE_POSITION_PREVIEW", false),
+  RELATIONSHIP_EXTRA_PREVIEW("RELATIONSHIP_EXTRA_PREVIEW", false),
   SCHEMA_FOCUS("SCHEMA_FOCUS", false),
   CHAT("CHAT", true),
   ERD_MUTATED("ERD_MUTATED", false);

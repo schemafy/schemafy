@@ -3,6 +3,7 @@ import {
   useEffect,
   useRef,
   useCallback,
+  useMemo,
   Suspense,
   type ReactNode,
 } from 'react';
@@ -142,6 +143,15 @@ export const SelectedSchemaProvider = ({
     setSelectedSchemaId,
   ]);
 
+  const contextValue = useMemo(
+    () => ({
+      projectId,
+      selectedSchemaId: selectedSchemaId as string,
+      setSelectedSchemaId,
+    }),
+    [projectId, selectedSchemaId, setSelectedSchemaId],
+  );
+
   if (!selectedSchemaId && (isCreateSchemaError || isSchemasError)) {
     return (
       <SchemaError
@@ -155,9 +165,7 @@ export const SelectedSchemaProvider = ({
   }
 
   return (
-    <SelectedSchemaContext.Provider
-      value={{ projectId, selectedSchemaId, setSelectedSchemaId }}
-    >
+    <SelectedSchemaContext.Provider value={contextValue}>
       <QueryErrorResetBoundary>
         {({ reset }) => (
           <ErrorBoundary

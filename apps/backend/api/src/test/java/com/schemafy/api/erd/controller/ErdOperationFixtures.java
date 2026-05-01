@@ -12,11 +12,16 @@ final class ErdOperationFixtures {
   private ErdOperationFixtures() {}
 
   static CommittedErdOperation committedOperation() {
+    return committedOperation(ErdOperationDerivationKind.ORIGINAL);
+  }
+
+  static CommittedErdOperation committedOperation(
+      ErdOperationDerivationKind derivationKind) {
     return new CommittedErdOperation(
         OP_ID,
         CLIENT_OPERATION_ID,
         COMMITTED_REVISION,
-        ErdOperationDerivationKind.ORIGINAL);
+        derivationKind);
   }
 
 }

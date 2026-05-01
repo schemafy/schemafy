@@ -1,10 +1,14 @@
 package com.schemafy.api.project.controller;
 
 import jakarta.validation.Valid;
+import jakarta.validation.constraints.Max;
+import jakarta.validation.constraints.Positive;
+import jakarta.validation.constraints.PositiveOrZero;
 
 import org.springframework.http.HttpStatus;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
+import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
 import com.schemafy.api.common.constant.ApiPath;
@@ -39,6 +43,7 @@ import lombok.RequiredArgsConstructor;
 import reactor.core.publisher.Mono;
 
 @RestController
+@Validated
 @RequestMapping(ApiPath.API)
 @RequiredArgsConstructor
 public class WorkspaceController {
@@ -68,8 +73,8 @@ public class WorkspaceController {
   @PreAuthorize("hasAnyRole('ADMIN','MEMBER')")
   @GetMapping("/workspaces")
   public Mono<PageResponse<WorkspaceSummaryResponse>> getWorkspaces(
-      @RequestParam(defaultValue = "0") int page,
-      @RequestParam(defaultValue = "5") int size,
+      @RequestParam(defaultValue = "0") @PositiveOrZero int page,
+      @RequestParam(defaultValue = "5") @Positive @Max(100) int size,
       Authentication authentication) {
     String requesterId = authentication.getName();
     return getWorkspacesUseCase.getWorkspaces(new GetWorkspacesQuery(
@@ -122,8 +127,9 @@ public class WorkspaceController {
   @PreAuthorize("hasAnyRole('ADMIN','MEMBER')")
   @GetMapping("/workspaces/{id}/members")
   public Mono<PageResponse<WorkspaceMemberResponse>> getMembers(
-      @PathVariable String id, @RequestParam(defaultValue = "0") int page,
-      @RequestParam(defaultValue = "5") int size,
+      @PathVariable String id,
+      @RequestParam(defaultValue = "0") @PositiveOrZero int page,
+      @RequestParam(defaultValue = "5") @Positive @Max(100) int size,
       Authentication authentication) {
     String requesterId = authentication.getName();
     return workspaceMemberOrchestrator.getMembers(new GetWorkspaceMembersQuery(

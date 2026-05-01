@@ -3,7 +3,9 @@ package com.schemafy.api.testsupport.project;
 import java.time.Instant;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.test.web.reactive.server.WebTestClient;
 
+import com.schemafy.api.common.exception.CommonErrorCode;
 import com.schemafy.api.testsupport.user.UserHttpTestSupport;
 import com.schemafy.core.project.adapter.out.persistence.InvitationRepository;
 import com.schemafy.core.project.adapter.out.persistence.ProjectMemberRepository;
@@ -22,6 +24,8 @@ import com.schemafy.core.project.domain.WorkspaceRole;
 
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
+
+import static org.assertj.core.api.Assertions.assertThat;
 
 public abstract class ProjectHttpTestSupport extends UserHttpTestSupport {
 
@@ -146,6 +150,21 @@ public abstract class ProjectHttpTestSupport extends UserHttpTestSupport {
 
   protected ShareLink saveShareLink(ShareLink shareLink) {
     return shareLinkRepository.save(shareLink).block();
+  }
+
+  protected void assertInvalidPagination(
+      WebTestClient webTestClient,
+      String uri,
+      String token) {
+    webTestClient.get()
+        .uri(uri)
+        .header("Authorization", "Bearer " + token)
+        .exchange()
+        .expectStatus().isBadRequest()
+        .expectBody()
+        .jsonPath("$.reason").isEqualTo(CommonErrorCode.INVALID_PARAMETER.code())
+        .jsonPath("$.detail").value(detail -> assertThat((String) detail)
+            .isNotBlank());
   }
 
 }

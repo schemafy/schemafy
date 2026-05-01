@@ -94,7 +94,7 @@ public class WorkspaceApiSnippets extends RestDocsSnippets {
         parameterWithName("page").description("페이지 번호 (0부터 시작, 기본값: 0)")
             .optional(),
         parameterWithName("size")
-            .description("페이지 크기 (기본값: 20, 최대: 100)").optional());
+            .description("페이지 크기 (기본값: 5, 범위: 1-100)").optional());
   }
 
   /** 워크스페이스 목록 조회 응답 헤더 */
@@ -221,7 +221,7 @@ public class WorkspaceApiSnippets extends RestDocsSnippets {
         parameterWithName("page").description("페이지 번호 (0부터 시작, 기본값: 0)")
             .optional(),
         parameterWithName("size")
-            .description("페이지 크기 (기본값: 20, 최대: 100)").optional());
+            .description("페이지 크기 (기본값: 5, 범위: 1-100)").optional());
   }
 
   /** 워크스페이스 멤버 조회 응답 헤더 */

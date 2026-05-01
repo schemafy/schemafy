@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { memo, useState } from 'react';
 import { toast } from 'sonner';
 import { Button } from '@/components';
 import { ChevronDown, ChevronUp } from 'lucide-react';
@@ -14,7 +14,7 @@ import {
 import { useSelectedSchema } from '../contexts';
 import { validateSchemaName } from '../utils/validateSchemaName';
 
-export const SchemaSelector = () => {
+export const SchemaSelector = memo(() => {
   const { projectId, selectedSchemaId, setSelectedSchemaId } =
     useSelectedSchema();
   const { data: schemas, isLoading } = useSchemas(projectId);
@@ -170,4 +170,4 @@ export const SchemaSelector = () => {
       </div>
     </div>
   );
-};
+});
