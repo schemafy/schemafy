@@ -12,18 +12,25 @@ import com.schemafy.core.project.application.port.in.DeleteProjectCommand;
 import com.schemafy.core.project.application.port.in.DeleteProjectUseCase;
 import com.schemafy.core.project.application.port.in.GetMySharedProjectsQuery;
 import com.schemafy.core.project.application.port.in.GetMySharedProjectsUseCase;
+import com.schemafy.core.project.application.port.in.GetProjectMembersQuery;
+import com.schemafy.core.project.application.port.in.GetProjectMembersUseCase;
+import com.schemafy.core.project.application.port.in.GetProjectQuery;
+import com.schemafy.core.project.application.port.in.GetProjectUseCase;
 import com.schemafy.core.project.application.port.in.LeaveProjectCommand;
 import com.schemafy.core.project.application.port.in.LeaveProjectUseCase;
 import com.schemafy.core.project.application.port.in.ProjectDetail;
 import com.schemafy.core.project.application.port.in.RemoveProjectMemberCommand;
 import com.schemafy.core.project.application.port.in.RemoveProjectMemberUseCase;
+import com.schemafy.core.project.application.port.in.UpdateProjectCommand;
 import com.schemafy.core.project.application.port.in.UpdateProjectMemberRoleCommand;
 import com.schemafy.core.project.application.port.in.UpdateProjectMemberRoleUseCase;
+import com.schemafy.core.project.application.port.in.UpdateProjectUseCase;
 import com.schemafy.core.project.domain.ProjectMember;
 import com.schemafy.core.project.domain.ProjectRole;
 import com.schemafy.core.project.domain.Workspace;
 import com.schemafy.core.project.domain.WorkspaceRole;
 import com.schemafy.core.project.domain.exception.ProjectErrorCode;
+import com.schemafy.core.project.domain.exception.WorkspaceErrorCode;
 import com.schemafy.core.user.domain.User;
 
 import reactor.test.StepVerifier;
@@ -41,6 +48,15 @@ class ProjectUseCaseIntegrationTest extends ProjectDomainIntegrationSupport {
 
   @Autowired
   private DeleteProjectUseCase deleteProjectUseCase;
+
+  @Autowired
+  private GetProjectUseCase getProjectUseCase;
+
+  @Autowired
+  private UpdateProjectUseCase updateProjectUseCase;
+
+  @Autowired
+  private GetProjectMembersUseCase getProjectMembersUseCase;
 
   @Autowired
   private RemoveProjectMemberUseCase removeProjectMemberUseCase;
@@ -84,6 +100,89 @@ class ProjectUseCaseIntegrationTest extends ProjectDomainIntegrationSupport {
     assertThat(creatorMember.getRoleAsEnum()).isEqualTo(ProjectRole.ADMIN);
     assertThat(memberProjectMember.getRoleAsEnum()).isEqualTo(ProjectRole.VIEWER);
     assertThat(deletedProjectMember).isNull();
+  }
+
+  @Test
+  @DisplayName("프로젝트 생성은 워크스페이스 관리자만 허용한다")
+  void createProject_requiresWorkspaceAdmin() {
+    User member = signUpUser("member-create-denied@test.com", "Member");
+    Workspace workspace = saveWorkspace("Create Denied WS", "Description");
+    saveWorkspaceMember(workspace, member, WorkspaceRole.MEMBER);
+
+    StepVerifier.create(createProjectUseCase.createProject(new CreateProjectCommand(
+        workspace.getId(),
+        "Denied Project",
+        "Description",
+        member.id())))
+        .expectErrorMatches(DomainException.hasErrorCode(WorkspaceErrorCode.ACCESS_DENIED))
+        .verify();
+  }
+
+  @Test
+  @DisplayName("프로젝트 조회는 프로젝트 멤버에게 허용된다")
+  void getProject_allowsMember() {
+    User member = signUpUser("member-get@test.com", "Member");
+    Workspace workspace = saveWorkspace("Get WS", "Description");
+    var project = saveProject(workspace, "Get Project");
+    saveProjectMember(project, member, ProjectRole.EDITOR);
+
+    ProjectDetail detail = getProjectUseCase.getProject(new GetProjectQuery(
+        project.getId(),
+        member.id())).block();
+
+    assertThat(detail).isNotNull();
+    assertThat(detail.project().getId()).isEqualTo(project.getId());
+    assertThat(detail.currentUserRole()).isEqualTo(ProjectRole.EDITOR.name());
+  }
+
+  @Test
+  @DisplayName("프로젝트 조회는 비회원이면 거부된다")
+  void getProject_deniesNonMember() {
+    User requester = signUpUser("non-member-get@test.com", "Requester");
+    Workspace workspace = saveWorkspace("Get Denied WS", "Description");
+    var project = saveProject(workspace, "Get Denied Project");
+
+    StepVerifier.create(getProjectUseCase.getProject(new GetProjectQuery(project.getId(),
+        requester.id())))
+        .expectErrorMatches(DomainException.hasErrorCode(ProjectErrorCode.ACCESS_DENIED))
+        .verify();
+  }
+
+  @Test
+  @DisplayName("프로젝트 수정은 관리자에게 허용된다")
+  void updateProject_allowsAdmin() {
+    User admin = signUpUser("admin-update-project@test.com", "Admin");
+    Workspace workspace = saveWorkspace("Update Project WS", "Description");
+    var project = saveProject(workspace, "Old Name");
+    saveProjectMember(project, admin, ProjectRole.ADMIN);
+
+    ProjectDetail updated = updateProjectUseCase.updateProject(new UpdateProjectCommand(
+        project.getId(),
+        "New Name",
+        "New Description",
+        admin.id()))
+        .block();
+
+    assertThat(updated).isNotNull();
+    assertThat(updated.project().getName()).isEqualTo("New Name");
+    assertThat(updated.currentUserRole()).isEqualTo(ProjectRole.ADMIN.name());
+  }
+
+  @Test
+  @DisplayName("프로젝트 수정은 비관리자면 거부된다")
+  void updateProject_deniesNonAdmin() {
+    User editor = signUpUser("editor-update-project@test.com", "Editor");
+    Workspace workspace = saveWorkspace("Update Denied WS", "Description");
+    var project = saveProject(workspace, "Update Denied Project");
+    saveProjectMember(project, editor, ProjectRole.EDITOR);
+
+    StepVerifier.create(updateProjectUseCase.updateProject(new UpdateProjectCommand(
+        project.getId(),
+        "Forbidden",
+        "Forbidden",
+        editor.id())))
+        .expectErrorMatches(DomainException.hasErrorCode(ProjectErrorCode.ADMIN_REQUIRED))
+        .verify();
   }
 
   @Test
@@ -185,6 +284,57 @@ class ProjectUseCaseIntegrationTest extends ProjectDomainIntegrationSupport {
 
     assertThat(projectRepository.findByIdAndNotDeleted(project.getId()).block()).isNull();
     assertThat(findSchemasByProjectId(project.getId())).isEmpty();
+  }
+
+  @Test
+  @DisplayName("프로젝트 삭제는 비관리자면 거부된다")
+  void deleteProject_deniesNonAdmin() {
+    User editor = signUpUser("editor-delete-project@test.com", "Editor");
+    Workspace workspace = saveWorkspace("Delete Denied WS", "Description");
+    var project = saveProject(workspace, "Delete Denied Project");
+    saveProjectMember(project, editor, ProjectRole.EDITOR);
+
+    StepVerifier.create(deleteProjectUseCase.deleteProject(
+        new DeleteProjectCommand(project.getId(), editor.id())))
+        .expectErrorMatches(DomainException.hasErrorCode(ProjectErrorCode.ADMIN_REQUIRED))
+        .verify();
+  }
+
+  @Test
+  @DisplayName("프로젝트 멤버 조회는 프로젝트 멤버에게 허용된다")
+  void getProjectMembers_allowsMember() {
+    User requester = signUpUser("member-get-members@test.com", "Requester");
+    User another = signUpUser("another-get-members@test.com", "Another");
+    Workspace workspace = saveWorkspace("Members WS", "Description");
+    var project = saveProject(workspace, "Members Project");
+    saveProjectMember(project, requester, ProjectRole.VIEWER);
+    saveProjectMember(project, another, ProjectRole.EDITOR);
+
+    var result = getProjectMembersUseCase.getProjectMembers(new GetProjectMembersQuery(
+        project.getId(),
+        requester.id(),
+        0,
+        10)).block();
+
+    assertThat(result).isNotNull();
+    assertThat(result.content()).hasSize(2);
+    assertThat(result.totalElements()).isEqualTo(2);
+  }
+
+  @Test
+  @DisplayName("프로젝트 멤버 조회는 비회원이면 거부된다")
+  void getProjectMembers_deniesNonMember() {
+    User requester = signUpUser("non-member-get-members@test.com", "Requester");
+    Workspace workspace = saveWorkspace("Members Denied WS", "Description");
+    var project = saveProject(workspace, "Members Denied Project");
+
+    StepVerifier.create(getProjectMembersUseCase.getProjectMembers(new GetProjectMembersQuery(
+        project.getId(),
+        requester.id(),
+        0,
+        10)))
+        .expectErrorMatches(DomainException.hasErrorCode(ProjectErrorCode.ACCESS_DENIED))
+        .verify();
   }
 
   @Test

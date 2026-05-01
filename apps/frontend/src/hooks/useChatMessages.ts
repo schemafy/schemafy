@@ -1,50 +1,37 @@
 import { collaborationStore } from '@/store';
-import type { ChatMessage } from '@/features/collaboration/api';
-import { useEffect, useState } from 'react';
+import { useEffect } from 'react';
+
+const DISPLAY_DURATION = 4000;
 
 export const useChatMessages = () => {
-  const [displayMessages, setDisplayMessages] = useState<ChatMessage[]>([]);
-
   useEffect(() => {
+    const timerMap = new Map<string, ReturnType<typeof setTimeout>>();
+
     const unsubscribe = collaborationStore.onChatMessage((message) => {
-      if (message.position) {
-        setDisplayMessages((prev) => {
-          if (prev.some((msg) => msg.messageId === message.messageId)) {
-            return prev;
-          }
-          return [...prev, message];
-        });
-        return;
-      }
-
       const cursor = collaborationStore.cursors.get(message.sessionId);
+      const position =
+        message.position ?? (cursor ? { x: cursor.x, y: cursor.y } : undefined);
 
-      if (!cursor) {
-        console.error('Cursor not found');
-        return;
+      collaborationStore.setActiveChatMessage(message.sessionId, {
+        ...message,
+        position,
+      });
+
+      if (timerMap.has(message.sessionId)) {
+        clearTimeout(timerMap.get(message.sessionId)!);
       }
 
-      const messageWithPosition: ChatMessage = {
-        ...message,
-        position: { x: cursor.x + 20, y: cursor.y + 20 },
-      };
+      const timer = setTimeout(() => {
+        collaborationStore.clearActiveChatMessage(message.sessionId);
+        timerMap.delete(message.sessionId);
+      }, DISPLAY_DURATION);
 
-      setDisplayMessages((prev) => {
-        if (prev.some((msg) => msg.messageId === message.messageId)) {
-          return prev;
-        }
-        return [...prev, messageWithPosition];
-      });
+      timerMap.set(message.sessionId, timer);
     });
 
-    return unsubscribe;
+    return () => {
+      unsubscribe();
+      timerMap.forEach(clearTimeout);
+    };
   }, []);
-
-  const removeMessage = (messageId: string) => {
-    setDisplayMessages((prev) =>
-      prev.filter((msg) => msg.messageId !== messageId),
-    );
-  };
-
-  return { displayMessages, removeMessage };
 };
