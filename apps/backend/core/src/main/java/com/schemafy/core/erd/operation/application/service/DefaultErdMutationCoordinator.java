@@ -9,6 +9,7 @@ import org.springframework.stereotype.Component;
 import org.springframework.transaction.reactive.TransactionalOperator;
 
 import com.schemafy.core.common.MutationResult;
+import com.schemafy.core.common.exception.DomainException;
 import com.schemafy.core.common.json.JsonCodec;
 import com.schemafy.core.erd.operation.ErdOperationContexts;
 import com.schemafy.core.erd.operation.ErdOperationMetadata;
@@ -20,6 +21,7 @@ import com.schemafy.core.erd.operation.application.port.out.SaveSchemaCollaborat
 import com.schemafy.core.erd.operation.application.service.ErdMutationTargetResolver.FinalizedErdMutationTarget;
 import com.schemafy.core.erd.operation.application.service.ErdMutationTargetResolver.ResolvedErdMutationTarget;
 import com.schemafy.core.erd.operation.domain.*;
+import com.schemafy.core.erd.operation.domain.exception.OperationErrorCode;
 import com.schemafy.core.ulid.application.port.out.UlidGeneratorPort;
 
 import lombok.RequiredArgsConstructor;
@@ -120,7 +122,7 @@ class DefaultErdMutationCoordinator implements ErdMutationCoordinator {
         mutationResult);
 
     return resolveSchemaState(operationType, resolvedTarget, finalizedTarget, preloadedState)
-        .flatMap(schemaState -> incrementSchemaCollaborationRevisionPort.increment(schemaState.schemaId())
+        .flatMap(schemaState -> incrementRevision(schemaState.schemaId(), metadata)
             .flatMap(updatedState -> appendErdOperationLogPort.append(buildOperationLog(
                 operationType,
                 payload,
@@ -130,6 +132,36 @@ class DefaultErdMutationCoordinator implements ErdMutationCoordinator {
                 metadata)))
             .map(operationLog -> mutationResult.withOperation(
                 CommittedErdOperation.from(operationLog))));
+  }
+
+  private Mono<SchemaCollaborationState> incrementRevision(
+      String schemaId,
+      ErdOperationMetadata metadata) {
+    Long expectedRevision = metadata.baseSchemaRevision();
+    if (isDerivedMutation(metadata)) {
+      if (expectedRevision == null) {
+        return Mono.error(new IllegalStateException("Derived operation requires base schema revision"));
+      }
+      return incrementSchemaCollaborationRevisionPort
+          .incrementIfCurrentRevision(schemaId, expectedRevision)
+          .switchIfEmpty(Mono.error(new DomainException(
+              staleDerivedOperationErrorCode(metadata),
+              "Schema revision changed before undo/redo commit: schemaId=" + schemaId)));
+    }
+    return incrementSchemaCollaborationRevisionPort.increment(schemaId);
+  }
+
+  private boolean isDerivedMutation(ErdOperationMetadata metadata) {
+    ErdOperationDerivationKind derivationKind = metadata.derivationKind();
+    return derivationKind == ErdOperationDerivationKind.UNDO
+        || derivationKind == ErdOperationDerivationKind.REDO;
+  }
+
+  private OperationErrorCode staleDerivedOperationErrorCode(ErdOperationMetadata metadata) {
+    if (metadata.derivationKind() == ErdOperationDerivationKind.REDO) {
+      return OperationErrorCode.REDO_NOT_ELIGIBLE;
+    }
+    return OperationErrorCode.SUPERSEDED;
   }
 
   private Mono<SchemaCollaborationState> resolveSchemaState(

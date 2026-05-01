@@ -10,6 +10,7 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
 import com.fasterxml.jackson.databind.JsonNode;
+import com.schemafy.core.common.exception.DomainException;
 import com.schemafy.core.common.json.JsonCodec;
 import com.schemafy.core.erd.column.application.port.in.CreateColumnCommand;
 import com.schemafy.core.erd.column.application.port.in.CreateColumnUseCase;
@@ -17,7 +18,10 @@ import com.schemafy.core.erd.constraint.application.port.in.CreateConstraintColu
 import com.schemafy.core.erd.constraint.application.port.in.CreateConstraintCommand;
 import com.schemafy.core.erd.constraint.application.port.in.CreateConstraintUseCase;
 import com.schemafy.core.erd.constraint.domain.type.ConstraintKind;
+import com.schemafy.core.erd.operation.ErdOperationContexts;
 import com.schemafy.core.erd.operation.application.port.out.IncrementSchemaCollaborationRevisionPort;
+import com.schemafy.core.erd.operation.domain.ErdOperationDerivationKind;
+import com.schemafy.core.erd.operation.domain.exception.OperationErrorCode;
 import com.schemafy.core.erd.relationship.application.port.in.ChangeRelationshipKindCommand;
 import com.schemafy.core.erd.relationship.application.port.in.ChangeRelationshipKindUseCase;
 import com.schemafy.core.erd.relationship.application.port.in.CreateRelationshipCommand;
@@ -315,6 +319,41 @@ class ErdOperationLedgerIntegrationTest extends ErdProjectIntegrationSupport {
         .containsExactlyInAnyOrder("CHANGE_SCHEMA_NAME", "CHANGE_TABLE_EXTRA");
   }
 
+  @Test
+  @DisplayName("파생 mutation은 resolve 당시 revision이 더 이상 최신이 아니면 커밋하지 않는다")
+  void rejectsDerivedMutationWhenBaseRevisionIsStale() {
+    String projectId = createActiveProjectId("erd_operation_stale_derived");
+
+    String schemaId = createSchemaUseCase.createSchema(new CreateSchemaCommand(
+        projectId,
+        "MySQL",
+        "stale_derived_schema",
+        "utf8mb4",
+        "utf8mb4_general_ci")).block().result().id();
+
+    String tableId = createTableUseCase.createTable(new CreateTableCommand(
+        schemaId,
+        "stale_derived_table",
+        "utf8mb4",
+        "utf8mb4_general_ci",
+        null)).block().result().tableId();
+
+    long currentRevision = currentRevision(schemaId);
+    long beforeCount = operationCount(schemaId);
+
+    StepVerifier.create(changeTableExtraUseCase.changeTableExtra(new ChangeTableExtraCommand(
+        tableId,
+        "{\"comment\":\"stale\"}"))
+        .contextWrite(ErdOperationContexts.withDerivation(ErdOperationDerivationKind.UNDO, "stale-parent")
+            .andThen(ErdOperationContexts.withBaseSchemaRevision(currentRevision - 1))))
+        .expectErrorMatches(DomainException.hasErrorCode(OperationErrorCode.SUPERSEDED))
+        .verify();
+
+    assertThat(currentRevision(schemaId)).isEqualTo(currentRevision);
+    assertThat(operationCount(schemaId)).isEqualTo(beforeCount);
+    assertThat(tableExtraIsNull(tableId)).isTrue();
+  }
+
   private long currentRevision(String schemaId) {
     return databaseClient.sql("""
         SELECT current_revision
@@ -323,6 +362,19 @@ class ErdOperationLedgerIntegrationTest extends ErdProjectIntegrationSupport {
         """)
         .bind("schemaId", schemaId)
         .map((row, metadata) -> ((Number) row.get("current_revision")).longValue())
+        .one()
+        .block();
+  }
+
+  private boolean tableExtraIsNull(String tableId) {
+    return databaseClient.sql("""
+        SELECT COUNT(*) AS cnt
+        FROM db_tables
+        WHERE id = :tableId
+          AND extra IS NULL
+        """)
+        .bind("tableId", tableId)
+        .map((row, metadata) -> ((Number) row.get("cnt")).longValue() == 1)
         .one()
         .block();
   }

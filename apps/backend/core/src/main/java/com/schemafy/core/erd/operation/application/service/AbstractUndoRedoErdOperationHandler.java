@@ -64,7 +64,8 @@ abstract class AbstractUndoRedoErdOperationHandler<T extends InversePayload>
         ? ErdOperationDerivationKind.UNDO
         : ErdOperationDerivationKind.REDO;
     return erdMutationCoordinator.coordinate(operationType, inversePayload, mutationSupplier)
-        .contextWrite(ErdOperationContexts.withDerivation(derivationKind, executionBase.opId()));
+        .contextWrite(ErdOperationContexts.withDerivation(derivationKind, executionBase.opId())
+            .andThen(ErdOperationContexts.withBaseSchemaRevision(resolved.schemaCurrentRevision())));
   }
 
   protected abstract Mono<MutationResult<Void>> applyInverse(
