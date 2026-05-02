@@ -107,16 +107,19 @@ apiClient.interceptors.response.use(
   },
 );
 
-apiClient.interceptors.response.use((response) => response, (error) => {
-  const axiosError = error as AxiosError;
-  const clientOperationId = getHeaderValue(
-    axiosError.config?.headers,
-    'X-Client-Op-Id',
-  );
+apiClient.interceptors.response.use(
+  (response) => response,
+  (error) => {
+    const axiosError = error as AxiosError;
+    const clientOperationId = getHeaderValue(
+      axiosError.config?.headers,
+      'X-Client-Op-Id',
+    );
 
-  if (clientOperationId) {
-    operationHistoryStore.markFailed(clientOperationId, error);
-  }
+    if (clientOperationId) {
+      operationHistoryStore.markFailed(clientOperationId, error);
+    }
 
-  return handleApiError(axiosError);
-});
+    return handleApiError(axiosError);
+  },
+);

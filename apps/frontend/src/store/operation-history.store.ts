@@ -1,7 +1,11 @@
 import { action, computed, makeObservable, observable } from 'mobx';
 import type { ErdOperation } from '@/features/drawing/api/types';
 import type { ReceiveErdMutated } from '@/features/collaboration/api';
-import type { LocalOperationMetadata, LocalOperationStatus, PendingOperationMetadata } from "@/types/operation.types";
+import type {
+  LocalOperationMetadata,
+  LocalOperationStatus,
+  PendingOperationMetadata,
+} from '@/types/operation.types';
 
 export class OperationHistoryStore {
   operationsByClientId: Map<string, LocalOperationMetadata> = new Map();
@@ -65,7 +69,7 @@ export class OperationHistoryStore {
       failureMessage: null,
       createdAt: Date.now(),
       committedAt: null,
-    }
+    };
 
     this.operationsByClientId.set(metadata.clientOperationId, next);
   }
@@ -136,14 +140,20 @@ export class OperationHistoryStore {
     const clientOperationId = message.operation.clientOperationId;
 
     if (!clientOperationId) {
-      this.lastRemoteOperationBySchemaId.set(message.schemaId, message.operation);
+      this.lastRemoteOperationBySchemaId.set(
+        message.schemaId,
+        message.operation,
+      );
       return;
     }
 
     const existing = this.operationsByClientId.get(clientOperationId);
 
     if (!existing) {
-      this.lastRemoteOperationBySchemaId.set(message.schemaId, message.operation);
+      this.lastRemoteOperationBySchemaId.set(
+        message.schemaId,
+        message.operation,
+      );
       return;
     }
 
