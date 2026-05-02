@@ -19,6 +19,7 @@ import type {
 import { authStore } from './auth.store';
 import { apiClient } from '@/lib/api/client';
 import { toast } from 'sonner';
+import { operationHistoryStore } from './operation-history.store';
 
 const WEBSOCKET_URL =
   import.meta.env.VITE_WS_URL || 'ws://localhost:4000/ws/collaboration';
@@ -180,6 +181,7 @@ export class CollaborationStore {
       this.schemaRevisions.clear();
       this.activeChatMessages.clear();
       this.sessionId = null;
+      operationHistoryStore.clearAll();
     });
   }
 
@@ -306,6 +308,7 @@ export class CollaborationStore {
       message.schemaId,
       message.operation.committedRevision,
     );
+    operationHistoryStore.handleErdMutated(message);
     this.erdMutatedListeners.forEach((listener) => listener(message));
   }
 
