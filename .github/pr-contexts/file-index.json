@@ -73,7 +73,8 @@
     361
   ],
   "apps/frontend/src/store/collaboration.store.ts": [
-    291
+    291,
+    374
   ],
   ".github/workflows/test.yml": [
     346
@@ -587,5 +588,26 @@
   ],
   ".agents/skills/perf-audit/SKILL.md": [
     373
+  ],
+  "apps/frontend/src/features/drawing/api/mutation-request.ts": [
+    374
+  ],
+  "apps/frontend/src/features/drawing/hooks/useSchemaMutations.ts": [
+    374
+  ],
+  "apps/frontend/src/lib/api/client.ts": [
+    374
+  ],
+  "apps/frontend/src/store/index.ts": [
+    374
+  ],
+  "apps/frontend/src/store/operation-history.store.ts": [
+    374
+  ],
+  "apps/frontend/src/types/operation.types.ts": [
+    374
+  ],
+  "apps/frontend/tests/operation-history.store.spec.ts": [
+    374
   ]
 }
