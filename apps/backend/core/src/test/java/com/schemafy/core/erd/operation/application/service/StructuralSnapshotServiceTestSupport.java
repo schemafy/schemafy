@@ -46,6 +46,7 @@ public final class StructuralSnapshotServiceTestSupport {
         List.of(),
         List.of(),
         List.of(),
+        List.of(),
         List.of());
   }
 

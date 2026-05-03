@@ -28,28 +28,6 @@ public record StructuralSnapshot(
     List<RelationshipSnapshot> relationships,
     List<RelationshipColumnSnapshot> relationshipColumns) {
 
-  // 기존 코드 호환성을 고려해야하나?
-  public StructuralSnapshot(
-      String schemaId,
-      List<ColumnSnapshot> columns,
-      List<ConstraintSnapshot> constraints,
-      List<ConstraintColumnSnapshot> constraintColumns,
-      List<IndexSnapshot> indexes,
-      List<IndexColumnSnapshot> indexColumns,
-      List<RelationshipSnapshot> relationships,
-      List<RelationshipColumnSnapshot> relationshipColumns) {
-    this(
-        schemaId,
-        List.of(),
-        columns,
-        constraints,
-        constraintColumns,
-        indexes,
-        indexColumns,
-        relationships,
-        relationshipColumns);
-  }
-
   public StructuralSnapshot {
     tables = List.copyOf(tables == null ? List.of() : tables);
     columns = List.copyOf(columns == null ? List.of() : columns);

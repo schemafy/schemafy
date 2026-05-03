@@ -42,6 +42,7 @@ class InversePayloadJsonTest {
   void serializeStructuralInverse_excludesNestedDerivedEmptyProperty() {
     StructuralSnapshot snapshot = new StructuralSnapshot(
         "schema-1",
+        List.of(),
         List.of(new StructuralSnapshot.ColumnSnapshot(
             "column-1",
             "table-1",
@@ -78,6 +79,7 @@ class InversePayloadJsonTest {
   void serializeCreateTableInverse_includesTableSnapshot() {
     StructuralSnapshot beforeSnapshot = new StructuralSnapshot(
         "schema-1",
+        List.of(),
         List.of(),
         List.of(),
         List.of(),
