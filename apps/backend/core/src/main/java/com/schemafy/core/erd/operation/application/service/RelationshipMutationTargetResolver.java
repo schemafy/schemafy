@@ -44,8 +44,10 @@ class RelationshipMutationTargetResolver {
   }
 
   private Mono<ResolvedErdMutationTarget> resolveCreateRelationship(Object payload) {
-    CreateRelationshipCommand command = requirePayload(payload, CreateRelationshipCommand.class);
-    return targetLookup.resolveTableContext(command.fkTableId());
+    return resolveStructuralOr(payload, targetLookup, () -> {
+      CreateRelationshipCommand command = requirePayload(payload, CreateRelationshipCommand.class);
+      return targetLookup.resolveTableContext(command.fkTableId());
+    });
   }
 
   private Mono<ResolvedErdMutationTarget> resolveChangeRelationshipName(Object payload) {
@@ -57,8 +59,10 @@ class RelationshipMutationTargetResolver {
   }
 
   private Mono<ResolvedErdMutationTarget> resolveChangeRelationshipKind(Object payload) {
-    ChangeRelationshipKindCommand command = requirePayload(payload, ChangeRelationshipKindCommand.class);
-    return targetLookup.resolveByRelationshipId(command.relationshipId(), command.relationshipId());
+    return resolveStructuralOr(payload, targetLookup, () -> {
+      ChangeRelationshipKindCommand command = requirePayload(payload, ChangeRelationshipKindCommand.class);
+      return targetLookup.resolveByRelationshipId(command.relationshipId(), command.relationshipId());
+    });
   }
 
   private Mono<ResolvedErdMutationTarget> resolveChangeRelationshipCardinality(Object payload) {
@@ -76,8 +80,10 @@ class RelationshipMutationTargetResolver {
   }
 
   private Mono<ResolvedErdMutationTarget> resolveDeleteRelationship(Object payload) {
-    DeleteRelationshipCommand command = requirePayload(payload, DeleteRelationshipCommand.class);
-    return targetLookup.resolveByRelationshipId(command.relationshipId(), command.relationshipId());
+    return resolveStructuralOr(payload, targetLookup, () -> {
+      DeleteRelationshipCommand command = requirePayload(payload, DeleteRelationshipCommand.class);
+      return targetLookup.resolveByRelationshipId(command.relationshipId(), command.relationshipId());
+    });
   }
 
   private Mono<ResolvedErdMutationTarget> resolveAddRelationshipColumn(Object payload) {

@@ -15,6 +15,7 @@ import com.schemafy.core.erd.table.application.port.out.CreateTablePort;
 import com.schemafy.core.erd.table.application.port.out.DeleteTablePort;
 import com.schemafy.core.erd.table.application.port.out.GetTableByIdPort;
 import com.schemafy.core.erd.table.application.port.out.GetTablesBySchemaIdPort;
+import com.schemafy.core.erd.table.application.port.out.RestoreTablePort;
 import com.schemafy.core.erd.table.application.port.out.TableExistsPort;
 import com.schemafy.core.erd.table.domain.Table;
 import com.schemafy.core.erd.table.domain.exception.TableErrorCode;
@@ -33,6 +34,7 @@ class TablePersistenceAdapter implements
     ChangeTableNamePort,
     ChangeTableExtraPort,
     ChangeTableMetaPort,
+    RestoreTablePort,
     DeleteTablePort,
     CascadeDeleteTablesBySchemaIdPort,
     CascadeDeleteTablePort {
@@ -94,6 +96,20 @@ class TablePersistenceAdapter implements
           if (collation != null) {
             tableEntity.setCollation(hasText(collation) ? collation : null);
           }
+          return tableRepository.save(tableEntity);
+        })
+        .then();
+  }
+
+  @Override
+  public Mono<Void> restoreTable(Table table) {
+    return findTableOrError(table.id())
+        .flatMap((@NonNull TableEntity tableEntity) -> {
+          tableEntity.setSchemaId(table.schemaId());
+          tableEntity.setName(table.name());
+          tableEntity.setCharset(table.charset());
+          tableEntity.setCollation(table.collation());
+          tableEntity.setExtra(hasText(table.extra()) ? table.extra() : null);
           return tableRepository.save(tableEntity);
         })
         .then();

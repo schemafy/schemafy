@@ -24,6 +24,7 @@ import com.schemafy.core.erd.constraint.application.service.PkCascadeHelper;
 import com.schemafy.core.erd.constraint.domain.Constraint;
 import com.schemafy.core.erd.constraint.domain.ConstraintColumn;
 import com.schemafy.core.erd.constraint.domain.type.ConstraintKind;
+import com.schemafy.core.erd.operation.application.service.StructuralSnapshotService;
 import com.schemafy.core.erd.relationship.application.port.in.CreateRelationshipCommand;
 import com.schemafy.core.erd.relationship.application.port.out.CreateRelationshipColumnPort;
 import com.schemafy.core.erd.relationship.application.port.out.CreateRelationshipPort;
@@ -41,6 +42,7 @@ import com.schemafy.core.ulid.application.port.out.UlidGeneratorPort;
 import reactor.core.publisher.Mono;
 import reactor.test.StepVerifier;
 
+import static com.schemafy.core.erd.operation.application.service.StructuralSnapshotServiceTestSupport.stubEmptySnapshots;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
@@ -95,6 +97,9 @@ class CreateRelationshipServiceTest {
   @Mock
   TransactionalOperator transactionalOperator;
 
+  @Mock
+  StructuralSnapshotService structuralSnapshotService;
+
   @InjectMocks
   CreateRelationshipService sut;
 
@@ -102,6 +107,7 @@ class CreateRelationshipServiceTest {
   void setUpTransaction() {
     given(transactionalOperator.transactional(any(Mono.class)))
         .willAnswer(invocation -> invocation.getArgument(0));
+    stubEmptySnapshots(structuralSnapshotService);
   }
 
   @Nested

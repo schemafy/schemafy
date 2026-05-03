@@ -5,6 +5,7 @@ import java.util.Set;
 
 import org.springframework.transaction.reactive.TransactionalOperator;
 
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -19,6 +20,7 @@ import com.schemafy.core.erd.column.application.port.in.DeleteColumnCommand;
 import com.schemafy.core.erd.column.application.port.in.DeleteColumnUseCase;
 import com.schemafy.core.erd.column.application.port.out.GetColumnsByTableIdPort;
 import com.schemafy.core.erd.column.fixture.ColumnFixture;
+import com.schemafy.core.erd.operation.application.service.StructuralSnapshotService;
 import com.schemafy.core.erd.relationship.application.port.in.DeleteRelationshipCommand;
 import com.schemafy.core.erd.relationship.application.port.in.DeleteRelationshipUseCase;
 import com.schemafy.core.erd.relationship.application.port.out.GetRelationshipsByTableIdPort;
@@ -32,6 +34,7 @@ import com.schemafy.core.erd.table.fixture.TableFixture;
 import reactor.core.publisher.Mono;
 import reactor.test.StepVerifier;
 
+import static com.schemafy.core.erd.operation.application.service.StructuralSnapshotServiceTestSupport.stubEmptySnapshots;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
@@ -66,8 +69,16 @@ class DeleteTableServiceTest {
   @Mock
   DeleteColumnUseCase deleteColumnUseCase;
 
+  @Mock
+  StructuralSnapshotService structuralSnapshotService;
+
   @InjectMocks
   DeleteTableService sut;
+
+  @BeforeEach
+  void setUpSnapshots() {
+    stubEmptySnapshots(structuralSnapshotService);
+  }
 
   @Nested
   @DisplayName("deleteTable 메서드는")

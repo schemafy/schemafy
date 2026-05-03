@@ -63,7 +63,7 @@ public class RemoveConstraintColumnService implements RemoveConstraintColumnUseC
                           command.constraintColumnId(),
                           beforeSnapshot,
                           afterSnapshot,
-                          affectedTableIds(result))))));
+                          result.sortedAffectedTableIds())))));
         })
         .as(transactionalOperator::transactional);
   }
@@ -121,12 +121,6 @@ public class RemoveConstraintColumnService implements RemoveConstraintColumnUseC
           return changeConstraintColumnPositionPort
               .changeConstraintColumnPositions(constraintId, reordered);
         });
-  }
-
-  private static List<String> affectedTableIds(MutationResult<?> result) {
-    return result.affectedTableIds().stream()
-        .sorted()
-        .toList();
   }
 
 }

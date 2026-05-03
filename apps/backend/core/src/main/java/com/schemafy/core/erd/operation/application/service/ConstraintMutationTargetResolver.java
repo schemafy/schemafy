@@ -41,8 +41,10 @@ class ConstraintMutationTargetResolver {
   }
 
   private Mono<ResolvedErdMutationTarget> resolveCreateConstraint(Object payload) {
-    CreateConstraintCommand command = requirePayload(payload, CreateConstraintCommand.class);
-    return targetLookup.resolveTableContext(command.tableId());
+    return resolveStructuralOr(payload, targetLookup, () -> {
+      CreateConstraintCommand command = requirePayload(payload, CreateConstraintCommand.class);
+      return targetLookup.resolveTableContext(command.tableId());
+    });
   }
 
   private Mono<ResolvedErdMutationTarget> resolveChangeConstraintName(Object payload) {
@@ -64,8 +66,10 @@ class ConstraintMutationTargetResolver {
   }
 
   private Mono<ResolvedErdMutationTarget> resolveDeleteConstraint(Object payload) {
-    DeleteConstraintCommand command = requirePayload(payload, DeleteConstraintCommand.class);
-    return targetLookup.resolveByConstraintId(command.constraintId(), command.constraintId());
+    return resolveStructuralOr(payload, targetLookup, () -> {
+      DeleteConstraintCommand command = requirePayload(payload, DeleteConstraintCommand.class);
+      return targetLookup.resolveByConstraintId(command.constraintId(), command.constraintId());
+    });
   }
 
   private Mono<ResolvedErdMutationTarget> resolveAddConstraintColumn(Object payload) {

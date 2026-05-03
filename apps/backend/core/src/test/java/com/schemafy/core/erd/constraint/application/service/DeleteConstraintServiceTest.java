@@ -21,10 +21,12 @@ import com.schemafy.core.erd.constraint.domain.Constraint;
 import com.schemafy.core.erd.constraint.domain.ConstraintColumn;
 import com.schemafy.core.erd.constraint.domain.type.ConstraintKind;
 import com.schemafy.core.erd.constraint.fixture.ConstraintFixture;
+import com.schemafy.core.erd.operation.application.service.StructuralSnapshotService;
 
 import reactor.core.publisher.Mono;
 import reactor.test.StepVerifier;
 
+import static com.schemafy.core.erd.operation.application.service.StructuralSnapshotServiceTestSupport.stubEmptySnapshots;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anySet;
 import static org.mockito.ArgumentMatchers.eq;
@@ -55,6 +57,9 @@ class DeleteConstraintServiceTest {
   @Mock
   PkCascadeHelper pkCascadeHelper;
 
+  @Mock
+  StructuralSnapshotService structuralSnapshotService;
+
   @InjectMocks
   DeleteConstraintService sut;
 
@@ -62,6 +67,7 @@ class DeleteConstraintServiceTest {
   void setUp() {
     given(transactionalOperator.transactional(any(Mono.class)))
         .willAnswer(invocation -> invocation.getArgument(0));
+    stubEmptySnapshots(structuralSnapshotService);
   }
 
   @Nested

@@ -32,6 +32,7 @@ import com.schemafy.core.erd.index.application.port.out.GetIndexColumnsByColumnI
 import com.schemafy.core.erd.index.application.port.out.GetIndexColumnsByIndexIdPort;
 import com.schemafy.core.erd.index.domain.IndexColumn;
 import com.schemafy.core.erd.index.domain.type.SortDirection;
+import com.schemafy.core.erd.operation.application.service.StructuralSnapshotService;
 import com.schemafy.core.erd.relationship.application.port.out.DeleteRelationshipColumnPort;
 import com.schemafy.core.erd.relationship.application.port.out.DeleteRelationshipColumnsByColumnIdPort;
 import com.schemafy.core.erd.relationship.application.port.out.DeleteRelationshipColumnsByRelationshipIdPort;
@@ -47,6 +48,7 @@ import com.schemafy.core.erd.relationship.domain.type.RelationshipKind;
 import reactor.core.publisher.Mono;
 import reactor.test.StepVerifier;
 
+import static com.schemafy.core.erd.operation.application.service.StructuralSnapshotServiceTestSupport.stubEmptySnapshots;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.BDDMockito.given;
@@ -102,6 +104,9 @@ class DeleteColumnServiceTest {
   @Mock
   GetRelationshipsByPkTableIdPort getRelationshipsByPkTableIdPort;
 
+  @Mock
+  StructuralSnapshotService structuralSnapshotService;
+
   @InjectMocks
   DeleteColumnService sut;
 
@@ -109,6 +114,7 @@ class DeleteColumnServiceTest {
   void setUp() {
     given(transactionalOperator.transactional(any(Mono.class)))
         .willAnswer(invocation -> invocation.getArgument(0));
+    stubEmptySnapshots(structuralSnapshotService);
   }
 
   private void stubColumnExists() {

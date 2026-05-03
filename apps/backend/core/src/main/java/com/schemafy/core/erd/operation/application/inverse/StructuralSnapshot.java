@@ -15,9 +15,11 @@ import com.schemafy.core.erd.relationship.domain.Relationship;
 import com.schemafy.core.erd.relationship.domain.RelationshipColumn;
 import com.schemafy.core.erd.relationship.domain.type.Cardinality;
 import com.schemafy.core.erd.relationship.domain.type.RelationshipKind;
+import com.schemafy.core.erd.table.domain.Table;
 
 public record StructuralSnapshot(
     String schemaId,
+    List<TableSnapshot> tables,
     List<ColumnSnapshot> columns,
     List<ConstraintSnapshot> constraints,
     List<ConstraintColumnSnapshot> constraintColumns,
@@ -26,7 +28,30 @@ public record StructuralSnapshot(
     List<RelationshipSnapshot> relationships,
     List<RelationshipColumnSnapshot> relationshipColumns) {
 
+  // 기존 코드 호환성을 고려해야하나?
+  public StructuralSnapshot(
+      String schemaId,
+      List<ColumnSnapshot> columns,
+      List<ConstraintSnapshot> constraints,
+      List<ConstraintColumnSnapshot> constraintColumns,
+      List<IndexSnapshot> indexes,
+      List<IndexColumnSnapshot> indexColumns,
+      List<RelationshipSnapshot> relationships,
+      List<RelationshipColumnSnapshot> relationshipColumns) {
+    this(
+        schemaId,
+        List.of(),
+        columns,
+        constraints,
+        constraintColumns,
+        indexes,
+        indexColumns,
+        relationships,
+        relationshipColumns);
+  }
+
   public StructuralSnapshot {
+    tables = List.copyOf(tables == null ? List.of() : tables);
     columns = List.copyOf(columns == null ? List.of() : columns);
     constraints = List.copyOf(constraints == null ? List.of() : constraints);
     constraintColumns = List.copyOf(constraintColumns == null ? List.of() : constraintColumns);
@@ -34,6 +59,30 @@ public record StructuralSnapshot(
     indexColumns = List.copyOf(indexColumns == null ? List.of() : indexColumns);
     relationships = List.copyOf(relationships == null ? List.of() : relationships);
     relationshipColumns = List.copyOf(relationshipColumns == null ? List.of() : relationshipColumns);
+  }
+
+  public record TableSnapshot(
+      String id,
+      String schemaId,
+      String name,
+      String charset,
+      String collation,
+      String extra) {
+
+    public static TableSnapshot from(Table table) {
+      return new TableSnapshot(
+          table.id(),
+          table.schemaId(),
+          table.name(),
+          table.charset(),
+          table.collation(),
+          table.extra());
+    }
+
+    public Table toDomain() {
+      return new Table(id, schemaId, name, charset, collation, extra);
+    }
+
   }
 
   public record ColumnSnapshot(

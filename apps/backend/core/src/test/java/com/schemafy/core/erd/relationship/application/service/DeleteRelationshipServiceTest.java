@@ -15,6 +15,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 import com.schemafy.core.erd.column.application.port.in.DeleteColumnCommand;
 import com.schemafy.core.erd.column.application.port.in.DeleteColumnUseCase;
+import com.schemafy.core.erd.operation.application.service.StructuralSnapshotService;
 import com.schemafy.core.erd.relationship.application.port.out.DeleteRelationshipColumnsByRelationshipIdPort;
 import com.schemafy.core.erd.relationship.application.port.out.DeleteRelationshipPort;
 import com.schemafy.core.erd.relationship.application.port.out.GetRelationshipByIdPort;
@@ -25,6 +26,7 @@ import com.schemafy.core.erd.relationship.fixture.RelationshipFixture;
 import reactor.core.publisher.Mono;
 import reactor.test.StepVerifier;
 
+import static com.schemafy.core.erd.operation.application.service.StructuralSnapshotServiceTestSupport.stubEmptySnapshots;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.given;
@@ -53,6 +55,9 @@ class DeleteRelationshipServiceTest {
   @Mock
   GetRelationshipByIdPort getRelationshipByIdPort;
 
+  @Mock
+  StructuralSnapshotService structuralSnapshotService;
+
   @InjectMocks
   DeleteRelationshipService sut;
 
@@ -60,6 +65,7 @@ class DeleteRelationshipServiceTest {
   void setUp() {
     given(transactionalOperator.transactional(any(Mono.class)))
         .willAnswer(invocation -> invocation.getArgument(0));
+    stubEmptySnapshots(structuralSnapshotService);
   }
 
   @Nested

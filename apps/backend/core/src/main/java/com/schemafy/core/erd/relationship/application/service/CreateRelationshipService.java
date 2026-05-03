@@ -23,7 +23,9 @@ import com.schemafy.core.erd.constraint.application.service.PkCascadeHelper;
 import com.schemafy.core.erd.constraint.domain.Constraint;
 import com.schemafy.core.erd.constraint.domain.ConstraintColumn;
 import com.schemafy.core.erd.constraint.domain.type.ConstraintKind;
+import com.schemafy.core.erd.operation.application.inverse.CreateRelationshipInverse;
 import com.schemafy.core.erd.operation.application.service.ErdMutationCoordinator;
+import com.schemafy.core.erd.operation.application.service.StructuralSnapshotService;
 import com.schemafy.core.erd.operation.domain.ErdOperationType;
 import com.schemafy.core.erd.relationship.application.port.in.CreateRelationshipCommand;
 import com.schemafy.core.erd.relationship.application.port.in.CreateRelationshipResult;
@@ -61,6 +63,7 @@ public class CreateRelationshipService implements CreateRelationshipUseCase {
   private final GetConstraintsByTableIdPort getConstraintsByTableIdPort;
   private final GetConstraintColumnsByConstraintIdPort getConstraintColumnsByConstraintIdPort;
   private final PkCascadeHelper pkCascadeHelper;
+  private final StructuralSnapshotService structuralSnapshotService;
   private ErdMutationCoordinator erdMutationCoordinator = ErdMutationCoordinator.noop();
 
   @Autowired
@@ -71,24 +74,34 @@ public class CreateRelationshipService implements CreateRelationshipUseCase {
   @Override
   public Mono<MutationResult<CreateRelationshipResult>> createRelationship(
       CreateRelationshipCommand command) {
-    return erdMutationCoordinator.coordinate(ErdOperationType.CREATE_RELATIONSHIP, command, () -> Mono.defer(() -> {
-      return getTableByIdPort.findTableById(command.fkTableId())
-          .switchIfEmpty(Mono.error(new DomainException(RelationshipErrorCode.TARGET_TABLE_NOT_FOUND,
-              "Relationship fk table not found")))
-          .flatMap(fkTable -> getTableByIdPort.findTableById(command.pkTableId())
-              .switchIfEmpty(Mono.error(new DomainException(RelationshipErrorCode.TARGET_TABLE_NOT_FOUND,
-                  "Relationship pk table not found")))
-              .flatMap(pkTable -> {
-                Set<String> affectedTableIds = new HashSet<>();
-                affectedTableIds.add(fkTable.id());
-                affectedTableIds.add(pkTable.id());
-                return createRelationshipAuto(
-                    fkTable,
-                    pkTable,
-                    command,
-                    affectedTableIds);
-              }));
-    })).as(transactionalOperator::transactional);
+    return erdMutationCoordinator.coordinate(ErdOperationType.CREATE_RELATIONSHIP, command,
+        () -> structuralSnapshotService.captureByTableId(command.fkTableId()).flatMap(beforeSnapshot -> Mono.defer(
+            () -> {
+              return getTableByIdPort.findTableById(command.fkTableId())
+                  .switchIfEmpty(Mono.error(new DomainException(RelationshipErrorCode.TARGET_TABLE_NOT_FOUND,
+                      "Relationship fk table not found")))
+                  .flatMap(fkTable -> getTableByIdPort.findTableById(command.pkTableId())
+                      .switchIfEmpty(Mono.error(new DomainException(RelationshipErrorCode.TARGET_TABLE_NOT_FOUND,
+                          "Relationship pk table not found")))
+                      .flatMap(pkTable -> {
+                        Set<String> affectedTableIds = new HashSet<>();
+                        affectedTableIds.add(fkTable.id());
+                        affectedTableIds.add(pkTable.id());
+                        return createRelationshipAuto(
+                            fkTable,
+                            pkTable,
+                            command,
+                            affectedTableIds);
+                      }));
+            })
+            .flatMap(result -> structuralSnapshotService.captureBySchemaId(beforeSnapshot.schemaId())
+                .map(afterSnapshot -> result.withInverse(new CreateRelationshipInverse(
+                    beforeSnapshot.schemaId(),
+                    result.result().relationshipId(),
+                    beforeSnapshot,
+                    afterSnapshot,
+                    result.sortedAffectedTableIds()))))))
+        .as(transactionalOperator::transactional);
   }
 
   private Mono<MutationResult<CreateRelationshipResult>> createRelationshipAuto(

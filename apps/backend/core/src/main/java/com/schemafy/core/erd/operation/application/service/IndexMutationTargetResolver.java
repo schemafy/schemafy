@@ -42,8 +42,10 @@ class IndexMutationTargetResolver {
   }
 
   private Mono<ResolvedErdMutationTarget> resolveCreateIndex(Object payload) {
-    CreateIndexCommand command = requirePayload(payload, CreateIndexCommand.class);
-    return targetLookup.resolveTableContext(command.tableId());
+    return resolveStructuralOr(payload, targetLookup, () -> {
+      CreateIndexCommand command = requirePayload(payload, CreateIndexCommand.class);
+      return targetLookup.resolveTableContext(command.tableId());
+    });
   }
 
   private Mono<ResolvedErdMutationTarget> resolveChangeIndexName(Object payload) {
@@ -63,8 +65,10 @@ class IndexMutationTargetResolver {
   }
 
   private Mono<ResolvedErdMutationTarget> resolveDeleteIndex(Object payload) {
-    DeleteIndexCommand command = requirePayload(payload, DeleteIndexCommand.class);
-    return targetLookup.resolveByIndexId(command.indexId(), command.indexId());
+    return resolveStructuralOr(payload, targetLookup, () -> {
+      DeleteIndexCommand command = requirePayload(payload, DeleteIndexCommand.class);
+      return targetLookup.resolveByIndexId(command.indexId(), command.indexId());
+    });
   }
 
   private Mono<ResolvedErdMutationTarget> resolveAddIndexColumn(Object payload) {

@@ -74,6 +74,49 @@ class InversePayloadJsonTest {
   }
 
   @Test
+  @DisplayName("create/delete structural inverse는 table snapshot을 포함해 복원한다")
+  void serializeCreateTableInverse_includesTableSnapshot() {
+    StructuralSnapshot beforeSnapshot = new StructuralSnapshot(
+        "schema-1",
+        List.of(),
+        List.of(),
+        List.of(),
+        List.of(),
+        List.of(),
+        List.of(),
+        List.of());
+    StructuralSnapshot afterSnapshot = new StructuralSnapshot(
+        "schema-1",
+        List.of(new StructuralSnapshot.TableSnapshot(
+            "table-1",
+            "schema-1",
+            "users",
+            "utf8mb4",
+            "utf8mb4_general_ci",
+            "{\"x\":100}")),
+        List.of(),
+        List.of(),
+        List.of(),
+        List.of(),
+        List.of(),
+        List.of(),
+        List.of());
+    CreateTableInverse payload = new CreateTableInverse(
+        "schema-1",
+        "table-1",
+        beforeSnapshot,
+        afterSnapshot,
+        List.of("table-1"));
+
+    String json = jsonCodec.serialize(payload, InversePayload.class);
+    InversePayload parsed = jsonCodec.parse(json, InversePayload.class);
+
+    assertThat(json).contains("\"kind\":\"CREATE_TABLE\"");
+    assertThat(json).contains("\"tables\"");
+    assertThat(parsed).isEqualTo(payload);
+  }
+
+  @Test
   @DisplayName("기존에 empty가 포함된 inverse JSON도 복원한다")
   void parseInversePayload_ignoresLegacyDerivedEmptyProperty() {
     String json = """

@@ -14,11 +14,13 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import com.schemafy.core.common.exception.DomainException;
+import com.schemafy.core.erd.column.application.port.in.CreateColumnCommand;
 import com.schemafy.core.erd.column.application.port.out.CreateColumnPort;
 import com.schemafy.core.erd.column.application.port.out.GetColumnsByTableIdPort;
 import com.schemafy.core.erd.column.domain.Column;
 import com.schemafy.core.erd.column.domain.exception.ColumnErrorCode;
 import com.schemafy.core.erd.column.fixture.ColumnFixture;
+import com.schemafy.core.erd.operation.application.service.StructuralSnapshotService;
 import com.schemafy.core.erd.schema.application.port.out.GetSchemaByIdPort;
 import com.schemafy.core.erd.schema.domain.Schema;
 import com.schemafy.core.erd.schema.domain.exception.SchemaErrorCode;
@@ -30,6 +32,7 @@ import com.schemafy.core.ulid.application.port.out.UlidGeneratorPort;
 import reactor.core.publisher.Mono;
 import reactor.test.StepVerifier;
 
+import static com.schemafy.core.erd.operation.application.service.StructuralSnapshotServiceTestSupport.stubEmptySnapshots;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
@@ -58,6 +61,9 @@ class CreateColumnServiceTest {
   GetColumnsByTableIdPort getColumnsByTableIdPort;
 
   @Mock
+  StructuralSnapshotService structuralSnapshotService;
+
+  @Mock
   TransactionalOperator transactionalOperator;
 
   @InjectMocks
@@ -67,6 +73,7 @@ class CreateColumnServiceTest {
   void setUpTransaction() {
     given(transactionalOperator.transactional(any(Mono.class)))
         .willAnswer(invocation -> invocation.getArgument(0));
+    stubEmptySnapshots(structuralSnapshotService);
   }
 
   @Nested
@@ -166,7 +173,7 @@ class CreateColumnServiceTest {
       @Test
       @DisplayName("ENUM 컬럼을 values와 함께 생성한다")
       void createsEnumColumnWithValues() {
-        var command = new com.schemafy.core.erd.column.application.port.in.CreateColumnCommand(
+        var command = new CreateColumnCommand(
             ColumnFixture.DEFAULT_TABLE_ID,
             "status",
             "ENUM",
@@ -204,7 +211,7 @@ class CreateColumnServiceTest {
       @Test
       @DisplayName("seqNo가 없으면 마지막 위치로 자동 추가한다")
       void createsColumnWithAutoSeqNoWhenMissing() {
-        var command = new com.schemafy.core.erd.column.application.port.in.CreateColumnCommand(
+        var command = new CreateColumnCommand(
             ColumnFixture.DEFAULT_TABLE_ID,
             "new_col",
             "VARCHAR",
@@ -246,7 +253,7 @@ class CreateColumnServiceTest {
       @Test
       @DisplayName("INVALID_VALUE 예외가 발생한다")
       void throwsInvalidValueException() {
-        var command = new com.schemafy.core.erd.column.application.port.in.CreateColumnCommand(
+        var command = new CreateColumnCommand(
             ColumnFixture.DEFAULT_TABLE_ID,
             "status",
             "ENUM",
@@ -440,7 +447,7 @@ class CreateColumnServiceTest {
       @DisplayName("ColumnAutoIncrementNotAllowedException이 발생한다")
       void throwsColumnAutoIncrementNotAllowedException() {
         var command = ColumnFixture.createCommandWithAutoIncrement("BIGINT");
-        var commandWithWrongType = new com.schemafy.core.erd.column.application.port.in.CreateColumnCommand(
+        var commandWithWrongType = new CreateColumnCommand(
             command.tableId(),
             command.name(),
             "TEXT",
@@ -507,7 +514,7 @@ class CreateColumnServiceTest {
       @DisplayName("ColumnCharsetNotAllowedException이 발생한다")
       void throwsColumnCharsetNotAllowedException() {
         var command = ColumnFixture.createCommandWithCharset("utf8mb4", "utf8mb4_general_ci");
-        var commandWithInt = new com.schemafy.core.erd.column.application.port.in.CreateColumnCommand(
+        var commandWithInt = new CreateColumnCommand(
             command.tableId(),
             command.name(),
             "INT",

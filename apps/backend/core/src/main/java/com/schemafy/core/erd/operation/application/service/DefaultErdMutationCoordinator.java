@@ -186,9 +186,7 @@ class DefaultErdMutationCoordinator implements ErdMutationCoordinator {
       FinalizedErdMutationTarget finalizedTarget,
       SchemaCollaborationState updatedState,
       ErdOperationMetadata metadata) {
-    List<String> affectedTableIds = mutationResult.affectedTableIds().stream()
-        .sorted()
-        .toList();
+    List<String> affectedTableIds = mutationResult.sortedAffectedTableIds();
 
     return new ErdOperationLog(
         ulidGeneratorPort.generate(),

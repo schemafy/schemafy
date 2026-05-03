@@ -14,7 +14,9 @@ import com.schemafy.core.erd.column.application.port.in.DeleteColumnCommand;
 import com.schemafy.core.erd.column.application.port.in.DeleteColumnUseCase;
 import com.schemafy.core.erd.column.application.port.out.GetColumnsByTableIdPort;
 import com.schemafy.core.erd.operation.ErdOperationContexts;
+import com.schemafy.core.erd.operation.application.inverse.DeleteTableInverse;
 import com.schemafy.core.erd.operation.application.service.ErdMutationCoordinator;
+import com.schemafy.core.erd.operation.application.service.StructuralSnapshotService;
 import com.schemafy.core.erd.operation.domain.ErdOperationType;
 import com.schemafy.core.erd.relationship.application.port.in.DeleteRelationshipCommand;
 import com.schemafy.core.erd.relationship.application.port.in.DeleteRelationshipUseCase;
@@ -41,6 +43,7 @@ public class DeleteTableService implements DeleteTableUseCase {
   private final DeleteRelationshipUseCase deleteRelationshipUseCase;
   private final GetColumnsByTableIdPort getColumnsByTableIdPort;
   private final DeleteColumnUseCase deleteColumnUseCase;
+  private final StructuralSnapshotService structuralSnapshotService;
   private ErdMutationCoordinator erdMutationCoordinator = ErdMutationCoordinator.noop();
 
   @Autowired
@@ -56,21 +59,31 @@ public class DeleteTableService implements DeleteTableUseCase {
     Mono<Void> ensureExists = getTableByIdPort.findTableById(tableId)
         .switchIfEmpty(Mono.error(new DomainException(TableErrorCode.NOT_FOUND, "Table not found: " + tableId)))
         .then();
-    return erdMutationCoordinator.coordinate(ErdOperationType.DELETE_TABLE, command, () -> ensureExists
-        .then(getRelationshipsByTableIdPort.findRelationshipsByTableId(tableId)
-            .defaultIfEmpty(List.of())
-            .flatMapMany(Flux::fromIterable)
-            // Identifying cascade can remove later relationships from the initial snapshot.
-            .concatMap(relationship -> deleteRelationshipIgnoringAlreadyDeleted(relationship.id(), affectedTableIds))
-            .then(Mono.defer(() -> getColumnsByTableIdPort.findColumnsByTableId(tableId)))
-            .flatMapMany(Flux::fromIterable)
-            .concatMap(column -> deleteColumnUseCase.deleteColumn(
-                new DeleteColumnCommand(column.id()))
-                .contextWrite(ErdOperationContexts.suppressNestedMutation())
-                .doOnNext(result -> affectedTableIds.addAll(result.affectedTableIds()))
-                .then())
-            .then(Mono.defer(() -> deleteTablePort.deleteTable(tableId)))
-            .then(Mono.fromCallable(() -> MutationResult.<Void>of(null, affectedTableIds)))))
+    return erdMutationCoordinator.coordinate(ErdOperationType.DELETE_TABLE, command,
+        () -> structuralSnapshotService.captureByTableId(tableId)
+            .flatMap(beforeSnapshot -> ensureExists
+                .then(getRelationshipsByTableIdPort.findRelationshipsByTableId(tableId)
+                    .defaultIfEmpty(List.of())
+                    .flatMapMany(Flux::fromIterable)
+                    // Identifying cascade can remove later relationships from the initial snapshot.
+                    .concatMap(relationship -> deleteRelationshipIgnoringAlreadyDeleted(relationship.id(),
+                        affectedTableIds))
+                    .then(Mono.defer(() -> getColumnsByTableIdPort.findColumnsByTableId(tableId)))
+                    .flatMapMany(Flux::fromIterable)
+                    .concatMap(column -> deleteColumnUseCase.deleteColumn(
+                        new DeleteColumnCommand(column.id()))
+                        .contextWrite(ErdOperationContexts.suppressNestedMutation())
+                        .doOnNext(result -> affectedTableIds.addAll(result.affectedTableIds()))
+                        .then())
+                    .then(Mono.defer(() -> deleteTablePort.deleteTable(tableId)))
+                    .then(Mono.fromCallable(() -> MutationResult.<Void>of(null, affectedTableIds)))
+                    .flatMap(result -> structuralSnapshotService.captureBySchemaId(beforeSnapshot.schemaId())
+                        .map(afterSnapshot -> result.withInverse(new DeleteTableInverse(
+                            beforeSnapshot.schemaId(),
+                            tableId,
+                            beforeSnapshot,
+                            afterSnapshot,
+                            result.sortedAffectedTableIds())))))))
         .as(transactionalOperator::transactional);
   }
 

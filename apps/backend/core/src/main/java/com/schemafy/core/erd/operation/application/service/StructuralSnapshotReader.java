@@ -7,7 +7,9 @@ import java.util.function.Function;
 import org.springframework.stereotype.Component;
 
 import com.schemafy.core.common.exception.DomainException;
+import com.schemafy.core.erd.column.application.port.out.GetColumnByIdPort;
 import com.schemafy.core.erd.column.application.port.out.GetColumnsByTableIdPort;
+import com.schemafy.core.erd.column.domain.exception.ColumnErrorCode;
 import com.schemafy.core.erd.constraint.application.port.out.GetConstraintByIdPort;
 import com.schemafy.core.erd.constraint.application.port.out.GetConstraintColumnByIdPort;
 import com.schemafy.core.erd.constraint.application.port.out.GetConstraintColumnsByConstraintIdPort;
@@ -26,6 +28,7 @@ import com.schemafy.core.erd.operation.application.inverse.StructuralSnapshot.In
 import com.schemafy.core.erd.operation.application.inverse.StructuralSnapshot.IndexSnapshot;
 import com.schemafy.core.erd.operation.application.inverse.StructuralSnapshot.RelationshipColumnSnapshot;
 import com.schemafy.core.erd.operation.application.inverse.StructuralSnapshot.RelationshipSnapshot;
+import com.schemafy.core.erd.operation.application.inverse.StructuralSnapshot.TableSnapshot;
 import com.schemafy.core.erd.relationship.application.port.out.GetRelationshipByIdPort;
 import com.schemafy.core.erd.relationship.application.port.out.GetRelationshipColumnByIdPort;
 import com.schemafy.core.erd.relationship.application.port.out.GetRelationshipColumnsByRelationshipIdPort;
@@ -46,6 +49,7 @@ class StructuralSnapshotReader {
 
   private final GetTableByIdPort getTableByIdPort;
   private final GetTablesBySchemaIdPort getTablesBySchemaIdPort;
+  private final GetColumnByIdPort getColumnByIdPort;
   private final GetColumnsByTableIdPort getColumnsByTableIdPort;
   private final GetConstraintByIdPort getConstraintByIdPort;
   private final GetConstraintColumnByIdPort getConstraintColumnByIdPort;
@@ -66,6 +70,12 @@ class StructuralSnapshotReader {
             ConstraintErrorCode.NOT_FOUND,
             "Constraint not found: " + constraintId)))
         .flatMap(constraint -> captureByTableId(constraint.tableId()));
+  }
+
+  Mono<StructuralSnapshot> captureByColumnId(String columnId) {
+    return getColumnByIdPort.findColumnById(columnId)
+        .switchIfEmpty(Mono.error(new DomainException(ColumnErrorCode.NOT_FOUND, "Column not found: " + columnId)))
+        .flatMap(column -> captureByTableId(column.tableId()));
   }
 
   Mono<StructuralSnapshot> captureByConstraintColumnId(String constraintColumnId) {
@@ -114,9 +124,13 @@ class StructuralSnapshotReader {
 
   Mono<StructuralSnapshot> captureBySchemaId(String schemaId) {
     Mono<List<Table>> tablesMono = getTablesBySchemaIdPort.findTablesBySchemaId(schemaId)
-        .collectList();
+        .collectList()
+        .cache();
 
     return tablesMono.flatMap(tables -> {
+      Mono<List<TableSnapshot>> tableSnapshotsMono = Mono.just(sortBy(tables, Table::id).stream()
+          .map(TableSnapshot::from)
+          .toList());
       List<String> tableIds = tables.stream()
           .map(Table::id)
           .sorted()
@@ -188,6 +202,7 @@ class StructuralSnapshotReader {
           .map(columns -> sortBy(columns, RelationshipColumnSnapshot::id));
 
       return Mono.zip(
+          tableSnapshotsMono,
           columnsMono,
           constraintsMono,
           constraintColumnsMono,
@@ -203,7 +218,8 @@ class StructuralSnapshotReader {
               tuple.getT4(),
               tuple.getT5(),
               tuple.getT6(),
-              tuple.getT7()));
+              tuple.getT7(),
+              tuple.getT8()));
     });
   }
 

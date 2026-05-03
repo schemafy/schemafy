@@ -14,6 +14,7 @@ import lombok.RequiredArgsConstructor;
 import reactor.core.publisher.Mono;
 
 import static com.schemafy.core.erd.operation.application.service.ErdMutationTargetResolutionSupport.requirePayload;
+import static com.schemafy.core.erd.operation.application.service.ErdMutationTargetResolutionSupport.resolveStructuralOr;
 import static com.schemafy.core.erd.operation.application.service.ErdMutationTargetResolutionSupport.unsupportedTargetOperation;
 
 @Component
@@ -34,8 +35,10 @@ class TableMutationTargetResolver {
   }
 
   private Mono<ResolvedErdMutationTarget> resolveCreateTable(Object payload) {
-    CreateTableCommand command = requirePayload(payload, CreateTableCommand.class);
-    return targetLookup.resolveSchemaContext(command.schemaId());
+    return resolveStructuralOr(payload, targetLookup, () -> {
+      CreateTableCommand command = requirePayload(payload, CreateTableCommand.class);
+      return targetLookup.resolveSchemaContext(command.schemaId());
+    });
   }
 
   private Mono<ResolvedErdMutationTarget> resolveChangeTableName(Object payload) {
@@ -57,8 +60,10 @@ class TableMutationTargetResolver {
   }
 
   private Mono<ResolvedErdMutationTarget> resolveDeleteTable(Object payload) {
-    DeleteTableCommand command = requirePayload(payload, DeleteTableCommand.class);
-    return targetLookup.resolveByTableId(command.tableId(), command.tableId());
+    return resolveStructuralOr(payload, targetLookup, () -> {
+      DeleteTableCommand command = requirePayload(payload, DeleteTableCommand.class);
+      return targetLookup.resolveByTableId(command.tableId(), command.tableId());
+    });
   }
 
 }

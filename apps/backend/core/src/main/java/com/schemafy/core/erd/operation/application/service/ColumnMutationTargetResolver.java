@@ -16,6 +16,7 @@ import lombok.RequiredArgsConstructor;
 import reactor.core.publisher.Mono;
 
 import static com.schemafy.core.erd.operation.application.service.ErdMutationTargetResolutionSupport.requirePayload;
+import static com.schemafy.core.erd.operation.application.service.ErdMutationTargetResolutionSupport.resolveStructuralOr;
 import static com.schemafy.core.erd.operation.application.service.ErdMutationTargetResolutionSupport.unsupportedTargetOperation;
 
 @Component
@@ -37,8 +38,10 @@ class ColumnMutationTargetResolver {
   }
 
   private Mono<ResolvedErdMutationTarget> resolveCreateColumn(Object payload) {
-    CreateColumnCommand command = requirePayload(payload, CreateColumnCommand.class);
-    return targetLookup.resolveTableContext(command.tableId());
+    return resolveStructuralOr(payload, targetLookup, () -> {
+      CreateColumnCommand command = requirePayload(payload, CreateColumnCommand.class);
+      return targetLookup.resolveTableContext(command.tableId());
+    });
   }
 
   private Mono<ResolvedErdMutationTarget> resolveChangeColumnName(Object payload) {
@@ -68,8 +71,10 @@ class ColumnMutationTargetResolver {
   }
 
   private Mono<ResolvedErdMutationTarget> resolveDeleteColumn(Object payload) {
-    DeleteColumnCommand command = requirePayload(payload, DeleteColumnCommand.class);
-    return targetLookup.resolveByColumnId(command.columnId(), command.columnId());
+    return resolveStructuralOr(payload, targetLookup, () -> {
+      DeleteColumnCommand command = requirePayload(payload, DeleteColumnCommand.class);
+      return targetLookup.resolveByColumnId(command.columnId(), command.columnId());
+    });
   }
 
 }
