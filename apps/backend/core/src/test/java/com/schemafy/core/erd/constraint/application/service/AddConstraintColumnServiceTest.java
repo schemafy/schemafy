@@ -29,6 +29,8 @@ import com.schemafy.core.erd.constraint.domain.ConstraintColumn;
 import com.schemafy.core.erd.constraint.domain.exception.ConstraintErrorCode;
 import com.schemafy.core.erd.constraint.domain.type.ConstraintKind;
 import com.schemafy.core.erd.constraint.fixture.ConstraintFixture;
+import com.schemafy.core.erd.operation.application.inverse.StructuralSnapshot;
+import com.schemafy.core.erd.operation.application.service.StructuralSnapshotService;
 import com.schemafy.core.ulid.application.port.out.UlidGeneratorPort;
 
 import reactor.core.publisher.Mono;
@@ -38,6 +40,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.then;
+import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.never;
 
 @ExtendWith(MockitoExtension.class)
@@ -69,6 +72,9 @@ class AddConstraintColumnServiceTest {
   PkCascadeHelper pkCascadeHelper;
 
   @Mock
+  StructuralSnapshotService structuralSnapshotService;
+
+  @Mock
   TransactionalOperator transactionalOperator;
 
   @InjectMocks
@@ -78,6 +84,10 @@ class AddConstraintColumnServiceTest {
   void setUpTransaction() {
     given(transactionalOperator.transactional(any(Mono.class)))
         .willAnswer(invocation -> invocation.getArgument(0));
+    lenient().when(structuralSnapshotService.captureByConstraintId(any()))
+        .thenReturn(Mono.just(structuralSnapshot()));
+    lenient().when(structuralSnapshotService.captureBySchemaId(any()))
+        .thenReturn(Mono.just(structuralSnapshot()));
   }
 
   @Nested
@@ -450,6 +460,10 @@ class AddConstraintColumnServiceTest {
 
   private Constraint createConstraint(String id, String tableId, ConstraintKind kind) {
     return new Constraint(id, tableId, "test_constraint", kind, null, null);
+  }
+
+  private static StructuralSnapshot structuralSnapshot() {
+    return new StructuralSnapshot("schema1", List.of(), List.of(), List.of(), List.of(), List.of(), List.of(), List.of());
   }
 
 }

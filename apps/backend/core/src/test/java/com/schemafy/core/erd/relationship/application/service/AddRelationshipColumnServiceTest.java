@@ -23,6 +23,8 @@ import com.schemafy.core.erd.relationship.application.port.out.GetRelationshipCo
 import com.schemafy.core.erd.relationship.domain.RelationshipColumn;
 import com.schemafy.core.erd.relationship.domain.exception.RelationshipErrorCode;
 import com.schemafy.core.erd.relationship.fixture.RelationshipFixture;
+import com.schemafy.core.erd.operation.application.inverse.StructuralSnapshot;
+import com.schemafy.core.erd.operation.application.service.StructuralSnapshotService;
 import com.schemafy.core.erd.table.application.port.out.GetTableByIdPort;
 import com.schemafy.core.erd.table.domain.Table;
 import com.schemafy.core.ulid.application.port.out.UlidGeneratorPort;
@@ -34,6 +36,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.then;
+import static org.mockito.Mockito.lenient;
 
 @ExtendWith(MockitoExtension.class)
 @DisplayName("AddRelationshipColumnService")
@@ -62,6 +65,9 @@ class AddRelationshipColumnServiceTest {
   GetColumnsByTableIdPort getColumnsByTableIdPort;
 
   @Mock
+  StructuralSnapshotService structuralSnapshotService;
+
+  @Mock
   TransactionalOperator transactionalOperator;
 
   @InjectMocks
@@ -71,6 +77,10 @@ class AddRelationshipColumnServiceTest {
   void setUpTransaction() {
     given(transactionalOperator.transactional(any(Mono.class)))
         .willAnswer(invocation -> invocation.getArgument(0));
+    lenient().when(structuralSnapshotService.captureByRelationshipId(any()))
+        .thenReturn(Mono.just(structuralSnapshot()));
+    lenient().when(structuralSnapshotService.captureBySchemaId(any()))
+        .thenReturn(Mono.just(structuralSnapshot()));
   }
 
   @Nested
@@ -280,6 +290,10 @@ class AddRelationshipColumnServiceTest {
 
   private Table createTable(String tableId, String schemaId) {
     return new Table(tableId, schemaId, "test_table", "utf8mb4", "utf8mb4_general_ci");
+  }
+
+  private static StructuralSnapshot structuralSnapshot() {
+    return new StructuralSnapshot("schema1", List.of(), List.of(), List.of(), List.of(), List.of(), List.of(), List.of());
   }
 
 }

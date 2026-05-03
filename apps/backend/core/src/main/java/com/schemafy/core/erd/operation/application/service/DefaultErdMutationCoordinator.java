@@ -119,6 +119,7 @@ class DefaultErdMutationCoordinator implements ErdMutationCoordinator {
       ErdOperationMetadata metadata) {
     FinalizedErdMutationTarget finalizedTarget = erdMutationTargetResolver.finalizeTarget(
         operationType,
+        payload,
         resolvedTarget,
         mutationResult);
 

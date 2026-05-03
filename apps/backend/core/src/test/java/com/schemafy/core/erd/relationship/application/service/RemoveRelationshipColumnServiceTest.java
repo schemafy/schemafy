@@ -24,6 +24,8 @@ import com.schemafy.core.erd.relationship.application.port.out.GetRelationshipCo
 import com.schemafy.core.erd.relationship.application.port.out.GetRelationshipColumnsByRelationshipIdPort;
 import com.schemafy.core.erd.relationship.domain.exception.RelationshipErrorCode;
 import com.schemafy.core.erd.relationship.fixture.RelationshipFixture;
+import com.schemafy.core.erd.operation.application.inverse.StructuralSnapshot;
+import com.schemafy.core.erd.operation.application.service.StructuralSnapshotService;
 
 import reactor.core.publisher.Mono;
 import reactor.test.StepVerifier;
@@ -33,6 +35,7 @@ import static org.mockito.ArgumentMatchers.anyList;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.then;
+import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.never;
 
 @ExtendWith(MockitoExtension.class)
@@ -61,6 +64,9 @@ class RemoveRelationshipColumnServiceTest {
   DeleteColumnUseCase deleteColumnUseCase;
 
   @Mock
+  StructuralSnapshotService structuralSnapshotService;
+
+  @Mock
   TransactionalOperator transactionalOperator;
 
   @InjectMocks
@@ -70,6 +76,10 @@ class RemoveRelationshipColumnServiceTest {
   void setUpTransaction() {
     given(transactionalOperator.transactional(any(Mono.class)))
         .willAnswer(invocation -> invocation.getArgument(0));
+    lenient().when(structuralSnapshotService.captureByRelationshipColumnId(any()))
+        .thenReturn(Mono.just(structuralSnapshot()));
+    lenient().when(structuralSnapshotService.captureBySchemaId(any()))
+        .thenReturn(Mono.just(structuralSnapshot()));
   }
 
   @Nested
@@ -239,6 +249,10 @@ class RemoveRelationshipColumnServiceTest {
 
     }
 
+  }
+
+  private static StructuralSnapshot structuralSnapshot() {
+    return new StructuralSnapshot("schema1", List.of(), List.of(), List.of(), List.of(), List.of(), List.of(), List.of());
   }
 
 }

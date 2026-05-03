@@ -25,6 +25,8 @@ import com.schemafy.core.erd.index.domain.IndexColumn;
 import com.schemafy.core.erd.index.domain.exception.IndexErrorCode;
 import com.schemafy.core.erd.index.domain.type.SortDirection;
 import com.schemafy.core.erd.index.fixture.IndexFixture;
+import com.schemafy.core.erd.operation.application.inverse.StructuralSnapshot;
+import com.schemafy.core.erd.operation.application.service.StructuralSnapshotService;
 import com.schemafy.core.ulid.application.port.out.UlidGeneratorPort;
 
 import reactor.core.publisher.Mono;
@@ -34,6 +36,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.then;
+import static org.mockito.Mockito.lenient;
 
 @ExtendWith(MockitoExtension.class)
 @DisplayName("AddIndexColumnService")
@@ -58,6 +61,9 @@ class AddIndexColumnServiceTest {
   GetColumnsByTableIdPort getColumnsByTableIdPort;
 
   @Mock
+  StructuralSnapshotService structuralSnapshotService;
+
+  @Mock
   TransactionalOperator transactionalOperator;
 
   @InjectMocks
@@ -67,6 +73,10 @@ class AddIndexColumnServiceTest {
   void setUpTransaction() {
     given(transactionalOperator.transactional(any(Mono.class)))
         .willAnswer(invocation -> invocation.getArgument(0));
+    lenient().when(structuralSnapshotService.captureByIndexId(any()))
+        .thenReturn(Mono.just(structuralSnapshot()));
+    lenient().when(structuralSnapshotService.captureBySchemaId(any()))
+        .thenReturn(Mono.just(structuralSnapshot()));
   }
 
   @Nested
@@ -240,6 +250,10 @@ class AddIndexColumnServiceTest {
           .verifyComplete();
     }
 
+  }
+
+  private static StructuralSnapshot structuralSnapshot() {
+    return new StructuralSnapshot("schema1", List.of(), List.of(), List.of(), List.of(), List.of(), List.of(), List.of());
   }
 
 }

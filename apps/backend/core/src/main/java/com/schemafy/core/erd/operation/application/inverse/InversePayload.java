@@ -12,7 +12,13 @@ import com.fasterxml.jackson.annotation.JsonTypeInfo;
   @JsonSubTypes.Type(value = ChangeRelationshipCardinalityInverse.class, name = "CHANGE_RELATIONSHIP_CARDINALITY"),
   @JsonSubTypes.Type(value = ChangeConstraintNameInverse.class, name = "CHANGE_CONSTRAINT_NAME"),
   @JsonSubTypes.Type(value = ChangeIndexNameInverse.class, name = "CHANGE_INDEX_NAME"),
-  @JsonSubTypes.Type(value = ChangeIndexTypeInverse.class, name = "CHANGE_INDEX_TYPE")
+  @JsonSubTypes.Type(value = ChangeIndexTypeInverse.class, name = "CHANGE_INDEX_TYPE"),
+  @JsonSubTypes.Type(value = AddConstraintColumnInverse.class, name = "ADD_CONSTRAINT_COLUMN"),
+  @JsonSubTypes.Type(value = RemoveConstraintColumnInverse.class, name = "REMOVE_CONSTRAINT_COLUMN"),
+  @JsonSubTypes.Type(value = AddIndexColumnInverse.class, name = "ADD_INDEX_COLUMN"),
+  @JsonSubTypes.Type(value = RemoveIndexColumnInverse.class, name = "REMOVE_INDEX_COLUMN"),
+  @JsonSubTypes.Type(value = AddRelationshipColumnInverse.class, name = "ADD_RELATIONSHIP_COLUMN"),
+  @JsonSubTypes.Type(value = RemoveRelationshipColumnInverse.class, name = "REMOVE_RELATIONSHIP_COLUMN")
 })
 public sealed interface InversePayload permits
     ChangeTableNameInverse,
@@ -22,6 +28,12 @@ public sealed interface InversePayload permits
     ChangeRelationshipCardinalityInverse,
     ChangeConstraintNameInverse,
     ChangeIndexNameInverse,
-    ChangeIndexTypeInverse {
+    ChangeIndexTypeInverse,
+    AddConstraintColumnInverse,
+    RemoveConstraintColumnInverse,
+    AddIndexColumnInverse,
+    RemoveIndexColumnInverse,
+    AddRelationshipColumnInverse,
+    RemoveRelationshipColumnInverse {
 
 }

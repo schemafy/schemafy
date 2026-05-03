@@ -1,6 +1,7 @@
 package com.schemafy.core.erd.operation.integration;
 
 import java.util.List;
+import java.util.stream.StreamSupport;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -19,6 +20,13 @@ import com.schemafy.core.erd.constraint.application.port.in.CreateConstraintColu
 import com.schemafy.core.erd.constraint.application.port.in.CreateConstraintCommand;
 import com.schemafy.core.erd.constraint.application.port.in.CreateConstraintUseCase;
 import com.schemafy.core.erd.constraint.domain.type.ConstraintKind;
+import com.schemafy.core.erd.index.application.port.in.CreateIndexColumnCommand;
+import com.schemafy.core.erd.index.application.port.in.CreateIndexCommand;
+import com.schemafy.core.erd.index.application.port.in.CreateIndexUseCase;
+import com.schemafy.core.erd.index.application.port.in.RemoveIndexColumnCommand;
+import com.schemafy.core.erd.index.application.port.in.RemoveIndexColumnUseCase;
+import com.schemafy.core.erd.index.domain.type.IndexType;
+import com.schemafy.core.erd.index.domain.type.SortDirection;
 import com.schemafy.core.erd.operation.ErdOperationContexts;
 import com.schemafy.core.erd.operation.application.port.in.RedoErdOperationCommand;
 import com.schemafy.core.erd.operation.application.port.in.RedoErdOperationUseCase;
@@ -31,6 +39,8 @@ import com.schemafy.core.erd.relationship.application.port.in.ChangeRelationship
 import com.schemafy.core.erd.relationship.application.port.in.ChangeRelationshipKindUseCase;
 import com.schemafy.core.erd.relationship.application.port.in.CreateRelationshipCommand;
 import com.schemafy.core.erd.relationship.application.port.in.CreateRelationshipUseCase;
+import com.schemafy.core.erd.relationship.application.port.in.RemoveRelationshipColumnCommand;
+import com.schemafy.core.erd.relationship.application.port.in.RemoveRelationshipColumnUseCase;
 import com.schemafy.core.erd.relationship.domain.type.Cardinality;
 import com.schemafy.core.erd.relationship.domain.type.RelationshipKind;
 import com.schemafy.core.erd.schema.application.port.in.ChangeSchemaNameCommand;
@@ -85,7 +95,16 @@ class ErdOperationLedgerIntegrationTest extends ErdProjectIntegrationSupport {
   CreateConstraintUseCase createConstraintUseCase;
 
   @Autowired
+  CreateIndexUseCase createIndexUseCase;
+
+  @Autowired
+  RemoveIndexColumnUseCase removeIndexColumnUseCase;
+
+  @Autowired
   CreateRelationshipUseCase createRelationshipUseCase;
+
+  @Autowired
+  RemoveRelationshipColumnUseCase removeRelationshipColumnUseCase;
 
   @Autowired
   ChangeRelationshipKindUseCase changeRelationshipKindUseCase;
@@ -355,6 +374,137 @@ class ErdOperationLedgerIntegrationTest extends ErdProjectIntegrationSupport {
   }
 
   @Test
+  @DisplayName("index column 제거 undo/redo는 parent index와 membership row를 원래 ID로 복원한다")
+  void indexColumnRemovalUndoRedoRestoresParentIndexAndColumnMembership() {
+    String projectId = createActiveProjectId("erd_operation_index_column_undo_redo");
+
+    String schemaId = createSchemaUseCase.createSchema(new CreateSchemaCommand(
+        projectId,
+        "MySQL",
+        "index_column_undo_redo_schema",
+        "utf8mb4",
+        "utf8mb4_general_ci")).block().result().id();
+
+    String tableId = createTableUseCase.createTable(new CreateTableCommand(
+        schemaId,
+        "users",
+        "utf8mb4",
+        "utf8mb4_general_ci",
+        null)).block().result().tableId();
+
+    String columnId = createColumnUseCase.createColumn(new CreateColumnCommand(
+        tableId,
+        "email",
+        "VARCHAR",
+        255,
+        null,
+        null,
+        false,
+        "utf8mb4",
+        "utf8mb4_general_ci",
+        null)).block().result().columnId();
+
+    String indexId = createIndexUseCase.createIndex(new CreateIndexCommand(
+        tableId,
+        "idx_users_email",
+        IndexType.BTREE,
+        List.of(new CreateIndexColumnCommand(columnId, 0, SortDirection.ASC)))).block().result().indexId();
+    String indexColumnId = firstIndexColumnId(indexId);
+
+    var removeResult = removeIndexColumnUseCase.removeIndexColumn(new RemoveIndexColumnCommand(indexColumnId)).block();
+    String removeOpId = removeResult.operation().opId();
+
+    assertThat(rowExists("db_index_columns", indexColumnId)).isFalse();
+    assertThat(rowExists("db_indexes", indexId)).isFalse();
+
+    undoErdOperationUseCase.undo(new UndoErdOperationCommand(removeOpId)).block();
+    assertThat(rowExists("db_indexes", indexId)).isTrue();
+    assertThat(rowExists("db_index_columns", indexColumnId)).isTrue();
+    assertThat(indexColumnSeqNo(indexColumnId)).isEqualTo(0);
+
+    redoErdOperationUseCase.redo(new RedoErdOperationCommand(removeOpId)).block();
+    assertThat(rowExists("db_index_columns", indexColumnId)).isFalse();
+    assertThat(rowExists("db_indexes", indexId)).isFalse();
+    assertLastOperation(schemaId, "REMOVE_INDEX_COLUMN", currentRevision(schemaId), List.of(tableId));
+  }
+
+  @Test
+  @DisplayName("relationship column 제거 undo/redo는 FK column과 orphan relationship을 원래 ID로 복원한다")
+  void relationshipColumnRemovalUndoRedoRestoresFkColumnAndOrphanRelationship() {
+    String projectId = createActiveProjectId("erd_operation_relationship_column_undo_redo");
+
+    String schemaId = createSchemaUseCase.createSchema(new CreateSchemaCommand(
+        projectId,
+        "MySQL",
+        "relationship_column_undo_redo_schema",
+        "utf8mb4",
+        "utf8mb4_general_ci")).block().result().id();
+
+    String pkTableId = createTableUseCase.createTable(new CreateTableCommand(
+        schemaId,
+        "users",
+        "utf8mb4",
+        "utf8mb4_general_ci",
+        null)).block().result().tableId();
+
+    String fkTableId = createTableUseCase.createTable(new CreateTableCommand(
+        schemaId,
+        "orders",
+        "utf8mb4",
+        "utf8mb4_general_ci",
+        null)).block().result().tableId();
+
+    String pkColumnId = createColumnUseCase.createColumn(new CreateColumnCommand(
+        pkTableId,
+        "id",
+        "INT",
+        null,
+        null,
+        null,
+        true,
+        null,
+        null,
+        "pk column")).block().result().columnId();
+
+    createConstraintUseCase.createConstraint(new CreateConstraintCommand(
+        pkTableId,
+        "pk_users",
+        ConstraintKind.PRIMARY_KEY,
+        null,
+        null,
+        List.of(new CreateConstraintColumnCommand(pkColumnId, 0)))).block();
+
+    String relationshipId = createRelationshipUseCase.createRelationship(new CreateRelationshipCommand(
+        fkTableId,
+        pkTableId,
+        RelationshipKind.NON_IDENTIFYING,
+        Cardinality.ONE_TO_MANY,
+        null)).block().result().relationshipId();
+    String relationshipColumnId = firstRelationshipColumnId(relationshipId);
+    String fkColumnId = relationshipColumnFkColumnId(relationshipColumnId);
+
+    var removeResult = removeRelationshipColumnUseCase
+        .removeRelationshipColumn(new RemoveRelationshipColumnCommand(relationshipColumnId))
+        .block();
+    String removeOpId = removeResult.operation().opId();
+
+    assertThat(rowExists("db_relationship_columns", relationshipColumnId)).isFalse();
+    assertThat(rowExists("db_relationships", relationshipId)).isFalse();
+    assertThat(rowExists("db_columns", fkColumnId)).isFalse();
+
+    undoErdOperationUseCase.undo(new UndoErdOperationCommand(removeOpId)).block();
+    assertThat(rowExists("db_relationships", relationshipId)).isTrue();
+    assertThat(rowExists("db_relationship_columns", relationshipColumnId)).isTrue();
+    assertThat(rowExists("db_columns", fkColumnId)).isTrue();
+
+    redoErdOperationUseCase.redo(new RedoErdOperationCommand(removeOpId)).block();
+    assertThat(rowExists("db_relationship_columns", relationshipColumnId)).isFalse();
+    assertThat(rowExists("db_relationships", relationshipId)).isFalse();
+    assertThat(rowExists("db_columns", fkColumnId)).isFalse();
+    assertLastOperation(schemaId, "REMOVE_RELATIONSHIP_COLUMN", currentRevision(schemaId), List.of(pkTableId, fkTableId));
+  }
+
+  @Test
   @DisplayName("같은 schema에 대한 concurrent revision increment는 유실 없이 누적된다")
   void incrementsRevisionAtomicallyUnderConcurrency() {
     String projectId = createActiveProjectId("erd_operation_atomic_increment");
@@ -601,6 +751,70 @@ class ErdOperationLedgerIntegrationTest extends ErdProjectIntegrationSupport {
         .block();
   }
 
+  private boolean rowExists(String tableName, String id) {
+    return databaseClient.sql("""
+        SELECT COUNT(*) AS cnt
+        FROM %s
+        WHERE id = :id
+        """.formatted(tableName))
+        .bind("id", id)
+        .map((row, metadata) -> ((Number) row.get("cnt")).longValue() == 1)
+        .one()
+        .block();
+  }
+
+  private String firstIndexColumnId(String indexId) {
+    return databaseClient.sql("""
+        SELECT id
+        FROM db_index_columns
+        WHERE index_id = :indexId
+        ORDER BY seq_no
+        LIMIT 1
+        """)
+        .bind("indexId", indexId)
+        .map((row, metadata) -> row.get("id", String.class))
+        .one()
+        .block();
+  }
+
+  private int indexColumnSeqNo(String indexColumnId) {
+    return databaseClient.sql("""
+        SELECT seq_no
+        FROM db_index_columns
+        WHERE id = :indexColumnId
+        """)
+        .bind("indexColumnId", indexColumnId)
+        .map((row, metadata) -> ((Number) row.get("seq_no")).intValue())
+        .one()
+        .block();
+  }
+
+  private String firstRelationshipColumnId(String relationshipId) {
+    return databaseClient.sql("""
+        SELECT id
+        FROM db_relationship_columns
+        WHERE relationship_id = :relationshipId
+        ORDER BY seq_no
+        LIMIT 1
+        """)
+        .bind("relationshipId", relationshipId)
+        .map((row, metadata) -> row.get("id", String.class))
+        .one()
+        .block();
+  }
+
+  private String relationshipColumnFkColumnId(String relationshipColumnId) {
+    return databaseClient.sql("""
+        SELECT fk_column_id
+        FROM db_relationship_columns
+        WHERE id = :relationshipColumnId
+        """)
+        .bind("relationshipColumnId", relationshipColumnId)
+        .map((row, metadata) -> row.get("fk_column_id", String.class))
+        .one()
+        .block();
+  }
+
   private void assertLastOperation(
       String schemaId,
       String expectedOpType,
@@ -635,7 +849,7 @@ class ErdOperationLedgerIntegrationTest extends ErdProjectIntegrationSupport {
   private List<String> parseStringArray(String rawJson) {
     JsonNode node = jsonCodec.parsePersistedNode(rawJson);
     assertThat(node.isArray()).isTrue();
-    return java.util.stream.StreamSupport.stream(node.spliterator(), false)
+    return StreamSupport.stream(node.spliterator(), false)
         .map(JsonNode::asText)
         .toList();
   }

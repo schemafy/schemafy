@@ -49,6 +49,7 @@ import com.schemafy.core.erd.operation.application.inverse.ChangeIndexTypeInvers
 import com.schemafy.core.erd.operation.application.inverse.ChangeRelationshipCardinalityInverse;
 import com.schemafy.core.erd.operation.application.inverse.ChangeRelationshipNameInverse;
 import com.schemafy.core.erd.operation.application.inverse.ChangeTableNameInverse;
+import com.schemafy.core.erd.operation.application.inverse.StructuralOperationInverse;
 import com.schemafy.core.erd.operation.domain.ErdOperationType;
 import com.schemafy.core.erd.operation.domain.ErdTouchedEntity;
 import com.schemafy.core.erd.relationship.application.port.in.AddRelationshipColumnCommand;
@@ -164,10 +165,16 @@ class ErdMutationTargetResolver {
       yield resolveByConstraintId(command.constraintId(), command.constraintId());
     }
     case ADD_CONSTRAINT_COLUMN -> {
+      if (payload instanceof StructuralOperationInverse inverse) {
+        yield resolveStructuralInverse(inverse);
+      }
       AddConstraintColumnCommand command = requirePayload(payload, AddConstraintColumnCommand.class);
       yield resolveByConstraintId(command.constraintId(), null);
     }
     case REMOVE_CONSTRAINT_COLUMN -> {
+      if (payload instanceof StructuralOperationInverse inverse) {
+        yield resolveStructuralInverse(inverse);
+      }
       RemoveConstraintColumnCommand command = requirePayload(payload, RemoveConstraintColumnCommand.class);
       yield resolveByConstraintColumnId(command.constraintColumnId(), command.constraintColumnId());
     }
@@ -187,10 +194,16 @@ class ErdMutationTargetResolver {
       yield resolveByIndexId(command.indexId(), command.indexId());
     }
     case ADD_INDEX_COLUMN -> {
+      if (payload instanceof StructuralOperationInverse inverse) {
+        yield resolveStructuralInverse(inverse);
+      }
       AddIndexColumnCommand command = requirePayload(payload, AddIndexColumnCommand.class);
       yield resolveByIndexId(command.indexId(), null);
     }
     case REMOVE_INDEX_COLUMN -> {
+      if (payload instanceof StructuralOperationInverse inverse) {
+        yield resolveStructuralInverse(inverse);
+      }
       RemoveIndexColumnCommand command = requirePayload(payload, RemoveIndexColumnCommand.class);
       yield resolveByIndexColumnId(command.indexColumnId(), command.indexColumnId());
     }
@@ -223,10 +236,16 @@ class ErdMutationTargetResolver {
       yield resolveByRelationshipId(command.relationshipId(), command.relationshipId());
     }
     case ADD_RELATIONSHIP_COLUMN -> {
+      if (payload instanceof StructuralOperationInverse inverse) {
+        yield resolveStructuralInverse(inverse);
+      }
       AddRelationshipColumnCommand command = requirePayload(payload, AddRelationshipColumnCommand.class);
       yield resolveByRelationshipId(command.relationshipId(), null);
     }
     case REMOVE_RELATIONSHIP_COLUMN -> {
+      if (payload instanceof StructuralOperationInverse inverse) {
+        yield resolveStructuralInverse(inverse);
+      }
       RemoveRelationshipColumnCommand command = requirePayload(payload, RemoveRelationshipColumnCommand.class);
       yield resolveByRelationshipColumnId(command.relationshipColumnId(), command.relationshipColumnId());
     }
@@ -303,13 +322,18 @@ class ErdMutationTargetResolver {
     return resolveByRelationshipId(command.relationshipId(), command.relationshipId());
   }
 
+  private Mono<ResolvedErdMutationTarget> resolveStructuralInverse(StructuralOperationInverse inverse) {
+    return resolveBySchemaId(inverse.schemaId(), inverse.touchedEntityId());
+  }
+
   <T> FinalizedErdMutationTarget finalizeTarget(
       ErdOperationType operationType,
+      Object payload,
       ResolvedErdMutationTarget resolvedTarget,
       MutationResult<T> mutationResult) {
     String resolvedSchemaId = resolvedTarget.schemaId();
     String touchedEntityId = operationType.createsEntity()
-        ? resolveCreatedEntityId(operationType, mutationResult)
+        ? resolveCreatedEntityId(operationType, payload, resolvedTarget, mutationResult)
         : resolvedTarget.touchedEntityId();
 
     if (resolvedSchemaId == null && operationType == ErdOperationType.CREATE_SCHEMA) {
@@ -324,7 +348,15 @@ class ErdMutationTargetResolver {
             : new ErdTouchedEntity(operationType.touchedEntityType(), touchedEntityId));
   }
 
-  private <T> String resolveCreatedEntityId(ErdOperationType operationType, MutationResult<T> mutationResult) {
+  private <T> String resolveCreatedEntityId(
+      ErdOperationType operationType,
+      Object payload,
+      ResolvedErdMutationTarget resolvedTarget,
+      MutationResult<T> mutationResult) {
+    if (payload instanceof StructuralOperationInverse && resolvedTarget.touchedEntityId() != null) {
+      return resolvedTarget.touchedEntityId();
+    }
+
     Object result = mutationResult.result();
     return switch (operationType) {
     case CREATE_SCHEMA -> requireResult(result, CreateSchemaResult.class).id();
