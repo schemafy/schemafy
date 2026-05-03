@@ -14,6 +14,7 @@ import com.schemafy.core.erd.constraint.application.port.out.CreateConstraintPor
 import com.schemafy.core.erd.constraint.application.port.out.DeleteConstraintPort;
 import com.schemafy.core.erd.constraint.application.port.out.GetConstraintByIdPort;
 import com.schemafy.core.erd.constraint.application.port.out.GetConstraintsByTableIdPort;
+import com.schemafy.core.erd.constraint.application.port.out.RestoreConstraintPort;
 import com.schemafy.core.erd.constraint.domain.Constraint;
 import com.schemafy.core.erd.constraint.domain.exception.ConstraintErrorCode;
 
@@ -28,6 +29,7 @@ class ConstraintPersistenceAdapter implements
     GetConstraintsByTableIdPort,
     ChangeConstraintNamePort,
     ChangeConstraintExpressionPort,
+    RestoreConstraintPort,
     DeleteConstraintPort,
     ConstraintExistsPort {
 
@@ -71,6 +73,20 @@ class ConstraintPersistenceAdapter implements
         .flatMap((@NonNull ConstraintEntity constraintEntity) -> {
           constraintEntity.setCheckExpr(checkExpr);
           constraintEntity.setDefaultExpr(defaultExpr);
+          return constraintRepository.save(constraintEntity);
+        })
+        .then();
+  }
+
+  @Override
+  public Mono<Void> restoreConstraint(Constraint constraint) {
+    return findConstraintOrError(constraint.id())
+        .flatMap((@NonNull ConstraintEntity constraintEntity) -> {
+          constraintEntity.setTableId(constraint.tableId());
+          constraintEntity.setName(constraint.name());
+          constraintEntity.setKind(constraint.kind().name());
+          constraintEntity.setCheckExpr(constraint.checkExpr());
+          constraintEntity.setDefaultExpr(constraint.defaultExpr());
           return constraintRepository.save(constraintEntity);
         })
         .then();

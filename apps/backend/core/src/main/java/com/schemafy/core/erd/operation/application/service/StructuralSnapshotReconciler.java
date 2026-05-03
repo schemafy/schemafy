@@ -11,16 +11,21 @@ import org.springframework.stereotype.Component;
 
 import com.schemafy.core.erd.column.application.port.out.CreateColumnPort;
 import com.schemafy.core.erd.column.application.port.out.DeleteColumnPort;
+import com.schemafy.core.erd.column.application.port.out.RestoreColumnPort;
 import com.schemafy.core.erd.constraint.application.port.out.ChangeConstraintColumnPositionPort;
 import com.schemafy.core.erd.constraint.application.port.out.CreateConstraintColumnPort;
 import com.schemafy.core.erd.constraint.application.port.out.CreateConstraintPort;
 import com.schemafy.core.erd.constraint.application.port.out.DeleteConstraintColumnPort;
 import com.schemafy.core.erd.constraint.application.port.out.DeleteConstraintPort;
+import com.schemafy.core.erd.constraint.application.port.out.RestoreConstraintColumnPort;
+import com.schemafy.core.erd.constraint.application.port.out.RestoreConstraintPort;
 import com.schemafy.core.erd.index.application.port.out.ChangeIndexColumnPositionPort;
 import com.schemafy.core.erd.index.application.port.out.CreateIndexColumnPort;
 import com.schemafy.core.erd.index.application.port.out.CreateIndexPort;
 import com.schemafy.core.erd.index.application.port.out.DeleteIndexColumnPort;
 import com.schemafy.core.erd.index.application.port.out.DeleteIndexPort;
+import com.schemafy.core.erd.index.application.port.out.RestoreIndexColumnPort;
+import com.schemafy.core.erd.index.application.port.out.RestoreIndexPort;
 import com.schemafy.core.erd.operation.application.inverse.StructuralSnapshot;
 import com.schemafy.core.erd.operation.application.inverse.StructuralSnapshot.ColumnSnapshot;
 import com.schemafy.core.erd.operation.application.inverse.StructuralSnapshot.ConstraintColumnSnapshot;
@@ -34,6 +39,8 @@ import com.schemafy.core.erd.relationship.application.port.out.CreateRelationshi
 import com.schemafy.core.erd.relationship.application.port.out.CreateRelationshipPort;
 import com.schemafy.core.erd.relationship.application.port.out.DeleteRelationshipColumnPort;
 import com.schemafy.core.erd.relationship.application.port.out.DeleteRelationshipPort;
+import com.schemafy.core.erd.relationship.application.port.out.RestoreRelationshipColumnPort;
+import com.schemafy.core.erd.relationship.application.port.out.RestoreRelationshipPort;
 
 import lombok.RequiredArgsConstructor;
 import reactor.core.publisher.Flux;
@@ -46,26 +53,34 @@ class StructuralSnapshotReconciler {
   private final StructuralSnapshotReader reader;
   private final CreateColumnPort createColumnPort;
   private final DeleteColumnPort deleteColumnPort;
+  private final RestoreColumnPort restoreColumnPort;
   private final CreateConstraintPort createConstraintPort;
   private final CreateConstraintColumnPort createConstraintColumnPort;
   private final DeleteConstraintPort deleteConstraintPort;
   private final DeleteConstraintColumnPort deleteConstraintColumnPort;
   private final ChangeConstraintColumnPositionPort changeConstraintColumnPositionPort;
+  private final RestoreConstraintPort restoreConstraintPort;
+  private final RestoreConstraintColumnPort restoreConstraintColumnPort;
   private final CreateIndexPort createIndexPort;
   private final CreateIndexColumnPort createIndexColumnPort;
   private final DeleteIndexPort deleteIndexPort;
   private final DeleteIndexColumnPort deleteIndexColumnPort;
   private final ChangeIndexColumnPositionPort changeIndexColumnPositionPort;
+  private final RestoreIndexPort restoreIndexPort;
+  private final RestoreIndexColumnPort restoreIndexColumnPort;
   private final CreateRelationshipPort createRelationshipPort;
   private final CreateRelationshipColumnPort createRelationshipColumnPort;
   private final DeleteRelationshipPort deleteRelationshipPort;
   private final DeleteRelationshipColumnPort deleteRelationshipColumnPort;
   private final ChangeRelationshipColumnPositionPort changeRelationshipColumnPositionPort;
+  private final RestoreRelationshipPort restoreRelationshipPort;
+  private final RestoreRelationshipColumnPort restoreRelationshipColumnPort;
 
   Mono<Void> reconcileTo(StructuralSnapshot target) {
     return reader.captureBySchemaId(target.schemaId())
         .flatMap(current -> deleteRowsNotInTarget(current, target)
             .then(createRowsMissingFromCurrent(current, target))
+            .then(restoreRowsExistingInCurrent(current, target))
             .then(applyMembershipPositions(target)));
   }
 
@@ -100,6 +115,56 @@ class StructuralSnapshotReconciler {
             .filter(column -> !targetColumnIds.contains(column.id()))
             .concatMap(column -> deleteColumnPort.deleteColumn(column.id())))
         .then();
+  }
+
+  private Mono<Void> restoreRowsExistingInCurrent(StructuralSnapshot current, StructuralSnapshot target) {
+    Map<String, ColumnSnapshot> currentColumnsById = byId(current.columns(), ColumnSnapshot::id);
+    Map<String, ConstraintSnapshot> currentConstraintsById = byId(current.constraints(), ConstraintSnapshot::id);
+    Map<String, IndexSnapshot> currentIndexesById = byId(current.indexes(), IndexSnapshot::id);
+    Map<String, RelationshipSnapshot> currentRelationshipsById = byId(
+        current.relationships(), RelationshipSnapshot::id);
+    Map<String, ConstraintColumnSnapshot> currentConstraintColumnsById = byId(
+        current.constraintColumns(), ConstraintColumnSnapshot::id);
+    Map<String, IndexColumnSnapshot> currentIndexColumnsById = byId(
+        current.indexColumns(), IndexColumnSnapshot::id);
+    Map<String, RelationshipColumnSnapshot> currentRelationshipColumnsById = byId(
+        current.relationshipColumns(), RelationshipColumnSnapshot::id);
+
+    return restoreChangedRows(
+        target.columns(),
+        currentColumnsById,
+        ColumnSnapshot::id,
+        column -> restoreColumnPort.restoreColumn(column.toDomain()))
+        .then(restoreChangedRows(
+            target.constraints(),
+            currentConstraintsById,
+            ConstraintSnapshot::id,
+            constraint -> restoreConstraintPort.restoreConstraint(constraint.toDomain())))
+        .then(restoreChangedRows(
+            target.indexes(),
+            currentIndexesById,
+            IndexSnapshot::id,
+            index -> restoreIndexPort.restoreIndex(index.toDomain())))
+        .then(restoreChangedRows(
+            target.relationships(),
+            currentRelationshipsById,
+            RelationshipSnapshot::id,
+            relationship -> restoreRelationshipPort.restoreRelationship(relationship.toDomain())))
+        .then(restoreChangedRows(
+            target.constraintColumns(),
+            currentConstraintColumnsById,
+            ConstraintColumnSnapshot::id,
+            column -> restoreConstraintColumnPort.restoreConstraintColumn(column.toDomain())))
+        .then(restoreChangedRows(
+            target.indexColumns(),
+            currentIndexColumnsById,
+            IndexColumnSnapshot::id,
+            column -> restoreIndexColumnPort.restoreIndexColumn(column.toDomain())))
+        .then(restoreChangedRows(
+            target.relationshipColumns(),
+            currentRelationshipColumnsById,
+            RelationshipColumnSnapshot::id,
+            column -> restoreRelationshipColumnPort.restoreRelationshipColumn(column.toDomain())));
   }
 
   private Mono<Void> createRowsMissingFromCurrent(StructuralSnapshot current, StructuralSnapshot target) {
@@ -181,6 +246,25 @@ class StructuralSnapshotReconciler {
     return values.stream()
         .map(idExtractor)
         .collect(Collectors.toUnmodifiableSet());
+  }
+
+  private static <T> Map<String, T> byId(List<T> values, Function<T, String> idExtractor) {
+    return values.stream()
+        .collect(Collectors.toUnmodifiableMap(idExtractor, Function.identity()));
+  }
+
+  private static <T> Mono<Void> restoreChangedRows(
+      List<T> targetRows,
+      Map<String, T> currentRowsById,
+      Function<T, String> idExtractor,
+      Function<T, Mono<Void>> restore) {
+    return Flux.fromIterable(targetRows)
+        .filter(targetRow -> {
+          T currentRow = currentRowsById.get(idExtractor.apply(targetRow));
+          return currentRow != null && !currentRow.equals(targetRow);
+        })
+        .concatMap(restore)
+        .then();
   }
 
   private static <T, U extends Comparable<? super U>> List<T> sortBy(List<T> values, Function<T, U> keyExtractor) {

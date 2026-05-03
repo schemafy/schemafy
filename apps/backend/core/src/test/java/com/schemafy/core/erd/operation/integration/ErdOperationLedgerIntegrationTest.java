@@ -33,6 +33,8 @@ import com.schemafy.core.erd.operation.application.port.in.RedoErdOperationUseCa
 import com.schemafy.core.erd.operation.application.port.in.UndoErdOperationCommand;
 import com.schemafy.core.erd.operation.application.port.in.UndoErdOperationUseCase;
 import com.schemafy.core.erd.operation.application.port.out.IncrementSchemaCollaborationRevisionPort;
+import com.schemafy.core.erd.operation.application.inverse.StructuralSnapshot;
+import com.schemafy.core.erd.operation.application.service.StructuralSnapshotService;
 import com.schemafy.core.erd.operation.domain.ErdOperationDerivationKind;
 import com.schemafy.core.erd.operation.domain.exception.OperationErrorCode;
 import com.schemafy.core.erd.relationship.application.port.in.ChangeRelationshipKindCommand;
@@ -114,6 +116,9 @@ class ErdOperationLedgerIntegrationTest extends ErdProjectIntegrationSupport {
 
   @Autowired
   IncrementSchemaCollaborationRevisionPort incrementSchemaCollaborationRevisionPort;
+
+  @Autowired
+  StructuralSnapshotService structuralSnapshotService;
 
   @Autowired
   UndoErdOperationUseCase undoErdOperationUseCase;
@@ -505,6 +510,116 @@ class ErdOperationLedgerIntegrationTest extends ErdProjectIntegrationSupport {
   }
 
   @Test
+  @DisplayName("structural snapshot reconcile은 같은 ID row 속성을 target snapshot과 동일하게 복원한다")
+  void structuralSnapshotReconcileRestoresExistingRowAttributes() {
+    String projectId = createActiveProjectId("erd_operation_structural_snapshot_restore");
+
+    String schemaId = createSchemaUseCase.createSchema(new CreateSchemaCommand(
+        projectId,
+        "MySQL",
+        "structural_snapshot_restore_schema",
+        "utf8mb4",
+        "utf8mb4_general_ci")).block().result().id();
+
+    String pkTableId = createTableUseCase.createTable(new CreateTableCommand(
+        schemaId,
+        "users",
+        "utf8mb4",
+        "utf8mb4_general_ci",
+        null)).block().result().tableId();
+
+    String fkTableId = createTableUseCase.createTable(new CreateTableCommand(
+        schemaId,
+        "orders",
+        "utf8mb4",
+        "utf8mb4_general_ci",
+        null)).block().result().tableId();
+
+    String pkColumnId = createColumnUseCase.createColumn(new CreateColumnCommand(
+        pkTableId,
+        "id",
+        "VARCHAR",
+        26,
+        null,
+        null,
+        false,
+        "utf8mb4",
+        "utf8mb4_general_ci",
+        "pk column")).block().result().columnId();
+
+    String otherPkColumnId = createColumnUseCase.createColumn(new CreateColumnCommand(
+        pkTableId,
+        "legacy_id",
+        "VARCHAR",
+        26,
+        null,
+        null,
+        false,
+        "utf8mb4",
+        "utf8mb4_general_ci",
+        null)).block().result().columnId();
+
+    String otherFkColumnId = createColumnUseCase.createColumn(new CreateColumnCommand(
+        fkTableId,
+        "legacy_user_id",
+        "VARCHAR",
+        26,
+        null,
+        null,
+        false,
+        "utf8mb4",
+        "utf8mb4_general_ci",
+        null)).block().result().columnId();
+
+    String constraintId = createConstraintUseCase.createConstraint(new CreateConstraintCommand(
+        pkTableId,
+        "pk_users",
+        ConstraintKind.PRIMARY_KEY,
+        null,
+        null,
+        List.of(new CreateConstraintColumnCommand(pkColumnId, 0)))).block().result().constraintId();
+    String constraintColumnId = firstConstraintColumnId(constraintId);
+
+    String indexId = createIndexUseCase.createIndex(new CreateIndexCommand(
+        pkTableId,
+        "idx_users_id",
+        IndexType.BTREE,
+        List.of(new CreateIndexColumnCommand(pkColumnId, 0, SortDirection.ASC)))).block().result().indexId();
+    String indexColumnId = firstIndexColumnId(indexId);
+
+    String relationshipId = createRelationshipUseCase.createRelationship(new CreateRelationshipCommand(
+        fkTableId,
+        pkTableId,
+        RelationshipKind.NON_IDENTIFYING,
+        Cardinality.ONE_TO_MANY,
+        "{\"label\":\"target\"}")).block().result().relationshipId();
+    String relationshipColumnId = firstRelationshipColumnId(relationshipId);
+
+    StructuralSnapshot targetSnapshot = structuralSnapshotService.captureBySchemaId(schemaId).block();
+
+    mutateStructuralSnapshotRows(
+        pkTableId,
+        fkTableId,
+        pkColumnId,
+        otherPkColumnId,
+        otherFkColumnId,
+        constraintId,
+        constraintColumnId,
+        indexId,
+        indexColumnId,
+        relationshipId,
+        relationshipColumnId);
+
+    assertThat(structuralSnapshotService.captureBySchemaId(schemaId).block())
+        .isNotEqualTo(targetSnapshot);
+
+    structuralSnapshotService.reconcileTo(targetSnapshot).block();
+
+    assertThat(structuralSnapshotService.captureBySchemaId(schemaId).block())
+        .isEqualTo(targetSnapshot);
+  }
+
+  @Test
   @DisplayName("같은 schema에 대한 concurrent revision increment는 유실 없이 누적된다")
   void incrementsRevisionAtomicallyUnderConcurrency() {
     String projectId = createActiveProjectId("erd_operation_atomic_increment");
@@ -759,6 +874,133 @@ class ErdOperationLedgerIntegrationTest extends ErdProjectIntegrationSupport {
         """.formatted(tableName))
         .bind("id", id)
         .map((row, metadata) -> ((Number) row.get("cnt")).longValue() == 1)
+        .one()
+        .block();
+  }
+
+  private void mutateStructuralSnapshotRows(
+      String pkTableId,
+      String fkTableId,
+      String pkColumnId,
+      String otherPkColumnId,
+      String otherFkColumnId,
+      String constraintId,
+      String constraintColumnId,
+      String indexId,
+      String indexColumnId,
+      String relationshipId,
+      String relationshipColumnId) {
+    assertSingleRowUpdated(databaseClient.sql("""
+        UPDATE db_columns
+        SET table_id = :fkTableId,
+            name = 'id_mutated',
+            data_type = 'INT',
+            type_arguments = NULL,
+            seq_no = 7,
+            auto_increment = TRUE,
+            charset = 'latin1',
+            collation = 'latin1_swedish_ci',
+            comment = 'mutated column'
+        WHERE id = :pkColumnId
+        """)
+        .bind("fkTableId", fkTableId)
+        .bind("pkColumnId", pkColumnId)
+        .fetch()
+        .rowsUpdated());
+
+    assertSingleRowUpdated(databaseClient.sql("""
+        UPDATE db_constraints
+        SET table_id = :fkTableId,
+            name = 'pk_mutated',
+            kind = 'UNIQUE',
+            check_expr = 'mutated_check',
+            default_expr = 'mutated_default'
+        WHERE id = :constraintId
+        """)
+        .bind("fkTableId", fkTableId)
+        .bind("constraintId", constraintId)
+        .fetch()
+        .rowsUpdated());
+
+    assertSingleRowUpdated(databaseClient.sql("""
+        UPDATE db_constraint_columns
+        SET column_id = :otherPkColumnId,
+            seq_no = 3
+        WHERE id = :constraintColumnId
+        """)
+        .bind("otherPkColumnId", otherPkColumnId)
+        .bind("constraintColumnId", constraintColumnId)
+        .fetch()
+        .rowsUpdated());
+
+    assertSingleRowUpdated(databaseClient.sql("""
+        UPDATE db_indexes
+        SET table_id = :fkTableId,
+            name = 'idx_mutated',
+            type = 'HASH'
+        WHERE id = :indexId
+        """)
+        .bind("fkTableId", fkTableId)
+        .bind("indexId", indexId)
+        .fetch()
+        .rowsUpdated());
+
+    assertSingleRowUpdated(databaseClient.sql("""
+        UPDATE db_index_columns
+        SET column_id = :otherPkColumnId,
+            seq_no = 4,
+            sort_dir = 'DESC'
+        WHERE id = :indexColumnId
+        """)
+        .bind("otherPkColumnId", otherPkColumnId)
+        .bind("indexColumnId", indexColumnId)
+        .fetch()
+        .rowsUpdated());
+
+    assertSingleRowUpdated(databaseClient.sql("""
+        UPDATE db_relationships
+        SET pk_table_id = :fkTableId,
+            fk_table_id = :pkTableId,
+            name = 'rel_mutated',
+            kind = 'IDENTIFYING',
+            cardinality = 'ONE_TO_ONE',
+            extra = '{"label":"mutated"}'
+        WHERE id = :relationshipId
+        """)
+        .bind("fkTableId", fkTableId)
+        .bind("pkTableId", pkTableId)
+        .bind("relationshipId", relationshipId)
+        .fetch()
+        .rowsUpdated());
+
+    assertSingleRowUpdated(databaseClient.sql("""
+        UPDATE db_relationship_columns
+        SET pk_column_id = :otherPkColumnId,
+            fk_column_id = :otherFkColumnId,
+            seq_no = 5
+        WHERE id = :relationshipColumnId
+        """)
+        .bind("otherPkColumnId", otherPkColumnId)
+        .bind("otherFkColumnId", otherFkColumnId)
+        .bind("relationshipColumnId", relationshipColumnId)
+        .fetch()
+        .rowsUpdated());
+  }
+
+  private void assertSingleRowUpdated(Mono<Long> rowsUpdated) {
+    assertThat(rowsUpdated.block()).isEqualTo(1L);
+  }
+
+  private String firstConstraintColumnId(String constraintId) {
+    return databaseClient.sql("""
+        SELECT id
+        FROM db_constraint_columns
+        WHERE constraint_id = :constraintId
+        ORDER BY seq_no
+        LIMIT 1
+        """)
+        .bind("constraintId", constraintId)
+        .map((row, metadata) -> row.get("id", String.class))
         .one()
         .block();
   }
