@@ -54,37 +54,49 @@ public class DeleteTableService implements DeleteTableUseCase {
   @Override
   public Mono<MutationResult<Void>> deleteTable(DeleteTableCommand command) {
     String tableId = command.tableId();
+    return Mono.deferContextual(contextView -> ErdOperationContexts.isNestedMutationSuppressed(contextView)
+        ? deleteTableWithoutInverse(tableId)
+        : deleteTableWithInverse(command, tableId))
+        .as(transactionalOperator::transactional);
+  }
+
+  private Mono<MutationResult<Void>> deleteTableWithInverse(
+      DeleteTableCommand command,
+      String tableId) {
+    return erdMutationCoordinator.coordinate(ErdOperationType.DELETE_TABLE, command,
+        () -> structuralSnapshotService.captureByTableId(tableId)
+            .flatMap(beforeSnapshot -> deleteTableWithoutInverse(tableId)
+                .flatMap(result -> structuralSnapshotService.captureBySchemaId(beforeSnapshot.schemaId())
+                    .map(afterSnapshot -> result.withInverse(new DeleteTableInverse(
+                        beforeSnapshot.schemaId(),
+                        tableId,
+                        beforeSnapshot,
+                        afterSnapshot,
+                        result.sortedAffectedTableIds()))))));
+  }
+
+  private Mono<MutationResult<Void>> deleteTableWithoutInverse(String tableId) {
     Set<String> affectedTableIds = ConcurrentHashMap.newKeySet();
     affectedTableIds.add(tableId);
     Mono<Void> ensureExists = getTableByIdPort.findTableById(tableId)
         .switchIfEmpty(Mono.error(new DomainException(TableErrorCode.NOT_FOUND, "Table not found: " + tableId)))
         .then();
-    return erdMutationCoordinator.coordinate(ErdOperationType.DELETE_TABLE, command,
-        () -> structuralSnapshotService.captureByTableId(tableId)
-            .flatMap(beforeSnapshot -> ensureExists
-                .then(getRelationshipsByTableIdPort.findRelationshipsByTableId(tableId)
-                    .defaultIfEmpty(List.of())
-                    .flatMapMany(Flux::fromIterable)
-                    // Identifying cascade can remove later relationships from the initial snapshot.
-                    .concatMap(relationship -> deleteRelationshipIgnoringAlreadyDeleted(relationship.id(),
-                        affectedTableIds))
-                    .then(Mono.defer(() -> getColumnsByTableIdPort.findColumnsByTableId(tableId)))
-                    .flatMapMany(Flux::fromIterable)
-                    .concatMap(column -> deleteColumnUseCase.deleteColumn(
-                        new DeleteColumnCommand(column.id()))
-                        .contextWrite(ErdOperationContexts.suppressNestedMutation())
-                        .doOnNext(result -> affectedTableIds.addAll(result.affectedTableIds()))
-                        .then())
-                    .then(Mono.defer(() -> deleteTablePort.deleteTable(tableId)))
-                    .then(Mono.fromCallable(() -> MutationResult.<Void>of(null, affectedTableIds)))
-                    .flatMap(result -> structuralSnapshotService.captureBySchemaId(beforeSnapshot.schemaId())
-                        .map(afterSnapshot -> result.withInverse(new DeleteTableInverse(
-                            beforeSnapshot.schemaId(),
-                            tableId,
-                            beforeSnapshot,
-                            afterSnapshot,
-                            result.sortedAffectedTableIds())))))))
-        .as(transactionalOperator::transactional);
+    return ensureExists
+        .then(getRelationshipsByTableIdPort.findRelationshipsByTableId(tableId)
+            .defaultIfEmpty(List.of())
+            .flatMapMany(Flux::fromIterable)
+            // Identifying cascade can remove later relationships from the initial snapshot.
+            .concatMap(relationship -> deleteRelationshipIgnoringAlreadyDeleted(relationship.id(),
+                affectedTableIds))
+            .then(Mono.defer(() -> getColumnsByTableIdPort.findColumnsByTableId(tableId)))
+            .flatMapMany(Flux::fromIterable)
+            .concatMap(column -> deleteColumnUseCase.deleteColumn(
+                new DeleteColumnCommand(column.id()))
+                .contextWrite(ErdOperationContexts.suppressNestedMutation())
+                .doOnNext(result -> affectedTableIds.addAll(result.affectedTableIds()))
+                .then())
+            .then(Mono.defer(() -> deleteTablePort.deleteTable(tableId)))
+            .then(Mono.fromCallable(() -> MutationResult.<Void>of(null, affectedTableIds))));
   }
 
   private Mono<Void> deleteRelationshipIgnoringAlreadyDeleted(

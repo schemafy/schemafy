@@ -15,6 +15,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 import com.schemafy.core.erd.column.application.port.in.DeleteColumnCommand;
 import com.schemafy.core.erd.column.application.port.in.DeleteColumnUseCase;
+import com.schemafy.core.erd.operation.ErdOperationContexts;
 import com.schemafy.core.erd.operation.application.service.StructuralSnapshotService;
 import com.schemafy.core.erd.relationship.application.port.out.DeleteRelationshipColumnsByRelationshipIdPort;
 import com.schemafy.core.erd.relationship.application.port.out.DeleteRelationshipPort;
@@ -32,6 +33,7 @@ import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.then;
 import static org.mockito.Mockito.inOrder;
+import static org.mockito.Mockito.never;
 
 @ExtendWith(MockitoExtension.class)
 @DisplayName("DeleteRelationshipService")
@@ -125,6 +127,32 @@ class DeleteRelationshipServiceTest {
           .verifyComplete();
 
       then(deleteColumnUseCase).shouldHaveNoInteractions();
+    }
+
+    @Test
+    @DisplayName("nested mutation suppress context에서는 snapshot 없이 관계를 삭제한다")
+    void skipsSnapshotsWhenNestedMutationSuppressed() {
+      var command = RelationshipFixture.deleteCommand();
+
+      given(getRelationshipByIdPort.findRelationshipById(RelationshipFixture.DEFAULT_ID))
+          .willReturn(Mono.just(RelationshipFixture.defaultRelationship()));
+      given(getRelationshipColumnsByRelationshipIdPort
+          .findRelationshipColumnsByRelationshipId(RelationshipFixture.DEFAULT_ID))
+          .willReturn(Mono.just(List.of()));
+      given(deleteRelationshipColumnsPort.deleteByRelationshipId(eq(RelationshipFixture.DEFAULT_ID)))
+          .willReturn(Mono.empty());
+      given(deleteRelationshipPort.deleteRelationship(eq(RelationshipFixture.DEFAULT_ID)))
+          .willReturn(Mono.empty());
+
+      StepVerifier.create(sut.deleteRelationship(command)
+          .contextWrite(ErdOperationContexts.suppressNestedMutation()))
+          .expectNextCount(1)
+          .verifyComplete();
+
+      then(deleteRelationshipPort).should()
+          .deleteRelationship(RelationshipFixture.DEFAULT_ID);
+      then(structuralSnapshotService).should(never()).captureByRelationshipId(any());
+      then(structuralSnapshotService).should(never()).captureBySchemaId(any());
     }
 
   }

@@ -32,6 +32,7 @@ import com.schemafy.core.erd.index.application.port.out.GetIndexColumnsByColumnI
 import com.schemafy.core.erd.index.application.port.out.GetIndexColumnsByIndexIdPort;
 import com.schemafy.core.erd.index.domain.IndexColumn;
 import com.schemafy.core.erd.index.domain.type.SortDirection;
+import com.schemafy.core.erd.operation.ErdOperationContexts;
 import com.schemafy.core.erd.operation.application.service.StructuralSnapshotService;
 import com.schemafy.core.erd.relationship.application.port.out.DeleteRelationshipColumnPort;
 import com.schemafy.core.erd.relationship.application.port.out.DeleteRelationshipColumnsByColumnIdPort;
@@ -149,6 +150,31 @@ class DeleteColumnServiceTest {
       then(deleteConstraintColumnsPort).should(never()).deleteByColumnId(any());
       then(deleteIndexColumnsPort).should(never()).deleteByColumnId(any());
       then(deleteRelationshipColumnsPort).should(never()).deleteByColumnId(any());
+    }
+
+    @Test
+    @DisplayName("nested mutation suppress context에서는 snapshot 없이 컬럼을 삭제한다")
+    void skipsSnapshotsWhenNestedMutationSuppressed() {
+      var command = ColumnFixture.deleteCommand();
+
+      stubColumnExists();
+      given(getConstraintColumnsByColumnIdPort.findConstraintColumnsByColumnId(any()))
+          .willReturn(Mono.just(List.of()));
+      given(getIndexColumnsByColumnIdPort.findIndexColumnsByColumnId(any()))
+          .willReturn(Mono.just(List.of()));
+      given(getRelationshipColumnsByColumnIdPort.findRelationshipColumnsByColumnId(any()))
+          .willReturn(Mono.just(List.of()));
+      given(deleteColumnPort.deleteColumn(any()))
+          .willReturn(Mono.empty());
+
+      StepVerifier.create(sut.deleteColumn(command)
+          .contextWrite(ErdOperationContexts.suppressNestedMutation()))
+          .expectNextCount(1)
+          .verifyComplete();
+
+      then(deleteColumnPort).should().deleteColumn(command.columnId());
+      then(structuralSnapshotService).should(never()).captureByColumnId(any());
+      then(structuralSnapshotService).should(never()).captureBySchemaId(any());
     }
 
     @Test
