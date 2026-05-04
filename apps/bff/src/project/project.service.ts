@@ -1,138 +1,140 @@
 import { Injectable } from '@nestjs/common';
 import { BackendClientService } from '../common/backend-client/backend-client.service';
 import type {
-  CreateWorkspaceInvitationRequest,
-  CreateWorkspaceRequest,
-  UpdateMemberRoleRequest,
-  UpdateWorkspaceRequest,
-  WorkspaceInvitationCreateResponse,
-  WorkspaceInvitationResponse,
-  WorkspaceMemberResponse,
-  WorkspaceResponse,
-  WorkspaceSummaryResponse,
-} from './workspace.types';
+  CreateProjectInvitationRequest,
+  CreateProjectRequest,
+  ProjectInvitationCreateResponse,
+  ProjectInvitationResponse,
+  ProjectMemberResponse,
+  ProjectResponse,
+  ProjectSummaryResponse,
+  UpdateProjectMemberRoleRequest,
+  UpdateProjectRequest,
+} from './project.types';
 import { PageResponse } from '../common/types/api-response.types';
 
 @Injectable()
-export class WorkspaceService {
+export class ProjectService {
   constructor(private readonly backendClient: BackendClientService) {}
 
-  async createWorkspace(
-    data: CreateWorkspaceRequest,
+  async createProject(
+    workspaceId: string,
+    data: CreateProjectRequest,
     authHeader: string,
-  ): Promise<WorkspaceResponse> {
-    const response = await this.backendClient.client.post<WorkspaceResponse>(
-      '/api/v1.0/workspaces',
+  ): Promise<ProjectResponse> {
+    const response = await this.backendClient.client.post<ProjectResponse>(
+      `/api/v1.0/workspaces/${workspaceId}/projects`,
       data,
       this.backendClient.getAuthConfig(authHeader),
     );
     return response.data;
   }
 
-  async getWorkspaces(
+  async getProjects(
+    workspaceId: string,
     page: number,
     size: number,
     authHeader: string,
-  ): Promise<PageResponse<WorkspaceSummaryResponse>> {
+  ): Promise<PageResponse<ProjectSummaryResponse>> {
     const response = await this.backendClient.client.get<
-      PageResponse<WorkspaceSummaryResponse>
-    >('/api/v1.0/workspaces', {
+      PageResponse<ProjectSummaryResponse>
+    >(`/api/v1.0/workspaces/${workspaceId}/projects`, {
       ...this.backendClient.getAuthConfig(authHeader),
       params: { page, size },
     });
     return response.data;
   }
 
-  async getWorkspace(
-    id: string,
+  async getProject(
+    projectId: string,
     authHeader: string,
-  ): Promise<WorkspaceResponse> {
-    const response = await this.backendClient.client.get<WorkspaceResponse>(
-      `/api/v1.0/workspaces/${id}`,
+  ): Promise<ProjectResponse> {
+    const response = await this.backendClient.client.get<ProjectResponse>(
+      `/api/v1.0/projects/${projectId}`,
       this.backendClient.getAuthConfig(authHeader),
     );
     return response.data;
   }
 
-  async updateWorkspace(
-    id: string,
-    data: UpdateWorkspaceRequest,
+  async updateProject(
+    projectId: string,
+    data: UpdateProjectRequest,
     authHeader: string,
-  ): Promise<WorkspaceResponse> {
-    const response = await this.backendClient.client.put<WorkspaceResponse>(
-      `/api/v1.0/workspaces/${id}`,
+  ): Promise<ProjectResponse> {
+    const response = await this.backendClient.client.put<ProjectResponse>(
+      `/api/v1.0/projects/${projectId}`,
       data,
       this.backendClient.getAuthConfig(authHeader),
     );
     return response.data;
   }
 
-  async deleteWorkspace(id: string, authHeader: string): Promise<null> {
+  async deleteProject(projectId: string, authHeader: string): Promise<null> {
     const response = await this.backendClient.client.delete<null>(
-      `/api/v1.0/workspaces/${id}`,
+      `/api/v1.0/projects/${projectId}`,
       this.backendClient.getAuthConfig(authHeader),
     );
     return response.data;
   }
 
   async getMembers(
-    id: string,
+    projectId: string,
     page: number,
     size: number,
     authHeader: string,
-  ): Promise<PageResponse<WorkspaceMemberResponse>> {
+  ): Promise<PageResponse<ProjectMemberResponse>> {
     const response = await this.backendClient.client.get<
-      PageResponse<WorkspaceMemberResponse>
-    >(`/api/v1.0/workspaces/${id}/members`, {
+      PageResponse<ProjectMemberResponse>
+    >(`/api/v1.0/projects/${projectId}/members`, {
       ...this.backendClient.getAuthConfig(authHeader),
       params: { page, size },
     });
     return response.data;
   }
 
-  async removeMember(
-    workspaceId: string,
-    userId: string,
-    authHeader: string,
-  ): Promise<null> {
-    const response = await this.backendClient.client.delete<null>(
-      `/api/v1.0/workspaces/${workspaceId}/members/${userId}`,
-      this.backendClient.getAuthConfig(authHeader),
-    );
-    return response.data;
-  }
-
-  async leaveWorkspace(workspaceId: string, authHeader: string): Promise<null> {
-    const response = await this.backendClient.client.delete<null>(
-      `/api/v1.0/workspaces/${workspaceId}/members/me`,
-      this.backendClient.getAuthConfig(authHeader),
-    );
-    return response.data;
-  }
-
   async updateMemberRole(
-    workspaceId: string,
+    projectId: string,
     userId: string,
-    data: UpdateMemberRoleRequest,
+    data: UpdateProjectMemberRoleRequest,
     authHeader: string,
-  ): Promise<WorkspaceMemberResponse> {
+  ): Promise<ProjectMemberResponse> {
     const response =
-      await this.backendClient.client.patch<WorkspaceMemberResponse>(
-        `/api/v1.0/workspaces/${workspaceId}/members/${userId}/role`,
+      await this.backendClient.client.patch<ProjectMemberResponse>(
+        `/api/v1.0/projects/${projectId}/members/${userId}/role`,
         data,
         this.backendClient.getAuthConfig(authHeader),
       );
     return response.data;
   }
 
-  async createInvitation(
-    workspaceId: string,
-    data: CreateWorkspaceInvitationRequest,
+  async removeMember(
+    projectId: string,
+    userId: string,
     authHeader: string,
-  ): Promise<WorkspaceInvitationCreateResponse> {
+  ): Promise<null> {
+    const response = await this.backendClient.client.delete<null>(
+      `/api/v1.0/projects/${projectId}/members/${userId}`,
+      this.backendClient.getAuthConfig(authHeader),
+    );
+    return response.data;
+  }
+
+  async leaveProject(projectId: string, authHeader: string): Promise<null> {
+    const response = await this.backendClient.client.delete<null>(
+      `/api/v1.0/projects/${projectId}/members/me`,
+      this.backendClient.getAuthConfig(authHeader),
+    );
+    return response.data;
+  }
+
+  async createInvitation(
+    projectId: string,
+    data: CreateProjectInvitationRequest,
+    authHeader: string,
+  ): Promise<ProjectInvitationCreateResponse> {
     const response =
-      await this.backendClient.client.post<WorkspaceInvitationCreateResponse>(
-        `/api/v1.0/workspaces/${workspaceId}/invitations`,
+      await this.backendClient.client.post<ProjectInvitationCreateResponse>(
+        `/api/v1.0/projects/${projectId}/invitations`,
         data,
         this.backendClient.getAuthConfig(authHeader),
       );
@@ -140,14 +142,14 @@ export class WorkspaceService {
   }
 
   async getInvitations(
-    workspaceId: string,
+    projectId: string,
     page: number,
     size: number,
     authHeader: string,
-  ): Promise<PageResponse<WorkspaceInvitationResponse>> {
+  ): Promise<PageResponse<ProjectInvitationResponse>> {
     const response = await this.backendClient.client.get<
-      PageResponse<WorkspaceInvitationResponse>
-    >(`/api/v1.0/workspaces/${workspaceId}/invitations`, {
+      PageResponse<ProjectInvitationResponse>
+    >(`/api/v1.0/projects/${projectId}/invitations`, {
       ...this.backendClient.getAuthConfig(authHeader),
       params: { page, size },
     });
@@ -158,10 +160,10 @@ export class WorkspaceService {
     page: number,
     size: number,
     authHeader: string,
-  ): Promise<PageResponse<WorkspaceInvitationResponse>> {
+  ): Promise<PageResponse<ProjectInvitationResponse>> {
     const response = await this.backendClient.client.get<
-      PageResponse<WorkspaceInvitationResponse>
-    >('/api/v1.0/users/me/invitations/workspaces', {
+      PageResponse<ProjectInvitationResponse>
+    >('/api/v1.0/users/me/invitations/projects', {
       ...this.backendClient.getAuthConfig(authHeader),
       params: { page, size },
     });
@@ -171,10 +173,10 @@ export class WorkspaceService {
   async acceptInvitation(
     invitationId: string,
     authHeader: string,
-  ): Promise<WorkspaceMemberResponse> {
+  ): Promise<ProjectMemberResponse> {
     const response =
-      await this.backendClient.client.patch<WorkspaceMemberResponse>(
-        `/api/v1.0/workspaces/invitations/${invitationId}/accept`,
+      await this.backendClient.client.patch<ProjectMemberResponse>(
+        `/api/v1.0/projects/invitations/${invitationId}/accept`,
         {},
         this.backendClient.getAuthConfig(authHeader),
       );
@@ -186,7 +188,7 @@ export class WorkspaceService {
     authHeader: string,
   ): Promise<null> {
     const response = await this.backendClient.client.patch<null>(
-      `/api/v1.0/workspaces/invitations/${invitationId}/reject`,
+      `/api/v1.0/projects/invitations/${invitationId}/reject`,
       {},
       this.backendClient.getAuthConfig(authHeader),
     );
