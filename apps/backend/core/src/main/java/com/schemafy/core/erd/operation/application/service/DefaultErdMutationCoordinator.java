@@ -81,7 +81,7 @@ class DefaultErdMutationCoordinator implements ErdMutationCoordinator {
     if (operationType == ErdOperationType.CREATE_SCHEMA) {
       return Mono.empty();
     }
-    return loadOrCreateSchemaState(resolvedTarget.schemaId(), resolvedTarget.projectId());
+    return loadOrCreateSchemaStateForUpdate(resolvedTarget.schemaId(), resolvedTarget.projectId());
   }
 
   private <T> Mono<MutationResult<T>> executeMutationAndCommit(
@@ -103,10 +103,20 @@ class DefaultErdMutationCoordinator implements ErdMutationCoordinator {
 
   private Mono<SchemaCollaborationState> loadOrCreateSchemaState(String schemaId, String projectId) {
     return findSchemaCollaborationStatePort.findBySchemaId(schemaId)
-        .switchIfEmpty(saveSchemaCollaborationStatePort
+        .switchIfEmpty(Mono.defer(() -> saveSchemaCollaborationStatePort
             .save(new SchemaCollaborationState(schemaId, projectId, 0L, null, null))
             .onErrorResume(DuplicateKeyException.class,
-                ex -> findSchemaCollaborationStatePort.findBySchemaId(schemaId)));
+                ex -> findSchemaCollaborationStatePort.findBySchemaId(schemaId))));
+  }
+
+  private Mono<SchemaCollaborationState> loadOrCreateSchemaStateForUpdate(String schemaId, String projectId) {
+    return findSchemaCollaborationStatePort.findBySchemaIdForUpdate(schemaId)
+        .switchIfEmpty(Mono.defer(() -> saveSchemaCollaborationStatePort
+            .save(new SchemaCollaborationState(schemaId, projectId, 0L, null, null))
+            .onErrorResume(DuplicateKeyException.class, ex -> Mono.empty())
+            .then(findSchemaCollaborationStatePort.findBySchemaIdForUpdate(schemaId))
+            .switchIfEmpty(Mono.error(new IllegalStateException(
+                "Schema collaboration state missing after creation: schemaId=" + schemaId)))));
   }
 
   private <T> Mono<MutationResult<T>> commitOperation(
