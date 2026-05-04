@@ -70,7 +70,8 @@
   "apps/frontend/src/pages/CanvasPage.tsx": [
     331,
     291,
-    361
+    361,
+    358
   ],
   "apps/frontend/src/store/collaboration.store.ts": [
     291,
@@ -83,7 +84,8 @@
     346
   ],
   "apps/backend/api/src/docs/asciidoc/api-guide.adoc": [
-    337
+    337,
+    358
   ],
   "apps/backend/api/src/main/java/com/schemafy/api/collaboration/dto/event/CollaborationOutboundFactory.java": [
     337
@@ -197,7 +199,8 @@
     354
   ],
   "apps/backend/api/src/test/java/com/schemafy/api/testsupport/project/ProjectHttpTestSupport.java": [
-    354
+    354,
+    358
   ],
   "apps/backend/core/src/main/java/com/schemafy/core/common/MutationResult.java": [
     337,
@@ -389,7 +392,8 @@
     361
   ],
   "apps/frontend/src/App.tsx": [
-    361
+    361,
+    358
   ],
   "apps/frontend/src/components/Button.tsx": [
     361
@@ -404,7 +408,8 @@
     361
   ],
   "apps/frontend/src/components/Layout.tsx": [
-    361
+    361,
+    358
   ],
   "apps/frontend/src/components/Loading.tsx": [
     361
@@ -413,7 +418,8 @@
     361
   ],
   "apps/frontend/src/components/index.ts": [
-    361
+    361,
+    358
   ],
   "apps/frontend/src/features/auth/RequireAuth.tsx": [
     361
@@ -446,7 +452,8 @@
     361
   ],
   "apps/frontend/src/pages/NotFoundPage.tsx": [
-    361
+    361,
+    358
   ],
   "apps/frontend/src/pages/OAuthCallbackPage.tsx": [
     361
@@ -458,10 +465,12 @@
     361
   ],
   "apps/frontend/src/pages/WorkspacePage.tsx": [
-    361
+    361,
+    358
   ],
   "apps/frontend/src/pages/index.ts": [
-    361
+    361,
+    358
   ],
   "apps/frontend/src/router.tsx": [
     361
@@ -609,5 +618,128 @@
   ],
   "apps/frontend/tests/operation-history.store.spec.ts": [
     374
+  ],
+  "apps/backend/api/src/main/java/com/schemafy/api/common/type/CursorResponse.java": [
+    358
+  ],
+  "apps/backend/api/src/main/java/com/schemafy/api/project/controller/InvitationController.java": [
+    358
+  ],
+  "apps/backend/api/src/main/java/com/schemafy/api/project/controller/dto/response/MyInvitationResponse.java": [
+    358
+  ],
+  "apps/backend/api/src/test/java/com/schemafy/api/project/controller/InvitationControllerTest.java": [
+    358
+  ],
+  "apps/backend/api/src/test/java/com/schemafy/api/project/docs/MyInvitationApiSnippets.java": [
+    358
+  ],
+  "apps/backend/core/src/main/java/com/schemafy/core/common/CursorResult.java": [
+    358
+  ],
+  "apps/backend/core/src/main/java/com/schemafy/core/project/adapter/out/persistence/InvitationPersistenceAdapter.java": [
+    358
+  ],
+  "apps/backend/core/src/main/java/com/schemafy/core/project/adapter/out/persistence/InvitationRepository.java": [
+    358
+  ],
+  "apps/backend/core/src/main/java/com/schemafy/core/project/application/port/in/GetMyInvitationsQuery.java": [
+    358
+  ],
+  "apps/backend/core/src/main/java/com/schemafy/core/project/application/port/in/GetMyInvitationsUseCase.java": [
+    358
+  ],
+  "apps/backend/core/src/main/java/com/schemafy/core/project/application/port/in/InvitationSummary.java": [
+    358
+  ],
+  "apps/backend/core/src/main/java/com/schemafy/core/project/application/port/out/InvitationPort.java": [
+    358
+  ],
+  "apps/backend/core/src/main/java/com/schemafy/core/project/application/service/GetMyInvitationsService.java": [
+    358
+  ],
+  "apps/backend/core/src/test/java/com/schemafy/core/project/integration/MyInvitationUseCaseIntegrationTest.java": [
+    358
+  ],
+  "apps/backend/core/src/test/java/com/schemafy/core/project/integration/ProjectDomainIntegrationSupport.java": [
+    358
+  ],
+  "apps/bff/src/app.module.ts": [
+    358
+  ],
+  "apps/bff/src/common/types/api-response.types.ts": [
+    358
+  ],
+  "apps/bff/src/project/project.controller.ts": [
+    358
+  ],
+  "apps/bff/src/project/project.module.ts": [
+    358
+  ],
+  "apps/bff/src/project/project.service.ts": [
+    358
+  ],
+  "apps/bff/src/project/project.types.ts": [
+    358
+  ],
+  "apps/bff/src/workspace/workspace.service.ts": [
+    358
+  ],
+  "apps/bff/src/workspace/workspace.types.ts": [
+    358
+  ],
+  "apps/frontend/src/components/EntityFormDialog.tsx": [
+    358
+  ],
+  "apps/frontend/src/components/Header/CanvasHeader.tsx": [
+    358
+  ],
+  "apps/frontend/src/components/Header/contents/NotificationContents.tsx": [
+    358
+  ],
+  "apps/frontend/src/components/Header/contents/ShareContents.tsx": [
+    358
+  ],
+  "apps/frontend/src/features/project/api/api.ts": [
+    358
+  ],
+  "apps/frontend/src/features/project/api/index.ts": [
+    358
+  ],
+  "apps/frontend/src/features/project/api/types.ts": [
+    358
+  ],
+  "apps/frontend/src/features/project/components/ProjectFormDialog.tsx": [
+    358
+  ],
+  "apps/frontend/src/features/project/hooks/query-keys.ts": [
+    358
+  ],
+  "apps/frontend/src/features/project/hooks/useProjects.ts": [
+    358
+  ],
+  "apps/frontend/src/features/project/utils/role.ts": [
+    358
+  ],
+  "apps/frontend/src/features/workspace/api/api.ts": [
+    358
+  ],
+  "apps/frontend/src/features/workspace/api/types.ts": [
+    358
+  ],
+  "apps/frontend/src/features/workspace/components/WorkspaceFormDialog.tsx": [
+    358
+  ],
+  "apps/frontend/src/features/workspace/components/WorkspaceMembersTab.tsx": [
+    358
+  ],
+  "apps/frontend/src/features/workspace/components/WorkspaceProjectsTab.tsx": [
+    358
+  ],
+  "apps/frontend/src/features/workspace/hooks/useWorkspaces.ts": [
+    358
+  ],
+  "apps/frontend/src/lib/api/types.ts": [
+    358
   ]
 }
