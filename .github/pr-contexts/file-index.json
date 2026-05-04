@@ -665,7 +665,8 @@
     358
   ],
   "apps/bff/src/app.module.ts": [
-    358
+    358,
+    377
   ],
   "apps/bff/src/common/types/api-response.types.ts": [
     358
