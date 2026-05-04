@@ -750,5 +750,8 @@
   ],
   "apps/backend/api/src/main/resources/application.yml": [
     377
+  ],
+  "apps/backend/api/build.gradle": [
+    377
   ]
 }
