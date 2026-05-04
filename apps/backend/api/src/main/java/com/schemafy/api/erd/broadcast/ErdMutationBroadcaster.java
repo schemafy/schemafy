@@ -53,6 +53,17 @@ public class ErdMutationBroadcaster {
         .onErrorResume(e -> Mono.empty());
   }
 
+  public Mono<Void> broadcastSchemaMutation(String schemaId,
+      Set<String> affectedTableIds,
+      CommittedErdOperation operation) {
+    return resolveFromSchemaId(schemaId)
+        .flatMap(ctx -> publish(ctx, affectedTableIds, operation))
+        .doOnError(e -> log.warn(
+            "[ErdMutationBroadcaster] broadcastSchemaMutation failed: schemaId={}, error={}",
+            schemaId, e.getMessage()))
+        .onErrorResume(e -> Mono.empty());
+  }
+
   public Mono<Void> broadcastWithContext(ResolvedContext ctx,
       Set<String> affectedTableIds,
       CommittedErdOperation operation) {

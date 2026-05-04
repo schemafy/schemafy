@@ -218,6 +218,41 @@ class ErdMutationBroadcasterTest {
   }
 
   @Nested
+  @DisplayName("broadcastSchemaMutation")
+  class BroadcastSchemaMutation {
+
+    @Test
+    @DisplayName("schema context로 affected table ids를 유지해서 이벤트를 발행한다")
+    void publishes_event_with_affected_table_ids() {
+      String schemaId = "schema-1";
+      String projectId = "project-1";
+      Set<String> tableIds = Set.of("deleted-table");
+
+      given(getSchemaByIdPort.findSchemaById(schemaId))
+          .willReturn(Mono.just(new Schema(schemaId, projectId,
+              "mariadb", "test", "utf8mb4", "utf8mb4_general_ci")));
+      given(eventPublisher.publish(eq(projectId),
+          any(CollaborationOutbound.class)))
+          .willReturn(Mono.empty());
+
+      StepVerifier.create(broadcaster.broadcastSchemaMutation(schemaId,
+          tableIds, OPERATION))
+          .verifyComplete();
+
+      ArgumentCaptor<CollaborationOutbound> captor = ArgumentCaptor
+          .forClass(CollaborationOutbound.class);
+      verify(eventPublisher).publish(eq(projectId), captor.capture());
+      verify(getTableByIdPort, never()).findTableById(any());
+      ErdMutatedEvent.Outbound event = (ErdMutatedEvent.Outbound) captor
+          .getValue();
+      assertThat(event.schemaId()).isEqualTo(schemaId);
+      assertThat(event.operation()).isEqualTo(OPERATION);
+      assertThat(event.affectedTableIds()).containsExactly("deleted-table");
+    }
+
+  }
+
+  @Nested
   @DisplayName("broadcastWithContext")
   class BroadcastWithContext {
 
