@@ -14,8 +14,6 @@ on:
       - 'style/*'
   pull_request:
     types: [opened, reopened, ready_for_review, closed]
-  issues:
-    types: [opened, edited, reopened, closed]
 
 permissions:
   issues: write

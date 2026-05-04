@@ -1,52 +1,38 @@
 import { MoreHorizontal, Search } from 'lucide-react';
 import { useState } from 'react';
-import {
-  Button,
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuTrigger,
-  Pagination,
-} from '@/components';
+import { useNavigate } from 'react-router-dom';
+import { Button, DropdownMenu, DropdownMenuContent, DropdownMenuTrigger, Pagination, } from '@/components';
+import { useGetProjects, useLeaveProject, } from '@/features/project/hooks/useProjects';
+import { ProjectFormDialog } from '@/features/project/components/ProjectFormDialog';
+import { ConfirmDialog } from './ConfirmDialog';
+import type { ProjectSummaryResponse } from '@/features/project/api';
 
-type Project = {
-  id: string;
-  name: string;
-  lastModified: string;
-  access: 'Private' | 'Shared';
-  memberCount: number;
-};
+interface WorkspaceProjectsTabProps {
+  workspaceId: string;
+  currentUserRole: string;
+}
 
-const MOCK_PROJECTS: Project[] = [
-  {
-    id: '1',
-    name: 'Project Alpha',
-    lastModified: '2024-01-15',
-    access: 'Private',
-    memberCount: 2,
-  },
-  {
-    id: '2',
-    name: 'Project Beta',
-    lastModified: '2024-02-20',
-    access: 'Shared',
-    memberCount: 3,
-  },
-  {
-    id: '3',
-    name: 'Project Gamma',
-    lastModified: '2024-03-10',
-    access: 'Private',
-    memberCount: 1,
-  },
-];
-
-const TOTAL_PAGES = 100;
-
-export const WorkspaceProjectsTab = () => {
+export const WorkspaceProjectsTab = ({
+                                       workspaceId,
+                                       currentUserRole,
+                                     }: WorkspaceProjectsTabProps) => {
+  const navigate = useNavigate();
   const [searchQuery, setSearchQuery] = useState('');
   const [currentPage, setCurrentPage] = useState(1);
 
-  const filtered = MOCK_PROJECTS.filter((p) =>
+  const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
+  const [editTarget, setEditTarget] = useState<ProjectSummaryResponse | null>(
+    null,
+  );
+  const [leaveTarget, setLeaveTarget] = useState<ProjectSummaryResponse | null>(
+    null,
+  );
+
+  const {data: projects} = useGetProjects(workspaceId, currentPage - 1);
+
+  const {mutate: leaveProject} = useLeaveProject();
+
+  const filtered = projects?.content.filter((p) =>
     p.name.toLowerCase().includes(searchQuery.toLowerCase()),
   );
 
@@ -66,85 +52,142 @@ export const WorkspaceProjectsTab = () => {
         />
       </div>
 
+      {currentUserRole === 'ADMIN' && (
+        <div className="w-full flex justify-end items-center">
+          <Button size="sm" onClick={() => setIsCreateDialogOpen(true)}>
+            Create
+          </Button>
+        </div>
+      )}
+
       <div className="border border-schemafy-light-gray rounded-[12px] overflow-hidden">
         <table className="w-full">
           <thead>
-            <tr className="border-b border-schemafy-light-gray">
-              <th className="text-left px-6 py-4 font-overline-sm text-schemafy-text w-[40%]">
-                Name
-              </th>
-              <th className="text-left px-6 py-4 font-overline-sm text-schemafy-text whitespace-nowrap">
-                Last Modified
-              </th>
-              <th className="text-left px-6 py-4 font-overline-sm text-schemafy-text">
-                Access
-              </th>
-              <th className="text-left px-6 py-4 font-overline-sm text-schemafy-text">
-                Members
-              </th>
-              <th className="px-6 py-4 w-10" />
-            </tr>
+          <tr className="border-b border-schemafy-light-gray">
+            <th className="text-left px-6 py-4 font-overline-sm text-schemafy-text w-[40%]">
+              Name
+            </th>
+            <th className="text-left px-6 py-4 font-overline-sm text-schemafy-text whitespace-nowrap">
+              Last Modified
+            </th>
+            <th className="text-left px-6 py-4 font-overline-sm text-schemafy-text">
+              Access
+            </th>
+            <th className="px-6 py-4 w-10"/>
+          </tr>
           </thead>
           <tbody>
-            {filtered.map((project) => (
+          {filtered &&
+            filtered.map((project) => (
               <tr
                 key={project.id}
-                className="border-b border-schemafy-light-gray last:border-b-0 hover:bg-schemafy-secondary transition-colors"
+                className="border-b border-schemafy-light-gray last:border-b-0 hover:bg-schemafy-secondary transition-colors cursor-pointer"
+                onClick={() => navigate(`/canvas/${project.id}`)}
               >
                 <td className="px-6 py-4 font-body-sm text-schemafy-text">
                   {project.name}
                 </td>
                 <td className="px-6 py-4 font-body-sm text-schemafy-dark-gray">
-                  {project.lastModified}
+                  {project.updatedAt}
                 </td>
                 <td className="px-6 py-4">
-                  <span className="px-3 py-1 bg-schemafy-secondary text-schemafy-dark-gray font-body-sm rounded-full">
-                    {project.access}
-                  </span>
+                    <span className="px-3 py-1 bg-schemafy-secondary text-schemafy-dark-gray font-body-sm rounded-full">
+                      {project.myRole.toUpperCase()}
+                    </span>
                 </td>
-                <td className="px-6 py-4">
-                  <div className="w-6 h-6 rounded-full bg-schemafy-secondary flex items-center justify-center font-overline-xs text-schemafy-dark-gray">
-                    {project.memberCount}
-                  </div>
-                </td>
-                <td className="px-6 py-4">
-                  <DropdownMenu>
-                    <DropdownMenuTrigger asChild>
-                      <button className="text-schemafy-dark-gray hover:text-schemafy-text transition-colors">
-                        <MoreHorizontal size={16} />
-                      </button>
-                    </DropdownMenuTrigger>
-                    <DropdownMenuContent
-                      sideOffset={4}
-                      align="end"
-                      className="!p-1.5 !min-w-0"
-                    >
-                      <Button
-                        variant="none"
-                        size="none"
-                        className="text-schemafy-destructive font-caption-md px-2 py-1 whitespace-nowrap"
-                      >
-                        Delete
-                      </Button>
-                    </DropdownMenuContent>
-                  </DropdownMenu>
-                </td>
+                <ProjectOption
+                  project={project}
+                  onEditClick={setEditTarget}
+                  onLeaveClick={setLeaveTarget}
+                />
               </tr>
             ))}
-            <tr>
-              <td colSpan={5} className="py-2">
-                <div className="flex justify-center">
-                  <Pagination
-                    currentPage={currentPage}
-                    totalPages={TOTAL_PAGES}
-                    onPageChange={setCurrentPage}
-                  />
-                </div>
-              </td>
-            </tr>
+          <tr>
+            <td colSpan={4} className="py-2">
+              <div className="flex justify-center">
+                <Pagination
+                  currentPage={currentPage}
+                  totalPages={projects?.totalPages ?? 1}
+                  onPageChange={setCurrentPage}
+                />
+              </div>
+            </td>
+          </tr>
           </tbody>
         </table>
       </div>
+
+      <ProjectFormDialog
+        open={isCreateDialogOpen}
+        onOpenChange={setIsCreateDialogOpen}
+        mode="create"
+        workspaceId={workspaceId}
+      />
+
+      <ProjectFormDialog
+        open={!!editTarget}
+        onOpenChange={(open) => !open && setEditTarget(null)}
+        mode="edit"
+        workspaceId={workspaceId}
+        projectId={editTarget?.id}
+        initialName={editTarget?.name}
+        initialDescription={editTarget?.description}
+      />
+
+      <ConfirmDialog
+        open={!!leaveTarget}
+        onOpenChange={(open) => !open && setLeaveTarget(null)}
+        title="Leave Project"
+        description={`Would you like to leave ${leaveTarget?.name}?`}
+        confirmLabel="Leave"
+        onConfirm={() => leaveTarget && leaveProject(leaveTarget.id)}
+      />
     </div>
+  );
+};
+
+const ProjectOption = ({
+                         project,
+                         onEditClick,
+                         onLeaveClick,
+                       }: {
+  project: ProjectSummaryResponse;
+  onEditClick: (project: ProjectSummaryResponse) => void;
+  onLeaveClick: (project: ProjectSummaryResponse) => void;
+}) => {
+  return (
+    <td className="px-6 py-4" onClick={(e) => e.stopPropagation()}>
+      <DropdownMenu>
+        <DropdownMenuTrigger asChild>
+          <button className="text-schemafy-dark-gray hover:text-schemafy-text transition-colors">
+            <MoreHorizontal size={16}/>
+          </button>
+        </DropdownMenuTrigger>
+        <DropdownMenuContent
+          sideOffset={4}
+          align="end"
+          className="!p-1.5 !min-w-0 flex flex-col gap-0.5"
+        >
+          {project.myRole === 'ADMIN' && (
+            <Button
+              variant="none"
+              size="none"
+              className="font-caption-md px-2 py-1 whitespace-nowrap"
+              onClick={() => onEditClick(project)}
+            >
+              Edit
+            </Button>
+          )}
+          <Button
+            variant="none"
+            size="none"
+            className="text-schemafy-destructive font-caption-md px-2 py-1 whitespace-nowrap"
+            onClick={() => onLeaveClick(project)}
+          >
+            Leave
+          </Button>
+        </DropdownMenuContent>
+      </DropdownMenu>
+    </td>
   );
 };

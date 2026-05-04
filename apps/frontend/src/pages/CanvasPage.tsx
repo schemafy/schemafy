@@ -4,27 +4,36 @@ import {
   RelationshipEditor,
   SchemaSelector,
   SelectedSchemaProvider,
+  ShortcutPanel,
   TempMemoPreview,
   Toolbar,
   useCanvasController,
 } from '@/features/drawing';
 import { MemoProvider } from '@/features/memo/context';
-import {
-  RemoteCursors,
-  ChatInput,
-  ChatOverlay,
-} from '@/features/collaboration/components';
+import { ChatInput, RemoteCursors } from '@/features/collaboration/components';
+import { observer } from 'mobx-react-lite';
+import { useNavigate, useParams } from 'react-router-dom';
+import { useGetProject } from '@/features/project/hooks/useProjects';
+import { useEffect } from 'react';
+import axios from 'axios';
 
-const CanvasContent = () => {
+const CanvasContent = observer(() => {
   const {
     state: {
       relationshipConfig,
       activeTool,
       tempMemoPosition,
       chatInputPosition,
+      isChatExiting,
       selectedRelationship,
+      isShortcutPanelOpen,
     },
-    setter: { setRelationshipConfig, setActiveTool, setSelectedRelationship },
+    setter: {
+      setRelationshipConfig,
+      setActiveTool,
+      setSelectedRelationship,
+      setIsShortcutPanelOpen,
+    },
     data: { tables, memos, relationships },
     handlers: {
       onTableDragStop,
@@ -40,7 +49,7 @@ const CanvasContent = () => {
       handleMemoCancel,
       handleMemoCreate,
       handleChatSend,
-      handleChatCancel,
+      closeChatInput,
       handlePaneClick,
       handleMouseMove,
     },
@@ -99,26 +108,47 @@ const CanvasContent = () => {
           {chatInputPosition && (
             <ChatInput
               position={chatInputPosition}
+              isExiting={isChatExiting}
               onSend={handleChatSend}
-              onCancel={handleChatCancel}
+              onCancel={closeChatInput}
             />
           )}
         </div>
       </div>
-      <ChatOverlay />
+      <FloatingButtons
+        isShortcutPanelOpen={isShortcutPanelOpen}
+        onHelpClick={() => setIsShortcutPanelOpen((prev) => !prev)}
+      />
+      {isShortcutPanelOpen && (
+        <ShortcutPanel onClose={() => setIsShortcutPanelOpen(false)} />
+      )}
       <RemoteCursors />
     </>
   );
-};
+});
 
 export const CanvasPage = () => {
-  const projectId = '06DS8JSJ7Y112MC87X0AB2CE8M';
+  const { projectId = '' } = useParams();
+  const navigate = useNavigate();
+  const { isError, isLoading, error } = useGetProject(projectId);
+
+  useEffect(() => {
+    if (!isError) return;
+
+    if (axios.isAxiosError(error) && error.response?.status === 403) {
+      navigate('/workspace', { replace: true });
+      return;
+    }
+
+    navigate('/not-found', { replace: true });
+  }, [isError, error, navigate]);
+
+  if (isLoading || isError) return null;
 
   return (
     <SelectedSchemaProvider projectId={projectId}>
       <MemoProvider>
         <CanvasContent />
-        <FloatingButtons />
       </MemoProvider>
     </SelectedSchemaProvider>
   );
