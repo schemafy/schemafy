@@ -20,10 +20,8 @@ export class OperationHistoryStore {
       undoableOpIdsBySchemaId: observable.shallow,
       lastRemoteOperationBySchemaId: observable.shallow,
       pendingOperations: computed,
-      committedOperations: computed,
       undoableOperations: computed,
       markPending: action,
-      markCommitted: action,
       markUndoable: action,
       markFailed: action,
       handleErdMutated: action,
@@ -34,10 +32,6 @@ export class OperationHistoryStore {
 
   get pendingOperations() {
     return this.filterByStatus('pending');
-  }
-
-  get committedOperations() {
-    return this.filterByStatus('committed');
   }
 
   get undoableOperations() {
@@ -74,7 +68,7 @@ export class OperationHistoryStore {
     this.operationsByClientId.set(metadata.clientOperationId, next);
   }
 
-  markCommitted(
+  markUndoable(
     schemaId: string,
     operation: ErdOperation,
     affectedTableIds: string[],
@@ -91,7 +85,7 @@ export class OperationHistoryStore {
       opId: operation.opId,
       committedRevision: operation.committedRevision,
       derivationKind: operation.derivationKind,
-      status: existing?.status === 'undoable' ? 'undoable' : 'committed',
+      status: 'undoable',
       affectedTableIds,
       failureMessage: null,
       createdAt: existing?.createdAt ?? Date.now(),
@@ -100,26 +94,14 @@ export class OperationHistoryStore {
 
     this.operationsByClientId.set(clientOperationId, next);
     this.clientIdsByOpId.set(operation.opId, clientOperationId);
-  }
-
-  markUndoable(clientOperationId: string) {
-    const existing = this.operationsByClientId.get(clientOperationId);
-
-    if (!existing || !existing.opId || !existing.schemaId) return;
-
-    const next: LocalOperationMetadata = {
-      ...existing,
-      status: 'undoable',
-    };
-    this.operationsByClientId.set(clientOperationId, next);
 
     const undoableOpIds =
-      this.undoableOpIdsBySchemaId.get(existing.schemaId) ?? [];
+      this.undoableOpIdsBySchemaId.get(schemaId) ?? [];
 
-    if (!undoableOpIds.includes(existing.opId)) {
-      this.undoableOpIdsBySchemaId.set(existing.schemaId, [
+    if (!undoableOpIds.includes(operation.opId)) {
+      this.undoableOpIdsBySchemaId.set(schemaId, [
         ...undoableOpIds,
-        existing.opId,
+        operation.opId,
       ]);
     }
   }

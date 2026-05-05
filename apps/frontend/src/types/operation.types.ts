@@ -1,6 +1,5 @@
 export type LocalOperationStatus =
   | 'pending'
-  | 'committed'
   | 'undoable'
   | 'failed'
   | 'superseded';

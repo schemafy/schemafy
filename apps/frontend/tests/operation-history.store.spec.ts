@@ -27,7 +27,7 @@ test.describe('OperationHistoryStore', () => {
     });
   });
 
-  test('HTTP success 이후 committed로 전환한다', () => {
+  test('HTTP success 이후 undoable로 전환한다', () => {
     const store = new OperationHistoryStore();
 
     store.markPending({
@@ -35,17 +35,18 @@ test.describe('OperationHistoryStore', () => {
       schemaId: 'schema-1',
       baseSchemaRevision: 1,
     });
-    store.markCommitted('schema-1', operation('client-op-1'), ['table-1']);
+    store.markUndoable('schema-1', operation('client-op-1'), ['table-1']);
 
     expect(store.pendingOperations).toHaveLength(0);
-    expect(store.committedOperations).toHaveLength(1);
-    expect(store.committedOperations[0]).toMatchObject({
+    expect(store.undoableOperations).toHaveLength(1);
+    expect(store.undoableOperations[0]).toMatchObject({
       clientOperationId: 'client-op-1',
       opId: 'op-1',
       committedRevision: 2,
       affectedTableIds: ['table-1'],
-      status: 'committed',
+      status: 'undoable',
     });
+    expect(store.getUndoableOpIds('schema-1')).toEqual(['op-1']);
   });
 
   test('matching ERD_MUTATED 수신은 local undoable 상태를 변경하지 않는다', () => {
@@ -56,7 +57,6 @@ test.describe('OperationHistoryStore', () => {
       schemaId: 'schema-1',
       baseSchemaRevision: 1,
     });
-    store.markCommitted('schema-1', operation('client-op-1'), ['table-1']);
     store.handleErdMutated({
       type: 'ERD_MUTATED',
       schemaId: 'schema-1',
@@ -66,15 +66,10 @@ test.describe('OperationHistoryStore', () => {
       timestamp: Date.now(),
     });
 
-    expect(store.committedOperations).toHaveLength(1);
+    expect(store.pendingOperations).toHaveLength(1);
     expect(store.undoableOperations).toHaveLength(0);
     expect(store.getUndoableOpIds('schema-1')).toEqual([]);
     expect(store.getLatestUndoableOperation('schema-1')).toBeNull();
-    expect(store.committedOperations[0]).toMatchObject({
-      clientOperationId: 'client-op-1',
-      opId: 'op-1',
-      status: 'committed',
-    });
   });
 
   test('HTTP error 이후 failed로 전환한다', () => {
