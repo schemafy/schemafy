@@ -693,7 +693,8 @@
     358
   ],
   "apps/frontend/src/components/Header/CanvasHeader.tsx": [
-    358
+    358,
+    361
   ],
   "apps/frontend/src/components/Header/contents/NotificationContents.tsx": [
     358
@@ -735,7 +736,8 @@
     358
   ],
   "apps/frontend/src/features/workspace/components/WorkspaceProjectsTab.tsx": [
-    358
+    358,
+    361
   ],
   "apps/frontend/src/features/workspace/hooks/useWorkspaces.ts": [
     358
