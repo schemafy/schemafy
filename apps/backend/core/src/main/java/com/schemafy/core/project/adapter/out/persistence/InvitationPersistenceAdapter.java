@@ -1,8 +1,10 @@
 package com.schemafy.core.project.adapter.out.persistence;
 
 import com.schemafy.core.common.PersistenceAdapter;
+import com.schemafy.core.project.application.port.in.InvitationSummary;
 import com.schemafy.core.project.application.port.out.InvitationPort;
 import com.schemafy.core.project.domain.Invitation;
+import com.schemafy.core.project.domain.InvitationStatus;
 
 import lombok.RequiredArgsConstructor;
 import reactor.core.publisher.Flux;
@@ -48,6 +50,18 @@ public class InvitationPersistenceAdapter implements InvitationPort {
       String targetType, String status, int limit, int offset) {
     return invitationRepository.findByEmailAndTypeAndStatus(email, targetType,
         status, limit, offset);
+  }
+
+  @Override
+  public Flux<InvitationSummary> findMyPendingInvitationSummaries(
+      String email, String cursorId, int limit) {
+    String status = InvitationStatus.PENDING.name();
+    if (cursorId == null) {
+      return invitationRepository.findMyInvitationSummariesFirstPage(email,
+          status, limit);
+    }
+    return invitationRepository.findMyInvitationSummariesNextPage(email,
+        status, cursorId, limit);
   }
 
   @Override

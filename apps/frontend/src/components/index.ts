@@ -13,3 +13,4 @@ export * from './Select';
 export * from './Dialog';
 export * from './ListItem';
 export * from './Toaster';
+export { EntityFormDialog } from './EntityFormDialog';
