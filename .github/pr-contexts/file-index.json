@@ -75,7 +75,8 @@
   ],
   "apps/frontend/src/store/collaboration.store.ts": [
     291,
-    374
+    374,
+    368
   ],
   ".github/workflows/test.yml": [
     346
@@ -608,7 +609,8 @@
     374
   ],
   "apps/frontend/src/store/index.ts": [
-    374
+    374,
+    368
   ],
   "apps/frontend/src/store/operation-history.store.ts": [
     374
@@ -756,5 +758,14 @@
   ],
   "apps/backend/api/build.gradle": [
     377
+  ],
+  "apps/frontend/src/features/drawing/hooks/useSchemaSnapshots.ts": [
+    368
+  ],
+  "apps/frontend/src/store/preview.store.ts": [
+    368
+  ],
+  "apps/frontend/src/store/preview.types.ts": [
+    368
   ]
 }
