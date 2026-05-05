@@ -42,6 +42,9 @@ export const syncCommittedRevision = (
     result.operation,
     result.affectedTableIds ?? [],
   );
+  if (result.operation.clientOperationId) {
+    operationHistoryStore.markUndoable(result.operation.clientOperationId);
+  }
   collaborationStore.setSchemaRevision(
     schemaId,
     result.operation.committedRevision,

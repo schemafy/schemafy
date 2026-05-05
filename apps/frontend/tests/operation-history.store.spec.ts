@@ -48,7 +48,7 @@ test.describe('OperationHistoryStore', () => {
     });
   });
 
-  test('matching ERD_MUTATED 수신 이후 undoable로 전환한다', () => {
+  test('matching ERD_MUTATED 수신은 local undoable 상태를 변경하지 않는다', () => {
     const store = new OperationHistoryStore();
 
     store.markPending({
@@ -66,13 +66,14 @@ test.describe('OperationHistoryStore', () => {
       timestamp: Date.now(),
     });
 
-    expect(store.committedOperations).toHaveLength(0);
-    expect(store.undoableOperations).toHaveLength(1);
-    expect(store.getUndoableOpIds('schema-1')).toEqual(['op-1']);
-    expect(store.getLatestUndoableOperation('schema-1')).toMatchObject({
+    expect(store.committedOperations).toHaveLength(1);
+    expect(store.undoableOperations).toHaveLength(0);
+    expect(store.getUndoableOpIds('schema-1')).toEqual([]);
+    expect(store.getLatestUndoableOperation('schema-1')).toBeNull();
+    expect(store.committedOperations[0]).toMatchObject({
       clientOperationId: 'client-op-1',
       opId: 'op-1',
-      status: 'undoable',
+      status: 'committed',
     });
   });
 
@@ -87,9 +88,7 @@ test.describe('OperationHistoryStore', () => {
     store.markFailed('client-op-1', new Error('request failed'));
 
     expect(store.pendingOperations).toHaveLength(0);
-    expect(
-      store.operationsByClientId.get('client-op-1'),
-    ).toMatchObject({
+    expect(store.operationsByClientId.get('client-op-1')).toMatchObject({
       status: 'failed',
       failureMessage: 'request failed',
     });

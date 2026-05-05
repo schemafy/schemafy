@@ -154,18 +154,7 @@ export class OperationHistoryStore {
         message.schemaId,
         message.operation,
       );
-      return;
     }
-
-    if (!existing.opId) {
-      this.markCommitted(
-        message.schemaId,
-        message.operation,
-        message.affectedTableIds,
-      );
-    }
-
-    this.markUndoable(clientOperationId);
   }
 
   getUndoableOpIds(schemaId: string) {
