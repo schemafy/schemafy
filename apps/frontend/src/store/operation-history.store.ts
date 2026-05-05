@@ -95,8 +95,7 @@ export class OperationHistoryStore {
     this.operationsByClientId.set(clientOperationId, next);
     this.clientIdsByOpId.set(operation.opId, clientOperationId);
 
-    const undoableOpIds =
-      this.undoableOpIdsBySchemaId.get(schemaId) ?? [];
+    const undoableOpIds = this.undoableOpIdsBySchemaId.get(schemaId) ?? [];
 
     if (!undoableOpIds.includes(operation.opId)) {
       this.undoableOpIdsBySchemaId.set(schemaId, [
