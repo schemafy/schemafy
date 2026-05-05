@@ -132,7 +132,8 @@ export const CanvasPage = () => {
   const { projectId } = useParams({ from: '/project/$projectId' });
   const navigate = useNavigate();
   const { isError, isLoading, error } = useGetProject(projectId);
-  const isForbidden = axios.isAxiosError(error) && error.response?.status === 403;
+  const isForbidden =
+    axios.isAxiosError(error) && error.response?.status === 403;
 
   useEffect(() => {
     if (!isError || !isForbidden) return;
