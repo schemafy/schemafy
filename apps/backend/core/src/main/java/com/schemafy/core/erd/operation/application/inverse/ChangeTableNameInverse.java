@@ -27,10 +27,6 @@ public record ChangeTableNameInverse(
       String fkTableId,
       String pkTableId) {
 
-    public RelationshipRename(String relationshipId, String oldName) {
-      this(relationshipId, oldName, null, null);
-    }
-
   }
 
 }
