@@ -222,7 +222,8 @@
   ],
   "apps/backend/core/src/main/java/com/schemafy/core/erd/operation/application/service/DefaultErdMutationCoordinator.java": [
     337,
-    372
+    372,
+    375
   ],
   "apps/backend/core/src/main/java/com/schemafy/core/erd/operation/application/service/DefaultUndoRedoEligibilityService.java": [
     352
@@ -534,7 +535,8 @@
     372
   ],
   "apps/backend/core/src/main/java/com/schemafy/core/erd/operation/application/inverse/InversePayload.java": [
-    372
+    372,
+    375
   ],
   "apps/backend/core/src/main/java/com/schemafy/core/erd/operation/application/port/out/IncrementSchemaCollaborationRevisionPort.java": [
     372
@@ -567,7 +569,8 @@
     372
   ],
   "apps/backend/core/src/main/java/com/schemafy/core/erd/operation/application/service/ErdMutationTargetResolver.java": [
-    372
+    372,
+    375
   ],
   "apps/backend/core/src/main/java/com/schemafy/core/erd/relationship/application/service/ChangeRelationshipCardinalityService.java": [
     372
@@ -767,5 +770,146 @@
   ],
   "apps/frontend/src/store/preview.types.ts": [
     368
+  ],
+  "apps/backend/core/src/main/java/com/schemafy/core/erd/column/adapter/out/persistence/ColumnPersistenceAdapter.java": [
+    375
+  ],
+  "apps/backend/core/src/main/java/com/schemafy/core/erd/column/application/port/out/RestoreColumnPort.java": [
+    375
+  ],
+  "apps/backend/core/src/main/java/com/schemafy/core/erd/column/domain/ColumnTypeArguments.java": [
+    375
+  ],
+  "apps/backend/core/src/main/java/com/schemafy/core/erd/constraint/adapter/out/persistence/ConstraintColumnPersistenceAdapter.java": [
+    375
+  ],
+  "apps/backend/core/src/main/java/com/schemafy/core/erd/constraint/adapter/out/persistence/ConstraintPersistenceAdapter.java": [
+    375
+  ],
+  "apps/backend/core/src/main/java/com/schemafy/core/erd/constraint/application/port/out/RestoreConstraintColumnPort.java": [
+    375
+  ],
+  "apps/backend/core/src/main/java/com/schemafy/core/erd/constraint/application/port/out/RestoreConstraintPort.java": [
+    375
+  ],
+  "apps/backend/core/src/main/java/com/schemafy/core/erd/constraint/application/service/AddConstraintColumnService.java": [
+    375
+  ],
+  "apps/backend/core/src/main/java/com/schemafy/core/erd/constraint/application/service/RemoveConstraintColumnService.java": [
+    375
+  ],
+  "apps/backend/core/src/main/java/com/schemafy/core/erd/index/adapter/out/persistence/IndexColumnPersistenceAdapter.java": [
+    375
+  ],
+  "apps/backend/core/src/main/java/com/schemafy/core/erd/index/adapter/out/persistence/IndexPersistenceAdapter.java": [
+    375
+  ],
+  "apps/backend/core/src/main/java/com/schemafy/core/erd/index/application/port/out/RestoreIndexColumnPort.java": [
+    375
+  ],
+  "apps/backend/core/src/main/java/com/schemafy/core/erd/index/application/port/out/RestoreIndexPort.java": [
+    375
+  ],
+  "apps/backend/core/src/main/java/com/schemafy/core/erd/index/application/service/AddIndexColumnService.java": [
+    375
+  ],
+  "apps/backend/core/src/main/java/com/schemafy/core/erd/index/application/service/RemoveIndexColumnService.java": [
+    375
+  ],
+  "apps/backend/core/src/main/java/com/schemafy/core/erd/operation/application/inverse/AddConstraintColumnInverse.java": [
+    375
+  ],
+  "apps/backend/core/src/main/java/com/schemafy/core/erd/operation/application/inverse/AddIndexColumnInverse.java": [
+    375
+  ],
+  "apps/backend/core/src/main/java/com/schemafy/core/erd/operation/application/inverse/AddRelationshipColumnInverse.java": [
+    375
+  ],
+  "apps/backend/core/src/main/java/com/schemafy/core/erd/operation/application/inverse/RemoveConstraintColumnInverse.java": [
+    375
+  ],
+  "apps/backend/core/src/main/java/com/schemafy/core/erd/operation/application/inverse/RemoveIndexColumnInverse.java": [
+    375
+  ],
+  "apps/backend/core/src/main/java/com/schemafy/core/erd/operation/application/inverse/RemoveRelationshipColumnInverse.java": [
+    375
+  ],
+  "apps/backend/core/src/main/java/com/schemafy/core/erd/operation/application/inverse/StructuralOperationInverse.java": [
+    375
+  ],
+  "apps/backend/core/src/main/java/com/schemafy/core/erd/operation/application/inverse/StructuralSnapshot.java": [
+    375
+  ],
+  "apps/backend/core/src/main/java/com/schemafy/core/erd/operation/application/service/ColumnMutationTargetResolver.java": [
+    375
+  ],
+  "apps/backend/core/src/main/java/com/schemafy/core/erd/operation/application/service/ConstraintMutationTargetResolver.java": [
+    375
+  ],
+  "apps/backend/core/src/main/java/com/schemafy/core/erd/operation/application/service/ErdMutationTargetFinalizer.java": [
+    375
+  ],
+  "apps/backend/core/src/main/java/com/schemafy/core/erd/operation/application/service/ErdMutationTargetLookup.java": [
+    375
+  ],
+  "apps/backend/core/src/main/java/com/schemafy/core/erd/operation/application/service/ErdMutationTargetResolutionSupport.java": [
+    375
+  ],
+  "apps/backend/core/src/main/java/com/schemafy/core/erd/operation/application/service/FinalizedErdMutationTarget.java": [
+    375
+  ],
+  "apps/backend/core/src/main/java/com/schemafy/core/erd/operation/application/service/IndexMutationTargetResolver.java": [
+    375
+  ],
+  "apps/backend/core/src/main/java/com/schemafy/core/erd/operation/application/service/RelationshipMutationTargetResolver.java": [
+    375
+  ],
+  "apps/backend/core/src/main/java/com/schemafy/core/erd/operation/application/service/ResolvedErdMutationTarget.java": [
+    375
+  ],
+  "apps/backend/core/src/main/java/com/schemafy/core/erd/operation/application/service/SchemaMutationTargetResolver.java": [
+    375
+  ],
+  "apps/backend/core/src/main/java/com/schemafy/core/erd/operation/application/service/StructuralSnapshotReader.java": [
+    375
+  ],
+  "apps/backend/core/src/main/java/com/schemafy/core/erd/operation/application/service/StructuralSnapshotReconciler.java": [
+    375
+  ],
+  "apps/backend/core/src/main/java/com/schemafy/core/erd/operation/application/service/StructuralSnapshotService.java": [
+    375
+  ],
+  "apps/backend/core/src/main/java/com/schemafy/core/erd/operation/application/service/StructuralUndoRedoHandler.java": [
+    375
+  ],
+  "apps/backend/core/src/main/java/com/schemafy/core/erd/operation/application/service/TableMutationTargetResolver.java": [
+    375
+  ],
+  "apps/backend/core/src/main/java/com/schemafy/core/erd/relationship/adapter/out/persistence/RelationshipColumnPersistenceAdapter.java": [
+    375
+  ],
+  "apps/backend/core/src/main/java/com/schemafy/core/erd/relationship/adapter/out/persistence/RelationshipPersistenceAdapter.java": [
+    375
+  ],
+  "apps/backend/core/src/main/java/com/schemafy/core/erd/relationship/application/port/out/RestoreRelationshipColumnPort.java": [
+    375
+  ],
+  "apps/backend/core/src/main/java/com/schemafy/core/erd/relationship/application/port/out/RestoreRelationshipPort.java": [
+    375
+  ],
+  "apps/backend/core/src/main/java/com/schemafy/core/erd/relationship/application/service/AddRelationshipColumnService.java": [
+    375
+  ],
+  "apps/backend/core/src/main/java/com/schemafy/core/erd/relationship/application/service/RemoveRelationshipColumnService.java": [
+    375
+  ],
+  "apps/backend/core/src/test/java/com/schemafy/core/erd/constraint/application/service/AddConstraintColumnServiceTest.java": [
+    375
+  ],
+  "apps/backend/core/src/test/java/com/schemafy/core/erd/constraint/application/service/RemoveConstraintColumnServiceTest.java": [
+    375
+  ],
+  "apps/backend/core/src/test/java/com/schemafy/core/erd/index/application/service/AddIndexColumnServiceTest.java": [
+    375
   ]
 }
