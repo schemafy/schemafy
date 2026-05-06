@@ -28,15 +28,15 @@ class ConstraintMutationTargetResolver {
 
   Mono<ResolvedErdMutationTarget> resolve(ErdOperationType operationType, Object payload) {
     return switch (operationType) {
-      case CREATE_CONSTRAINT -> resolveCreateConstraint(payload);
-      case CHANGE_CONSTRAINT_NAME -> resolveChangeConstraintName(payload);
-      case CHANGE_CONSTRAINT_CHECK_EXPR -> resolveChangeConstraintCheckExpr(payload);
-      case CHANGE_CONSTRAINT_DEFAULT_EXPR -> resolveChangeConstraintDefaultExpr(payload);
-      case DELETE_CONSTRAINT -> resolveDeleteConstraint(payload);
-      case ADD_CONSTRAINT_COLUMN -> resolveAddConstraintColumn(payload);
-      case REMOVE_CONSTRAINT_COLUMN -> resolveRemoveConstraintColumn(payload);
-      case CHANGE_CONSTRAINT_COLUMN_POSITION -> resolveChangeConstraintColumnPosition(payload);
-      default -> throw unsupportedTargetOperation(operationType);
+    case CREATE_CONSTRAINT -> resolveCreateConstraint(payload);
+    case CHANGE_CONSTRAINT_NAME -> resolveChangeConstraintName(payload);
+    case CHANGE_CONSTRAINT_CHECK_EXPR -> resolveChangeConstraintCheckExpr(payload);
+    case CHANGE_CONSTRAINT_DEFAULT_EXPR -> resolveChangeConstraintDefaultExpr(payload);
+    case DELETE_CONSTRAINT -> resolveDeleteConstraint(payload);
+    case ADD_CONSTRAINT_COLUMN -> resolveAddConstraintColumn(payload);
+    case REMOVE_CONSTRAINT_COLUMN -> resolveRemoveConstraintColumn(payload);
+    case CHANGE_CONSTRAINT_COLUMN_POSITION -> resolveChangeConstraintColumnPosition(payload);
+    default -> throw unsupportedTargetOperation(operationType);
     };
   }
 

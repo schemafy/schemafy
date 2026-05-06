@@ -65,6 +65,7 @@ public record StructuralSnapshot(
     public Column toDomain() {
       return new Column(id, tableId, name, dataType, typeArguments, seqNo, autoIncrement, charset, collation, comment);
     }
+
   }
 
   public record ConstraintSnapshot(
@@ -88,6 +89,7 @@ public record StructuralSnapshot(
     public Constraint toDomain() {
       return new Constraint(id, tableId, name, kind, checkExpr, defaultExpr);
     }
+
   }
 
   public record ConstraintColumnSnapshot(
@@ -103,6 +105,7 @@ public record StructuralSnapshot(
     public ConstraintColumn toDomain() {
       return new ConstraintColumn(id, constraintId, columnId, seqNo);
     }
+
   }
 
   public record IndexSnapshot(
@@ -118,6 +121,7 @@ public record StructuralSnapshot(
     public Index toDomain() {
       return new Index(id, tableId, name, type);
     }
+
   }
 
   public record IndexColumnSnapshot(
@@ -135,6 +139,7 @@ public record StructuralSnapshot(
     public IndexColumn toDomain() {
       return new IndexColumn(id, indexId, columnId, seqNo, sortDirection);
     }
+
   }
 
   public record RelationshipSnapshot(
@@ -160,6 +165,7 @@ public record StructuralSnapshot(
     public Relationship toDomain() {
       return new Relationship(id, pkTableId, fkTableId, name, kind, cardinality, extra);
     }
+
   }
 
   public record RelationshipColumnSnapshot(
@@ -177,6 +183,7 @@ public record StructuralSnapshot(
     public RelationshipColumn toDomain() {
       return new RelationshipColumn(id, relationshipId, pkColumnId, fkColumnId, seqNo);
     }
+
   }
 
 }

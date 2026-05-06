@@ -16,6 +16,8 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import com.schemafy.core.common.exception.DomainException;
 import com.schemafy.core.erd.column.application.port.out.GetColumnsByTableIdPort;
 import com.schemafy.core.erd.column.fixture.ColumnFixture;
+import com.schemafy.core.erd.operation.application.inverse.StructuralSnapshot;
+import com.schemafy.core.erd.operation.application.service.StructuralSnapshotService;
 import com.schemafy.core.erd.relationship.application.port.in.AddRelationshipColumnCommand;
 import com.schemafy.core.erd.relationship.application.port.out.CreateRelationshipColumnPort;
 import com.schemafy.core.erd.relationship.application.port.out.GetRelationshipByIdPort;
@@ -23,8 +25,6 @@ import com.schemafy.core.erd.relationship.application.port.out.GetRelationshipCo
 import com.schemafy.core.erd.relationship.domain.RelationshipColumn;
 import com.schemafy.core.erd.relationship.domain.exception.RelationshipErrorCode;
 import com.schemafy.core.erd.relationship.fixture.RelationshipFixture;
-import com.schemafy.core.erd.operation.application.inverse.StructuralSnapshot;
-import com.schemafy.core.erd.operation.application.service.StructuralSnapshotService;
 import com.schemafy.core.erd.table.application.port.out.GetTableByIdPort;
 import com.schemafy.core.erd.table.domain.Table;
 import com.schemafy.core.ulid.application.port.out.UlidGeneratorPort;
@@ -293,7 +293,8 @@ class AddRelationshipColumnServiceTest {
   }
 
   private static StructuralSnapshot structuralSnapshot() {
-    return new StructuralSnapshot("schema1", List.of(), List.of(), List.of(), List.of(), List.of(), List.of(), List.of());
+    return new StructuralSnapshot("schema1", List.of(), List.of(), List.of(), List.of(), List.of(), List.of(), List
+        .of());
   }
 
 }

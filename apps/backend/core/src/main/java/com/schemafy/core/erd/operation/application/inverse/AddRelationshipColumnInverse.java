@@ -17,4 +17,5 @@ public record AddRelationshipColumnInverse(
   public String touchedEntityId() {
     return relationshipColumnId;
   }
+
 }

@@ -17,4 +17,5 @@ public record AddIndexColumnInverse(
   public String touchedEntityId() {
     return indexColumnId;
   }
+
 }

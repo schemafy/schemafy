@@ -17,4 +17,5 @@ public record RemoveConstraintColumnInverse(
   public String touchedEntityId() {
     return constraintColumnId;
   }
+
 }

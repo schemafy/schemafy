@@ -9,8 +9,7 @@ import reactor.core.publisher.Mono;
 
 final class ErdMutationTargetResolutionSupport {
 
-  private ErdMutationTargetResolutionSupport() {
-  }
+  private ErdMutationTargetResolutionSupport() {}
 
   static <T> T requirePayload(Object payload, Class<T> type) {
     if (!type.isInstance(payload)) {

@@ -16,6 +16,8 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import com.schemafy.core.common.exception.DomainException;
 import com.schemafy.core.erd.column.application.port.in.DeleteColumnCommand;
 import com.schemafy.core.erd.column.application.port.in.DeleteColumnUseCase;
+import com.schemafy.core.erd.operation.application.inverse.StructuralSnapshot;
+import com.schemafy.core.erd.operation.application.service.StructuralSnapshotService;
 import com.schemafy.core.erd.relationship.application.port.out.ChangeRelationshipColumnPositionPort;
 import com.schemafy.core.erd.relationship.application.port.out.DeleteRelationshipColumnPort;
 import com.schemafy.core.erd.relationship.application.port.out.DeleteRelationshipPort;
@@ -24,8 +26,6 @@ import com.schemafy.core.erd.relationship.application.port.out.GetRelationshipCo
 import com.schemafy.core.erd.relationship.application.port.out.GetRelationshipColumnsByRelationshipIdPort;
 import com.schemafy.core.erd.relationship.domain.exception.RelationshipErrorCode;
 import com.schemafy.core.erd.relationship.fixture.RelationshipFixture;
-import com.schemafy.core.erd.operation.application.inverse.StructuralSnapshot;
-import com.schemafy.core.erd.operation.application.service.StructuralSnapshotService;
 
 import reactor.core.publisher.Mono;
 import reactor.test.StepVerifier;
@@ -252,7 +252,8 @@ class RemoveRelationshipColumnServiceTest {
   }
 
   private static StructuralSnapshot structuralSnapshot() {
-    return new StructuralSnapshot("schema1", List.of(), List.of(), List.of(), List.of(), List.of(), List.of(), List.of());
+    return new StructuralSnapshot("schema1", List.of(), List.of(), List.of(), List.of(), List.of(), List.of(), List
+        .of());
   }
 
 }

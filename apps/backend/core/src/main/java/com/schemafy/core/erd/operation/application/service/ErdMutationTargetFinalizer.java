@@ -52,16 +52,16 @@ class ErdMutationTargetFinalizer {
 
     Object result = mutationResult.result();
     return switch (operationType) {
-      case CREATE_SCHEMA -> requireResult(result, CreateSchemaResult.class).id();
-      case CREATE_TABLE -> requireResult(result, CreateTableResult.class).tableId();
-      case CREATE_COLUMN -> requireResult(result, CreateColumnResult.class).columnId();
-      case CREATE_CONSTRAINT -> requireResult(result, CreateConstraintResult.class).constraintId();
-      case ADD_CONSTRAINT_COLUMN -> requireResult(result, AddConstraintColumnResult.class).constraintColumnId();
-      case CREATE_INDEX -> requireResult(result, CreateIndexResult.class).indexId();
-      case ADD_INDEX_COLUMN -> requireResult(result, AddIndexColumnResult.class).indexColumnId();
-      case CREATE_RELATIONSHIP -> requireResult(result, CreateRelationshipResult.class).relationshipId();
-      case ADD_RELATIONSHIP_COLUMN -> requireResult(result, AddRelationshipColumnResult.class).relationshipColumnId();
-      default -> throw new IllegalArgumentException("Unsupported create operation: " + operationType);
+    case CREATE_SCHEMA -> requireResult(result, CreateSchemaResult.class).id();
+    case CREATE_TABLE -> requireResult(result, CreateTableResult.class).tableId();
+    case CREATE_COLUMN -> requireResult(result, CreateColumnResult.class).columnId();
+    case CREATE_CONSTRAINT -> requireResult(result, CreateConstraintResult.class).constraintId();
+    case ADD_CONSTRAINT_COLUMN -> requireResult(result, AddConstraintColumnResult.class).constraintColumnId();
+    case CREATE_INDEX -> requireResult(result, CreateIndexResult.class).indexId();
+    case ADD_INDEX_COLUMN -> requireResult(result, AddIndexColumnResult.class).indexColumnId();
+    case CREATE_RELATIONSHIP -> requireResult(result, CreateRelationshipResult.class).relationshipId();
+    case ADD_RELATIONSHIP_COLUMN -> requireResult(result, AddRelationshipColumnResult.class).relationshipColumnId();
+    default -> throw new IllegalArgumentException("Unsupported create operation: " + operationType);
     };
   }
 

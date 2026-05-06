@@ -17,4 +17,5 @@ public record RemoveIndexColumnInverse(
   public String touchedEntityId() {
     return indexColumnId;
   }
+
 }

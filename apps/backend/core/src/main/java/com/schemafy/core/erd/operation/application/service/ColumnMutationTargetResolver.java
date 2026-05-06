@@ -26,13 +26,13 @@ class ColumnMutationTargetResolver {
 
   Mono<ResolvedErdMutationTarget> resolve(ErdOperationType operationType, Object payload) {
     return switch (operationType) {
-      case CREATE_COLUMN -> resolveCreateColumn(payload);
-      case CHANGE_COLUMN_NAME -> resolveChangeColumnName(payload);
-      case CHANGE_COLUMN_TYPE -> resolveChangeColumnType(payload);
-      case CHANGE_COLUMN_META -> resolveChangeColumnMeta(payload);
-      case CHANGE_COLUMN_POSITION -> resolveChangeColumnPosition(payload);
-      case DELETE_COLUMN -> resolveDeleteColumn(payload);
-      default -> throw unsupportedTargetOperation(operationType);
+    case CREATE_COLUMN -> resolveCreateColumn(payload);
+    case CHANGE_COLUMN_NAME -> resolveChangeColumnName(payload);
+    case CHANGE_COLUMN_TYPE -> resolveChangeColumnType(payload);
+    case CHANGE_COLUMN_META -> resolveChangeColumnMeta(payload);
+    case CHANGE_COLUMN_POSITION -> resolveChangeColumnPosition(payload);
+    case DELETE_COLUMN -> resolveDeleteColumn(payload);
+    default -> throw unsupportedTargetOperation(operationType);
     };
   }
 

@@ -29,15 +29,15 @@ class IndexMutationTargetResolver {
 
   Mono<ResolvedErdMutationTarget> resolve(ErdOperationType operationType, Object payload) {
     return switch (operationType) {
-      case CREATE_INDEX -> resolveCreateIndex(payload);
-      case CHANGE_INDEX_NAME -> resolveChangeIndexName(payload);
-      case CHANGE_INDEX_TYPE -> resolveChangeIndexType(payload);
-      case DELETE_INDEX -> resolveDeleteIndex(payload);
-      case ADD_INDEX_COLUMN -> resolveAddIndexColumn(payload);
-      case REMOVE_INDEX_COLUMN -> resolveRemoveIndexColumn(payload);
-      case CHANGE_INDEX_COLUMN_POSITION -> resolveChangeIndexColumnPosition(payload);
-      case CHANGE_INDEX_COLUMN_SORT_DIRECTION -> resolveChangeIndexColumnSortDirection(payload);
-      default -> throw unsupportedTargetOperation(operationType);
+    case CREATE_INDEX -> resolveCreateIndex(payload);
+    case CHANGE_INDEX_NAME -> resolveChangeIndexName(payload);
+    case CHANGE_INDEX_TYPE -> resolveChangeIndexType(payload);
+    case DELETE_INDEX -> resolveDeleteIndex(payload);
+    case ADD_INDEX_COLUMN -> resolveAddIndexColumn(payload);
+    case REMOVE_INDEX_COLUMN -> resolveRemoveIndexColumn(payload);
+    case CHANGE_INDEX_COLUMN_POSITION -> resolveChangeIndexColumnPosition(payload);
+    case CHANGE_INDEX_COLUMN_SORT_DIRECTION -> resolveChangeIndexColumnSortDirection(payload);
+    default -> throw unsupportedTargetOperation(operationType);
     };
   }
 

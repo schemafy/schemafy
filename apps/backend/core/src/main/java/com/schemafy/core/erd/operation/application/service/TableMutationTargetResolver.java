@@ -24,12 +24,12 @@ class TableMutationTargetResolver {
 
   Mono<ResolvedErdMutationTarget> resolve(ErdOperationType operationType, Object payload) {
     return switch (operationType) {
-      case CREATE_TABLE -> resolveCreateTable(payload);
-      case CHANGE_TABLE_NAME -> resolveChangeTableName(payload);
-      case CHANGE_TABLE_META -> resolveChangeTableMeta(payload);
-      case CHANGE_TABLE_EXTRA -> resolveChangeTableExtra(payload);
-      case DELETE_TABLE -> resolveDeleteTable(payload);
-      default -> throw unsupportedTargetOperation(operationType);
+    case CREATE_TABLE -> resolveCreateTable(payload);
+    case CHANGE_TABLE_NAME -> resolveChangeTableName(payload);
+    case CHANGE_TABLE_META -> resolveChangeTableMeta(payload);
+    case CHANGE_TABLE_EXTRA -> resolveChangeTableExtra(payload);
+    case DELETE_TABLE -> resolveDeleteTable(payload);
+    default -> throw unsupportedTargetOperation(operationType);
     };
   }
 

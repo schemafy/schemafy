@@ -17,4 +17,5 @@ public record RemoveRelationshipColumnInverse(
   public String touchedEntityId() {
     return relationshipColumnId;
   }
+
 }

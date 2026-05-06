@@ -62,16 +62,16 @@ public class AddConstraintColumnService implements AddConstraintColumnUseCase {
   @Override
   public Mono<MutationResult<AddConstraintColumnResult>> addConstraintColumn(
       AddConstraintColumnCommand command) {
-    return erdMutationCoordinator.coordinate(ErdOperationType.ADD_CONSTRAINT_COLUMN, command, () -> Mono.defer(() ->
-            structuralSnapshotService.captureByConstraintId(command.constraintId())
-                .flatMap(beforeSnapshot -> addConstraintColumnWithoutInverse(command)
-                    .flatMap(result -> structuralSnapshotService.captureBySchemaId(beforeSnapshot.schemaId())
-                        .map(afterSnapshot -> result.withInverse(new AddConstraintColumnInverse(
-                            beforeSnapshot.schemaId(),
-                            result.result().constraintColumnId(),
-                            beforeSnapshot,
-                            afterSnapshot,
-                            affectedTableIds(result))))))))
+    return erdMutationCoordinator.coordinate(ErdOperationType.ADD_CONSTRAINT_COLUMN, command, () -> Mono.defer(
+        () -> structuralSnapshotService.captureByConstraintId(command.constraintId())
+            .flatMap(beforeSnapshot -> addConstraintColumnWithoutInverse(command)
+                .flatMap(result -> structuralSnapshotService.captureBySchemaId(beforeSnapshot.schemaId())
+                    .map(afterSnapshot -> result.withInverse(new AddConstraintColumnInverse(
+                        beforeSnapshot.schemaId(),
+                        result.result().constraintColumnId(),
+                        beforeSnapshot,
+                        afterSnapshot,
+                        affectedTableIds(result))))))))
         .as(transactionalOperator::transactional);
   }
 
@@ -174,10 +174,10 @@ public class AddConstraintColumnService implements AddConstraintColumnUseCase {
       Set<String> affectedTableIds) {
     return getColumnByIdPort.findColumnById(pkColumnId)
         .flatMap(pkColumn -> pkCascadeHelper.cascadeAddPkColumn(
-                pkTableId,
-                pkColumn,
-                new HashSet<>(),
-                affectedTableIds)
+            pkTableId,
+            pkColumn,
+            new HashSet<>(),
+            affectedTableIds)
             .map(cascadeInfoList -> cascadeInfoList.stream()
                 .map(info -> new CascadeCreatedColumn(
                     info.fkColumnId(),

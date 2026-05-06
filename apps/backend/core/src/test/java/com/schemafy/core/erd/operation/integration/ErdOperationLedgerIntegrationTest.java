@@ -28,12 +28,12 @@ import com.schemafy.core.erd.index.application.port.in.RemoveIndexColumnUseCase;
 import com.schemafy.core.erd.index.domain.type.IndexType;
 import com.schemafy.core.erd.index.domain.type.SortDirection;
 import com.schemafy.core.erd.operation.ErdOperationContexts;
+import com.schemafy.core.erd.operation.application.inverse.StructuralSnapshot;
 import com.schemafy.core.erd.operation.application.port.in.RedoErdOperationCommand;
 import com.schemafy.core.erd.operation.application.port.in.RedoErdOperationUseCase;
 import com.schemafy.core.erd.operation.application.port.in.UndoErdOperationCommand;
 import com.schemafy.core.erd.operation.application.port.in.UndoErdOperationUseCase;
 import com.schemafy.core.erd.operation.application.port.out.IncrementSchemaCollaborationRevisionPort;
-import com.schemafy.core.erd.operation.application.inverse.StructuralSnapshot;
 import com.schemafy.core.erd.operation.application.service.StructuralSnapshotService;
 import com.schemafy.core.erd.operation.domain.ErdOperationDerivationKind;
 import com.schemafy.core.erd.operation.domain.exception.OperationErrorCode;
@@ -506,7 +506,8 @@ class ErdOperationLedgerIntegrationTest extends ErdProjectIntegrationSupport {
     assertThat(rowExists("db_relationship_columns", relationshipColumnId)).isFalse();
     assertThat(rowExists("db_relationships", relationshipId)).isFalse();
     assertThat(rowExists("db_columns", fkColumnId)).isFalse();
-    assertLastOperation(schemaId, "REMOVE_RELATIONSHIP_COLUMN", currentRevision(schemaId), List.of(pkTableId, fkTableId));
+    assertLastOperation(schemaId, "REMOVE_RELATIONSHIP_COLUMN", currentRevision(schemaId), List.of(pkTableId,
+        fkTableId));
   }
 
   @Test

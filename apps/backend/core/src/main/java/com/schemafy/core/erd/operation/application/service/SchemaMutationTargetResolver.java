@@ -21,10 +21,10 @@ class SchemaMutationTargetResolver {
 
   Mono<ResolvedErdMutationTarget> resolve(ErdOperationType operationType, Object payload) {
     return switch (operationType) {
-      case CREATE_SCHEMA -> resolveCreateSchema(payload);
-      case CHANGE_SCHEMA_NAME -> resolveChangeSchemaName(payload);
-      case DELETE_SCHEMA -> resolveDeleteSchema(payload);
-      default -> throw unsupportedTargetOperation(operationType);
+    case CREATE_SCHEMA -> resolveCreateSchema(payload);
+    case CHANGE_SCHEMA_NAME -> resolveChangeSchemaName(payload);
+    case DELETE_SCHEMA -> resolveDeleteSchema(payload);
+    default -> throw unsupportedTargetOperation(operationType);
     };
   }
 

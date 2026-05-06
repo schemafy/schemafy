@@ -30,16 +30,16 @@ class RelationshipMutationTargetResolver {
 
   Mono<ResolvedErdMutationTarget> resolve(ErdOperationType operationType, Object payload) {
     return switch (operationType) {
-      case CREATE_RELATIONSHIP -> resolveCreateRelationship(payload);
-      case CHANGE_RELATIONSHIP_NAME -> resolveChangeRelationshipName(payload);
-      case CHANGE_RELATIONSHIP_KIND -> resolveChangeRelationshipKind(payload);
-      case CHANGE_RELATIONSHIP_CARDINALITY -> resolveChangeRelationshipCardinality(payload);
-      case CHANGE_RELATIONSHIP_EXTRA -> resolveChangeRelationshipExtra(payload);
-      case DELETE_RELATIONSHIP -> resolveDeleteRelationship(payload);
-      case ADD_RELATIONSHIP_COLUMN -> resolveAddRelationshipColumn(payload);
-      case REMOVE_RELATIONSHIP_COLUMN -> resolveRemoveRelationshipColumn(payload);
-      case CHANGE_RELATIONSHIP_COLUMN_POSITION -> resolveChangeRelationshipColumnPosition(payload);
-      default -> throw unsupportedTargetOperation(operationType);
+    case CREATE_RELATIONSHIP -> resolveCreateRelationship(payload);
+    case CHANGE_RELATIONSHIP_NAME -> resolveChangeRelationshipName(payload);
+    case CHANGE_RELATIONSHIP_KIND -> resolveChangeRelationshipKind(payload);
+    case CHANGE_RELATIONSHIP_CARDINALITY -> resolveChangeRelationshipCardinality(payload);
+    case CHANGE_RELATIONSHIP_EXTRA -> resolveChangeRelationshipExtra(payload);
+    case DELETE_RELATIONSHIP -> resolveDeleteRelationship(payload);
+    case ADD_RELATIONSHIP_COLUMN -> resolveAddRelationshipColumn(payload);
+    case REMOVE_RELATIONSHIP_COLUMN -> resolveRemoveRelationshipColumn(payload);
+    case CHANGE_RELATIONSHIP_COLUMN_POSITION -> resolveChangeRelationshipColumnPosition(payload);
+    default -> throw unsupportedTargetOperation(operationType);
     };
   }
 

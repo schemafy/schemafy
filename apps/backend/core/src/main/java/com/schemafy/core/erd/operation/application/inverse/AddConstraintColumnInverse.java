@@ -17,4 +17,5 @@ public record AddConstraintColumnInverse(
   public String touchedEntityId() {
     return constraintColumnId;
   }
+
 }
