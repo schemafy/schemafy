@@ -4,12 +4,14 @@ import java.util.List;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.test.context.ActiveProfiles;
 
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
 import com.fasterxml.jackson.databind.JsonNode;
+import com.schemafy.core.common.exception.DomainException;
 import com.schemafy.core.common.json.JsonCodec;
 import com.schemafy.core.erd.column.application.port.in.CreateColumnCommand;
 import com.schemafy.core.erd.column.application.port.in.CreateColumnUseCase;
@@ -17,7 +19,14 @@ import com.schemafy.core.erd.constraint.application.port.in.CreateConstraintColu
 import com.schemafy.core.erd.constraint.application.port.in.CreateConstraintCommand;
 import com.schemafy.core.erd.constraint.application.port.in.CreateConstraintUseCase;
 import com.schemafy.core.erd.constraint.domain.type.ConstraintKind;
+import com.schemafy.core.erd.operation.ErdOperationContexts;
+import com.schemafy.core.erd.operation.application.port.in.RedoErdOperationCommand;
+import com.schemafy.core.erd.operation.application.port.in.RedoErdOperationUseCase;
+import com.schemafy.core.erd.operation.application.port.in.UndoErdOperationCommand;
+import com.schemafy.core.erd.operation.application.port.in.UndoErdOperationUseCase;
 import com.schemafy.core.erd.operation.application.port.out.IncrementSchemaCollaborationRevisionPort;
+import com.schemafy.core.erd.operation.domain.ErdOperationDerivationKind;
+import com.schemafy.core.erd.operation.domain.exception.OperationErrorCode;
 import com.schemafy.core.erd.relationship.application.port.in.ChangeRelationshipKindCommand;
 import com.schemafy.core.erd.relationship.application.port.in.ChangeRelationshipKindUseCase;
 import com.schemafy.core.erd.relationship.application.port.in.CreateRelationshipCommand;
@@ -31,10 +40,13 @@ import com.schemafy.core.erd.schema.application.port.in.CreateSchemaUseCase;
 import com.schemafy.core.erd.support.ErdProjectIntegrationSupport;
 import com.schemafy.core.erd.table.application.port.in.ChangeTableExtraCommand;
 import com.schemafy.core.erd.table.application.port.in.ChangeTableExtraUseCase;
+import com.schemafy.core.erd.table.application.port.in.ChangeTableNameCommand;
+import com.schemafy.core.erd.table.application.port.in.ChangeTableNameUseCase;
 import com.schemafy.core.erd.table.application.port.in.CreateTableCommand;
 import com.schemafy.core.erd.table.application.port.in.CreateTableUseCase;
 import com.schemafy.core.erd.table.application.port.in.DeleteTableCommand;
 import com.schemafy.core.erd.table.application.port.in.DeleteTableUseCase;
+import com.schemafy.core.ulid.application.service.UlidGenerator;
 
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
@@ -61,6 +73,9 @@ class ErdOperationLedgerIntegrationTest extends ErdProjectIntegrationSupport {
   ChangeTableExtraUseCase changeTableExtraUseCase;
 
   @Autowired
+  ChangeTableNameUseCase changeTableNameUseCase;
+
+  @Autowired
   DeleteTableUseCase deleteTableUseCase;
 
   @Autowired
@@ -80,6 +95,12 @@ class ErdOperationLedgerIntegrationTest extends ErdProjectIntegrationSupport {
 
   @Autowired
   IncrementSchemaCollaborationRevisionPort incrementSchemaCollaborationRevisionPort;
+
+  @Autowired
+  UndoErdOperationUseCase undoErdOperationUseCase;
+
+  @Autowired
+  RedoErdOperationUseCase redoErdOperationUseCase;
 
   @Test
   @DisplayName("schema revision과 operation log를 순서대로 기록한다")
@@ -249,6 +270,91 @@ class ErdOperationLedgerIntegrationTest extends ErdProjectIntegrationSupport {
   }
 
   @Test
+  @DisplayName("PK 쪽 table rename으로 관계 이름이 함께 바뀌면 undo/redo affectedTableIds에 양쪽 테이블을 포함한다")
+  void tableRenameUndoRedoIncludesRelationshipTablesWhenPkSideNameChanges() {
+    assertTableRenameUndoRedoIncludesRelationshipTables(true);
+  }
+
+  @Test
+  @DisplayName("FK 쪽 table rename으로 관계 이름이 함께 바뀌면 undo/redo affectedTableIds에 양쪽 테이블을 포함한다")
+  void tableRenameUndoRedoIncludesRelationshipTablesWhenFkSideNameChanges() {
+    assertTableRenameUndoRedoIncludesRelationshipTables(false);
+  }
+
+  private void assertTableRenameUndoRedoIncludesRelationshipTables(boolean renamePkSide) {
+    String sidePrefix = renamePkSide ? "pk" : "fk";
+    String projectId = createActiveProjectId("erd_operation_table_rename_" + sidePrefix + "_relationship_affected");
+
+    String schemaId = createSchemaUseCase.createSchema(new CreateSchemaCommand(
+        projectId,
+        "MySQL",
+        "table_rename_" + sidePrefix + "_relationship_affected_schema",
+        "utf8mb4",
+        "utf8mb4_general_ci")).block().result().id();
+
+    String pkTableId = createTableUseCase.createTable(new CreateTableCommand(
+        schemaId,
+        "users",
+        "utf8mb4",
+        "utf8mb4_general_ci",
+        null)).block().result().tableId();
+
+    String fkTableId = createTableUseCase.createTable(new CreateTableCommand(
+        schemaId,
+        "orders",
+        "utf8mb4",
+        "utf8mb4_general_ci",
+        null)).block().result().tableId();
+
+    String pkColumnId = createColumnUseCase.createColumn(new CreateColumnCommand(
+        pkTableId,
+        "id",
+        "INT",
+        null,
+        null,
+        null,
+        true,
+        null,
+        null,
+        "pk column")).block().result().columnId();
+
+    createConstraintUseCase.createConstraint(new CreateConstraintCommand(
+        pkTableId,
+        "pk_users",
+        ConstraintKind.PRIMARY_KEY,
+        null,
+        null,
+        List.of(new CreateConstraintColumnCommand(pkColumnId, 0)))).block();
+
+    createRelationshipUseCase.createRelationship(new CreateRelationshipCommand(
+        fkTableId,
+        pkTableId,
+        RelationshipKind.NON_IDENTIFYING,
+        Cardinality.ONE_TO_MANY,
+        null)).block();
+
+    String targetTableId = renamePkSide ? pkTableId : fkTableId;
+    String newTableName = renamePkSide ? "accounts" : "orders_v2";
+    var renameResult = changeTableNameUseCase.changeTableName(new ChangeTableNameCommand(
+        targetTableId,
+        newTableName)).block();
+
+    assertThat(renameResult.affectedTableIds())
+        .containsExactlyInAnyOrder(pkTableId, fkTableId);
+
+    String renameOpId = renameResult.operation().opId();
+
+    var undoResult = undoErdOperationUseCase.undo(new UndoErdOperationCommand(renameOpId)).block();
+    assertThat(undoResult.affectedTableIds())
+        .containsExactlyInAnyOrder(pkTableId, fkTableId);
+
+    var redoResult = redoErdOperationUseCase.redo(new RedoErdOperationCommand(renameOpId)).block();
+    assertThat(redoResult.affectedTableIds())
+        .containsExactlyInAnyOrder(pkTableId, fkTableId);
+    assertLastOperation(schemaId, "CHANGE_TABLE_NAME", currentRevision(schemaId), List.of(pkTableId, fkTableId));
+  }
+
+  @Test
   @DisplayName("같은 schema에 대한 concurrent revision increment는 유실 없이 누적된다")
   void incrementsRevisionAtomicallyUnderConcurrency() {
     String projectId = createActiveProjectId("erd_operation_atomic_increment");
@@ -315,6 +421,82 @@ class ErdOperationLedgerIntegrationTest extends ErdProjectIntegrationSupport {
         .containsExactlyInAnyOrder("CHANGE_SCHEMA_NAME", "CHANGE_TABLE_EXTRA");
   }
 
+  @Test
+  @DisplayName("파생 mutation은 resolve 당시 revision이 더 이상 최신이 아니면 커밋하지 않는다")
+  void rejectsDerivedMutationWhenBaseRevisionIsStale() {
+    String projectId = createActiveProjectId("erd_operation_stale_derived");
+
+    String schemaId = createSchemaUseCase.createSchema(new CreateSchemaCommand(
+        projectId,
+        "MySQL",
+        "stale_derived_schema",
+        "utf8mb4",
+        "utf8mb4_general_ci")).block().result().id();
+
+    String tableId = createTableUseCase.createTable(new CreateTableCommand(
+        schemaId,
+        "stale_derived_table",
+        "utf8mb4",
+        "utf8mb4_general_ci",
+        null)).block().result().tableId();
+
+    long currentRevision = currentRevision(schemaId);
+    long beforeCount = operationCount(schemaId);
+
+    StepVerifier.create(changeTableExtraUseCase.changeTableExtra(new ChangeTableExtraCommand(
+        tableId,
+        "{\"comment\":\"stale\"}"))
+        .contextWrite(ErdOperationContexts.withDerivation(ErdOperationDerivationKind.UNDO, "stale-parent")
+            .andThen(ErdOperationContexts.withBaseSchemaRevision(currentRevision - 1))))
+        .expectErrorMatches(DomainException.hasErrorCode(OperationErrorCode.SUPERSEDED))
+        .verify();
+
+    assertThat(currentRevision(schemaId)).isEqualTo(currentRevision);
+    assertThat(operationCount(schemaId)).isEqualTo(beforeCount);
+    assertThat(tableExtraIsNull(tableId)).isTrue();
+  }
+
+  @Test
+  @DisplayName("같은 operation을 부모로 하는 파생 operation log는 중복 기록할 수 없다")
+  void enforcesUniqueDerivedFromOperationId() {
+    String projectId = createActiveProjectId("erd_operation_unique_derived_from");
+
+    String schemaId = createSchemaUseCase.createSchema(new CreateSchemaCommand(
+        projectId,
+        "MySQL",
+        "unique_derived_from_schema",
+        "utf8mb4",
+        "utf8mb4_general_ci")).block().result().id();
+
+    String tableId = createTableUseCase.createTable(new CreateTableCommand(
+        schemaId,
+        "unique_derived_from_table",
+        "utf8mb4",
+        "utf8mb4_general_ci",
+        null)).block().result().tableId();
+
+    long committedRevision = currentRevision(schemaId) + 10;
+    String parentOpId = latestOperationId(schemaId);
+
+    StepVerifier.create(insertDerivedOperationLog(
+        UlidGenerator.generate(),
+        projectId,
+        schemaId,
+        committedRevision,
+        parentOpId))
+        .expectNext(1L)
+        .verifyComplete();
+
+    StepVerifier.create(insertDerivedOperationLog(
+        UlidGenerator.generate(),
+        projectId,
+        schemaId,
+        committedRevision + 1,
+        parentOpId))
+        .expectError(DataIntegrityViolationException.class)
+        .verify();
+  }
+
   private long currentRevision(String schemaId) {
     return databaseClient.sql("""
         SELECT current_revision
@@ -325,6 +507,86 @@ class ErdOperationLedgerIntegrationTest extends ErdProjectIntegrationSupport {
         .map((row, metadata) -> ((Number) row.get("current_revision")).longValue())
         .one()
         .block();
+  }
+
+  private boolean tableExtraIsNull(String tableId) {
+    return databaseClient.sql("""
+        SELECT COUNT(*) AS cnt
+        FROM db_tables
+        WHERE id = :tableId
+          AND extra IS NULL
+        """)
+        .bind("tableId", tableId)
+        .map((row, metadata) -> ((Number) row.get("cnt")).longValue() == 1)
+        .one()
+        .block();
+  }
+
+  private String latestOperationId(String schemaId) {
+    return databaseClient.sql("""
+        SELECT op_id
+        FROM erd_operation_log
+        WHERE schema_id = :schemaId
+        ORDER BY committed_revision DESC
+        LIMIT 1
+        """)
+        .bind("schemaId", schemaId)
+        .map((row, metadata) -> row.get("op_id", String.class))
+        .one()
+        .block();
+  }
+
+  private Mono<Long> insertDerivedOperationLog(
+      String opId,
+      String projectId,
+      String schemaId,
+      long committedRevision,
+      String derivedFromOpId) {
+    return databaseClient.sql("""
+        INSERT INTO erd_operation_log (
+            op_id,
+            project_id,
+            schema_id,
+            op_type,
+            committed_revision,
+            base_schema_revision,
+            client_operation_id,
+            collab_session_id,
+            actor_user_id,
+            derivation_kind,
+            derived_from_op_id,
+            lifecycle_state,
+            payload_json,
+            inverse_payload_json,
+            touched_entities_json,
+            affected_table_ids_json
+        ) VALUES (
+            :opId,
+            :projectId,
+            :schemaId,
+            'CHANGE_TABLE_EXTRA',
+            :committedRevision,
+            :baseSchemaRevision,
+            NULL,
+            NULL,
+            'system',
+            'UNDO',
+            :derivedFromOpId,
+            'COMMITTED',
+            '{}',
+            NULL,
+            '[]',
+            '[]'
+        )
+        """)
+        .bind("opId", opId)
+        .bind("projectId", projectId)
+        .bind("schemaId", schemaId)
+        .bind("committedRevision", committedRevision)
+        .bind("baseSchemaRevision", committedRevision - 1)
+        .bind("derivedFromOpId", derivedFromOpId)
+        .fetch()
+        .rowsUpdated();
   }
 
   private long operationCount(String schemaId) {
