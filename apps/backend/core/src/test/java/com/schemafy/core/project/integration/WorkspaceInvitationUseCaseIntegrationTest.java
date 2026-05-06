@@ -1,5 +1,7 @@
 package com.schemafy.core.project.integration;
 
+import java.time.Instant;
+
 import org.springframework.beans.factory.annotation.Autowired;
 
 import org.junit.jupiter.api.DisplayName;
@@ -75,6 +77,48 @@ class WorkspaceInvitationUseCaseIntegrationTest
         .contains(invitation.getId());
     assertThat(myInvitations.content()).extracting(Invitation::getId)
         .contains(invitation.getId());
+  }
+
+  @Test
+  @DisplayName("이미 워크스페이스 멤버인 사용자가 pending 초대를 수락하면 초대들을 cancelled로 정리한 뒤 중복 멤버십 오류를 반환한다")
+  void acceptWorkspaceInvitation_alreadyMemberCancelsPendingInvitationsThenErrors() {
+    User admin = signUpUser("admin-wi-already-accept@test.com", "Admin");
+    User invitee = signUpUser("invitee-wi-already-accept@test.com", "Invitee");
+    var workspace = saveWorkspace("Already Member WS", "Description");
+    saveWorkspaceMember(workspace, admin, WorkspaceRole.ADMIN);
+    saveWorkspaceMember(workspace, invitee, WorkspaceRole.MEMBER);
+
+    Invitation currentInvitation = saveWorkspaceInvitation(workspace,
+        invitee.email(), WorkspaceRole.ADMIN, admin);
+    Invitation siblingInvitation = saveWorkspaceInvitation(workspace,
+        invitee.email(), WorkspaceRole.ADMIN, admin);
+    Invitation expiredSiblingInvitation = saveWorkspaceInvitation(workspace,
+        invitee.email(), WorkspaceRole.ADMIN, admin);
+    updateInvitationExpiration(expiredSiblingInvitation.getId(),
+        Instant.now().minusSeconds(60));
+
+    StepVerifier.create(acceptWorkspaceInvitationUseCase.acceptWorkspaceInvitation(
+        new AcceptWorkspaceInvitationCommand(currentInvitation.getId(), invitee.id())))
+        .expectErrorMatches(DomainException.hasErrorCode(
+            ProjectErrorCode.INVITATION_DUPLICATE_WORKSPACE_MEMBER))
+        .verify();
+
+    Invitation current = invitationRepository.findById(currentInvitation.getId()).block();
+    Invitation sibling = invitationRepository.findById(siblingInvitation.getId()).block();
+    Invitation expiredSibling = invitationRepository
+        .findById(expiredSiblingInvitation.getId())
+        .block();
+
+    assertThat(current).isNotNull();
+    assertThat(current.getStatusAsEnum()).isEqualTo(InvitationStatus.CANCELLED);
+    assertThat(current.getResolvedAt()).isNotNull();
+    assertThat(sibling).isNotNull();
+    assertThat(sibling.getStatusAsEnum()).isEqualTo(InvitationStatus.CANCELLED);
+    assertThat(sibling.getResolvedAt()).isNotNull();
+    assertThat(expiredSibling).isNotNull();
+    assertThat(expiredSibling.getStatusAsEnum()).isEqualTo(InvitationStatus.CANCELLED);
+    assertThat(expiredSibling.getResolvedAt()).isNotNull();
+    assertThat(countActiveWorkspaceMemberRows(workspace.getId(), invitee.id())).isEqualTo(1);
   }
 
   @Test

@@ -3,6 +3,9 @@ package com.schemafy.core.project.application.service;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.reactive.TransactionalOperator;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import com.schemafy.core.project.application.port.in.CreateWorkspaceInvitationCommand;
 import com.schemafy.core.project.application.port.in.CreateWorkspaceInvitationUseCase;
 import com.schemafy.core.project.application.port.out.InvitationPort;
@@ -18,6 +21,11 @@ import reactor.core.publisher.Mono;
 @RequiredArgsConstructor
 class CreateWorkspaceInvitationService
     implements CreateWorkspaceInvitationUseCase {
+
+  private static final Logger log = LoggerFactory.getLogger(
+      CreateWorkspaceInvitationService.class);
+  private static final String CLEANUP_REASON_EXPIRED_PENDING = "expired_pending";
+  private static final String CLEANUP_SOURCE_CREATE_WORKSPACE_INVITATION = "create_workspace_invitation";
 
   private final TransactionalOperator transactionalOperator;
   private final UlidGeneratorPort ulidGeneratorPort;
@@ -35,7 +43,11 @@ class CreateWorkspaceInvitationService
             .then(invitationPort.cancelExpiredPendingInvitationsByTargetAndEmail(
                 InvitationType.WORKSPACE.name(),
                 command.workspaceId(),
-                email.address()))
+                email.address())
+                .doOnNext(count -> logCleanupIfAny(
+                    count,
+                    command.workspaceId(),
+                    command.requesterId())))
             .then(workspaceInvitationHelper
                 .checkNotAlreadyMemberByEmail(command.workspaceId(), email)
                 .then(workspaceInvitationHelper.checkDuplicatePendingInvitation(
@@ -49,6 +61,22 @@ class CreateWorkspaceInvitationService
                         command.role(),
                         command.requesterId())))))
         .as(transactionalOperator::transactional);
+  }
+
+  private void logCleanupIfAny(
+      long cancelledCount,
+      String targetId,
+      String userId) {
+    if (cancelledCount > 0) {
+      log.info(
+          "Invitation cleanup: reason={}, source={}, targetType={}, targetId={}, userId={}, cancelledCount={}",
+          CLEANUP_REASON_EXPIRED_PENDING,
+          CLEANUP_SOURCE_CREATE_WORKSPACE_INVITATION,
+          InvitationType.WORKSPACE.name(),
+          targetId,
+          userId,
+          cancelledCount);
+    }
   }
 
 }

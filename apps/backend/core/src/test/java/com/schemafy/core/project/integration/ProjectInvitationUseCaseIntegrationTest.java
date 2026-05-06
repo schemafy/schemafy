@@ -1,5 +1,7 @@
 package com.schemafy.core.project.integration;
 
+import java.time.Instant;
+
 import org.springframework.beans.factory.annotation.Autowired;
 
 import org.junit.jupiter.api.DisplayName;
@@ -95,6 +97,51 @@ class ProjectInvitationUseCaseIntegrationTest extends ProjectDomainIntegrationSu
         .expectErrorMatches(DomainException.hasErrorCode(
             ProjectErrorCode.INVITATION_DUPLICATE_MEMBERSHIP_PROJECT))
         .verify();
+  }
+
+  @Test
+  @DisplayName("이미 프로젝트 멤버인 사용자가 pending 초대를 수락하면 초대들을 cancelled로 정리한 뒤 중복 멤버십 오류를 반환한다")
+  void acceptProjectInvitation_alreadyMemberCancelsPendingInvitationsThenErrors() {
+    User admin = signUpUser("admin-pi-already-accept@test.com", "Admin");
+    User invitee = signUpUser("invitee-pi-already-accept@test.com", "Invitee");
+    var workspace = saveWorkspace("Already Member Project WS", "Description");
+    saveWorkspaceMember(workspace, admin, WorkspaceRole.ADMIN);
+    saveWorkspaceMember(workspace, invitee, WorkspaceRole.MEMBER);
+    var project = saveProject(workspace, "Already Member Project");
+    saveProjectMember(project, admin, ProjectRole.ADMIN);
+    saveProjectMember(project, invitee, ProjectRole.VIEWER);
+
+    Invitation currentInvitation = saveProjectInvitation(project, workspace,
+        invitee.email(), ProjectRole.EDITOR, admin);
+    Invitation siblingInvitation = saveProjectInvitation(project, workspace,
+        invitee.email(), ProjectRole.EDITOR, admin);
+    Invitation expiredSiblingInvitation = saveProjectInvitation(project, workspace,
+        invitee.email(), ProjectRole.EDITOR, admin);
+    updateInvitationExpiration(expiredSiblingInvitation.getId(),
+        Instant.now().minusSeconds(60));
+
+    StepVerifier.create(acceptProjectInvitationUseCase.acceptProjectInvitation(
+        new AcceptProjectInvitationCommand(currentInvitation.getId(), invitee.id())))
+        .expectErrorMatches(DomainException.hasErrorCode(
+            ProjectErrorCode.INVITATION_DUPLICATE_MEMBERSHIP_PROJECT))
+        .verify();
+
+    Invitation current = invitationRepository.findById(currentInvitation.getId()).block();
+    Invitation sibling = invitationRepository.findById(siblingInvitation.getId()).block();
+    Invitation expiredSibling = invitationRepository
+        .findById(expiredSiblingInvitation.getId())
+        .block();
+
+    assertThat(current).isNotNull();
+    assertThat(current.getStatusAsEnum()).isEqualTo(InvitationStatus.CANCELLED);
+    assertThat(current.getResolvedAt()).isNotNull();
+    assertThat(sibling).isNotNull();
+    assertThat(sibling.getStatusAsEnum()).isEqualTo(InvitationStatus.CANCELLED);
+    assertThat(sibling.getResolvedAt()).isNotNull();
+    assertThat(expiredSibling).isNotNull();
+    assertThat(expiredSibling.getStatusAsEnum()).isEqualTo(InvitationStatus.CANCELLED);
+    assertThat(expiredSibling.getResolvedAt()).isNotNull();
+    assertThat(countActiveProjectMemberRows(project.getId(), invitee.id())).isEqualTo(1);
   }
 
   @Test

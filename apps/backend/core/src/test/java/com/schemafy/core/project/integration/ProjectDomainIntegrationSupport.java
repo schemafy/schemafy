@@ -224,6 +224,15 @@ abstract class ProjectDomainIntegrationSupport {
         .block();
   }
 
+  protected void updateInvitationExpiration(String invitationId, Instant expiresAt) {
+    databaseClient.sql("UPDATE invitations SET expires_at = :expiresAt WHERE id = :id")
+        .bind("expiresAt", expiresAt)
+        .bind("id", invitationId)
+        .fetch()
+        .rowsUpdated()
+        .block();
+  }
+
   private Mono<Long> deleteAll(String table) {
     return databaseClient.sql("DELETE FROM " + table)
         .fetch()

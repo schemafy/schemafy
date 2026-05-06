@@ -73,8 +73,7 @@ class ProjectInvitationHelper {
         InvitationStatus.PENDING.name())
         .flatMap(count -> {
           if (count > 0) {
-            log.warn("Duplicate pending invitation: project={}, email={}",
-                projectId, email.address());
+            log.warn("Duplicate pending invitation: project={}", projectId);
             return Mono.error(new DomainException(
                 ProjectErrorCode.INVITATION_ALREADY_EXISTS));
           }

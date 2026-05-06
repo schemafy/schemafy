@@ -26,6 +26,8 @@ class AddWorkspaceMemberService implements AddWorkspaceMemberUseCase {
 
   private static final Logger log = LoggerFactory.getLogger(
       AddWorkspaceMemberService.class);
+  private static final String CLEANUP_REASON_WORKSPACE_MEMBER_MATERIALIZED = "workspace_member_materialized";
+  private static final String CLEANUP_SOURCE_ADD_WORKSPACE_MEMBER = "add_workspace_member";
 
   private final TransactionalOperator transactionalOperator;
   private final UlidGeneratorPort ulidGeneratorPort;
@@ -36,18 +38,20 @@ class AddWorkspaceMemberService implements AddWorkspaceMemberUseCase {
 
   @Override
   public Mono<WorkspaceMember> addWorkspaceMember(AddWorkspaceMemberCommand command) {
-    // 권한 검증은 추후 어노테이션으로 분리할 예정이라 lock보다 먼저 수행
-    // commit 시점 권한까지 엄밀히 보장하려면 lock 이후 재검증 필요
+    // 권한 검증은 추후 어노테이션으로 분리할 예정이라 트랜잭션 진입 전 수행
     return Mono.fromSupplier(() -> Email.from(command.email()))
         .flatMap(email -> workspaceAccessHelper.validateAdminAccess(
             command.workspaceId(), command.requesterId())
             .then(workspaceAccessHelper.findUserByEmailOrThrow(email))
-            .flatMap(targetUser -> Mono.defer(() -> addWorkspaceMemberWithinWriteScope(command, email, targetUser.id())
+            .flatMap(targetUser -> Mono.defer(() -> doAddWorkspaceMember(
+                command,
+                email,
+                targetUser.id())
                 .as(transactionalOperator::transactional)))
             .onErrorResume(error -> {
               if (error instanceof DataIntegrityViolationException) {
-                log.warn("Duplicate key constraint: workspaceId={}, email={}",
-                    command.workspaceId(), email.address());
+                log.warn("Duplicate key constraint: workspaceId={}",
+                    command.workspaceId());
                 return Mono.error(new DomainException(
                     WorkspaceErrorCode.MEMBER_ALREADY_EXISTS));
               }
@@ -55,11 +59,11 @@ class AddWorkspaceMemberService implements AddWorkspaceMemberUseCase {
             }));
   }
 
-  private Mono<WorkspaceMember> addWorkspaceMemberWithinWriteScope(
+  private Mono<WorkspaceMember> doAddWorkspaceMember(
       AddWorkspaceMemberCommand command,
       Email email,
       String targetUserId) {
-    return workspaceAccessHelper.requireWorkspaceForWrite(command.workspaceId())
+    return workspaceAccessHelper.findWorkspaceOrThrow(command.workspaceId())
         .then(createOrRestoreWorkspaceMember(command, targetUserId))
         .flatMap(savedMember -> projectMembershipPropagationHelper
             .syncProjectMembershipsForWorkspaceRole(
@@ -68,7 +72,11 @@ class AddWorkspaceMemberService implements AddWorkspaceMemberUseCase {
                 savedMember.getRoleAsEnum())
             .then(invitationPort
                 .cancelPendingProjectInvitationsByWorkspaceIdAndEmail(
-                    command.workspaceId(), email.address()))
+                    command.workspaceId(), email.address())
+                .doOnNext(count -> logCleanupIfAny(
+                    count,
+                    command.workspaceId(),
+                    targetUserId)))
             .thenReturn(savedMember));
   }
 
@@ -90,8 +98,28 @@ class AddWorkspaceMemberService implements AddWorkspaceMemberUseCase {
         })
         .switchIfEmpty(Mono.defer(() -> Mono
             .fromCallable(ulidGeneratorPort::generate)
-            .map(id -> WorkspaceMember.create(id, command.workspaceId(), userId, command.role()))
+            .map(id -> WorkspaceMember.create(
+                id,
+                command.workspaceId(),
+                userId,
+                command.role()))
             .flatMap(workspaceMemberPort::save)));
+  }
+
+  private void logCleanupIfAny(
+      long cancelledCount,
+      String targetId,
+      String userId) {
+    if (cancelledCount > 0) {
+      log.info(
+          "Invitation cleanup: reason={}, source={}, targetType={}, targetId={}, userId={}, cancelledCount={}",
+          CLEANUP_REASON_WORKSPACE_MEMBER_MATERIALIZED,
+          CLEANUP_SOURCE_ADD_WORKSPACE_MEMBER,
+          "PROJECT",
+          targetId,
+          userId,
+          cancelledCount);
+    }
   }
 
 }

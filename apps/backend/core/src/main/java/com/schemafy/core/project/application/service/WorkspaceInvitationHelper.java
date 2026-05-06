@@ -72,8 +72,7 @@ class WorkspaceInvitationHelper {
         InvitationStatus.PENDING.name())
         .flatMap(count -> {
           if (count > 0) {
-            log.warn("Duplicate pending invitation: workspace={}, email={}",
-                workspaceId, email.address());
+            log.warn("Duplicate pending invitation: workspace={}", workspaceId);
             return Mono.error(new DomainException(
                 ProjectErrorCode.INVITATION_ALREADY_EXISTS));
           }
