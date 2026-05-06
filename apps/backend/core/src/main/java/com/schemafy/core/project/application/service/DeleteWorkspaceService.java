@@ -34,7 +34,7 @@ class DeleteWorkspaceService implements DeleteWorkspaceUseCase {
   }
 
   private Mono<Void> doDeleteWorkspace(String workspaceId) {
-    return workspaceAccessHelper.requireWorkspaceForWrite(workspaceId)
+    return workspaceAccessHelper.findWorkspaceOrThrow(workspaceId)
         .flatMap(workspace -> {
           workspace.delete();
           return workspacePort.save(workspace)

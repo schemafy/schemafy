@@ -22,20 +22,19 @@ class UpdateProjectMemberRoleService implements UpdateProjectMemberRoleUseCase {
   @Override
   public Mono<ProjectMember> updateProjectMemberRole(
       UpdateProjectMemberRoleCommand command) {
-    // 권한 검증은 추후 어노테이션으로 분리할 예정이라 lock보다 먼저 수행
-    // commit 시점 권한까지 엄밀히 보장하려면 lock 이후 재검증 필요
+    // 권한 검증은 추후 어노테이션으로 분리할 예정이라 트랜잭션 진입 전 수행
     return projectAccessHelper.validateProjectAdmin(command.projectId(),
         command.requesterId())
         .then(projectAccessHelper.findProjectById(command.projectId()))
-        .flatMap(project -> Mono.defer(() -> updateProjectMemberRoleWithinWriteScope(
+        .flatMap(project -> Mono.defer(() -> doUpdateProjectMemberRole(
             command, project.getWorkspaceId())
             .as(transactionalOperator::transactional)));
   }
 
-  private Mono<ProjectMember> updateProjectMemberRoleWithinWriteScope(
+  private Mono<ProjectMember> doUpdateProjectMemberRole(
       UpdateProjectMemberRoleCommand command,
       String workspaceId) {
-    return projectAccessHelper.requireProjectWithinWorkspaceForWrite(
+    return projectAccessHelper.requireProjectWithinWorkspace(
         workspaceId, command.projectId())
         .then(projectAccessHelper.findProjectMember(command.requesterId(),
             command.projectId()))

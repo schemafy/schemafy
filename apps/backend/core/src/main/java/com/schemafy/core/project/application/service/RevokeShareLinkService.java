@@ -28,7 +28,7 @@ class RevokeShareLinkService implements RevokeShareLinkUseCase {
         command.requesterId())
         .then(projectAccessHelper.findProjectById(command.projectId()))
         .flatMap(project -> Mono.defer(() -> projectAccessHelper
-            .requireProjectWithinWorkspaceForWrite(
+            .requireProjectWithinWorkspace(
                 project.getWorkspaceId(), command.projectId())
             .then(shareLinkHelper.findShareLinkById(command.shareLinkId(),
                 command.projectId()))

@@ -28,7 +28,7 @@ class LeaveProjectService implements LeaveProjectUseCase {
           if (project.isDeleted()) {
             return softDeleteProjectMemberFallback(command);
           }
-          return Mono.defer(() -> leaveProjectWithinWriteScope(
+          return Mono.defer(() -> doLeaveProject(
               command, project.getWorkspaceId())
               .thenReturn(Boolean.TRUE)
               .as(transactionalOperator::transactional))
@@ -38,10 +38,10 @@ class LeaveProjectService implements LeaveProjectUseCase {
         .then();
   }
 
-  private Mono<Void> leaveProjectWithinWriteScope(
+  private Mono<Void> doLeaveProject(
       LeaveProjectCommand command,
       String workspaceId) {
-    return projectAccessHelper.lockProjectWithinWorkspaceForWrite(
+    return projectAccessHelper.requireProjectWithinWorkspace(
         workspaceId, command.projectId())
         .flatMap(project -> projectAccessHelper
             .findProjectMember(command.requesterId(), command.projectId())

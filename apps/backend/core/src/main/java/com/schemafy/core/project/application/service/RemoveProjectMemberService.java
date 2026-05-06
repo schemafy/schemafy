@@ -18,19 +18,18 @@ class RemoveProjectMemberService implements RemoveProjectMemberUseCase {
 
   @Override
   public Mono<Void> removeProjectMember(RemoveProjectMemberCommand command) {
-    // 권한 검증은 추후 어노테이션으로 분리할 예정이라 lock보다 먼저 수행
-    // commit 시점 권한까지 엄밀히 보장하려면 lock 이후 재검증 필요
+    // 권한 검증은 추후 어노테이션으로 분리할 예정이라 트랜잭션 진입 전 수행
     return projectAccessHelper.validateProjectAdmin(command.projectId(), command.requesterId())
         .then(projectAccessHelper.findProjectById(command.projectId()))
-        .flatMap(project -> Mono.defer(() -> removeProjectMemberWithinWriteScope(
+        .flatMap(project -> Mono.defer(() -> doRemoveProjectMember(
             command, project.getWorkspaceId())
             .as(transactionalOperator::transactional)));
   }
 
-  private Mono<Void> removeProjectMemberWithinWriteScope(
+  private Mono<Void> doRemoveProjectMember(
       RemoveProjectMemberCommand command,
       String workspaceId) {
-    return projectAccessHelper.requireProjectWithinWorkspaceForWrite(
+    return projectAccessHelper.requireProjectWithinWorkspace(
         workspaceId, command.projectId())
         .then(projectAccessHelper.findProjectMember(command.targetUserId(), command.projectId()))
         .flatMap(target -> projectAccessHelper.validateWorkspaceAdminGuard(

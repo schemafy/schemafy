@@ -24,7 +24,7 @@ class DeleteShareLinkService implements DeleteShareLinkUseCase {
     return shareLinkHelper.validateAdminAccess(command.projectId(), command.requesterId())
         .then(projectAccessHelper.findProjectById(command.projectId()))
         .flatMap(project -> Mono.defer(() -> projectAccessHelper
-            .requireProjectWithinWorkspaceForWrite(
+            .requireProjectWithinWorkspace(
                 project.getWorkspaceId(), command.projectId())
             .then(shareLinkHelper.findShareLinkById(command.shareLinkId(),
                 command.projectId()))

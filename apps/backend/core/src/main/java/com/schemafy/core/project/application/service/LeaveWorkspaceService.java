@@ -30,7 +30,7 @@ class LeaveWorkspaceService implements LeaveWorkspaceUseCase {
 
   @Override
   public Mono<Void> leaveWorkspace(LeaveWorkspaceCommand command) {
-    return workspaceAccessHelper.requireWorkspaceForWrite(command.workspaceId())
+    return workspaceAccessHelper.findWorkspaceOrThrow(command.workspaceId())
         .then(workspaceAccessHelper.findWorkspaceMember(command.requesterId(),
             command.workspaceId()))
         .flatMap(member -> workspaceMemberPort

@@ -61,7 +61,7 @@ class LeaveProjectServiceTest {
     given(projectPort.findById(PROJECT_ID))
         .willReturn(Mono.just(project));
     given(projectAccessHelper
-        .lockProjectWithinWorkspaceForWrite(WORKSPACE_ID, PROJECT_ID))
+        .requireProjectWithinWorkspace(WORKSPACE_ID, PROJECT_ID))
         .willReturn(Mono.just(project));
     given(projectAccessHelper.findProjectMember(USER_ID, PROJECT_ID))
         .willReturn(Mono.just(member));
@@ -108,7 +108,7 @@ class LeaveProjectServiceTest {
     then(projectAccessHelper).should()
         .softDeleteMember(member);
     then(projectAccessHelper).should(never())
-        .lockProjectWithinWorkspaceForWrite(WORKSPACE_ID, PROJECT_ID);
+        .requireProjectWithinWorkspace(WORKSPACE_ID, PROJECT_ID);
     then(projectCascadeHelper).shouldHaveNoInteractions();
   }
 

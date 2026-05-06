@@ -33,23 +33,17 @@ class ProjectAccessHelper {
             new DomainException(ProjectErrorCode.NOT_FOUND)));
   }
 
-  Mono<Project> requireProjectWithinWorkspaceForWrite(
-      String workspaceId,
-      String projectId) {
-    return lockProjectWithinWorkspaceForWrite(workspaceId, projectId)
-        .switchIfEmpty(Mono.error(
-            new DomainException(ProjectErrorCode.NOT_FOUND)));
-  }
-
-  Mono<Project> lockProjectWithinWorkspaceForWrite(
+  Mono<Project> requireProjectWithinWorkspace(
       String workspaceId,
       String projectId) {
     return workspacePort
-        .findByIdAndNotDeletedForUpdate(workspaceId)
+        .findByIdAndNotDeleted(workspaceId)
         .switchIfEmpty(Mono.error(
             new DomainException(WorkspaceErrorCode.NOT_FOUND)))
-        .then(projectPort.findByIdAndNotDeletedForUpdate(projectId))
-        .filter(project -> workspaceId.equals(project.getWorkspaceId()));
+        .then(projectPort.findByIdAndNotDeleted(projectId))
+        .filter(project -> workspaceId.equals(project.getWorkspaceId()))
+        .switchIfEmpty(Mono.error(
+            new DomainException(ProjectErrorCode.NOT_FOUND)));
   }
 
   Mono<ProjectDetail> buildProjectDetail(Project project, String userId) {

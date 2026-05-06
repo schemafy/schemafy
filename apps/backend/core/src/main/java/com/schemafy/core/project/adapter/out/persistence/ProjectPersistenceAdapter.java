@@ -47,11 +47,6 @@ public class ProjectPersistenceAdapter
   }
 
   @Override
-  public Mono<Project> findByIdAndNotDeletedForUpdate(String projectId) {
-    return projectRepository.findByIdAndNotDeletedForUpdate(projectId);
-  }
-
-  @Override
   public Mono<Boolean> existsActiveProjectById(String projectId) {
     return projectRepository.findByIdAndNotDeleted(projectId)
         .hasElement();

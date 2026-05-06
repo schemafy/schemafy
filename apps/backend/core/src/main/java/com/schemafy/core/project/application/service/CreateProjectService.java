@@ -31,13 +31,13 @@ class CreateProjectService implements CreateProjectUseCase {
   @Override
   public Mono<ProjectDetail> createProject(CreateProjectCommand command) {
     return projectAccessHelper.validateWorkspaceAdmin(command.workspaceId(), command.requesterId())
-        .then(Mono.defer(() -> createProjectWithinWriteScope(command)
+        .then(Mono.defer(() -> doCreateProject(command)
             .as(transactionalOperator::transactional)));
   }
 
-  private Mono<ProjectDetail> createProjectWithinWriteScope(
+  private Mono<ProjectDetail> doCreateProject(
       CreateProjectCommand command) {
-    return workspaceAccessHelper.requireWorkspaceForWrite(command.workspaceId())
+    return workspaceAccessHelper.findWorkspaceOrThrow(command.workspaceId())
         .then(Mono.defer(() -> Mono.zip(
             Mono.fromCallable(ulidGeneratorPort::generate),
             Mono.fromCallable(ulidGeneratorPort::generate))

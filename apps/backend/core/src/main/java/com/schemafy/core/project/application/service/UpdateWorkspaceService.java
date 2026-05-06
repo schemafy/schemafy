@@ -23,13 +23,13 @@ class UpdateWorkspaceService implements UpdateWorkspaceUseCase {
   public Mono<WorkspaceDetail> updateWorkspace(UpdateWorkspaceCommand command) {
     return workspaceAccessHelper.validateAdminAccess(command.workspaceId(),
         command.requesterId())
-        .then(Mono.defer(() -> updateWorkspaceWithinWriteScope(command)
+        .then(Mono.defer(() -> doUpdateWorkspace(command)
             .as(transactionalOperator::transactional)));
   }
 
-  private Mono<WorkspaceDetail> updateWorkspaceWithinWriteScope(
+  private Mono<WorkspaceDetail> doUpdateWorkspace(
       UpdateWorkspaceCommand command) {
-    return workspaceAccessHelper.requireWorkspaceForWrite(
+    return workspaceAccessHelper.findWorkspaceOrThrow(
         command.workspaceId())
         .flatMap(workspace -> {
           workspace.update(command.name(), command.description());

@@ -19,17 +19,16 @@ class RemoveWorkspaceMemberService implements RemoveWorkspaceMemberUseCase {
 
   @Override
   public Mono<Void> removeWorkspaceMember(RemoveWorkspaceMemberCommand command) {
-    // 권한 검증은 추후 어노테이션으로 분리할 예정이라 lock보다 먼저 수행
-    // commit 시점 권한까지 엄밀히 보장하려면 lock 이후 재검증 필요
+    // 권한 검증은 추후 어노테이션으로 분리할 예정이라 트랜잭션 진입 전 수행
     return workspaceAccessHelper.validateAdminAccess(command.workspaceId(),
         command.requesterId())
-        .then(Mono.defer(() -> removeWorkspaceMemberWithinWriteScope(command)
+        .then(Mono.defer(() -> doRemoveWorkspaceMember(command)
             .as(transactionalOperator::transactional)));
   }
 
-  private Mono<Void> removeWorkspaceMemberWithinWriteScope(
+  private Mono<Void> doRemoveWorkspaceMember(
       RemoveWorkspaceMemberCommand command) {
-    return workspaceAccessHelper.requireWorkspaceForWrite(
+    return workspaceAccessHelper.findWorkspaceOrThrow(
         command.workspaceId())
         .then(workspaceAccessHelper.findWorkspaceMember(command.targetUserId(),
             command.workspaceId()))

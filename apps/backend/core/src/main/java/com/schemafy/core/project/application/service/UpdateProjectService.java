@@ -24,15 +24,15 @@ class UpdateProjectService implements UpdateProjectUseCase {
     return projectAccessHelper.validateProjectAdmin(command.projectId(),
         command.requesterId())
         .then(projectAccessHelper.findProjectById(command.projectId()))
-        .flatMap(project -> Mono.defer(() -> updateProjectWithinWriteScope(
+        .flatMap(project -> Mono.defer(() -> doUpdateProject(
             command, project.getWorkspaceId())
             .as(transactionalOperator::transactional)));
   }
 
-  private Mono<ProjectDetail> updateProjectWithinWriteScope(
+  private Mono<ProjectDetail> doUpdateProject(
       UpdateProjectCommand command,
       String workspaceId) {
-    return projectAccessHelper.requireProjectWithinWorkspaceForWrite(
+    return projectAccessHelper.requireProjectWithinWorkspace(
         workspaceId, command.projectId())
         .flatMap(project -> {
           project.update(command.name(), command.description());

@@ -29,11 +29,6 @@ public class WorkspacePersistenceAdapter
   }
 
   @Override
-  public Mono<Workspace> findByIdAndNotDeletedForUpdate(String workspaceId) {
-    return workspaceRepository.findByIdAndNotDeletedForUpdate(workspaceId);
-  }
-
-  @Override
   public Flux<Workspace> findByUserIdWithPaging(String userId, int limit,
       int offset) {
     return workspaceRepository.findByUserIdWithPaging(userId, limit, offset);

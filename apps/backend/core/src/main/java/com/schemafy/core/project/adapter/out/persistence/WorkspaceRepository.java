@@ -12,17 +12,10 @@ public interface WorkspaceRepository
     extends ReactiveCrudRepository<Workspace, String> {
 
   @Query("""
-      SELECT * FROM workspaces
-      WHERE id = :id AND deleted_at IS NULL
+          SELECT * FROM workspaces
+          WHERE id = :id AND deleted_at IS NULL
       """)
   Mono<Workspace> findByIdAndNotDeleted(String id);
-
-  @Query("""
-      SELECT * FROM workspaces
-      WHERE id = :id AND deleted_at IS NULL
-      FOR UPDATE
-      """)
-  Mono<Workspace> findByIdAndNotDeletedForUpdate(String id);
 
   @Query("""
       SELECT w.* FROM workspaces w

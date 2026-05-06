@@ -29,7 +29,7 @@ class CreateShareLinkService implements CreateShareLinkUseCase {
     return shareLinkHelper.validateAdminAccess(command.projectId(), command.requesterId())
         .then(projectAccessHelper.findProjectById(command.projectId()))
         .flatMap(project -> Mono.defer(() -> projectAccessHelper
-            .requireProjectWithinWorkspaceForWrite(
+            .requireProjectWithinWorkspace(
                 project.getWorkspaceId(), command.projectId())
             .then(Mono.fromCallable(ulidGeneratorPort::generate)
                 .flatMap(id -> {
