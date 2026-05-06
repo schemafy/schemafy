@@ -96,8 +96,6 @@ class ChangeTableNameUndoRedoHandler
         .map(tuple -> new ChangeTableNameInverse(
             table.id(),
             table.name(),
-            inversePayload.oldPkConstraintId(),
-            firstLegacyPkName(tuple.getT1(), inversePayload.oldPkConstraintId()),
             tuple.getT1(),
             tuple.getT2()));
   }
@@ -107,19 +105,6 @@ class ChangeTableNameUndoRedoHandler
         .switchIfEmpty(Mono.error(new DomainException(
             ConstraintErrorCode.NOT_FOUND,
             "Constraint not found: " + constraintId)));
-  }
-
-  private static String firstLegacyPkName(
-      List<ConstraintRename> constraintRenames,
-      String legacyPkConstraintId) {
-    if (legacyPkConstraintId == null) {
-      return null;
-    }
-    return constraintRenames.stream()
-        .filter(rename -> legacyPkConstraintId.equals(rename.constraintId()))
-        .map(ConstraintRename::oldName)
-        .findFirst()
-        .orElse(null);
   }
 
   private static Set<String> affectedTableIds(

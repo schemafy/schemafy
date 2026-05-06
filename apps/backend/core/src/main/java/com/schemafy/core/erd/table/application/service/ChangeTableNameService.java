@@ -141,7 +141,6 @@ public class ChangeTableNameService implements ChangeTableNameUseCase {
           reservedConstraintNames.add(newName);
           return Mono.just(new ConstraintRenamePlan(
               constraint.id(),
-              constraint.kind(),
               constraint.name(),
               newName));
         });
@@ -374,12 +373,9 @@ public class ChangeTableNameService implements ChangeTableNameUseCase {
     }
 
     ChangeTableNameInverse toInverse(Table oldTable) {
-      ConstraintRenamePlan pkRename = firstPrimaryKeyRename();
       return new ChangeTableNameInverse(
           oldTable.id(),
           oldTable.name(),
-          pkRename == null ? null : pkRename.constraintId(),
-          pkRename == null ? null : pkRename.oldName(),
           constraintRenames.stream()
               .map(rename -> new ConstraintRename(rename.constraintId(), rename.oldName()))
               .toList(),
@@ -392,20 +388,10 @@ public class ChangeTableNameService implements ChangeTableNameUseCase {
               .toList());
     }
 
-    private ConstraintRenamePlan firstPrimaryKeyRename() {
-      for (ConstraintRenamePlan rename : constraintRenames) {
-        if (rename.kind() == ConstraintKind.PRIMARY_KEY) {
-          return rename;
-        }
-      }
-      return null;
-    }
-
   }
 
   private record ConstraintRenamePlan(
       String constraintId,
-      ConstraintKind kind,
       String oldName,
       String newName) {
 
