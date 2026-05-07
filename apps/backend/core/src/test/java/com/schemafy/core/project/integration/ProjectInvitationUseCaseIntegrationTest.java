@@ -1,5 +1,7 @@
 package com.schemafy.core.project.integration;
 
+import java.time.Instant;
+
 import org.springframework.beans.factory.annotation.Autowired;
 
 import org.junit.jupiter.api.DisplayName;
@@ -98,6 +100,51 @@ class ProjectInvitationUseCaseIntegrationTest extends ProjectDomainIntegrationSu
   }
 
   @Test
+  @DisplayName("이미 프로젝트 멤버인 사용자가 pending 초대를 수락하면 초대들을 cancelled로 정리한 뒤 중복 멤버십 오류를 반환한다")
+  void acceptProjectInvitation_alreadyMemberCancelsPendingInvitationsThenErrors() {
+    User admin = signUpUser("admin-pi-already-accept@test.com", "Admin");
+    User invitee = signUpUser("invitee-pi-already-accept@test.com", "Invitee");
+    var workspace = saveWorkspace("Already Member Project WS", "Description");
+    saveWorkspaceMember(workspace, admin, WorkspaceRole.ADMIN);
+    saveWorkspaceMember(workspace, invitee, WorkspaceRole.MEMBER);
+    var project = saveProject(workspace, "Already Member Project");
+    saveProjectMember(project, admin, ProjectRole.ADMIN);
+    saveProjectMember(project, invitee, ProjectRole.VIEWER);
+
+    Invitation currentInvitation = saveProjectInvitation(project, workspace,
+        invitee.email(), ProjectRole.EDITOR, admin);
+    Invitation siblingInvitation = saveProjectInvitation(project, workspace,
+        invitee.email(), ProjectRole.EDITOR, admin);
+    Invitation expiredSiblingInvitation = saveProjectInvitation(project, workspace,
+        invitee.email(), ProjectRole.EDITOR, admin);
+    updateInvitationExpiration(expiredSiblingInvitation.getId(),
+        Instant.now().minusSeconds(60));
+
+    StepVerifier.create(acceptProjectInvitationUseCase.acceptProjectInvitation(
+        new AcceptProjectInvitationCommand(currentInvitation.getId(), invitee.id())))
+        .expectErrorMatches(DomainException.hasErrorCode(
+            ProjectErrorCode.INVITATION_DUPLICATE_MEMBERSHIP_PROJECT))
+        .verify();
+
+    Invitation current = invitationRepository.findById(currentInvitation.getId()).block();
+    Invitation sibling = invitationRepository.findById(siblingInvitation.getId()).block();
+    Invitation expiredSibling = invitationRepository
+        .findById(expiredSiblingInvitation.getId())
+        .block();
+
+    assertThat(current).isNotNull();
+    assertThat(current.getStatusAsEnum()).isEqualTo(InvitationStatus.CANCELLED);
+    assertThat(current.getResolvedAt()).isNotNull();
+    assertThat(sibling).isNotNull();
+    assertThat(sibling.getStatusAsEnum()).isEqualTo(InvitationStatus.CANCELLED);
+    assertThat(sibling.getResolvedAt()).isNotNull();
+    assertThat(expiredSibling).isNotNull();
+    assertThat(expiredSibling.getStatusAsEnum()).isEqualTo(InvitationStatus.CANCELLED);
+    assertThat(expiredSibling.getResolvedAt()).isNotNull();
+    assertThat(countActiveProjectMemberRows(project.getId(), invitee.id())).isEqualTo(1);
+  }
+
+  @Test
   @DisplayName("프로젝트 초대 생성 시 대문자 중복 이메일도 같은 초대로 처리한다")
   void createProjectInvitation_duplicatePending_caseInsensitive() {
     User admin = signUpUser("admin-pi-case@test.com", "Admin");
@@ -122,7 +169,47 @@ class ProjectInvitationUseCaseIntegrationTest extends ProjectDomainIntegrationSu
   }
 
   @Test
-  @DisplayName("프로젝트 초대 수락 시 soft delete 된 멤버십을 복원하고 형제 초대를 취소한다")
+  @DisplayName("프로젝트 중복 pending 초대는 하나를 수락하면 나머지가 cancelled로 수렴한다")
+  void acceptProjectInvitation_duplicatePendingFixtures_convergeOnAccept() {
+    User admin = signUpUser("admin-pi-duplicate-accept@test.com", "Admin");
+    User invitee = signUpUser("invitee-pi-duplicate-accept@test.com", "Invitee");
+    var workspace = saveWorkspace("Duplicate Accept Project WS", "Description");
+    saveWorkspaceMember(workspace, admin, WorkspaceRole.ADMIN);
+    saveWorkspaceMember(workspace, invitee, WorkspaceRole.MEMBER);
+    var project = saveProject(workspace, "Duplicate Accept Project");
+    saveProjectMember(project, admin, ProjectRole.ADMIN);
+
+    Invitation acceptedInvitation = saveProjectInvitation(project, workspace, invitee.email(),
+        ProjectRole.EDITOR, admin);
+    Invitation siblingInvitation = saveProjectInvitation(project, workspace, invitee.email(),
+        ProjectRole.EDITOR, admin);
+
+    ProjectMember restoredMember = acceptProjectInvitationUseCase.acceptProjectInvitation(
+        new AcceptProjectInvitationCommand(acceptedInvitation.getId(), invitee.id()))
+        .block();
+
+    Invitation accepted = invitationRepository.findById(acceptedInvitation.getId()).block();
+    Invitation sibling = invitationRepository.findById(siblingInvitation.getId()).block();
+
+    assertThat(accepted).isNotNull();
+    assertThat(accepted.getStatusAsEnum()).isEqualTo(InvitationStatus.ACCEPTED);
+    assertThat(sibling).isNotNull();
+    assertThat(sibling.getStatusAsEnum()).isEqualTo(InvitationStatus.CANCELLED);
+    assertThat(restoredMember).isNotNull();
+    assertThat(restoredMember.getRoleAsEnum()).isEqualTo(ProjectRole.EDITOR);
+    assertThat(countActiveProjectMemberRows(project.getId(), invitee.id())).isEqualTo(1);
+
+    StepVerifier.create(acceptProjectInvitationUseCase.acceptProjectInvitation(
+        new AcceptProjectInvitationCommand(siblingInvitation.getId(), invitee.id())))
+        .expectErrorMatches(error -> error instanceof DomainException de
+            && (de.getErrorCode() == ProjectErrorCode.INVITATION_DUPLICATE_MEMBERSHIP_PROJECT
+                || de.getErrorCode() == ProjectErrorCode.PROJECT_INVITATION_ALREADY_PROCESSED))
+        .verify();
+    assertThat(countActiveProjectMemberRows(project.getId(), invitee.id())).isEqualTo(1);
+  }
+
+  @Test
+  @DisplayName("프로젝트 초대 수락 시 soft delete 된 멤버십을 복원한다")
   void acceptProjectInvitation_restoresMembership() {
     User admin = signUpUser("admin-pi-restore@test.com", "Admin");
     User invitee = signUpUser("invitee-pi-restore@test.com", "Invitee");
@@ -137,18 +224,13 @@ class ProjectInvitationUseCaseIntegrationTest extends ProjectDomainIntegrationSu
 
     Invitation acceptedInvitation = saveProjectInvitation(project, workspace, invitee.email(),
         ProjectRole.EDITOR, admin);
-    Invitation siblingInvitation = saveProjectInvitation(project, workspace, invitee.email(),
-        ProjectRole.VIEWER, admin);
 
     ProjectMember restoredMember = acceptProjectInvitationUseCase.acceptProjectInvitation(
         new AcceptProjectInvitationCommand(acceptedInvitation.getId(), invitee.id()))
         .block();
 
-    Invitation cancelledSibling = invitationRepository.findById(siblingInvitation.getId()).block();
-
     assertThat(restoredMember.getId()).isEqualTo(deletedMember.getId());
     assertThat(restoredMember.getRoleAsEnum()).isEqualTo(ProjectRole.EDITOR);
-    assertThat(cancelledSibling.getStatusAsEnum()).isEqualTo(InvitationStatus.CANCELLED);
   }
 
   @Test
@@ -171,6 +253,20 @@ class ProjectInvitationUseCaseIntegrationTest extends ProjectDomainIntegrationSu
     Invitation rejected = invitationRepository.findById(invitation.getId()).block();
     assertThat(rejected.getStatusAsEnum()).isEqualTo(InvitationStatus.REJECTED);
     assertThat(rejected.getResolvedAt()).isNotNull();
+  }
+
+  private long countActiveProjectMemberRows(String projectId, String userId) {
+    return databaseClient.sql("""
+        SELECT COUNT(*) FROM project_members
+        WHERE project_id = :projectId
+          AND user_id = :userId
+          AND deleted_at IS NULL
+        """)
+        .bind("projectId", projectId)
+        .bind("userId", userId)
+        .map(row -> row.get(0, Long.class))
+        .one()
+        .block();
   }
 
 }

@@ -1,5 +1,7 @@
 package com.schemafy.core.project.application.service;
 
+import java.util.List;
+
 import org.springframework.stereotype.Component;
 
 import org.slf4j.Logger;
@@ -71,8 +73,7 @@ class ProjectInvitationHelper {
         InvitationStatus.PENDING.name())
         .flatMap(count -> {
           if (count > 0) {
-            log.warn("Duplicate pending invitation: project={}, email={}",
-                projectId, email.address());
+            log.warn("Duplicate pending invitation: project={}", projectId);
             return Mono.error(new DomainException(
                 ProjectErrorCode.INVITATION_ALREADY_EXISTS));
           }
@@ -117,14 +118,19 @@ class ProjectInvitationHelper {
             return Mono.error(new DomainException(
                 ProjectErrorCode.INVITATION_DUPLICATE_MEMBERSHIP_PROJECT));
           }
-          existing.restore();
-          existing.updateRole(role);
-          return projectMemberPort.save(existing);
+          return projectMemberPort
+              .upsertAllForProject(projectId, List.of(ProjectMember.create(
+                  existing.getId(), projectId, userId, role)))
+              .then(projectMemberPort.findByProjectIdAndUserIdAndNotDeleted(
+                  projectId, userId));
         })
         .switchIfEmpty(Mono.defer(() -> Mono
             .fromCallable(ulidGeneratorPort::generate)
-            .flatMap(id -> projectMemberPort.save(
-                ProjectMember.create(id, projectId, userId, role)))));
+            .flatMap(id -> projectMemberPort
+                .upsertAllForProject(projectId, List.of(ProjectMember.create(
+                    id, projectId, userId, role)))
+                .then(projectMemberPort.findByProjectIdAndUserIdAndNotDeleted(
+                    projectId, userId)))));
   }
 
 }

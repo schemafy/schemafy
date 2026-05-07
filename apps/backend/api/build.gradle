@@ -112,10 +112,6 @@ tasks.named('bootJar') {
 	exclude('ddl/**')
 }
 
-tasks.named('bootRun') {
-	workingDir = rootProject.projectDir
-}
-
 spotbugs {
 	toolVersion = '4.8.6'
 	effort = 'max'

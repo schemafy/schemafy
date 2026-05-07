@@ -1,9 +1,8 @@
 package com.schemafy.core.erd.table.application.service;
 
-import java.util.HashSet;
 import java.util.List;
+import java.util.Optional;
 import java.util.OptionalInt;
-import java.util.Set;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -16,9 +15,6 @@ import com.schemafy.core.erd.constraint.application.port.out.ConstraintExistsPor
 import com.schemafy.core.erd.constraint.application.port.out.GetConstraintsByTableIdPort;
 import com.schemafy.core.erd.constraint.domain.Constraint;
 import com.schemafy.core.erd.constraint.domain.type.ConstraintKind;
-import com.schemafy.core.erd.operation.application.inverse.ChangeTableNameInverse;
-import com.schemafy.core.erd.operation.application.inverse.ChangeTableNameInverse.ConstraintRename;
-import com.schemafy.core.erd.operation.application.inverse.ChangeTableNameInverse.RelationshipRename;
 import com.schemafy.core.erd.operation.application.service.ErdMutationCoordinator;
 import com.schemafy.core.erd.operation.domain.ErdOperationType;
 import com.schemafy.core.erd.relationship.application.port.out.ChangeRelationshipNamePort;
@@ -72,172 +68,96 @@ public class ChangeTableNameService implements ChangeTableNameUseCase {
                         "A table with the name '" + command.newName() + "' already exists in the schema."));
                   }
 
-                  return buildRenamePlan(table, command.newName())
-                      .flatMap(plan -> changeTableNamePort.changeTableName(
-                          command.tableId(),
-                          command.newName())
-                          .then(applyConstraintRenames(plan.constraintRenames()))
-                          .then(applyRelationshipRenames(plan.relationshipRenames()))
-                          .thenReturn(MutationResult.<Void>of(null, plan.affectedTableIds(table.id()))
-                              .withInverse(plan.toInverse(table))));
+                  return changeTableNamePort.changeTableName(
+                      command.tableId(),
+                      command.newName())
+                      .then(renamePkConstraint(table.schemaId(), command.tableId(), command.newName()))
+                      .then(renameAutoRelationshipNames(table, command.newName()))
+                      .thenReturn(MutationResult.<Void>of(null, table.id()));
                 })))
         .as(transactionalOperator::transactional);
   }
 
-  private Mono<TableRenamePlan> buildRenamePlan(Table oldTable, String newTableName) {
-    Set<String> reservedConstraintNames = new HashSet<>();
-    Set<String> reservedRelationshipNames = new HashSet<>();
-    Mono<List<ConstraintRenamePlan>> constraintRenames = buildAutoConstraintRenamePlans(
-        oldTable,
-        newTableName,
-        reservedConstraintNames);
-    Mono<List<RelationshipRenamePlan>> relationshipRenames = buildAutoRelationshipRenamePlans(
-        oldTable,
-        newTableName,
-        reservedRelationshipNames);
-
-    return Mono.zip(constraintRenames, relationshipRenames)
-        .map(tuple -> new TableRenamePlan(tuple.getT1(), tuple.getT2()));
-  }
-
-  private Mono<List<ConstraintRenamePlan>> buildAutoConstraintRenamePlans(
-      Table oldTable,
-      String newTableName,
-      Set<String> reservedConstraintNames) {
-    return getConstraintsByTableIdPort.findConstraintsByTableId(oldTable.id())
+  private Mono<Void> renamePkConstraint(String schemaId, String tableId, String newTableName) {
+    return getConstraintsByTableIdPort.findConstraintsByTableId(tableId)
         .defaultIfEmpty(List.of())
-        .flatMapMany(Flux::fromIterable)
-        .concatMap(constraint -> buildAutoConstraintRenamePlan(
-            constraint,
-            oldTable,
-            newTableName,
-            reservedConstraintNames))
-        .collectList();
-  }
+        .flatMap(constraints -> {
+          Optional<Constraint> pkOpt = constraints.stream()
+              .filter(c -> c.kind() == ConstraintKind.PRIMARY_KEY)
+              .findFirst();
 
-  private Mono<ConstraintRenamePlan> buildAutoConstraintRenamePlan(
-      Constraint constraint,
-      Table oldTable,
-      String newTableName,
-      Set<String> reservedConstraintNames) {
-    String prefix = constraintKindPrefix(constraint.kind());
-    String oldBaseName = normalizeName(prefix + oldTable.name());
-    OptionalInt suffixOpt = parseAutoNameSuffix(constraint.name(), oldBaseName);
-    if (suffixOpt.isEmpty()) {
-      return Mono.empty();
-    }
-    String newBaseName = normalizeName(prefix + newTableName);
-    int suffix = suffixOpt.getAsInt();
-    return resolveUniqueConstraintName(
-        oldTable.schemaId(),
-        newBaseName,
-        constraint.id(),
-        suffix,
-        reservedConstraintNames)
-        .flatMap(newName -> {
-          if (newName.equals(constraint.name())) {
+          if (pkOpt.isEmpty()) {
             return Mono.empty();
           }
-          reservedConstraintNames.add(newName);
-          return Mono.just(new ConstraintRenamePlan(
-              constraint.id(),
-              constraint.name(),
-              newName));
+
+          String baseName = "pk_" + newTableName;
+          return resolveUniqueConstraintName(schemaId, baseName, pkOpt.get().id())
+              .flatMap(newName -> changeConstraintNamePort.changeConstraintName(
+                  pkOpt.get().id(), newName));
         });
   }
 
-  private Mono<Void> applyConstraintRenames(List<ConstraintRenamePlan> plans) {
-    return Flux.fromIterable(plans)
-        .concatMap(plan -> changeConstraintNamePort.changeConstraintName(
-            plan.constraintId(),
-            plan.newName()))
-        .then();
+  private Mono<String> resolveUniqueConstraintName(
+      String schemaId, String baseName, String excludeId) {
+    return resolveUniqueConstraintName(schemaId, baseName, excludeId, 0);
   }
 
   private Mono<String> resolveUniqueConstraintName(
-      String schemaId,
-      String baseName,
-      String excludeId,
-      int suffix,
-      Set<String> reservedConstraintNames) {
+      String schemaId, String baseName, String excludeId, int suffix) {
     String candidate = suffix == 0 ? baseName : baseName + "_" + suffix;
-    if (reservedConstraintNames.contains(candidate)) {
-      return resolveUniqueConstraintName(
-          schemaId,
-          baseName,
-          excludeId,
-          suffix + 1,
-          reservedConstraintNames);
-    }
     return constraintExistsPort.existsBySchemaIdAndNameExcludingId(schemaId, candidate, excludeId)
         .flatMap(exists -> {
           if (exists) {
-            return resolveUniqueConstraintName(
-                schemaId,
-                baseName,
-                excludeId,
-                suffix + 1,
-                reservedConstraintNames);
+            return resolveUniqueConstraintName(schemaId, baseName, excludeId, suffix + 1);
           }
           return Mono.just(candidate);
         });
   }
 
-  private Mono<List<RelationshipRenamePlan>> buildAutoRelationshipRenamePlans(
-      Table oldTable,
-      String newTableName,
-      Set<String> reservedRelationshipNames) {
+  private Mono<Void> renameAutoRelationshipNames(Table oldTable, String newTableName) {
     return getRelationshipsByTableIdPort.findRelationshipsByTableId(oldTable.id())
         .defaultIfEmpty(List.of())
         .flatMapMany(Flux::fromIterable)
-        .concatMap(relationship -> buildAutoRelationshipRenamePlan(
-            relationship,
-            oldTable,
-            newTableName,
-            reservedRelationshipNames))
-        .collectList();
+        .concatMap(relationship -> renameAutoRelationshipName(relationship, oldTable, newTableName))
+        .then();
   }
 
-  private Mono<RelationshipRenamePlan> buildAutoRelationshipRenamePlan(
+  private Mono<Void> renameAutoRelationshipName(
       Relationship relationship,
       Table oldTable,
-      String newTableName,
-      Set<String> reservedRelationshipNames) {
+      String newTableName) {
     boolean isFkRenamed = relationship.fkTableId().equals(oldTable.id());
     boolean isPkRenamed = relationship.pkTableId().equals(oldTable.id());
     if (!isFkRenamed && !isPkRenamed) {
       return Mono.empty();
     }
     if (isFkRenamed && isPkRenamed) {
-      return buildAutoRelationshipRenamePlan(
+      return renameAutoRelationshipName(
           relationship,
           oldTable.name(),
           oldTable.name(),
           newTableName,
-          newTableName,
-          reservedRelationshipNames);
+          newTableName);
     }
     String otherTableId = isFkRenamed ? relationship.pkTableId() : relationship.fkTableId();
     return getTableByIdPort.findTableById(otherTableId)
-        .flatMap(otherTable -> buildAutoRelationshipRenamePlan(
+        .flatMap(otherTable -> renameAutoRelationshipName(
             relationship,
             isFkRenamed ? oldTable.name() : otherTable.name(),
             isPkRenamed ? oldTable.name() : otherTable.name(),
             isFkRenamed ? newTableName : otherTable.name(),
-            isPkRenamed ? newTableName : otherTable.name(),
-            reservedRelationshipNames))
+            isPkRenamed ? newTableName : otherTable.name()))
         .switchIfEmpty(Mono.empty());
   }
 
-  private Mono<RelationshipRenamePlan> buildAutoRelationshipRenamePlan(
+  private Mono<Void> renameAutoRelationshipName(
       Relationship relationship,
       String oldFkName,
       String oldPkName,
       String newFkName,
-      String newPkName,
-      Set<String> reservedRelationshipNames) {
+      String newPkName) {
     String oldBaseName = normalizeName("rel_" + oldFkName + "_to_" + oldPkName);
-    OptionalInt suffixOpt = parseAutoNameSuffix(relationship.name(), oldBaseName);
+    OptionalInt suffixOpt = parseAutoRelationshipSuffix(relationship.name(), oldBaseName);
     if (suffixOpt.isEmpty()) {
       return Mono.empty();
     }
@@ -247,8 +167,7 @@ public class ChangeTableNameService implements ChangeTableNameUseCase {
         relationship.fkTableId(),
         newBaseName,
         relationship.id(),
-        suffix,
-        reservedRelationshipNames)
+        suffix)
         .flatMap(newName -> {
           if (newName.equals(relationship.name())) {
             return Mono.empty();
@@ -256,70 +175,38 @@ public class ChangeTableNameService implements ChangeTableNameUseCase {
           if (!isValidRelationshipName(newName)) {
             return Mono.empty();
           }
-          reservedRelationshipNames.add(relationshipNameKey(relationship.fkTableId(), newName));
-          return Mono.just(new RelationshipRenamePlan(
-              relationship.id(),
-              relationship.fkTableId(),
-              relationship.pkTableId(),
-              relationship.name(),
-              newName));
+          return changeRelationshipNamePort.changeRelationshipName(relationship.id(), newName);
         });
-  }
-
-  private Mono<Void> applyRelationshipRenames(List<RelationshipRenamePlan> plans) {
-    return Flux.fromIterable(plans)
-        .concatMap(plan -> changeRelationshipNamePort.changeRelationshipName(
-            plan.relationshipId(),
-            plan.newName()))
-        .then();
   }
 
   private Mono<String> resolveUniqueRelationshipName(
       String fkTableId,
       String baseName,
       String excludeId,
-      int suffix,
-      Set<String> reservedRelationshipNames) {
+      int suffix) {
     String candidate = suffix == 0 ? baseName : baseName + "_" + suffix;
-    if (reservedRelationshipNames.contains(relationshipNameKey(fkTableId, candidate))) {
-      return resolveUniqueRelationshipName(
-          fkTableId,
-          baseName,
-          excludeId,
-          suffix + 1,
-          reservedRelationshipNames);
-    }
     return relationshipExistsPort
         .existsByFkTableIdAndNameExcludingId(fkTableId, candidate, excludeId)
         .flatMap(exists -> {
           if (exists) {
-            return resolveUniqueRelationshipName(
-                fkTableId,
-                baseName,
-                excludeId,
-                suffix + 1,
-                reservedRelationshipNames);
+            return resolveUniqueRelationshipName(fkTableId, baseName, excludeId, suffix + 1);
           }
           return Mono.just(candidate);
         });
   }
 
-  private static String relationshipNameKey(String fkTableId, String relationshipName) {
-    return fkTableId + "\u0000" + relationshipName;
-  }
-
-  private static OptionalInt parseAutoNameSuffix(String name, String baseName) {
-    if (name == null || baseName == null) {
+  private static OptionalInt parseAutoRelationshipSuffix(String relationshipName, String baseName) {
+    if (relationshipName == null || baseName == null) {
       return OptionalInt.empty();
     }
-    if (name.equals(baseName)) {
+    if (relationshipName.equals(baseName)) {
       return OptionalInt.of(0);
     }
     String prefix = baseName + "_";
-    if (!name.startsWith(prefix)) {
+    if (!relationshipName.startsWith(prefix)) {
       return OptionalInt.empty();
     }
-    String suffix = name.substring(prefix.length());
+    String suffix = relationshipName.substring(prefix.length());
     if (suffix.isEmpty()) {
       return OptionalInt.empty();
     }
@@ -335,16 +222,6 @@ public class ChangeTableNameService implements ChangeTableNameUseCase {
     }
   }
 
-  private static String constraintKindPrefix(ConstraintKind kind) {
-    return switch (kind) {
-    case PRIMARY_KEY -> "pk_";
-    case UNIQUE -> "uq_";
-    case CHECK -> "ck_";
-    case DEFAULT -> "df_";
-    case NOT_NULL -> "nn_";
-    };
-  }
-
   private static String normalizeName(String name) {
     return name == null ? null : name.trim();
   }
@@ -356,54 +233,6 @@ public class ChangeTableNameService implements ChangeTableNameUseCase {
     } catch (DomainException exception) {
       return false;
     }
-  }
-
-  private record TableRenamePlan(
-      List<ConstraintRenamePlan> constraintRenames,
-      List<RelationshipRenamePlan> relationshipRenames) {
-
-    Set<String> affectedTableIds(String tableId) {
-      Set<String> affectedTableIds = new HashSet<>();
-      affectedTableIds.add(tableId);
-      relationshipRenames.forEach(rename -> {
-        affectedTableIds.add(rename.fkTableId());
-        affectedTableIds.add(rename.pkTableId());
-      });
-      return affectedTableIds;
-    }
-
-    ChangeTableNameInverse toInverse(Table oldTable) {
-      return new ChangeTableNameInverse(
-          oldTable.id(),
-          oldTable.name(),
-          constraintRenames.stream()
-              .map(rename -> new ConstraintRename(rename.constraintId(), rename.oldName()))
-              .toList(),
-          relationshipRenames.stream()
-              .map(rename -> new RelationshipRename(
-                  rename.relationshipId(),
-                  rename.oldName(),
-                  rename.fkTableId(),
-                  rename.pkTableId()))
-              .toList());
-    }
-
-  }
-
-  private record ConstraintRenamePlan(
-      String constraintId,
-      String oldName,
-      String newName) {
-
-  }
-
-  private record RelationshipRenamePlan(
-      String relationshipId,
-      String fkTableId,
-      String pkTableId,
-      String oldName,
-      String newName) {
-
   }
 
 }

@@ -146,14 +146,14 @@ export const useCreateInvitation = (workspaceId: string) => {
   });
 };
 
-export const useGetMyWorkspaceInvitations = (page = 0, size = 10) => {
+export const useGetMyInvitations = (page = 0, size = 10) => {
   return useQuery({
     queryKey: workspaceKeys.myInvitations(page, size),
     queryFn: () => getMyInvitations(page, size),
   });
 };
 
-export const useAcceptWorkspaceInvitation = () => {
+export const useAcceptInvitation = () => {
   const queryClient = useQueryClient();
 
   return useMutation({
@@ -167,7 +167,7 @@ export const useAcceptWorkspaceInvitation = () => {
   });
 };
 
-export const useRejectWorkspaceInvitation = () => {
+export const useRejectInvitation = () => {
   const queryClient = useQueryClient();
 
   return useMutation({

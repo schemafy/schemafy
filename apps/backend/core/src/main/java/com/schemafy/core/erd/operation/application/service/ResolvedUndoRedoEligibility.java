@@ -16,7 +16,9 @@ public record ResolvedUndoRedoEligibility(
   }
 
   public ErdOperationLog executionBaseOperation() {
-    return currentChainTipOperation;
+    return action == UndoRedoAction.UNDO
+        ? currentChainTipOperation
+        : targetRootOriginalOperation;
   }
 
 }

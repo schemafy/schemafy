@@ -19,6 +19,3 @@ CREATE TABLE IF NOT EXISTS erd_operation_log (
     CONSTRAINT pk_erd_operation_log PRIMARY KEY (op_id),
     CONSTRAINT uq_erd_operation_log_schema_revision UNIQUE (schema_id, committed_revision)
 );
-
-CREATE UNIQUE INDEX IF NOT EXISTS uq_erd_operation_log_derived_from_op
-    ON erd_operation_log (derived_from_op_id);

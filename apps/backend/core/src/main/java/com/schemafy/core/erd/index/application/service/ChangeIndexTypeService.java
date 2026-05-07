@@ -18,7 +18,6 @@ import com.schemafy.core.erd.index.domain.Index;
 import com.schemafy.core.erd.index.domain.IndexColumn;
 import com.schemafy.core.erd.index.domain.exception.IndexErrorCode;
 import com.schemafy.core.erd.index.domain.validator.IndexValidator;
-import com.schemafy.core.erd.operation.application.inverse.ChangeIndexTypeInverse;
 import com.schemafy.core.erd.operation.application.service.ErdMutationCoordinator;
 import com.schemafy.core.erd.operation.domain.ErdOperationType;
 
@@ -63,8 +62,7 @@ public class ChangeIndexTypeService implements ChangeIndexTypeUseCase {
                             index.id());
                         return changeIndexTypePort
                             .changeIndexType(index.id(), command.type())
-                            .thenReturn(MutationResult.<Void>of(null, index.tableId())
-                                .withInverse(new ChangeIndexTypeInverse(index.id(), index.type())));
+                            .thenReturn(MutationResult.<Void>of(null, index.tableId()));
                       }))));
     }));
   }

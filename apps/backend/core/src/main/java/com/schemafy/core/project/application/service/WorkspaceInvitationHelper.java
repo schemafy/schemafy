@@ -72,8 +72,7 @@ class WorkspaceInvitationHelper {
         InvitationStatus.PENDING.name())
         .flatMap(count -> {
           if (count > 0) {
-            log.warn("Duplicate pending invitation: workspace={}, email={}",
-                workspaceId, email.address());
+            log.warn("Duplicate pending invitation: workspace={}", workspaceId);
             return Mono.error(new DomainException(
                 ProjectErrorCode.INVITATION_ALREADY_EXISTS));
           }
@@ -112,7 +111,7 @@ class WorkspaceInvitationHelper {
       String workspaceId,
       String userId,
       WorkspaceRole role) {
-    return workspaceMemberPort.findLatestByWorkspaceIdAndUserId(workspaceId,
+    return workspaceMemberPort.findByWorkspaceIdAndUserId(workspaceId,
         userId)
         .flatMap(existing -> {
           if (!existing.isDeleted()) {
@@ -125,8 +124,8 @@ class WorkspaceInvitationHelper {
         })
         .switchIfEmpty(Mono.defer(() -> Mono
             .fromCallable(ulidGeneratorPort::generate)
-            .flatMap(id -> workspaceMemberPort.save(
-                WorkspaceMember.create(id, workspaceId, userId, role)))));
+            .map(id -> WorkspaceMember.create(id, workspaceId, userId, role))
+            .flatMap(workspaceMemberPort::save)));
   }
 
 }

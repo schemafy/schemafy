@@ -17,7 +17,6 @@ import type {
   WebSocketMessage,
 } from '@/features/collaboration/api';
 import { authStore } from './auth.store';
-import { previewStore } from './preview.store';
 import { apiClient } from '@/lib/api/client';
 import { toast } from 'sonner';
 
@@ -175,7 +174,6 @@ export class CollaborationStore {
 
     this.reconnectAttempts = 0;
     delete apiClient.defaults.headers.common['X-Session-Id'];
-    previewStore.clearAll();
     runInAction(() => {
       this.projectId = null;
       this.cursors.clear();
@@ -340,7 +338,6 @@ export class CollaborationStore {
   }
 
   private handleLeaveMessage(message: ReceiveLeave) {
-    previewStore.clearBySession(message.sessionId);
     runInAction(() => {
       this.cursors.delete(message.sessionId);
     });

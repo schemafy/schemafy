@@ -8,7 +8,6 @@ import org.springframework.stereotype.Service;
 
 import com.schemafy.core.common.MutationResult;
 import com.schemafy.core.common.exception.DomainException;
-import com.schemafy.core.erd.operation.application.inverse.ChangeRelationshipNameInverse;
 import com.schemafy.core.erd.operation.application.service.ErdMutationCoordinator;
 import com.schemafy.core.erd.operation.domain.ErdOperationType;
 import com.schemafy.core.erd.relationship.application.port.in.ChangeRelationshipNameCommand;
@@ -58,10 +57,7 @@ public class ChangeRelationshipNameService implements ChangeRelationshipNameUseC
                     affectedTableIds.add(relationship.pkTableId());
                     return changeRelationshipNamePort
                         .changeRelationshipName(relationship.id(), normalizedName)
-                        .thenReturn(MutationResult.<Void>of(null, affectedTableIds)
-                            .withInverse(new ChangeRelationshipNameInverse(
-                                relationship.id(),
-                                relationship.name())));
+                        .thenReturn(MutationResult.<Void>of(null, affectedTableIds));
                   }));
         }));
   }

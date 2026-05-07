@@ -8,7 +8,6 @@ import org.springframework.stereotype.Service;
 
 import com.schemafy.core.common.MutationResult;
 import com.schemafy.core.common.exception.DomainException;
-import com.schemafy.core.erd.operation.application.inverse.ChangeRelationshipCardinalityInverse;
 import com.schemafy.core.erd.operation.application.service.ErdMutationCoordinator;
 import com.schemafy.core.erd.operation.domain.ErdOperationType;
 import com.schemafy.core.erd.relationship.application.port.in.ChangeRelationshipCardinalityCommand;
@@ -49,10 +48,7 @@ public class ChangeRelationshipCardinalityService implements ChangeRelationshipC
               affectedTableIds.add(relationship.pkTableId());
               return changeRelationshipCardinalityPort
                   .changeRelationshipCardinality(relationship.id(), command.cardinality())
-                  .thenReturn(MutationResult.<Void>of(null, affectedTableIds)
-                      .withInverse(new ChangeRelationshipCardinalityInverse(
-                          relationship.id(),
-                          relationship.cardinality())));
+                  .thenReturn(MutationResult.<Void>of(null, affectedTableIds));
             }));
   }
 

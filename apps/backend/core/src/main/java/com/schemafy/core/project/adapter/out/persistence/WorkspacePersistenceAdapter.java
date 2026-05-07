@@ -95,10 +95,10 @@ public class WorkspacePersistenceAdapter
   }
 
   @Override
-  public Mono<WorkspaceMember> findLatestByWorkspaceIdAndUserId(
+  public Mono<WorkspaceMember> findByWorkspaceIdAndUserId(
       String workspaceId,
       String userId) {
-    return workspaceMemberRepository.findLatestByWorkspaceIdAndUserId(
+    return workspaceMemberRepository.findByWorkspaceIdAndUserId(
         workspaceId, userId);
   }
 

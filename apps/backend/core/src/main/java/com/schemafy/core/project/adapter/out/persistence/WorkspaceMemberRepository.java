@@ -77,10 +77,9 @@ public interface WorkspaceMemberRepository
       SELECT * FROM workspace_members
       WHERE workspace_id = :workspaceId
         AND user_id = :userId
-      ORDER BY created_at DESC
       LIMIT 1
       """)
-  Mono<WorkspaceMember> findLatestByWorkspaceIdAndUserId(String workspaceId,
+  Mono<WorkspaceMember> findByWorkspaceIdAndUserId(String workspaceId,
       String userId);
 
 }

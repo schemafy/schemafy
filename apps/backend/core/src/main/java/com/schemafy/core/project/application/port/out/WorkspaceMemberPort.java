@@ -32,7 +32,7 @@ public interface WorkspaceMemberPort {
       String workspaceId,
       String role);
 
-  Mono<WorkspaceMember> findLatestByWorkspaceIdAndUserId(
+  Mono<WorkspaceMember> findByWorkspaceIdAndUserId(
       String workspaceId,
       String userId);
 

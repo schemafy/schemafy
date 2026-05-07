@@ -1,0 +1,152 @@
+{
+  ".env.example": [
+    367
+  ],
+  ".github/workflows/cursor-pr-review.yml": [
+    367
+  ],
+  ".github/workflows/save-pr-context.yml": [
+    367
+  ],
+  "apps/backend/api/build.gradle": [
+    367
+  ],
+  "apps/backend/api/src/docs/asciidoc/api-guide.adoc": [
+    367
+  ],
+  "apps/backend/api/src/main/java/com/schemafy/api/collaboration/dto/CollaborationEventType.java": [
+    367
+  ],
+  "apps/backend/api/src/main/java/com/schemafy/api/collaboration/dto/PreviewAction.java": [
+    367
+  ],
+  "apps/backend/api/src/main/java/com/schemafy/api/collaboration/dto/event/CollaborationInbound.java": [
+    367
+  ],
+  "apps/backend/api/src/main/java/com/schemafy/api/collaboration/dto/event/CollaborationOutbound.java": [
+    367
+  ],
+  "apps/backend/api/src/main/java/com/schemafy/api/collaboration/dto/event/CollaborationOutboundFactory.java": [
+    367
+  ],
+  "apps/backend/api/src/main/java/com/schemafy/api/collaboration/dto/event/RelationshipExtraPreviewEvent.java": [
+    367
+  ],
+  "apps/backend/api/src/main/java/com/schemafy/api/collaboration/dto/event/TablePositionPreviewEvent.java": [
+    367
+  ],
+  "apps/backend/api/src/main/java/com/schemafy/api/collaboration/service/handler/RelationshipExtraPreviewMessageHandler.java": [
+    367
+  ],
+  "apps/backend/api/src/main/java/com/schemafy/api/collaboration/service/handler/TablePositionPreviewMessageHandler.java": [
+    367
+  ],
+  "apps/backend/api/src/main/java/com/schemafy/api/common/type/CursorResponse.java": [
+    367
+  ],
+  "apps/backend/api/src/main/java/com/schemafy/api/erd/controller/OperationController.java": [
+    367
+  ],
+  "apps/backend/api/src/main/java/com/schemafy/api/project/controller/InvitationController.java": [
+    367
+  ],
+  "apps/backend/api/src/main/java/com/schemafy/api/project/controller/dto/response/MyInvitationResponse.java": [
+    367
+  ],
+  "apps/backend/api/src/main/resources/application-local.yml": [
+    367
+  ],
+  "apps/backend/api/src/main/resources/application-server.yml": [
+    367
+  ],
+  "apps/backend/api/src/main/resources/application.yml": [
+    367
+  ],
+  "apps/backend/api/src/test/java/com/schemafy/api/collaboration/dto/event/RelationshipExtraPreviewEventTest.java": [
+    367
+  ],
+  "apps/backend/api/src/test/java/com/schemafy/api/collaboration/dto/event/TablePositionPreviewEventTest.java": [
+    367
+  ],
+  "apps/backend/api/src/test/java/com/schemafy/api/collaboration/service/CollaborationServiceTest.java": [
+    367
+  ],
+  "apps/backend/api/src/test/java/com/schemafy/api/collaboration/service/handler/RelationshipExtraPreviewMessageHandlerTest.java": [
+    367
+  ],
+  "apps/backend/api/src/test/java/com/schemafy/api/collaboration/service/handler/TablePositionPreviewMessageHandlerTest.java": [
+    367
+  ],
+  "apps/backend/api/src/test/java/com/schemafy/api/erd/controller/ErdOperationFixtures.java": [
+    367
+  ],
+  "apps/backend/api/src/test/java/com/schemafy/api/erd/controller/OperationControllerTest.java": [
+    367
+  ],
+  "apps/backend/api/src/test/java/com/schemafy/api/erd/docs/OperationApiSnippets.java": [
+    367
+  ],
+  "apps/backend/api/src/test/java/com/schemafy/api/project/controller/InvitationControllerTest.java": [
+    367
+  ],
+  "apps/backend/api/src/test/java/com/schemafy/api/project/docs/MyInvitationApiSnippets.java": [
+    367
+  ],
+  "apps/backend/api/src/test/java/com/schemafy/api/testsupport/project/ProjectHttpTestSupport.java": [
+    367
+  ],
+  "apps/backend/core/build.gradle": [
+    367
+  ],
+  "apps/backend/core/src/main/java/com/schemafy/core/common/CursorResult.java": [
+    367
+  ],
+  "apps/backend/core/src/main/java/com/schemafy/core/common/MutationResult.java": [
+    367
+  ],
+  "apps/backend/core/src/main/java/com/schemafy/core/common/json/JsonCodec.java": [
+    367
+  ],
+  "apps/backend/core/src/main/java/com/schemafy/core/erd/column/application/service/ChangeColumnNameService.java": [
+    367
+  ],
+  "apps/backend/core/src/main/java/com/schemafy/core/erd/column/application/service/ChangeColumnTypeService.java": [
+    367
+  ],
+  "apps/backend/core/src/main/java/com/schemafy/core/erd/constraint/application/service/ChangeConstraintNameService.java": [
+    367
+  ],
+  "apps/backend/core/src/main/java/com/schemafy/core/erd/index/application/service/ChangeIndexNameService.java": [
+    367
+  ],
+  "apps/backend/core/src/main/java/com/schemafy/core/erd/index/application/service/ChangeIndexTypeService.java": [
+    367
+  ],
+  "apps/backend/core/src/main/java/com/schemafy/core/erd/operation/ErdOperationContexts.java": [
+    367
+  ],
+  "apps/backend/core/src/main/java/com/schemafy/core/erd/operation/ErdOperationMetadata.java": [
+    367
+  ],
+  "apps/backend/core/src/main/java/com/schemafy/core/erd/operation/adapter/out/persistence/ErdOperationPersistenceAdapter.java": [
+    367
+  ],
+  "apps/backend/core/src/main/java/com/schemafy/core/erd/operation/adapter/out/persistence/SchemaCollaborationStateRepository.java": [
+    367
+  ],
+  "apps/backend/core/src/main/java/com/schemafy/core/erd/operation/application/inverse/ChangeColumnNameInverse.java": [
+    367
+  ],
+  "apps/backend/core/src/main/java/com/schemafy/core/erd/operation/application/inverse/ChangeColumnTypeInverse.java": [
+    367
+  ],
+  "apps/backend/core/src/main/java/com/schemafy/core/erd/operation/application/inverse/ChangeConstraintNameInverse.java": [
+    367
+  ],
+  "apps/backend/core/src/main/java/com/schemafy/core/erd/operation/application/inverse/ChangeIndexNameInverse.java": [
+    367
+  ],
+  "apps/backend/core/src/main/java/com/schemafy/core/erd/operation/application/inverse/ChangeIndexTypeInverse.java": [
+    367
+  ]
+}

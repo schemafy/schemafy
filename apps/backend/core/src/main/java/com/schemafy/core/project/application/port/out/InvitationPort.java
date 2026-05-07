@@ -1,6 +1,5 @@
 package com.schemafy.core.project.application.port.out;
 
-import com.schemafy.core.project.application.port.in.InvitationSummary;
 import com.schemafy.core.project.domain.Invitation;
 
 import reactor.core.publisher.Flux;
@@ -33,11 +32,6 @@ public interface InvitationPort {
       int limit,
       int offset);
 
-  Flux<InvitationSummary> findMyPendingInvitationSummaries(
-      String email,
-      String cursorId,
-      int limit);
-
   Mono<Long> countByEmailAndTypeAndStatus(
       String email,
       String targetType,
@@ -50,6 +44,15 @@ public interface InvitationPort {
       String resultStatus,
       String currentStatus,
       String excludeId);
+
+  Mono<Long> cancelExpiredPendingInvitationsByTargetAndEmail(
+      String targetType,
+      String targetId,
+      String email);
+
+  Mono<Long> cancelPendingProjectInvitationsByWorkspaceIdAndEmail(
+      String workspaceId,
+      String email);
 
   Mono<Long> softDeleteByTarget(String targetType, String targetId);
 

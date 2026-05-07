@@ -7,7 +7,6 @@ import { TooltipProvider } from '@/components';
 import {
   CanvasPage,
   LandingPage,
-  NotFoundPage,
   OAuthCallbackPage,
   SignInPage,
   SignUpPage,
@@ -34,7 +33,7 @@ function App() {
                     element={<OAuthCallbackPage />}
                   />
                   <Route
-                    path="/canvas/:projectId"
+                    path="/canvas"
                     element={
                       <RequireAuth>
                         <CanvasPage />
@@ -49,7 +48,6 @@ function App() {
                       </RequireAuth>
                     }
                   />
-                  <Route path="*" element={<NotFoundPage />} />
                 </Routes>
               </Layout>
             </Router>

@@ -8,6 +8,4 @@ public interface IncrementSchemaCollaborationRevisionPort {
 
   Mono<SchemaCollaborationState> increment(String schemaId);
 
-  Mono<SchemaCollaborationState> incrementIfCurrentRevision(String schemaId, long expectedRevision);
-
 }

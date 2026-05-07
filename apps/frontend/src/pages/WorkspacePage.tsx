@@ -120,11 +120,7 @@ export const WorkspacePage = () => {
 
             <div className="flex-1">
               {activeTab === 'projects' ? (
-                <WorkspaceProjectsTab
-                  key={selectedWorkspaceId}
-                  workspaceId={selectedWorkspaceId}
-                  currentUserRole={currentUserRole}
-                />
+                <WorkspaceProjectsTab />
               ) : (
                 <WorkspaceMembersTab
                   workspaceId={selectedWorkspaceId}
@@ -134,7 +130,7 @@ export const WorkspacePage = () => {
             </div>
 
             <LeaveWarningComponent
-              onLeave={() => setIsLeaveConfirmOpen(true)}
+              setIsLeaveConfirmOpen={setIsLeaveConfirmOpen}
             />
           </div>
         </div>
@@ -173,7 +169,11 @@ export const WorkspacePage = () => {
   );
 };
 
-const LeaveWarningComponent = ({ onLeave }: { onLeave: () => void }) => {
+const LeaveWarningComponent = ({
+  setIsLeaveConfirmOpen,
+}: {
+  setIsLeaveConfirmOpen: (value: boolean) => void;
+}) => {
   return (
     <div className="border border-schemafy-yellow/30 bg-schemafy-yellow/10 rounded-[12px] px-6 py-5 flex items-center justify-between gap-6">
       <div className="flex flex-col gap-1">
@@ -189,7 +189,7 @@ const LeaveWarningComponent = ({ onLeave }: { onLeave: () => void }) => {
         variant="none"
         size="sm"
         className="shrink-0 bg-schemafy-yellow text-white"
-        onClick={onLeave}
+        onClick={() => setIsLeaveConfirmOpen(true)}
       >
         Leave
       </Button>

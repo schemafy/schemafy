@@ -48,6 +48,14 @@ export type WorkspaceInvitationCreateResponse = {
   createdAt: string;
 };
 
+export type PageResponse<T> = {
+  content: T[];
+  page: number;
+  size: number;
+  totalElements: number;
+  totalPages: number;
+};
+
 export type CreateWorkspaceRequest = {
   name: string;
   description?: string;

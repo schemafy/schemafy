@@ -1,10 +1,8 @@
 package com.schemafy.core.project.adapter.out.persistence;
 
 import com.schemafy.core.common.PersistenceAdapter;
-import com.schemafy.core.project.application.port.in.InvitationSummary;
 import com.schemafy.core.project.application.port.out.InvitationPort;
 import com.schemafy.core.project.domain.Invitation;
-import com.schemafy.core.project.domain.InvitationStatus;
 
 import lombok.RequiredArgsConstructor;
 import reactor.core.publisher.Flux;
@@ -53,18 +51,6 @@ public class InvitationPersistenceAdapter implements InvitationPort {
   }
 
   @Override
-  public Flux<InvitationSummary> findMyPendingInvitationSummaries(
-      String email, String cursorId, int limit) {
-    String status = InvitationStatus.PENDING.name();
-    if (cursorId == null) {
-      return invitationRepository.findMyInvitationSummariesFirstPage(email,
-          status, limit);
-    }
-    return invitationRepository.findMyInvitationSummariesNextPage(email,
-        status, cursorId, limit);
-  }
-
-  @Override
   public Mono<Long> countByEmailAndTypeAndStatus(String email,
       String targetType, String status) {
     return invitationRepository.countByEmailAndTypeAndStatus(email, targetType,
@@ -77,6 +63,24 @@ public class InvitationPersistenceAdapter implements InvitationPort {
       String currentStatus, String excludeId) {
     return invitationRepository.updateStatusByTargetAndEmail(targetType,
         targetId, email, resultStatus, currentStatus, excludeId);
+  }
+
+  @Override
+  public Mono<Long> cancelExpiredPendingInvitationsByTargetAndEmail(
+      String targetType,
+      String targetId,
+      String email) {
+    return invitationRepository.cancelExpiredPendingInvitationsByTargetAndEmail(
+        targetType, targetId, email);
+  }
+
+  @Override
+  public Mono<Long> cancelPendingProjectInvitationsByWorkspaceIdAndEmail(
+      String workspaceId,
+      String email) {
+    return invitationRepository
+        .cancelPendingProjectInvitationsByWorkspaceIdAndEmail(
+            workspaceId, email);
   }
 
   @Override

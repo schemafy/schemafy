@@ -22,30 +22,39 @@ class UpdateProjectMemberRoleService implements UpdateProjectMemberRoleUseCase {
   @Override
   public Mono<ProjectMember> updateProjectMemberRole(
       UpdateProjectMemberRoleCommand command) {
+    // 권한 검증은 추후 어노테이션으로 분리할 예정이라 트랜잭션 진입 전 수행
     return projectAccessHelper.validateProjectAdmin(command.projectId(),
         command.requesterId())
-        .then(Mono.zip(
-            projectAccessHelper.findProjectMember(command.requesterId(),
-                command.projectId()),
-            projectAccessHelper.findProjectMember(command.targetUserId(),
-                command.projectId())))
-        .flatMap(tuple -> {
-          ProjectMember requester = tuple.getT1();
-          ProjectMember target = tuple.getT2();
+        .then(projectAccessHelper.findProjectById(command.projectId()))
+        .flatMap(project -> Mono.defer(() -> doUpdateProjectMemberRole(
+            command, project.getWorkspaceId())
+            .as(transactionalOperator::transactional)));
+  }
 
-          projectAccessHelper.validateRoleChangePermission(requester, target, command.role());
-          Mono<Void> workspaceAdminGuard = target.isAdmin() && !command.role().isAdmin()
-              ? projectAccessHelper.validateWorkspaceAdminGuard(command.projectId(), target)
-              : Mono.empty();
+  private Mono<ProjectMember> doUpdateProjectMemberRole(
+      UpdateProjectMemberRoleCommand command,
+      String workspaceId) {
+    return projectAccessHelper.requireProjectWithinWorkspace(
+        workspaceId, command.projectId())
+        .then(projectAccessHelper.findProjectMember(command.requesterId(),
+            command.projectId()))
+        .flatMap(requester -> projectAccessHelper.findProjectMember(
+            command.targetUserId(), command.projectId())
+            .flatMap(target -> {
 
-          return workspaceAdminGuard
-              .then(Mono.fromSupplier(() -> {
-                target.updateRole(command.role());
-                return target;
-              }))
-              .flatMap(projectMemberPort::save);
-        })
-        .as(transactionalOperator::transactional);
+              projectAccessHelper.validateRoleChangePermission(requester, target, command.role());
+              Mono<Void> workspaceAdminGuard = target.isAdmin() && !command.role().isAdmin()
+                  ? projectAccessHelper.validateWorkspaceAdminGuard(
+                      command.projectId(), target)
+                  : Mono.empty();
+
+              return workspaceAdminGuard
+                  .then(Mono.fromSupplier(() -> {
+                    target.updateRole(command.role());
+                    return target;
+                  }))
+                  .flatMap(projectMemberPort::save);
+            }));
   }
 
 }

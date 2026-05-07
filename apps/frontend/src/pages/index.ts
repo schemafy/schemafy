@@ -4,4 +4,3 @@ export { SignInPage } from './SignInPage';
 export { CanvasPage } from './CanvasPage';
 export { OAuthCallbackPage } from './OAuthCallbackPage';
 export { WorkspacePage } from './WorkspacePage';
-export { NotFoundPage } from './NotFoundPage';

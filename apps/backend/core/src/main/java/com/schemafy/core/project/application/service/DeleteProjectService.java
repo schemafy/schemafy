@@ -23,8 +23,11 @@ class DeleteProjectService implements DeleteProjectUseCase {
   @RequireProjectAccess(role = ProjectRole.ADMIN)
   public Mono<Void> deleteProject(DeleteProjectCommand command) {
     return projectAccessHelper.findProjectById(command.projectId())
-        .flatMap(projectCascadeHelper::softDeleteProjectCascade)
-        .as(transactionalOperator::transactional);
+        .flatMap(project -> Mono.defer(() -> projectAccessHelper
+            .requireProjectWithinWorkspace(
+                project.getWorkspaceId(), command.projectId())
+            .flatMap(projectCascadeHelper::softDeleteProjectCascade)
+            .as(transactionalOperator::transactional)));
   }
 
 }

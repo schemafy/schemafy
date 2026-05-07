@@ -8,6 +8,7 @@ import com.schemafy.core.project.application.port.in.ProjectDetail;
 import com.schemafy.core.project.application.port.out.ProjectMemberPort;
 import com.schemafy.core.project.application.port.out.ProjectPort;
 import com.schemafy.core.project.application.port.out.WorkspaceMemberPort;
+import com.schemafy.core.project.application.port.out.WorkspacePort;
 import com.schemafy.core.project.domain.Project;
 import com.schemafy.core.project.domain.ProjectMember;
 import com.schemafy.core.project.domain.ProjectRole;
@@ -27,9 +28,23 @@ class ProjectAccessHelper {
   private final ProjectPort projectPort;
   private final ProjectMemberPort projectMemberPort;
   private final WorkspaceMemberPort workspaceMemberPort;
+  private final WorkspacePort workspacePort;
 
   Mono<Project> findProjectById(String projectId) {
     return projectPort.findByIdAndNotDeleted(projectId)
+        .switchIfEmpty(Mono.error(
+            new DomainException(ProjectErrorCode.NOT_FOUND)));
+  }
+
+  Mono<Project> requireProjectWithinWorkspace(
+      String workspaceId,
+      String projectId) {
+    return workspacePort
+        .findByIdAndNotDeleted(workspaceId)
+        .switchIfEmpty(Mono.error(
+            new DomainException(WorkspaceErrorCode.NOT_FOUND)))
+        .then(projectPort.findByIdAndNotDeleted(projectId))
+        .filter(project -> workspaceId.equals(project.getWorkspaceId()))
         .switchIfEmpty(Mono.error(
             new DomainException(ProjectErrorCode.NOT_FOUND)));
   }
@@ -45,8 +60,8 @@ class ProjectAccessHelper {
   Mono<ProjectMember> findProjectMember(String userId, String projectId) {
     return projectMemberPort
         .findByProjectIdAndUserIdAndNotDeleted(projectId, userId)
-        .switchIfEmpty(Mono.error(new DomainException(
-            ProjectErrorCode.MEMBER_NOT_FOUND)));
+        .switchIfEmpty(Mono.error(
+            new DomainException(ProjectErrorCode.MEMBER_NOT_FOUND)));
   }
 
   Mono<Void> softDeleteMember(ProjectMember member) {
@@ -80,7 +95,8 @@ class ProjectAccessHelper {
         .flatMap(project -> workspaceMemberPort
             .findByWorkspaceIdAndUserIdAndNotDeleted(project.getWorkspaceId(), target.getUserId())
             .filter(WorkspaceMember::isAdmin)
-            .flatMap(admin -> Mono.error(new DomainException(ProjectErrorCode.WORKSPACE_ADMIN_PROJECT_ADMIN_PROTECTED)))
+            .flatMap(admin -> Mono.error(new DomainException(
+                ProjectErrorCode.WORKSPACE_ADMIN_PROJECT_ADMIN_PROTECTED)))
             .then());
   }
 

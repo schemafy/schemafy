@@ -41,14 +41,6 @@ import com.schemafy.core.erd.index.application.port.in.RemoveIndexColumnCommand;
 import com.schemafy.core.erd.index.application.port.out.GetIndexByIdPort;
 import com.schemafy.core.erd.index.application.port.out.GetIndexColumnByIdPort;
 import com.schemafy.core.erd.index.domain.exception.IndexErrorCode;
-import com.schemafy.core.erd.operation.application.inverse.ChangeColumnNameInverse;
-import com.schemafy.core.erd.operation.application.inverse.ChangeColumnTypeInverse;
-import com.schemafy.core.erd.operation.application.inverse.ChangeConstraintNameInverse;
-import com.schemafy.core.erd.operation.application.inverse.ChangeIndexNameInverse;
-import com.schemafy.core.erd.operation.application.inverse.ChangeIndexTypeInverse;
-import com.schemafy.core.erd.operation.application.inverse.ChangeRelationshipCardinalityInverse;
-import com.schemafy.core.erd.operation.application.inverse.ChangeRelationshipNameInverse;
-import com.schemafy.core.erd.operation.application.inverse.ChangeTableNameInverse;
 import com.schemafy.core.erd.operation.domain.ErdOperationType;
 import com.schemafy.core.erd.operation.domain.ErdTouchedEntity;
 import com.schemafy.core.erd.relationship.application.port.in.AddRelationshipColumnCommand;
@@ -115,7 +107,10 @@ class ErdMutationTargetResolver {
       CreateTableCommand command = requirePayload(payload, CreateTableCommand.class);
       yield resolveSchemaContext(command.schemaId());
     }
-    case CHANGE_TABLE_NAME -> resolveChangeTableName(payload);
+    case CHANGE_TABLE_NAME -> {
+      ChangeTableNameCommand command = requirePayload(payload, ChangeTableNameCommand.class);
+      yield resolveByTableId(command.tableId(), command.tableId());
+    }
     case CHANGE_TABLE_META -> {
       ChangeTableMetaCommand command = requirePayload(payload, ChangeTableMetaCommand.class);
       yield resolveByTableId(command.tableId(), command.tableId());
@@ -132,8 +127,14 @@ class ErdMutationTargetResolver {
       CreateColumnCommand command = requirePayload(payload, CreateColumnCommand.class);
       yield resolveTableContext(command.tableId());
     }
-    case CHANGE_COLUMN_NAME -> resolveChangeColumnName(payload);
-    case CHANGE_COLUMN_TYPE -> resolveChangeColumnType(payload);
+    case CHANGE_COLUMN_NAME -> {
+      ChangeColumnNameCommand command = requirePayload(payload, ChangeColumnNameCommand.class);
+      yield resolveByColumnId(command.columnId(), command.columnId());
+    }
+    case CHANGE_COLUMN_TYPE -> {
+      ChangeColumnTypeCommand command = requirePayload(payload, ChangeColumnTypeCommand.class);
+      yield resolveByColumnId(command.columnId(), command.columnId());
+    }
     case CHANGE_COLUMN_META -> {
       ChangeColumnMetaCommand command = requirePayload(payload, ChangeColumnMetaCommand.class);
       yield resolveByColumnId(command.columnId(), command.columnId());
@@ -150,7 +151,10 @@ class ErdMutationTargetResolver {
       CreateConstraintCommand command = requirePayload(payload, CreateConstraintCommand.class);
       yield resolveTableContext(command.tableId());
     }
-    case CHANGE_CONSTRAINT_NAME -> resolveChangeConstraintName(payload);
+    case CHANGE_CONSTRAINT_NAME -> {
+      ChangeConstraintNameCommand command = requirePayload(payload, ChangeConstraintNameCommand.class);
+      yield resolveByConstraintId(command.constraintId(), command.constraintId());
+    }
     case CHANGE_CONSTRAINT_CHECK_EXPR -> {
       ChangeConstraintCheckExprCommand command = requirePayload(payload, ChangeConstraintCheckExprCommand.class);
       yield resolveByConstraintId(command.constraintId(), command.constraintId());
@@ -180,8 +184,14 @@ class ErdMutationTargetResolver {
       CreateIndexCommand command = requirePayload(payload, CreateIndexCommand.class);
       yield resolveTableContext(command.tableId());
     }
-    case CHANGE_INDEX_NAME -> resolveChangeIndexName(payload);
-    case CHANGE_INDEX_TYPE -> resolveChangeIndexType(payload);
+    case CHANGE_INDEX_NAME -> {
+      ChangeIndexNameCommand command = requirePayload(payload, ChangeIndexNameCommand.class);
+      yield resolveByIndexId(command.indexId(), command.indexId());
+    }
+    case CHANGE_INDEX_TYPE -> {
+      ChangeIndexTypeCommand command = requirePayload(payload, ChangeIndexTypeCommand.class);
+      yield resolveByIndexId(command.indexId(), command.indexId());
+    }
     case DELETE_INDEX -> {
       DeleteIndexCommand command = requirePayload(payload, DeleteIndexCommand.class);
       yield resolveByIndexId(command.indexId(), command.indexId());
@@ -208,12 +218,19 @@ class ErdMutationTargetResolver {
       CreateRelationshipCommand command = requirePayload(payload, CreateRelationshipCommand.class);
       yield resolveTableContext(command.fkTableId());
     }
-    case CHANGE_RELATIONSHIP_NAME -> resolveChangeRelationshipName(payload);
+    case CHANGE_RELATIONSHIP_NAME -> {
+      ChangeRelationshipNameCommand command = requirePayload(payload, ChangeRelationshipNameCommand.class);
+      yield resolveByRelationshipId(command.relationshipId(), command.relationshipId());
+    }
     case CHANGE_RELATIONSHIP_KIND -> {
       ChangeRelationshipKindCommand command = requirePayload(payload, ChangeRelationshipKindCommand.class);
       yield resolveByRelationshipId(command.relationshipId(), command.relationshipId());
     }
-    case CHANGE_RELATIONSHIP_CARDINALITY -> resolveChangeRelationshipCardinality(payload);
+    case CHANGE_RELATIONSHIP_CARDINALITY -> {
+      ChangeRelationshipCardinalityCommand command = requirePayload(payload,
+          ChangeRelationshipCardinalityCommand.class);
+      yield resolveByRelationshipId(command.relationshipId(), command.relationshipId());
+    }
     case CHANGE_RELATIONSHIP_EXTRA -> {
       ChangeRelationshipExtraCommand command = requirePayload(payload, ChangeRelationshipExtraCommand.class);
       yield resolveByRelationshipId(command.relationshipId(), command.relationshipId());
@@ -236,71 +253,6 @@ class ErdMutationTargetResolver {
       yield resolveByRelationshipColumnId(command.relationshipColumnId(), command.relationshipColumnId());
     }
     };
-  }
-
-  private Mono<ResolvedErdMutationTarget> resolveChangeTableName(Object payload) {
-    if (payload instanceof ChangeTableNameInverse inverse) {
-      return resolveByTableId(inverse.tableId(), inverse.tableId());
-    }
-    ChangeTableNameCommand command = requirePayload(payload, ChangeTableNameCommand.class);
-    return resolveByTableId(command.tableId(), command.tableId());
-  }
-
-  private Mono<ResolvedErdMutationTarget> resolveChangeColumnName(Object payload) {
-    if (payload instanceof ChangeColumnNameInverse inverse) {
-      return resolveByColumnId(inverse.columnId(), inverse.columnId());
-    }
-    ChangeColumnNameCommand command = requirePayload(payload, ChangeColumnNameCommand.class);
-    return resolveByColumnId(command.columnId(), command.columnId());
-  }
-
-  private Mono<ResolvedErdMutationTarget> resolveChangeColumnType(Object payload) {
-    if (payload instanceof ChangeColumnTypeInverse inverse) {
-      return resolveByColumnId(inverse.columnId(), inverse.columnId());
-    }
-    ChangeColumnTypeCommand command = requirePayload(payload, ChangeColumnTypeCommand.class);
-    return resolveByColumnId(command.columnId(), command.columnId());
-  }
-
-  private Mono<ResolvedErdMutationTarget> resolveChangeConstraintName(Object payload) {
-    if (payload instanceof ChangeConstraintNameInverse inverse) {
-      return resolveByConstraintId(inverse.constraintId(), inverse.constraintId());
-    }
-    ChangeConstraintNameCommand command = requirePayload(payload, ChangeConstraintNameCommand.class);
-    return resolveByConstraintId(command.constraintId(), command.constraintId());
-  }
-
-  private Mono<ResolvedErdMutationTarget> resolveChangeIndexName(Object payload) {
-    if (payload instanceof ChangeIndexNameInverse inverse) {
-      return resolveByIndexId(inverse.indexId(), inverse.indexId());
-    }
-    ChangeIndexNameCommand command = requirePayload(payload, ChangeIndexNameCommand.class);
-    return resolveByIndexId(command.indexId(), command.indexId());
-  }
-
-  private Mono<ResolvedErdMutationTarget> resolveChangeIndexType(Object payload) {
-    if (payload instanceof ChangeIndexTypeInverse inverse) {
-      return resolveByIndexId(inverse.indexId(), inverse.indexId());
-    }
-    ChangeIndexTypeCommand command = requirePayload(payload, ChangeIndexTypeCommand.class);
-    return resolveByIndexId(command.indexId(), command.indexId());
-  }
-
-  private Mono<ResolvedErdMutationTarget> resolveChangeRelationshipName(Object payload) {
-    if (payload instanceof ChangeRelationshipNameInverse inverse) {
-      return resolveByRelationshipId(inverse.relationshipId(), inverse.relationshipId());
-    }
-    ChangeRelationshipNameCommand command = requirePayload(payload, ChangeRelationshipNameCommand.class);
-    return resolveByRelationshipId(command.relationshipId(), command.relationshipId());
-  }
-
-  private Mono<ResolvedErdMutationTarget> resolveChangeRelationshipCardinality(Object payload) {
-    if (payload instanceof ChangeRelationshipCardinalityInverse inverse) {
-      return resolveByRelationshipId(inverse.relationshipId(), inverse.relationshipId());
-    }
-    ChangeRelationshipCardinalityCommand command = requirePayload(payload,
-        ChangeRelationshipCardinalityCommand.class);
-    return resolveByRelationshipId(command.relationshipId(), command.relationshipId());
   }
 
   <T> FinalizedErdMutationTarget finalizeTarget(
@@ -451,7 +403,6 @@ class ErdMutationTargetResolver {
       String projectId,
       String schemaId,
       ErdTouchedEntity touchedEntity) {
-
   }
 
 }

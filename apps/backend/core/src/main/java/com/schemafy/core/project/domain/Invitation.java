@@ -139,6 +139,17 @@ public class Invitation extends BaseEntity {
     this.resolvedAt = Instant.now();
   }
 
+  public void cancel() {
+    if (!getStatusAsEnum().isPending()) {
+      ProjectErrorCode errorCode = getTargetTypeAsEnum().isWorkspace()
+          ? ProjectErrorCode.WORKSPACE_INVITATION_ALREADY_PROCESSED
+          : ProjectErrorCode.PROJECT_INVITATION_ALREADY_PROCESSED;
+      throw new DomainException(errorCode);
+    }
+    this.status = InvitationStatus.CANCELLED.name();
+    this.resolvedAt = Instant.now();
+  }
+
   public void validateInvitedEmailMatches(String email) {
     if (!this.invitedEmail.equals(Email.from(email).address())) {
       throw new DomainException(ProjectErrorCode.INVITATION_EMAIL_MISMATCH);

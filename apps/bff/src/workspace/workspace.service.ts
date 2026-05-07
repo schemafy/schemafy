@@ -3,6 +3,7 @@ import { BackendClientService } from '../common/backend-client/backend-client.se
 import type {
   CreateWorkspaceInvitationRequest,
   CreateWorkspaceRequest,
+  PageResponse,
   UpdateMemberRoleRequest,
   UpdateWorkspaceRequest,
   WorkspaceInvitationCreateResponse,
@@ -11,7 +12,6 @@ import type {
   WorkspaceResponse,
   WorkspaceSummaryResponse,
 } from './workspace.types';
-import { PageResponse } from '../common/types/api-response.types';
 
 @Injectable()
 export class WorkspaceService {

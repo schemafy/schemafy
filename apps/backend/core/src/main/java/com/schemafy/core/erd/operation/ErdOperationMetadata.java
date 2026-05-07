@@ -1,59 +1,33 @@
 package com.schemafy.core.erd.operation;
 
-import com.schemafy.core.erd.operation.domain.ErdOperationDerivationKind;
-
 public record ErdOperationMetadata(
     String sessionId,
     String clientOperationId,
     Long baseSchemaRevision,
-    String actorUserId,
-    ErdOperationDerivationKind derivationKind,
-    String derivedFromOpId) {
+    String actorUserId) {
 
   public static ErdOperationMetadata empty() {
-    return new ErdOperationMetadata(null, null, null, null, null, null);
-  }
-
-  public ErdOperationMetadata(
-      String sessionId,
-      String clientOperationId,
-      Long baseSchemaRevision,
-      String actorUserId) {
-    this(sessionId, clientOperationId, baseSchemaRevision, actorUserId, null, null);
+    return new ErdOperationMetadata(null, null, null, null);
   }
 
   public ErdOperationMetadata withSessionId(String sessionId) {
-    return new ErdOperationMetadata(sessionId, clientOperationId, baseSchemaRevision, actorUserId,
-        derivationKind, derivedFromOpId);
+    return new ErdOperationMetadata(sessionId, clientOperationId, baseSchemaRevision, actorUserId);
   }
 
   public ErdOperationMetadata withClientOperationId(String clientOperationId) {
-    return new ErdOperationMetadata(sessionId, clientOperationId, baseSchemaRevision, actorUserId,
-        derivationKind, derivedFromOpId);
+    return new ErdOperationMetadata(sessionId, clientOperationId, baseSchemaRevision, actorUserId);
   }
 
   public ErdOperationMetadata withBaseSchemaRevision(Long baseSchemaRevision) {
-    return new ErdOperationMetadata(sessionId, clientOperationId, baseSchemaRevision, actorUserId,
-        derivationKind, derivedFromOpId);
+    return new ErdOperationMetadata(sessionId, clientOperationId, baseSchemaRevision, actorUserId);
   }
 
   public ErdOperationMetadata withActorUserId(String actorUserId) {
-    return new ErdOperationMetadata(sessionId, clientOperationId, baseSchemaRevision, actorUserId,
-        derivationKind, derivedFromOpId);
-  }
-
-  public ErdOperationMetadata withDerivation(
-      ErdOperationDerivationKind derivationKind, String derivedFromOpId) {
-    return new ErdOperationMetadata(sessionId, clientOperationId, baseSchemaRevision, actorUserId,
-        derivationKind, derivedFromOpId);
+    return new ErdOperationMetadata(sessionId, clientOperationId, baseSchemaRevision, actorUserId);
   }
 
   public String actorUserIdOr(String defaultValue) {
     return actorUserId != null ? actorUserId : defaultValue;
-  }
-
-  public ErdOperationDerivationKind derivationKindOrDefault() {
-    return derivationKind != null ? derivationKind : ErdOperationDerivationKind.ORIGINAL;
   }
 
 }

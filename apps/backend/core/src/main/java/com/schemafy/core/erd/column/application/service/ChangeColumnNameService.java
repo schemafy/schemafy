@@ -16,7 +16,6 @@ import com.schemafy.core.erd.column.application.port.out.GetColumnsByTableIdPort
 import com.schemafy.core.erd.column.domain.Column;
 import com.schemafy.core.erd.column.domain.exception.ColumnErrorCode;
 import com.schemafy.core.erd.column.domain.validator.ColumnValidator;
-import com.schemafy.core.erd.operation.application.inverse.ChangeColumnNameInverse;
 import com.schemafy.core.erd.operation.application.service.ErdMutationCoordinator;
 import com.schemafy.core.erd.operation.domain.ErdOperationType;
 import com.schemafy.core.erd.schema.application.port.out.GetSchemaByIdPort;
@@ -54,8 +53,7 @@ public class ChangeColumnNameService implements ChangeColumnNameUseCase {
             .switchIfEmpty(Mono.error(new DomainException(ColumnErrorCode.NOT_FOUND, "Column not found")))
             .flatMap(column -> fetchTableSchemaAndColumns(column)
                 .flatMap(tuple -> applyChange(column, tuple, command.newName()))
-                .thenReturn(MutationResult.<Void>of(null, column.tableId())
-                    .withInverse(new ChangeColumnNameInverse(column.id(), column.name())))))
+                .thenReturn(MutationResult.<Void>of(null, column.tableId()))))
         .as(transactionalOperator::transactional);
   }
 

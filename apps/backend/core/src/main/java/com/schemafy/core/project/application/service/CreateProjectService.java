@@ -26,15 +26,21 @@ class CreateProjectService implements CreateProjectUseCase {
   private final ProjectMemberPort projectMemberPort;
   private final ProjectAccessHelper projectAccessHelper;
   private final ProjectMembershipPropagationHelper projectMembershipPropagationHelper;
+  private final WorkspaceAccessHelper workspaceAccessHelper;
 
   @Override
   public Mono<ProjectDetail> createProject(CreateProjectCommand command) {
-    return projectAccessHelper.validateWorkspaceAdmin(command.workspaceId(),
-        command.requesterId())
-        .then(Mono.defer(() -> Mono
-            .zip(
-                Mono.fromCallable(ulidGeneratorPort::generate),
-                Mono.fromCallable(ulidGeneratorPort::generate))
+    return projectAccessHelper.validateWorkspaceAdmin(command.workspaceId(), command.requesterId())
+        .then(Mono.defer(() -> doCreateProject(command)
+            .as(transactionalOperator::transactional)));
+  }
+
+  private Mono<ProjectDetail> doCreateProject(
+      CreateProjectCommand command) {
+    return workspaceAccessHelper.findWorkspaceOrThrow(command.workspaceId())
+        .then(Mono.defer(() -> Mono.zip(
+            Mono.fromCallable(ulidGeneratorPort::generate),
+            Mono.fromCallable(ulidGeneratorPort::generate))
             .flatMap(tuple -> {
               Project project = Project.create(tuple.getT1(),
                   command.workspaceId(), command.name(), command.description());
@@ -55,8 +61,7 @@ class CreateProjectService implements CreateProjectUseCase {
                       .thenReturn(savedProject))
                   .flatMap(savedProject -> projectAccessHelper
                       .buildProjectDetail(savedProject, command.requesterId()));
-            })))
-        .as(transactionalOperator::transactional);
+            })));
   }
 
 }

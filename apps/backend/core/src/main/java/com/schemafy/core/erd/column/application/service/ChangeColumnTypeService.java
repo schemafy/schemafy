@@ -1,9 +1,9 @@
 package com.schemafy.core.erd.column.application.service;
 
-import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -24,8 +24,6 @@ import com.schemafy.core.erd.column.domain.validator.ColumnValidator;
 import com.schemafy.core.erd.constraint.application.port.out.GetConstraintByIdPort;
 import com.schemafy.core.erd.constraint.application.port.out.GetConstraintColumnsByColumnIdPort;
 import com.schemafy.core.erd.constraint.domain.type.ConstraintKind;
-import com.schemafy.core.erd.operation.application.inverse.ChangeColumnTypeInverse;
-import com.schemafy.core.erd.operation.application.inverse.ChangeColumnTypeInverse.FkColumnTypeRevert;
 import com.schemafy.core.erd.operation.application.service.ErdMutationCoordinator;
 import com.schemafy.core.erd.operation.domain.ErdOperationType;
 import com.schemafy.core.erd.relationship.application.port.out.GetRelationshipColumnsByColumnIdPort;
@@ -64,9 +62,7 @@ public class ChangeColumnTypeService implements ChangeColumnTypeUseCase {
         command.precision(),
         command.scale(),
         command.values());
-    Set<String> affectedTableIds = new HashSet<>();
-    Set<String> capturedFkColumnIds = new HashSet<>();
-    List<FkColumnTypeRevert> fkRevertList = new ArrayList<>();
+    Set<String> affectedTableIds = ConcurrentHashMap.newKeySet();
 
     return erdMutationCoordinator.coordinate(ErdOperationType.CHANGE_COLUMN_TYPE, command,
         () -> rejectIfForeignKeyColumn(command.columnId())
@@ -81,16 +77,9 @@ public class ChangeColumnTypeService implements ChangeColumnTypeUseCase {
                       columns,
                       command.dataType(),
                       typeArguments,
-                      affectedTableIds,
-                      fkRevertList,
-                      capturedFkColumnIds)
-                      .then(Mono.fromCallable(() -> MutationResult.<Void>of(null, affectedTableIds)
-                          .withInverse(new ChangeColumnTypeInverse(
-                              column.id(),
-                              column.dataType(),
-                              column.typeArguments(),
-                              fkRevertList)))));
-            }))
+                      affectedTableIds));
+            })
+            .then(Mono.fromCallable(() -> MutationResult.<Void>of(null, affectedTableIds))))
         .as(transactionalOperator::transactional);
   }
 
@@ -112,9 +101,7 @@ public class ChangeColumnTypeService implements ChangeColumnTypeUseCase {
       List<Column> columns,
       String dataType,
       ColumnTypeArguments typeArguments,
-      Set<String> affectedTableIds,
-      List<FkColumnTypeRevert> fkRevertList,
-      Set<String> capturedFkColumnIds) {
+      Set<String> affectedTableIds) {
     String normalizedDataType = ColumnValidator.normalizeDataType(dataType);
     ColumnValidator.validateDataType(normalizedDataType);
     ColumnValidator.validateTypeArguments(normalizedDataType, typeArguments);
@@ -134,9 +121,7 @@ public class ChangeColumnTypeService implements ChangeColumnTypeUseCase {
             normalizedDataType,
             typeArguments,
             new HashSet<>(),
-            affectedTableIds,
-            fkRevertList,
-            capturedFkColumnIds));
+            affectedTableIds));
   }
 
   private Mono<Void> cascadeTypeToFkColumns(
@@ -144,16 +129,14 @@ public class ChangeColumnTypeService implements ChangeColumnTypeUseCase {
       String dataType,
       ColumnTypeArguments typeArguments,
       Set<String> visited,
-      Set<String> affectedTableIds,
-      List<FkColumnTypeRevert> fkRevertList,
-      Set<String> capturedFkColumnIds) {
+      Set<String> affectedTableIds) {
     if (!visited.add(pkColumn.id())) {
       return Mono.empty();
     }
     return getConstraintColumnsByColumnIdPort.findConstraintColumnsByColumnId(pkColumn.id())
         .defaultIfEmpty(List.of())
         .flatMap(constraintColumns -> Flux.fromIterable(constraintColumns)
-            .concatMap(cc -> getConstraintByIdPort.findConstraintById(cc.constraintId()))
+            .flatMap(cc -> getConstraintByIdPort.findConstraintById(cc.constraintId()))
             .filter(constraint -> constraint.kind() == ConstraintKind.PRIMARY_KEY)
             .next()
             .flatMap(pk -> propagateTypeToFkColumns(
@@ -161,9 +144,7 @@ public class ChangeColumnTypeService implements ChangeColumnTypeUseCase {
                 dataType,
                 typeArguments,
                 visited,
-                affectedTableIds,
-                fkRevertList,
-                capturedFkColumnIds)));
+                affectedTableIds)));
   }
 
   private Mono<Void> propagateTypeToFkColumns(
@@ -171,54 +152,39 @@ public class ChangeColumnTypeService implements ChangeColumnTypeUseCase {
       String dataType,
       ColumnTypeArguments typeArguments,
       Set<String> visited,
-      Set<String> affectedTableIds,
-      List<FkColumnTypeRevert> fkRevertList,
-      Set<String> capturedFkColumnIds) {
+      Set<String> affectedTableIds) {
     return getRelationshipsByPkTableIdPort.findRelationshipsByPkTableId(pkColumn.tableId())
         .defaultIfEmpty(List.of())
         .flatMapMany(Flux::fromIterable)
-        .concatMap(relationship -> {
+        .flatMap(relationship -> {
           affectedTableIds.add(relationship.fkTableId());
           return getRelationshipColumnsByRelationshipIdPort
               .findRelationshipColumnsByRelationshipId(relationship.id())
               .defaultIfEmpty(List.of())
               .flatMapMany(Flux::fromIterable)
               .filter(rc -> rc.pkColumnId().equals(pkColumn.id()))
-              .concatMap(rc -> getColumnByIdPort.findColumnById(rc.fkColumnId())
-                  .switchIfEmpty(Mono.error(new DomainException(
-                      ColumnErrorCode.NOT_FOUND,
-                      "Column not found: " + rc.fkColumnId())))
-                  .flatMap(fkCol -> {
-                    if (capturedFkColumnIds.add(fkCol.id())) {
-                      fkRevertList.add(new FkColumnTypeRevert(
-                          fkCol.id(),
-                          fkCol.dataType(),
-                          fkCol.typeArguments(),
-                          fkCol.charset(),
-                          fkCol.collation()));
-                    }
-                    Mono<Void> changeType = changeColumnTypePort.changeColumnType(
-                        rc.fkColumnId(), dataType, typeArguments);
-                    Mono<Void> clearCharsetCollation = ColumnValidator.isTextType(dataType)
-                        ? Mono.empty()
-                        : changeColumnMetaPort.changeColumnMeta(
-                            rc.fkColumnId(),
-                            null,
-                            "",
-                            "",
-                            null);
+              .flatMap(rc -> {
+                Mono<Void> changeType = changeColumnTypePort.changeColumnType(
+                    rc.fkColumnId(), dataType, typeArguments);
+                Mono<Void> clearCharsetCollation = ColumnValidator.isTextType(dataType)
+                    ? Mono.empty()
+                    : changeColumnMetaPort.changeColumnMeta(
+                        rc.fkColumnId(),
+                        null,
+                        "",
+                        "",
+                        null);
 
-                    return changeType
-                        .then(clearCharsetCollation)
-                        .then(cascadeTypeToFkColumns(
+                return changeType
+                    .then(clearCharsetCollation)
+                    .then(getColumnByIdPort.findColumnById(rc.fkColumnId())
+                        .flatMap(fkCol -> cascadeTypeToFkColumns(
                             fkCol,
                             dataType,
                             typeArguments,
                             visited,
-                            affectedTableIds,
-                            fkRevertList,
-                            capturedFkColumnIds));
-                  }));
+                            affectedTableIds)));
+              });
         })
         .then();
   }

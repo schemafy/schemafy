@@ -4,7 +4,6 @@ import org.springframework.data.r2dbc.repository.Modifying;
 import org.springframework.data.r2dbc.repository.Query;
 import org.springframework.data.repository.reactive.ReactiveCrudRepository;
 
-import com.schemafy.core.project.application.port.in.InvitationSummary;
 import com.schemafy.core.project.domain.Invitation;
 
 import reactor.core.publisher.Flux;
@@ -77,135 +76,6 @@ public interface InvitationRepository
       int offset);
 
   @Query("""
-      SELECT *
-      FROM (
-        SELECT * FROM (
-          SELECT
-            i.id AS id,
-            i.target_type AS target_type,
-            i.target_id AS target_id,
-            w.name AS target_name,
-            w.description AS target_description,
-            i.invited_email AS invited_email,
-            i.invited_role AS invited_role,
-            i.invited_by AS invited_by,
-            i.status AS status,
-            i.expires_at AS expires_at,
-            i.created_at AS created_at
-          FROM invitations i
-          JOIN workspaces w
-            ON i.target_type = 'WORKSPACE'
-           AND i.target_id = w.id
-           AND w.deleted_at IS NULL
-          WHERE i.invited_email = :email
-            AND i.status = :status
-            AND i.deleted_at IS NULL
-            AND i.expires_at > NOW()
-          ORDER BY i.id DESC
-          LIMIT :limit
-        ) workspace_invitations
-        UNION ALL
-        SELECT * FROM (
-          SELECT
-            i.id AS id,
-            i.target_type AS target_type,
-            i.target_id AS target_id,
-            p.name AS target_name,
-            p.description AS target_description,
-            i.invited_email AS invited_email,
-            i.invited_role AS invited_role,
-            i.invited_by AS invited_by,
-            i.status AS status,
-            i.expires_at AS expires_at,
-            i.created_at AS created_at
-          FROM invitations i
-          JOIN projects p
-            ON i.target_type = 'PROJECT'
-           AND i.target_id = p.id
-           AND p.deleted_at IS NULL
-          WHERE i.invited_email = :email
-            AND i.status = :status
-            AND i.deleted_at IS NULL
-            AND i.expires_at > NOW()
-          ORDER BY i.id DESC
-          LIMIT :limit
-        ) project_invitations
-      ) my_invitations
-      ORDER BY id DESC
-      LIMIT :limit
-      """)
-  Flux<InvitationSummary> findMyInvitationSummariesFirstPage(
-      String email,
-      String status,
-      int limit);
-
-  @Query("""
-      SELECT *
-      FROM (
-        SELECT * FROM (
-          SELECT
-            i.id AS id,
-            i.target_type AS target_type,
-            i.target_id AS target_id,
-            w.name AS target_name,
-            w.description AS target_description,
-            i.invited_email AS invited_email,
-            i.invited_role AS invited_role,
-            i.invited_by AS invited_by,
-            i.status AS status,
-            i.expires_at AS expires_at,
-            i.created_at AS created_at
-          FROM invitations i
-          JOIN workspaces w
-            ON i.target_type = 'WORKSPACE'
-           AND i.target_id = w.id
-           AND w.deleted_at IS NULL
-          WHERE i.invited_email = :email
-            AND i.status = :status
-            AND i.deleted_at IS NULL
-            AND i.expires_at > NOW()
-            AND i.id < :cursorId
-          ORDER BY i.id DESC
-          LIMIT :limit
-        ) workspace_invitations
-        UNION ALL
-        SELECT * FROM (
-          SELECT
-            i.id AS id,
-            i.target_type AS target_type,
-            i.target_id AS target_id,
-            p.name AS target_name,
-            p.description AS target_description,
-            i.invited_email AS invited_email,
-            i.invited_role AS invited_role,
-            i.invited_by AS invited_by,
-            i.status AS status,
-            i.expires_at AS expires_at,
-            i.created_at AS created_at
-          FROM invitations i
-          JOIN projects p
-            ON i.target_type = 'PROJECT'
-           AND i.target_id = p.id
-           AND p.deleted_at IS NULL
-          WHERE i.invited_email = :email
-            AND i.status = :status
-            AND i.deleted_at IS NULL
-            AND i.expires_at > NOW()
-            AND i.id < :cursorId
-          ORDER BY i.id DESC
-          LIMIT :limit
-        ) project_invitations
-      ) my_invitations
-      ORDER BY id DESC
-      LIMIT :limit
-      """)
-  Flux<InvitationSummary> findMyInvitationSummariesNextPage(
-      String email,
-      String status,
-      String cursorId,
-      int limit);
-
-  @Query("""
       SELECT COUNT(*) FROM invitations
       WHERE target_type = :targetType
         AND invited_email = :email
@@ -237,6 +107,37 @@ public interface InvitationRepository
       String resultStatus,
       String currentStatus,
       String excludeId);
+
+  @Modifying
+  @Query("""
+      UPDATE invitations
+      SET status = 'CANCELLED', resolved_at = NOW(), updated_at = NOW(), version = version + 1
+      WHERE target_type = :targetType
+        AND target_id = :targetId
+        AND invited_email = :email
+        AND status = 'PENDING'
+        AND expires_at <= NOW()
+        AND deleted_at IS NULL
+      """)
+  Mono<Long> cancelExpiredPendingInvitationsByTargetAndEmail(
+      String targetType,
+      String targetId,
+      String email);
+
+  @Modifying
+  @Query("""
+      UPDATE invitations
+      SET status = 'CANCELLED', resolved_at = NOW(), updated_at = NOW(), version = version + 1
+      WHERE target_type = 'PROJECT'
+        AND parent_id = :workspaceId
+        AND invited_email = :email
+        AND status = 'PENDING'
+        AND expires_at > NOW()
+        AND deleted_at IS NULL
+      """)
+  Mono<Long> cancelPendingProjectInvitationsByWorkspaceIdAndEmail(
+      String workspaceId,
+      String email);
 
   @Modifying
   @Query("""

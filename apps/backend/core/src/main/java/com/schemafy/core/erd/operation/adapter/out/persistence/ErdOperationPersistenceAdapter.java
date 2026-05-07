@@ -73,24 +73,6 @@ class ErdOperationPersistenceAdapter implements
   }
 
   @Override
-  public Mono<SchemaCollaborationState> incrementIfCurrentRevision(String schemaId, long expectedRevision) {
-    return schemaCollaborationStateRepository.incrementRevisionIfCurrentRevision(schemaId, expectedRevision)
-        .flatMap(rowsUpdated -> {
-          if (rowsUpdated == 0) {
-            return Mono.empty();
-          }
-          if (rowsUpdated != 1) {
-            return Mono.error(new IllegalStateException(
-                "Schema collaboration state guarded increment failed: schemaId=" + schemaId));
-          }
-          return schemaCollaborationStateRepository.findById(schemaId)
-              .switchIfEmpty(Mono.error(new IllegalStateException(
-                  "Schema collaboration state missing after guarded increment: schemaId=" + schemaId)));
-        })
-        .map(schemaCollaborationStateMapper::toDomain);
-  }
-
-  @Override
   public Mono<ErdOperationLog> append(ErdOperationLog erdOperationLog) {
     return erdOperationLogRepository.save(erdOperationLogMapper.toEntity(erdOperationLog))
         .map(erdOperationLogMapper::toDomain);

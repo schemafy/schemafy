@@ -25,13 +25,22 @@ class UpdateProjectService implements UpdateProjectUseCase {
   @RequireProjectAccess(role = ProjectRole.ADMIN)
   public Mono<ProjectDetail> updateProject(UpdateProjectCommand command) {
     return projectAccessHelper.findProjectById(command.projectId())
+        .flatMap(project -> Mono.defer(() -> doUpdateProject(
+            command, project.getWorkspaceId())
+            .as(transactionalOperator::transactional)));
+  }
+
+  private Mono<ProjectDetail> doUpdateProject(
+      UpdateProjectCommand command,
+      String workspaceId) {
+    return projectAccessHelper.requireProjectWithinWorkspace(
+        workspaceId, command.projectId())
         .flatMap(project -> {
           project.update(command.name(), command.description());
           return projectPort.save(project);
         })
         .flatMap(savedProject -> projectAccessHelper.buildProjectDetail(
-            savedProject, command.requesterId()))
-        .as(transactionalOperator::transactional);
+            savedProject, command.requesterId()));
   }
 
 }

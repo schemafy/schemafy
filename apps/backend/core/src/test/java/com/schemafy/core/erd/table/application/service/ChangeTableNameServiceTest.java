@@ -17,8 +17,6 @@ import com.schemafy.core.common.exception.DomainException;
 import com.schemafy.core.erd.constraint.application.port.out.ChangeConstraintNamePort;
 import com.schemafy.core.erd.constraint.application.port.out.ConstraintExistsPort;
 import com.schemafy.core.erd.constraint.application.port.out.GetConstraintsByTableIdPort;
-import com.schemafy.core.erd.constraint.domain.Constraint;
-import com.schemafy.core.erd.constraint.domain.type.ConstraintKind;
 import com.schemafy.core.erd.relationship.application.port.out.ChangeRelationshipNamePort;
 import com.schemafy.core.erd.relationship.application.port.out.GetRelationshipsByTableIdPort;
 import com.schemafy.core.erd.relationship.application.port.out.RelationshipExistsPort;
@@ -35,12 +33,9 @@ import com.schemafy.core.erd.table.fixture.TableFixture;
 import reactor.core.publisher.Mono;
 import reactor.test.StepVerifier;
 
-import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.then;
-import static org.mockito.Mockito.never;
 
 @ExtendWith(MockitoExtension.class)
 @DisplayName("ChangeTableNameService")
@@ -119,147 +114,6 @@ class ChangeTableNameServiceTest {
             .changeTableName(command.tableId(), command.newName());
       }
 
-      @Test
-      @DisplayName("PK 쪽 테이블 rename으로 관계 이름이 바뀌면 FK 테이블도 affectedTableIds에 포함한다")
-      void includesRelatedTableWhenPkSideRelationshipNameChanges() {
-        var oldTable = new Table(
-            "table-1",
-            "schema-1",
-            "users",
-            TableFixture.DEFAULT_CHARSET,
-            TableFixture.DEFAULT_COLLATION);
-        var fkTable = new Table(
-            "table-2",
-            "schema-1",
-            "orders",
-            TableFixture.DEFAULT_CHARSET,
-            TableFixture.DEFAULT_COLLATION);
-        var relationship = new Relationship(
-            "rel-1",
-            oldTable.id(),
-            fkTable.id(),
-            "rel_orders_to_users",
-            RelationshipKind.NON_IDENTIFYING,
-            Cardinality.ONE_TO_MANY,
-            null);
-        var command = new com.schemafy.core.erd.table.application.port.in.ChangeTableNameCommand(
-            oldTable.id(),
-            "accounts");
-
-        given(tableExistsPort.existsBySchemaIdAndName(any(), any()))
-            .willReturn(Mono.just(false));
-        given(getTableByIdPort.findTableById(oldTable.id()))
-            .willReturn(Mono.just(oldTable));
-        given(getTableByIdPort.findTableById(fkTable.id()))
-            .willReturn(Mono.just(fkTable));
-        given(changeTableNamePort.changeTableName(any(), any()))
-            .willReturn(Mono.empty());
-        given(getConstraintsByTableIdPort.findConstraintsByTableId(any()))
-            .willReturn(Mono.just(List.of()));
-        given(getRelationshipsByTableIdPort.findRelationshipsByTableId(oldTable.id()))
-            .willReturn(Mono.just(List.of(relationship)));
-        given(relationshipExistsPort.existsByFkTableIdAndNameExcludingId(
-            relationship.fkTableId(),
-            "rel_orders_to_accounts",
-            relationship.id()))
-            .willReturn(Mono.just(false));
-        given(changeRelationshipNamePort.changeRelationshipName(any(), any()))
-            .willReturn(Mono.empty());
-
-        StepVerifier.create(sut.changeTableName(command))
-            .assertNext(result -> assertThat(result.affectedTableIds())
-                .containsExactlyInAnyOrder(oldTable.id(), fkTable.id()))
-            .verifyComplete();
-
-        then(changeRelationshipNamePort).should()
-            .changeRelationshipName(relationship.id(), "rel_orders_to_accounts");
-      }
-
-    }
-
-    @Nested
-    @DisplayName("자동 생성된 제약조건 이름이 있으면")
-    class WithAutoConstraintNames {
-
-      @Test
-      @DisplayName("테이블 rename에 맞춰 PK가 아닌 자동 제약조건 이름도 갱신한다")
-      void updatesAutoConstraintNamesAcrossKinds() {
-        var oldTable = new Table(
-            "table-1",
-            "schema-1",
-            "users",
-            TableFixture.DEFAULT_CHARSET,
-            TableFixture.DEFAULT_COLLATION);
-        var constraints = List.of(
-            constraint("pk-1", oldTable.id(), "pk_users", ConstraintKind.PRIMARY_KEY),
-            constraint("uq-1", oldTable.id(), "uq_users", ConstraintKind.UNIQUE),
-            constraint("uq-2", oldTable.id(), "uq_users_1", ConstraintKind.UNIQUE),
-            constraint("ck-1", oldTable.id(), "ck_users", ConstraintKind.CHECK),
-            constraint("df-1", oldTable.id(), "df_users", ConstraintKind.DEFAULT),
-            constraint("nn-1", oldTable.id(), "nn_users", ConstraintKind.NOT_NULL),
-            constraint("manual-1", oldTable.id(), "users_email_unique", ConstraintKind.UNIQUE));
-        var command = new com.schemafy.core.erd.table.application.port.in.ChangeTableNameCommand(
-            oldTable.id(),
-            "accounts");
-
-        given(tableExistsPort.existsBySchemaIdAndName(oldTable.schemaId(), command.newName()))
-            .willReturn(Mono.just(false));
-        given(getTableByIdPort.findTableById(oldTable.id()))
-            .willReturn(Mono.just(oldTable));
-        given(changeTableNamePort.changeTableName(oldTable.id(), command.newName()))
-            .willReturn(Mono.empty());
-        given(getConstraintsByTableIdPort.findConstraintsByTableId(oldTable.id()))
-            .willReturn(Mono.just(constraints));
-        given(getRelationshipsByTableIdPort.findRelationshipsByTableId(oldTable.id()))
-            .willReturn(Mono.just(List.of()));
-        givenConstraintNameAvailable(oldTable.schemaId(), "pk_accounts", "pk-1");
-        givenConstraintNameAvailable(oldTable.schemaId(), "uq_accounts", "uq-1");
-        givenConstraintNameAvailable(oldTable.schemaId(), "uq_accounts_1", "uq-2");
-        givenConstraintNameAvailable(oldTable.schemaId(), "ck_accounts", "ck-1");
-        givenConstraintNameAvailable(oldTable.schemaId(), "df_accounts", "df-1");
-        givenConstraintNameAvailable(oldTable.schemaId(), "nn_accounts", "nn-1");
-        given(changeConstraintNamePort.changeConstraintName(any(), any()))
-            .willReturn(Mono.empty());
-
-        StepVerifier.create(sut.changeTableName(command))
-            .expectNextCount(1)
-            .verifyComplete();
-
-        then(changeConstraintNamePort).should()
-            .changeConstraintName("pk-1", "pk_accounts");
-        then(changeConstraintNamePort).should()
-            .changeConstraintName("uq-1", "uq_accounts");
-        then(changeConstraintNamePort).should()
-            .changeConstraintName("uq-2", "uq_accounts_1");
-        then(changeConstraintNamePort).should()
-            .changeConstraintName("ck-1", "ck_accounts");
-        then(changeConstraintNamePort).should()
-            .changeConstraintName("df-1", "df_accounts");
-        then(changeConstraintNamePort).should()
-            .changeConstraintName("nn-1", "nn_accounts");
-        then(changeConstraintNamePort).should(never())
-            .changeConstraintName(eq("manual-1"), any());
-      }
-
-      private void givenConstraintNameAvailable(
-          String schemaId,
-          String name,
-          String constraintId) {
-        given(constraintExistsPort.existsBySchemaIdAndNameExcludingId(
-            schemaId,
-            name,
-            constraintId))
-            .willReturn(Mono.just(false));
-      }
-
-      private Constraint constraint(
-          String id,
-          String tableId,
-          String name,
-          ConstraintKind kind) {
-        return new Constraint(id, tableId, name, kind, null, null);
-      }
-
     }
 
     @Nested
@@ -267,8 +121,8 @@ class ChangeTableNameServiceTest {
     class WithAutoRelationshipNames {
 
       @Test
-      @DisplayName("FK 쪽 테이블 rename으로 관계 이름이 바뀌면 PK 테이블도 affectedTableIds에 포함한다")
-      void includesRelatedTableWhenFkSideRelationshipNameChanges() {
+      @DisplayName("테이블 rename에 맞춰 관계 이름을 갱신한다")
+      void updatesAutoRelationshipName() {
         var oldTable = new Table(
             "table-1",
             "schema-1",
@@ -314,8 +168,7 @@ class ChangeTableNameServiceTest {
             .willReturn(Mono.empty());
 
         StepVerifier.create(sut.changeTableName(command))
-            .assertNext(result -> assertThat(result.affectedTableIds())
-                .containsExactlyInAnyOrder(oldTable.id(), pkTable.id()))
+            .expectNextCount(1)
             .verifyComplete();
 
         then(changeRelationshipNamePort).should()
