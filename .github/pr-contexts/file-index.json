@@ -58,7 +58,8 @@
   ],
   "apps/frontend/src/features/drawing/hooks/useCanvasController.ts": [
     331,
-    291
+    291,
+    380
   ],
   "apps/frontend/src/features/drawing/hooks/useCanvasKeyboard.ts": [
     331,
@@ -918,5 +919,14 @@
   ],
   "apps/frontend/vite.config.ts": [
     318
+  ],
+  "apps/frontend/src/features/collaboration/hooks/useChatInputAnchor.ts": [
+    380
+  ],
+  "apps/frontend/src/hooks/index.ts": [
+    380
+  ],
+  "apps/frontend/src/hooks/useThrottledCallback.ts": [
+    380
   ]
 }
