@@ -94,12 +94,16 @@ apiClient.interceptors.response.use(
 
     if (responseStatus === 401) {
       config._retry = true;
-      const newToken = await refreshToken();
-      if (newToken) {
-        config.headers = config.headers ?? {};
-        (config.headers as Record<string, string>)['Authorization'] =
-          `Bearer ${newToken}`;
-        return apiClient(config);
+      try {
+        const newToken = await refreshToken();
+        if (newToken) {
+          config.headers = config.headers ?? {};
+          (config.headers as Record<string, string>)['Authorization'] =
+            `Bearer ${newToken}`;
+          return apiClient(config);
+        }
+      } catch {
+        return Promise.reject(error);
       }
     }
 
