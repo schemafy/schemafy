@@ -15,7 +15,9 @@ public enum OperationErrorCode implements DomainErrorCode {
   INVALID_VALUE(HttpStatus.BAD_REQUEST),
   SUPERSEDED(HttpStatus.CONFLICT),
   ALREADY_UNDONE(HttpStatus.CONFLICT),
-  REDO_NOT_ELIGIBLE(HttpStatus.CONFLICT);
+  REDO_NOT_ELIGIBLE(HttpStatus.CONFLICT),
+  INVERSE_PAYLOAD_MISSING(HttpStatus.CONFLICT),
+  UNSUPPORTED(HttpStatus.CONFLICT);
 
   private final HttpStatus status;
 

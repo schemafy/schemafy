@@ -7,11 +7,14 @@ import com.schemafy.api.collaboration.dto.CollaborationEventType;
 @JsonTypeInfo(use = JsonTypeInfo.Id.NAME, property = "type", visible = true)
 @JsonSubTypes({
   @JsonSubTypes.Type(value = CursorEvent.Inbound.class, name = "CURSOR"),
+  @JsonSubTypes.Type(value = TablePositionPreviewEvent.Inbound.class, name = "TABLE_POSITION_PREVIEW"),
+  @JsonSubTypes.Type(value = RelationshipExtraPreviewEvent.Inbound.class, name = "RELATIONSHIP_EXTRA_PREVIEW"),
   @JsonSubTypes.Type(value = SchemaFocusEvent.Inbound.class, name = "SCHEMA_FOCUS"),
   @JsonSubTypes.Type(value = ChatEvent.Inbound.class, name = "CHAT")
 })
 public sealed interface CollaborationInbound
-    permits CursorEvent.Inbound, SchemaFocusEvent.Inbound,
+    permits CursorEvent.Inbound, TablePositionPreviewEvent.Inbound,
+    RelationshipExtraPreviewEvent.Inbound, SchemaFocusEvent.Inbound,
     ChatEvent.Inbound {
 
   CollaborationEventType type();

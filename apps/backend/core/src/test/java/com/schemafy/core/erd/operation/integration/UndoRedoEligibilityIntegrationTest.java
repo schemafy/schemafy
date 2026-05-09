@@ -76,7 +76,7 @@ class UndoRedoEligibilityIntegrationTest extends ErdProjectIntegrationSupport {
           assertThat(result.targetRootOriginalOperation().opId()).isEqualTo(o3.opId());
           assertThat(result.currentChainTipOperation().opId()).isEqualTo(u3.opId());
           assertThat(result.currentRedoCandidateOperation().opId()).isEqualTo(o3.opId());
-          assertThat(result.executionBaseOperation().opId()).isEqualTo(o3.opId());
+          assertThat(result.executionBaseOperation().opId()).isEqualTo(u3.opId());
         })
         .verifyComplete();
   }
@@ -133,7 +133,7 @@ class UndoRedoEligibilityIntegrationTest extends ErdProjectIntegrationSupport {
     var o2 = append(opId("op-2"), schemaId, projectId, 2, ErdOperationDerivationKind.ORIGINAL, null);
     var o3 = append(opId("op-3"), schemaId, projectId, 3, ErdOperationDerivationKind.ORIGINAL, null);
     append(opId("op-4"), schemaId, projectId, 4, ErdOperationDerivationKind.UNDO, o3.opId());
-    append(opId("op-5"), schemaId, projectId, 5, ErdOperationDerivationKind.UNDO, o2.opId());
+    var u2 = append(opId("op-5"), schemaId, projectId, 5, ErdOperationDerivationKind.UNDO, o2.opId());
 
     StepVerifier.create(undoRedoEligibilityService.resolve(UndoRedoAction.REDO, o3.opId()))
         .expectErrorMatches(DomainException.hasErrorCode(OperationErrorCode.REDO_NOT_ELIGIBLE))
@@ -143,7 +143,7 @@ class UndoRedoEligibilityIntegrationTest extends ErdProjectIntegrationSupport {
         .assertNext(result -> {
           assertThat(result.targetRootOriginalOperation().opId()).isEqualTo(o2.opId());
           assertThat(result.currentRedoCandidateOperation().opId()).isEqualTo(o2.opId());
-          assertThat(result.executionBaseOperation().opId()).isEqualTo(o2.opId());
+          assertThat(result.executionBaseOperation().opId()).isEqualTo(u2.opId());
         })
         .verifyComplete();
   }

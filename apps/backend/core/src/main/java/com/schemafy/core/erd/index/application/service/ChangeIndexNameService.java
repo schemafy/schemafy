@@ -12,6 +12,7 @@ import com.schemafy.core.erd.index.application.port.out.GetIndexByIdPort;
 import com.schemafy.core.erd.index.application.port.out.IndexExistsPort;
 import com.schemafy.core.erd.index.domain.exception.IndexErrorCode;
 import com.schemafy.core.erd.index.domain.validator.IndexValidator;
+import com.schemafy.core.erd.operation.application.inverse.ChangeIndexNameInverse;
 import com.schemafy.core.erd.operation.application.service.ErdMutationCoordinator;
 import com.schemafy.core.erd.operation.domain.ErdOperationType;
 
@@ -51,7 +52,8 @@ public class ChangeIndexNameService implements ChangeIndexNameUseCase {
                 }
                 return changeIndexNamePort
                     .changeIndexName(index.id(), normalizedName)
-                    .thenReturn(MutationResult.<Void>of(null, index.tableId()));
+                    .thenReturn(MutationResult.<Void>of(null, index.tableId())
+                        .withInverse(new ChangeIndexNameInverse(index.id(), index.name())));
               }));
     }));
   }
