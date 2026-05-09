@@ -1,7 +1,11 @@
 import { action, computed, makeObservable, observable } from 'mobx';
 import type { ErdOperation } from '@/features/drawing/api/types';
 import type { ReceiveErdMutated } from '@/features/collaboration/api';
-import type { LocalOperationMetadata, LocalOperationStatus, PendingOperationMetadata, } from '@/types/operation.types';
+import type {
+  LocalOperationMetadata,
+  LocalOperationStatus,
+  PendingOperationMetadata,
+} from '@/types/operation.types';
 
 export class OperationHistoryStore {
   operationsByClientId: Map<string, LocalOperationMetadata> = new Map();
@@ -120,10 +124,7 @@ export class OperationHistoryStore {
       return;
     }
 
-    this.lastRemoteOperationBySchemaId.set(
-      message.schemaId,
-      message.operation,
-    );
+    this.lastRemoteOperationBySchemaId.set(message.schemaId, message.operation);
     this.clearSchemaUndoableHistory(message.schemaId);
   }
 
