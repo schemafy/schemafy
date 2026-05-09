@@ -1,8 +1,19 @@
 import { useState } from 'react';
-import { DropdownMenu, DropdownMenuContent, DropdownMenuTrigger, } from '../../DropDown';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuTrigger,
+} from '../../DropDown';
 import { Button } from '../../Button';
 import { Avatar } from '../../Avatar';
-import { Select, SelectContent, SelectGroup, SelectItem, SelectTrigger, SelectValue, } from '../../Select';
+import {
+  Select,
+  SelectContent,
+  SelectGroup,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '../../Select';
 import {
   useCreateInvitation,
   useGetMembers,
@@ -10,12 +21,21 @@ import {
   useUpdateMemberRole,
 } from '@/features/project/hooks/useProjects';
 import { availableRoles } from '@/features/project/utils/role';
+import { authStore } from '@/store';
+
+const RoleText = ({ role }: { role: string }) => {
+  return (
+    <span className="font-body-xs text-schemafy-dark-gray">
+      {role.toLowerCase()}
+    </span>
+  );
+};
 
 const RoleSelect = ({
-                      value,
-                      onValueChange,
-                      userRole = 'ADMIN',
-                    }: {
+  value,
+  onValueChange,
+  userRole = 'ADMIN',
+}: {
   value: string;
   onValueChange: (value: string) => void;
   userRole?: string;
@@ -25,7 +45,7 @@ const RoleSelect = ({
   return (
     <Select value={value} onValueChange={onValueChange}>
       <SelectTrigger className="w-[3.75rem] border-none font-body-xs">
-        <SelectValue/>
+        <SelectValue />
       </SelectTrigger>
       <SelectContent>
         <SelectGroup>
@@ -40,23 +60,34 @@ const RoleSelect = ({
   );
 };
 
-export const ShareContents = ({projectId}: { projectId: string }) => {
+export const ShareContents = ({ projectId }: { projectId: string }) => {
   const [email, setEmail] = useState('');
   const [inviteRole, setInviteRole] = useState('VIEWER');
 
-  const {data: projectData} = useGetProject(projectId);
-  const {data: membersData} = useGetMembers(projectId);
-  const {mutate: createInvitation, isPending} =
+  const { data: projectData } = useGetProject(projectId);
+  const { data: membersData } = useGetMembers(projectId);
+  const { mutate: createInvitation, isPending } =
     useCreateInvitation(projectId);
-  const {mutate: updateMemberRole} = useUpdateMemberRole(projectId);
+  const { mutate: updateMemberRole } = useUpdateMemberRole(projectId);
 
   const currentUserRole = projectData?.currentUserRole ?? 'VIEWER';
   const members = membersData?.content ?? [];
+  const canManageMembers = currentUserRole === 'ADMIN';
+  const currentUserId = authStore.user?.id;
+  const currentMember = members.find(
+    (member) => member.userId === currentUserId,
+  );
+  const orderedMembers = currentMember
+    ? [
+        currentMember,
+        ...members.filter((member) => member.userId !== currentUserId),
+      ]
+    : members;
 
   const handleInvite = () => {
     if (!projectId || !email.trim()) return;
     createInvitation(
-      {email, role: inviteRole},
+      { email, role: inviteRole },
       {
         onSuccess: () => {
           setEmail('');
@@ -77,7 +108,7 @@ export const ShareContents = ({projectId}: { projectId: string }) => {
         align="end"
         className="flex flex-col gap-2.5 font-body-xs"
       >
-        {currentUserRole === 'ADMIN' && (
+        {canManageMembers && (
           <div className="flex gap-4">
             <input
               type="email"
@@ -101,22 +132,26 @@ export const ShareContents = ({projectId}: { projectId: string }) => {
           </div>
         )}
         <p className="text-schemafy-dark-gray">Who has access</p>
-        {members.map((member) => (
+        {orderedMembers.map((member) => (
           <div
             key={member.userId}
             className="flex justify-between items-center"
           >
             <div className="flex gap-2.5 items-center">
-              <Avatar size={'dropdown'}/>
+              <Avatar size={'dropdown'} />
               <p>{member.userName}</p>
             </div>
-            <RoleSelect
-              value={member.role}
-              onValueChange={(role) =>
-                updateMemberRole({userId: member.userId, data: {role}})
-              }
-              userRole={currentUserRole}
-            />
+            {canManageMembers && member.userId !== currentUserId ? (
+              <RoleSelect
+                value={member.role}
+                onValueChange={(role) =>
+                  updateMemberRole({ userId: member.userId, data: { role } })
+                }
+                userRole={currentUserRole}
+              />
+            ) : (
+              <RoleText role={member.role} />
+            )}
           </div>
         ))}
       </DropdownMenuContent>
