@@ -1,11 +1,7 @@
 import { action, computed, makeObservable, observable } from 'mobx';
 import type { ErdOperation } from '@/features/drawing/api/types';
 import type { ReceiveErdMutated } from '@/features/collaboration/api';
-import type {
-  LocalOperationMetadata,
-  LocalOperationStatus,
-  PendingOperationMetadata,
-} from '@/types/operation.types';
+import type { LocalOperationMetadata, LocalOperationStatus, PendingOperationMetadata, } from '@/types/operation.types';
 
 export class OperationHistoryStore {
   operationsByClientId: Map<string, LocalOperationMetadata> = new Map();
@@ -120,22 +116,15 @@ export class OperationHistoryStore {
   handleErdMutated(message: ReceiveErdMutated) {
     const clientOperationId = message.operation.clientOperationId;
 
-    if (!clientOperationId) {
-      this.lastRemoteOperationBySchemaId.set(
-        message.schemaId,
-        message.operation,
-      );
+    if (clientOperationId && this.operationsByClientId.has(clientOperationId)) {
       return;
     }
 
-    const existing = this.operationsByClientId.get(clientOperationId);
-
-    if (!existing) {
-      this.lastRemoteOperationBySchemaId.set(
-        message.schemaId,
-        message.operation,
-      );
-    }
+    this.lastRemoteOperationBySchemaId.set(
+      message.schemaId,
+      message.operation,
+    );
+    this.clearSchemaUndoableHistory(message.schemaId);
   }
 
   getUndoableOpIds(schemaId: string) {
@@ -187,6 +176,21 @@ export class OperationHistoryStore {
     if (error instanceof Error) return error.message;
     if (typeof error === 'string') return error;
     return null;
+  }
+
+  private clearSchemaUndoableHistory(schemaId: string) {
+    const undoableOpIds = this.undoableOpIdsBySchemaId.get(schemaId) ?? [];
+
+    undoableOpIds.forEach((opId) => {
+      const clientOperationId = this.clientIdsByOpId.get(opId);
+
+      if (!clientOperationId) return;
+
+      this.operationsByClientId.delete(clientOperationId);
+      this.clientIdsByOpId.delete(opId);
+    });
+
+    this.undoableOpIdsBySchemaId.delete(schemaId);
   }
 }
 
