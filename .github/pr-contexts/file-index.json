@@ -404,14 +404,16 @@
     361
   ],
   "apps/frontend/src/components/Header/Header.tsx": [
-    361
+    361,
+    318
   ],
   "apps/frontend/src/components/Header/LandingHeader.tsx": [
     361
   ],
   "apps/frontend/src/components/Layout.tsx": [
     361,
-    358
+    358,
+    318
   ],
   "apps/frontend/src/components/Loading.tsx": [
     361
@@ -699,13 +701,15 @@
   ],
   "apps/frontend/src/components/Header/CanvasHeader.tsx": [
     358,
-    361
+    361,
+    318
   ],
   "apps/frontend/src/components/Header/contents/NotificationContents.tsx": [
     358
   ],
   "apps/frontend/src/components/Header/contents/ShareContents.tsx": [
-    358
+    358,
+    318
   ],
   "apps/frontend/src/features/project/api/api.ts": [
     358
@@ -911,5 +915,8 @@
   ],
   "apps/backend/core/src/test/java/com/schemafy/core/erd/index/application/service/AddIndexColumnServiceTest.java": [
     375
+  ],
+  "apps/frontend/vite.config.ts": [
+    318
   ]
 }
