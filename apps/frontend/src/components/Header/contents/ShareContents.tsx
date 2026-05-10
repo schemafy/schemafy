@@ -21,6 +21,15 @@ import {
   useUpdateMemberRole,
 } from '@/features/project/hooks/useProjects';
 import { availableRoles } from '@/features/project/utils/role';
+import { authStore } from '@/store';
+
+const RoleText = ({ role }: { role: string }) => {
+  return (
+    <span className="font-body-xs text-schemafy-dark-gray">
+      {role.toLowerCase()}
+    </span>
+  );
+};
 
 const RoleSelect = ({
   value,
@@ -63,6 +72,17 @@ export const ShareContents = ({ projectId }: { projectId: string }) => {
 
   const currentUserRole = projectData?.currentUserRole ?? 'VIEWER';
   const members = membersData?.content ?? [];
+  const canManageMembers = currentUserRole === 'ADMIN';
+  const currentUserId = authStore.user?.id;
+  const currentMember = members.find(
+    (member) => member.userId === currentUserId,
+  );
+  const orderedMembers = currentMember
+    ? [
+        currentMember,
+        ...members.filter((member) => member.userId !== currentUserId),
+      ]
+    : members;
 
   const handleInvite = () => {
     if (!projectId || !email.trim()) return;
@@ -88,7 +108,7 @@ export const ShareContents = ({ projectId }: { projectId: string }) => {
         align="end"
         className="flex flex-col gap-2.5 font-body-xs"
       >
-        {currentUserRole === 'ADMIN' && (
+        {canManageMembers && (
           <div className="flex gap-4">
             <input
               type="email"
@@ -112,7 +132,7 @@ export const ShareContents = ({ projectId }: { projectId: string }) => {
           </div>
         )}
         <p className="text-schemafy-dark-gray">Who has access</p>
-        {members.map((member) => (
+        {orderedMembers.map((member) => (
           <div
             key={member.userId}
             className="flex justify-between items-center"
@@ -121,13 +141,17 @@ export const ShareContents = ({ projectId }: { projectId: string }) => {
               <Avatar size={'dropdown'} />
               <p>{member.userName}</p>
             </div>
-            <RoleSelect
-              value={member.role}
-              onValueChange={(role) =>
-                updateMemberRole({ userId: member.userId, data: { role } })
-              }
-              userRole={currentUserRole}
-            />
+            {canManageMembers && member.userId !== currentUserId ? (
+              <RoleSelect
+                value={member.role}
+                onValueChange={(role) =>
+                  updateMemberRole({ userId: member.userId, data: { role } })
+                }
+                userRole={currentUserRole}
+              />
+            ) : (
+              <RoleText role={member.role} />
+            )}
           </div>
         ))}
       </DropdownMenuContent>
