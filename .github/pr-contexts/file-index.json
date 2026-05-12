@@ -928,5 +928,11 @@
   ],
   "apps/frontend/src/hooks/useThrottledCallback.ts": [
     380
+  ],
+  ".github/prompts/copilot-pr-review.md": [
+    381
+  ],
+  ".github/workflows/copilot-pr-review.yml": [
+    381
   ]
 }
