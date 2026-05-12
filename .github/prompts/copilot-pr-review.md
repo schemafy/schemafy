@@ -1,4 +1,4 @@
-You are running inside GitHub Actions to review a pull request with Cursor CLI.
+You are running inside GitHub Actions to review a pull request with Copilot CLI.
 
 Task:
 
@@ -13,6 +13,7 @@ Execution context:
 - Related issue context (derived from branch name, commit messages, PR text) is also provided above this prompt.
 - Environment variables available: `PR_NUMBER`, `PR_URL`, `PR_HEAD_SHA`, `GITHUB_REPOSITORY`.
 - `gh` CLI is available and authenticated via `GH_TOKEN`.
+- Copilot CLI may inspect the checked-out repository and PR diff, but must not modify files.
 
 Review scope rules:
 
@@ -27,10 +28,10 @@ Commenting policy:
 
 - Severity: only `High` and `Medium`.
 - Every comment body must include this marker on a separate line:
-    - `<!-- cursor-pr-review:v1 -->`
+    - `<!-- copilot-pr-review:v1 -->`
 - Target only changed lines in the PR.
 - Line comments are optional. If no High/Medium issues exist, skip line comments entirely.
-- Do NOT post comments via GitHub API. Output them in the structured block below instead.
+- Do NOT post comments via GitHub API or `gh pr review`. Output them in the structured block below instead.
 
 Suggested command flow:
 
@@ -58,24 +59,25 @@ OVERALL_COMMENT_BEGIN
 ### 개선 사항
 
 - (개선 사항이 없으면 이 섹션 전체를 생략)
-  OVERALL_COMMENT_END
-  REVIEW_JSON_BEGIN
-  {
+
+OVERALL_COMMENT_END
+REVIEW_JSON_BEGIN
+{
   "line_comments": [
-  {
-  "path": "<relative file path>",
-  "line": <line number>,
-  "side": "RIGHT",
-  "body": "<Korean comment text>\n<!-- cursor-pr-review:v1 -->"
-  }
+    {
+      "path": "<relative file path>",
+      "line": <line number>,
+      "side": "RIGHT",
+      "body": "<Korean comment text>\n<!-- copilot-pr-review:v1 -->"
+    }
   ],
   "summary": {
-  "high": <number>,
-  "medium": <number>,
-  "comments": <number>
+    "high": <number>,
+    "medium": <number>,
+    "comments": <number>
   }
-  }
-  REVIEW_JSON_END
+}
+REVIEW_JSON_END
 
 Rules for the output blocks:
 
