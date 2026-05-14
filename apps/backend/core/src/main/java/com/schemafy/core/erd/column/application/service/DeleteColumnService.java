@@ -1,8 +1,8 @@
 package com.schemafy.core.erd.column.application.service;
 
+import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
 
 import org.springframework.beans.factory.annotation.Autowired;
@@ -106,11 +106,11 @@ public class DeleteColumnService implements DeleteColumnUseCase {
   }
 
   private Mono<MutationResult<Void>> deleteColumnWithoutInverse(DeleteColumnCommand command) {
-    Set<String> affectedTableIds = ConcurrentHashMap.newKeySet();
+    Set<String> affectedTableIds = new HashSet<>();
     return rejectIfForeignKeyColumn(command.columnId())
         .then(Mono.defer(() -> deleteColumnInternal(
             command.columnId(),
-            ConcurrentHashMap.newKeySet(),
+            new HashSet<>(),
             affectedTableIds)))
         .then(Mono.fromCallable(() -> MutationResult.<Void>of(null, affectedTableIds)));
   }

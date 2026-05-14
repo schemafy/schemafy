@@ -1,8 +1,8 @@
 package com.schemafy.core.erd.table.application.service;
 
+import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
-import java.util.concurrent.ConcurrentHashMap;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -76,7 +76,7 @@ public class DeleteTableService implements DeleteTableUseCase {
   }
 
   private Mono<MutationResult<Void>> deleteTableWithoutInverse(String tableId) {
-    Set<String> affectedTableIds = ConcurrentHashMap.newKeySet();
+    Set<String> affectedTableIds = new HashSet<>();
     affectedTableIds.add(tableId);
     Mono<Void> ensureExists = getTableByIdPort.findTableById(tableId)
         .switchIfEmpty(Mono.error(new DomainException(TableErrorCode.NOT_FOUND, "Table not found: " + tableId)))
