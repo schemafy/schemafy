@@ -18,7 +18,7 @@ import {
 } from '../api';
 import { workspaceKeys } from './query-keys';
 
-export const useCreateWorkspace = () => {
+export const useCreateWorkspaceMutation = () => {
   const queryClient = useQueryClient();
 
   return useMutation({
@@ -29,19 +29,20 @@ export const useCreateWorkspace = () => {
   });
 };
 
-export const useUpdateWorkspace = (id: string) => {
+export const useUpdateWorkspaceMutation = () => {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: (data: UpdateWorkspaceRequest) => updateWorkspace(id, data),
-    onSuccess: () => {
+    mutationFn: ({ id, data }: { id: string; data: UpdateWorkspaceRequest }) =>
+      updateWorkspace(id, data),
+    onSuccess: (_, { id }) => {
       queryClient.invalidateQueries({ queryKey: workspaceKeys.detail(id) });
       queryClient.invalidateQueries({ queryKey: workspaceKeys.lists() });
     },
   });
 };
 
-export const useDeleteWorkspace = () => {
+export const useDeleteWorkspaceMutation = () => {
   const queryClient = useQueryClient();
 
   return useMutation({
@@ -53,7 +54,7 @@ export const useDeleteWorkspace = () => {
   });
 };
 
-export const useLeaveWorkspace = () => {
+export const useLeaveWorkspaceMutation = () => {
   const queryClient = useQueryClient();
 
   return useMutation({
@@ -64,7 +65,7 @@ export const useLeaveWorkspace = () => {
   });
 };
 
-export const useRemoveMember = (workspaceId: string) => {
+export const useRemoveMemberMutation = (workspaceId: string) => {
   const queryClient = useQueryClient();
 
   return useMutation({
@@ -77,7 +78,7 @@ export const useRemoveMember = (workspaceId: string) => {
   });
 };
 
-export const useUpdateMemberRole = (workspaceId: string) => {
+export const useUpdateMemberRoleMutation = (workspaceId: string) => {
   const queryClient = useQueryClient();
 
   return useMutation({
@@ -96,7 +97,7 @@ export const useUpdateMemberRole = (workspaceId: string) => {
   });
 };
 
-export const useCreateInvitation = (workspaceId: string) => {
+export const useCreateInvitationMutation = (workspaceId: string) => {
   const queryClient = useQueryClient();
 
   return useMutation({
@@ -110,7 +111,7 @@ export const useCreateInvitation = (workspaceId: string) => {
   });
 };
 
-export const useAcceptWorkspaceInvitation = () => {
+export const useAcceptWorkspaceInvitationMutation = () => {
   const queryClient = useQueryClient();
 
   return useMutation({
@@ -124,7 +125,7 @@ export const useAcceptWorkspaceInvitation = () => {
   });
 };
 
-export const useRejectWorkspaceInvitation = () => {
+export const useRejectWorkspaceInvitationMutation = () => {
   const queryClient = useQueryClient();
 
   return useMutation({
