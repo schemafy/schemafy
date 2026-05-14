@@ -9,11 +9,8 @@ import {
   WorkspaceProjectsTab,
   WorkspaceSidebar,
 } from '@/features/workspace/components';
-import {
-  useGetWorkspace,
-  useGetWorkspaces,
-  useLeaveWorkspace,
-} from '@/features/workspace/hooks/useWorkspaces';
+import { useWorkspace } from '@/features/workspace/hooks/useWorkspace';
+import { useWorkspaces } from '@/features/workspace/hooks/useWorkspaces';
 
 type TabType = 'projects' | 'members';
 
@@ -26,11 +23,9 @@ export const WorkspacePage = () => {
   const [isInviteDialogOpen, setIsInviteDialogOpen] = useState(false);
   const [isLeaveConfirmOpen, setIsLeaveConfirmOpen] = useState(false);
 
-  const { data: workspacesData } = useGetWorkspaces();
-  const { data: selectedWorkspace } = useGetWorkspace(selectedWorkspaceId);
-  const { mutate: leaveWorkspace } = useLeaveWorkspace();
+  const { workspacesData, workspaces, leaveWorkspace } = useWorkspaces();
+  const { workspace: selectedWorkspace } = useWorkspace(selectedWorkspaceId);
 
-  const workspaces = workspacesData?.content ?? [];
   const currentUserRole =
     selectedWorkspace?.currentUserRole.toUpperCase() ?? '';
 

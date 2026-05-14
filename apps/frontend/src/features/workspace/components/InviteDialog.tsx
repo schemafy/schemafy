@@ -12,7 +12,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components';
-import { useCreateInvitation } from '../hooks/useWorkspaces';
+import { useWorkspaceInvitations } from '../hooks/useWorkspaceInvitations';
 import { availableRoles } from '@/features/workspace/utils/role';
 
 interface InviteDialogProps {
@@ -31,8 +31,8 @@ export const InviteDialog = ({
   const [email, setEmail] = useState('');
   const [role, setRole] = useState<string>('MEMBER');
 
-  const { mutate: createInvitation, isPending } =
-    useCreateInvitation(workspaceId);
+  const { createInvitation, isCreatingInvitation } =
+    useWorkspaceInvitations(workspaceId);
 
   const roles = availableRoles(currentUserRole);
 
@@ -98,7 +98,7 @@ export const InviteDialog = ({
           <Button
             size="sm"
             onClick={handleSubmit}
-            disabled={!email.trim() || isPending}
+            disabled={!email.trim() || isCreatingInvitation}
           >
             Invite
           </Button>

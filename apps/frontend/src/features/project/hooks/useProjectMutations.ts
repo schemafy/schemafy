@@ -18,7 +18,7 @@ import {
 } from '../api';
 import { projectKeys } from './query-keys';
 
-export const useCreateProject = (workspaceId: string) => {
+export const useCreateProjectMutation = (workspaceId: string) => {
   const queryClient = useQueryClient();
 
   return useMutation({
@@ -32,12 +32,18 @@ export const useCreateProject = (workspaceId: string) => {
   });
 };
 
-export const useUpdateProject = (projectId: string, workspaceId: string) => {
+export const useUpdateProjectMutation = (workspaceId: string) => {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: (data: UpdateProjectRequest) => updateProject(projectId, data),
-    onSuccess: () => {
+    mutationFn: ({
+      projectId,
+      data,
+    }: {
+      projectId: string;
+      data: UpdateProjectRequest;
+    }) => updateProject(projectId, data),
+    onSuccess: (_, { projectId }) => {
       queryClient.invalidateQueries({
         queryKey: projectKeys.detail(projectId),
       });
@@ -48,7 +54,7 @@ export const useUpdateProject = (projectId: string, workspaceId: string) => {
   });
 };
 
-export const useDeleteProject = (workspaceId: string) => {
+export const useDeleteProjectMutation = (workspaceId: string) => {
   const queryClient = useQueryClient();
 
   return useMutation({
@@ -62,7 +68,7 @@ export const useDeleteProject = (workspaceId: string) => {
   });
 };
 
-export const useLeaveProject = () => {
+export const useLeaveProjectMutation = () => {
   const queryClient = useQueryClient();
 
   return useMutation({
@@ -73,7 +79,7 @@ export const useLeaveProject = () => {
   });
 };
 
-export const useRemoveMember = (projectId: string) => {
+export const useRemoveMemberMutation = (projectId: string) => {
   const queryClient = useQueryClient();
 
   return useMutation({
@@ -86,7 +92,7 @@ export const useRemoveMember = (projectId: string) => {
   });
 };
 
-export const useUpdateMemberRole = (projectId: string) => {
+export const useUpdateMemberRoleMutation = (projectId: string) => {
   const queryClient = useQueryClient();
 
   return useMutation({
@@ -105,7 +111,7 @@ export const useUpdateMemberRole = (projectId: string) => {
   });
 };
 
-export const useCreateInvitation = (projectId: string) => {
+export const useCreateInvitationMutation = (projectId: string) => {
   const queryClient = useQueryClient();
 
   return useMutation({
@@ -119,7 +125,7 @@ export const useCreateInvitation = (projectId: string) => {
   });
 };
 
-export const useAcceptProjectInvitation = () => {
+export const useAcceptProjectInvitationMutation = () => {
   const queryClient = useQueryClient();
 
   return useMutation({
@@ -133,7 +139,7 @@ export const useAcceptProjectInvitation = () => {
   });
 };
 
-export const useRejectProjectInvitation = () => {
+export const useRejectProjectInvitationMutation = () => {
   const queryClient = useQueryClient();
 
   return useMutation({

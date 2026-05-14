@@ -13,7 +13,7 @@ import { MemoProvider } from '@/features/memo/context';
 import { ChatInput, RemoteCursors } from '@/features/collaboration/components';
 import { observer } from 'mobx-react-lite';
 import { useNavigate, useParams } from 'react-router-dom';
-import { useGetProject } from '@/features/project/hooks/useProjects';
+import { useProject } from '@/features/project/hooks/useProject';
 import { useEffect } from 'react';
 import axios from 'axios';
 
@@ -34,7 +34,7 @@ const CanvasContent = observer(() => {
       setSelectedRelationship,
       setIsShortcutPanelOpen,
     },
-    data: { tables, memos, relationships },
+    data: {tables, memos, relationships},
     handlers: {
       onTableDragStop,
       onTablesDelete,
@@ -67,7 +67,7 @@ const CanvasContent = observer(() => {
 
         <div className="flex-1 bg-schemafy-secondary relative">
           <div className="absolute top-4 right-4 z-10">
-            <SchemaSelector />
+            <SchemaSelector/>
           </div>
 
           <ReactFlowCanvas
@@ -120,35 +120,39 @@ const CanvasContent = observer(() => {
         onHelpClick={() => setIsShortcutPanelOpen((prev) => !prev)}
       />
       {isShortcutPanelOpen && (
-        <ShortcutPanel onClose={() => setIsShortcutPanelOpen(false)} />
+        <ShortcutPanel onClose={() => setIsShortcutPanelOpen(false)}/>
       )}
-      <RemoteCursors />
+      <RemoteCursors/>
     </>
   );
 });
 
 export const CanvasPage = () => {
-  const { projectId = '' } = useParams();
+  const {projectId = ''} = useParams();
   const navigate = useNavigate();
-  const { isError, isLoading, error } = useGetProject(projectId);
+  const {
+    isProjectError,
+    isLoadingProject,
+    projectError,
+  } = useProject(projectId);
 
   useEffect(() => {
-    if (!isError) return;
+    if (!isProjectError) return;
 
-    if (axios.isAxiosError(error) && error.response?.status === 403) {
-      navigate('/workspace', { replace: true });
+    if (axios.isAxiosError(projectError) && projectError.response?.status === 403) {
+      navigate('/workspace', {replace: true});
       return;
     }
 
-    navigate('/not-found', { replace: true });
-  }, [isError, error, navigate]);
+    navigate('/not-found', {replace: true});
+  }, [isProjectError, projectError, navigate]);
 
-  if (isLoading || isError) return null;
+  if (isLoadingProject || isProjectError) return null;
 
   return (
     <SelectedSchemaProvider projectId={projectId}>
       <MemoProvider>
-        <CanvasContent />
+        <CanvasContent/>
       </MemoProvider>
     </SelectedSchemaProvider>
   );
