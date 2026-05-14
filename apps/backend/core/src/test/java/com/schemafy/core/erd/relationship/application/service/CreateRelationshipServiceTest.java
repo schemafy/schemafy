@@ -48,6 +48,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.then;
+import static org.mockito.Mockito.never;
 
 @ExtendWith(MockitoExtension.class)
 @DisplayName("CreateRelationshipService")
@@ -316,6 +317,47 @@ class CreateRelationshipServiceTest {
       StepVerifier.create(sut.createRelationship(command))
           .expectError(DomainException.class)
           .verify();
+    }
+
+    @Test
+    @DisplayName("FK 테이블이 없으면 관계 대상 테이블 예외가 발생하고 snapshot을 캡처하지 않는다")
+    void throwsTargetTableNotFoundWhenFkTableMissingBeforeSnapshot() {
+      var command = new CreateRelationshipCommand(FK_TABLE_ID,
+          PK_TABLE_ID,
+          RelationshipKind.NON_IDENTIFYING,
+          Cardinality.ONE_TO_MANY, null);
+
+      given(getTableByIdPort.findTableById(FK_TABLE_ID))
+          .willReturn(Mono.empty());
+
+      StepVerifier.create(sut.createRelationship(command))
+          .expectErrorMatches(DomainException.hasErrorCode(RelationshipErrorCode.TARGET_TABLE_NOT_FOUND))
+          .verify();
+
+      then(structuralSnapshotService).should(never()).captureByTableId(any());
+      then(structuralSnapshotService).should(never()).captureBySchemaId(any());
+    }
+
+    @Test
+    @DisplayName("PK 테이블이 없으면 관계 대상 테이블 예외가 발생하고 snapshot을 캡처하지 않는다")
+    void throwsTargetTableNotFoundWhenPkTableMissingBeforeSnapshot() {
+      var command = new CreateRelationshipCommand(FK_TABLE_ID,
+          PK_TABLE_ID,
+          RelationshipKind.NON_IDENTIFYING,
+          Cardinality.ONE_TO_MANY, null);
+      var fkTable = createTable(FK_TABLE_ID, SCHEMA_ID, "fk_table");
+
+      given(getTableByIdPort.findTableById(FK_TABLE_ID))
+          .willReturn(Mono.just(fkTable));
+      given(getTableByIdPort.findTableById(PK_TABLE_ID))
+          .willReturn(Mono.empty());
+
+      StepVerifier.create(sut.createRelationship(command))
+          .expectErrorMatches(DomainException.hasErrorCode(RelationshipErrorCode.TARGET_TABLE_NOT_FOUND))
+          .verify();
+
+      then(structuralSnapshotService).should(never()).captureByTableId(any());
+      then(structuralSnapshotService).should(never()).captureBySchemaId(any());
     }
 
     @Test

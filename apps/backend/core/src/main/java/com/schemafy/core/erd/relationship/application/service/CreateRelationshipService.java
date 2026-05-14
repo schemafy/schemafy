@@ -75,41 +75,43 @@ public class CreateRelationshipService implements CreateRelationshipUseCase {
   public Mono<MutationResult<CreateRelationshipResult>> createRelationship(
       CreateRelationshipCommand command) {
     return erdMutationCoordinator.coordinate(ErdOperationType.CREATE_RELATIONSHIP, command,
-        () -> structuralSnapshotService.captureByTableId(command.fkTableId()).flatMap(beforeSnapshot -> Mono.defer(
-            () -> {
-              return getTableByIdPort.findTableById(command.fkTableId())
-                  .switchIfEmpty(Mono.error(new DomainException(RelationshipErrorCode.TARGET_TABLE_NOT_FOUND,
-                      "Relationship fk table not found")))
-                  .flatMap(fkTable -> getTableByIdPort.findTableById(command.pkTableId())
-                      .switchIfEmpty(Mono.error(new DomainException(RelationshipErrorCode.TARGET_TABLE_NOT_FOUND,
-                          "Relationship pk table not found")))
-                      .flatMap(pkTable -> {
-                        Set<String> affectedTableIds = new HashSet<>();
-                        affectedTableIds.add(fkTable.id());
-                        affectedTableIds.add(pkTable.id());
-                        return createRelationshipAuto(
-                            fkTable,
-                            pkTable,
-                            command,
-                            affectedTableIds);
-                      }));
-            })
-            .flatMap(result -> structuralSnapshotService.captureBySchemaId(beforeSnapshot.schemaId())
-                .map(afterSnapshot -> result.withInverse(new CreateRelationshipInverse(
-                    beforeSnapshot.schemaId(),
-                    result.result().relationshipId(),
-                    beforeSnapshot,
-                    afterSnapshot,
-                    result.sortedAffectedTableIds()))))))
+        () -> loadTargetTables(command)
+            .flatMap(tables -> validateCreateRelationship(command, tables)
+                .then(structuralSnapshotService.captureBySchemaId(tables.fkTable().schemaId()))
+                .flatMap(beforeSnapshot -> {
+                  Set<String> affectedTableIds = new HashSet<>();
+                  affectedTableIds.add(tables.fkTable().id());
+                  affectedTableIds.add(tables.pkTable().id());
+                  return createRelationshipAuto(
+                      tables.fkTable(),
+                      tables.pkTable(),
+                      command,
+                      affectedTableIds)
+                      .flatMap(result -> structuralSnapshotService.captureBySchemaId(beforeSnapshot.schemaId())
+                          .map(afterSnapshot -> result.withInverse(new CreateRelationshipInverse(
+                              beforeSnapshot.schemaId(),
+                              result.result().relationshipId(),
+                              beforeSnapshot,
+                              afterSnapshot,
+                              result.sortedAffectedTableIds()))));
+                })))
         .as(transactionalOperator::transactional);
   }
 
-  private Mono<MutationResult<CreateRelationshipResult>> createRelationshipAuto(
-      Table fkTable,
-      Table pkTable,
+  private Mono<TargetTables> loadTargetTables(CreateRelationshipCommand command) {
+    return getTableByIdPort.findTableById(command.fkTableId())
+        .switchIfEmpty(Mono.error(new DomainException(RelationshipErrorCode.TARGET_TABLE_NOT_FOUND,
+            "Relationship fk table not found")))
+        .flatMap(fkTable -> getTableByIdPort.findTableById(command.pkTableId())
+            .switchIfEmpty(Mono.error(new DomainException(RelationshipErrorCode.TARGET_TABLE_NOT_FOUND,
+                "Relationship pk table not found")))
+            .map(pkTable -> new TargetTables(fkTable, pkTable)));
+  }
+
+  private Mono<Void> validateCreateRelationship(
       CreateRelationshipCommand command,
-      Set<String> affectedTableIds) {
-    if (!fkTable.schemaId().equals(pkTable.schemaId())) {
+      TargetTables tables) {
+    if (!tables.fkTable().schemaId().equals(tables.pkTable().schemaId())) {
       return Mono.error(new DomainException(RelationshipErrorCode.TARGET_TABLE_NOT_FOUND,
           "Relationship tables must belong to the same schema"));
     }
@@ -117,7 +119,14 @@ public class CreateRelationshipService implements CreateRelationshipUseCase {
       return Mono.error(new DomainException(RelationshipErrorCode.INVALID_VALUE,
           "Relationship kind and cardinality are required"));
     }
+    return Mono.empty();
+  }
 
+  private Mono<MutationResult<CreateRelationshipResult>> createRelationshipAuto(
+      Table fkTable,
+      Table pkTable,
+      CreateRelationshipCommand command,
+      Set<String> affectedTableIds) {
     return resolveAutoRelationshipName(fkTable, pkTable)
         .flatMap(normalizedName -> Mono.zip(
             loadPkColumns(pkTable),
@@ -360,6 +369,9 @@ public class CreateRelationshipService implements CreateRelationshipUseCase {
 
   private static String normalizeId(String value) {
     return value == null ? null : value.toUpperCase(Locale.ROOT);
+  }
+
+  private record TargetTables(Table fkTable, Table pkTable) {
   }
 
 }
