@@ -3,7 +3,6 @@ package com.schemafy.core.project.application.service;
 import org.springframework.stereotype.Component;
 
 import com.schemafy.core.common.exception.DomainException;
-import com.schemafy.core.project.application.access.AccessVerifier;
 import com.schemafy.core.project.application.port.in.ProjectDetail;
 import com.schemafy.core.project.application.port.out.ProjectMemberPort;
 import com.schemafy.core.project.application.port.out.ProjectPort;
@@ -12,9 +11,7 @@ import com.schemafy.core.project.domain.Project;
 import com.schemafy.core.project.domain.ProjectMember;
 import com.schemafy.core.project.domain.ProjectRole;
 import com.schemafy.core.project.domain.WorkspaceMember;
-import com.schemafy.core.project.domain.WorkspaceRole;
 import com.schemafy.core.project.domain.exception.ProjectErrorCode;
-import com.schemafy.core.project.domain.exception.WorkspaceErrorCode;
 
 import lombok.RequiredArgsConstructor;
 import reactor.core.publisher.Mono;
@@ -23,7 +20,6 @@ import reactor.core.publisher.Mono;
 @RequiredArgsConstructor
 class ProjectAccessHelper {
 
-  private final AccessVerifier accessVerifier;
   private final ProjectPort projectPort;
   private final ProjectMemberPort projectMemberPort;
   private final WorkspaceMemberPort workspaceMemberPort;
@@ -52,25 +48,6 @@ class ProjectAccessHelper {
   Mono<Void> softDeleteMember(ProjectMember member) {
     member.delete();
     return projectMemberPort.save(member).then();
-  }
-
-  Mono<Void> validateWorkspaceAdmin(String workspaceId, String userId) {
-    return accessVerifier.requireWorkspaceAccess(workspaceId, userId, WorkspaceRole.ADMIN)
-        .onErrorMap(DomainException.hasErrorCode(WorkspaceErrorCode.ADMIN_REQUIRED),
-            error -> new DomainException(WorkspaceErrorCode.ACCESS_DENIED))
-        .then();
-  }
-
-  Mono<Void> validateWorkspaceMember(String workspaceId, String userId) {
-    return accessVerifier.requireWorkspaceAccess(workspaceId, userId, WorkspaceRole.MEMBER);
-  }
-
-  Mono<Void> validateProjectMember(String projectId, String userId) {
-    return accessVerifier.requireProjectAccess(projectId, userId, ProjectRole.VIEWER);
-  }
-
-  Mono<Void> validateProjectAdmin(String projectId, String userId) {
-    return accessVerifier.requireProjectAccess(projectId, userId, ProjectRole.ADMIN);
   }
 
   Mono<Void> validateWorkspaceAdminGuard(
