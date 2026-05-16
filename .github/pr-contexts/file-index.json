@@ -72,7 +72,8 @@
     331,
     291,
     361,
-    358
+    358,
+    382
   ],
   "apps/frontend/src/store/collaboration.store.ts": [
     291,
@@ -471,7 +472,8 @@
   ],
   "apps/frontend/src/pages/WorkspacePage.tsx": [
     361,
-    358
+    358,
+    382
   ],
   "apps/frontend/src/pages/index.ts": [
     361,
@@ -706,11 +708,13 @@
     318
   ],
   "apps/frontend/src/components/Header/contents/NotificationContents.tsx": [
-    358
+    358,
+    382
   ],
   "apps/frontend/src/components/Header/contents/ShareContents.tsx": [
     358,
-    318
+    318,
+    382
   ],
   "apps/frontend/src/features/project/api/api.ts": [
     358
@@ -722,13 +726,15 @@
     358
   ],
   "apps/frontend/src/features/project/components/ProjectFormDialog.tsx": [
-    358
+    358,
+    382
   ],
   "apps/frontend/src/features/project/hooks/query-keys.ts": [
     358
   ],
   "apps/frontend/src/features/project/hooks/useProjects.ts": [
-    358
+    358,
+    382
   ],
   "apps/frontend/src/features/project/utils/role.ts": [
     358
@@ -740,17 +746,21 @@
     358
   ],
   "apps/frontend/src/features/workspace/components/WorkspaceFormDialog.tsx": [
-    358
+    358,
+    382
   ],
   "apps/frontend/src/features/workspace/components/WorkspaceMembersTab.tsx": [
-    358
+    358,
+    382
   ],
   "apps/frontend/src/features/workspace/components/WorkspaceProjectsTab.tsx": [
     358,
-    361
+    361,
+    382
   ],
   "apps/frontend/src/features/workspace/hooks/useWorkspaces.ts": [
-    358
+    358,
+    382
   ],
   "apps/frontend/src/lib/api/types.ts": [
     358
@@ -1030,5 +1040,38 @@
   ],
   "apps/backend/core/src/test/java/com/schemafy/core/project/integration/WorkspaceUseCaseIntegrationTest.java": [
     369
+  ],
+  "apps/frontend/src/features/project/hooks/useMyProjectInvitations.ts": [
+    382
+  ],
+  "apps/frontend/src/features/project/hooks/useProject.ts": [
+    382
+  ],
+  "apps/frontend/src/features/project/hooks/useProjectInvitations.ts": [
+    382
+  ],
+  "apps/frontend/src/features/project/hooks/useProjectMembers.ts": [
+    382
+  ],
+  "apps/frontend/src/features/project/hooks/useProjectMutations.ts": [
+    382
+  ],
+  "apps/frontend/src/features/workspace/components/InviteDialog.tsx": [
+    382
+  ],
+  "apps/frontend/src/features/workspace/hooks/useMyWorkspaceInvitations.ts": [
+    382
+  ],
+  "apps/frontend/src/features/workspace/hooks/useWorkspace.ts": [
+    382
+  ],
+  "apps/frontend/src/features/workspace/hooks/useWorkspaceInvitations.ts": [
+    382
+  ],
+  "apps/frontend/src/features/workspace/hooks/useWorkspaceMembers.ts": [
+    382
+  ],
+  "apps/frontend/src/features/workspace/hooks/useWorkspaceMutations.ts": [
+    382
   ]
 }
