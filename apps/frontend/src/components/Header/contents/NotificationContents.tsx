@@ -1,24 +1,28 @@
 import { Avatar } from '../../Avatar';
 import { Button } from '../../Button';
-import { DropdownMenu, DropdownMenuContent, DropdownMenuTrigger, } from '../../DropDown';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuTrigger,
+} from '../../DropDown';
 import { useMyWorkspaceInvitations } from '@/features/workspace/hooks/useMyWorkspaceInvitations';
 import { useMyProjectInvitations } from '@/features/project/hooks/useMyProjectInvitations';
 
 type UnifiedInvitation =
   | {
-  type: 'workspace';
-  id: string;
-  invitedBy: string;
-  invitedRole: string;
-  createdAt: string;
-}
+      type: 'workspace';
+      id: string;
+      invitedBy: string;
+      invitedRole: string;
+      createdAt: string;
+    }
   | {
-  type: 'project';
-  id: string;
-  invitedBy: string;
-  invitedRole: string;
-  createdAt: string;
-};
+      type: 'project';
+      id: string;
+      invitedBy: string;
+      invitedRole: string;
+      createdAt: string;
+    };
 
 export const NotificationContents = () => {
   const {
@@ -88,8 +92,7 @@ export const NotificationContents = () => {
           <Button variant={'none'} size={'none'}>
             Notifications
           </Button>
-          <div
-            className="rounded-full bg-schemafy-destructive w-5 h-5 flex items-center justify-center text-schemafy-button-text text-sm">
+          <div className="rounded-full bg-schemafy-destructive w-5 h-5 flex items-center justify-center text-schemafy-button-text text-sm">
             {unified.length}
           </div>
         </div>
@@ -126,14 +129,14 @@ type NotificationItemProps = {
 };
 
 const NotificationItem = ({
-                            invitation,
-                            isPending,
-                            onAccept,
-                            onReject,
-                          }: NotificationItemProps) => {
+  invitation,
+  isPending,
+  onAccept,
+  onReject,
+}: NotificationItemProps) => {
   return (
     <div className="flex gap-2.5 items-center">
-      <Avatar size={'dropdown'} src="https://picsum.photos/200/300?random=1"/>
+      <Avatar size={'dropdown'} src="https://picsum.photos/200/300?random=1" />
       <div className="max-w-[10rem] font-body-xs text-schemafy-text">
         {invitation.invitedBy} invited you to{' '}
         <span className="font-semibold">{invitation.type}</span> as{' '}

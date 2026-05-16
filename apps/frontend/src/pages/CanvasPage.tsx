@@ -34,7 +34,7 @@ const CanvasContent = observer(() => {
       setSelectedRelationship,
       setIsShortcutPanelOpen,
     },
-    data: {tables, memos, relationships},
+    data: { tables, memos, relationships },
     handlers: {
       onTableDragStop,
       onTablesDelete,
@@ -67,7 +67,7 @@ const CanvasContent = observer(() => {
 
         <div className="flex-1 bg-schemafy-secondary relative">
           <div className="absolute top-4 right-4 z-10">
-            <SchemaSelector/>
+            <SchemaSelector />
           </div>
 
           <ReactFlowCanvas
@@ -120,31 +120,31 @@ const CanvasContent = observer(() => {
         onHelpClick={() => setIsShortcutPanelOpen((prev) => !prev)}
       />
       {isShortcutPanelOpen && (
-        <ShortcutPanel onClose={() => setIsShortcutPanelOpen(false)}/>
+        <ShortcutPanel onClose={() => setIsShortcutPanelOpen(false)} />
       )}
-      <RemoteCursors/>
+      <RemoteCursors />
     </>
   );
 });
 
 export const CanvasPage = () => {
-  const {projectId = ''} = useParams();
+  const { projectId = '' } = useParams();
   const navigate = useNavigate();
-  const {
-    isProjectError,
-    isLoadingProject,
-    projectError,
-  } = useProject(projectId);
+  const { isProjectError, isLoadingProject, projectError } =
+    useProject(projectId);
 
   useEffect(() => {
     if (!isProjectError) return;
 
-    if (axios.isAxiosError(projectError) && projectError.response?.status === 403) {
-      navigate('/workspace', {replace: true});
+    if (
+      axios.isAxiosError(projectError) &&
+      projectError.response?.status === 403
+    ) {
+      navigate('/workspace', { replace: true });
       return;
     }
 
-    navigate('/not-found', {replace: true});
+    navigate('/not-found', { replace: true });
   }, [isProjectError, projectError, navigate]);
 
   if (isLoadingProject || isProjectError) return null;
@@ -152,7 +152,7 @@ export const CanvasPage = () => {
   return (
     <SelectedSchemaProvider projectId={projectId}>
       <MemoProvider>
-        <CanvasContent/>
+        <CanvasContent />
       </MemoProvider>
     </SelectedSchemaProvider>
   );
