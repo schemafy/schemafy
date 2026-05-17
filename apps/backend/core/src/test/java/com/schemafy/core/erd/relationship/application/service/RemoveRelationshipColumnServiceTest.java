@@ -253,7 +253,7 @@ class RemoveRelationshipColumnServiceTest {
 
   private static StructuralSnapshot structuralSnapshot() {
     return new StructuralSnapshot("schema1", List.of(), List.of(), List.of(), List.of(), List.of(), List.of(), List
-        .of());
+        .of(), List.of());
   }
 
 }

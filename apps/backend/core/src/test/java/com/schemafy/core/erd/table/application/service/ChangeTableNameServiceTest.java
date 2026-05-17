@@ -25,6 +25,7 @@ import com.schemafy.core.erd.relationship.application.port.out.RelationshipExist
 import com.schemafy.core.erd.relationship.domain.Relationship;
 import com.schemafy.core.erd.relationship.domain.type.Cardinality;
 import com.schemafy.core.erd.relationship.domain.type.RelationshipKind;
+import com.schemafy.core.erd.table.application.port.in.ChangeTableNameCommand;
 import com.schemafy.core.erd.table.application.port.out.ChangeTableNamePort;
 import com.schemafy.core.erd.table.application.port.out.GetTableByIdPort;
 import com.schemafy.core.erd.table.application.port.out.TableExistsPort;
@@ -142,7 +143,7 @@ class ChangeTableNameServiceTest {
             RelationshipKind.NON_IDENTIFYING,
             Cardinality.ONE_TO_MANY,
             null);
-        var command = new com.schemafy.core.erd.table.application.port.in.ChangeTableNameCommand(
+        var command = new ChangeTableNameCommand(
             oldTable.id(),
             "accounts");
 
@@ -198,7 +199,7 @@ class ChangeTableNameServiceTest {
             constraint("df-1", oldTable.id(), "df_users", ConstraintKind.DEFAULT),
             constraint("nn-1", oldTable.id(), "nn_users", ConstraintKind.NOT_NULL),
             constraint("manual-1", oldTable.id(), "users_email_unique", ConstraintKind.UNIQUE));
-        var command = new com.schemafy.core.erd.table.application.port.in.ChangeTableNameCommand(
+        var command = new ChangeTableNameCommand(
             oldTable.id(),
             "accounts");
 
@@ -289,7 +290,7 @@ class ChangeTableNameServiceTest {
             RelationshipKind.NON_IDENTIFYING,
             Cardinality.ONE_TO_MANY,
             null);
-        var command = new com.schemafy.core.erd.table.application.port.in.ChangeTableNameCommand(
+        var command = new ChangeTableNameCommand(
             oldTable.id(),
             "orders_v2");
 
@@ -351,7 +352,7 @@ class ChangeTableNameServiceTest {
             RelationshipKind.NON_IDENTIFYING,
             Cardinality.ONE_TO_MANY,
             null);
-        var command = new com.schemafy.core.erd.table.application.port.in.ChangeTableNameCommand(
+        var command = new ChangeTableNameCommand(
             oldTable.id(),
             "orders_v2");
 

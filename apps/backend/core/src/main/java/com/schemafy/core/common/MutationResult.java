@@ -1,6 +1,7 @@
 package com.schemafy.core.common;
 
 import java.util.Collections;
+import java.util.List;
 import java.util.Set;
 
 import com.schemafy.core.erd.operation.application.inverse.InversePayload;
@@ -39,6 +40,12 @@ public record MutationResult<T>(
 
   public MutationResult<T> withInverse(InversePayload inversePayload) {
     return new MutationResult<>(result, affectedTableIds, operation, inversePayload);
+  }
+
+  public List<String> sortedAffectedTableIds() {
+    return affectedTableIds.stream()
+        .sorted()
+        .toList();
   }
 
 }

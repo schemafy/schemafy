@@ -15,10 +15,12 @@ import com.schemafy.core.erd.index.application.port.out.DeleteIndexColumnsByInde
 import com.schemafy.core.erd.index.application.port.out.DeleteIndexPort;
 import com.schemafy.core.erd.index.application.port.out.GetIndexByIdPort;
 import com.schemafy.core.erd.index.fixture.IndexFixture;
+import com.schemafy.core.erd.operation.application.service.StructuralSnapshotService;
 
 import reactor.core.publisher.Mono;
 import reactor.test.StepVerifier;
 
+import static com.schemafy.core.erd.operation.application.service.StructuralSnapshotServiceTestSupport.stubEmptySnapshots;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.then;
@@ -39,6 +41,9 @@ class DeleteIndexServiceTest {
   @Mock
   TransactionalOperator transactionalOperator;
 
+  @Mock
+  StructuralSnapshotService structuralSnapshotService;
+
   @InjectMocks
   DeleteIndexService sut;
 
@@ -46,6 +51,7 @@ class DeleteIndexServiceTest {
   void setUpTransaction() {
     given(transactionalOperator.transactional(any(Mono.class)))
         .willAnswer(invocation -> invocation.getArgument(0));
+    stubEmptySnapshots(structuralSnapshotService);
   }
 
   @Nested

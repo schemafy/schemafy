@@ -71,7 +71,7 @@ public class AddConstraintColumnService implements AddConstraintColumnUseCase {
                         result.result().constraintColumnId(),
                         beforeSnapshot,
                         afterSnapshot,
-                        affectedTableIds(result))))))))
+                        result.sortedAffectedTableIds())))))))
         .as(transactionalOperator::transactional);
   }
 
@@ -231,10 +231,6 @@ public class AddConstraintColumnService implements AddConstraintColumnUseCase {
         .mapToInt(ConstraintColumn::seqNo)
         .max()
         .orElse(-1) + 1;
-  }
-
-  private static List<String> affectedTableIds(MutationResult<?> result) {
-    return result.affectedTableIds().stream().sorted().toList();
   }
 
 }

@@ -58,7 +58,7 @@ public class RemoveIndexColumnService implements RemoveIndexColumnUseCase {
                           command.indexColumnId(),
                           beforeSnapshot,
                           afterSnapshot,
-                          affectedTableIds(result))))));
+                          result.sortedAffectedTableIds())))));
         })
         .as(transactionalOperator::transactional);
   }
@@ -93,12 +93,6 @@ public class RemoveIndexColumnService implements RemoveIndexColumnUseCase {
           }
           return changeIndexColumnPositionPort.changeIndexColumnPositions(indexId, reordered);
         });
-  }
-
-  private static List<String> affectedTableIds(MutationResult<?> result) {
-    return result.affectedTableIds().stream()
-        .sorted()
-        .toList();
   }
 
 }

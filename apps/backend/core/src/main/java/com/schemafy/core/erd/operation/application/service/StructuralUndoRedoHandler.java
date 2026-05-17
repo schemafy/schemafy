@@ -25,10 +25,21 @@ import reactor.core.publisher.Mono;
 class StructuralUndoRedoHandler implements UndoRedoErdOperationHandler {
 
   private static final Set<ErdOperationType> SUPPORTED_TYPES = Set.of(
+      ErdOperationType.CREATE_TABLE,
+      ErdOperationType.DELETE_TABLE,
+      ErdOperationType.CREATE_COLUMN,
+      ErdOperationType.DELETE_COLUMN,
+      ErdOperationType.CREATE_CONSTRAINT,
+      ErdOperationType.DELETE_CONSTRAINT,
       ErdOperationType.ADD_CONSTRAINT_COLUMN,
       ErdOperationType.REMOVE_CONSTRAINT_COLUMN,
+      ErdOperationType.CREATE_INDEX,
+      ErdOperationType.DELETE_INDEX,
       ErdOperationType.ADD_INDEX_COLUMN,
       ErdOperationType.REMOVE_INDEX_COLUMN,
+      ErdOperationType.CREATE_RELATIONSHIP,
+      ErdOperationType.CHANGE_RELATIONSHIP_KIND,
+      ErdOperationType.DELETE_RELATIONSHIP,
       ErdOperationType.ADD_RELATIONSHIP_COLUMN,
       ErdOperationType.REMOVE_RELATIONSHIP_COLUMN);
 

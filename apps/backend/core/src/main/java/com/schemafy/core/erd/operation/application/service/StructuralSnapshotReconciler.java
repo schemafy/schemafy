@@ -34,6 +34,7 @@ import com.schemafy.core.erd.operation.application.inverse.StructuralSnapshot.In
 import com.schemafy.core.erd.operation.application.inverse.StructuralSnapshot.IndexSnapshot;
 import com.schemafy.core.erd.operation.application.inverse.StructuralSnapshot.RelationshipColumnSnapshot;
 import com.schemafy.core.erd.operation.application.inverse.StructuralSnapshot.RelationshipSnapshot;
+import com.schemafy.core.erd.operation.application.inverse.StructuralSnapshot.TableSnapshot;
 import com.schemafy.core.erd.relationship.application.port.out.ChangeRelationshipColumnPositionPort;
 import com.schemafy.core.erd.relationship.application.port.out.CreateRelationshipColumnPort;
 import com.schemafy.core.erd.relationship.application.port.out.CreateRelationshipPort;
@@ -41,6 +42,9 @@ import com.schemafy.core.erd.relationship.application.port.out.DeleteRelationshi
 import com.schemafy.core.erd.relationship.application.port.out.DeleteRelationshipPort;
 import com.schemafy.core.erd.relationship.application.port.out.RestoreRelationshipColumnPort;
 import com.schemafy.core.erd.relationship.application.port.out.RestoreRelationshipPort;
+import com.schemafy.core.erd.table.application.port.out.CreateTablePort;
+import com.schemafy.core.erd.table.application.port.out.DeleteTablePort;
+import com.schemafy.core.erd.table.application.port.out.RestoreTablePort;
 
 import lombok.RequiredArgsConstructor;
 import reactor.core.publisher.Flux;
@@ -51,6 +55,9 @@ import reactor.core.publisher.Mono;
 class StructuralSnapshotReconciler {
 
   private final StructuralSnapshotReader reader;
+  private final CreateTablePort createTablePort;
+  private final DeleteTablePort deleteTablePort;
+  private final RestoreTablePort restoreTablePort;
   private final CreateColumnPort createColumnPort;
   private final DeleteColumnPort deleteColumnPort;
   private final RestoreColumnPort restoreColumnPort;
@@ -92,6 +99,7 @@ class StructuralSnapshotReconciler {
     Set<String> targetConstraintIds = ids(target.constraints(), ConstraintSnapshot::id);
     Set<String> targetIndexIds = ids(target.indexes(), IndexSnapshot::id);
     Set<String> targetColumnIds = ids(target.columns(), ColumnSnapshot::id);
+    Set<String> targetTableIds = ids(target.tables(), TableSnapshot::id);
 
     return Flux.fromIterable(current.relationshipColumns())
         .filter(column -> !targetRelationshipColumnIds.contains(column.id()))
@@ -114,10 +122,14 @@ class StructuralSnapshotReconciler {
         .thenMany(Flux.fromIterable(current.columns())
             .filter(column -> !targetColumnIds.contains(column.id()))
             .concatMap(column -> deleteColumnPort.deleteColumn(column.id())))
+        .thenMany(Flux.fromIterable(current.tables())
+            .filter(table -> !targetTableIds.contains(table.id()))
+            .concatMap(table -> deleteTablePort.deleteTable(table.id())))
         .then();
   }
 
   private Mono<Void> restoreRowsExistingInCurrent(StructuralSnapshot current, StructuralSnapshot target) {
+    Map<String, TableSnapshot> currentTablesById = byId(current.tables(), TableSnapshot::id);
     Map<String, ColumnSnapshot> currentColumnsById = byId(current.columns(), ColumnSnapshot::id);
     Map<String, ConstraintSnapshot> currentConstraintsById = byId(current.constraints(), ConstraintSnapshot::id);
     Map<String, IndexSnapshot> currentIndexesById = byId(current.indexes(), IndexSnapshot::id);
@@ -131,10 +143,15 @@ class StructuralSnapshotReconciler {
         current.relationshipColumns(), RelationshipColumnSnapshot::id);
 
     return restoreChangedRows(
-        target.columns(),
-        currentColumnsById,
-        ColumnSnapshot::id,
-        column -> restoreColumnPort.restoreColumn(column.toDomain()))
+        target.tables(),
+        currentTablesById,
+        TableSnapshot::id,
+        table -> restoreTablePort.restoreTable(table.toDomain()))
+        .then(restoreChangedRows(
+            target.columns(),
+            currentColumnsById,
+            ColumnSnapshot::id,
+            column -> restoreColumnPort.restoreColumn(column.toDomain())))
         .then(restoreChangedRows(
             target.constraints(),
             currentConstraintsById,
@@ -168,6 +185,7 @@ class StructuralSnapshotReconciler {
   }
 
   private Mono<Void> createRowsMissingFromCurrent(StructuralSnapshot current, StructuralSnapshot target) {
+    Set<String> currentTableIds = ids(current.tables(), TableSnapshot::id);
     Set<String> currentColumnIds = ids(current.columns(), ColumnSnapshot::id);
     Set<String> currentConstraintIds = ids(current.constraints(), ConstraintSnapshot::id);
     Set<String> currentIndexIds = ids(current.indexes(), IndexSnapshot::id);
@@ -176,9 +194,12 @@ class StructuralSnapshotReconciler {
     Set<String> currentIndexColumnIds = ids(current.indexColumns(), IndexColumnSnapshot::id);
     Set<String> currentRelationshipColumnIds = ids(current.relationshipColumns(), RelationshipColumnSnapshot::id);
 
-    return Flux.fromIterable(target.columns())
-        .filter(column -> !currentColumnIds.contains(column.id()))
-        .concatMap(column -> createColumnPort.createColumn(column.toDomain()))
+    return Flux.fromIterable(target.tables())
+        .filter(table -> !currentTableIds.contains(table.id()))
+        .concatMap(table -> createTablePort.createTable(table.toDomain()))
+        .thenMany(Flux.fromIterable(target.columns())
+            .filter(column -> !currentColumnIds.contains(column.id()))
+            .concatMap(column -> createColumnPort.createColumn(column.toDomain())))
         .thenMany(Flux.fromIterable(target.constraints())
             .filter(constraint -> !currentConstraintIds.contains(constraint.id()))
             .concatMap(constraint -> createConstraintPort.createConstraint(constraint.toDomain())))

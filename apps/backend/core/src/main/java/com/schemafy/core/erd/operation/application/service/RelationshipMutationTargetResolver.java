@@ -2,6 +2,7 @@ package com.schemafy.core.erd.operation.application.service;
 
 import org.springframework.stereotype.Component;
 
+import com.schemafy.core.common.exception.DomainException;
 import com.schemafy.core.erd.operation.application.inverse.ChangeRelationshipCardinalityInverse;
 import com.schemafy.core.erd.operation.application.inverse.ChangeRelationshipNameInverse;
 import com.schemafy.core.erd.operation.domain.ErdOperationType;
@@ -14,6 +15,8 @@ import com.schemafy.core.erd.relationship.application.port.in.ChangeRelationship
 import com.schemafy.core.erd.relationship.application.port.in.CreateRelationshipCommand;
 import com.schemafy.core.erd.relationship.application.port.in.DeleteRelationshipCommand;
 import com.schemafy.core.erd.relationship.application.port.in.RemoveRelationshipColumnCommand;
+import com.schemafy.core.erd.relationship.domain.exception.RelationshipErrorCode;
+import com.schemafy.core.erd.table.domain.exception.TableErrorCode;
 
 import lombok.RequiredArgsConstructor;
 import reactor.core.publisher.Mono;
@@ -44,8 +47,13 @@ class RelationshipMutationTargetResolver {
   }
 
   private Mono<ResolvedErdMutationTarget> resolveCreateRelationship(Object payload) {
-    CreateRelationshipCommand command = requirePayload(payload, CreateRelationshipCommand.class);
-    return targetLookup.resolveTableContext(command.fkTableId());
+    return resolveStructuralOr(payload, targetLookup, () -> {
+      CreateRelationshipCommand command = requirePayload(payload, CreateRelationshipCommand.class);
+      return targetLookup.resolveTableContext(command.fkTableId())
+          .onErrorMap(DomainException.hasErrorCode(TableErrorCode.NOT_FOUND),
+              ex -> new DomainException(RelationshipErrorCode.TARGET_TABLE_NOT_FOUND,
+                  "Relationship fk table not found"));
+    });
   }
 
   private Mono<ResolvedErdMutationTarget> resolveChangeRelationshipName(Object payload) {
@@ -57,8 +65,10 @@ class RelationshipMutationTargetResolver {
   }
 
   private Mono<ResolvedErdMutationTarget> resolveChangeRelationshipKind(Object payload) {
-    ChangeRelationshipKindCommand command = requirePayload(payload, ChangeRelationshipKindCommand.class);
-    return targetLookup.resolveByRelationshipId(command.relationshipId(), command.relationshipId());
+    return resolveStructuralOr(payload, targetLookup, () -> {
+      ChangeRelationshipKindCommand command = requirePayload(payload, ChangeRelationshipKindCommand.class);
+      return targetLookup.resolveByRelationshipId(command.relationshipId(), command.relationshipId());
+    });
   }
 
   private Mono<ResolvedErdMutationTarget> resolveChangeRelationshipCardinality(Object payload) {
@@ -76,8 +86,10 @@ class RelationshipMutationTargetResolver {
   }
 
   private Mono<ResolvedErdMutationTarget> resolveDeleteRelationship(Object payload) {
-    DeleteRelationshipCommand command = requirePayload(payload, DeleteRelationshipCommand.class);
-    return targetLookup.resolveByRelationshipId(command.relationshipId(), command.relationshipId());
+    return resolveStructuralOr(payload, targetLookup, () -> {
+      DeleteRelationshipCommand command = requirePayload(payload, DeleteRelationshipCommand.class);
+      return targetLookup.resolveByRelationshipId(command.relationshipId(), command.relationshipId());
+    });
   }
 
   private Mono<ResolvedErdMutationTarget> resolveAddRelationshipColumn(Object payload) {

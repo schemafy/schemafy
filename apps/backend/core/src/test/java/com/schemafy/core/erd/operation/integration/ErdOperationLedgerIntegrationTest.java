@@ -379,6 +379,122 @@ class ErdOperationLedgerIntegrationTest extends ErdProjectIntegrationSupport {
   }
 
   @Test
+  @DisplayName("table 생성 undo/redo는 같은 table ID를 삭제하고 복원한다")
+  void createTableUndoRedoRestoresSameTableId() {
+    String projectId = createActiveProjectId("erd_operation_create_table_undo_redo");
+
+    String schemaId = createSchemaUseCase.createSchema(new CreateSchemaCommand(
+        projectId,
+        "MySQL",
+        "create_table_undo_redo_schema",
+        "utf8mb4",
+        "utf8mb4_general_ci")).block().result().id();
+
+    var createResult = createTableUseCase.createTable(new CreateTableCommand(
+        schemaId,
+        "users",
+        "utf8mb4",
+        "utf8mb4_general_ci",
+        "{\"x\":100}")).block();
+    String tableId = createResult.result().tableId();
+    String createOpId = createResult.operation().opId();
+
+    undoErdOperationUseCase.undo(new UndoErdOperationCommand(createOpId)).block();
+    assertThat(rowExists("db_tables", tableId)).isFalse();
+
+    redoErdOperationUseCase.redo(new RedoErdOperationCommand(createOpId)).block();
+    assertThat(rowExists("db_tables", tableId)).isTrue();
+    assertLastOperation(schemaId, "CREATE_TABLE", currentRevision(schemaId), List.of(tableId));
+  }
+
+  @Test
+  @DisplayName("table 삭제 undo/redo는 cascade로 삭제된 구조를 원래 ID로 복원한다")
+  void deleteTableUndoRedoRestoresCascadeGraphWithOriginalIds() {
+    String projectId = createActiveProjectId("erd_operation_delete_table_undo_redo");
+
+    String schemaId = createSchemaUseCase.createSchema(new CreateSchemaCommand(
+        projectId,
+        "MySQL",
+        "delete_table_undo_redo_schema",
+        "utf8mb4",
+        "utf8mb4_general_ci")).block().result().id();
+
+    String pkTableId = createTableUseCase.createTable(new CreateTableCommand(
+        schemaId,
+        "users",
+        "utf8mb4",
+        "utf8mb4_general_ci",
+        null)).block().result().tableId();
+
+    String fkTableId = createTableUseCase.createTable(new CreateTableCommand(
+        schemaId,
+        "orders",
+        "utf8mb4",
+        "utf8mb4_general_ci",
+        null)).block().result().tableId();
+
+    String pkColumnId = createColumnUseCase.createColumn(new CreateColumnCommand(
+        pkTableId,
+        "id",
+        "INT",
+        null,
+        null,
+        null,
+        true,
+        null,
+        null,
+        null)).block().result().columnId();
+
+    createConstraintUseCase.createConstraint(new CreateConstraintCommand(
+        pkTableId,
+        "pk_users",
+        ConstraintKind.PRIMARY_KEY,
+        null,
+        null,
+        List.of(new CreateConstraintColumnCommand(pkColumnId, 0)))).block();
+
+    String relationshipId = createRelationshipUseCase.createRelationship(new CreateRelationshipCommand(
+        fkTableId,
+        pkTableId,
+        RelationshipKind.NON_IDENTIFYING,
+        Cardinality.ONE_TO_MANY,
+        null)).block().result().relationshipId();
+    String relationshipColumnId = firstRelationshipColumnId(relationshipId);
+    String fkColumnId = relationshipColumnFkColumnId(relationshipColumnId);
+
+    String indexId = createIndexUseCase.createIndex(new CreateIndexCommand(
+        fkTableId,
+        "idx_orders_user_id",
+        IndexType.BTREE,
+        List.of(new CreateIndexColumnCommand(fkColumnId, 0, SortDirection.ASC)))).block().result().indexId();
+    String indexColumnId = firstIndexColumnId(indexId);
+
+    var deleteResult = deleteTableUseCase.deleteTable(new DeleteTableCommand(fkTableId)).block();
+    String deleteOpId = deleteResult.operation().opId();
+
+    assertThat(rowExists("db_tables", fkTableId)).isFalse();
+    assertThat(rowExists("db_relationships", relationshipId)).isFalse();
+    assertThat(rowExists("db_relationship_columns", relationshipColumnId)).isFalse();
+    assertThat(rowExists("db_columns", fkColumnId)).isFalse();
+    assertThat(rowExists("db_indexes", indexId)).isFalse();
+    assertThat(rowExists("db_index_columns", indexColumnId)).isFalse();
+
+    undoErdOperationUseCase.undo(new UndoErdOperationCommand(deleteOpId)).block();
+    assertThat(rowExists("db_tables", fkTableId)).isTrue();
+    assertThat(rowExists("db_relationships", relationshipId)).isTrue();
+    assertThat(rowExists("db_relationship_columns", relationshipColumnId)).isTrue();
+    assertThat(rowExists("db_columns", fkColumnId)).isTrue();
+    assertThat(rowExists("db_indexes", indexId)).isTrue();
+    assertThat(rowExists("db_index_columns", indexColumnId)).isTrue();
+
+    redoErdOperationUseCase.redo(new RedoErdOperationCommand(deleteOpId)).block();
+    assertThat(rowExists("db_tables", fkTableId)).isFalse();
+    assertThat(rowExists("db_relationships", relationshipId)).isFalse();
+    assertThat(rowExists("db_columns", fkColumnId)).isFalse();
+    assertLastOperation(schemaId, "DELETE_TABLE", currentRevision(schemaId), List.of(pkTableId, fkTableId));
+  }
+
+  @Test
   @DisplayName("index column 제거 undo/redo는 parent index와 membership row를 원래 ID로 복원한다")
   void indexColumnRemovalUndoRedoRestoresParentIndexAndColumnMembership() {
     String projectId = createActiveProjectId("erd_operation_index_column_undo_redo");

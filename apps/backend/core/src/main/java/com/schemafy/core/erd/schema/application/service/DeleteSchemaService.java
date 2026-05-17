@@ -1,7 +1,7 @@
 package com.schemafy.core.erd.schema.application.service;
 
+import java.util.HashSet;
 import java.util.Set;
-import java.util.concurrent.ConcurrentHashMap;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -44,7 +44,7 @@ public class DeleteSchemaService implements DeleteSchemaUseCase {
   @Override
   public Mono<MutationResult<Void>> deleteSchema(DeleteSchemaCommand command) {
     String schemaId = command.schemaId();
-    Set<String> affectedTableIds = ConcurrentHashMap.newKeySet();
+    Set<String> affectedTableIds = new HashSet<>();
     Mono<Void> ensureExists = getSchemaByIdPort.findSchemaById(schemaId)
         .switchIfEmpty(Mono.error(new DomainException(SchemaErrorCode.NOT_FOUND, "Schema not found: " + schemaId)))
         .then();

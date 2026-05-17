@@ -9,6 +9,14 @@ import reactor.core.publisher.Mono;
 interface SchemaCollaborationStateRepository
     extends ReactiveCrudRepository<SchemaCollaborationStateEntity, String> {
 
+  @Query("""
+      SELECT schema_id, project_id, current_revision, created_at, updated_at
+      FROM schema_collaboration_state
+      WHERE schema_id = :schemaId
+      FOR UPDATE
+      """)
+  Mono<SchemaCollaborationStateEntity> findByIdForUpdate(String schemaId);
+
   @Modifying
   @Query("""
       UPDATE schema_collaboration_state

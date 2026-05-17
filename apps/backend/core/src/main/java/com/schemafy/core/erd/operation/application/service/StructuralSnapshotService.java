@@ -18,6 +18,10 @@ public class StructuralSnapshotService {
     return reader.captureByConstraintId(constraintId);
   }
 
+  public Mono<StructuralSnapshot> captureByColumnId(String columnId) {
+    return reader.captureByColumnId(columnId);
+  }
+
   public Mono<StructuralSnapshot> captureByConstraintColumnId(String constraintColumnId) {
     return reader.captureByConstraintColumnId(constraintColumnId);
   }

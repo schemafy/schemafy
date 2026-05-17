@@ -63,7 +63,7 @@ public class RemoveRelationshipColumnService implements RemoveRelationshipColumn
                         command.relationshipColumnId(),
                         beforeSnapshot,
                         afterSnapshot,
-                        affectedTableIds(result)))))))
+                        result.sortedAffectedTableIds()))))))
         .as(transactionalOperator::transactional);
   }
 
@@ -113,12 +113,6 @@ public class RemoveRelationshipColumnService implements RemoveRelationshipColumn
           return changeRelationshipColumnPositionPort
               .changeRelationshipColumnPositions(relationshipId, reordered);
         });
-  }
-
-  private static List<String> affectedTableIds(MutationResult<?> result) {
-    return result.affectedTableIds().stream()
-        .sorted()
-        .toList();
   }
 
 }
