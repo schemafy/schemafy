@@ -103,7 +103,8 @@
     337
   ],
   "apps/backend/api/src/main/java/com/schemafy/api/erd/broadcast/ErdMutationBroadcaster.java": [
-    337
+    337,
+    376
   ],
   "apps/backend/api/src/main/java/com/schemafy/api/erd/controller/ColumnController.java": [
     337
@@ -151,7 +152,8 @@
     352
   ],
   "apps/backend/api/src/test/java/com/schemafy/api/erd/broadcast/ErdMutationBroadcasterTest.java": [
-    337
+    337,
+    376
   ],
   "apps/backend/api/src/test/java/com/schemafy/api/erd/controller/ColumnControllerTest.java": [
     337
@@ -207,14 +209,16 @@
   ],
   "apps/backend/core/src/main/java/com/schemafy/core/common/MutationResult.java": [
     337,
-    372
+    372,
+    376
   ],
   "apps/backend/core/src/main/java/com/schemafy/core/erd/operation/adapter/out/persistence/ErdOperationLogRepository.java": [
     352
   ],
   "apps/backend/core/src/main/java/com/schemafy/core/erd/operation/adapter/out/persistence/ErdOperationPersistenceAdapter.java": [
     352,
-    372
+    372,
+    376
   ],
   "apps/backend/core/src/main/java/com/schemafy/core/erd/operation/application/port/out/GetErdOperationByIdPort.java": [
     352
@@ -225,7 +229,8 @@
   "apps/backend/core/src/main/java/com/schemafy/core/erd/operation/application/service/DefaultErdMutationCoordinator.java": [
     337,
     372,
-    375
+    375,
+    376
   ],
   "apps/backend/core/src/main/java/com/schemafy/core/erd/operation/application/service/DefaultUndoRedoEligibilityService.java": [
     352
@@ -513,7 +518,8 @@
     372
   ],
   "apps/backend/core/src/main/java/com/schemafy/core/erd/operation/adapter/out/persistence/SchemaCollaborationStateRepository.java": [
-    372
+    372,
+    376
   ],
   "apps/backend/core/src/main/java/com/schemafy/core/erd/operation/application/inverse/ChangeColumnNameInverse.java": [
     372
@@ -541,7 +547,8 @@
   ],
   "apps/backend/core/src/main/java/com/schemafy/core/erd/operation/application/inverse/InversePayload.java": [
     372,
-    375
+    375,
+    376
   ],
   "apps/backend/core/src/main/java/com/schemafy/core/erd/operation/application/port/out/IncrementSchemaCollaborationRevisionPort.java": [
     372
@@ -808,10 +815,12 @@
     375
   ],
   "apps/backend/core/src/main/java/com/schemafy/core/erd/constraint/application/service/AddConstraintColumnService.java": [
-    375
+    375,
+    376
   ],
   "apps/backend/core/src/main/java/com/schemafy/core/erd/constraint/application/service/RemoveConstraintColumnService.java": [
-    375
+    375,
+    376
   ],
   "apps/backend/core/src/main/java/com/schemafy/core/erd/index/adapter/out/persistence/IndexColumnPersistenceAdapter.java": [
     375
@@ -826,10 +835,12 @@
     375
   ],
   "apps/backend/core/src/main/java/com/schemafy/core/erd/index/application/service/AddIndexColumnService.java": [
-    375
+    375,
+    376
   ],
   "apps/backend/core/src/main/java/com/schemafy/core/erd/index/application/service/RemoveIndexColumnService.java": [
-    375
+    375,
+    376
   ],
   "apps/backend/core/src/main/java/com/schemafy/core/erd/operation/application/inverse/AddConstraintColumnInverse.java": [
     375
@@ -850,16 +861,20 @@
     375
   ],
   "apps/backend/core/src/main/java/com/schemafy/core/erd/operation/application/inverse/StructuralOperationInverse.java": [
-    375
+    375,
+    376
   ],
   "apps/backend/core/src/main/java/com/schemafy/core/erd/operation/application/inverse/StructuralSnapshot.java": [
-    375
+    375,
+    376
   ],
   "apps/backend/core/src/main/java/com/schemafy/core/erd/operation/application/service/ColumnMutationTargetResolver.java": [
-    375
+    375,
+    376
   ],
   "apps/backend/core/src/main/java/com/schemafy/core/erd/operation/application/service/ConstraintMutationTargetResolver.java": [
-    375
+    375,
+    376
   ],
   "apps/backend/core/src/main/java/com/schemafy/core/erd/operation/application/service/ErdMutationTargetFinalizer.java": [
     375
@@ -874,10 +889,12 @@
     375
   ],
   "apps/backend/core/src/main/java/com/schemafy/core/erd/operation/application/service/IndexMutationTargetResolver.java": [
-    375
+    375,
+    376
   ],
   "apps/backend/core/src/main/java/com/schemafy/core/erd/operation/application/service/RelationshipMutationTargetResolver.java": [
-    375
+    375,
+    376
   ],
   "apps/backend/core/src/main/java/com/schemafy/core/erd/operation/application/service/ResolvedErdMutationTarget.java": [
     375
@@ -886,19 +903,24 @@
     375
   ],
   "apps/backend/core/src/main/java/com/schemafy/core/erd/operation/application/service/StructuralSnapshotReader.java": [
-    375
+    375,
+    376
   ],
   "apps/backend/core/src/main/java/com/schemafy/core/erd/operation/application/service/StructuralSnapshotReconciler.java": [
-    375
+    375,
+    376
   ],
   "apps/backend/core/src/main/java/com/schemafy/core/erd/operation/application/service/StructuralSnapshotService.java": [
-    375
+    375,
+    376
   ],
   "apps/backend/core/src/main/java/com/schemafy/core/erd/operation/application/service/StructuralUndoRedoHandler.java": [
-    375
+    375,
+    376
   ],
   "apps/backend/core/src/main/java/com/schemafy/core/erd/operation/application/service/TableMutationTargetResolver.java": [
-    375
+    375,
+    376
   ],
   "apps/backend/core/src/main/java/com/schemafy/core/erd/relationship/adapter/out/persistence/RelationshipColumnPersistenceAdapter.java": [
     375
@@ -913,10 +935,12 @@
     375
   ],
   "apps/backend/core/src/main/java/com/schemafy/core/erd/relationship/application/service/AddRelationshipColumnService.java": [
-    375
+    375,
+    376
   ],
   "apps/backend/core/src/main/java/com/schemafy/core/erd/relationship/application/service/RemoveRelationshipColumnService.java": [
-    375
+    375,
+    376
   ],
   "apps/backend/core/src/test/java/com/schemafy/core/erd/constraint/application/service/AddConstraintColumnServiceTest.java": [
     375
@@ -1073,5 +1097,83 @@
   ],
   "apps/frontend/src/features/workspace/hooks/useWorkspaceMutations.ts": [
     382
+  ],
+  "apps/backend/api/src/main/java/com/schemafy/api/erd/controller/OperationController.java": [
+    376
+  ],
+  "apps/backend/api/src/test/java/com/schemafy/api/erd/controller/OperationControllerBroadcastTest.java": [
+    376
+  ],
+  "apps/backend/core/src/main/java/com/schemafy/core/erd/column/application/service/CreateColumnService.java": [
+    376
+  ],
+  "apps/backend/core/src/main/java/com/schemafy/core/erd/column/application/service/DeleteColumnService.java": [
+    376
+  ],
+  "apps/backend/core/src/main/java/com/schemafy/core/erd/constraint/application/service/CreateConstraintService.java": [
+    376
+  ],
+  "apps/backend/core/src/main/java/com/schemafy/core/erd/constraint/application/service/DeleteConstraintService.java": [
+    376
+  ],
+  "apps/backend/core/src/main/java/com/schemafy/core/erd/index/application/service/CreateIndexService.java": [
+    376
+  ],
+  "apps/backend/core/src/main/java/com/schemafy/core/erd/index/application/service/DeleteIndexService.java": [
+    376
+  ],
+  "apps/backend/core/src/main/java/com/schemafy/core/erd/operation/application/inverse/ChangeRelationshipKindInverse.java": [
+    376
+  ],
+  "apps/backend/core/src/main/java/com/schemafy/core/erd/operation/application/inverse/CreateColumnInverse.java": [
+    376
+  ],
+  "apps/backend/core/src/main/java/com/schemafy/core/erd/operation/application/inverse/CreateConstraintInverse.java": [
+    376
+  ],
+  "apps/backend/core/src/main/java/com/schemafy/core/erd/operation/application/inverse/CreateIndexInverse.java": [
+    376
+  ],
+  "apps/backend/core/src/main/java/com/schemafy/core/erd/operation/application/inverse/CreateRelationshipInverse.java": [
+    376
+  ],
+  "apps/backend/core/src/main/java/com/schemafy/core/erd/operation/application/inverse/CreateTableInverse.java": [
+    376
+  ],
+  "apps/backend/core/src/main/java/com/schemafy/core/erd/operation/application/inverse/DeleteColumnInverse.java": [
+    376
+  ],
+  "apps/backend/core/src/main/java/com/schemafy/core/erd/operation/application/inverse/DeleteConstraintInverse.java": [
+    376
+  ],
+  "apps/backend/core/src/main/java/com/schemafy/core/erd/operation/application/inverse/DeleteIndexInverse.java": [
+    376
+  ],
+  "apps/backend/core/src/main/java/com/schemafy/core/erd/operation/application/inverse/DeleteRelationshipInverse.java": [
+    376
+  ],
+  "apps/backend/core/src/main/java/com/schemafy/core/erd/operation/application/inverse/DeleteTableInverse.java": [
+    376
+  ],
+  "apps/backend/core/src/main/java/com/schemafy/core/erd/operation/application/port/out/FindSchemaCollaborationStatePort.java": [
+    376
+  ],
+  "apps/backend/core/src/main/java/com/schemafy/core/erd/relationship/application/service/ChangeRelationshipKindService.java": [
+    376
+  ],
+  "apps/backend/core/src/main/java/com/schemafy/core/erd/relationship/application/service/CreateRelationshipService.java": [
+    376
+  ],
+  "apps/backend/core/src/main/java/com/schemafy/core/erd/relationship/application/service/DeleteRelationshipService.java": [
+    376
+  ],
+  "apps/backend/core/src/main/java/com/schemafy/core/erd/schema/application/service/DeleteSchemaService.java": [
+    376
+  ],
+  "apps/backend/core/src/main/java/com/schemafy/core/erd/table/adapter/out/persistence/TablePersistenceAdapter.java": [
+    376
+  ],
+  "apps/backend/core/src/main/java/com/schemafy/core/erd/table/application/port/out/RestoreTablePort.java": [
+    376
   ]
 }
