@@ -50,20 +50,6 @@ class WorkspaceInvitationHelper {
             new DomainException(WorkspaceErrorCode.NOT_FOUND)));
   }
 
-  Mono<Void> validateAdmin(String workspaceId, String userId) {
-    return workspaceMemberPort
-        .findByWorkspaceIdAndUserIdAndNotDeleted(workspaceId, userId)
-        .switchIfEmpty(Mono.error(
-            new DomainException(WorkspaceErrorCode.ACCESS_DENIED)))
-        .flatMap(member -> {
-          if (!member.isAdmin()) {
-            return Mono.error(
-                new DomainException(WorkspaceErrorCode.ADMIN_REQUIRED));
-          }
-          return Mono.empty();
-        });
-  }
-
   Mono<Void> checkDuplicatePendingInvitation(String workspaceId, Email email) {
     return invitationPort.countByTargetAndEmailAndStatus(
         InvitationType.WORKSPACE.name(),

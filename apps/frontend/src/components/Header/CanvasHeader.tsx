@@ -5,11 +5,8 @@ import { ExportContents } from './contents/ExportContents';
 import { ShareContents } from './contents/ShareContents';
 import { VersionsContents } from './contents/VersionContents';
 import { SettingsContents } from './contents/SettingsContents';
-import { useParams } from 'react-router-dom';
 
-export const CanvasHeader = () => {
-  const { projectId = '' } = useParams();
-
+export const CanvasHeader = ({ projectId }: { projectId: string }) => {
   return (
     <div className="flex items-center gap-9">
       <ImportContents />
