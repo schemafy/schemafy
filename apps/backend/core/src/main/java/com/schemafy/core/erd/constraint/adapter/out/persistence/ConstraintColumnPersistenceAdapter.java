@@ -6,6 +6,7 @@ import java.util.Map;
 import java.util.Objects;
 
 import com.schemafy.core.common.PersistenceAdapter;
+import com.schemafy.core.common.exception.DomainException;
 import com.schemafy.core.erd.constraint.application.port.out.ChangeConstraintColumnPositionPort;
 import com.schemafy.core.erd.constraint.application.port.out.CreateConstraintColumnPort;
 import com.schemafy.core.erd.constraint.application.port.out.DeleteConstraintColumnPort;
@@ -14,7 +15,9 @@ import com.schemafy.core.erd.constraint.application.port.out.DeleteConstraintCol
 import com.schemafy.core.erd.constraint.application.port.out.GetConstraintColumnByIdPort;
 import com.schemafy.core.erd.constraint.application.port.out.GetConstraintColumnsByColumnIdPort;
 import com.schemafy.core.erd.constraint.application.port.out.GetConstraintColumnsByConstraintIdPort;
+import com.schemafy.core.erd.constraint.application.port.out.RestoreConstraintColumnPort;
 import com.schemafy.core.erd.constraint.domain.ConstraintColumn;
+import com.schemafy.core.erd.constraint.domain.exception.ConstraintErrorCode;
 
 import lombok.RequiredArgsConstructor;
 import reactor.core.publisher.Mono;
@@ -27,6 +30,7 @@ class ConstraintColumnPersistenceAdapter implements
     GetConstraintColumnByIdPort,
     GetConstraintColumnsByColumnIdPort,
     GetConstraintColumnsByConstraintIdPort,
+    RestoreConstraintColumnPort,
     DeleteConstraintColumnPort,
     DeleteConstraintColumnsByConstraintIdPort,
     DeleteConstraintColumnsByColumnIdPort {
@@ -86,6 +90,18 @@ class ConstraintColumnPersistenceAdapter implements
   }
 
   @Override
+  public Mono<Void> restoreConstraintColumn(ConstraintColumn constraintColumn) {
+    return findConstraintColumnOrError(constraintColumn.id())
+        .flatMap(entity -> {
+          entity.setConstraintId(constraintColumn.constraintId());
+          entity.setColumnId(constraintColumn.columnId());
+          entity.setSeqNo(constraintColumn.seqNo());
+          return constraintColumnRepository.save(entity);
+        })
+        .then();
+  }
+
+  @Override
   public Mono<Void> deleteConstraintColumn(String constraintColumnId) {
     return constraintColumnRepository.deleteById(constraintColumnId);
   }
@@ -98,6 +114,13 @@ class ConstraintColumnPersistenceAdapter implements
   @Override
   public Mono<Void> deleteByColumnId(String columnId) {
     return constraintColumnRepository.deleteByColumnId(columnId);
+  }
+
+  private Mono<ConstraintColumnEntity> findConstraintColumnOrError(String constraintColumnId) {
+    return constraintColumnRepository.findById(constraintColumnId)
+        .switchIfEmpty(Mono.error(new DomainException(
+            ConstraintErrorCode.COLUMN_NOT_FOUND,
+            "Constraint column not found: " + constraintColumnId)));
   }
 
 }

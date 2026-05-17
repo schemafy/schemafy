@@ -18,6 +18,7 @@ import com.schemafy.core.erd.index.application.port.out.DeleteIndexColumnsByInde
 import com.schemafy.core.erd.index.application.port.out.GetIndexColumnByIdPort;
 import com.schemafy.core.erd.index.application.port.out.GetIndexColumnsByColumnIdPort;
 import com.schemafy.core.erd.index.application.port.out.GetIndexColumnsByIndexIdPort;
+import com.schemafy.core.erd.index.application.port.out.RestoreIndexColumnPort;
 import com.schemafy.core.erd.index.domain.IndexColumn;
 import com.schemafy.core.erd.index.domain.exception.IndexErrorCode;
 import com.schemafy.core.erd.index.domain.type.SortDirection;
@@ -34,6 +35,7 @@ class IndexColumnPersistenceAdapter implements
     GetIndexColumnByIdPort,
     GetIndexColumnsByColumnIdPort,
     GetIndexColumnsByIndexIdPort,
+    RestoreIndexColumnPort,
     DeleteIndexColumnPort,
     DeleteIndexColumnsByIndexIdPort,
     DeleteIndexColumnsByColumnIdPort {
@@ -96,6 +98,19 @@ class IndexColumnPersistenceAdapter implements
     return findIndexColumnOrError(indexColumnId)
         .flatMap((@NonNull IndexColumnEntity indexColumnEntity) -> {
           indexColumnEntity.setSortDirection(sortDirection.name());
+          return indexColumnRepository.save(indexColumnEntity);
+        })
+        .then();
+  }
+
+  @Override
+  public Mono<Void> restoreIndexColumn(IndexColumn indexColumn) {
+    return findIndexColumnOrError(indexColumn.id())
+        .flatMap((@NonNull IndexColumnEntity indexColumnEntity) -> {
+          indexColumnEntity.setIndexId(indexColumn.indexId());
+          indexColumnEntity.setColumnId(indexColumn.columnId());
+          indexColumnEntity.setSeqNo(indexColumn.seqNo());
+          indexColumnEntity.setSortDirection(indexColumn.sortDirection().name());
           return indexColumnRepository.save(indexColumnEntity);
         })
         .then();

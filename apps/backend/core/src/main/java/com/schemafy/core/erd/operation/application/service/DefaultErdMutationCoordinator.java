@@ -18,8 +18,6 @@ import com.schemafy.core.erd.operation.application.port.out.AppendErdOperationLo
 import com.schemafy.core.erd.operation.application.port.out.FindSchemaCollaborationStatePort;
 import com.schemafy.core.erd.operation.application.port.out.IncrementSchemaCollaborationRevisionPort;
 import com.schemafy.core.erd.operation.application.port.out.SaveSchemaCollaborationStatePort;
-import com.schemafy.core.erd.operation.application.service.ErdMutationTargetResolver.FinalizedErdMutationTarget;
-import com.schemafy.core.erd.operation.application.service.ErdMutationTargetResolver.ResolvedErdMutationTarget;
 import com.schemafy.core.erd.operation.domain.*;
 import com.schemafy.core.erd.operation.domain.exception.OperationErrorCode;
 import com.schemafy.core.ulid.application.port.out.UlidGeneratorPort;
@@ -35,6 +33,7 @@ class DefaultErdMutationCoordinator implements ErdMutationCoordinator {
 
   private final TransactionalOperator transactionalOperator;
   private final ErdMutationTargetResolver erdMutationTargetResolver;
+  private final ErdMutationTargetFinalizer erdMutationTargetFinalizer;
   private final FindSchemaCollaborationStatePort findSchemaCollaborationStatePort;
   private final IncrementSchemaCollaborationRevisionPort incrementSchemaCollaborationRevisionPort;
   private final SaveSchemaCollaborationStatePort saveSchemaCollaborationStatePort;
@@ -117,8 +116,9 @@ class DefaultErdMutationCoordinator implements ErdMutationCoordinator {
       ResolvedErdMutationTarget resolvedTarget,
       SchemaCollaborationState preloadedState,
       ErdOperationMetadata metadata) {
-    FinalizedErdMutationTarget finalizedTarget = erdMutationTargetResolver.finalizeTarget(
+    FinalizedErdMutationTarget finalizedTarget = erdMutationTargetFinalizer.finalizeTarget(
         operationType,
+        payload,
         resolvedTarget,
         mutationResult);
 

@@ -13,7 +13,9 @@ import com.schemafy.core.common.MutationResult;
 import com.schemafy.core.common.exception.DomainException;
 import com.schemafy.core.erd.column.application.port.out.GetColumnsByTableIdPort;
 import com.schemafy.core.erd.column.domain.Column;
+import com.schemafy.core.erd.operation.application.inverse.AddRelationshipColumnInverse;
 import com.schemafy.core.erd.operation.application.service.ErdMutationCoordinator;
+import com.schemafy.core.erd.operation.application.service.StructuralSnapshotService;
 import com.schemafy.core.erd.operation.domain.ErdOperationType;
 import com.schemafy.core.erd.relationship.application.port.in.AddRelationshipColumnCommand;
 import com.schemafy.core.erd.relationship.application.port.in.AddRelationshipColumnResult;
@@ -43,6 +45,7 @@ public class AddRelationshipColumnService implements AddRelationshipColumnUseCas
   private final GetRelationshipColumnsByRelationshipIdPort getRelationshipColumnsByRelationshipIdPort;
   private final GetTableByIdPort getTableByIdPort;
   private final GetColumnsByTableIdPort getColumnsByTableIdPort;
+  private final StructuralSnapshotService structuralSnapshotService;
   private ErdMutationCoordinator erdMutationCoordinator = ErdMutationCoordinator.noop();
 
   @Autowired
@@ -54,21 +57,35 @@ public class AddRelationshipColumnService implements AddRelationshipColumnUseCas
   public Mono<MutationResult<AddRelationshipColumnResult>> addRelationshipColumn(
       AddRelationshipColumnCommand command) {
     return erdMutationCoordinator.coordinate(ErdOperationType.ADD_RELATIONSHIP_COLUMN, command,
-        () -> getRelationshipByIdPort.findRelationshipById(command.relationshipId())
-            .switchIfEmpty(Mono.error(new DomainException(RelationshipErrorCode.NOT_FOUND, "Relationship not found")))
-            .flatMap(relationship -> {
-              Set<String> affectedTableIds = new HashSet<>();
-              affectedTableIds.add(relationship.fkTableId());
-              affectedTableIds.add(relationship.pkTableId());
-              return loadTables(relationship)
-                  .flatMap(tables -> addColumn(
-                      relationship,
-                      tables.fkTable(),
-                      tables.pkTable(),
-                      command))
-                  .map(result -> MutationResult.of(result, affectedTableIds));
-            }))
+        () -> structuralSnapshotService.captureByRelationshipId(command.relationshipId())
+            .flatMap(beforeSnapshot -> addRelationshipColumnWithoutInverse(command)
+                .flatMap(result -> structuralSnapshotService.captureBySchemaId(beforeSnapshot.schemaId())
+                    .map(afterSnapshot -> result.withInverse(new AddRelationshipColumnInverse(
+                        beforeSnapshot.schemaId(),
+                        result.result().relationshipColumnId(),
+                        beforeSnapshot,
+                        afterSnapshot,
+                        affectedTableIds(result)))))))
         .as(transactionalOperator::transactional);
+  }
+
+  private Mono<MutationResult<AddRelationshipColumnResult>> addRelationshipColumnWithoutInverse(
+      AddRelationshipColumnCommand command) {
+    return getRelationshipByIdPort.findRelationshipById(command.relationshipId())
+        .switchIfEmpty(Mono.error(new DomainException(
+            RelationshipErrorCode.NOT_FOUND, "Relationship not found")))
+        .flatMap(relationship -> {
+          Set<String> affectedTableIds = new HashSet<>();
+          affectedTableIds.add(relationship.fkTableId());
+          affectedTableIds.add(relationship.pkTableId());
+          return loadTables(relationship)
+              .flatMap(tables -> addColumn(
+                  relationship,
+                  tables.fkTable(),
+                  tables.pkTable(),
+                  command))
+              .map(result -> MutationResult.of(result, affectedTableIds));
+        });
   }
 
   private Mono<TablePair> loadTables(Relationship relationship) {
@@ -149,6 +166,12 @@ public class AddRelationshipColumnService implements AddRelationshipColumnUseCas
         .mapToInt(RelationshipColumn::seqNo)
         .max()
         .orElse(-1) + 1;
+  }
+
+  private static List<String> affectedTableIds(MutationResult<?> result) {
+    return result.affectedTableIds().stream()
+        .sorted()
+        .toList();
   }
 
 }

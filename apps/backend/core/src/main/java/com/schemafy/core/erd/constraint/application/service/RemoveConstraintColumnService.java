@@ -23,7 +23,9 @@ import com.schemafy.core.erd.constraint.domain.Constraint;
 import com.schemafy.core.erd.constraint.domain.ConstraintColumn;
 import com.schemafy.core.erd.constraint.domain.exception.ConstraintErrorCode;
 import com.schemafy.core.erd.constraint.domain.type.ConstraintKind;
+import com.schemafy.core.erd.operation.application.inverse.RemoveConstraintColumnInverse;
 import com.schemafy.core.erd.operation.application.service.ErdMutationCoordinator;
+import com.schemafy.core.erd.operation.application.service.StructuralSnapshotService;
 import com.schemafy.core.erd.operation.domain.ErdOperationType;
 
 import lombok.RequiredArgsConstructor;
@@ -41,6 +43,7 @@ public class RemoveConstraintColumnService implements RemoveConstraintColumnUseC
   private final GetConstraintColumnByIdPort getConstraintColumnByIdPort;
   private final GetConstraintColumnsByConstraintIdPort getConstraintColumnsByConstraintIdPort;
   private final PkCascadeHelper pkCascadeHelper;
+  private final StructuralSnapshotService structuralSnapshotService;
   private ErdMutationCoordinator erdMutationCoordinator = ErdMutationCoordinator.noop();
 
   @Autowired
@@ -51,26 +54,40 @@ public class RemoveConstraintColumnService implements RemoveConstraintColumnUseC
   @Override
   public Mono<MutationResult<Void>> removeConstraintColumn(RemoveConstraintColumnCommand command) {
     return erdMutationCoordinator.coordinate(ErdOperationType.REMOVE_CONSTRAINT_COLUMN, command,
-        () -> getConstraintColumnByIdPort
-            .findConstraintColumnById(command.constraintColumnId())
-            .switchIfEmpty(Mono.error(new DomainException(ConstraintErrorCode.COLUMN_NOT_FOUND,
-                "Constraint column not found: " + command.constraintColumnId())))
-            .flatMap(constraintColumn -> getConstraintByIdPort
-                .findConstraintById(constraintColumn.constraintId())
-                .switchIfEmpty(Mono.error(new DomainException(ConstraintErrorCode.NOT_FOUND,
-                    "Constraint not found: " + constraintColumn.constraintId())))
-                .flatMap(constraint -> {
-                  Set<String> affectedTableIds = new HashSet<>();
-                  affectedTableIds.add(constraint.tableId());
-                  return deleteConstraintColumnPort.deleteConstraintColumn(constraintColumn.id())
-                      .then(handlePkConstraintColumnRemoval(
-                          constraint,
-                          constraintColumn.columnId(),
-                          affectedTableIds))
-                      .then(reorderOrDeleteConstraint(constraint.id()))
-                      .then(Mono.fromCallable(() -> MutationResult.<Void>of(null, affectedTableIds)));
-                })))
+        () -> {
+          return structuralSnapshotService.captureByConstraintColumnId(command.constraintColumnId())
+              .flatMap(beforeSnapshot -> removeConstraintColumnWithoutInverse(command)
+                  .flatMap(result -> structuralSnapshotService.captureBySchemaId(beforeSnapshot.schemaId())
+                      .map(afterSnapshot -> result.withInverse(new RemoveConstraintColumnInverse(
+                          beforeSnapshot.schemaId(),
+                          command.constraintColumnId(),
+                          beforeSnapshot,
+                          afterSnapshot,
+                          affectedTableIds(result))))));
+        })
         .as(transactionalOperator::transactional);
+  }
+
+  private Mono<MutationResult<Void>> removeConstraintColumnWithoutInverse(RemoveConstraintColumnCommand command) {
+    return getConstraintColumnByIdPort
+        .findConstraintColumnById(command.constraintColumnId())
+        .switchIfEmpty(Mono.error(new DomainException(ConstraintErrorCode.COLUMN_NOT_FOUND,
+            "Constraint column not found: " + command.constraintColumnId())))
+        .flatMap(constraintColumn -> getConstraintByIdPort
+            .findConstraintById(constraintColumn.constraintId())
+            .switchIfEmpty(Mono.error(new DomainException(ConstraintErrorCode.NOT_FOUND,
+                "Constraint not found: " + constraintColumn.constraintId())))
+            .flatMap(constraint -> {
+              Set<String> affectedTableIds = new HashSet<>();
+              affectedTableIds.add(constraint.tableId());
+              return deleteConstraintColumnPort.deleteConstraintColumn(constraintColumn.id())
+                  .then(handlePkConstraintColumnRemoval(
+                      constraint,
+                      constraintColumn.columnId(),
+                      affectedTableIds))
+                  .then(reorderOrDeleteConstraint(constraint.id()))
+                  .then(Mono.fromCallable(() -> MutationResult.<Void>of(null, affectedTableIds)));
+            }));
   }
 
   private Mono<Void> handlePkConstraintColumnRemoval(
@@ -104,6 +121,12 @@ public class RemoveConstraintColumnService implements RemoveConstraintColumnUseC
           return changeConstraintColumnPositionPort
               .changeConstraintColumnPositions(constraintId, reordered);
         });
+  }
+
+  private static List<String> affectedTableIds(MutationResult<?> result) {
+    return result.affectedTableIds().stream()
+        .sorted()
+        .toList();
   }
 
 }
