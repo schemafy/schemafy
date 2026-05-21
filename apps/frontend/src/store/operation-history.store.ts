@@ -97,12 +97,14 @@ export class OperationHistoryStore {
 
     const undoableOpIds = this.undoableOpIdsBySchemaId.get(schemaId) ?? [];
 
-    if (!undoableOpIds.includes(operation.opId)) {
-      this.undoableOpIdsBySchemaId.set(schemaId, [
-        ...undoableOpIds,
-        operation.opId,
-      ]);
-    }
+    const nextUndoableOpIds = undoableOpIds.includes(operation.opId)
+      ? undoableOpIds
+      : [...undoableOpIds, operation.opId];
+
+    this.undoableOpIdsBySchemaId.set(
+      schemaId,
+      this.sortUndoableOpIdsByCommittedRevision(nextUndoableOpIds),
+    );
   }
 
   markFailed(clientOperationId: string, error?: unknown) {
@@ -177,6 +179,28 @@ export class OperationHistoryStore {
     if (error instanceof Error) return error.message;
     if (typeof error === 'string') return error;
     return null;
+  }
+
+  private sortUndoableOpIdsByCommittedRevision(opIds: string[]) {
+    return [...opIds].sort((leftOpId, rightOpId) => {
+      const leftRevision = this.getCommittedRevision(leftOpId);
+      const rightRevision = this.getCommittedRevision(rightOpId);
+
+      if (leftRevision !== rightRevision) {
+        return leftRevision - rightRevision;
+      }
+
+      return leftOpId.localeCompare(rightOpId);
+    });
+  }
+
+  private getCommittedRevision(opId: string) {
+    const clientOperationId = this.clientIdsByOpId.get(opId);
+    const committedRevision = clientOperationId
+      ? this.operationsByClientId.get(clientOperationId)?.committedRevision
+      : null;
+
+    return committedRevision ?? Number.NEGATIVE_INFINITY;
   }
 
   private clearSchemaUndoableHistory(schemaId: string) {

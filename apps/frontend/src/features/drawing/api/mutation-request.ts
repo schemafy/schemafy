@@ -37,13 +37,17 @@ export const syncCommittedRevision = (
   schemaId: string,
   result: CommittedMutationResult,
 ) => {
+  const committedRevision = result.operation.committedRevision;
+
   operationHistoryStore.markUndoable(
     schemaId,
     result.operation,
     result.affectedTableIds ?? [],
   );
-  collaborationStore.setSchemaRevision(
-    schemaId,
-    result.operation.committedRevision,
-  );
+
+  const currentRevision = collaborationStore.getSchemaRevision(schemaId);
+
+  if (currentRevision === null || committedRevision > currentRevision) {
+    collaborationStore.setSchemaRevision(schemaId, committedRevision);
+  }
 };
