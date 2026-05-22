@@ -9,8 +9,6 @@ import java.util.Map;
 import org.springframework.aop.support.AopUtils;
 import org.springframework.core.Ordered;
 import org.springframework.core.annotation.Order;
-import org.springframework.core.env.Environment;
-import org.springframework.core.env.Profiles;
 import org.springframework.stereotype.Component;
 
 import org.aspectj.lang.ProceedingJoinPoint;
@@ -34,7 +32,6 @@ public class AccessVerificationAspect {
   private final AccessVerifier accessVerifier;
   private final ProjectAccessTargetInference targetInference;
   private final ErdProjectContextResolver erdProjectContextResolver;
-  private final Environment environment;
 
   @Around("@annotation(com.schemafy.core.project.application.access.RequireProjectAccess) || "
       + "@within(com.schemafy.core.project.application.access.RequireProjectAccess) || "
@@ -60,20 +57,24 @@ public class AccessVerificationAspect {
 
     Class<?> returnType = method.getReturnType();
     if (Mono.class.isAssignableFrom(returnType)) {
-      return Mono.defer(() -> buildVerificationChain(
+      return Mono.defer(() -> resolveAccessRequest(
           method,
           joinPoint.getArgs(),
           projectAccess,
           workspaceAccess)
-          .then(Mono.defer(() -> proceedMono(joinPoint, method))));
+          .flatMap(accessRequest -> Mono.defer(() -> proceedMono(joinPoint, method))
+              .contextWrite(ProjectAccessRequesterContext.withRequesterId(
+                  accessRequest.requesterId()))));
     }
     if (Flux.class.isAssignableFrom(returnType)) {
-      return Flux.defer(() -> buildVerificationChain(
+      return Flux.defer(() -> resolveAccessRequest(
           method,
           joinPoint.getArgs(),
           projectAccess,
           workspaceAccess)
-          .thenMany(Flux.defer(() -> proceedFlux(joinPoint, method))));
+          .flatMapMany(accessRequest -> Flux.defer(() -> proceedFlux(joinPoint, method))
+              .contextWrite(ProjectAccessRequesterContext.withRequesterId(
+                  accessRequest.requesterId()))));
     }
     throw new IllegalStateException(
         "Access annotations are only supported on Mono/Flux methods: "
@@ -88,7 +89,7 @@ public class AccessVerificationAspect {
     return targetClass.getAnnotation(RequireProjectAccess.class);
   }
 
-  private Mono<Void> buildVerificationChain(
+  private Mono<AccessRequest> resolveAccessRequest(
       Method method,
       Object[] args,
       RequireProjectAccess projectAccess,
@@ -114,7 +115,8 @@ public class AccessVerificationAspect {
       return accessVerifier.requireProjectAccess(
           accessRequest.resourceId(),
           accessRequest.requesterId(),
-          projectAccess.role());
+          projectAccess.role())
+          .thenReturn(accessRequest);
     }
     AccessRequest accessRequest = extractAccessRequest(
         method,
@@ -125,7 +127,8 @@ public class AccessVerificationAspect {
     return accessVerifier.requireWorkspaceAccess(
         accessRequest.resourceId(),
         accessRequest.requesterId(),
-        workspaceAccess.role());
+        workspaceAccess.role())
+        .thenReturn(accessRequest);
   }
 
   private AccessRequest extractAccessRequest(
@@ -139,7 +142,7 @@ public class AccessVerificationAspect {
         extractStringValue(method, request, requesterAccessorName, "requesterId"));
   }
 
-  private Mono<Void> verifyProjectResourceTargets(
+  private Mono<AccessRequest> verifyProjectResourceTargets(
       Method method,
       Object request,
       RequireProjectAccess projectAccess,
@@ -153,11 +156,8 @@ public class AccessVerificationAspect {
       String contextRequesterId = ProjectAccessRequesterContext.requesterIdOrNull(contextView);
       String requesterId = contextRequesterId != null
           ? contextRequesterId
-          : resolveRequesterId(request, contextView);
+          : resolveRequesterId(method, request, projectAccess.requesterId(), contextView);
       if (requesterId == null) {
-        if (environment != null && environment.acceptsProfiles(Profiles.of("test"))) {
-          return Mono.empty();
-        }
         return Mono.error(new IllegalStateException("Project access requester is missing"));
       }
       Map<ProjectAccessResourceRef, Mono<String>> projectIdCache = new HashMap<>();
@@ -169,30 +169,34 @@ public class AccessVerificationAspect {
           .distinct()
           .concatMap(projectId -> accessVerifier.requireProjectAccess(
               projectId, requesterId, projectAccess.role()))
-          .then();
+          .then(Mono.just(new AccessRequest(null, requesterId)));
     });
   }
 
-  private String resolveRequesterId(Object request, ContextView contextView) {
+  private String resolveRequesterId(
+      Method method,
+      Object request,
+      String requesterAccessorName,
+      ContextView contextView) {
     String actorUserId = ErdOperationContexts.metadata(contextView).actorUserIdOr(null);
     if (actorUserId != null) {
       return actorUserId;
     }
     try {
-      Method requesterId = request.getClass().getMethod("requesterId");
+      Method requesterId = request.getClass().getMethod(requesterAccessorName);
       Object value = requesterId.invoke(request);
       return value instanceof String stringValue ? stringValue : null;
     } catch (NoSuchMethodException e) {
       return null;
     } catch (IllegalAccessException e) {
       throw new IllegalStateException(
-          "Access annotation cannot read requesterId accessor on "
-              + request.getClass().getSimpleName(),
+          "Access annotation cannot read requesterId accessor " + requesterAccessorName + " on "
+              + method.getDeclaringClass().getSimpleName() + "#" + method.getName(),
           e);
     } catch (InvocationTargetException e) {
       throw new IllegalStateException(
-          "Access annotation requesterId accessor failed on "
-              + request.getClass().getSimpleName(),
+          "Access annotation requesterId accessor " + requesterAccessorName + " failed on "
+              + method.getDeclaringClass().getSimpleName() + "#" + method.getName(),
           e.getTargetException());
     }
   }

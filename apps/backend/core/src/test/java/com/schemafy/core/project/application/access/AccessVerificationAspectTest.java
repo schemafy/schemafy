@@ -36,7 +36,6 @@ class AccessVerificationAspectTest {
     factory.addAspect(new AccessVerificationAspect(
         accessVerifier,
         new ProjectAccessTargetInference(new ProjectAccessResourceRegistry(List.of())),
-        null,
         null));
     return factory.getProxy();
   }
@@ -49,8 +48,7 @@ class AccessVerificationAspectTest {
     factory.addAspect(new AccessVerificationAspect(
         accessVerifier,
         new ProjectAccessTargetInference(registry),
-        new ErdProjectContextResolver(registry),
-        null));
+        new ErdProjectContextResolver(registry)));
     return factory.getProxy();
   }
 
@@ -179,6 +177,23 @@ class AccessVerificationAspectTest {
         .requireProjectAccess(eq("project-id"), eq("requester-id"), eq(ProjectRole.VIEWER));
   }
 
+  @Test
+  @DisplayName("ERD resource access는 지정한 requester accessor 이름을 사용할 수 있다")
+  void erdResourceAccess_supportsCustomRequesterAccessor() {
+    AccessVerifier verifier = mock(AccessVerifier.class);
+    when(verifier.requireProjectAccess("project-id", "actor-id", ProjectRole.VIEWER))
+        .thenReturn(Mono.empty());
+    TestService proxy = createErdProxy(verifier, new TestService());
+
+    StepVerifier.create(proxy.loadAlternateMemo(
+        new AlternateMemoAccessCommand("memo-id", "actor-id")))
+        .expectNext("alternate-memo")
+        .verifyComplete();
+
+    verify(verifier)
+        .requireProjectAccess(eq("project-id"), eq("actor-id"), eq(ProjectRole.VIEWER));
+  }
+
   static class TestService {
 
     private final AtomicInteger invocations = new AtomicInteger();
@@ -225,6 +240,12 @@ class AccessVerificationAspectTest {
       return Mono.just("memo");
     }
 
+    @RequireProjectAccess(target = "memo:memoId", requesterId = "actorId")
+    public Mono<String> loadAlternateMemo(AlternateMemoAccessCommand command) {
+      invocations.incrementAndGet();
+      return Mono.just("alternate-memo");
+    }
+
   }
 
   static class TestTableResourceResolver implements ProjectAccessResourceResolver {
@@ -260,6 +281,9 @@ class AccessVerificationAspectTest {
   }
 
   record MemoAccessCommand(String memoId, String requesterId) {
+  }
+
+  record AlternateMemoAccessCommand(String memoId, String actorId) {
   }
 
 }

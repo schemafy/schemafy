@@ -92,7 +92,6 @@ class AccessVerificationAspectSpringContextTest {
       return new AccessVerificationAspect(
           accessVerifier,
           new ProjectAccessTargetInference(new ProjectAccessResourceRegistry(List.of())),
-          null,
           null);
     }
 
