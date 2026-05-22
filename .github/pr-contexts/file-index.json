@@ -107,22 +107,28 @@
     376
   ],
   "apps/backend/api/src/main/java/com/schemafy/api/erd/controller/ColumnController.java": [
-    337
+    337,
+    383
   ],
   "apps/backend/api/src/main/java/com/schemafy/api/erd/controller/ConstraintController.java": [
-    337
+    337,
+    383
   ],
   "apps/backend/api/src/main/java/com/schemafy/api/erd/controller/IndexController.java": [
-    337
+    337,
+    383
   ],
   "apps/backend/api/src/main/java/com/schemafy/api/erd/controller/RelationshipController.java": [
-    337
+    337,
+    383
   ],
   "apps/backend/api/src/main/java/com/schemafy/api/erd/controller/SchemaController.java": [
-    337
+    337,
+    383
   ],
   "apps/backend/api/src/main/java/com/schemafy/api/erd/controller/TableController.java": [
-    337
+    337,
+    383
   ],
   "apps/backend/api/src/main/java/com/schemafy/api/erd/controller/dto/response/SchemaResponse.java": [
     337
@@ -497,19 +503,24 @@
     372
   ],
   "apps/backend/core/src/main/java/com/schemafy/core/erd/column/application/service/ChangeColumnNameService.java": [
-    372
+    372,
+    383
   ],
   "apps/backend/core/src/main/java/com/schemafy/core/erd/column/application/service/ChangeColumnTypeService.java": [
-    372
+    372,
+    383
   ],
   "apps/backend/core/src/main/java/com/schemafy/core/erd/constraint/application/service/ChangeConstraintNameService.java": [
-    372
+    372,
+    383
   ],
   "apps/backend/core/src/main/java/com/schemafy/core/erd/index/application/service/ChangeIndexNameService.java": [
-    372
+    372,
+    383
   ],
   "apps/backend/core/src/main/java/com/schemafy/core/erd/index/application/service/ChangeIndexTypeService.java": [
-    372
+    372,
+    383
   ],
   "apps/backend/core/src/main/java/com/schemafy/core/erd/operation/ErdOperationContexts.java": [
     372
@@ -816,11 +827,13 @@
   ],
   "apps/backend/core/src/main/java/com/schemafy/core/erd/constraint/application/service/AddConstraintColumnService.java": [
     375,
-    376
+    376,
+    383
   ],
   "apps/backend/core/src/main/java/com/schemafy/core/erd/constraint/application/service/RemoveConstraintColumnService.java": [
     375,
-    376
+    376,
+    383
   ],
   "apps/backend/core/src/main/java/com/schemafy/core/erd/index/adapter/out/persistence/IndexColumnPersistenceAdapter.java": [
     375
@@ -836,11 +849,13 @@
   ],
   "apps/backend/core/src/main/java/com/schemafy/core/erd/index/application/service/AddIndexColumnService.java": [
     375,
-    376
+    376,
+    383
   ],
   "apps/backend/core/src/main/java/com/schemafy/core/erd/index/application/service/RemoveIndexColumnService.java": [
     375,
-    376
+    376,
+    383
   ],
   "apps/backend/core/src/main/java/com/schemafy/core/erd/operation/application/inverse/AddConstraintColumnInverse.java": [
     375
@@ -1099,28 +1114,35 @@
     382
   ],
   "apps/backend/api/src/main/java/com/schemafy/api/erd/controller/OperationController.java": [
-    376
+    376,
+    383
   ],
   "apps/backend/api/src/test/java/com/schemafy/api/erd/controller/OperationControllerBroadcastTest.java": [
     376
   ],
   "apps/backend/core/src/main/java/com/schemafy/core/erd/column/application/service/CreateColumnService.java": [
-    376
+    376,
+    383
   ],
   "apps/backend/core/src/main/java/com/schemafy/core/erd/column/application/service/DeleteColumnService.java": [
-    376
+    376,
+    383
   ],
   "apps/backend/core/src/main/java/com/schemafy/core/erd/constraint/application/service/CreateConstraintService.java": [
-    376
+    376,
+    383
   ],
   "apps/backend/core/src/main/java/com/schemafy/core/erd/constraint/application/service/DeleteConstraintService.java": [
-    376
+    376,
+    383
   ],
   "apps/backend/core/src/main/java/com/schemafy/core/erd/index/application/service/CreateIndexService.java": [
-    376
+    376,
+    383
   ],
   "apps/backend/core/src/main/java/com/schemafy/core/erd/index/application/service/DeleteIndexService.java": [
-    376
+    376,
+    383
   ],
   "apps/backend/core/src/main/java/com/schemafy/core/erd/operation/application/inverse/ChangeRelationshipKindInverse.java": [
     376
@@ -1175,5 +1197,89 @@
   ],
   "apps/backend/core/src/main/java/com/schemafy/core/erd/table/application/port/out/RestoreTablePort.java": [
     376
+  ],
+  "apps/backend/api/src/main/java/com/schemafy/api/common/security/jwt/JwtAuthenticationFilter.java": [
+    383
+  ],
+  "apps/backend/api/src/main/java/com/schemafy/api/erd/controller/DbVendorController.java": [
+    383
+  ],
+  "apps/backend/api/src/main/java/com/schemafy/api/erd/controller/MemoController.java": [
+    383
+  ],
+  "apps/backend/api/src/main/java/com/schemafy/api/erd/service/memo/MemoApiCommandMapper.java": [
+    383
+  ],
+  "apps/backend/api/src/main/java/com/schemafy/api/erd/service/memo/MemoDeletePermissionPolicy.java": [
+    383
+  ],
+  "apps/backend/api/src/test/java/com/schemafy/api/common/config/JwtAuthenticationFilterTest.java": [
+    383
+  ],
+  "apps/backend/api/src/test/java/com/schemafy/api/common/config/SecurityConfigTest.java": [
+    383
+  ],
+  "apps/backend/api/src/test/java/com/schemafy/api/erd/service/MemoOrchestratorTest.java": [
+    383
+  ],
+  "apps/backend/api/src/test/java/com/schemafy/api/erd/service/memo/MemoApiCommandMapperTest.java": [
+    383
+  ],
+  "apps/backend/core/src/main/java/com/schemafy/core/erd/column/application/service/ChangeColumnMetaService.java": [
+    383
+  ],
+  "apps/backend/core/src/main/java/com/schemafy/core/erd/column/application/service/ChangeColumnPositionService.java": [
+    383
+  ],
+  "apps/backend/core/src/main/java/com/schemafy/core/erd/column/application/service/GetColumnService.java": [
+    383
+  ],
+  "apps/backend/core/src/main/java/com/schemafy/core/erd/column/application/service/GetColumnsByTableIdService.java": [
+    383
+  ],
+  "apps/backend/core/src/main/java/com/schemafy/core/erd/constraint/application/service/ChangeConstraintColumnPositionService.java": [
+    383
+  ],
+  "apps/backend/core/src/main/java/com/schemafy/core/erd/constraint/application/service/ChangeConstraintExpressionService.java": [
+    383
+  ],
+  "apps/backend/core/src/main/java/com/schemafy/core/erd/constraint/application/service/GetConstraintColumnService.java": [
+    383
+  ],
+  "apps/backend/core/src/main/java/com/schemafy/core/erd/constraint/application/service/GetConstraintColumnsByConstraintIdService.java": [
+    383
+  ],
+  "apps/backend/core/src/main/java/com/schemafy/core/erd/constraint/application/service/GetConstraintService.java": [
+    383
+  ],
+  "apps/backend/core/src/main/java/com/schemafy/core/erd/constraint/application/service/GetConstraintsByTableIdService.java": [
+    383
+  ],
+  "apps/backend/core/src/main/java/com/schemafy/core/erd/index/application/service/ChangeIndexColumnPositionService.java": [
+    383
+  ],
+  "apps/backend/core/src/main/java/com/schemafy/core/erd/index/application/service/ChangeIndexColumnSortDirectionService.java": [
+    383
+  ],
+  "apps/backend/core/src/main/java/com/schemafy/core/erd/index/application/service/GetIndexColumnService.java": [
+    383
+  ],
+  "apps/backend/core/src/main/java/com/schemafy/core/erd/index/application/service/GetIndexColumnsByIndexIdService.java": [
+    383
+  ],
+  "apps/backend/core/src/main/java/com/schemafy/core/erd/index/application/service/GetIndexService.java": [
+    383
+  ],
+  "apps/backend/core/src/main/java/com/schemafy/core/erd/index/application/service/GetIndexesByTableIdService.java": [
+    383
+  ],
+  "apps/backend/core/src/main/java/com/schemafy/core/erd/memo/application/port/in/DeleteMemoCommand.java": [
+    383
+  ],
+  "apps/backend/core/src/main/java/com/schemafy/core/erd/memo/application/port/in/DeleteMemoCommentCommand.java": [
+    383
+  ],
+  "apps/backend/core/src/main/java/com/schemafy/core/erd/memo/application/service/CreateMemoCommentService.java": [
+    383
   ]
 }
