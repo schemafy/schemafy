@@ -2,10 +2,15 @@ package com.schemafy.core.project.application.access;
 
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
 import org.springframework.aop.support.AopUtils;
 import org.springframework.core.Ordered;
 import org.springframework.core.annotation.Order;
+import org.springframework.core.env.Environment;
+import org.springframework.core.env.Profiles;
 import org.springframework.stereotype.Component;
 
 import org.aspectj.lang.ProceedingJoinPoint;
@@ -13,9 +18,12 @@ import org.aspectj.lang.annotation.Around;
 import org.aspectj.lang.annotation.Aspect;
 import org.aspectj.lang.reflect.MethodSignature;
 
+import com.schemafy.core.erd.operation.ErdOperationContexts;
+
 import lombok.RequiredArgsConstructor;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
+import reactor.util.context.ContextView;
 
 @Aspect
 @Component
@@ -24,8 +32,12 @@ import reactor.core.publisher.Mono;
 public class AccessVerificationAspect {
 
   private final AccessVerifier accessVerifier;
+  private final ProjectAccessTargetInference targetInference;
+  private final ErdProjectContextResolver erdProjectContextResolver;
+  private final Environment environment;
 
   @Around("@annotation(com.schemafy.core.project.application.access.RequireProjectAccess) || "
+      + "@within(com.schemafy.core.project.application.access.RequireProjectAccess) || "
       + "@annotation(com.schemafy.core.project.application.access.RequireWorkspaceAccess)")
   public Object verifyAccess(ProceedingJoinPoint joinPoint) {
     MethodSignature signature = (MethodSignature) joinPoint.getSignature();
@@ -33,7 +45,7 @@ public class AccessVerificationAspect {
         signature.getMethod(),
         joinPoint.getTarget().getClass());
 
-    RequireProjectAccess projectAccess = method.getAnnotation(RequireProjectAccess.class);
+    RequireProjectAccess projectAccess = resolveProjectAccess(method, joinPoint.getTarget().getClass());
     RequireWorkspaceAccess workspaceAccess = method.getAnnotation(RequireWorkspaceAccess.class);
     if (projectAccess != null && workspaceAccess != null) {
       throw new IllegalStateException(
@@ -68,20 +80,121 @@ public class AccessVerificationAspect {
             + method.getDeclaringClass().getSimpleName() + "#" + method.getName());
   }
 
+  private RequireProjectAccess resolveProjectAccess(Method method, Class<?> targetClass) {
+    RequireProjectAccess methodAccess = method.getAnnotation(RequireProjectAccess.class);
+    if (methodAccess != null) {
+      return methodAccess;
+    }
+    return targetClass.getAnnotation(RequireProjectAccess.class);
+  }
+
   private Mono<Void> buildVerificationChain(
       Method method,
       Object[] args,
       RequireProjectAccess projectAccess,
       RequireWorkspaceAccess workspaceAccess) {
-    return projectAccess != null
-        ? accessVerifier.requireProjectAccess(
-            extractStringValue(method, args, projectAccess.projectId(), "projectId"),
-            extractStringValue(method, args, projectAccess.requesterId(), "requesterId"),
-            projectAccess.role())
-        : accessVerifier.requireWorkspaceAccess(
-            extractStringValue(method, args, workspaceAccess.workspaceId(), "workspaceId"),
-            extractStringValue(method, args, workspaceAccess.requesterId(), "requesterId"),
-            workspaceAccess.role());
+    Object request = extractRequestArgument(method, args);
+    if (projectAccess != null) {
+      List<ProjectAccessTarget> targets = targetInference
+          .resolveTargets(projectAccess, request.getClass());
+      if (!targets.isEmpty()) {
+        return verifyProjectResourceTargets(method, request, projectAccess, targets);
+      }
+      if (targetInference.isErdType(request.getClass())) {
+        return Mono.error(new IllegalStateException(
+            "ERD project access target is missing on "
+                + method.getDeclaringClass().getSimpleName() + "#" + method.getName()));
+      }
+      AccessRequest accessRequest = extractAccessRequest(
+          method,
+          request,
+          projectAccess.projectId(),
+          projectAccess.requesterId(),
+          "projectId");
+      return accessVerifier.requireProjectAccess(
+          accessRequest.resourceId(),
+          accessRequest.requesterId(),
+          projectAccess.role());
+    }
+    AccessRequest accessRequest = extractAccessRequest(
+        method,
+        request,
+        workspaceAccess.workspaceId(),
+        workspaceAccess.requesterId(),
+        "workspaceId");
+    return accessVerifier.requireWorkspaceAccess(
+        accessRequest.resourceId(),
+        accessRequest.requesterId(),
+        workspaceAccess.role());
+  }
+
+  private AccessRequest extractAccessRequest(
+      Method method,
+      Object request,
+      String resourceAccessorName,
+      String requesterAccessorName,
+      String resourceLabel) {
+    return new AccessRequest(
+        extractStringValue(method, request, resourceAccessorName, resourceLabel),
+        extractStringValue(method, request, requesterAccessorName, "requesterId"));
+  }
+
+  private Mono<Void> verifyProjectResourceTargets(
+      Method method,
+      Object request,
+      RequireProjectAccess projectAccess,
+      List<ProjectAccessTarget> targets) {
+    if (erdProjectContextResolver == null) {
+      return Mono.error(new IllegalStateException(
+          "ERD project context resolver is required for "
+              + method.getDeclaringClass().getSimpleName() + "#" + method.getName()));
+    }
+    return Mono.deferContextual(contextView -> {
+      String contextRequesterId = ProjectAccessRequesterContext.requesterIdOrNull(contextView);
+      String requesterId = contextRequesterId != null
+          ? contextRequesterId
+          : resolveRequesterId(request, contextView);
+      if (requesterId == null) {
+        if (environment != null && environment.acceptsProfiles(Profiles.of("test"))) {
+          return Mono.empty();
+        }
+        return Mono.error(new IllegalStateException("Project access requester is missing"));
+      }
+      Map<ProjectAccessResourceRef, Mono<String>> projectIdCache = new HashMap<>();
+      return Flux.fromIterable(targets)
+          .concatMap(target -> erdProjectContextResolver.resolveProjectId(
+              target.type(),
+              extractStringValue(method, request, target.accessorName(), "target"),
+              projectIdCache))
+          .distinct()
+          .concatMap(projectId -> accessVerifier.requireProjectAccess(
+              projectId, requesterId, projectAccess.role()))
+          .then();
+    });
+  }
+
+  private String resolveRequesterId(Object request, ContextView contextView) {
+    String actorUserId = ErdOperationContexts.metadata(contextView).actorUserIdOr(null);
+    if (actorUserId != null) {
+      return actorUserId;
+    }
+    try {
+      Method requesterId = request.getClass().getMethod("requesterId");
+      Object value = requesterId.invoke(request);
+      return value instanceof String stringValue ? stringValue : null;
+    } catch (NoSuchMethodException e) {
+      return null;
+    } catch (IllegalAccessException e) {
+      throw new IllegalStateException(
+          "Access annotation cannot read requesterId accessor on "
+              + request.getClass().getSimpleName(),
+          e);
+    } catch (InvocationTargetException e) {
+      throw new IllegalStateException(
+          "Access annotation requesterId accessor failed on "
+              + request.getClass().getSimpleName(),
+          e.getTargetException());
+    }
   }
 
   @SuppressWarnings("unchecked")
@@ -114,8 +227,7 @@ public class AccessVerificationAspect {
     }
   }
 
-  private String extractStringValue(Method method, Object[] args, String accessorName, String label) {
-    Object request = extractRequestArgument(method, args);
+  private String extractStringValue(Method method, Object request, String accessorName, String label) {
     Method accessor = findAccessor(method, request.getClass(), accessorName, label);
     Object value;
     try {
@@ -159,6 +271,9 @@ public class AccessVerificationAspect {
               + method.getDeclaringClass().getSimpleName() + "#" + method.getName(),
           e);
     }
+  }
+
+  private record AccessRequest(String resourceId, String requesterId) {
   }
 
 }

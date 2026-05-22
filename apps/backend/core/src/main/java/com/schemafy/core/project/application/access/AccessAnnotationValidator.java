@@ -1,6 +1,7 @@
 package com.schemafy.core.project.application.access;
 
 import java.lang.reflect.Method;
+import java.lang.reflect.Modifier;
 
 import org.springframework.aop.support.AopUtils;
 import org.springframework.beans.factory.SmartInitializingSingleton;
@@ -16,6 +17,7 @@ import reactor.core.publisher.Mono;
 class AccessAnnotationValidator implements SmartInitializingSingleton {
 
   private final ApplicationContext applicationContext;
+  private final ProjectAccessTargetInference targetInference;
 
   @Override
   public void afterSingletonsInstantiated() {
@@ -32,8 +34,15 @@ class AccessAnnotationValidator implements SmartInitializingSingleton {
   }
 
   private void validateMethod(Class<?> targetClass, Method method) {
+    RequireProjectAccess classProjectAccess = targetClass.getAnnotation(RequireProjectAccess.class);
     RequireProjectAccess projectAccess = method.getAnnotation(RequireProjectAccess.class);
     RequireWorkspaceAccess workspaceAccess = method.getAnnotation(RequireWorkspaceAccess.class);
+    if (projectAccess == null && classProjectAccess != null) {
+      if (!Modifier.isPublic(method.getModifiers())) {
+        return;
+      }
+      projectAccess = classProjectAccess;
+    }
     if (projectAccess == null && workspaceAccess == null) {
       return;
     }
@@ -59,6 +68,9 @@ class AccessAnnotationValidator implements SmartInitializingSingleton {
 
     Class<?> requestType = method.getParameterTypes()[0];
     if (projectAccess != null) {
+      if (validateProjectResourceAccess(targetClass, method, requestType, projectAccess)) {
+        return;
+      }
       validateStringAccessor(targetClass, method, requestType, projectAccess.projectId(), "projectId");
       validateStringAccessor(targetClass, method, requestType, projectAccess.requesterId(), "requesterId");
     }
@@ -66,6 +78,23 @@ class AccessAnnotationValidator implements SmartInitializingSingleton {
       validateStringAccessor(targetClass, method, requestType, workspaceAccess.workspaceId(), "workspaceId");
       validateStringAccessor(targetClass, method, requestType, workspaceAccess.requesterId(), "requesterId");
     }
+  }
+
+  private boolean validateProjectResourceAccess(
+      Class<?> targetClass,
+      Method method,
+      Class<?> requestType,
+      RequireProjectAccess projectAccess) {
+    var targets = targetInference.resolveTargets(projectAccess, requestType);
+    if (!targets.isEmpty()) {
+      return true;
+    }
+    if (targetInference.isErdType(requestType)) {
+      throw new IllegalStateException(
+          "ERD project access target is missing on "
+              + targetClass.getSimpleName() + "#" + method.getName());
+    }
+    return false;
   }
 
   private void validateStringAccessor(
