@@ -9,6 +9,8 @@ import com.schemafy.core.erd.memo.application.port.out.GetMemoByIdPort;
 import com.schemafy.core.erd.memo.application.port.out.GetMemoCommentsByMemoIdPort;
 import com.schemafy.core.erd.memo.domain.MemoComment;
 import com.schemafy.core.erd.memo.domain.exception.MemoErrorCode;
+import com.schemafy.core.project.application.access.RequireProjectAccess;
+import com.schemafy.core.project.domain.ProjectRole;
 
 import lombok.RequiredArgsConstructor;
 import reactor.core.publisher.Flux;
@@ -16,6 +18,7 @@ import reactor.core.publisher.Mono;
 
 @Service
 @RequiredArgsConstructor
+@RequireProjectAccess(role = ProjectRole.VIEWER)
 class GetMemoCommentsService implements GetMemoCommentsUseCase {
 
   private final GetMemoByIdPort getMemoByIdPort;

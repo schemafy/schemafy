@@ -22,12 +22,15 @@ import com.schemafy.core.erd.relationship.application.port.out.GetRelationshipCo
 import com.schemafy.core.erd.relationship.domain.Relationship;
 import com.schemafy.core.erd.relationship.domain.RelationshipColumn;
 import com.schemafy.core.erd.relationship.domain.exception.RelationshipErrorCode;
+import com.schemafy.core.project.application.access.RequireProjectAccess;
+import com.schemafy.core.project.domain.ProjectRole;
 
 import lombok.RequiredArgsConstructor;
 import reactor.core.publisher.Mono;
 
 @Service
 @RequiredArgsConstructor
+@RequireProjectAccess(role = ProjectRole.EDITOR)
 public class ChangeRelationshipColumnPositionService
     implements ChangeRelationshipColumnPositionUseCase {
 

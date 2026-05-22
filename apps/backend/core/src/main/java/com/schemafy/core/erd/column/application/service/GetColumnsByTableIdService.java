@@ -8,12 +8,15 @@ import com.schemafy.core.erd.column.application.port.in.GetColumnsByTableIdQuery
 import com.schemafy.core.erd.column.application.port.in.GetColumnsByTableIdUseCase;
 import com.schemafy.core.erd.column.application.port.out.GetColumnsByTableIdPort;
 import com.schemafy.core.erd.column.domain.Column;
+import com.schemafy.core.project.application.access.RequireProjectAccess;
+import com.schemafy.core.project.domain.ProjectRole;
 
 import lombok.RequiredArgsConstructor;
 import reactor.core.publisher.Mono;
 
 @Service
 @RequiredArgsConstructor
+@RequireProjectAccess(role = ProjectRole.VIEWER)
 public class GetColumnsByTableIdService implements GetColumnsByTableIdUseCase {
 
   private final GetColumnsByTableIdPort getColumnsByTableIdPort;

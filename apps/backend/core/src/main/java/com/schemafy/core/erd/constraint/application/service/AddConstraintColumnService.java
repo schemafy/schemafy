@@ -30,6 +30,8 @@ import com.schemafy.core.erd.constraint.domain.type.ConstraintKind;
 import com.schemafy.core.erd.constraint.domain.validator.ConstraintValidator;
 import com.schemafy.core.erd.operation.application.service.ErdMutationCoordinator;
 import com.schemafy.core.erd.operation.domain.ErdOperationType;
+import com.schemafy.core.project.application.access.RequireProjectAccess;
+import com.schemafy.core.project.domain.ProjectRole;
 import com.schemafy.core.ulid.application.port.out.UlidGeneratorPort;
 
 import lombok.RequiredArgsConstructor;
@@ -38,6 +40,7 @@ import reactor.core.publisher.Mono;
 
 @Service
 @RequiredArgsConstructor
+@RequireProjectAccess(role = ProjectRole.EDITOR, targets = { "constraint:constraintId", "column:columnId" })
 public class AddConstraintColumnService implements AddConstraintColumnUseCase {
 
   private final TransactionalOperator transactionalOperator;

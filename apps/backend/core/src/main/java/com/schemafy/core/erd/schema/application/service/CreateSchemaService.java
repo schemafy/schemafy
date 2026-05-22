@@ -16,6 +16,8 @@ import com.schemafy.core.erd.schema.application.port.out.CreateSchemaPort;
 import com.schemafy.core.erd.schema.application.port.out.SchemaExistsPort;
 import com.schemafy.core.erd.schema.domain.Schema;
 import com.schemafy.core.erd.schema.domain.exception.SchemaErrorCode;
+import com.schemafy.core.project.application.access.RequireProjectAccess;
+import com.schemafy.core.project.domain.ProjectRole;
 import com.schemafy.core.project.domain.exception.ProjectErrorCode;
 import com.schemafy.core.ulid.application.port.out.UlidGeneratorPort;
 
@@ -24,6 +26,7 @@ import reactor.core.publisher.Mono;
 
 @Service
 @RequiredArgsConstructor
+@RequireProjectAccess(role = ProjectRole.EDITOR)
 class CreateSchemaService implements CreateSchemaUseCase {
 
   private final ActiveProjectExistsPort activeProjectExistsPort;

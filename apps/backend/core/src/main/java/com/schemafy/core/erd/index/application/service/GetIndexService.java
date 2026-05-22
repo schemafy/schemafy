@@ -8,12 +8,15 @@ import com.schemafy.core.erd.index.application.port.in.GetIndexUseCase;
 import com.schemafy.core.erd.index.application.port.out.GetIndexByIdPort;
 import com.schemafy.core.erd.index.domain.Index;
 import com.schemafy.core.erd.index.domain.exception.IndexErrorCode;
+import com.schemafy.core.project.application.access.RequireProjectAccess;
+import com.schemafy.core.project.domain.ProjectRole;
 
 import lombok.RequiredArgsConstructor;
 import reactor.core.publisher.Mono;
 
 @Service
 @RequiredArgsConstructor
+@RequireProjectAccess(role = ProjectRole.VIEWER)
 public class GetIndexService implements GetIndexUseCase {
 
   private final GetIndexByIdPort getIndexByIdPort;

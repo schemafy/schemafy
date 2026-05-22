@@ -25,6 +25,8 @@ import com.schemafy.core.erd.table.application.port.in.DeleteTableUseCase;
 import com.schemafy.core.erd.table.application.port.out.DeleteTablePort;
 import com.schemafy.core.erd.table.application.port.out.GetTableByIdPort;
 import com.schemafy.core.erd.table.domain.exception.TableErrorCode;
+import com.schemafy.core.project.application.access.RequireProjectAccess;
+import com.schemafy.core.project.domain.ProjectRole;
 
 import lombok.RequiredArgsConstructor;
 import reactor.core.publisher.Flux;
@@ -32,6 +34,7 @@ import reactor.core.publisher.Mono;
 
 @Service
 @RequiredArgsConstructor
+@RequireProjectAccess(role = ProjectRole.ADMIN)
 public class DeleteTableService implements DeleteTableUseCase {
 
   private final TransactionalOperator transactionalOperator;

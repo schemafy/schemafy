@@ -8,12 +8,15 @@ import com.schemafy.core.erd.constraint.application.port.in.GetConstraintColumnU
 import com.schemafy.core.erd.constraint.application.port.out.GetConstraintColumnByIdPort;
 import com.schemafy.core.erd.constraint.domain.ConstraintColumn;
 import com.schemafy.core.erd.constraint.domain.exception.ConstraintErrorCode;
+import com.schemafy.core.project.application.access.RequireProjectAccess;
+import com.schemafy.core.project.domain.ProjectRole;
 
 import lombok.RequiredArgsConstructor;
 import reactor.core.publisher.Mono;
 
 @Service
 @RequiredArgsConstructor
+@RequireProjectAccess(role = ProjectRole.VIEWER)
 public class GetConstraintColumnService implements GetConstraintColumnUseCase {
 
   private final GetConstraintColumnByIdPort getConstraintColumnByIdPort;

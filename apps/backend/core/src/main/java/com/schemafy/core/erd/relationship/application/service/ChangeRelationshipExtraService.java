@@ -15,12 +15,15 @@ import com.schemafy.core.erd.relationship.application.port.in.ChangeRelationship
 import com.schemafy.core.erd.relationship.application.port.out.ChangeRelationshipExtraPort;
 import com.schemafy.core.erd.relationship.application.port.out.GetRelationshipByIdPort;
 import com.schemafy.core.erd.relationship.domain.exception.RelationshipErrorCode;
+import com.schemafy.core.project.application.access.RequireProjectAccess;
+import com.schemafy.core.project.domain.ProjectRole;
 
 import lombok.RequiredArgsConstructor;
 import reactor.core.publisher.Mono;
 
 @Service
 @RequiredArgsConstructor
+@RequireProjectAccess(role = ProjectRole.EDITOR)
 public class ChangeRelationshipExtraService implements ChangeRelationshipExtraUseCase {
 
   private final ChangeRelationshipExtraPort changeRelationshipExtraPort;

@@ -18,12 +18,15 @@ import com.schemafy.core.erd.relationship.application.port.out.GetRelationshipBy
 import com.schemafy.core.erd.relationship.application.port.out.RelationshipExistsPort;
 import com.schemafy.core.erd.relationship.domain.exception.RelationshipErrorCode;
 import com.schemafy.core.erd.relationship.domain.validator.RelationshipValidator;
+import com.schemafy.core.project.application.access.RequireProjectAccess;
+import com.schemafy.core.project.domain.ProjectRole;
 
 import lombok.RequiredArgsConstructor;
 import reactor.core.publisher.Mono;
 
 @Service
 @RequiredArgsConstructor
+@RequireProjectAccess(role = ProjectRole.EDITOR)
 public class ChangeRelationshipNameService implements ChangeRelationshipNameUseCase {
 
   private final ChangeRelationshipNamePort changeRelationshipNamePort;

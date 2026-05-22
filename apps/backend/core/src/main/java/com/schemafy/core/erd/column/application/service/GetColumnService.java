@@ -8,12 +8,15 @@ import com.schemafy.core.erd.column.application.port.in.GetColumnUseCase;
 import com.schemafy.core.erd.column.application.port.out.GetColumnByIdPort;
 import com.schemafy.core.erd.column.domain.Column;
 import com.schemafy.core.erd.column.domain.exception.ColumnErrorCode;
+import com.schemafy.core.project.application.access.RequireProjectAccess;
+import com.schemafy.core.project.domain.ProjectRole;
 
 import lombok.RequiredArgsConstructor;
 import reactor.core.publisher.Mono;
 
 @Service
 @RequiredArgsConstructor
+@RequireProjectAccess(role = ProjectRole.VIEWER)
 public class GetColumnService implements GetColumnUseCase {
 
   private final GetColumnByIdPort getColumnByIdPort;

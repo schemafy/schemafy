@@ -41,6 +41,8 @@ import com.schemafy.core.erd.relationship.application.port.out.GetRelationshipCo
 import com.schemafy.core.erd.relationship.application.port.out.GetRelationshipsByPkTableIdPort;
 import com.schemafy.core.erd.relationship.domain.Relationship;
 import com.schemafy.core.erd.relationship.domain.RelationshipColumn;
+import com.schemafy.core.project.application.access.RequireProjectAccess;
+import com.schemafy.core.project.domain.ProjectRole;
 
 import lombok.RequiredArgsConstructor;
 import reactor.core.publisher.Flux;
@@ -48,6 +50,7 @@ import reactor.core.publisher.Mono;
 
 @Service
 @RequiredArgsConstructor
+@RequireProjectAccess(role = ProjectRole.ADMIN)
 public class DeleteColumnService implements DeleteColumnUseCase {
 
   private final TransactionalOperator transactionalOperator;

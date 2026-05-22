@@ -23,6 +23,8 @@ import com.schemafy.core.erd.constraint.domain.type.ConstraintKind;
 import com.schemafy.core.erd.constraint.domain.validator.ConstraintValidator;
 import com.schemafy.core.erd.operation.application.service.ErdMutationCoordinator;
 import com.schemafy.core.erd.operation.domain.ErdOperationType;
+import com.schemafy.core.project.application.access.RequireProjectAccess;
+import com.schemafy.core.project.domain.ProjectRole;
 
 import lombok.RequiredArgsConstructor;
 import reactor.core.publisher.Flux;
@@ -30,6 +32,7 @@ import reactor.core.publisher.Mono;
 
 @Service
 @RequiredArgsConstructor
+@RequireProjectAccess(role = ProjectRole.EDITOR)
 public class ChangeConstraintExpressionService implements
     ChangeConstraintCheckExprUseCase,
     ChangeConstraintDefaultExprUseCase {

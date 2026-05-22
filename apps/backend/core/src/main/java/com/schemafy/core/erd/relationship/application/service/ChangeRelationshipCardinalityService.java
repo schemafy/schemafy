@@ -16,12 +16,15 @@ import com.schemafy.core.erd.relationship.application.port.in.ChangeRelationship
 import com.schemafy.core.erd.relationship.application.port.out.ChangeRelationshipCardinalityPort;
 import com.schemafy.core.erd.relationship.application.port.out.GetRelationshipByIdPort;
 import com.schemafy.core.erd.relationship.domain.exception.RelationshipErrorCode;
+import com.schemafy.core.project.application.access.RequireProjectAccess;
+import com.schemafy.core.project.domain.ProjectRole;
 
 import lombok.RequiredArgsConstructor;
 import reactor.core.publisher.Mono;
 
 @Service
 @RequiredArgsConstructor
+@RequireProjectAccess(role = ProjectRole.EDITOR)
 public class ChangeRelationshipCardinalityService implements ChangeRelationshipCardinalityUseCase {
 
   private final ChangeRelationshipCardinalityPort changeRelationshipCardinalityPort;

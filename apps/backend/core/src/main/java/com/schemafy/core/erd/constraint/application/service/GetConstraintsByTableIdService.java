@@ -8,12 +8,15 @@ import com.schemafy.core.erd.constraint.application.port.in.GetConstraintsByTabl
 import com.schemafy.core.erd.constraint.application.port.in.GetConstraintsByTableIdUseCase;
 import com.schemafy.core.erd.constraint.application.port.out.GetConstraintsByTableIdPort;
 import com.schemafy.core.erd.constraint.domain.Constraint;
+import com.schemafy.core.project.application.access.RequireProjectAccess;
+import com.schemafy.core.project.domain.ProjectRole;
 
 import lombok.RequiredArgsConstructor;
 import reactor.core.publisher.Mono;
 
 @Service
 @RequiredArgsConstructor
+@RequireProjectAccess(role = ProjectRole.VIEWER)
 public class GetConstraintsByTableIdService implements GetConstraintsByTableIdUseCase {
 
   private final GetConstraintsByTableIdPort getConstraintsByTableIdPort;

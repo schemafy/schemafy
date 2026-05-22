@@ -8,12 +8,15 @@ import com.schemafy.core.erd.relationship.application.port.in.GetRelationshipCol
 import com.schemafy.core.erd.relationship.application.port.out.GetRelationshipColumnByIdPort;
 import com.schemafy.core.erd.relationship.domain.RelationshipColumn;
 import com.schemafy.core.erd.relationship.domain.exception.RelationshipErrorCode;
+import com.schemafy.core.project.application.access.RequireProjectAccess;
+import com.schemafy.core.project.domain.ProjectRole;
 
 import lombok.RequiredArgsConstructor;
 import reactor.core.publisher.Mono;
 
 @Service
 @RequiredArgsConstructor
+@RequireProjectAccess(role = ProjectRole.VIEWER)
 public class GetRelationshipColumnService implements GetRelationshipColumnUseCase {
 
   private final GetRelationshipColumnByIdPort getRelationshipColumnByIdPort;

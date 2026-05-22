@@ -9,12 +9,15 @@ import com.schemafy.core.erd.schema.application.port.in.GetSchemaWithRevisionRes
 import com.schemafy.core.erd.schema.application.port.in.GetSchemaWithRevisionUseCase;
 import com.schemafy.core.erd.schema.application.port.out.GetSchemaByIdPort;
 import com.schemafy.core.erd.schema.domain.exception.SchemaErrorCode;
+import com.schemafy.core.project.application.access.RequireProjectAccess;
+import com.schemafy.core.project.domain.ProjectRole;
 
 import lombok.RequiredArgsConstructor;
 import reactor.core.publisher.Mono;
 
 @Service
 @RequiredArgsConstructor
+@RequireProjectAccess(role = ProjectRole.VIEWER)
 public class GetSchemaWithRevisionService implements GetSchemaWithRevisionUseCase {
 
   private final GetSchemaByIdPort getSchemaByIdPort;

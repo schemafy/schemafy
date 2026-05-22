@@ -13,12 +13,15 @@ import com.schemafy.core.erd.schema.application.port.out.ChangeSchemaNamePort;
 import com.schemafy.core.erd.schema.application.port.out.GetSchemaByIdPort;
 import com.schemafy.core.erd.schema.application.port.out.SchemaExistsPort;
 import com.schemafy.core.erd.schema.domain.exception.SchemaErrorCode;
+import com.schemafy.core.project.application.access.RequireProjectAccess;
+import com.schemafy.core.project.domain.ProjectRole;
 
 import lombok.RequiredArgsConstructor;
 import reactor.core.publisher.Mono;
 
 @Service
 @RequiredArgsConstructor
+@RequireProjectAccess(role = ProjectRole.EDITOR)
 public class ChangeSchemaNameService implements ChangeSchemaNameUseCase {
 
   private final ChangeSchemaNamePort changeSchemaNamePort;

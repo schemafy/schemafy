@@ -6,7 +6,6 @@ import java.util.Set;
 import jakarta.validation.Valid;
 
 import org.springframework.beans.factory.ObjectProvider;
-import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PatchMapping;
@@ -79,7 +78,6 @@ public class IndexController {
 
   private final ObjectProvider<ErdMutationBroadcaster> broadcasterProvider;
 
-  @PreAuthorize("hasAnyRole('OWNER','ADMIN','EDITOR')")
   @PostMapping("/indexes")
   public Mono<MutationResponse<IndexResponse>> createIndex(
       @Valid @RequestBody CreateIndexRequest request) {
@@ -98,7 +96,6 @@ public class IndexController {
             result.operation()));
   }
 
-  @PreAuthorize("hasAnyRole('OWNER','ADMIN','EDITOR','COMMENTER','VIEWER')")
   @GetMapping("/indexes/{indexId}")
   public Mono<IndexResponse> getIndex(
       @PathVariable String indexId) {
@@ -107,7 +104,6 @@ public class IndexController {
         .map(IndexResponse::from);
   }
 
-  @PreAuthorize("hasAnyRole('OWNER','ADMIN','EDITOR','COMMENTER','VIEWER')")
   @GetMapping("/tables/{tableId}/indexes")
   public Mono<List<IndexResponse>> getIndexesByTableId(
       @PathVariable String tableId) {
@@ -118,7 +114,6 @@ public class IndexController {
             .toList());
   }
 
-  @PreAuthorize("hasAnyRole('OWNER','ADMIN','EDITOR')")
   @PatchMapping("/indexes/{indexId}/name")
   public Mono<MutationResponse<Void>> changeIndexName(
       @PathVariable String indexId,
@@ -134,7 +129,6 @@ public class IndexController {
             result.affectedTableIds(), result.operation()));
   }
 
-  @PreAuthorize("hasAnyRole('OWNER','ADMIN','EDITOR')")
   @PatchMapping("/indexes/{indexId}/type")
   public Mono<MutationResponse<Void>> changeIndexType(
       @PathVariable String indexId,
@@ -150,7 +144,6 @@ public class IndexController {
             result.affectedTableIds(), result.operation()));
   }
 
-  @PreAuthorize("hasAnyRole('OWNER','ADMIN')")
   @DeleteMapping("/indexes/{indexId}")
   public Mono<MutationResponse<Void>> deleteIndex(
       @PathVariable String indexId) {
@@ -163,7 +156,6 @@ public class IndexController {
             result.affectedTableIds(), result.operation()));
   }
 
-  @PreAuthorize("hasAnyRole('OWNER','ADMIN','EDITOR','COMMENTER','VIEWER')")
   @GetMapping("/indexes/{indexId}/columns")
   public Mono<List<IndexColumnResponse>> getIndexColumns(
       @PathVariable String indexId) {
@@ -174,7 +166,6 @@ public class IndexController {
             .toList());
   }
 
-  @PreAuthorize("hasAnyRole('OWNER','ADMIN','EDITOR')")
   @PostMapping("/indexes/{indexId}/columns")
   public Mono<MutationResponse<AddIndexColumnResponse>> addIndexColumn(
       @PathVariable String indexId,
@@ -194,7 +185,6 @@ public class IndexController {
             result.operation()));
   }
 
-  @PreAuthorize("hasAnyRole('OWNER','ADMIN','EDITOR')")
   @DeleteMapping("/index-columns/{indexColumnId}")
   public Mono<MutationResponse<Void>> removeIndexColumn(
       @PathVariable String indexColumnId) {
@@ -207,7 +197,6 @@ public class IndexController {
             result.affectedTableIds(), result.operation()));
   }
 
-  @PreAuthorize("hasAnyRole('OWNER','ADMIN','EDITOR','COMMENTER','VIEWER')")
   @GetMapping("/index-columns/{indexColumnId}")
   public Mono<IndexColumnResponse> getIndexColumn(
       @PathVariable String indexColumnId) {
@@ -216,7 +205,6 @@ public class IndexController {
         .map(IndexColumnResponse::from);
   }
 
-  @PreAuthorize("hasAnyRole('OWNER','ADMIN','EDITOR')")
   @PatchMapping("/index-columns/{indexColumnId}/position")
   public Mono<MutationResponse<Void>> changeIndexColumnPosition(
       @PathVariable String indexColumnId,
@@ -232,7 +220,6 @@ public class IndexController {
             result.affectedTableIds(), result.operation()));
   }
 
-  @PreAuthorize("hasAnyRole('OWNER','ADMIN','EDITOR')")
   @PatchMapping("/index-columns/{indexColumnId}/sort-direction")
   public Mono<MutationResponse<Void>> changeIndexColumnSortDirection(
       @PathVariable String indexColumnId,
