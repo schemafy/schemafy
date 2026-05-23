@@ -1,0 +1,18 @@
+steps:
+  - name: gcr.io/cloud-builders/docker
+    args:
+      - build
+      - -f
+      - apps/bff/Dockerfile
+      - -t
+      - asia-northeast3-docker.pkg.dev/$PROJECT_ID/schemafy/bff:$_TAG
+      - -t
+      - asia-northeast3-docker.pkg.dev/$PROJECT_ID/schemafy/bff:latest
+      - .
+images:
+  - asia-northeast3-docker.pkg.dev/$PROJECT_ID/schemafy/bff:$_TAG
+  - asia-northeast3-docker.pkg.dev/$PROJECT_ID/schemafy/bff:latest
+options:
+  machineType: E2_HIGHCPU_8
+  logging: CLOUD_LOGGING_ONLY
+timeout: 1200s

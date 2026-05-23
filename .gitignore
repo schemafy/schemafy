@@ -54,3 +54,18 @@ out/
 ### AI Agent ###
 CLAUDE.local.md
 agent-log
+# Terraform
+**/.terraform/
+*.tfstate
+*.tfstate.*
+*.tfplan
+infra/terraform/tfplan
+crash.log
+crash.*.log
+infra/terraform/terraform.tfvars
+override.tf
+override.tf.json
+*_override.tf
+*_override.tf.json
+.terraformrc
+terraform.rc

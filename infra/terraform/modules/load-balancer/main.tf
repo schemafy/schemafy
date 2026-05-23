@@ -52,7 +52,8 @@ resource "google_compute_backend_service" "api" {
   name                  = "${var.name_prefix}-api-backend"
   protocol              = "HTTPS"
   load_balancing_scheme = "EXTERNAL_MANAGED"
-  timeout_sec           = 60
+  # timeout_sec is not supported for serverless NEGs; Cloud Run controls
+  # request timeout at the service level.
 
   backend {
     group = google_compute_region_network_endpoint_group.api.id
@@ -69,8 +70,7 @@ resource "google_compute_backend_service" "bff" {
   name                  = "${var.name_prefix}-bff-backend"
   protocol              = "HTTPS"
   load_balancing_scheme = "EXTERNAL_MANAGED"
-  # WebSocket sessions need long-running connections.
-  timeout_sec = 3600
+  # WebSocket sessions ride on Cloud Run's request_timeout (3600s).
 
   backend {
     group = google_compute_region_network_endpoint_group.bff.id

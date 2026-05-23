@@ -65,19 +65,8 @@ resource "google_cloud_run_v2_service" "this" {
         initial_delay_seconds = 5
         period_seconds        = 5
         timeout_seconds       = 3
-        failure_threshold     = 30
-        http_get {
-          path = var.health_check_path
-          port = var.port
-        }
-      }
-
-      liveness_probe {
-        period_seconds    = 30
-        timeout_seconds   = 5
-        failure_threshold = 3
-        http_get {
-          path = var.health_check_path
+        failure_threshold     = 60
+        tcp_socket {
           port = var.port
         }
       }

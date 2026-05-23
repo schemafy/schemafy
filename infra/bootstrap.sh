@@ -27,6 +27,7 @@ gcloud services enable \
   iamcredentials.googleapis.com \
   sts.googleapis.com \
   storage.googleapis.com \
+  cloudbuild.googleapis.com \
   --project="$PROJECT_ID"
 
 echo ">> Creating Terraform state bucket gs://$STATE_BUCKET (if absent)"
