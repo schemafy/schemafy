@@ -101,6 +101,14 @@ resource "google_compute_url_map" "https" {
       service = google_compute_backend_service.api.id
     }
 
+    # Backend HMAC filter only skips signatures for paths under /public/api/.
+    # Route the public auth/OAuth surface directly so login/signup/refresh and
+    # the GitHub OAuth callback can reach the backend without HMAC headers.
+    path_rule {
+      paths   = ["/public", "/public/*"]
+      service = google_compute_backend_service.api.id
+    }
+
     path_rule {
       paths   = ["/bff", "/bff/*"]
       service = google_compute_backend_service.bff.id

@@ -13,7 +13,7 @@ locals {
     DB_USER                      = "schemafy"
     REDIS_PORT                   = "6379"
     REDIS_ENABLED                = "true"
-    GITHUB_REDIRECT_URI          = var.domain != "" ? "https://${var.domain}/api/public/api/v1.0/oauth/github/callback" : ""
+    GITHUB_REDIRECT_URI          = var.domain != "" ? "https://${var.domain}/public/api/v1.0/oauth/github/callback" : ""
     GITHUB_FRONTEND_CALLBACK_URL = var.domain != "" ? "https://${var.domain}/oauth/callback" : ""
     FRONTEND_URL                 = var.domain != "" ? "https://${var.domain}" : ""
     JWT_ALLOWED_ORIGINS          = var.domain != "" ? "https://${var.domain}" : ""
