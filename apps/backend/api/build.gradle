@@ -107,9 +107,9 @@ tasks.named('asciidoctor') {
 	attributes 'snippets': snippetsDir
 }
 
-// Production 빌드: DDL 포함 X
+// Production 빌드: H2용 DDL만 제외 (MariaDB DDL은 schema init용으로 포함)
 tasks.named('bootJar') {
-	exclude('ddl/**')
+	exclude('ddl/h2/**')
 }
 
 tasks.named('bootRun') {

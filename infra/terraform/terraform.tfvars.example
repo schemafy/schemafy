@@ -1,0 +1,18 @@
+project_id  = "your-gcp-project-id"
+region      = "asia-northeast3"
+zone        = "asia-northeast3-a"
+name_prefix = "schemafy"
+
+# Set domain after acquiring it. Leave empty for IP-only deploys (no managed cert).
+domain          = ""
+manage_dns_zone = false
+
+# GitHub repo that may deploy via Workload Identity Federation.
+github_repo = "yan-su/schemafy"
+github_ref  = "refs/heads/main"
+
+# Container images. For the first apply, leave defaults (placeholder). After CI
+# builds and pushes real images, update these and re-apply, or let GitHub Actions
+# deploy revisions directly (Terraform ignores image drift via lifecycle.ignore_changes).
+# bff_image = "asia-northeast3-docker.pkg.dev/<project>/schemafy/bff:latest"
+# api_image = "asia-northeast3-docker.pkg.dev/<project>/schemafy/api:latest"

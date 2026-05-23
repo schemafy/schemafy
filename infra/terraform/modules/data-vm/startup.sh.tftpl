@@ -1,0 +1,83 @@
+#!/bin/bash
+set -euxo pipefail
+
+DATA_DIR=/var/lib/schemafy
+DISK_DEV=/dev/disk/by-id/google-${data_disk_name}
+
+# Wait for the attached data disk device node to appear.
+for i in $(seq 1 30); do [ -e "$DISK_DEV" ] && break; sleep 2; done
+
+# Format only if uninitialized, then mount.
+if ! blkid "$DISK_DEV" >/dev/null 2>&1; then
+  mkfs.ext4 -F "$DISK_DEV"
+fi
+mkdir -p "$DATA_DIR"
+if ! mountpoint -q "$DATA_DIR"; then
+  mount "$DISK_DEV" "$DATA_DIR"
+fi
+grep -q "$DATA_DIR" /etc/fstab || echo "$DISK_DEV $DATA_DIR ext4 defaults,nofail 0 2" >> /etc/fstab
+mkdir -p "$DATA_DIR/mariadb" "$DATA_DIR/redis"
+
+export DEBIAN_FRONTEND=noninteractive
+apt-get update
+apt-get install -y ca-certificates curl gnupg
+
+# Install Docker if missing.
+if ! command -v docker >/dev/null 2>&1; then
+  install -m 0755 -d /etc/apt/keyrings
+  curl -fsSL https://download.docker.com/linux/ubuntu/gpg | gpg --dearmor -o /etc/apt/keyrings/docker.gpg
+  chmod a+r /etc/apt/keyrings/docker.gpg
+  . /etc/os-release
+  echo "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.gpg] https://download.docker.com/linux/ubuntu $${VERSION_CODENAME} stable" \
+    > /etc/apt/sources.list.d/docker.list
+  apt-get update
+  apt-get install -y docker-ce docker-ce-cli containerd.io docker-compose-plugin
+  systemctl enable --now docker
+fi
+
+# Fetch DB credentials from VM metadata (set by Terraform).
+META=http://metadata.google.internal/computeMetadata/v1/instance/attributes
+DB_PASSWORD=$(curl -fsS -H "Metadata-Flavor: Google" "$META/db-password")
+DB_ROOT_PASSWORD=$(curl -fsS -H "Metadata-Flavor: Google" "$META/db-root-password")
+
+cat > "$DATA_DIR/docker-compose.yml" <<COMPOSE
+services:
+  mariadb:
+    image: mariadb:11.4
+    container_name: schemafy-mariadb
+    restart: unless-stopped
+    environment:
+      MARIADB_DATABASE: ${db_name}
+      MARIADB_USER: ${db_user}
+      MARIADB_PASSWORD: "$${DB_PASSWORD}"
+      MARIADB_ROOT_PASSWORD: "$${DB_ROOT_PASSWORD}"
+      TZ: Asia/Seoul
+    ports:
+      - "3306:3306"
+    volumes:
+      - $DATA_DIR/mariadb:/var/lib/mysql
+    healthcheck:
+      test: ["CMD", "healthcheck.sh", "--connect", "--innodb_initialized"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 30s
+
+  redis:
+    image: redis:8.4-alpine
+    container_name: schemafy-redis
+    restart: unless-stopped
+    ports:
+      - "6379:6379"
+    volumes:
+      - $DATA_DIR/redis:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+COMPOSE
+
+export DB_PASSWORD DB_ROOT_PASSWORD
+cd "$DATA_DIR"
+docker compose up -d
