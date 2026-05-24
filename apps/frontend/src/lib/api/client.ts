@@ -14,6 +14,8 @@ const PUBLIC_BASE_URL: string =
   import.meta.env.VITE_PUBLIC_BASE_URL ||
   'http://localhost:8080/public/api/v1.0';
 
+export type ErrorPolicy = 'default' | 'suppress-toast' | 'bypass';
+
 const commonConfig = {
   timeout: 10000,
   headers: {
@@ -46,7 +48,7 @@ export const publicClient = axios.create({
 type RequestConfigMeta = {
   _retry?: boolean;
   _skipAuth?: boolean;
-  _skipErrorHandler?: boolean;
+  errorPolicy?: ErrorPolicy;
 };
 
 export type RequestConfigWithMeta = AxiosRequestConfig & RequestConfigMeta;
@@ -56,19 +58,19 @@ type InternalRequestConfigWithMeta = InternalAxiosRequestConfig &
 
 apiClient.interceptors.request.use(
   async (config: InternalRequestConfigWithMeta) => {
-  const currentToken = authStore.accessToken;
-  if (currentToken) {
-    (config.headers as Record<string, string>)['Authorization'] =
-      `Bearer ${currentToken}`;
-    return config;
-  }
+    const currentToken = authStore.accessToken;
+    if (currentToken) {
+      (config.headers as Record<string, string>)['Authorization'] =
+        `Bearer ${currentToken}`;
+      return config;
+    }
 
-  const newToken = await refreshToken();
-  if (newToken) {
-    (config.headers as Record<string, string>)['Authorization'] =
-      `Bearer ${newToken}`;
-  }
-  return config;
+    const newToken = await refreshToken();
+    if (newToken) {
+      (config.headers as Record<string, string>)['Authorization'] =
+        `Bearer ${newToken}`;
+    }
+    return config;
   },
 );
 
@@ -98,18 +100,22 @@ apiClient.interceptors.response.use(
 
 apiClient.interceptors.response.use((response) => response, (error) => {
   const config = error.config as InternalRequestConfigWithMeta | undefined;
-  if (config?._skipErrorHandler) {
+  if (config?.errorPolicy === 'bypass') {
     return Promise.reject(error);
   }
 
-  return handleApiError(error);
+  return handleApiError(error, {
+    suppressToast: config?.errorPolicy === 'suppress-toast',
+  });
 });
 
 publicClient.interceptors.response.use((response) => response, (error) => {
   const config = error.config as RequestConfigWithMeta | undefined;
-  if (config?._skipErrorHandler) {
+  if (config?.errorPolicy === 'bypass') {
     return Promise.reject(error);
   }
 
-  return handleApiError(error);
+  return handleApiError(error, {
+    suppressToast: config?.errorPolicy === 'suppress-toast',
+  });
 });

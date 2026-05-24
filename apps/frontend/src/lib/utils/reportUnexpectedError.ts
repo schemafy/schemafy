@@ -1,11 +1,9 @@
 import { isAxiosError } from 'axios';
 import { toast } from 'sonner';
 
-interface ReportUnexpectedErrorOptions {
-  allowAxios?: boolean;
+interface ReportErrorOptions {
   context?: string;
   userMessage?: string;
-  toastForUnhandledAxios?: boolean;
 }
 
 type HandledAxiosError = {
@@ -31,26 +29,11 @@ const toError = (error: unknown, context?: string) => {
   return new Error(message);
 };
 
-export const reportUnexpectedError = (
+const emitError = (
   error: unknown,
-  options: ReportUnexpectedErrorOptions = {},
+  options: ReportErrorOptions = {},
 ) => {
-  const {
-    allowAxios = false,
-    context,
-    userMessage,
-    toastForUnhandledAxios = false,
-  } = options;
-
-  if (isAxiosError(error) && !allowAxios) {
-    const handledByApiError = (error as HandledAxiosError).__handledByApiError;
-
-    if (!handledByApiError && toastForUnhandledAxios && userMessage) {
-      toast.error(userMessage);
-    }
-
-    return;
-  }
+  const { context, userMessage } = options;
 
   const errorToReport = toError(error, context);
   const reportErrorFn = (globalThis as { reportError?: (error: Error) => void })
@@ -63,4 +46,25 @@ export const reportUnexpectedError = (
   if (userMessage) {
     toast.error(userMessage);
   }
+};
+
+export const reportError = (
+  error: unknown,
+  options: ReportErrorOptions = {},
+) => {
+  emitError(error, options);
+};
+
+export const reportUnexpectedError = (
+  error: unknown,
+  options: ReportErrorOptions = {},
+) => {
+  if (
+    isAxiosError(error) &&
+    (error as HandledAxiosError).__handledByApiError
+  ) {
+    return;
+  }
+
+  emitError(error, options);
 };

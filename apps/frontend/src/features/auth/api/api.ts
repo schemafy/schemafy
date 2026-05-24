@@ -2,6 +2,7 @@ import type { AxiosResponse } from 'axios';
 import {
   apiClient,
   publicClient,
+  type ErrorPolicy,
   type RequestConfigWithMeta,
 } from '@/lib/api/client';
 import type { SignInRequest, SignUpRequest, AuthResponse } from './types';
@@ -38,15 +39,19 @@ export const signIn = async (data: SignInRequest): Promise<AuthResponse> => {
 };
 
 export const refreshToken = async (
-  options: { silent?: boolean } = {},
+  options: { errorPolicy?: ErrorPolicy } = {},
 ): Promise<string> => {
   if (!refreshPromise) {
     refreshPromise = (async () => {
       try {
-        const config: RequestConfigWithMeta | undefined = options.silent
-          ? { _skipErrorHandler: true }
+        const config: RequestConfigWithMeta | undefined = options.errorPolicy
+          ? { errorPolicy: options.errorPolicy }
           : undefined;
-        const response = await publicClient.post('/users/refresh', undefined, config);
+        const response = await publicClient.post(
+          '/users/refresh',
+          undefined,
+          config,
+        );
         return handleTokenResponse(response);
       } catch (error) {
         authStore.clearAuth();

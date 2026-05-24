@@ -2,11 +2,15 @@ import { isAxiosError } from 'axios';
 import { toast } from 'sonner';
 import { ErrorCategory, type ApiError, type ErrorResponseData } from './types';
 import { getErrorMessage } from './error-messages';
-import { reportUnexpectedError } from '@/lib';
+import { reportError } from '@/lib';
 
 type HandledAxiosError = {
   __handledByApiError?: boolean;
 };
+
+interface HandleApiErrorOptions {
+  suppressToast?: boolean;
+}
 
 const isApiError = (data: ErrorResponseData): data is ApiError =>
   'category' in data && typeof data.category === 'string';
@@ -16,7 +20,12 @@ const extractCode = (data: ErrorResponseData): string | undefined => {
   return data.reason;
 };
 
-export const handleApiError = (error: unknown): Promise<never> => {
+export const handleApiError = (
+  error: unknown,
+  options: HandleApiErrorOptions = {},
+): Promise<never> => {
+  const { suppressToast = false } = options;
+
   if (!isAxiosError<ErrorResponseData>(error)) {
     return Promise.reject(error);
   }
@@ -27,7 +36,12 @@ export const handleApiError = (error: unknown): Promise<never> => {
 
   if (!errorData) {
     const { message } = getErrorMessage('NETWORK_ERROR');
-    toast.error(message);
+    reportError(error, {
+      context: '[Network API Error]',
+    });
+    if (!suppressToast) {
+      toast.error(message);
+    }
     return Promise.reject(error);
   }
 
@@ -40,22 +54,27 @@ export const handleApiError = (error: unknown): Promise<never> => {
 
   switch (category) {
     case ErrorCategory.SILENT:
-      reportUnexpectedError(error, {
-        allowAxios: true,
+      reportError(error, {
         context: '[Silent API Error]',
       });
       break;
 
     case ErrorCategory.USER_FEEDBACK:
-      toast.error(message);
+      if (!suppressToast) {
+        toast.error(message);
+      }
       break;
 
     case ErrorCategory.AUTO_HANDLE:
-      toast.info(message);
+      if (!suppressToast) {
+        toast.info(message);
+      }
       break;
 
     default:
-      toast.error(message);
+      if (!suppressToast) {
+        toast.error(message);
+      }
   }
 
   return Promise.reject(error);
