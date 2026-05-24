@@ -54,14 +54,36 @@ export type SameDirectionControlPoints = {
   controlPoint1: Point;
 };
 
+export type AnchorSide = 'top' | 'right' | 'bottom' | 'left';
+
+export type FloatingAnchor = {
+  mode: 'floating';
+};
+
+export type FixedAnchor = {
+  mode: 'fixed';
+  side: AnchorSide;
+  ratio: number;
+};
+
+export type RelationshipAnchor = FloatingAnchor | FixedAnchor;
+
+export type EndpointAnchor = {
+  fkAnchor?: RelationshipAnchor;
+  pkAnchor?: RelationshipAnchor;
+};
+
 export type RelationshipExtra = {
   fkHandle?: string;
   pkHandle?: string;
-} & Partial<CrossDirectionControlPoints>;
+} & EndpointAnchor &
+  Partial<CrossDirectionControlPoints>;
 
 export interface EdgeData extends Record<string, unknown> {
   relationshipType: RelationshipType;
   isNonIdentifying: boolean;
+  fkAnchor?: RelationshipAnchor;
+  pkAnchor?: RelationshipAnchor;
   controlPoint1?: Point;
   controlPoint2?: Point;
   onControlPointDragEnd?: (
