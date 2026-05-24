@@ -15,12 +15,12 @@ import {
   SignUpPage,
   WorkspacePage,
 } from '@/pages';
-import type { authStore } from '@/store/auth.store';
+import type { AuthStore } from '@/store/auth.store';
 import { ensureAuthInitialized } from '@/features/auth/lib/auth-bootstrap';
 
 export interface RouterContext {
   queryClient: QueryClient;
-  auth: typeof authStore;
+  auth: AuthStore;
 }
 
 type SignInSearch = {

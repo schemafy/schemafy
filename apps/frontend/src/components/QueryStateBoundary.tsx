@@ -29,7 +29,7 @@ export const QueryStateBoundary = <TData,>({
     return <LoadingState className="min-h-full" label={loadingLabel} />;
   }
 
-  if (isError || !data) {
+  if (isError || data === undefined) {
     return (
       <div className="flex w-full min-h-full flex-col justify-center items-center gap-3">
         <p className="text-sm text-schemafy-dark-gray">{errorMessage}</p>
