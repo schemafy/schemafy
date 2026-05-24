@@ -1,7 +1,7 @@
 import { makeAutoObservable } from 'mobx';
 import type { AuthResponse } from '@/features/auth/api';
 
-class AuthStore {
+export class AuthStore {
   accessToken: string | null = null;
   user: AuthResponse | null = null;
   isAuthLoading: boolean = false;

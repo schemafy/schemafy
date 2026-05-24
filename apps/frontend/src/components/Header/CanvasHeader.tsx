@@ -5,8 +5,11 @@ import { ExportContents } from './contents/ExportContents';
 import { ShareContents } from './contents/ShareContents';
 import { VersionsContents } from './contents/VersionContents';
 import { SettingsContents } from './contents/SettingsContents';
+import { useParams } from '@tanstack/react-router';
 
-export const CanvasHeader = ({ projectId }: { projectId: string }) => {
+export const CanvasHeader = () => {
+  const { projectId } = useParams({ from: '/project/$projectId' });
+
   return (
     <div className="flex items-center gap-9">
       <ImportContents />

@@ -1,25 +1,31 @@
 import { authStore } from '@/store/auth.store';
-import { Button } from '../Button';
+import { Button, ButtonLink } from '../Button';
 import { Avatar } from '../Avatar';
 import { NotificationContents } from './contents/NotificationContents';
 import { logout } from '@/features/auth/api';
+import { clearAuthSession } from '@/features/auth/lib/auth-session';
+import { useNavigate } from '@tanstack/react-router';
+import { toast } from 'sonner';
 
 export const DashboardHeader = () => {
+  const navigate = useNavigate();
+
   const handleLogout = async () => {
     try {
       await logout();
-      authStore.clearAuth();
-    } catch (error) {
-      console.error('Failed to sign out', error);
+      clearAuthSession();
+      await navigate({ to: '/signin', search: { oauthError: null } });
+    } catch {
+      toast.error('Failed to sign out. Please try again.');
     }
   };
 
   return (
     <div className="flex items-center justify-end gap-5 w-full">
       <div className="flex items-center gap-9 ml-8">
-        <Button to="/workspace" variant={'none'} size={'none'}>
+        <ButtonLink to="/workspace" variant={'none'} size={'none'}>
           Projects
-        </Button>
+        </ButtonLink>
         <Button variant={'none'} size={'none'}>
           Settings
         </Button>
@@ -27,9 +33,9 @@ export const DashboardHeader = () => {
       </div>
       <div className="flex items-center gap-4">
         <div className="flex gap-2">
-          <Button round to="/workspace">
+          <ButtonLink round to="/workspace">
             New Project
-          </Button>
+          </ButtonLink>
           <Button variant={'secondary'} round onClick={handleLogout}>
             Sign Out
           </Button>
