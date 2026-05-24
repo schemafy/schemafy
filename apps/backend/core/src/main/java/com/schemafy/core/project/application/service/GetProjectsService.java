@@ -3,12 +3,14 @@ package com.schemafy.core.project.application.service;
 import org.springframework.stereotype.Service;
 
 import com.schemafy.core.common.PageResult;
+import com.schemafy.core.project.application.access.RequireWorkspaceAccess;
 import com.schemafy.core.project.application.port.in.GetProjectsQuery;
 import com.schemafy.core.project.application.port.in.GetProjectsUseCase;
 import com.schemafy.core.project.application.port.in.ProjectSummary;
 import com.schemafy.core.project.application.port.out.ProjectMemberPort;
 import com.schemafy.core.project.application.port.out.ProjectPort;
 import com.schemafy.core.project.domain.ProjectRole;
+import com.schemafy.core.project.domain.WorkspaceRole;
 
 import lombok.RequiredArgsConstructor;
 import reactor.core.publisher.Flux;
@@ -20,34 +22,32 @@ class GetProjectsService implements GetProjectsUseCase {
 
   private final ProjectPort projectPort;
   private final ProjectMemberPort projectMemberPort;
-  private final ProjectAccessHelper projectAccessHelper;
 
   @Override
+  @RequireWorkspaceAccess(role = WorkspaceRole.MEMBER)
   public Mono<PageResult<ProjectSummary>> getProjects(GetProjectsQuery query) {
-    return projectAccessHelper.validateWorkspaceMember(query.workspaceId(),
-        query.requesterId())
-        .then(Mono.defer(() -> {
-          int offset = query.page() * query.size();
-          return projectMemberPort.countByWorkspaceIdAndUserId(
-              query.workspaceId(),
-              query.requesterId())
-              .flatMap(totalElements -> Mono.zip(
-                  projectPort.findByWorkspaceIdAndUserIdWithPaging(
-                      query.workspaceId(), query.requesterId(), query.size(),
-                      offset)
-                      .collectList(),
-                  projectMemberPort.findRolesByWorkspaceIdAndUserIdWithPaging(
-                      query.workspaceId(), query.requesterId(), query.size(),
-                      offset)
-                      .collectList())
-                  .flatMap(tuple -> Flux.range(0, tuple.getT1().size())
-                      .map(index -> new ProjectSummary(
-                          tuple.getT1().get(index),
-                          ProjectRole.fromString(tuple.getT2().get(index))))
-                      .collectList()
-                      .map(content -> PageResult.of(content, query.page(),
-                          query.size(), totalElements))));
-        }));
+    return Mono.defer(() -> {
+      int offset = query.page() * query.size();
+      return projectMemberPort.countByWorkspaceIdAndUserId(
+          query.workspaceId(),
+          query.requesterId())
+          .flatMap(totalElements -> Mono.zip(
+              projectPort.findByWorkspaceIdAndUserIdWithPaging(
+                  query.workspaceId(), query.requesterId(), query.size(),
+                  offset)
+                  .collectList(),
+              projectMemberPort.findRolesByWorkspaceIdAndUserIdWithPaging(
+                  query.workspaceId(), query.requesterId(), query.size(),
+                  offset)
+                  .collectList())
+              .flatMap(tuple -> Flux.range(0, tuple.getT1().size())
+                  .map(index -> new ProjectSummary(
+                      tuple.getT1().get(index),
+                      ProjectRole.fromString(tuple.getT2().get(index))))
+                  .collectList()
+                  .map(content -> PageResult.of(content, query.page(),
+                      query.size(), totalElements))));
+    });
   }
 
 }

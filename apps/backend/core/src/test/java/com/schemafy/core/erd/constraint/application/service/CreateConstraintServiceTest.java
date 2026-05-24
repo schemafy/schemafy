@@ -1,5 +1,6 @@
 package com.schemafy.core.erd.constraint.application.service;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
@@ -30,6 +31,7 @@ import com.schemafy.core.erd.constraint.domain.ConstraintColumn;
 import com.schemafy.core.erd.constraint.domain.exception.ConstraintErrorCode;
 import com.schemafy.core.erd.constraint.domain.type.ConstraintKind;
 import com.schemafy.core.erd.constraint.fixture.ConstraintFixture;
+import com.schemafy.core.erd.operation.application.service.StructuralSnapshotService;
 import com.schemafy.core.erd.table.application.port.out.GetTableByIdPort;
 import com.schemafy.core.erd.table.domain.Table;
 import com.schemafy.core.erd.table.domain.exception.TableErrorCode;
@@ -38,6 +40,7 @@ import com.schemafy.core.ulid.application.port.out.UlidGeneratorPort;
 import reactor.core.publisher.Mono;
 import reactor.test.StepVerifier;
 
+import static com.schemafy.core.erd.operation.application.service.StructuralSnapshotServiceTestSupport.stubEmptySnapshots;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
@@ -81,6 +84,9 @@ class CreateConstraintServiceTest {
   @Mock
   TransactionalOperator transactionalOperator;
 
+  @Mock
+  StructuralSnapshotService structuralSnapshotService;
+
   @InjectMocks
   CreateConstraintService sut;
 
@@ -88,6 +94,7 @@ class CreateConstraintServiceTest {
   void setUpTransaction() {
     given(transactionalOperator.transactional(any(Mono.class)))
         .willAnswer(invocation -> invocation.getArgument(0));
+    stubEmptySnapshots(structuralSnapshotService);
   }
 
   @Nested
@@ -179,7 +186,7 @@ class CreateConstraintServiceTest {
               new CreateConstraintColumnCommand("col2", null)));
       var table = createTable("table1", "schema1");
       var tableColumns = List.of(ColumnFixture.columnWithId("col1"), ColumnFixture.columnWithId("col2"));
-      List<ConstraintColumn> capturedColumns = new java.util.ArrayList<>();
+      List<ConstraintColumn> capturedColumns = new ArrayList<>();
 
       given(getTableByIdPort.findTableById(command.tableId())).willReturn(Mono.just(table));
       given(constraintExistsPort.existsBySchemaIdAndName("schema1", "uq_auto"))

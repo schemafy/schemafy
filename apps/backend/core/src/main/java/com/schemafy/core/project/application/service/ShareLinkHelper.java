@@ -3,11 +3,9 @@ package com.schemafy.core.project.application.service;
 import org.springframework.stereotype.Component;
 
 import com.schemafy.core.common.exception.DomainException;
-import com.schemafy.core.project.application.port.out.ProjectMemberPort;
 import com.schemafy.core.project.application.port.out.ProjectPort;
 import com.schemafy.core.project.application.port.out.ShareLinkPort;
 import com.schemafy.core.project.domain.Project;
-import com.schemafy.core.project.domain.ProjectMember;
 import com.schemafy.core.project.domain.ShareLink;
 import com.schemafy.core.project.domain.exception.ProjectErrorCode;
 import com.schemafy.core.project.domain.exception.ShareLinkErrorCode;
@@ -21,7 +19,6 @@ class ShareLinkHelper {
 
   private final ShareLinkPort shareLinkPort;
   private final ProjectPort projectPort;
-  private final ProjectMemberPort projectMemberPort;
 
   Mono<ShareLink> validateShareLinkAccessible(ShareLink shareLink) {
     if (Boolean.TRUE.equals(shareLink.getIsRevoked()) || shareLink.isExpired()) {
@@ -42,17 +39,6 @@ class ShareLinkHelper {
     return projectPort.findByIdAndNotDeleted(projectId)
         .switchIfEmpty(Mono.error(
             new DomainException(ProjectErrorCode.NOT_FOUND)));
-  }
-
-  Mono<Void> validateAdminAccess(String projectId, String userId) {
-    return projectMemberPort
-        .findByProjectIdAndUserIdAndNotDeleted(projectId, userId)
-        .switchIfEmpty(Mono.error(
-            new DomainException(ProjectErrorCode.ACCESS_DENIED)))
-        .filter(ProjectMember::isAdmin)
-        .switchIfEmpty(Mono.error(
-            new DomainException(ProjectErrorCode.ADMIN_REQUIRED)))
-        .then();
   }
 
 }

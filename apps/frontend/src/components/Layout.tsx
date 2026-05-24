@@ -1,5 +1,5 @@
 import type { PropsWithChildren } from 'react';
-import { useLocation } from 'react-router-dom';
+import { matchPath, useLocation } from 'react-router-dom';
 import { cn } from '@/lib';
 import { Header } from './Header';
 import { Footer } from './Footer';
@@ -7,12 +7,14 @@ import { Toaster } from './Toaster';
 
 export const Layout = ({ children }: PropsWithChildren) => {
   const location = useLocation();
-  const isCanvasPage = location.pathname === '/canvas';
+  const isCanvasPage = location.pathname.startsWith('/canvas');
   const isWorkspacePage = location.pathname.startsWith('/workspace');
+  const canvasMatch = matchPath('/canvas/:projectId', location.pathname);
+  const projectId = canvasMatch?.params.projectId ?? '';
 
   return (
     <div className="layout flex flex-col min-h-screen bg-schemafy-bg w-full items-center">
-      <Header isCanvasPage={isCanvasPage} />
+      <Header isCanvasPage={isCanvasPage} projectId={projectId} />
       <main
         className={cn(
           'flex-grow w-full flex',

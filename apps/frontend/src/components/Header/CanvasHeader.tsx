@@ -6,12 +6,12 @@ import { ShareContents } from './contents/ShareContents';
 import { VersionsContents } from './contents/VersionContents';
 import { SettingsContents } from './contents/SettingsContents';
 
-export const CanvasHeader = () => {
+export const CanvasHeader = ({ projectId }: { projectId: string }) => {
   return (
     <div className="flex items-center gap-9">
       <ImportContents />
       <ExportContents />
-      <ShareContents />
+      <ShareContents projectId={projectId} />
       <VersionsContents />
       <SettingsContents />
       <Button variant={'secondary'} round>

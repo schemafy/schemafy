@@ -4,7 +4,7 @@ import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
 
 // https://vite.dev/config/
-export default defineConfig(({ command }) => {
+export default defineConfig(({command}) => {
   const isDev = command === 'serve';
   const aliases: Record<string, string> = {
     '@': path.resolve(__dirname, './src'),
@@ -14,6 +14,7 @@ export default defineConfig(({ command }) => {
     plugins: [react(), tailwindcss()],
     resolve: {
       alias: aliases,
+      dedupe: ['react', 'react-dom', 'react-router-dom'],
     },
     server: isDev
       ? {

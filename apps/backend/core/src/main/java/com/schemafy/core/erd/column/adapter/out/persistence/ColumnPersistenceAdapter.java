@@ -18,6 +18,7 @@ import com.schemafy.core.erd.column.application.port.out.DeleteColumnPort;
 import com.schemafy.core.erd.column.application.port.out.DeleteColumnsByTableIdPort;
 import com.schemafy.core.erd.column.application.port.out.GetColumnByIdPort;
 import com.schemafy.core.erd.column.application.port.out.GetColumnsByTableIdPort;
+import com.schemafy.core.erd.column.application.port.out.RestoreColumnPort;
 import com.schemafy.core.erd.column.domain.Column;
 import com.schemafy.core.erd.column.domain.ColumnTypeArguments;
 import com.schemafy.core.erd.column.domain.exception.ColumnErrorCode;
@@ -35,6 +36,7 @@ class ColumnPersistenceAdapter implements
     ChangeColumnTypePort,
     ChangeColumnMetaPort,
     ChangeColumnPositionPort,
+    RestoreColumnPort,
     DeleteColumnPort,
     DeleteColumnsByTableIdPort {
 
@@ -130,6 +132,24 @@ class ColumnPersistenceAdapter implements
         })
         .collectList()
         .flatMap(entities -> columnRepository.saveAll(entities).then());
+  }
+
+  @Override
+  public Mono<Void> restoreColumn(Column column) {
+    return findColumnOrError(column.id())
+        .flatMap((@NonNull ColumnEntity columnEntity) -> {
+          columnEntity.setTableId(column.tableId());
+          columnEntity.setName(column.name());
+          columnEntity.setDataType(column.dataType());
+          columnEntity.setTypeArguments(columnMapper.toTypeArgumentsJson(column.typeArguments()));
+          columnEntity.setSeqNo(column.seqNo());
+          columnEntity.setAutoIncrement(column.autoIncrement());
+          columnEntity.setCharset(column.charset());
+          columnEntity.setCollation(column.collation());
+          columnEntity.setComment(column.comment());
+          return columnRepository.save(columnEntity);
+        })
+        .then();
   }
 
   @Override

@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -13,25 +14,89 @@ import {
   SelectTrigger,
   SelectValue,
 } from '../../Select';
+import {
+  useCreateInvitation,
+  useGetMembers,
+  useGetProject,
+  useUpdateMemberRole,
+} from '@/features/project/hooks/useProjects';
+import { availableRoles } from '@/features/project/utils/role';
+import { authStore } from '@/store';
 
-const RoleSelect = () => {
+const RoleText = ({ role }: { role: string }) => {
   return (
-    <Select>
+    <span className="font-body-xs text-schemafy-dark-gray">
+      {role.toLowerCase()}
+    </span>
+  );
+};
+
+const RoleSelect = ({
+  value,
+  onValueChange,
+  userRole = 'ADMIN',
+}: {
+  value: string;
+  onValueChange: (value: string) => void;
+  userRole?: string;
+}) => {
+  const roles = availableRoles(userRole);
+
+  return (
+    <Select value={value} onValueChange={onValueChange}>
       <SelectTrigger className="w-[3.75rem] border-none font-body-xs">
-        <SelectValue placeholder="admin" />
+        <SelectValue />
       </SelectTrigger>
-      <SelectContent popover="manual">
+      <SelectContent>
         <SelectGroup>
-          <SelectItem value="admin">admin</SelectItem>
-          <SelectItem value="viewer">viewer</SelectItem>
-          <SelectItem value="editor">editor</SelectItem>
+          {roles.map((role) => (
+            <SelectItem key={role} value={role}>
+              {role.toLowerCase()}
+            </SelectItem>
+          ))}
         </SelectGroup>
       </SelectContent>
     </Select>
   );
 };
 
-export const ShareContents = () => {
+export const ShareContents = ({ projectId }: { projectId: string }) => {
+  const [email, setEmail] = useState('');
+  const [inviteRole, setInviteRole] = useState('VIEWER');
+
+  const { data: projectData } = useGetProject(projectId);
+  const { data: membersData } = useGetMembers(projectId);
+  const { mutate: createInvitation, isPending } =
+    useCreateInvitation(projectId);
+  const { mutate: updateMemberRole } = useUpdateMemberRole(projectId);
+
+  const currentUserRole = projectData?.currentUserRole ?? 'VIEWER';
+  const members = membersData?.content ?? [];
+  const canManageMembers = currentUserRole === 'ADMIN';
+  const currentUserId = authStore.user?.id;
+  const currentMember = members.find(
+    (member) => member.userId === currentUserId,
+  );
+  const orderedMembers = currentMember
+    ? [
+        currentMember,
+        ...members.filter((member) => member.userId !== currentUserId),
+      ]
+    : members;
+
+  const handleInvite = () => {
+    if (!projectId || !email.trim()) return;
+    createInvitation(
+      { email, role: inviteRole },
+      {
+        onSuccess: () => {
+          setEmail('');
+          setInviteRole('VIEWER');
+        },
+      },
+    );
+  };
+
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
@@ -43,26 +108,52 @@ export const ShareContents = () => {
         align="end"
         className="flex flex-col gap-2.5 font-body-xs"
       >
-        <div className="flex gap-4">
-          <input
-            type="email"
-            className="w-[12.5rem] placeholder:text-schemafy-dark-gray bg-secondary rounded-[10px] px-3 py-2"
-            placeholder="schemafy@email.com"
-          />
-          <RoleSelect />
-          <Button size={'dropdown'}>Invite</Button>
-        </div>
-        <p className="text-schemafy-dark-gray">Who has access</p>
-        <div className="flex justify-between items-center">
-          <div className="flex gap-2.5 items-center">
-            <Avatar
-              size={'dropdown'}
-              src="https://picsum.photos/200/300?random=1"
+        {canManageMembers && (
+          <div className="flex gap-4">
+            <input
+              type="email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              className="w-[12.5rem] placeholder:text-schemafy-dark-gray bg-secondary rounded-[10px] px-3 py-2"
+              placeholder="schemafy@email.com"
             />
-            <p>name</p>
+            <RoleSelect
+              value={inviteRole}
+              onValueChange={setInviteRole}
+              userRole={currentUserRole}
+            />
+            <Button
+              size={'dropdown'}
+              onClick={handleInvite}
+              disabled={isPending}
+            >
+              Invite
+            </Button>
           </div>
-          <RoleSelect />
-        </div>
+        )}
+        <p className="text-schemafy-dark-gray">Who has access</p>
+        {orderedMembers.map((member) => (
+          <div
+            key={member.userId}
+            className="flex justify-between items-center"
+          >
+            <div className="flex gap-2.5 items-center">
+              <Avatar size={'dropdown'} />
+              <p>{member.userName}</p>
+            </div>
+            {canManageMembers && member.userId !== currentUserId ? (
+              <RoleSelect
+                value={member.role}
+                onValueChange={(role) =>
+                  updateMemberRole({ userId: member.userId, data: { role } })
+                }
+                userRole={currentUserRole}
+              />
+            ) : (
+              <RoleText role={member.role} />
+            )}
+          </div>
+        ))}
       </DropdownMenuContent>
     </DropdownMenu>
   );
