@@ -43,6 +43,10 @@ const emitError = (
     reportErrorFn(errorToReport);
   }
 
+  if (import.meta.env.DEV) {
+    console.error(errorToReport);
+  }
+
   if (userMessage) {
     toast.error(userMessage);
   }
