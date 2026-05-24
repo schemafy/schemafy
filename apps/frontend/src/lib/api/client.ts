@@ -1,4 +1,5 @@
 import axios, {
+  AxiosHeaders,
   type AxiosError,
   type InternalAxiosRequestConfig,
   type AxiosRequestConfig,
@@ -56,19 +57,25 @@ export type RequestConfigWithMeta = AxiosRequestConfig & RequestConfigMeta;
 type InternalRequestConfigWithMeta = InternalAxiosRequestConfig &
   RequestConfigMeta;
 
+const setAuthorizationHeader = (
+  config: InternalRequestConfigWithMeta,
+  token: string,
+) => {
+  config.headers = AxiosHeaders.from(config.headers);
+  config.headers.set('Authorization', `Bearer ${token}`);
+};
+
 apiClient.interceptors.request.use(
   async (config: InternalRequestConfigWithMeta) => {
     const currentToken = authStore.accessToken;
     if (currentToken) {
-      (config.headers as Record<string, string>)['Authorization'] =
-        `Bearer ${currentToken}`;
+      setAuthorizationHeader(config, currentToken);
       return config;
     }
 
     const newToken = await refreshToken();
     if (newToken) {
-      (config.headers as Record<string, string>)['Authorization'] =
-        `Bearer ${newToken}`;
+      setAuthorizationHeader(config, newToken);
     }
     return config;
   },
@@ -87,9 +94,7 @@ apiClient.interceptors.response.use(
       config._retry = true;
       const newToken = await refreshToken();
       if (newToken) {
-        config.headers = config.headers ?? {};
-        (config.headers as Record<string, string>)['Authorization'] =
-          `Bearer ${newToken}`;
+        setAuthorizationHeader(config, newToken);
         return apiClient(config);
       }
     }

@@ -16,9 +16,7 @@ const toError = (error: unknown, context?: string) => {
       return error;
     }
 
-    const contextualError = new Error(`${context}\n${error.message}`);
-    contextualError.stack = error.stack;
-    return contextualError;
+    return new Error(`${context}\n${error.message}`, { cause: error });
   }
 
   const message =
