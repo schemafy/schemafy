@@ -1,6 +1,6 @@
 import { MoreHorizontal, Search } from 'lucide-react';
 import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate } from '@tanstack/react-router';
 import {
   Button,
   DropdownMenu,
@@ -91,7 +91,12 @@ export const WorkspaceProjectsTab = ({
                 <tr
                   key={project.id}
                   className="border-b border-schemafy-light-gray last:border-b-0 hover:bg-schemafy-secondary transition-colors cursor-pointer"
-                  onClick={() => navigate(`/canvas/${project.id}`)}
+                  onClick={() =>
+                    void navigate({
+                      to: '/project/$projectId',
+                      params: { projectId: project.id },
+                    })
+                  }
                 >
                   <td className="px-6 py-4 font-body-sm text-schemafy-text">
                     {project.name}

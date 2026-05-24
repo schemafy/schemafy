@@ -1,16 +1,21 @@
 import { getMyInfo, refreshToken } from '@/features/auth/api';
 import { authStore } from '@/store/auth.store';
 import { reportUnexpectedError } from '@/lib';
+import { clearAuthSession } from './auth-session';
 
-let bootstrapPromise: Promise<boolean> | null = null;
+let authBootstrapPromise: Promise<boolean> | null = null;
 
-export const ensureAuthInitialized = async (): Promise<boolean> => {
+export const isAuthenticated = () => {
+  return Boolean(authStore.accessToken && authStore.user);
+};
+
+export const ensureAuthInitialized = async () => {
   if (authStore.isInitialized) {
-    return Boolean(authStore.accessToken && authStore.user);
+    return isAuthenticated();
   }
 
-  if (!bootstrapPromise) {
-    bootstrapPromise = (async () => {
+  if (!authBootstrapPromise) {
+    authBootstrapPromise = (async () => {
       try {
         authStore.setAuthLoading(true);
         await refreshToken({ errorPolicy: 'suppress-toast' });
@@ -20,19 +25,18 @@ export const ensureAuthInitialized = async (): Promise<boolean> => {
 
         return true;
       } catch (error) {
-        authStore.clearAuth();
+        clearAuthSession();
         reportUnexpectedError(error, {
           context: 'Failed to restore the auth session during app bootstrap.',
         });
-
         return false;
       } finally {
         authStore.setAuthLoading(false);
         authStore.setInitialized(true);
-        bootstrapPromise = null;
+        authBootstrapPromise = null;
       }
     })();
   }
 
-  return bootstrapPromise;
+  return authBootstrapPromise;
 };

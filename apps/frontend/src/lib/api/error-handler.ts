@@ -20,6 +20,23 @@ const extractCode = (data: ErrorResponseData): string | undefined => {
   return data.reason;
 };
 
+const AUTH_REQUIRED_CODES = new Set([
+  'AUTH_AUTHENTICATION_REQUIRED',
+  'UNAUTHORIZED',
+]);
+
+export const notifyAuthRequired = () => {
+  toast.info('Please sign in to continue.');
+};
+
+const notifyAutoHandledError = (code: string | undefined, message: string) => {
+  if (code && AUTH_REQUIRED_CODES.has(code)) {
+    return;
+  }
+
+  toast.info(message);
+};
+
 export const handleApiError = (
   error: unknown,
   options: HandleApiErrorOptions = {},
@@ -67,7 +84,7 @@ export const handleApiError = (
 
     case ErrorCategory.AUTO_HANDLE:
       if (!suppressToast) {
-        toast.info(message);
+        notifyAutoHandledError(code, message);
       }
       break;
 

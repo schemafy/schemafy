@@ -1,7 +1,7 @@
 import { Button, InputField } from '@/components';
 import { useFormState } from '../hooks';
 import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate } from '@tanstack/react-router';
 import { signUp } from '@/features/auth/api';
 import type { ValidationRules, SignUpFormValues } from '../types';
 import { reportUnexpectedError } from '@/lib';
@@ -92,7 +92,7 @@ export const SignUpForm = () => {
       });
 
       resetForm();
-      navigate('/');
+      navigate({ to: '/' });
     } catch (error) {
       reportUnexpectedError(error, {
         context: 'Unexpected sign-up form failure.',

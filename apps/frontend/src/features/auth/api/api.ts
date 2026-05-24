@@ -8,6 +8,7 @@ import {
 import type { SignInRequest, SignUpRequest, AuthResponse } from './types';
 
 import { authStore } from '@/store/auth.store';
+import { clearAuthSession } from '../lib/auth-session';
 
 let refreshPromise: Promise<string> | null = null;
 
@@ -54,7 +55,7 @@ export const refreshToken = async (
         );
         return handleTokenResponse(response);
       } catch (error) {
-        authStore.clearAuth();
+        clearAuthSession();
         throw error;
       } finally {
         refreshPromise = null;

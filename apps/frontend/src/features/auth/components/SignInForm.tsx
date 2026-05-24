@@ -2,7 +2,7 @@ import { Button, InputField } from '@/components';
 import type { SignInFormValues, ValidationRules } from '../types';
 import { useFormState } from '../hooks';
 import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate } from '@tanstack/react-router';
 import { signIn } from '@/features/auth/api';
 import { authStore } from '@/store/auth.store';
 import { gitHubLogin } from '@/features/auth/lib/oauth';
@@ -76,7 +76,7 @@ export const SignInForm = ({ oauthError }: SignInFormProps) => {
 
       authStore.setUser(user);
       resetForm();
-      navigate('/');
+      navigate({ to: '/' });
     } catch (error) {
       reportUnexpectedError(error, {
         context: 'Unexpected sign-in form failure.',
