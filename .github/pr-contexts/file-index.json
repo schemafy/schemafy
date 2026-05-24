@@ -1281,5 +1281,8 @@
   ],
   "apps/backend/core/src/main/java/com/schemafy/core/erd/memo/application/service/CreateMemoCommentService.java": [
     383
+  ],
+  "apps/frontend/src/store/auth.store.ts": [
+    361
   ]
 }
