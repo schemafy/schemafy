@@ -11,6 +11,7 @@ import org.junit.jupiter.api.Test;
 
 import com.schemafy.core.common.exception.DomainException;
 import com.schemafy.core.config.R2dbcTestConfiguration;
+import com.schemafy.core.erd.table.domain.Table;
 import com.schemafy.core.erd.table.domain.exception.TableErrorCode;
 import com.schemafy.core.erd.table.fixture.TableFixture;
 
@@ -279,6 +280,37 @@ class TablePersistenceAdapterTest {
       StepVerifier.create(sut.changeTableExtra("non-existent-id", "{\"ui\": {}}"))
           .expectErrorMatches(DomainException.hasErrorCode(TableErrorCode.NOT_FOUND))
           .verify();
+    }
+
+  }
+
+  @Nested
+  @DisplayName("restoreTable 메서드는")
+  class RestoreTable {
+
+    @Test
+    @DisplayName("테이블 row의 모든 snapshot 속성을 복원한다")
+    void restoresTableAttributes() {
+      var table = TableFixture.defaultTable();
+      sut.createTable(table).block();
+      sut.changeTableName(table.id(), "mutated_table").block();
+      sut.changeTableMeta(table.id(), "utf8", "utf8_general_ci").block();
+      sut.changeTableExtra(table.id(), "{\"mutated\":true}").block();
+
+      var target = new Table(
+          table.id(),
+          table.schemaId(),
+          "restored_table",
+          "utf8mb4",
+          "utf8mb4_general_ci",
+          "{\"restored\":true}");
+
+      StepVerifier.create(sut.restoreTable(target))
+          .verifyComplete();
+
+      StepVerifier.create(sut.findTableById(table.id()))
+          .assertNext(found -> assertThat(found).isEqualTo(target))
+          .verifyComplete();
     }
 
   }

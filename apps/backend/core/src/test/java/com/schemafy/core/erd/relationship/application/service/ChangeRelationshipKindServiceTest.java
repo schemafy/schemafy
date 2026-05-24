@@ -15,6 +15,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 import com.schemafy.core.common.exception.DomainException;
 import com.schemafy.core.erd.constraint.application.service.PkCascadeHelper;
+import com.schemafy.core.erd.operation.application.service.StructuralSnapshotService;
 import com.schemafy.core.erd.relationship.application.port.out.ChangeRelationshipKindPort;
 import com.schemafy.core.erd.relationship.application.port.out.GetRelationshipByIdPort;
 import com.schemafy.core.erd.relationship.application.port.out.GetRelationshipsBySchemaIdPort;
@@ -29,6 +30,7 @@ import com.schemafy.core.erd.table.domain.Table;
 import reactor.core.publisher.Mono;
 import reactor.test.StepVerifier;
 
+import static com.schemafy.core.erd.operation.application.service.StructuralSnapshotServiceTestSupport.stubEmptySnapshots;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anySet;
 import static org.mockito.ArgumentMatchers.eq;
@@ -60,6 +62,9 @@ class ChangeRelationshipKindServiceTest {
   @Mock
   TransactionalOperator transactionalOperator;
 
+  @Mock
+  StructuralSnapshotService structuralSnapshotService;
+
   @InjectMocks
   ChangeRelationshipKindService sut;
 
@@ -67,6 +72,7 @@ class ChangeRelationshipKindServiceTest {
   void setUpTransaction() {
     lenient().when(transactionalOperator.transactional(any(Mono.class)))
         .thenAnswer(invocation -> invocation.getArgument(0));
+    stubEmptySnapshots(structuralSnapshotService);
   }
 
   @Nested

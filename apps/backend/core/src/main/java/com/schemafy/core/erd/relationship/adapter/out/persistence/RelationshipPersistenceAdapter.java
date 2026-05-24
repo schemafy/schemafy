@@ -18,6 +18,7 @@ import com.schemafy.core.erd.relationship.application.port.out.GetRelationshipsB
 import com.schemafy.core.erd.relationship.application.port.out.GetRelationshipsBySchemaIdPort;
 import com.schemafy.core.erd.relationship.application.port.out.GetRelationshipsByTableIdPort;
 import com.schemafy.core.erd.relationship.application.port.out.RelationshipExistsPort;
+import com.schemafy.core.erd.relationship.application.port.out.RestoreRelationshipPort;
 import com.schemafy.core.erd.relationship.domain.Relationship;
 import com.schemafy.core.erd.relationship.domain.exception.RelationshipErrorCode;
 import com.schemafy.core.erd.relationship.domain.type.Cardinality;
@@ -38,6 +39,7 @@ class RelationshipPersistenceAdapter implements
     ChangeRelationshipKindPort,
     ChangeRelationshipCardinalityPort,
     ChangeRelationshipExtraPort,
+    RestoreRelationshipPort,
     DeleteRelationshipPort,
     RelationshipExistsPort {
 
@@ -116,6 +118,21 @@ class RelationshipPersistenceAdapter implements
     return findRelationshipOrError(relationshipId)
         .flatMap((@NonNull RelationshipEntity relationshipEntity) -> {
           relationshipEntity.setExtra(extra);
+          return relationshipRepository.save(relationshipEntity);
+        })
+        .then();
+  }
+
+  @Override
+  public Mono<Void> restoreRelationship(Relationship relationship) {
+    return findRelationshipOrError(relationship.id())
+        .flatMap((@NonNull RelationshipEntity relationshipEntity) -> {
+          relationshipEntity.setPkTableId(relationship.pkTableId());
+          relationshipEntity.setFkTableId(relationship.fkTableId());
+          relationshipEntity.setName(relationship.name());
+          relationshipEntity.setKind(relationship.kind().name());
+          relationshipEntity.setCardinality(relationship.cardinality().name());
+          relationshipEntity.setExtra(relationship.extra());
           return relationshipRepository.save(relationshipEntity);
         })
         .then();

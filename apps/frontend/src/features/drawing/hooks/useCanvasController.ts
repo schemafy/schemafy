@@ -10,17 +10,16 @@ import { useSchemas } from './useSchemas';
 import { useErdMutationSync } from './useErdMutationSync';
 import type { Point, RelationshipConfig } from '../types';
 import { collaborationStore } from '@/store/collaboration.store';
+import { useThrottledCallback } from '@/hooks/useThrottledCallback';
+import { useChatInputAnchor } from '@/features/collaboration/hooks/useChatInputAnchor';
 
 const CURSOR_THROTTLE_MS = 50;
-const CHAT_EXIT_ANIMATION_MS = 200;
 
 export const useCanvasController = () => {
   const { projectId, selectedSchemaId } = useSelectedSchema();
   const { data: schemas } = useSchemas(projectId);
   useErdMutationSync(selectedSchemaId, projectId);
   const { screenToFlowPosition } = useReactFlow();
-  const lastCursorSendTime = useRef<number>(0);
-  const lastChatPositionTime = useRef<number>(0);
 
   const [relationshipConfig, setRelationshipConfig] =
     useState<RelationshipConfig>({
@@ -35,12 +34,7 @@ export const useCanvasController = () => {
   } | null>(null);
   const tempMemoPositionRef = useRef(tempMemoPosition);
   tempMemoPositionRef.current = tempMemoPosition;
-  const [chatInputPosition, setChatInputPosition] = useState<Point | null>(
-    null,
-  );
-  const [isChatOpen, setIsChatOpen] = useState(false);
-  const [isChatExiting, setIsChatExiting] = useState(false);
-  const chatExitTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const chat = useChatInputAnchor();
   const [isShortcutPanelOpen, setIsShortcutPanelOpen] = useState(false);
 
   useEffect(() => {
@@ -58,71 +52,12 @@ export const useCanvasController = () => {
     return () => window.removeEventListener('mousemove', handleGlobalMouseMove);
   }, []);
 
-  useEffect(() => {
-    return () => {
-      if (chatExitTimerRef.current) clearTimeout(chatExitTimerRef.current);
-    };
-  }, []);
-
-  const closeChatInput = useCallback(() => {
-    if (chatExitTimerRef.current) return;
-    setIsChatOpen(false);
-    setIsChatExiting(true);
-    chatExitTimerRef.current = setTimeout(() => {
-      setChatInputPosition(null);
-      setIsChatExiting(false);
-      chatExitTimerRef.current = null;
-    }, CHAT_EXIT_ANIMATION_MS);
-  }, []);
-
-  const openChatInput = useCallback((position: Point) => {
-    if (chatExitTimerRef.current) {
-      clearTimeout(chatExitTimerRef.current);
-      chatExitTimerRef.current = null;
-    }
-    setIsChatExiting(false);
-    setChatInputPosition(position);
-    setIsChatOpen(true);
-  }, []);
-
-  useEffect(() => {
-    if (!isChatOpen) return;
-
-    const handleWindowMouseMove = (e: MouseEvent) => {
-      const now = Date.now();
-      if (now - lastChatPositionTime.current < CURSOR_THROTTLE_MS) return;
-      lastChatPositionTime.current = now;
-      setChatInputPosition({ x: e.clientX + 16, y: e.clientY + 16 });
-    };
-
-    const handleMouseLeave = () => {
-      closeChatInput();
-    };
-
-    const handleClickOutside = (e: MouseEvent) => {
-      const chatInputEl = document.querySelector('[data-chat-input]');
-      if (!chatInputEl || !chatInputEl.contains(e.target as Node)) {
-        closeChatInput();
-      }
-    };
-
-    window.addEventListener('mousemove', handleWindowMouseMove);
-    document.addEventListener('mouseleave', handleMouseLeave);
-    window.addEventListener('mousedown', handleClickOutside, true);
-
-    return () => {
-      window.removeEventListener('mousemove', handleWindowMouseMove);
-      document.removeEventListener('mouseleave', handleMouseLeave);
-      window.removeEventListener('mousedown', handleClickOutside, true);
-    };
-  }, [isChatOpen, closeChatInput]);
-
   useCanvasKeyboard({
     mousePositionRef,
-    isChatOpen,
+    isChatOpen: chat.isOpen,
     isShortcutPanelOpen,
     activeTool,
-    openChatInput,
+    openChatInput: chat.open,
     setActiveTool,
   });
 
@@ -194,23 +129,20 @@ export const useCanvasController = () => {
     [activeTool, addTable, handleMemoCancel, screenToFlowPosition],
   );
 
+  const sendCursorThrottled = useThrottledCallback(
+    (clientX: number, clientY: number) => {
+      const flowPosition = screenToFlowPosition({ x: clientX, y: clientY });
+      collaborationStore.sendCursor(flowPosition.x, flowPosition.y);
+    },
+    CURSOR_THROTTLE_MS,
+  );
+
   const handleMouseMove = useCallback(
     (e: React.MouseEvent) => {
-      const position = { x: e.clientX, y: e.clientY };
-
-      mousePositionRef.current = position;
-
-      const now = Date.now();
-      if (now - lastCursorSendTime.current >= CURSOR_THROTTLE_MS) {
-        lastCursorSendTime.current = now;
-        const flowPosition = screenToFlowPosition({
-          x: position.x,
-          y: position.y,
-        });
-        collaborationStore.sendCursor(flowPosition.x, flowPosition.y);
-      }
+      mousePositionRef.current = { x: e.clientX, y: e.clientY };
+      sendCursorThrottled(e.clientX, e.clientY);
     },
-    [screenToFlowPosition],
+    [sendCursorThrottled],
   );
 
   return {
@@ -218,8 +150,8 @@ export const useCanvasController = () => {
       relationshipConfig,
       activeTool,
       tempMemoPosition,
-      chatInputPosition,
-      isChatExiting,
+      chatInputPosition: chat.position,
+      isChatExiting: chat.isExiting,
       selectedRelationship,
       isShortcutPanelOpen,
     },
@@ -227,7 +159,6 @@ export const useCanvasController = () => {
       setRelationshipConfig,
       setActiveTool,
       setTempMemoPosition,
-      setChatInputPosition,
       setSelectedRelationship,
       setIsShortcutPanelOpen,
     },
@@ -250,7 +181,7 @@ export const useCanvasController = () => {
       handleMemoCancel,
       handleMemoCreate,
       handleChatSend,
-      closeChatInput,
+      closeChatInput: chat.close,
       handlePaneClick,
       handleMouseMove,
     },

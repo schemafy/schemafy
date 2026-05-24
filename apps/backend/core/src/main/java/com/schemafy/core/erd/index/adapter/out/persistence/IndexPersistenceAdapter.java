@@ -14,6 +14,7 @@ import com.schemafy.core.erd.index.application.port.out.DeleteIndexPort;
 import com.schemafy.core.erd.index.application.port.out.GetIndexByIdPort;
 import com.schemafy.core.erd.index.application.port.out.GetIndexesByTableIdPort;
 import com.schemafy.core.erd.index.application.port.out.IndexExistsPort;
+import com.schemafy.core.erd.index.application.port.out.RestoreIndexPort;
 import com.schemafy.core.erd.index.domain.Index;
 import com.schemafy.core.erd.index.domain.exception.IndexErrorCode;
 import com.schemafy.core.erd.index.domain.type.IndexType;
@@ -29,6 +30,7 @@ class IndexPersistenceAdapter implements
     GetIndexesByTableIdPort,
     ChangeIndexNamePort,
     ChangeIndexTypePort,
+    RestoreIndexPort,
     DeleteIndexPort,
     IndexExistsPort {
 
@@ -71,6 +73,18 @@ class IndexPersistenceAdapter implements
     return findIndexOrError(indexId)
         .flatMap((@NonNull IndexEntity indexEntity) -> {
           indexEntity.setType(type.name());
+          return indexRepository.save(indexEntity);
+        })
+        .then();
+  }
+
+  @Override
+  public Mono<Void> restoreIndex(Index index) {
+    return findIndexOrError(index.id())
+        .flatMap((@NonNull IndexEntity indexEntity) -> {
+          indexEntity.setTableId(index.tableId());
+          indexEntity.setName(index.name());
+          indexEntity.setType(index.type().name());
           return indexRepository.save(indexEntity);
         })
         .then();

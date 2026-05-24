@@ -5,9 +5,11 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.schemafy.core.common.exception.DomainException;
 import com.schemafy.core.erd.column.domain.exception.ColumnErrorCode;
 
+@JsonIgnoreProperties("empty")
 public record ColumnTypeArguments(
     Integer length,
     Integer precision,

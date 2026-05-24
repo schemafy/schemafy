@@ -9,16 +9,17 @@ import org.springframework.stereotype.Component;
 import org.springframework.transaction.reactive.TransactionalOperator;
 
 import com.schemafy.core.common.MutationResult;
+import com.schemafy.core.common.exception.DomainException;
 import com.schemafy.core.common.json.JsonCodec;
 import com.schemafy.core.erd.operation.ErdOperationContexts;
 import com.schemafy.core.erd.operation.ErdOperationMetadata;
+import com.schemafy.core.erd.operation.application.inverse.InversePayload;
 import com.schemafy.core.erd.operation.application.port.out.AppendErdOperationLogPort;
 import com.schemafy.core.erd.operation.application.port.out.FindSchemaCollaborationStatePort;
 import com.schemafy.core.erd.operation.application.port.out.IncrementSchemaCollaborationRevisionPort;
 import com.schemafy.core.erd.operation.application.port.out.SaveSchemaCollaborationStatePort;
-import com.schemafy.core.erd.operation.application.service.ErdMutationTargetResolver.FinalizedErdMutationTarget;
-import com.schemafy.core.erd.operation.application.service.ErdMutationTargetResolver.ResolvedErdMutationTarget;
 import com.schemafy.core.erd.operation.domain.*;
+import com.schemafy.core.erd.operation.domain.exception.OperationErrorCode;
 import com.schemafy.core.ulid.application.port.out.UlidGeneratorPort;
 
 import lombok.RequiredArgsConstructor;
@@ -32,6 +33,7 @@ class DefaultErdMutationCoordinator implements ErdMutationCoordinator {
 
   private final TransactionalOperator transactionalOperator;
   private final ErdMutationTargetResolver erdMutationTargetResolver;
+  private final ErdMutationTargetFinalizer erdMutationTargetFinalizer;
   private final FindSchemaCollaborationStatePort findSchemaCollaborationStatePort;
   private final IncrementSchemaCollaborationRevisionPort incrementSchemaCollaborationRevisionPort;
   private final SaveSchemaCollaborationStatePort saveSchemaCollaborationStatePort;
@@ -79,7 +81,7 @@ class DefaultErdMutationCoordinator implements ErdMutationCoordinator {
     if (operationType == ErdOperationType.CREATE_SCHEMA) {
       return Mono.empty();
     }
-    return loadOrCreateSchemaState(resolvedTarget.schemaId(), resolvedTarget.projectId());
+    return loadOrCreateSchemaStateForUpdate(resolvedTarget.schemaId(), resolvedTarget.projectId());
   }
 
   private <T> Mono<MutationResult<T>> executeMutationAndCommit(
@@ -101,10 +103,20 @@ class DefaultErdMutationCoordinator implements ErdMutationCoordinator {
 
   private Mono<SchemaCollaborationState> loadOrCreateSchemaState(String schemaId, String projectId) {
     return findSchemaCollaborationStatePort.findBySchemaId(schemaId)
-        .switchIfEmpty(saveSchemaCollaborationStatePort
+        .switchIfEmpty(Mono.defer(() -> saveSchemaCollaborationStatePort
             .save(new SchemaCollaborationState(schemaId, projectId, 0L, null, null))
             .onErrorResume(DuplicateKeyException.class,
-                ex -> findSchemaCollaborationStatePort.findBySchemaId(schemaId)));
+                ex -> findSchemaCollaborationStatePort.findBySchemaId(schemaId))));
+  }
+
+  private Mono<SchemaCollaborationState> loadOrCreateSchemaStateForUpdate(String schemaId, String projectId) {
+    return findSchemaCollaborationStatePort.findBySchemaIdForUpdate(schemaId)
+        .switchIfEmpty(Mono.defer(() -> saveSchemaCollaborationStatePort
+            .save(new SchemaCollaborationState(schemaId, projectId, 0L, null, null))
+            .onErrorResume(DuplicateKeyException.class, ex -> Mono.empty())
+            .then(findSchemaCollaborationStatePort.findBySchemaIdForUpdate(schemaId))
+            .switchIfEmpty(Mono.error(new IllegalStateException(
+                "Schema collaboration state missing after creation: schemaId=" + schemaId)))));
   }
 
   private <T> Mono<MutationResult<T>> commitOperation(
@@ -114,13 +126,14 @@ class DefaultErdMutationCoordinator implements ErdMutationCoordinator {
       ResolvedErdMutationTarget resolvedTarget,
       SchemaCollaborationState preloadedState,
       ErdOperationMetadata metadata) {
-    FinalizedErdMutationTarget finalizedTarget = erdMutationTargetResolver.finalizeTarget(
+    FinalizedErdMutationTarget finalizedTarget = erdMutationTargetFinalizer.finalizeTarget(
         operationType,
+        payload,
         resolvedTarget,
         mutationResult);
 
     return resolveSchemaState(operationType, resolvedTarget, finalizedTarget, preloadedState)
-        .flatMap(schemaState -> incrementSchemaCollaborationRevisionPort.increment(schemaState.schemaId())
+        .flatMap(schemaState -> incrementRevision(schemaState.schemaId(), metadata)
             .flatMap(updatedState -> appendErdOperationLogPort.append(buildOperationLog(
                 operationType,
                 payload,
@@ -130,6 +143,36 @@ class DefaultErdMutationCoordinator implements ErdMutationCoordinator {
                 metadata)))
             .map(operationLog -> mutationResult.withOperation(
                 CommittedErdOperation.from(operationLog))));
+  }
+
+  private Mono<SchemaCollaborationState> incrementRevision(
+      String schemaId,
+      ErdOperationMetadata metadata) {
+    Long expectedRevision = metadata.baseSchemaRevision();
+    if (isDerivedMutation(metadata)) {
+      if (expectedRevision == null) {
+        return Mono.error(new IllegalStateException("Derived operation requires base schema revision"));
+      }
+      return incrementSchemaCollaborationRevisionPort
+          .incrementIfCurrentRevision(schemaId, expectedRevision)
+          .switchIfEmpty(Mono.error(new DomainException(
+              staleDerivedOperationErrorCode(metadata),
+              "Schema revision changed before undo/redo commit: schemaId=" + schemaId)));
+    }
+    return incrementSchemaCollaborationRevisionPort.increment(schemaId);
+  }
+
+  private boolean isDerivedMutation(ErdOperationMetadata metadata) {
+    ErdOperationDerivationKind derivationKind = metadata.derivationKind();
+    return derivationKind == ErdOperationDerivationKind.UNDO
+        || derivationKind == ErdOperationDerivationKind.REDO;
+  }
+
+  private OperationErrorCode staleDerivedOperationErrorCode(ErdOperationMetadata metadata) {
+    if (metadata.derivationKind() == ErdOperationDerivationKind.REDO) {
+      return OperationErrorCode.REDO_NOT_ELIGIBLE;
+    }
+    return OperationErrorCode.SUPERSEDED;
   }
 
   private Mono<SchemaCollaborationState> resolveSchemaState(
@@ -153,9 +196,7 @@ class DefaultErdMutationCoordinator implements ErdMutationCoordinator {
       FinalizedErdMutationTarget finalizedTarget,
       SchemaCollaborationState updatedState,
       ErdOperationMetadata metadata) {
-    List<String> affectedTableIds = mutationResult.affectedTableIds().stream()
-        .sorted()
-        .toList();
+    List<String> affectedTableIds = mutationResult.sortedAffectedTableIds();
 
     return new ErdOperationLog(
         ulidGeneratorPort.generate(),
@@ -167,15 +208,24 @@ class DefaultErdMutationCoordinator implements ErdMutationCoordinator {
         metadata.clientOperationId(),
         metadata.sessionId(),
         metadata.actorUserIdOr(SYSTEM_ACTOR_USER_ID),
-        ErdOperationDerivationKind.ORIGINAL,
-        null,
+        metadata.derivationKindOrDefault(),
+        metadata.derivedFromOpId(),
         ErdOperationLifecycleState.COMMITTED,
-        jsonCodec.serialize(payload),
-        null,
+        serializePayload(payload),
+        mutationResult.inversePayload() == null
+            ? null
+            : jsonCodec.serialize(mutationResult.inversePayload(), InversePayload.class),
         jsonCodec.serialize(finalizedTarget.touchedEntity() == null
             ? List.of()
             : List.of(finalizedTarget.touchedEntity())),
         jsonCodec.serialize(affectedTableIds));
+  }
+
+  private String serializePayload(Object payload) {
+    if (payload instanceof InversePayload inversePayload) {
+      return jsonCodec.serialize(inversePayload, InversePayload.class);
+    }
+    return jsonCodec.serialize(payload);
   }
 
 }

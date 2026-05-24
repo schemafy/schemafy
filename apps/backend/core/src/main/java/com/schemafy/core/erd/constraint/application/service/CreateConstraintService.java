@@ -30,7 +30,9 @@ import com.schemafy.core.erd.constraint.domain.ConstraintColumn;
 import com.schemafy.core.erd.constraint.domain.exception.ConstraintErrorCode;
 import com.schemafy.core.erd.constraint.domain.type.ConstraintKind;
 import com.schemafy.core.erd.constraint.domain.validator.ConstraintValidator;
+import com.schemafy.core.erd.operation.application.inverse.CreateConstraintInverse;
 import com.schemafy.core.erd.operation.application.service.ErdMutationCoordinator;
+import com.schemafy.core.erd.operation.application.service.StructuralSnapshotService;
 import com.schemafy.core.erd.operation.domain.ErdOperationType;
 import com.schemafy.core.erd.table.application.port.out.GetTableByIdPort;
 import com.schemafy.core.erd.table.domain.Table;
@@ -56,6 +58,7 @@ public class CreateConstraintService implements CreateConstraintUseCase {
   private final GetConstraintsByTableIdPort getConstraintsByTableIdPort;
   private final GetConstraintColumnsByConstraintIdPort getConstraintColumnsByConstraintIdPort;
   private final PkCascadeHelper pkCascadeHelper;
+  private final StructuralSnapshotService structuralSnapshotService;
   private ErdMutationCoordinator erdMutationCoordinator = ErdMutationCoordinator.noop();
 
   @Autowired
@@ -65,50 +68,59 @@ public class CreateConstraintService implements CreateConstraintUseCase {
 
   @Override
   public Mono<MutationResult<CreateConstraintResult>> createConstraint(CreateConstraintCommand command) {
-    return erdMutationCoordinator.coordinate(ErdOperationType.CREATE_CONSTRAINT, command, () -> Mono.defer(() -> {
-      String normalizedName = normalizeName(command.name());
-      String normalizedCheckExpr = normalizeOptional(command.checkExpr());
-      String normalizedDefaultExpr = normalizeOptional(command.defaultExpr());
-      List<CreateConstraintColumnCommand> columnCommands = resolveColumnSeqNos(normalizeColumns(command.columns()));
+    return erdMutationCoordinator.coordinate(ErdOperationType.CREATE_CONSTRAINT, command,
+        () -> structuralSnapshotService.captureByTableId(command.tableId()).flatMap(beforeSnapshot -> Mono.defer(() -> {
+          String normalizedName = normalizeName(command.name());
+          String normalizedCheckExpr = normalizeOptional(command.checkExpr());
+          String normalizedDefaultExpr = normalizeOptional(command.defaultExpr());
+          List<CreateConstraintColumnCommand> columnCommands = resolveColumnSeqNos(normalizeColumns(command.columns()));
 
-      boolean autoName = normalizedName == null || normalizedName.isBlank();
-      if (!autoName) {
-        ConstraintValidator.validateName(normalizedName);
-      }
-      columnCommands.forEach(column -> ConstraintValidator.validatePosition(column.seqNo()));
+          boolean autoName = normalizedName == null || normalizedName.isBlank();
+          if (!autoName) {
+            ConstraintValidator.validateName(normalizedName);
+          }
+          columnCommands.forEach(column -> ConstraintValidator.validatePosition(column.seqNo()));
 
-      return getTableByIdPort.findTableById(command.tableId())
-          .switchIfEmpty(Mono.error(new DomainException(TableErrorCode.NOT_FOUND, "Table not found")))
-          .flatMap(table -> {
-            Set<String> affectedTableIds = ConcurrentHashMap.newKeySet();
-            affectedTableIds.add(table.id());
+          return getTableByIdPort.findTableById(command.tableId())
+              .switchIfEmpty(Mono.error(new DomainException(TableErrorCode.NOT_FOUND, "Table not found")))
+              .flatMap(table -> {
+                Set<String> affectedTableIds = ConcurrentHashMap.newKeySet();
+                affectedTableIds.add(table.id());
 
-            Mono<String> nameMono;
-            if (autoName) {
-              nameMono = resolveAutoConstraintName(table, command.kind());
-            } else {
-              nameMono = constraintExistsPort.existsBySchemaIdAndName(table.schemaId(), normalizedName)
-                  .flatMap(exists -> {
-                    if (exists) {
-                      return Mono.error(new DomainException(ConstraintErrorCode.NAME_DUPLICATE,
-                          "Constraint name '%s' already exists in schema".formatted(normalizedName)));
-                    }
-                    return Mono.just(normalizedName);
-                  });
-            }
+                Mono<String> nameMono;
+                if (autoName) {
+                  nameMono = resolveAutoConstraintName(table, command.kind());
+                } else {
+                  nameMono = constraintExistsPort.existsBySchemaIdAndName(table.schemaId(), normalizedName)
+                      .flatMap(exists -> {
+                        if (exists) {
+                          return Mono.error(new DomainException(ConstraintErrorCode.NAME_DUPLICATE,
+                              "Constraint name '%s' already exists in schema".formatted(normalizedName)));
+                        }
+                        return Mono.just(normalizedName);
+                      });
+                }
 
-            return nameMono.flatMap(resolvedName -> fetchTableContext(table.id())
-                .flatMap(context -> createConstraint(
-                    table,
-                    context,
-                    command.kind(),
-                    resolvedName,
-                    normalizedCheckExpr,
-                    normalizedDefaultExpr,
-                    columnCommands,
-                    affectedTableIds)));
-          });
-    })).as(transactionalOperator::transactional);
+                return nameMono.flatMap(resolvedName -> fetchTableContext(table.id())
+                    .flatMap(context -> createConstraint(
+                        table,
+                        context,
+                        command.kind(),
+                        resolvedName,
+                        normalizedCheckExpr,
+                        normalizedDefaultExpr,
+                        columnCommands,
+                        affectedTableIds)));
+              });
+        })
+            .flatMap(result -> structuralSnapshotService.captureBySchemaId(beforeSnapshot.schemaId())
+                .map(afterSnapshot -> result.withInverse(new CreateConstraintInverse(
+                    beforeSnapshot.schemaId(),
+                    result.result().constraintId(),
+                    beforeSnapshot,
+                    afterSnapshot,
+                    result.sortedAffectedTableIds()))))))
+        .as(transactionalOperator::transactional);
   }
 
   private Mono<MutationResult<CreateConstraintResult>> createConstraint(

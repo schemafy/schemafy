@@ -16,6 +16,7 @@ import { HttpExceptionFilter } from './common/filters/http-exception.filter.js';
   imports: [
     ConfigModule.forRoot({
       isGlobal: true,
+      envFilePath: ['.env', '../../.env'],
     }),
     BackendClientModule,
     CollaborationModule,

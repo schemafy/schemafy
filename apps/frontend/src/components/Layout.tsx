@@ -9,10 +9,11 @@ export const Layout = () => {
   });
   const isCanvasPage = pathname.startsWith('/project/');
   const isWorkspacePage = pathname.startsWith('/workspace');
+  const projectId = isCanvasPage ? pathname.split('/')[2] ?? '' : '';
 
   return (
     <div className="layout flex flex-col min-h-screen bg-schemafy-bg w-full items-center">
-      <Header isCanvasPage={isCanvasPage} />
+      <Header isCanvasPage={isCanvasPage} projectId={projectId} />
       <main
         className={cn(
           'flex-grow w-full flex',
