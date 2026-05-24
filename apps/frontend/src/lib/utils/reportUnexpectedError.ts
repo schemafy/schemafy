@@ -24,15 +24,12 @@ const toError = (error: unknown, context?: string) => {
   const message =
     typeof error === 'string'
       ? error
-      : context ?? 'An unexpected error occurred.';
+      : (context ?? 'An unexpected error occurred.');
 
   return new Error(message);
 };
 
-const emitError = (
-  error: unknown,
-  options: ReportErrorOptions = {},
-) => {
+const emitError = (error: unknown, options: ReportErrorOptions = {}) => {
   const { context, userMessage } = options;
 
   const errorToReport = toError(error, context);
@@ -63,10 +60,7 @@ export const reportUnexpectedError = (
   error: unknown,
   options: ReportErrorOptions = {},
 ) => {
-  if (
-    isAxiosError(error) &&
-    (error as HandledAxiosError).__handledByApiError
-  ) {
+  if (isAxiosError(error) && (error as HandledAxiosError).__handledByApiError) {
     return;
   }
 

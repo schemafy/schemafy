@@ -98,24 +98,30 @@ apiClient.interceptors.response.use(
   },
 );
 
-apiClient.interceptors.response.use((response) => response, (error) => {
-  const config = error.config as InternalRequestConfigWithMeta | undefined;
-  if (config?.errorPolicy === 'bypass') {
-    return Promise.reject(error);
-  }
+apiClient.interceptors.response.use(
+  (response) => response,
+  (error) => {
+    const config = error.config as InternalRequestConfigWithMeta | undefined;
+    if (config?.errorPolicy === 'bypass') {
+      return Promise.reject(error);
+    }
 
-  return handleApiError(error, {
-    suppressToast: config?.errorPolicy === 'suppress-toast',
-  });
-});
+    return handleApiError(error, {
+      suppressToast: config?.errorPolicy === 'suppress-toast',
+    });
+  },
+);
 
-publicClient.interceptors.response.use((response) => response, (error) => {
-  const config = error.config as RequestConfigWithMeta | undefined;
-  if (config?.errorPolicy === 'bypass') {
-    return Promise.reject(error);
-  }
+publicClient.interceptors.response.use(
+  (response) => response,
+  (error) => {
+    const config = error.config as RequestConfigWithMeta | undefined;
+    if (config?.errorPolicy === 'bypass') {
+      return Promise.reject(error);
+    }
 
-  return handleApiError(error, {
-    suppressToast: config?.errorPolicy === 'suppress-toast',
-  });
-});
+    return handleApiError(error, {
+      suppressToast: config?.errorPolicy === 'suppress-toast',
+    });
+  },
+);
