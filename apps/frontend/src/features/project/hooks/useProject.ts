@@ -11,8 +11,10 @@ export const useProject = (projectId: string) => {
 
   return {
     project: projectQuery.data,
+    isPendingProject: projectQuery.isPending,
     isLoadingProject: projectQuery.isLoading,
     isProjectError: projectQuery.isError,
     projectError: projectQuery.error,
+    refetchProject: projectQuery.refetch,
   };
 };

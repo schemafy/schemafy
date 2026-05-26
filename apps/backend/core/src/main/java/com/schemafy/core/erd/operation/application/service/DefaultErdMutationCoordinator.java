@@ -18,8 +18,6 @@ import com.schemafy.core.erd.operation.application.port.out.AppendErdOperationLo
 import com.schemafy.core.erd.operation.application.port.out.FindSchemaCollaborationStatePort;
 import com.schemafy.core.erd.operation.application.port.out.IncrementSchemaCollaborationRevisionPort;
 import com.schemafy.core.erd.operation.application.port.out.SaveSchemaCollaborationStatePort;
-import com.schemafy.core.erd.operation.application.service.ErdMutationTargetResolver.FinalizedErdMutationTarget;
-import com.schemafy.core.erd.operation.application.service.ErdMutationTargetResolver.ResolvedErdMutationTarget;
 import com.schemafy.core.erd.operation.domain.*;
 import com.schemafy.core.erd.operation.domain.exception.OperationErrorCode;
 import com.schemafy.core.ulid.application.port.out.UlidGeneratorPort;
@@ -35,6 +33,7 @@ class DefaultErdMutationCoordinator implements ErdMutationCoordinator {
 
   private final TransactionalOperator transactionalOperator;
   private final ErdMutationTargetResolver erdMutationTargetResolver;
+  private final ErdMutationTargetFinalizer erdMutationTargetFinalizer;
   private final FindSchemaCollaborationStatePort findSchemaCollaborationStatePort;
   private final IncrementSchemaCollaborationRevisionPort incrementSchemaCollaborationRevisionPort;
   private final SaveSchemaCollaborationStatePort saveSchemaCollaborationStatePort;
@@ -82,7 +81,7 @@ class DefaultErdMutationCoordinator implements ErdMutationCoordinator {
     if (operationType == ErdOperationType.CREATE_SCHEMA) {
       return Mono.empty();
     }
-    return loadOrCreateSchemaState(resolvedTarget.schemaId(), resolvedTarget.projectId());
+    return loadOrCreateSchemaStateForUpdate(resolvedTarget.schemaId(), resolvedTarget.projectId());
   }
 
   private <T> Mono<MutationResult<T>> executeMutationAndCommit(
@@ -104,10 +103,20 @@ class DefaultErdMutationCoordinator implements ErdMutationCoordinator {
 
   private Mono<SchemaCollaborationState> loadOrCreateSchemaState(String schemaId, String projectId) {
     return findSchemaCollaborationStatePort.findBySchemaId(schemaId)
-        .switchIfEmpty(saveSchemaCollaborationStatePort
+        .switchIfEmpty(Mono.defer(() -> saveSchemaCollaborationStatePort
             .save(new SchemaCollaborationState(schemaId, projectId, 0L, null, null))
             .onErrorResume(DuplicateKeyException.class,
-                ex -> findSchemaCollaborationStatePort.findBySchemaId(schemaId)));
+                ex -> findSchemaCollaborationStatePort.findBySchemaId(schemaId))));
+  }
+
+  private Mono<SchemaCollaborationState> loadOrCreateSchemaStateForUpdate(String schemaId, String projectId) {
+    return findSchemaCollaborationStatePort.findBySchemaIdForUpdate(schemaId)
+        .switchIfEmpty(Mono.defer(() -> saveSchemaCollaborationStatePort
+            .save(new SchemaCollaborationState(schemaId, projectId, 0L, null, null))
+            .onErrorResume(DuplicateKeyException.class, ex -> Mono.empty())
+            .then(findSchemaCollaborationStatePort.findBySchemaIdForUpdate(schemaId))
+            .switchIfEmpty(Mono.error(new IllegalStateException(
+                "Schema collaboration state missing after creation: schemaId=" + schemaId)))));
   }
 
   private <T> Mono<MutationResult<T>> commitOperation(
@@ -117,8 +126,9 @@ class DefaultErdMutationCoordinator implements ErdMutationCoordinator {
       ResolvedErdMutationTarget resolvedTarget,
       SchemaCollaborationState preloadedState,
       ErdOperationMetadata metadata) {
-    FinalizedErdMutationTarget finalizedTarget = erdMutationTargetResolver.finalizeTarget(
+    FinalizedErdMutationTarget finalizedTarget = erdMutationTargetFinalizer.finalizeTarget(
         operationType,
+        payload,
         resolvedTarget,
         mutationResult);
 
@@ -186,9 +196,7 @@ class DefaultErdMutationCoordinator implements ErdMutationCoordinator {
       FinalizedErdMutationTarget finalizedTarget,
       SchemaCollaborationState updatedState,
       ErdOperationMetadata metadata) {
-    List<String> affectedTableIds = mutationResult.affectedTableIds().stream()
-        .sorted()
-        .toList();
+    List<String> affectedTableIds = mutationResult.sortedAffectedTableIds();
 
     return new ErdOperationLog(
         ulidGeneratorPort.generate(),

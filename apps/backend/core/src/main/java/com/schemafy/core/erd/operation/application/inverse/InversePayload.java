@@ -12,7 +12,24 @@ import com.fasterxml.jackson.annotation.JsonTypeInfo;
   @JsonSubTypes.Type(value = ChangeRelationshipCardinalityInverse.class, name = "CHANGE_RELATIONSHIP_CARDINALITY"),
   @JsonSubTypes.Type(value = ChangeConstraintNameInverse.class, name = "CHANGE_CONSTRAINT_NAME"),
   @JsonSubTypes.Type(value = ChangeIndexNameInverse.class, name = "CHANGE_INDEX_NAME"),
-  @JsonSubTypes.Type(value = ChangeIndexTypeInverse.class, name = "CHANGE_INDEX_TYPE")
+  @JsonSubTypes.Type(value = ChangeIndexTypeInverse.class, name = "CHANGE_INDEX_TYPE"),
+  @JsonSubTypes.Type(value = CreateTableInverse.class, name = "CREATE_TABLE"),
+  @JsonSubTypes.Type(value = DeleteTableInverse.class, name = "DELETE_TABLE"),
+  @JsonSubTypes.Type(value = CreateColumnInverse.class, name = "CREATE_COLUMN"),
+  @JsonSubTypes.Type(value = DeleteColumnInverse.class, name = "DELETE_COLUMN"),
+  @JsonSubTypes.Type(value = CreateConstraintInverse.class, name = "CREATE_CONSTRAINT"),
+  @JsonSubTypes.Type(value = DeleteConstraintInverse.class, name = "DELETE_CONSTRAINT"),
+  @JsonSubTypes.Type(value = AddConstraintColumnInverse.class, name = "ADD_CONSTRAINT_COLUMN"),
+  @JsonSubTypes.Type(value = RemoveConstraintColumnInverse.class, name = "REMOVE_CONSTRAINT_COLUMN"),
+  @JsonSubTypes.Type(value = CreateIndexInverse.class, name = "CREATE_INDEX"),
+  @JsonSubTypes.Type(value = DeleteIndexInverse.class, name = "DELETE_INDEX"),
+  @JsonSubTypes.Type(value = AddIndexColumnInverse.class, name = "ADD_INDEX_COLUMN"),
+  @JsonSubTypes.Type(value = RemoveIndexColumnInverse.class, name = "REMOVE_INDEX_COLUMN"),
+  @JsonSubTypes.Type(value = CreateRelationshipInverse.class, name = "CREATE_RELATIONSHIP"),
+  @JsonSubTypes.Type(value = ChangeRelationshipKindInverse.class, name = "CHANGE_RELATIONSHIP_KIND"),
+  @JsonSubTypes.Type(value = DeleteRelationshipInverse.class, name = "DELETE_RELATIONSHIP"),
+  @JsonSubTypes.Type(value = AddRelationshipColumnInverse.class, name = "ADD_RELATIONSHIP_COLUMN"),
+  @JsonSubTypes.Type(value = RemoveRelationshipColumnInverse.class, name = "REMOVE_RELATIONSHIP_COLUMN")
 })
 public sealed interface InversePayload permits
     ChangeTableNameInverse,
@@ -22,6 +39,23 @@ public sealed interface InversePayload permits
     ChangeRelationshipCardinalityInverse,
     ChangeConstraintNameInverse,
     ChangeIndexNameInverse,
-    ChangeIndexTypeInverse {
+    ChangeIndexTypeInverse,
+    CreateTableInverse,
+    DeleteTableInverse,
+    CreateColumnInverse,
+    DeleteColumnInverse,
+    CreateConstraintInverse,
+    DeleteConstraintInverse,
+    AddConstraintColumnInverse,
+    RemoveConstraintColumnInverse,
+    CreateIndexInverse,
+    DeleteIndexInverse,
+    AddIndexColumnInverse,
+    RemoveIndexColumnInverse,
+    CreateRelationshipInverse,
+    ChangeRelationshipKindInverse,
+    DeleteRelationshipInverse,
+    AddRelationshipColumnInverse,
+    RemoveRelationshipColumnInverse {
 
 }

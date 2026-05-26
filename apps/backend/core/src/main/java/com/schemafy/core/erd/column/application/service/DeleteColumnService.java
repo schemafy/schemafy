@@ -1,8 +1,8 @@
 package com.schemafy.core.erd.column.application.service;
 
+import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
 
 import org.springframework.beans.factory.annotation.Autowired;
@@ -29,7 +29,10 @@ import com.schemafy.core.erd.index.application.port.out.DeleteIndexPort;
 import com.schemafy.core.erd.index.application.port.out.GetIndexColumnsByColumnIdPort;
 import com.schemafy.core.erd.index.application.port.out.GetIndexColumnsByIndexIdPort;
 import com.schemafy.core.erd.index.domain.IndexColumn;
+import com.schemafy.core.erd.operation.ErdOperationContexts;
+import com.schemafy.core.erd.operation.application.inverse.DeleteColumnInverse;
 import com.schemafy.core.erd.operation.application.service.ErdMutationCoordinator;
+import com.schemafy.core.erd.operation.application.service.StructuralSnapshotService;
 import com.schemafy.core.erd.operation.domain.ErdOperationType;
 import com.schemafy.core.erd.relationship.application.port.out.DeleteRelationshipColumnPort;
 import com.schemafy.core.erd.relationship.application.port.out.DeleteRelationshipColumnsByColumnIdPort;
@@ -73,6 +76,7 @@ public class DeleteColumnService implements DeleteColumnUseCase {
   private final DeleteRelationshipPort deleteRelationshipPort;
   private final GetRelationshipByIdPort getRelationshipByIdPort;
   private final GetRelationshipsByPkTableIdPort getRelationshipsByPkTableIdPort;
+  private final StructuralSnapshotService structuralSnapshotService;
   private ErdMutationCoordinator erdMutationCoordinator = ErdMutationCoordinator.noop();
 
   @Autowired
@@ -82,15 +86,33 @@ public class DeleteColumnService implements DeleteColumnUseCase {
 
   @Override
   public Mono<MutationResult<Void>> deleteColumn(DeleteColumnCommand command) {
-    Set<String> affectedTableIds = ConcurrentHashMap.newKeySet();
-    return erdMutationCoordinator.coordinate(ErdOperationType.DELETE_COLUMN, command,
-        () -> rejectIfForeignKeyColumn(command.columnId())
-            .then(Mono.defer(() -> deleteColumnInternal(
-                command.columnId(),
-                ConcurrentHashMap.newKeySet(),
-                affectedTableIds)))
-            .then(Mono.fromCallable(() -> MutationResult.<Void>of(null, affectedTableIds))))
+    return Mono.deferContextual(contextView -> ErdOperationContexts.isNestedMutationSuppressed(contextView)
+        ? deleteColumnWithoutInverse(command)
+        : deleteColumnWithInverse(command))
         .as(transactionalOperator::transactional);
+  }
+
+  private Mono<MutationResult<Void>> deleteColumnWithInverse(DeleteColumnCommand command) {
+    return erdMutationCoordinator.coordinate(ErdOperationType.DELETE_COLUMN, command,
+        () -> structuralSnapshotService.captureByColumnId(command.columnId())
+            .flatMap(beforeSnapshot -> deleteColumnWithoutInverse(command)
+                .flatMap(result -> structuralSnapshotService.captureBySchemaId(beforeSnapshot.schemaId())
+                    .map(afterSnapshot -> result.withInverse(new DeleteColumnInverse(
+                        beforeSnapshot.schemaId(),
+                        command.columnId(),
+                        beforeSnapshot,
+                        afterSnapshot,
+                        result.sortedAffectedTableIds()))))));
+  }
+
+  private Mono<MutationResult<Void>> deleteColumnWithoutInverse(DeleteColumnCommand command) {
+    Set<String> affectedTableIds = new HashSet<>();
+    return rejectIfForeignKeyColumn(command.columnId())
+        .then(Mono.defer(() -> deleteColumnInternal(
+            command.columnId(),
+            new HashSet<>(),
+            affectedTableIds)))
+        .then(Mono.fromCallable(() -> MutationResult.<Void>of(null, affectedTableIds)));
   }
 
   private Mono<Void> rejectIfForeignKeyColumn(String columnId) {

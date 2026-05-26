@@ -8,4 +8,6 @@ public interface FindSchemaCollaborationStatePort {
 
   Mono<SchemaCollaborationState> findBySchemaId(String schemaId);
 
+  Mono<SchemaCollaborationState> findBySchemaIdForUpdate(String schemaId);
+
 }

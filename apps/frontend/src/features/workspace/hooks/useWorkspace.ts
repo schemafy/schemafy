@@ -11,6 +11,10 @@ export const useWorkspace = (id: string) => {
 
   return {
     workspace: workspaceQuery.data,
+    isPendingWorkspace: workspaceQuery.isPending,
     isLoadingWorkspace: workspaceQuery.isLoading,
+    isWorkspaceError: workspaceQuery.isError,
+    workspaceError: workspaceQuery.error,
+    refetchWorkspace: workspaceQuery.refetch,
   };
 };

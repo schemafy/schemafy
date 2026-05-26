@@ -14,6 +14,7 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import com.schemafy.core.common.exception.DomainException;
+import com.schemafy.core.erd.column.application.port.in.ChangeColumnTypeCommand;
 import com.schemafy.core.erd.column.application.port.out.ChangeColumnMetaPort;
 import com.schemafy.core.erd.column.application.port.out.ChangeColumnTypePort;
 import com.schemafy.core.erd.column.application.port.out.GetColumnByIdPort;
@@ -151,7 +152,7 @@ class ChangeColumnTypeServiceTest {
       @Test
       @DisplayName("VARCHAR에서 ENUM(values)으로 변경한다")
       void changesVarcharToEnumWithValues() {
-        var command = new com.schemafy.core.erd.column.application.port.in.ChangeColumnTypeCommand(
+        var command = new ChangeColumnTypeCommand(
             ColumnFixture.DEFAULT_ID,
             "ENUM",
             null,

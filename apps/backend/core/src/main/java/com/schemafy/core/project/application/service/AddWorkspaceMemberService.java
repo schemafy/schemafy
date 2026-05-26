@@ -8,10 +8,12 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.schemafy.core.common.exception.DomainException;
+import com.schemafy.core.project.application.access.RequireWorkspaceAccess;
 import com.schemafy.core.project.application.port.in.AddWorkspaceMemberCommand;
 import com.schemafy.core.project.application.port.in.AddWorkspaceMemberUseCase;
 import com.schemafy.core.project.application.port.out.WorkspaceMemberPort;
 import com.schemafy.core.project.domain.WorkspaceMember;
+import com.schemafy.core.project.domain.WorkspaceRole;
 import com.schemafy.core.project.domain.exception.WorkspaceErrorCode;
 import com.schemafy.core.ulid.application.port.out.UlidGeneratorPort;
 import com.schemafy.core.user.domain.Email;
@@ -33,11 +35,10 @@ class AddWorkspaceMemberService implements AddWorkspaceMemberUseCase {
   private final ProjectMembershipPropagationHelper projectMembershipPropagationHelper;
 
   @Override
+  @RequireWorkspaceAccess(role = WorkspaceRole.ADMIN)
   public Mono<WorkspaceMember> addWorkspaceMember(AddWorkspaceMemberCommand command) {
     return Mono.fromSupplier(() -> Email.from(command.email()))
-        .flatMap(email -> workspaceAccessHelper.validateAdminAccess(
-            command.workspaceId(), command.requesterId())
-            .then(workspaceAccessHelper.findUserByEmailOrThrow(email))
+        .flatMap(email -> workspaceAccessHelper.findUserByEmailOrThrow(email)
             .flatMap(targetUser -> workspaceMemberPort
                 .findLatestByWorkspaceIdAndUserId(command.workspaceId(),
                     targetUser.id())

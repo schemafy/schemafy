@@ -1,6 +1,7 @@
 package com.schemafy.core.erd.operation.integration;
 
 import java.util.List;
+import java.util.stream.StreamSupport;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -19,18 +20,29 @@ import com.schemafy.core.erd.constraint.application.port.in.CreateConstraintColu
 import com.schemafy.core.erd.constraint.application.port.in.CreateConstraintCommand;
 import com.schemafy.core.erd.constraint.application.port.in.CreateConstraintUseCase;
 import com.schemafy.core.erd.constraint.domain.type.ConstraintKind;
+import com.schemafy.core.erd.index.application.port.in.CreateIndexColumnCommand;
+import com.schemafy.core.erd.index.application.port.in.CreateIndexCommand;
+import com.schemafy.core.erd.index.application.port.in.CreateIndexUseCase;
+import com.schemafy.core.erd.index.application.port.in.RemoveIndexColumnCommand;
+import com.schemafy.core.erd.index.application.port.in.RemoveIndexColumnUseCase;
+import com.schemafy.core.erd.index.domain.type.IndexType;
+import com.schemafy.core.erd.index.domain.type.SortDirection;
 import com.schemafy.core.erd.operation.ErdOperationContexts;
+import com.schemafy.core.erd.operation.application.inverse.StructuralSnapshot;
 import com.schemafy.core.erd.operation.application.port.in.RedoErdOperationCommand;
 import com.schemafy.core.erd.operation.application.port.in.RedoErdOperationUseCase;
 import com.schemafy.core.erd.operation.application.port.in.UndoErdOperationCommand;
 import com.schemafy.core.erd.operation.application.port.in.UndoErdOperationUseCase;
 import com.schemafy.core.erd.operation.application.port.out.IncrementSchemaCollaborationRevisionPort;
+import com.schemafy.core.erd.operation.application.service.StructuralSnapshotService;
 import com.schemafy.core.erd.operation.domain.ErdOperationDerivationKind;
 import com.schemafy.core.erd.operation.domain.exception.OperationErrorCode;
 import com.schemafy.core.erd.relationship.application.port.in.ChangeRelationshipKindCommand;
 import com.schemafy.core.erd.relationship.application.port.in.ChangeRelationshipKindUseCase;
 import com.schemafy.core.erd.relationship.application.port.in.CreateRelationshipCommand;
 import com.schemafy.core.erd.relationship.application.port.in.CreateRelationshipUseCase;
+import com.schemafy.core.erd.relationship.application.port.in.RemoveRelationshipColumnCommand;
+import com.schemafy.core.erd.relationship.application.port.in.RemoveRelationshipColumnUseCase;
 import com.schemafy.core.erd.relationship.domain.type.Cardinality;
 import com.schemafy.core.erd.relationship.domain.type.RelationshipKind;
 import com.schemafy.core.erd.schema.application.port.in.ChangeSchemaNameCommand;
@@ -85,7 +97,16 @@ class ErdOperationLedgerIntegrationTest extends ErdProjectIntegrationSupport {
   CreateConstraintUseCase createConstraintUseCase;
 
   @Autowired
+  CreateIndexUseCase createIndexUseCase;
+
+  @Autowired
+  RemoveIndexColumnUseCase removeIndexColumnUseCase;
+
+  @Autowired
   CreateRelationshipUseCase createRelationshipUseCase;
+
+  @Autowired
+  RemoveRelationshipColumnUseCase removeRelationshipColumnUseCase;
 
   @Autowired
   ChangeRelationshipKindUseCase changeRelationshipKindUseCase;
@@ -95,6 +116,9 @@ class ErdOperationLedgerIntegrationTest extends ErdProjectIntegrationSupport {
 
   @Autowired
   IncrementSchemaCollaborationRevisionPort incrementSchemaCollaborationRevisionPort;
+
+  @Autowired
+  StructuralSnapshotService structuralSnapshotService;
 
   @Autowired
   UndoErdOperationUseCase undoErdOperationUseCase;
@@ -355,6 +379,364 @@ class ErdOperationLedgerIntegrationTest extends ErdProjectIntegrationSupport {
   }
 
   @Test
+  @DisplayName("table 생성 undo/redo는 같은 table ID를 삭제하고 복원한다")
+  void createTableUndoRedoRestoresSameTableId() {
+    String projectId = createActiveProjectId("erd_operation_create_table_undo_redo");
+
+    String schemaId = createSchemaUseCase.createSchema(new CreateSchemaCommand(
+        projectId,
+        "MySQL",
+        "create_table_undo_redo_schema",
+        "utf8mb4",
+        "utf8mb4_general_ci")).block().result().id();
+
+    var createResult = createTableUseCase.createTable(new CreateTableCommand(
+        schemaId,
+        "users",
+        "utf8mb4",
+        "utf8mb4_general_ci",
+        "{\"x\":100}")).block();
+    String tableId = createResult.result().tableId();
+    String createOpId = createResult.operation().opId();
+
+    undoErdOperationUseCase.undo(new UndoErdOperationCommand(createOpId)).block();
+    assertThat(rowExists("db_tables", tableId)).isFalse();
+
+    redoErdOperationUseCase.redo(new RedoErdOperationCommand(createOpId)).block();
+    assertThat(rowExists("db_tables", tableId)).isTrue();
+    assertLastOperation(schemaId, "CREATE_TABLE", currentRevision(schemaId), List.of(tableId));
+  }
+
+  @Test
+  @DisplayName("table 삭제 undo/redo는 cascade로 삭제된 구조를 원래 ID로 복원한다")
+  void deleteTableUndoRedoRestoresCascadeGraphWithOriginalIds() {
+    String projectId = createActiveProjectId("erd_operation_delete_table_undo_redo");
+
+    String schemaId = createSchemaUseCase.createSchema(new CreateSchemaCommand(
+        projectId,
+        "MySQL",
+        "delete_table_undo_redo_schema",
+        "utf8mb4",
+        "utf8mb4_general_ci")).block().result().id();
+
+    String pkTableId = createTableUseCase.createTable(new CreateTableCommand(
+        schemaId,
+        "users",
+        "utf8mb4",
+        "utf8mb4_general_ci",
+        null)).block().result().tableId();
+
+    String fkTableId = createTableUseCase.createTable(new CreateTableCommand(
+        schemaId,
+        "orders",
+        "utf8mb4",
+        "utf8mb4_general_ci",
+        null)).block().result().tableId();
+
+    String pkColumnId = createColumnUseCase.createColumn(new CreateColumnCommand(
+        pkTableId,
+        "id",
+        "INT",
+        null,
+        null,
+        null,
+        true,
+        null,
+        null,
+        null)).block().result().columnId();
+
+    createConstraintUseCase.createConstraint(new CreateConstraintCommand(
+        pkTableId,
+        "pk_users",
+        ConstraintKind.PRIMARY_KEY,
+        null,
+        null,
+        List.of(new CreateConstraintColumnCommand(pkColumnId, 0)))).block();
+
+    String relationshipId = createRelationshipUseCase.createRelationship(new CreateRelationshipCommand(
+        fkTableId,
+        pkTableId,
+        RelationshipKind.NON_IDENTIFYING,
+        Cardinality.ONE_TO_MANY,
+        null)).block().result().relationshipId();
+    String relationshipColumnId = firstRelationshipColumnId(relationshipId);
+    String fkColumnId = relationshipColumnFkColumnId(relationshipColumnId);
+
+    String indexId = createIndexUseCase.createIndex(new CreateIndexCommand(
+        fkTableId,
+        "idx_orders_user_id",
+        IndexType.BTREE,
+        List.of(new CreateIndexColumnCommand(fkColumnId, 0, SortDirection.ASC)))).block().result().indexId();
+    String indexColumnId = firstIndexColumnId(indexId);
+
+    var deleteResult = deleteTableUseCase.deleteTable(new DeleteTableCommand(fkTableId)).block();
+    String deleteOpId = deleteResult.operation().opId();
+
+    assertThat(rowExists("db_tables", fkTableId)).isFalse();
+    assertThat(rowExists("db_relationships", relationshipId)).isFalse();
+    assertThat(rowExists("db_relationship_columns", relationshipColumnId)).isFalse();
+    assertThat(rowExists("db_columns", fkColumnId)).isFalse();
+    assertThat(rowExists("db_indexes", indexId)).isFalse();
+    assertThat(rowExists("db_index_columns", indexColumnId)).isFalse();
+
+    undoErdOperationUseCase.undo(new UndoErdOperationCommand(deleteOpId)).block();
+    assertThat(rowExists("db_tables", fkTableId)).isTrue();
+    assertThat(rowExists("db_relationships", relationshipId)).isTrue();
+    assertThat(rowExists("db_relationship_columns", relationshipColumnId)).isTrue();
+    assertThat(rowExists("db_columns", fkColumnId)).isTrue();
+    assertThat(rowExists("db_indexes", indexId)).isTrue();
+    assertThat(rowExists("db_index_columns", indexColumnId)).isTrue();
+
+    redoErdOperationUseCase.redo(new RedoErdOperationCommand(deleteOpId)).block();
+    assertThat(rowExists("db_tables", fkTableId)).isFalse();
+    assertThat(rowExists("db_relationships", relationshipId)).isFalse();
+    assertThat(rowExists("db_columns", fkColumnId)).isFalse();
+    assertLastOperation(schemaId, "DELETE_TABLE", currentRevision(schemaId), List.of(pkTableId, fkTableId));
+  }
+
+  @Test
+  @DisplayName("index column 제거 undo/redo는 parent index와 membership row를 원래 ID로 복원한다")
+  void indexColumnRemovalUndoRedoRestoresParentIndexAndColumnMembership() {
+    String projectId = createActiveProjectId("erd_operation_index_column_undo_redo");
+
+    String schemaId = createSchemaUseCase.createSchema(new CreateSchemaCommand(
+        projectId,
+        "MySQL",
+        "index_column_undo_redo_schema",
+        "utf8mb4",
+        "utf8mb4_general_ci")).block().result().id();
+
+    String tableId = createTableUseCase.createTable(new CreateTableCommand(
+        schemaId,
+        "users",
+        "utf8mb4",
+        "utf8mb4_general_ci",
+        null)).block().result().tableId();
+
+    String columnId = createColumnUseCase.createColumn(new CreateColumnCommand(
+        tableId,
+        "email",
+        "VARCHAR",
+        255,
+        null,
+        null,
+        false,
+        "utf8mb4",
+        "utf8mb4_general_ci",
+        null)).block().result().columnId();
+
+    String indexId = createIndexUseCase.createIndex(new CreateIndexCommand(
+        tableId,
+        "idx_users_email",
+        IndexType.BTREE,
+        List.of(new CreateIndexColumnCommand(columnId, 0, SortDirection.ASC)))).block().result().indexId();
+    String indexColumnId = firstIndexColumnId(indexId);
+
+    var removeResult = removeIndexColumnUseCase.removeIndexColumn(new RemoveIndexColumnCommand(indexColumnId)).block();
+    String removeOpId = removeResult.operation().opId();
+
+    assertThat(rowExists("db_index_columns", indexColumnId)).isFalse();
+    assertThat(rowExists("db_indexes", indexId)).isFalse();
+
+    undoErdOperationUseCase.undo(new UndoErdOperationCommand(removeOpId)).block();
+    assertThat(rowExists("db_indexes", indexId)).isTrue();
+    assertThat(rowExists("db_index_columns", indexColumnId)).isTrue();
+    assertThat(indexColumnSeqNo(indexColumnId)).isEqualTo(0);
+
+    redoErdOperationUseCase.redo(new RedoErdOperationCommand(removeOpId)).block();
+    assertThat(rowExists("db_index_columns", indexColumnId)).isFalse();
+    assertThat(rowExists("db_indexes", indexId)).isFalse();
+    assertLastOperation(schemaId, "REMOVE_INDEX_COLUMN", currentRevision(schemaId), List.of(tableId));
+  }
+
+  @Test
+  @DisplayName("relationship column 제거 undo/redo는 FK column과 orphan relationship을 원래 ID로 복원한다")
+  void relationshipColumnRemovalUndoRedoRestoresFkColumnAndOrphanRelationship() {
+    String projectId = createActiveProjectId("erd_operation_relationship_column_undo_redo");
+
+    String schemaId = createSchemaUseCase.createSchema(new CreateSchemaCommand(
+        projectId,
+        "MySQL",
+        "relationship_column_undo_redo_schema",
+        "utf8mb4",
+        "utf8mb4_general_ci")).block().result().id();
+
+    String pkTableId = createTableUseCase.createTable(new CreateTableCommand(
+        schemaId,
+        "users",
+        "utf8mb4",
+        "utf8mb4_general_ci",
+        null)).block().result().tableId();
+
+    String fkTableId = createTableUseCase.createTable(new CreateTableCommand(
+        schemaId,
+        "orders",
+        "utf8mb4",
+        "utf8mb4_general_ci",
+        null)).block().result().tableId();
+
+    String pkColumnId = createColumnUseCase.createColumn(new CreateColumnCommand(
+        pkTableId,
+        "id",
+        "INT",
+        null,
+        null,
+        null,
+        true,
+        null,
+        null,
+        "pk column")).block().result().columnId();
+
+    createConstraintUseCase.createConstraint(new CreateConstraintCommand(
+        pkTableId,
+        "pk_users",
+        ConstraintKind.PRIMARY_KEY,
+        null,
+        null,
+        List.of(new CreateConstraintColumnCommand(pkColumnId, 0)))).block();
+
+    String relationshipId = createRelationshipUseCase.createRelationship(new CreateRelationshipCommand(
+        fkTableId,
+        pkTableId,
+        RelationshipKind.NON_IDENTIFYING,
+        Cardinality.ONE_TO_MANY,
+        null)).block().result().relationshipId();
+    String relationshipColumnId = firstRelationshipColumnId(relationshipId);
+    String fkColumnId = relationshipColumnFkColumnId(relationshipColumnId);
+
+    var removeResult = removeRelationshipColumnUseCase
+        .removeRelationshipColumn(new RemoveRelationshipColumnCommand(relationshipColumnId))
+        .block();
+    String removeOpId = removeResult.operation().opId();
+
+    assertThat(rowExists("db_relationship_columns", relationshipColumnId)).isFalse();
+    assertThat(rowExists("db_relationships", relationshipId)).isFalse();
+    assertThat(rowExists("db_columns", fkColumnId)).isFalse();
+
+    undoErdOperationUseCase.undo(new UndoErdOperationCommand(removeOpId)).block();
+    assertThat(rowExists("db_relationships", relationshipId)).isTrue();
+    assertThat(rowExists("db_relationship_columns", relationshipColumnId)).isTrue();
+    assertThat(rowExists("db_columns", fkColumnId)).isTrue();
+
+    redoErdOperationUseCase.redo(new RedoErdOperationCommand(removeOpId)).block();
+    assertThat(rowExists("db_relationship_columns", relationshipColumnId)).isFalse();
+    assertThat(rowExists("db_relationships", relationshipId)).isFalse();
+    assertThat(rowExists("db_columns", fkColumnId)).isFalse();
+    assertLastOperation(schemaId, "REMOVE_RELATIONSHIP_COLUMN", currentRevision(schemaId), List.of(pkTableId,
+        fkTableId));
+  }
+
+  @Test
+  @DisplayName("structural snapshot reconcile은 같은 ID row 속성을 target snapshot과 동일하게 복원한다")
+  void structuralSnapshotReconcileRestoresExistingRowAttributes() {
+    String projectId = createActiveProjectId("erd_operation_structural_snapshot_restore");
+
+    String schemaId = createSchemaUseCase.createSchema(new CreateSchemaCommand(
+        projectId,
+        "MySQL",
+        "structural_snapshot_restore_schema",
+        "utf8mb4",
+        "utf8mb4_general_ci")).block().result().id();
+
+    String pkTableId = createTableUseCase.createTable(new CreateTableCommand(
+        schemaId,
+        "users",
+        "utf8mb4",
+        "utf8mb4_general_ci",
+        null)).block().result().tableId();
+
+    String fkTableId = createTableUseCase.createTable(new CreateTableCommand(
+        schemaId,
+        "orders",
+        "utf8mb4",
+        "utf8mb4_general_ci",
+        null)).block().result().tableId();
+
+    String pkColumnId = createColumnUseCase.createColumn(new CreateColumnCommand(
+        pkTableId,
+        "id",
+        "VARCHAR",
+        26,
+        null,
+        null,
+        false,
+        "utf8mb4",
+        "utf8mb4_general_ci",
+        "pk column")).block().result().columnId();
+
+    String otherPkColumnId = createColumnUseCase.createColumn(new CreateColumnCommand(
+        pkTableId,
+        "legacy_id",
+        "VARCHAR",
+        26,
+        null,
+        null,
+        false,
+        "utf8mb4",
+        "utf8mb4_general_ci",
+        null)).block().result().columnId();
+
+    String otherFkColumnId = createColumnUseCase.createColumn(new CreateColumnCommand(
+        fkTableId,
+        "legacy_user_id",
+        "VARCHAR",
+        26,
+        null,
+        null,
+        false,
+        "utf8mb4",
+        "utf8mb4_general_ci",
+        null)).block().result().columnId();
+
+    String constraintId = createConstraintUseCase.createConstraint(new CreateConstraintCommand(
+        pkTableId,
+        "pk_users",
+        ConstraintKind.PRIMARY_KEY,
+        null,
+        null,
+        List.of(new CreateConstraintColumnCommand(pkColumnId, 0)))).block().result().constraintId();
+    String constraintColumnId = firstConstraintColumnId(constraintId);
+
+    String indexId = createIndexUseCase.createIndex(new CreateIndexCommand(
+        pkTableId,
+        "idx_users_id",
+        IndexType.BTREE,
+        List.of(new CreateIndexColumnCommand(pkColumnId, 0, SortDirection.ASC)))).block().result().indexId();
+    String indexColumnId = firstIndexColumnId(indexId);
+
+    String relationshipId = createRelationshipUseCase.createRelationship(new CreateRelationshipCommand(
+        fkTableId,
+        pkTableId,
+        RelationshipKind.NON_IDENTIFYING,
+        Cardinality.ONE_TO_MANY,
+        "{\"label\":\"target\"}")).block().result().relationshipId();
+    String relationshipColumnId = firstRelationshipColumnId(relationshipId);
+
+    StructuralSnapshot targetSnapshot = structuralSnapshotService.captureBySchemaId(schemaId).block();
+
+    mutateStructuralSnapshotRows(
+        pkTableId,
+        fkTableId,
+        pkColumnId,
+        otherPkColumnId,
+        otherFkColumnId,
+        constraintId,
+        constraintColumnId,
+        indexId,
+        indexColumnId,
+        relationshipId,
+        relationshipColumnId);
+
+    assertThat(structuralSnapshotService.captureBySchemaId(schemaId).block())
+        .isNotEqualTo(targetSnapshot);
+
+    structuralSnapshotService.reconcileTo(targetSnapshot).block();
+
+    assertThat(structuralSnapshotService.captureBySchemaId(schemaId).block())
+        .isEqualTo(targetSnapshot);
+  }
+
+  @Test
   @DisplayName("같은 schema에 대한 concurrent revision increment는 유실 없이 누적된다")
   void incrementsRevisionAtomicallyUnderConcurrency() {
     String projectId = createActiveProjectId("erd_operation_atomic_increment");
@@ -601,6 +983,197 @@ class ErdOperationLedgerIntegrationTest extends ErdProjectIntegrationSupport {
         .block();
   }
 
+  private boolean rowExists(String tableName, String id) {
+    return databaseClient.sql("""
+        SELECT COUNT(*) AS cnt
+        FROM %s
+        WHERE id = :id
+        """.formatted(tableName))
+        .bind("id", id)
+        .map((row, metadata) -> ((Number) row.get("cnt")).longValue() == 1)
+        .one()
+        .block();
+  }
+
+  private void mutateStructuralSnapshotRows(
+      String pkTableId,
+      String fkTableId,
+      String pkColumnId,
+      String otherPkColumnId,
+      String otherFkColumnId,
+      String constraintId,
+      String constraintColumnId,
+      String indexId,
+      String indexColumnId,
+      String relationshipId,
+      String relationshipColumnId) {
+    assertSingleRowUpdated(databaseClient.sql("""
+        UPDATE db_columns
+        SET table_id = :fkTableId,
+            name = 'id_mutated',
+            data_type = 'INT',
+            type_arguments = NULL,
+            seq_no = 7,
+            auto_increment = TRUE,
+            charset = 'latin1',
+            collation = 'latin1_swedish_ci',
+            comment = 'mutated column'
+        WHERE id = :pkColumnId
+        """)
+        .bind("fkTableId", fkTableId)
+        .bind("pkColumnId", pkColumnId)
+        .fetch()
+        .rowsUpdated());
+
+    assertSingleRowUpdated(databaseClient.sql("""
+        UPDATE db_constraints
+        SET table_id = :fkTableId,
+            name = 'pk_mutated',
+            kind = 'UNIQUE',
+            check_expr = 'mutated_check',
+            default_expr = 'mutated_default'
+        WHERE id = :constraintId
+        """)
+        .bind("fkTableId", fkTableId)
+        .bind("constraintId", constraintId)
+        .fetch()
+        .rowsUpdated());
+
+    assertSingleRowUpdated(databaseClient.sql("""
+        UPDATE db_constraint_columns
+        SET column_id = :otherPkColumnId,
+            seq_no = 3
+        WHERE id = :constraintColumnId
+        """)
+        .bind("otherPkColumnId", otherPkColumnId)
+        .bind("constraintColumnId", constraintColumnId)
+        .fetch()
+        .rowsUpdated());
+
+    assertSingleRowUpdated(databaseClient.sql("""
+        UPDATE db_indexes
+        SET table_id = :fkTableId,
+            name = 'idx_mutated',
+            type = 'HASH'
+        WHERE id = :indexId
+        """)
+        .bind("fkTableId", fkTableId)
+        .bind("indexId", indexId)
+        .fetch()
+        .rowsUpdated());
+
+    assertSingleRowUpdated(databaseClient.sql("""
+        UPDATE db_index_columns
+        SET column_id = :otherPkColumnId,
+            seq_no = 4,
+            sort_dir = 'DESC'
+        WHERE id = :indexColumnId
+        """)
+        .bind("otherPkColumnId", otherPkColumnId)
+        .bind("indexColumnId", indexColumnId)
+        .fetch()
+        .rowsUpdated());
+
+    assertSingleRowUpdated(databaseClient.sql("""
+        UPDATE db_relationships
+        SET pk_table_id = :fkTableId,
+            fk_table_id = :pkTableId,
+            name = 'rel_mutated',
+            kind = 'IDENTIFYING',
+            cardinality = 'ONE_TO_ONE',
+            extra = '{"label":"mutated"}'
+        WHERE id = :relationshipId
+        """)
+        .bind("fkTableId", fkTableId)
+        .bind("pkTableId", pkTableId)
+        .bind("relationshipId", relationshipId)
+        .fetch()
+        .rowsUpdated());
+
+    assertSingleRowUpdated(databaseClient.sql("""
+        UPDATE db_relationship_columns
+        SET pk_column_id = :otherPkColumnId,
+            fk_column_id = :otherFkColumnId,
+            seq_no = 5
+        WHERE id = :relationshipColumnId
+        """)
+        .bind("otherPkColumnId", otherPkColumnId)
+        .bind("otherFkColumnId", otherFkColumnId)
+        .bind("relationshipColumnId", relationshipColumnId)
+        .fetch()
+        .rowsUpdated());
+  }
+
+  private void assertSingleRowUpdated(Mono<Long> rowsUpdated) {
+    assertThat(rowsUpdated.block()).isEqualTo(1L);
+  }
+
+  private String firstConstraintColumnId(String constraintId) {
+    return databaseClient.sql("""
+        SELECT id
+        FROM db_constraint_columns
+        WHERE constraint_id = :constraintId
+        ORDER BY seq_no
+        LIMIT 1
+        """)
+        .bind("constraintId", constraintId)
+        .map((row, metadata) -> row.get("id", String.class))
+        .one()
+        .block();
+  }
+
+  private String firstIndexColumnId(String indexId) {
+    return databaseClient.sql("""
+        SELECT id
+        FROM db_index_columns
+        WHERE index_id = :indexId
+        ORDER BY seq_no
+        LIMIT 1
+        """)
+        .bind("indexId", indexId)
+        .map((row, metadata) -> row.get("id", String.class))
+        .one()
+        .block();
+  }
+
+  private int indexColumnSeqNo(String indexColumnId) {
+    return databaseClient.sql("""
+        SELECT seq_no
+        FROM db_index_columns
+        WHERE id = :indexColumnId
+        """)
+        .bind("indexColumnId", indexColumnId)
+        .map((row, metadata) -> ((Number) row.get("seq_no")).intValue())
+        .one()
+        .block();
+  }
+
+  private String firstRelationshipColumnId(String relationshipId) {
+    return databaseClient.sql("""
+        SELECT id
+        FROM db_relationship_columns
+        WHERE relationship_id = :relationshipId
+        ORDER BY seq_no
+        LIMIT 1
+        """)
+        .bind("relationshipId", relationshipId)
+        .map((row, metadata) -> row.get("id", String.class))
+        .one()
+        .block();
+  }
+
+  private String relationshipColumnFkColumnId(String relationshipColumnId) {
+    return databaseClient.sql("""
+        SELECT fk_column_id
+        FROM db_relationship_columns
+        WHERE id = :relationshipColumnId
+        """)
+        .bind("relationshipColumnId", relationshipColumnId)
+        .map((row, metadata) -> row.get("fk_column_id", String.class))
+        .one()
+        .block();
+  }
+
   private void assertLastOperation(
       String schemaId,
       String expectedOpType,
@@ -635,7 +1208,7 @@ class ErdOperationLedgerIntegrationTest extends ErdProjectIntegrationSupport {
   private List<String> parseStringArray(String rawJson) {
     JsonNode node = jsonCodec.parsePersistedNode(rawJson);
     assertThat(node.isArray()).isTrue();
-    return java.util.stream.StreamSupport.stream(node.spliterator(), false)
+    return StreamSupport.stream(node.spliterator(), false)
         .map(JsonNode::asText)
         .toList();
   }

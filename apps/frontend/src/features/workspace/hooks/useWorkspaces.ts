@@ -51,7 +51,11 @@ export const useWorkspaces = (page = 0, size = 5) => {
   return {
     workspaces: workspacesQuery.data?.content ?? [],
     workspacesData: workspacesQuery.data,
+    isPendingWorkspaces: workspacesQuery.isPending,
     isLoadingWorkspaces: workspacesQuery.isLoading,
+    isWorkspacesError: workspacesQuery.isError,
+    workspacesError: workspacesQuery.error,
+    refetchWorkspaces: workspacesQuery.refetch,
     createWorkspace,
     updateWorkspace,
     deleteWorkspace,

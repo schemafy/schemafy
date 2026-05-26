@@ -3,6 +3,7 @@ package com.schemafy.core.project.application.service;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.reactive.TransactionalOperator;
 
+import com.schemafy.core.project.application.access.RequireWorkspaceAccess;
 import com.schemafy.core.project.application.port.in.UpdateWorkspaceMemberRoleCommand;
 import com.schemafy.core.project.application.port.in.UpdateWorkspaceMemberRoleUseCase;
 import com.schemafy.core.project.domain.WorkspaceMember;
@@ -21,12 +22,11 @@ class UpdateWorkspaceMemberRoleService
   private final ProjectMembershipPropagationHelper projectMembershipPropagationHelper;
 
   @Override
+  @RequireWorkspaceAccess(role = WorkspaceRole.ADMIN)
   public Mono<WorkspaceMember> updateWorkspaceMemberRole(
       UpdateWorkspaceMemberRoleCommand command) {
-    return workspaceAccessHelper.validateAdminAccess(command.workspaceId(),
-        command.requesterId())
-        .then(workspaceAccessHelper.findWorkspaceMember(command.targetUserId(),
-            command.workspaceId()))
+    return workspaceAccessHelper.findWorkspaceMember(command.targetUserId(),
+        command.workspaceId())
         .flatMap(targetMember -> workspaceAccessHelper.modifyMemberWithAdminGuard(
             command.workspaceId(),
             targetMember,

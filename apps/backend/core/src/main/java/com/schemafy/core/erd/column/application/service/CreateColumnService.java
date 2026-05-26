@@ -16,7 +16,9 @@ import com.schemafy.core.erd.column.application.port.out.GetColumnsByTableIdPort
 import com.schemafy.core.erd.column.domain.Column;
 import com.schemafy.core.erd.column.domain.ColumnTypeArguments;
 import com.schemafy.core.erd.column.domain.validator.ColumnValidator;
+import com.schemafy.core.erd.operation.application.inverse.CreateColumnInverse;
 import com.schemafy.core.erd.operation.application.service.ErdMutationCoordinator;
+import com.schemafy.core.erd.operation.application.service.StructuralSnapshotService;
 import com.schemafy.core.erd.operation.domain.ErdOperationType;
 import com.schemafy.core.erd.schema.application.port.out.GetSchemaByIdPort;
 import com.schemafy.core.erd.schema.domain.Schema;
@@ -40,6 +42,7 @@ public class CreateColumnService implements CreateColumnUseCase {
   private final GetSchemaByIdPort getSchemaByIdPort;
   private final GetColumnsByTableIdPort getColumnsByTableIdPort;
   private final TransactionalOperator transactionalOperator;
+  private final StructuralSnapshotService structuralSnapshotService;
   private ErdMutationCoordinator erdMutationCoordinator = ErdMutationCoordinator.noop();
 
   @Autowired
@@ -56,11 +59,19 @@ public class CreateColumnService implements CreateColumnUseCase {
         command.values());
 
     return erdMutationCoordinator.coordinate(ErdOperationType.CREATE_COLUMN, command,
-        () -> getTableByIdPort.findTableById(command.tableId())
-            .switchIfEmpty(Mono.error(new DomainException(TableErrorCode.NOT_FOUND, "Table not found")))
-            .flatMap(table -> fetchSchemaAndColumns(table)
-                .flatMap(tuple -> createColumn(table, tuple, command, typeArguments))
-                .map(result -> MutationResult.of(result, table.id()))))
+        () -> structuralSnapshotService.captureByTableId(command.tableId())
+            .flatMap(beforeSnapshot -> getTableByIdPort.findTableById(command.tableId())
+                .switchIfEmpty(Mono.error(new DomainException(TableErrorCode.NOT_FOUND, "Table not found")))
+                .flatMap(table -> fetchSchemaAndColumns(table)
+                    .flatMap(tuple -> createColumn(table, tuple, command, typeArguments))
+                    .map(result -> MutationResult.of(result, table.id())))
+                .flatMap(result -> structuralSnapshotService.captureBySchemaId(beforeSnapshot.schemaId())
+                    .map(afterSnapshot -> result.withInverse(new CreateColumnInverse(
+                        beforeSnapshot.schemaId(),
+                        result.result().columnId(),
+                        beforeSnapshot,
+                        afterSnapshot,
+                        result.sortedAffectedTableIds()))))))
         .as(transactionalOperator::transactional);
   }
 

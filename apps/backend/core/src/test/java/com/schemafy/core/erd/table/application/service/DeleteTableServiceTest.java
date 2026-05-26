@@ -5,6 +5,7 @@ import java.util.Set;
 
 import org.springframework.transaction.reactive.TransactionalOperator;
 
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -19,6 +20,8 @@ import com.schemafy.core.erd.column.application.port.in.DeleteColumnCommand;
 import com.schemafy.core.erd.column.application.port.in.DeleteColumnUseCase;
 import com.schemafy.core.erd.column.application.port.out.GetColumnsByTableIdPort;
 import com.schemafy.core.erd.column.fixture.ColumnFixture;
+import com.schemafy.core.erd.operation.ErdOperationContexts;
+import com.schemafy.core.erd.operation.application.service.StructuralSnapshotService;
 import com.schemafy.core.erd.relationship.application.port.in.DeleteRelationshipCommand;
 import com.schemafy.core.erd.relationship.application.port.in.DeleteRelationshipUseCase;
 import com.schemafy.core.erd.relationship.application.port.out.GetRelationshipsByTableIdPort;
@@ -32,6 +35,7 @@ import com.schemafy.core.erd.table.fixture.TableFixture;
 import reactor.core.publisher.Mono;
 import reactor.test.StepVerifier;
 
+import static com.schemafy.core.erd.operation.application.service.StructuralSnapshotServiceTestSupport.stubEmptySnapshots;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
@@ -40,6 +44,7 @@ import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.then;
 import static org.mockito.Mockito.inOrder;
 import static org.mockito.Mockito.lenient;
+import static org.mockito.Mockito.never;
 
 @ExtendWith(MockitoExtension.class)
 @DisplayName("DeleteTableService")
@@ -66,8 +71,16 @@ class DeleteTableServiceTest {
   @Mock
   DeleteColumnUseCase deleteColumnUseCase;
 
+  @Mock
+  StructuralSnapshotService structuralSnapshotService;
+
   @InjectMocks
   DeleteTableService sut;
+
+  @BeforeEach
+  void setUpSnapshots() {
+    stubEmptySnapshots(structuralSnapshotService);
+  }
 
   @Nested
   @DisplayName("deleteTable 메서드는")
@@ -144,6 +157,32 @@ class DeleteTableServiceTest {
         then(deleteRelationshipUseCase).shouldHaveNoInteractions();
         then(deleteColumnUseCase).shouldHaveNoInteractions();
         then(deleteTablePort).should().deleteTable(command.tableId());
+      }
+
+      @Test
+      @DisplayName("nested mutation suppress context에서는 snapshot 없이 테이블을 삭제한다")
+      void skipsSnapshotsWhenNestedMutationSuppressed() {
+        var command = TableFixture.deleteCommand();
+
+        given(getTableByIdPort.findTableById(command.tableId()))
+            .willReturn(Mono.just(TableFixture.tableWithId(command.tableId())));
+        given(getRelationshipsByTableIdPort.findRelationshipsByTableId(any()))
+            .willReturn(Mono.just(List.of()));
+        given(getColumnsByTableIdPort.findColumnsByTableId(any()))
+            .willReturn(Mono.just(List.of()));
+        given(deleteTablePort.deleteTable(any()))
+            .willReturn(Mono.empty());
+        given(transactionalOperator.transactional(any(Mono.class)))
+            .willAnswer(invocation -> invocation.getArgument(0));
+
+        StepVerifier.create(sut.deleteTable(command)
+            .contextWrite(ErdOperationContexts.suppressNestedMutation()))
+            .expectNextCount(1)
+            .verifyComplete();
+
+        then(deleteTablePort).should().deleteTable(command.tableId());
+        then(structuralSnapshotService).should(never()).captureByTableId(any());
+        then(structuralSnapshotService).should(never()).captureBySchemaId(any());
       }
 
       @Test

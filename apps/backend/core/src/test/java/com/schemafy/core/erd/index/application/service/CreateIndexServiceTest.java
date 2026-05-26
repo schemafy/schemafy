@@ -1,5 +1,6 @@
 package com.schemafy.core.erd.index.application.service;
 
+import java.util.ArrayList;
 import java.util.List;
 
 import org.springframework.transaction.reactive.TransactionalOperator;
@@ -29,6 +30,7 @@ import com.schemafy.core.erd.index.domain.exception.IndexErrorCode;
 import com.schemafy.core.erd.index.domain.type.IndexType;
 import com.schemafy.core.erd.index.domain.type.SortDirection;
 import com.schemafy.core.erd.index.fixture.IndexFixture;
+import com.schemafy.core.erd.operation.application.service.StructuralSnapshotService;
 import com.schemafy.core.erd.table.application.port.out.GetTableByIdPort;
 import com.schemafy.core.erd.table.domain.Table;
 import com.schemafy.core.erd.table.domain.exception.TableErrorCode;
@@ -37,6 +39,7 @@ import com.schemafy.core.ulid.application.port.out.UlidGeneratorPort;
 import reactor.core.publisher.Mono;
 import reactor.test.StepVerifier;
 
+import static com.schemafy.core.erd.operation.application.service.StructuralSnapshotServiceTestSupport.stubEmptySnapshots;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
@@ -73,6 +76,9 @@ class CreateIndexServiceTest {
   @Mock
   TransactionalOperator transactionalOperator;
 
+  @Mock
+  StructuralSnapshotService structuralSnapshotService;
+
   @InjectMocks
   CreateIndexService sut;
 
@@ -80,6 +86,7 @@ class CreateIndexServiceTest {
   void setUpTransaction() {
     given(transactionalOperator.transactional(any(Mono.class)))
         .willAnswer(invocation -> invocation.getArgument(0));
+    stubEmptySnapshots(structuralSnapshotService);
   }
 
   @Nested
@@ -164,7 +171,7 @@ class CreateIndexServiceTest {
       var tableColumns = List.of(
           ColumnFixture.columnWithId("col1"),
           ColumnFixture.columnWithId("col2"));
-      List<IndexColumn> capturedColumns = new java.util.ArrayList<>();
+      List<IndexColumn> capturedColumns = new ArrayList<>();
 
       given(getTableByIdPort.findTableById(command.tableId()))
           .willReturn(Mono.just(table));
