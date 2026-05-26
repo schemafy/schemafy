@@ -63,12 +63,14 @@ export const ShareContents = ({ projectId }: { projectId: string }) => {
 
   const { project } = useProject(projectId);
   const { members, updateMemberRole } = useProjectMembers(projectId);
-  const { createInvitation, isCreatingInvitation } =
-    useProjectInvitations(projectId);
 
   const currentUserRole = project?.currentUserRole ?? 'VIEWER';
   const canManageMembers = currentUserRole === 'ADMIN';
   const currentUserId = authStore.user?.id;
+  const { createInvitation, isCreatingInvitation } = useProjectInvitations(
+    projectId,
+    { enabled: canManageMembers },
+  );
   const currentMember = members.find(
     (member) => member.userId === currentUserId,
   );

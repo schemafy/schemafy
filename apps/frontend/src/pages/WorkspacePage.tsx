@@ -82,17 +82,22 @@ export const WorkspacePage = () => {
               </div>
               <div className="flex items-center gap-2">
                 {currentUserRole === 'ADMIN' && (
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => setIsEditDialogOpen(true)}
-                  >
-                    Edit
-                  </Button>
+                  <>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => setIsEditDialogOpen(true)}
+                    >
+                      Edit
+                    </Button>
+                    <Button
+                      size="sm"
+                      onClick={() => setIsInviteDialogOpen(true)}
+                    >
+                      Invite
+                    </Button>
+                  </>
                 )}
-                <Button size="sm" onClick={() => setIsInviteDialogOpen(true)}>
-                  Invite
-                </Button>
               </div>
             </div>
 

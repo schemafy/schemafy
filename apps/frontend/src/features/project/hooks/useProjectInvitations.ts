@@ -4,15 +4,22 @@ import { getInvitations } from '../api';
 import { projectKeys } from './query-keys';
 import { useCreateInvitationMutation } from './useProjectMutations';
 
+type UseProjectInvitationsOptions = {
+  page?: number;
+  size?: number;
+  enabled?: boolean;
+};
+
 export const useProjectInvitations = (
   projectId: string,
-  page = 0,
-  size = 10,
+  options: UseProjectInvitationsOptions = {},
 ) => {
+  const { page = 0, size = 10, enabled = true } = options;
+
   const invitationsQuery = useQuery({
     queryKey: projectKeys.invitations(projectId, page, size),
     queryFn: () => getInvitations(projectId, page, size),
-    enabled: !!projectId,
+    enabled: !!projectId && enabled,
   });
   const createInvitationMutation = useCreateInvitationMutation(projectId);
 

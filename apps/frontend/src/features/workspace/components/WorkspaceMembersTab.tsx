@@ -143,13 +143,15 @@ export const WorkspaceMembersTab = ({
                     {formatDateWithTime(new Date(member.joinedAt))}
                   </td>
                   {currentUserRole === 'ADMIN' &&
-                    user?.id !== member.userId && (
+                    (user?.id !== member.userId ? (
                       <MemberOptions
                         handleOpenRoleChange={handleOpenRoleChange}
                         onRemoveClick={setRemoveTarget}
                         member={member}
                       />
-                    )}
+                    ) : (
+                      <td className="px-6 py-4" />
+                    ))}
                 </tr>
               ))
             )}

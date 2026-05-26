@@ -31,13 +31,16 @@ export const InviteDialog = ({
   const [email, setEmail] = useState('');
   const [role, setRole] = useState<string>('MEMBER');
 
-  const { createInvitation, isCreatingInvitation } =
-    useWorkspaceInvitations(workspaceId);
+  const isAdmin = currentUserRole === 'ADMIN';
+  const { createInvitation, isCreatingInvitation } = useWorkspaceInvitations(
+    workspaceId,
+    { enabled: isAdmin },
+  );
 
   const roles = availableRoles(currentUserRole);
 
   const handleSubmit = () => {
-    if (!email.trim()) return;
+    if (!isAdmin || !email.trim()) return;
     createInvitation(
       { email, role },
       {

@@ -4,15 +4,22 @@ import { getInvitations } from '../api';
 import { workspaceKeys } from './query-keys';
 import { useCreateInvitationMutation } from './useWorkspaceMutations';
 
+type UseWorkspaceInvitationsOptions = {
+  page?: number;
+  size?: number;
+  enabled?: boolean;
+};
+
 export const useWorkspaceInvitations = (
   workspaceId: string,
-  page = 0,
-  size = 10,
+  options: UseWorkspaceInvitationsOptions = {},
 ) => {
+  const { page = 0, size = 10, enabled = true } = options;
+
   const invitationsQuery = useQuery({
     queryKey: workspaceKeys.invitations(workspaceId, page, size),
     queryFn: () => getInvitations(workspaceId, page, size),
-    enabled: !!workspaceId,
+    enabled: !!workspaceId && enabled,
   });
   const createInvitationMutation = useCreateInvitationMutation(workspaceId);
 
