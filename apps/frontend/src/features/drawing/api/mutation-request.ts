@@ -4,7 +4,7 @@ import type { MutationResponse } from './types';
 import { collaborationStore } from '@/store/collaboration.store';
 import { operationHistoryStore } from '@/store/operation-history.store';
 
-type CommittedMutationResult = Pick<
+export type CommittedMutationResult = Pick<
   MutationResponse<unknown>,
   'operation' | 'affectedTableIds'
 >;
@@ -38,6 +38,17 @@ export const syncCommittedRevision = (
   result: CommittedMutationResult,
 ) => {
   const committedRevision = result.operation.committedRevision;
+  const syncStatus = collaborationStore.getRevisionSyncStatus(
+    schemaId,
+    committedRevision,
+  );
+
+  if (syncStatus === 'stale') return syncStatus;
+
+  if (syncStatus === 'gap') {
+    operationHistoryStore.clearSchemaHistory(schemaId);
+    return syncStatus;
+  }
 
   operationHistoryStore.markUndoable(
     schemaId,
@@ -45,9 +56,7 @@ export const syncCommittedRevision = (
     result.affectedTableIds ?? [],
   );
 
-  const currentRevision = collaborationStore.getSchemaRevision(schemaId);
+  collaborationStore.setSchemaRevision(schemaId, committedRevision);
 
-  if (currentRevision === null || committedRevision > currentRevision) {
-    collaborationStore.setSchemaRevision(schemaId, committedRevision);
-  }
+  return syncStatus;
 };

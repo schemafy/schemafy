@@ -12,7 +12,10 @@ export const useCreateSchema = (projectId: string) => {
   return useMutation({
     mutationFn: (data: CreateSchemaRequest) => createSchema(data),
     onSuccess: (result) => {
-      syncCommittedRevision(result.data.id, result);
+      const syncStatus = syncCommittedRevision(result.data.id, result);
+
+      if (syncStatus === 'stale') return;
+
       queryClient.invalidateQueries({
         queryKey: erdKeys.schemas(projectId),
       });
@@ -32,10 +35,18 @@ export const useChangeSchemaName = (projectId: string) => {
       data: ChangeSchemaNameRequest;
     }) => changeSchemaName(schemaId, data),
     onSuccess: (result, { schemaId }) => {
-      syncCommittedRevision(schemaId, result);
+      const syncStatus = syncCommittedRevision(schemaId, result);
+
+      if (syncStatus === 'stale') return;
+
       queryClient.invalidateQueries({
         queryKey: erdKeys.schemas(projectId),
       });
+      if (syncStatus === 'gap') {
+        queryClient.invalidateQueries({
+          queryKey: erdKeys.schemaSnapshots(schemaId),
+        });
+      }
     },
   });
 };
@@ -46,7 +57,20 @@ export const useDeleteSchema = (projectId: string) => {
   return useMutation({
     mutationFn: (schemaId: string) => deleteSchema(schemaId),
     onSuccess: (result, deletedSchemaId) => {
-      syncCommittedRevision(deletedSchemaId, result);
+      const syncStatus = syncCommittedRevision(deletedSchemaId, result);
+
+      if (syncStatus === 'stale') return;
+
+      if (syncStatus === 'gap') {
+        queryClient.invalidateQueries({
+          queryKey: erdKeys.schemas(projectId),
+        });
+        queryClient.invalidateQueries({
+          queryKey: erdKeys.schemaSnapshots(deletedSchemaId),
+        });
+        return;
+      }
+
       queryClient.removeQueries({
         queryKey: erdKeys.schemaSnapshots(deletedSchemaId),
       });

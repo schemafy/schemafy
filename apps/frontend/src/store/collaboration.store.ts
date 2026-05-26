@@ -29,6 +29,8 @@ const MAX_RECONNECT_ATTEMPTS = 10;
 const BASE_RECONNECT_DELAY_MS = 3000;
 const MAX_RECONNECT_DELAY_MS = 60000;
 
+export type RevisionSyncStatus = 'applied' | 'stale' | 'gap';
+
 export class CollaborationStore {
   cursors: Map<string, CursorPosition> = new Map();
   schemaRevisions: Map<string, number> = new Map();
@@ -39,8 +41,9 @@ export class CollaborationStore {
   private reconnectTimeoutId: number | null = null;
   private reconnectAttempts = 0;
   private chatMessageListeners: Set<(message: ChatMessage) => void> = new Set();
-  private erdMutatedListeners: Set<(message: ReceiveErdMutated) => void> =
-    new Set();
+  private erdMutatedListeners: Set<
+    (message: ReceiveErdMutated, syncStatus: RevisionSyncStatus) => void
+  > = new Set();
 
   constructor() {
     makeObservable(this, {
@@ -67,6 +70,19 @@ export class CollaborationStore {
 
   getSchemaRevision(schemaId: string): number | null {
     return this.schemaRevisions.get(schemaId) ?? null;
+  }
+
+  getRevisionSyncStatus(
+    schemaId: string,
+    committedRevision: number,
+  ): RevisionSyncStatus {
+    const currentRevision = this.getSchemaRevision(schemaId);
+
+    if (currentRevision === null) return 'applied';
+    if (committedRevision <= currentRevision) return 'stale';
+    if (committedRevision === currentRevision + 1) return 'applied';
+
+    return 'gap';
   }
 
   setSchemaRevision(schemaId: string, revision: number) {
@@ -203,7 +219,12 @@ export class CollaborationStore {
     };
   }
 
-  onErdMutated(listener: (message: ReceiveErdMutated) => void) {
+  onErdMutated(
+    listener: (
+      message: ReceiveErdMutated,
+      syncStatus: RevisionSyncStatus,
+    ) => void,
+  ) {
     this.erdMutatedListeners.add(listener);
 
     return () => {
@@ -306,12 +327,29 @@ export class CollaborationStore {
   }
 
   private handleErdMutatedMessage(message: ReceiveErdMutated) {
+    const syncStatus = this.getRevisionSyncStatus(
+      message.schemaId,
+      message.operation.committedRevision,
+    );
+
+    if (syncStatus === 'stale') return;
+
+    if (syncStatus === 'gap') {
+      operationHistoryStore.clearSchemaHistory(message.schemaId);
+      this.erdMutatedListeners.forEach((listener) =>
+        listener(message, syncStatus),
+      );
+      return;
+    }
+
     this.setSchemaRevision(
       message.schemaId,
       message.operation.committedRevision,
     );
     operationHistoryStore.handleErdMutated(message);
-    this.erdMutatedListeners.forEach((listener) => listener(message));
+    this.erdMutatedListeners.forEach((listener) =>
+      listener(message, syncStatus),
+    );
   }
 
   private handleChatMessage(message: ReceiveChat) {
