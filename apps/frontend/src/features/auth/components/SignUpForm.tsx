@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { useNavigate } from '@tanstack/react-router';
 import { signUp } from '@/features/auth/api';
 import type { ValidationRules, SignUpFormValues } from '../types';
+import { reportUnexpectedError } from '@/lib';
 
 const formFields = [
   {
@@ -92,7 +93,10 @@ export const SignUpForm = () => {
 
       resetForm();
       navigate({ to: '/' });
-    } catch {
+    } catch (error) {
+      reportUnexpectedError(error, {
+        context: 'Unexpected sign-up form failure.',
+      });
     } finally {
       setIsSubmitting(false);
     }

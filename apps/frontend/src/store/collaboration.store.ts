@@ -20,6 +20,7 @@ import { authStore } from './auth.store';
 import { previewStore } from './preview.store';
 import { apiClient } from '@/lib/api/client';
 import { toast } from 'sonner';
+import { reportUnexpectedError } from '@/lib';
 
 const WEBSOCKET_URL =
   import.meta.env.VITE_WS_URL || 'ws://localhost:4000/ws/collaboration';
@@ -127,7 +128,9 @@ export class CollaborationStore {
 
         this.handleMessage(payload);
       } catch (error) {
-        console.error('[WebSocket] Parse error', error);
+        reportUnexpectedError(error, {
+          context: '[WebSocket] Failed to parse an incoming message.',
+        });
       }
     };
 
@@ -154,7 +157,9 @@ export class CollaborationStore {
     };
 
     this.ws.onerror = (event) => {
-      console.error('[WebSocket] error:', event);
+      reportUnexpectedError(event, {
+        context: '[WebSocket] Connection error.',
+      });
     };
   }
 
@@ -215,11 +220,12 @@ export class CollaborationStore {
       content,
     };
 
-    this.send(message, (error) => {
-      console.error('Failed to send chat message:', error);
+    this.send(message, () => {
       setTimeout(() => {
         this.send(message, (retryError) => {
-          console.error('Retry failed:', retryError);
+          reportUnexpectedError(retryError, {
+            userMessage: 'Failed to send the chat message. Please try again.',
+          });
         });
       }, 500);
     });
@@ -229,14 +235,12 @@ export class CollaborationStore {
     const user = this.currentUser;
 
     if (!user) {
-      console.error('User is not logged in');
       return;
     }
 
     const sessionId = this.sessionId;
 
     if (!sessionId) {
-      console.error('Session ID is not available');
       return;
     }
 
@@ -277,7 +281,9 @@ export class CollaborationStore {
       if (onError) {
         onError(error);
       } else {
-        console.error('Failed to send message:', error);
+        reportUnexpectedError(error, {
+          context: 'Failed to send a collaboration message.',
+        });
       }
     }
   }
