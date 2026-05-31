@@ -1,6 +1,5 @@
 package com.schemafy.core.project.application.access;
 
-import java.util.List;
 import java.util.Set;
 
 import org.springframework.stereotype.Component;
@@ -20,13 +19,6 @@ class IndexProjectAccessResourceResolver implements ProjectAccessResourceResolve
   @Override
   public Set<ProjectAccessResourceType> resourceTypes() {
     return Set.of(ProjectAccessResourceType.INDEX, ProjectAccessResourceType.INDEX_COLUMN);
-  }
-
-  @Override
-  public List<ProjectAccessAccessorRule> accessorRules() {
-    return List.of(
-        new ProjectAccessAccessorRule("indexId", ProjectAccessResourceType.INDEX),
-        new ProjectAccessAccessorRule("indexColumnId", ProjectAccessResourceType.INDEX_COLUMN));
   }
 
   @Override

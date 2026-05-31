@@ -9,15 +9,18 @@ import com.schemafy.core.erd.memo.application.port.out.ChangeMemoPositionPort;
 import com.schemafy.core.erd.memo.application.port.out.GetMemoByIdPort;
 import com.schemafy.core.erd.memo.domain.Memo;
 import com.schemafy.core.erd.memo.domain.exception.MemoErrorCode;
+import com.schemafy.core.project.application.access.AccessTarget;
 import com.schemafy.core.project.application.access.RequireProjectAccess;
 import com.schemafy.core.project.domain.ProjectRole;
 
 import lombok.RequiredArgsConstructor;
 import reactor.core.publisher.Mono;
 
+import static com.schemafy.core.project.application.access.ProjectAccessResourceType.MEMO;
+
 @Service
 @RequiredArgsConstructor
-@RequireProjectAccess(role = ProjectRole.EDITOR)
+@RequireProjectAccess(role = ProjectRole.EDITOR, target = @AccessTarget(value = MEMO, id = "memoId"))
 class UpdateMemoPositionService implements UpdateMemoPositionUseCase {
 
   private final GetMemoByIdPort getMemoByIdPort;

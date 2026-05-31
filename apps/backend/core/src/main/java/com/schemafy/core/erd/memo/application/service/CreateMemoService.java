@@ -15,6 +15,7 @@ import com.schemafy.core.erd.memo.domain.MemoComment;
 import com.schemafy.core.erd.memo.domain.MemoDetail;
 import com.schemafy.core.erd.schema.application.port.out.GetSchemaByIdPort;
 import com.schemafy.core.erd.schema.domain.exception.SchemaErrorCode;
+import com.schemafy.core.project.application.access.AccessTarget;
 import com.schemafy.core.project.application.access.RequireProjectAccess;
 import com.schemafy.core.project.domain.ProjectRole;
 import com.schemafy.core.ulid.application.port.out.UlidGeneratorPort;
@@ -22,9 +23,11 @@ import com.schemafy.core.ulid.application.port.out.UlidGeneratorPort;
 import lombok.RequiredArgsConstructor;
 import reactor.core.publisher.Mono;
 
+import static com.schemafy.core.project.application.access.ProjectAccessResourceType.SCHEMA;
+
 @Service
 @RequiredArgsConstructor
-@RequireProjectAccess(role = ProjectRole.EDITOR)
+@RequireProjectAccess(role = ProjectRole.EDITOR, target = @AccessTarget(value = SCHEMA, id = "schemaId"))
 class CreateMemoService implements CreateMemoUseCase {
 
   private final GetSchemaByIdPort getSchemaByIdPort;

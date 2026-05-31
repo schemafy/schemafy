@@ -1,7 +1,5 @@
 package com.schemafy.core.project.application.access;
 
-import java.util.List;
-
 import org.springframework.context.annotation.AnnotationConfigApplicationContext;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -70,7 +68,7 @@ class AccessAnnotationValidatorTest {
         org.springframework.context.ApplicationContext applicationContext) {
       return new AccessAnnotationValidator(
           applicationContext,
-          new ProjectAccessTargetInference(new ProjectAccessResourceRegistry(List.of())));
+          new ProjectAccessTargetInference());
     }
 
   }

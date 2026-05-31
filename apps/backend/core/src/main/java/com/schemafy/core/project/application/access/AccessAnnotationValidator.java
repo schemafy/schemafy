@@ -89,11 +89,6 @@ class AccessAnnotationValidator implements SmartInitializingSingleton {
     if (!targets.isEmpty()) {
       return true;
     }
-    if (targetInference.isErdType(requestType)) {
-      throw new IllegalStateException(
-          "ERD project access target is missing on "
-              + targetClass.getSimpleName() + "#" + method.getName());
-    }
     return false;
   }
 

@@ -1,6 +1,5 @@
 package com.schemafy.core.project.application.access;
 
-import java.util.List;
 import java.util.Set;
 
 import org.springframework.stereotype.Component;
@@ -20,11 +19,6 @@ class MemoProjectAccessResourceResolver implements ProjectAccessResourceResolver
   @Override
   public Set<ProjectAccessResourceType> resourceTypes() {
     return Set.of(ProjectAccessResourceType.MEMO, ProjectAccessResourceType.MEMO_COMMENT);
-  }
-
-  @Override
-  public List<ProjectAccessAccessorRule> accessorRules() {
-    return List.of(new ProjectAccessAccessorRule("memoId", ProjectAccessResourceType.MEMO));
   }
 
   @Override

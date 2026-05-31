@@ -1,54 +1,45 @@
 package com.schemafy.core.project.application.access;
 
 import java.lang.reflect.Method;
-import java.util.List;
-import java.util.Set;
 
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
-import com.schemafy.core.erd.constraint.application.port.in.AddConstraintColumnCommand;
 import com.schemafy.core.erd.operation.application.port.in.UndoErdOperationCommand;
-import com.schemafy.core.erd.relationship.application.port.in.CreateRelationshipCommand;
-import com.schemafy.core.erd.schema.application.port.in.GetSchemasByProjectIdQuery;
 import com.schemafy.core.erd.table.application.port.in.GetTableQuery;
 import com.schemafy.core.project.domain.ProjectRole;
 
-import reactor.core.publisher.Mono;
-
+import static com.schemafy.core.project.application.access.ProjectAccessResourceType.OPERATION;
+import static com.schemafy.core.project.application.access.ProjectAccessResourceType.TABLE;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 @DisplayName("ProjectAccessTargetInference")
 class ProjectAccessTargetInferenceTest {
 
-  private final ProjectAccessTargetInference inference = new ProjectAccessTargetInference(
-      new ProjectAccessResourceRegistry(List.of(new TestResourceResolver())));
+  private final ProjectAccessTargetInference inference = new ProjectAccessTargetInference();
 
   @Test
-  @DisplayName("단일 id accessor는 자동 target으로 추론한다")
-  void inferSingleTarget() throws Exception {
+  @DisplayName("target이 명시되지 않으면 빈 target 목록을 반환한다")
+  void emptyTargetsWhenTargetIsNotExplicit() throws Exception {
     var targets = inference.resolveTargets(annotation("viewer"), GetTableQuery.class);
 
-    assertThat(targets)
-        .containsExactly(new ProjectAccessTarget(ProjectAccessResourceType.TABLE, "tableId"));
+    assertThat(targets).isEmpty();
   }
 
   @Test
-  @DisplayName("ERD projectId는 PROJECT target으로 추론한다")
-  void inferProjectTarget() throws Exception {
-    var targets = inference.resolveTargets(annotation("viewer"),
-        GetSchemasByProjectIdQuery.class);
+  @DisplayName("명시 target을 해석한다")
+  void parseExplicitTarget() throws Exception {
+    var targets = inference.resolveTargets(annotation("operation"), UndoErdOperationCommand.class);
 
     assertThat(targets)
-        .containsExactly(new ProjectAccessTarget(ProjectAccessResourceType.PROJECT, "projectId"));
+        .containsExactly(new ProjectAccessTarget(ProjectAccessResourceType.OPERATION, "opId"));
   }
 
   @Test
-  @DisplayName("fkTableId와 pkTableId는 허용된 다중 TABLE target이다")
-  void inferRelationshipTablePair() throws Exception {
-    var targets = inference.resolveTargets(annotation("viewer"),
-        CreateRelationshipCommand.class);
+  @DisplayName("명시 targets를 해석한다")
+  void parseExplicitTargets() throws Exception {
+    var targets = inference.resolveTargets(annotation("relationship"), RelationshipCommand.class);
 
     assertThat(targets)
         .containsExactlyInAnyOrder(
@@ -57,23 +48,27 @@ class ProjectAccessTargetInferenceTest {
   }
 
   @Test
-  @DisplayName("허용되지 않은 다중 target은 명시 targets를 요구한다")
-  void ambiguousTargetsFail() throws Exception {
-    assertThatThrownBy(() -> inference.resolveTargets(annotation("viewer"),
-        AddConstraintColumnCommand.class))
+  @DisplayName("target id accessor가 없으면 실패한다")
+  void missingAccessorFails() throws Exception {
+    assertThatThrownBy(() -> inference.resolveTargets(annotation("missing"), GetTableQuery.class))
         .isInstanceOf(IllegalStateException.class)
-        .hasMessageContaining("Ambiguous project access targets");
+        .hasMessageContaining("Project access target requires accessor missingId()");
   }
 
   @Test
-  @DisplayName("opId는 자동 추론하지 않고 명시 DSL로만 해석한다")
-  void opIdRequiresExplicitTarget() throws Exception {
-    assertThat(inference.resolveTargets(annotation("viewer"),
-        UndoErdOperationCommand.class))
-        .isEmpty();
+  @DisplayName("target id가 비어 있으면 실패한다")
+  void blankTargetIdFails() throws Exception {
+    assertThatThrownBy(() -> inference.resolveTargets(annotation("invalid"), GetTableQuery.class))
+        .isInstanceOf(IllegalStateException.class)
+        .hasMessageContaining("Project access target must define type and id accessor");
+  }
 
-    assertThat(inference.resolveTargets(annotation("operation"), UndoErdOperationCommand.class))
-        .containsExactly(new ProjectAccessTarget(ProjectAccessResourceType.OPERATION, "opId"));
+  @Test
+  @DisplayName("단일 target id가 비어 있으면 실패한다")
+  void blankSingleTargetIdFails() throws Exception {
+    assertThatThrownBy(() -> inference.resolveTargets(annotation("invalidSingle"), GetTableQuery.class))
+        .isInstanceOf(IllegalStateException.class)
+        .hasMessageContaining("Project access target must define type and id accessor");
   }
 
   private RequireProjectAccess annotation(String methodName) throws Exception {
@@ -86,44 +81,27 @@ class ProjectAccessTargetInferenceTest {
     @RequireProjectAccess(role = ProjectRole.VIEWER)
     void viewer() {}
 
-    @RequireProjectAccess(role = ProjectRole.EDITOR, target = "operation:opId")
+    @RequireProjectAccess(role = ProjectRole.EDITOR, target = @AccessTarget(value = OPERATION, id = "opId"))
     void operation() {}
+
+    @RequireProjectAccess(role = ProjectRole.EDITOR, targets = {
+      @AccessTarget(value = TABLE, id = "fkTableId"),
+      @AccessTarget(value = TABLE, id = "pkTableId")
+    })
+    void relationship() {}
+
+    @RequireProjectAccess(role = ProjectRole.EDITOR, target = @AccessTarget(value = TABLE, id = "missingId"))
+    void missing() {}
+
+    @RequireProjectAccess(role = ProjectRole.EDITOR, targets = @AccessTarget(value = TABLE, id = ""))
+    void invalid() {}
+
+    @RequireProjectAccess(role = ProjectRole.EDITOR, target = @AccessTarget(value = TABLE, id = ""))
+    void invalidSingle() {}
 
   }
 
-  private static class TestResourceResolver implements ProjectAccessResourceResolver {
-
-    @Override
-    public Set<ProjectAccessResourceType> resourceTypes() {
-      return Set.of();
-    }
-
-    @Override
-    public List<ProjectAccessAccessorRule> accessorRules() {
-      return List.of(
-          new ProjectAccessAccessorRule(
-              "constraintColumnId",
-              ProjectAccessResourceType.CONSTRAINT_COLUMN),
-          new ProjectAccessAccessorRule(
-              "relationshipColumnId",
-              ProjectAccessResourceType.RELATIONSHIP_COLUMN),
-          new ProjectAccessAccessorRule("indexColumnId", ProjectAccessResourceType.INDEX_COLUMN),
-          new ProjectAccessAccessorRule("fkTableId", ProjectAccessResourceType.TABLE),
-          new ProjectAccessAccessorRule("pkTableId", ProjectAccessResourceType.TABLE),
-          new ProjectAccessAccessorRule("schemaId", ProjectAccessResourceType.SCHEMA),
-          new ProjectAccessAccessorRule("tableId", ProjectAccessResourceType.TABLE),
-          new ProjectAccessAccessorRule("columnId", ProjectAccessResourceType.COLUMN),
-          new ProjectAccessAccessorRule("constraintId", ProjectAccessResourceType.CONSTRAINT),
-          new ProjectAccessAccessorRule("relationshipId", ProjectAccessResourceType.RELATIONSHIP),
-          new ProjectAccessAccessorRule("indexId", ProjectAccessResourceType.INDEX),
-          new ProjectAccessAccessorRule("memoId", ProjectAccessResourceType.MEMO));
-    }
-
-    @Override
-    public Mono<ProjectAccessResourceRef> resolveParent(ProjectAccessResourceType type, String id) {
-      return Mono.error(new UnsupportedOperationException());
-    }
-
+  record RelationshipCommand(String fkTableId, String pkTableId) {
   }
 
 }

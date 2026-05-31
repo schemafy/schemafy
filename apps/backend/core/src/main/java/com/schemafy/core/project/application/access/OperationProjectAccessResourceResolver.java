@@ -1,6 +1,5 @@
 package com.schemafy.core.project.application.access;
 
-import java.util.List;
 import java.util.Set;
 
 import org.springframework.stereotype.Component;
@@ -20,11 +19,6 @@ class OperationProjectAccessResourceResolver implements ProjectAccessResourceRes
   @Override
   public Set<ProjectAccessResourceType> resourceTypes() {
     return Set.of(ProjectAccessResourceType.OPERATION);
-  }
-
-  @Override
-  public List<ProjectAccessAccessorRule> accessorRules() {
-    return List.of();
   }
 
   @Override

@@ -1,6 +1,5 @@
 package com.schemafy.core.project.application.access;
 
-import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import org.springframework.context.annotation.Bean;
@@ -91,7 +90,7 @@ class AccessVerificationAspectSpringContextTest {
     AccessVerificationAspect accessVerificationAspect(AccessVerifier accessVerifier) {
       return new AccessVerificationAspect(
           accessVerifier,
-          new ProjectAccessTargetInference(new ProjectAccessResourceRegistry(List.of())),
+          new ProjectAccessTargetInference(),
           null);
     }
 

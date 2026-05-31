@@ -17,6 +17,7 @@ import com.schemafy.core.erd.memo.domain.MemoComment;
 import com.schemafy.core.erd.memo.domain.exception.MemoErrorCode;
 import com.schemafy.core.erd.schema.application.port.out.GetSchemaByIdPort;
 import com.schemafy.core.erd.schema.domain.exception.SchemaErrorCode;
+import com.schemafy.core.project.application.access.AccessTarget;
 import com.schemafy.core.project.application.access.RequireProjectAccess;
 import com.schemafy.core.project.application.port.out.ProjectMemberPort;
 import com.schemafy.core.project.domain.ProjectRole;
@@ -24,8 +25,10 @@ import com.schemafy.core.project.domain.ProjectRole;
 import lombok.RequiredArgsConstructor;
 import reactor.core.publisher.Mono;
 
+import static com.schemafy.core.project.application.access.ProjectAccessResourceType.MEMO_COMMENT;
+
 @Service
-@RequireProjectAccess(role = ProjectRole.VIEWER, target = "memoComment:commentId")
+@RequireProjectAccess(role = ProjectRole.VIEWER, target = @AccessTarget(value = MEMO_COMMENT, id = "commentId"))
 @RequiredArgsConstructor
 class DeleteMemoCommentService implements DeleteMemoCommentUseCase {
 

@@ -19,6 +19,8 @@ import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 import reactor.test.StepVerifier;
 
+import static com.schemafy.core.project.application.access.ProjectAccessResourceType.MEMO;
+import static com.schemafy.core.project.application.access.ProjectAccessResourceType.TABLE;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.any;
 import static org.mockito.Mockito.anyString;
@@ -35,19 +37,19 @@ class AccessVerificationAspectTest {
     factory.setProxyTargetClass(true);
     factory.addAspect(new AccessVerificationAspect(
         accessVerifier,
-        new ProjectAccessTargetInference(new ProjectAccessResourceRegistry(List.of())),
+        new ProjectAccessTargetInference(),
         null));
     return factory.getProxy();
   }
 
   private TestService createErdProxy(AccessVerifier accessVerifier, TestService target) {
-    ProjectAccessResourceRegistry registry = new ProjectAccessResourceRegistry(
+    ProjectAccessTargetRegistry registry = new ProjectAccessTargetRegistry(
         List.of(new TestTableResourceResolver()));
     AspectJProxyFactory factory = new AspectJProxyFactory(target);
     factory.setProxyTargetClass(true);
     factory.addAspect(new AccessVerificationAspect(
         accessVerifier,
-        new ProjectAccessTargetInference(registry),
+        new ProjectAccessTargetInference(),
         new ErdProjectContextResolver(registry)));
     return factory.getProxy();
   }
@@ -228,19 +230,19 @@ class AccessVerificationAspectTest {
       return Mono.just("invalid");
     }
 
-    @RequireProjectAccess
+    @RequireProjectAccess(target = @AccessTarget(value = TABLE, id = "tableId"))
     public Mono<String> loadTable(GetTableQuery query) {
       invocations.incrementAndGet();
       return Mono.just("table");
     }
 
-    @RequireProjectAccess(target = "memo:memoId")
+    @RequireProjectAccess(target = @AccessTarget(value = MEMO, id = "memoId"))
     public Mono<String> loadMemo(MemoAccessCommand command) {
       invocations.incrementAndGet();
       return Mono.just("memo");
     }
 
-    @RequireProjectAccess(target = "memo:memoId", requesterId = "actorId")
+    @RequireProjectAccess(target = @AccessTarget(value = MEMO, id = "memoId"), requesterId = "actorId")
     public Mono<String> loadAlternateMemo(AlternateMemoAccessCommand command) {
       invocations.incrementAndGet();
       return Mono.just("alternate-memo");
@@ -253,13 +255,6 @@ class AccessVerificationAspectTest {
     @Override
     public Set<ProjectAccessResourceType> resourceTypes() {
       return Set.of(ProjectAccessResourceType.TABLE, ProjectAccessResourceType.MEMO);
-    }
-
-    @Override
-    public List<ProjectAccessAccessorRule> accessorRules() {
-      return List.of(
-          new ProjectAccessAccessorRule("tableId", ProjectAccessResourceType.TABLE),
-          new ProjectAccessAccessorRule("memoId", ProjectAccessResourceType.MEMO));
     }
 
     @Override

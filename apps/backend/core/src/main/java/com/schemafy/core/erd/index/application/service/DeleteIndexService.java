@@ -14,15 +14,18 @@ import com.schemafy.core.erd.index.application.port.out.GetIndexByIdPort;
 import com.schemafy.core.erd.index.domain.exception.IndexErrorCode;
 import com.schemafy.core.erd.operation.application.service.ErdMutationCoordinator;
 import com.schemafy.core.erd.operation.domain.ErdOperationType;
+import com.schemafy.core.project.application.access.AccessTarget;
 import com.schemafy.core.project.application.access.RequireProjectAccess;
 import com.schemafy.core.project.domain.ProjectRole;
 
 import lombok.RequiredArgsConstructor;
 import reactor.core.publisher.Mono;
 
+import static com.schemafy.core.project.application.access.ProjectAccessResourceType.INDEX;
+
 @Service
 @RequiredArgsConstructor
-@RequireProjectAccess(role = ProjectRole.ADMIN)
+@RequireProjectAccess(role = ProjectRole.EDITOR, target = @AccessTarget(value = INDEX, id = "indexId"))
 public class DeleteIndexService implements DeleteIndexUseCase {
 
   private final TransactionalOperator transactionalOperator;

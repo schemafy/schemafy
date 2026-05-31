@@ -17,6 +17,7 @@ import com.schemafy.core.erd.table.application.port.out.CreateTablePort;
 import com.schemafy.core.erd.table.application.port.out.TableExistsPort;
 import com.schemafy.core.erd.table.domain.Table;
 import com.schemafy.core.erd.table.domain.exception.TableErrorCode;
+import com.schemafy.core.project.application.access.AccessTarget;
 import com.schemafy.core.project.application.access.RequireProjectAccess;
 import com.schemafy.core.project.domain.ProjectRole;
 import com.schemafy.core.ulid.application.port.out.UlidGeneratorPort;
@@ -24,9 +25,11 @@ import com.schemafy.core.ulid.application.port.out.UlidGeneratorPort;
 import lombok.RequiredArgsConstructor;
 import reactor.core.publisher.Mono;
 
+import static com.schemafy.core.project.application.access.ProjectAccessResourceType.SCHEMA;
+
 @Service
 @RequiredArgsConstructor
-@RequireProjectAccess(role = ProjectRole.EDITOR)
+@RequireProjectAccess(role = ProjectRole.EDITOR, target = @AccessTarget(value = SCHEMA, id = "schemaId"))
 public class CreateTableService implements CreateTableUseCase {
 
   private final UlidGeneratorPort ulidGeneratorPort;

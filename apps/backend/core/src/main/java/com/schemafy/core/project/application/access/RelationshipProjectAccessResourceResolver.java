@@ -1,6 +1,5 @@
 package com.schemafy.core.project.application.access;
 
-import java.util.List;
 import java.util.Set;
 
 import org.springframework.stereotype.Component;
@@ -22,15 +21,6 @@ class RelationshipProjectAccessResourceResolver implements ProjectAccessResource
     return Set.of(
         ProjectAccessResourceType.RELATIONSHIP,
         ProjectAccessResourceType.RELATIONSHIP_COLUMN);
-  }
-
-  @Override
-  public List<ProjectAccessAccessorRule> accessorRules() {
-    return List.of(
-        new ProjectAccessAccessorRule("relationshipId", ProjectAccessResourceType.RELATIONSHIP),
-        new ProjectAccessAccessorRule(
-            "relationshipColumnId",
-            ProjectAccessResourceType.RELATIONSHIP_COLUMN));
   }
 
   @Override

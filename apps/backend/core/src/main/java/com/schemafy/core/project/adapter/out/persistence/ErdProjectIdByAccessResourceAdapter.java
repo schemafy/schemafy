@@ -16,6 +16,7 @@ class ErdProjectIdByAccessResourceAdapter implements GetProjectIdByAccessResourc
   @Override
   public Mono<String> findProjectId(ProjectAccessResourceType type, String id) {
     return switch (type) {
+    case NONE -> Mono.error(new IllegalStateException("Project access resource type is missing"));
     case PROJECT -> repository.findProjectIdByProjectId(id);
     case SCHEMA -> repository.findProjectIdBySchemaId(id);
     case TABLE -> repository.findProjectIdByTableId(id);

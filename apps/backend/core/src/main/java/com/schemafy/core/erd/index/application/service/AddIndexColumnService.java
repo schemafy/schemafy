@@ -25,6 +25,7 @@ import com.schemafy.core.erd.index.domain.exception.IndexErrorCode;
 import com.schemafy.core.erd.index.domain.validator.IndexValidator;
 import com.schemafy.core.erd.operation.application.service.ErdMutationCoordinator;
 import com.schemafy.core.erd.operation.domain.ErdOperationType;
+import com.schemafy.core.project.application.access.AccessTarget;
 import com.schemafy.core.project.application.access.RequireProjectAccess;
 import com.schemafy.core.project.domain.ProjectRole;
 import com.schemafy.core.ulid.application.port.out.UlidGeneratorPort;
@@ -33,9 +34,14 @@ import lombok.RequiredArgsConstructor;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
+import static com.schemafy.core.project.application.access.ProjectAccessResourceType.COLUMN;
+import static com.schemafy.core.project.application.access.ProjectAccessResourceType.INDEX;
+
 @Service
 @RequiredArgsConstructor
-@RequireProjectAccess(role = ProjectRole.EDITOR, targets = { "index:indexId", "column:columnId" })
+@RequireProjectAccess(role = ProjectRole.EDITOR, targets = {
+  @AccessTarget(value = INDEX, id = "indexId"),
+  @AccessTarget(value = COLUMN, id = "columnId") })
 public class AddIndexColumnService implements AddIndexColumnUseCase {
 
   private final TransactionalOperator transactionalOperator;

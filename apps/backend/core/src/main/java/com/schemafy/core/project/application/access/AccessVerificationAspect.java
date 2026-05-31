@@ -101,11 +101,6 @@ public class AccessVerificationAspect {
       if (!targets.isEmpty()) {
         return verifyProjectResourceTargets(method, request, projectAccess, targets);
       }
-      if (targetInference.isErdType(request.getClass())) {
-        return Mono.error(new IllegalStateException(
-            "ERD project access target is missing on "
-                + method.getDeclaringClass().getSimpleName() + "#" + method.getName()));
-      }
       AccessRequest accessRequest = extractAccessRequest(
           method,
           request,

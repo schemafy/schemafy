@@ -26,15 +26,18 @@ import com.schemafy.core.erd.relationship.application.port.out.GetRelationshipCo
 import com.schemafy.core.erd.relationship.application.port.out.GetRelationshipColumnsByRelationshipIdPort;
 import com.schemafy.core.erd.relationship.domain.RelationshipColumn;
 import com.schemafy.core.erd.relationship.domain.exception.RelationshipErrorCode;
+import com.schemafy.core.project.application.access.AccessTarget;
 import com.schemafy.core.project.application.access.RequireProjectAccess;
 import com.schemafy.core.project.domain.ProjectRole;
 
 import lombok.RequiredArgsConstructor;
 import reactor.core.publisher.Mono;
 
+import static com.schemafy.core.project.application.access.ProjectAccessResourceType.RELATIONSHIP_COLUMN;
+
 @Service
 @RequiredArgsConstructor
-@RequireProjectAccess(role = ProjectRole.EDITOR)
+@RequireProjectAccess(role = ProjectRole.EDITOR, target = @AccessTarget(value = RELATIONSHIP_COLUMN, id = "relationshipColumnId"))
 public class RemoveRelationshipColumnService implements RemoveRelationshipColumnUseCase {
 
   private final TransactionalOperator transactionalOperator;

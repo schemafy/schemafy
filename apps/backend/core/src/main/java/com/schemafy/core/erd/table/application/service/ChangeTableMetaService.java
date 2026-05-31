@@ -11,15 +11,18 @@ import com.schemafy.core.erd.operation.domain.ErdOperationType;
 import com.schemafy.core.erd.table.application.port.in.ChangeTableMetaCommand;
 import com.schemafy.core.erd.table.application.port.in.ChangeTableMetaUseCase;
 import com.schemafy.core.erd.table.application.port.out.ChangeTableMetaPort;
+import com.schemafy.core.project.application.access.AccessTarget;
 import com.schemafy.core.project.application.access.RequireProjectAccess;
 import com.schemafy.core.project.domain.ProjectRole;
 
 import lombok.RequiredArgsConstructor;
 import reactor.core.publisher.Mono;
 
+import static com.schemafy.core.project.application.access.ProjectAccessResourceType.TABLE;
+
 @Service
 @RequiredArgsConstructor
-@RequireProjectAccess(role = ProjectRole.EDITOR)
+@RequireProjectAccess(role = ProjectRole.EDITOR, target = @AccessTarget(value = TABLE, id = "tableId"))
 public class ChangeTableMetaService implements ChangeTableMetaUseCase {
 
   private final ChangeTableMetaPort changeTableMetaPort;

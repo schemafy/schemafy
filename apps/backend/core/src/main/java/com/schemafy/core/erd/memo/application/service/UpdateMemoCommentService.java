@@ -10,14 +10,17 @@ import com.schemafy.core.erd.memo.application.port.out.GetMemoByIdPort;
 import com.schemafy.core.erd.memo.application.port.out.GetMemoCommentByIdPort;
 import com.schemafy.core.erd.memo.domain.MemoComment;
 import com.schemafy.core.erd.memo.domain.exception.MemoErrorCode;
+import com.schemafy.core.project.application.access.AccessTarget;
 import com.schemafy.core.project.application.access.RequireProjectAccess;
 import com.schemafy.core.project.domain.ProjectRole;
 
 import lombok.RequiredArgsConstructor;
 import reactor.core.publisher.Mono;
 
+import static com.schemafy.core.project.application.access.ProjectAccessResourceType.MEMO_COMMENT;
+
 @Service
-@RequireProjectAccess(role = ProjectRole.EDITOR, target = "memoComment:commentId")
+@RequireProjectAccess(role = ProjectRole.EDITOR, target = @AccessTarget(value = MEMO_COMMENT, id = "commentId"))
 @RequiredArgsConstructor
 class UpdateMemoCommentService implements UpdateMemoCommentUseCase {
 

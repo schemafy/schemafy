@@ -14,7 +14,7 @@ import reactor.core.publisher.Mono;
 @RequiredArgsConstructor
 class ErdProjectContextResolver {
 
-  private final ProjectAccessResourceRegistry registry;
+  private final ProjectAccessTargetRegistry registry;
 
   Mono<String> resolveProjectId(ProjectAccessResourceType type, String id) {
     return resolveProjectId(type, id, new HashMap<>());

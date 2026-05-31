@@ -1,6 +1,5 @@
 package com.schemafy.core.project.application.access;
 
-import java.util.List;
 import java.util.Set;
 
 import org.springframework.stereotype.Component;
@@ -22,15 +21,6 @@ class ConstraintProjectAccessResourceResolver implements ProjectAccessResourceRe
     return Set.of(
         ProjectAccessResourceType.CONSTRAINT,
         ProjectAccessResourceType.CONSTRAINT_COLUMN);
-  }
-
-  @Override
-  public List<ProjectAccessAccessorRule> accessorRules() {
-    return List.of(
-        new ProjectAccessAccessorRule("constraintId", ProjectAccessResourceType.CONSTRAINT),
-        new ProjectAccessAccessorRule(
-            "constraintColumnId",
-            ProjectAccessResourceType.CONSTRAINT_COLUMN));
   }
 
   @Override

@@ -22,7 +22,7 @@ class ErdProjectContextResolverTest {
   @DisplayName("리소스 부모 체인을 따라 projectId를 해석한다")
   void resolveProjectId_followsResourceParentChain() {
     ErdProjectContextResolver resolver = new ErdProjectContextResolver(
-        new ProjectAccessResourceRegistry(List.of(new TestResourceResolver())));
+        new ProjectAccessTargetRegistry(List.of(new TestResourceResolver())));
 
     StepVerifier.create(resolver.resolveProjectId(ProjectAccessResourceType.COLUMN, "column-1"))
         .expectNext("project-1")
@@ -33,7 +33,7 @@ class ErdProjectContextResolverTest {
   @DisplayName("리소스 부모 체인에 순환이 있으면 실패한다")
   void resolveProjectId_failsOnResourceCycle() {
     ErdProjectContextResolver resolver = new ErdProjectContextResolver(
-        new ProjectAccessResourceRegistry(List.of(new CyclicResourceResolver())));
+        new ProjectAccessTargetRegistry(List.of(new CyclicResourceResolver())));
 
     StepVerifier.create(resolver.resolveProjectId(ProjectAccessResourceType.COLUMN, "column-1"))
         .expectErrorMatches(error -> error instanceof IllegalStateException
@@ -46,7 +46,7 @@ class ErdProjectContextResolverTest {
   void resolveProjectId_reusesParentChainInSameVerification() {
     CountingResourceResolver resourceResolver = new CountingResourceResolver();
     ErdProjectContextResolver resolver = new ErdProjectContextResolver(
-        new ProjectAccessResourceRegistry(List.of(resourceResolver)));
+        new ProjectAccessTargetRegistry(List.of(resourceResolver)));
     Map<ProjectAccessResourceRef, Mono<String>> cache = new HashMap<>();
 
     StepVerifier.create(Flux.concat(
@@ -69,11 +69,6 @@ class ErdProjectContextResolverTest {
     }
 
     @Override
-    public List<ProjectAccessAccessorRule> accessorRules() {
-      return List.of();
-    }
-
-    @Override
     public Mono<ProjectAccessResourceRef> resolveParent(ProjectAccessResourceType type, String id) {
       return switch (type) {
       case COLUMN -> Mono.just(new ProjectAccessResourceRef(
@@ -93,11 +88,6 @@ class ErdProjectContextResolverTest {
     @Override
     public Set<ProjectAccessResourceType> resourceTypes() {
       return Set.of(ProjectAccessResourceType.COLUMN, ProjectAccessResourceType.TABLE);
-    }
-
-    @Override
-    public List<ProjectAccessAccessorRule> accessorRules() {
-      return List.of();
     }
 
     @Override
@@ -125,11 +115,6 @@ class ErdProjectContextResolverTest {
           ProjectAccessResourceType.COLUMN,
           ProjectAccessResourceType.TABLE,
           ProjectAccessResourceType.SCHEMA);
-    }
-
-    @Override
-    public List<ProjectAccessAccessorRule> accessorRules() {
-      return List.of();
     }
 
     @Override

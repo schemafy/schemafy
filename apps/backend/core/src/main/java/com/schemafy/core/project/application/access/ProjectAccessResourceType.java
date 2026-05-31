@@ -2,6 +2,7 @@ package com.schemafy.core.project.application.access;
 
 public enum ProjectAccessResourceType {
 
+  NONE("none"),
   PROJECT("project"),
   SCHEMA("schema"),
   TABLE("table"),

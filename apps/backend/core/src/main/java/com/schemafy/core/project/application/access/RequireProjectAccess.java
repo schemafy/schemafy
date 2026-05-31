@@ -17,8 +17,8 @@ public @interface RequireProjectAccess {
 
   String requesterId() default "requesterId";
 
-  String target() default "";
+  AccessTarget target() default @AccessTarget(value = ProjectAccessResourceType.NONE, id = "");
 
-  String[] targets() default {};
+  AccessTarget[] targets() default {};
 
 }

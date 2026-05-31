@@ -14,14 +14,17 @@ import com.schemafy.core.erd.operation.application.port.in.UndoErdOperationComma
 import com.schemafy.core.erd.operation.application.port.in.UndoErdOperationUseCase;
 import com.schemafy.core.erd.operation.domain.ErdOperationType;
 import com.schemafy.core.erd.operation.domain.exception.OperationErrorCode;
+import com.schemafy.core.project.application.access.AccessTarget;
 import com.schemafy.core.project.application.access.RequireProjectAccess;
 import com.schemafy.core.project.domain.ProjectRole;
 
 import lombok.RequiredArgsConstructor;
 import reactor.core.publisher.Mono;
 
+import static com.schemafy.core.project.application.access.ProjectAccessResourceType.OPERATION;
+
 @Service
-@RequireProjectAccess(role = ProjectRole.EDITOR, target = "operation:opId")
+@RequireProjectAccess(role = ProjectRole.EDITOR, target = @AccessTarget(value = OPERATION, id = "opId"))
 @RequiredArgsConstructor
 public class UndoRedoErdOperationService implements UndoErdOperationUseCase,
     RedoErdOperationUseCase {

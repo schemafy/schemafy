@@ -27,6 +27,7 @@ import com.schemafy.core.erd.relationship.domain.exception.RelationshipErrorCode
 import com.schemafy.core.erd.relationship.domain.validator.RelationshipValidator;
 import com.schemafy.core.erd.table.application.port.out.GetTableByIdPort;
 import com.schemafy.core.erd.table.domain.Table;
+import com.schemafy.core.project.application.access.AccessTarget;
 import com.schemafy.core.project.application.access.RequireProjectAccess;
 import com.schemafy.core.project.domain.ProjectRole;
 import com.schemafy.core.ulid.application.port.out.UlidGeneratorPort;
@@ -34,10 +35,16 @@ import com.schemafy.core.ulid.application.port.out.UlidGeneratorPort;
 import lombok.RequiredArgsConstructor;
 import reactor.core.publisher.Mono;
 
+import static com.schemafy.core.project.application.access.ProjectAccessResourceType.COLUMN;
+import static com.schemafy.core.project.application.access.ProjectAccessResourceType.RELATIONSHIP;
+
 @Service
 @RequiredArgsConstructor
-@RequireProjectAccess(role = ProjectRole.EDITOR, targets = { "relationship:relationshipId", "column:pkColumnId",
-  "column:fkColumnId" })
+@RequireProjectAccess(role = ProjectRole.EDITOR, targets = {
+  @AccessTarget(value = RELATIONSHIP, id = "relationshipId"),
+  @AccessTarget(value = COLUMN, id = "pkColumnId"),
+  @AccessTarget(value = COLUMN, id = "fkColumnId")
+})
 public class AddRelationshipColumnService implements AddRelationshipColumnUseCase {
 
   private final TransactionalOperator transactionalOperator;
