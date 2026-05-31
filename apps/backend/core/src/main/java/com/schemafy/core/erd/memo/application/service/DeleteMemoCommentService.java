@@ -28,7 +28,7 @@ import reactor.core.publisher.Mono;
 import static com.schemafy.core.project.application.access.ProjectAccessResourceType.MEMO_COMMENT;
 
 @Service
-@RequireProjectAccess(role = ProjectRole.VIEWER, target = @AccessTarget(value = MEMO_COMMENT, id = "commentId"))
+@RequireProjectAccess(role = ProjectRole.EDITOR, target = @AccessTarget(value = MEMO_COMMENT, id = "commentId"))
 @RequiredArgsConstructor
 class DeleteMemoCommentService implements DeleteMemoCommentUseCase {
 

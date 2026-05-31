@@ -13,6 +13,7 @@ import com.schemafy.core.erd.memo.application.port.out.SoftDeleteMemoPort;
 import com.schemafy.core.erd.memo.domain.exception.MemoErrorCode;
 import com.schemafy.core.erd.schema.application.port.out.GetSchemaByIdPort;
 import com.schemafy.core.erd.schema.domain.exception.SchemaErrorCode;
+import com.schemafy.core.project.application.access.AccessTarget;
 import com.schemafy.core.project.application.access.RequireProjectAccess;
 import com.schemafy.core.project.application.port.out.ProjectMemberPort;
 import com.schemafy.core.project.domain.ProjectRole;
@@ -20,9 +21,11 @@ import com.schemafy.core.project.domain.ProjectRole;
 import lombok.RequiredArgsConstructor;
 import reactor.core.publisher.Mono;
 
+import static com.schemafy.core.project.application.access.ProjectAccessResourceType.MEMO;
+
 @Service
 @RequiredArgsConstructor
-@RequireProjectAccess(role = ProjectRole.VIEWER)
+@RequireProjectAccess(role = ProjectRole.EDITOR, target = @AccessTarget(value = MEMO, id = "memoId"))
 class DeleteMemoService implements DeleteMemoUseCase {
 
   private final GetMemoByIdPort getMemoByIdPort;
