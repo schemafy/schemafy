@@ -8,12 +8,18 @@ import com.schemafy.core.erd.constraint.application.port.in.GetConstraintUseCase
 import com.schemafy.core.erd.constraint.application.port.out.GetConstraintByIdPort;
 import com.schemafy.core.erd.constraint.domain.Constraint;
 import com.schemafy.core.erd.constraint.domain.exception.ConstraintErrorCode;
+import com.schemafy.core.project.application.access.AccessTarget;
+import com.schemafy.core.project.application.access.RequireProjectAccess;
+import com.schemafy.core.project.domain.ProjectRole;
 
 import lombok.RequiredArgsConstructor;
 import reactor.core.publisher.Mono;
 
+import static com.schemafy.core.project.application.access.ProjectAccessResourceType.CONSTRAINT;
+
 @Service
 @RequiredArgsConstructor
+@RequireProjectAccess(role = ProjectRole.VIEWER, target = @AccessTarget(value = CONSTRAINT, id = "constraintId"))
 public class GetConstraintService implements GetConstraintUseCase {
 
   private final GetConstraintByIdPort getConstraintByIdPort;

@@ -16,6 +16,7 @@ import com.schemafy.api.common.exception.AuthErrorCode;
 import com.schemafy.api.common.security.principal.AuthenticatedUser;
 import com.schemafy.core.common.exception.DomainErrorCode;
 import com.schemafy.core.erd.operation.ErdOperationContexts;
+import com.schemafy.core.project.application.access.ProjectAccessRequesterContext;
 
 import io.jsonwebtoken.ExpiredJwtException;
 import io.jsonwebtoken.JwtException;
@@ -54,8 +55,17 @@ public class JwtAuthenticationFilter implements WebFilter {
         .flatMap(result -> {
           if (result.valid()) {
             return chain.filter(exchange)
-                .contextWrite(context -> ErdOperationContexts.withActorUserId(result.authentication().getName())
-                    .apply(context.putAll(ReactiveSecurityContextHolder.withAuthentication(result.authentication()))));
+                .contextWrite(context -> {
+                  String requesterId = result.authentication().getName();
+                  return ErdOperationContexts.withActorUserId(requesterId)
+                      .apply(context
+                          .putAll(ReactiveSecurityContextHolder
+                              .withAuthentication(result.authentication())
+                              .readOnly())
+                          .putAll(ProjectAccessRequesterContext
+                              .withRequesterId(requesterId)
+                              .readOnly()));
+                });
           }
 
           if (publicPath) {

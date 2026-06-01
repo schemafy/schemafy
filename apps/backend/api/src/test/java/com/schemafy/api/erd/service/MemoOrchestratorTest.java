@@ -16,7 +16,6 @@ import com.schemafy.api.erd.controller.dto.request.UpdateMemoCommentRequest;
 import com.schemafy.api.erd.controller.dto.request.UpdateMemoRequest;
 import com.schemafy.api.erd.service.memo.MemoApiCommandMapper;
 import com.schemafy.api.erd.service.memo.MemoApiResponseMapper;
-import com.schemafy.api.erd.service.memo.MemoDeletePermissionPolicy;
 import com.schemafy.core.common.exception.DomainException;
 import com.schemafy.core.common.json.JsonCodec;
 import com.schemafy.core.erd.memo.application.port.in.CreateMemoCommentUseCase;
@@ -87,8 +86,7 @@ class MemoOrchestratorTest {
         getMemoCommentsUseCase,
         updateMemoCommentUseCase,
         getUsersByIdsUseCase,
-        new MemoApiCommandMapper(new MemoDeletePermissionPolicy(),
-            jsonCodec),
+        new MemoApiCommandMapper(jsonCodec),
         new MemoApiResponseMapper(jsonCodec),
         jsonCodec);
   }
