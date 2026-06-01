@@ -21,6 +21,8 @@ import com.schemafy.api.erd.broadcast.ErdMutationBroadcaster;
 import com.schemafy.api.erd.controller.dto.request.ChangeSchemaNameRequest;
 import com.schemafy.api.erd.controller.dto.request.CreateSchemaRequest;
 import com.schemafy.api.erd.controller.dto.response.SchemaResponse;
+import com.schemafy.api.erd.controller.dto.response.SchemaSnapshotsResponse;
+import com.schemafy.api.erd.service.SchemaSnapshotOrchestrator;
 import com.schemafy.core.erd.operation.domain.CommittedErdOperation;
 import com.schemafy.core.erd.schema.application.port.in.ChangeSchemaNameCommand;
 import com.schemafy.core.erd.schema.application.port.in.ChangeSchemaNameUseCase;
@@ -46,6 +48,7 @@ public class SchemaController {
   private final GetSchemasByProjectIdUseCase getSchemasByProjectIdUseCase;
   private final ChangeSchemaNameUseCase changeSchemaNameUseCase;
   private final DeleteSchemaUseCase deleteSchemaUseCase;
+  private final SchemaSnapshotOrchestrator schemaSnapshotOrchestrator;
 
   private final ObjectProvider<ErdMutationBroadcaster> broadcasterProvider;
 
@@ -77,6 +80,13 @@ public class SchemaController {
     GetSchemaQuery query = new GetSchemaQuery(schemaId);
     return getSchemaWithRevisionUseCase.getSchemaWithRevision(query)
         .map(result -> SchemaResponse.from(result.schema(), result.currentRevision()));
+  }
+
+  @PreAuthorize("hasAnyRole('OWNER','ADMIN','EDITOR','COMMENTER','VIEWER')")
+  @GetMapping("/schemas/{schemaId}/snapshots")
+  public Mono<SchemaSnapshotsResponse> getSchemaSnapshots(
+      @PathVariable String schemaId) {
+    return schemaSnapshotOrchestrator.getSchemaSnapshots(schemaId);
   }
 
   @PreAuthorize("hasAnyRole('OWNER','ADMIN','EDITOR','COMMENTER','VIEWER')")
