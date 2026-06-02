@@ -123,6 +123,11 @@ export class OperationHistoryStore {
     const clientOperationId = message.operation.clientOperationId;
 
     if (clientOperationId && this.operationsByClientId.has(clientOperationId)) {
+      this.markUndoable(
+        message.schemaId,
+        message.operation,
+        message.affectedTableIds,
+      );
       return;
     }
 
