@@ -1303,7 +1303,8 @@
     386
   ],
   "apps/frontend/src/features/drawing/hooks/useErdCache.ts": [
-    386
+    386,
+    374
   ],
   "apps/frontend/src/features/drawing/hooks/useLocalStorage.ts": [
     386
@@ -1313,5 +1314,23 @@
   ],
   "apps/frontend/src/lib/utils/reportUnexpectedError.ts": [
     386
+  ],
+  "apps/frontend/src/features/drawing/hooks/useColumnMutations.ts": [
+    374
+  ],
+  "apps/frontend/src/features/drawing/hooks/useConstraintMutations.ts": [
+    374
+  ],
+  "apps/frontend/src/features/drawing/hooks/useErdMutationSync.ts": [
+    374
+  ],
+  "apps/frontend/src/features/drawing/hooks/useIndexMutations.ts": [
+    374
+  ],
+  "apps/frontend/src/features/drawing/hooks/useRelationshipMutations.ts": [
+    374
+  ],
+  "apps/frontend/src/features/drawing/hooks/useTableMutations.ts": [
+    374
   ]
 }
