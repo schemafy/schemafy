@@ -11,7 +11,7 @@ import type { Point, EdgeData } from '../types';
 import { useControlPointDrag } from '../hooks/useControlPointDrag';
 import {
   getInternalNodeRect,
-  getRelationshipAnchorPoint,
+  resolveRelationshipAnchor,
 } from '../utils/anchorGeometry';
 
 export const CustomSmoothStepEdge = memo(
@@ -38,11 +38,11 @@ export const CustomSmoothStepEdge = memo(
     const targetRect = getInternalNodeRect(targetNode);
     const sourceAnchor =
       sourceRect && targetRect
-        ? getRelationshipAnchorPoint(sourceRect, targetRect, data?.fkAnchor)
+        ? resolveRelationshipAnchor(sourceRect, targetRect, data?.fkAnchor)
         : null;
     const targetAnchor =
       sourceRect && targetRect
-        ? getRelationshipAnchorPoint(targetRect, sourceRect, data?.pkAnchor)
+        ? resolveRelationshipAnchor(targetRect, sourceRect, data?.pkAnchor)
         : null;
 
     const {
