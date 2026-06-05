@@ -2,16 +2,20 @@ import { memo } from 'react';
 import {
   BaseEdge,
   EdgeLabelRenderer,
+  useReactFlow,
   type EdgeProps,
   type Edge,
 } from '@xyflow/react';
 import { Move } from 'lucide-react';
 import type { Point, EdgeData } from '../types';
 import { useControlPointDrag } from '../hooks/useControlPointDrag';
+import { getNodeRect } from '../utils/anchorGeometry';
 
 export const CustomSmoothStepEdge = memo(
   ({
     id,
+    source,
+    target,
     sourceX,
     sourceY,
     targetX,
@@ -25,6 +29,10 @@ export const CustomSmoothStepEdge = memo(
     labelStyle,
     data,
   }: EdgeProps<Edge<EdgeData>>) => {
+    const { getNode } = useReactFlow();
+    const sourceRect = getNodeRect(getNode(source));
+    const targetRect = getNodeRect(getNode(target));
+
     const {
       path,
       handle1Position,
@@ -40,6 +48,8 @@ export const CustomSmoothStepEdge = memo(
       targetY,
       sourcePosition,
       targetPosition,
+      sourceRect,
+      targetRect,
       data,
     });
 

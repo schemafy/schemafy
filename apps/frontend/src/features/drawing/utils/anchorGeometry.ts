@@ -1,4 +1,4 @@
-import { Position } from '@xyflow/react';
+import { Position, type Node } from '@xyflow/react';
 import type { AnchorSide, FixedAnchor, Point } from '../types';
 
 const MIN_RECT_SIZE = 1;
@@ -18,6 +18,13 @@ export type AnchorPoint = {
   ratio: number;
 };
 
+export type NodeRectSource = Pick<Node, 'position' | 'width' | 'height'> & {
+  measured?: {
+    width?: number;
+    height?: number;
+  };
+};
+
 const clamp = (value: number, min: number, max: number) =>
   Math.min(Math.max(value, min), max);
 
@@ -27,6 +34,24 @@ const normalizeRect = (rect: Rect): Rect => ({
   width: Math.max(rect.width, MIN_RECT_SIZE),
   height: Math.max(rect.height, MIN_RECT_SIZE),
 });
+
+export const getNodeRect = (node: NodeRectSource | undefined): Rect | null => {
+  if (!node) return null;
+
+  const width = node.measured?.width ?? node.width;
+  const height = node.measured?.height ?? node.height;
+
+  if (typeof width !== 'number' || typeof height !== 'number') {
+    return null;
+  }
+
+  return normalizeRect({
+    x: node.position.x,
+    y: node.position.y,
+    width,
+    height,
+  });
+};
 
 export const getRectCenter = (rect: Rect): Point => {
   const normalizedRect = normalizeRect(rect);
