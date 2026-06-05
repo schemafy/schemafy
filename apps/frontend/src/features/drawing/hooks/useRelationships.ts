@@ -226,6 +226,8 @@ export const useRelationships = (relationshipConfig: RelationshipConfig) => {
           (isSameDirection
             ? connection.targetHandle
             : connection.sourceHandle) ?? undefined,
+        fkAnchor: { mode: 'floating' },
+        pkAnchor: { mode: 'floating' },
       };
 
       createRelationshipWithExtra({
