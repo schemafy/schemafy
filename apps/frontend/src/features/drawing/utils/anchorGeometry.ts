@@ -1,5 +1,10 @@
-import { Position, type Node } from '@xyflow/react';
-import type { AnchorSide, FixedAnchor, Point } from '../types';
+import { Position, type InternalNode, type Node } from '@xyflow/react';
+import type {
+  AnchorSide,
+  FixedAnchor,
+  Point,
+  RelationshipAnchor,
+} from '../types';
 
 const MIN_RECT_SIZE = 1;
 const CENTER_EPSILON = 0.0001;
@@ -48,6 +53,26 @@ export const getNodeRect = (node: NodeRectSource | undefined): Rect | null => {
   return normalizeRect({
     x: node.position.x,
     y: node.position.y,
+    width,
+    height,
+  });
+};
+
+export const getInternalNodeRect = (
+  node: InternalNode | undefined,
+): Rect | null => {
+  if (!node) return null;
+
+  const width = node.measured?.width ?? node.width;
+  const height = node.measured?.height ?? node.height;
+
+  if (typeof width !== 'number' || typeof height !== 'number') {
+    return null;
+  }
+
+  return normalizeRect({
+    x: node.internals.positionAbsolute.x,
+    y: node.internals.positionAbsolute.y,
     width,
     height,
   });
@@ -175,4 +200,16 @@ export const getFloatingAnchorPoint = (
       : normalizedFromRect.y;
 
   return buildAnchorPoint(normalizedFromRect, side, { x, y });
+};
+
+export const getRelationshipAnchorPoint = (
+  fromRect: Rect,
+  toRect: Rect,
+  anchor: RelationshipAnchor | undefined,
+): AnchorPoint => {
+  if (anchor?.mode === 'fixed') {
+    return getFixedAnchorPoint(fromRect, anchor);
+  }
+
+  return getFloatingAnchorPoint(fromRect, toRect);
 };
