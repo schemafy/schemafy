@@ -1332,5 +1332,32 @@
   ],
   "apps/frontend/src/features/drawing/hooks/useTableMutations.ts": [
     374
+  ],
+  "apps/backend/api/src/main/java/com/schemafy/api/user/controller/dto/request/SignUpRequest.java": [
+    387
+  ],
+  "apps/backend/api/src/test/java/com/schemafy/api/user/controller/AuthControllerTest.java": [
+    387
+  ],
+  "apps/backend/api/src/test/java/com/schemafy/api/user/docs/UserApiSnippets.java": [
+    387
+  ],
+  "apps/backend/core/src/main/java/com/schemafy/core/user/application/port/in/SignUpUserCommand.java": [
+    387
+  ],
+  "apps/backend/core/src/main/java/com/schemafy/core/user/domain/User.java": [
+    387
+  ],
+  "apps/backend/core/src/main/java/com/schemafy/core/user/domain/exception/UserErrorCode.java": [
+    387
+  ],
+  "apps/backend/core/src/test/java/com/schemafy/core/user/application/port/in/SignUpUserCommandTest.java": [
+    387
+  ],
+  "apps/backend/core/src/test/java/com/schemafy/core/user/application/service/SignUpUserServiceTest.java": [
+    387
+  ],
+  "apps/backend/core/src/test/java/com/schemafy/core/user/domain/UserTest.java": [
+    387
   ]
 }
