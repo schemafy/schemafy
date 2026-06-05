@@ -60,8 +60,6 @@ export const CustomSmoothStepEdge = memo(
       targetY: targetAnchor?.point.y ?? targetY,
       sourcePosition: sourceAnchor?.position ?? sourcePosition,
       targetPosition: targetAnchor?.position ?? targetPosition,
-      sourceRect,
-      targetRect,
       data,
     });
 

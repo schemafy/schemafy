@@ -1,7 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { useReactFlow, type Position } from '@xyflow/react';
 import type { CrossDirectionControlPoints, Point, EdgeData } from '../types';
-import type { Rect } from '../utils/anchorGeometry';
 import {
   isHorizontalPosition,
   calculateNewControlPoints,
@@ -16,8 +15,6 @@ interface UseControlPointDragParams {
   targetY: number;
   sourcePosition: Position;
   targetPosition: Position;
-  sourceRect?: Rect | null;
-  targetRect?: Rect | null;
   data: EdgeData | undefined;
 }
 
@@ -29,8 +26,6 @@ export const useControlPointDrag = ({
   targetY,
   sourcePosition,
   targetPosition,
-  sourceRect,
-  targetRect,
   data,
 }: UseControlPointDragParams) => {
   const { screenToFlowPosition } = useReactFlow();
@@ -60,14 +55,12 @@ export const useControlPointDrag = ({
 
   const controlPointsRef = useRef(controlPoints);
   const dataRef = useRef(data);
-  const nodeBoundsRef = useRef({ sourceRect, targetRect });
   const screenToFlowPositionRef = useRef(screenToFlowPosition);
   const isCrossDirectionRef = useRef(isCrossDirection);
   const sourceIsHorizontalRef = useRef(sourceIsHorizontal);
 
   controlPointsRef.current = controlPoints;
   dataRef.current = data;
-  nodeBoundsRef.current = { sourceRect, targetRect };
   screenToFlowPositionRef.current = screenToFlowPosition;
   isCrossDirectionRef.current = isCrossDirection;
   sourceIsHorizontalRef.current = sourceIsHorizontal;
@@ -156,7 +149,6 @@ export const useControlPointDrag = ({
     handle1Position,
     handle2Position,
     labelPosition,
-    hasNodeBounds: Boolean(sourceRect && targetRect),
     draggingHandle,
     handleMouseDown,
   };
