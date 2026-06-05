@@ -1,7 +1,6 @@
 package com.schemafy.api.erd.controller;
 
 import org.springframework.beans.factory.ObjectProvider;
-import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -29,7 +28,6 @@ public class OperationController {
   private final RedoErdOperationUseCase redoErdOperationUseCase;
   private final ObjectProvider<ErdMutationBroadcaster> broadcasterProvider;
 
-  @PreAuthorize("hasAnyRole('OWNER','ADMIN','EDITOR')")
   @PostMapping("/operations/{opId}/undo")
   public Mono<MutationResponse<Void>> undo(@PathVariable String opId) {
     return undoErdOperationUseCase.undo(new UndoErdOperationCommand(opId))
@@ -38,7 +36,6 @@ public class OperationController {
             result.affectedTableIds(), result.operation()));
   }
 
-  @PreAuthorize("hasAnyRole('OWNER','ADMIN','EDITOR')")
   @PostMapping("/operations/{opId}/redo")
   public Mono<MutationResponse<Void>> redo(@PathVariable String opId) {
     return redoErdOperationUseCase.redo(new RedoErdOperationCommand(opId))

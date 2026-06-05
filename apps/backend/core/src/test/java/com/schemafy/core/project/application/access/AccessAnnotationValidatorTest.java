@@ -66,7 +66,9 @@ class AccessAnnotationValidatorTest {
     @Bean
     AccessAnnotationValidator accessAnnotationValidator(
         org.springframework.context.ApplicationContext applicationContext) {
-      return new AccessAnnotationValidator(applicationContext);
+      return new AccessAnnotationValidator(
+          applicationContext,
+          new ProjectAccessTargetInference());
     }
 
   }

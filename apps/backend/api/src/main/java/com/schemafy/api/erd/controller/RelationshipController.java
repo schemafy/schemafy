@@ -6,7 +6,6 @@ import java.util.Set;
 import jakarta.validation.Valid;
 
 import org.springframework.beans.factory.ObjectProvider;
-import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PatchMapping;
@@ -85,7 +84,6 @@ public class RelationshipController {
 
   private final ObjectProvider<ErdMutationBroadcaster> broadcasterProvider;
 
-  @PreAuthorize("hasAnyRole('OWNER','ADMIN','EDITOR')")
   @PostMapping("/relationships")
   public Mono<MutationResponse<RelationshipResponse>> createRelationship(
       @Valid @RequestBody CreateRelationshipRequest request) {
@@ -106,7 +104,6 @@ public class RelationshipController {
             result.operation()));
   }
 
-  @PreAuthorize("hasAnyRole('OWNER','ADMIN','EDITOR','COMMENTER','VIEWER')")
   @GetMapping("/relationships/{relationshipId}")
   public Mono<RelationshipResponse> getRelationship(
       @PathVariable String relationshipId) {
@@ -115,7 +112,6 @@ public class RelationshipController {
         .map(relationshipResponseMapper::toRelationshipResponse);
   }
 
-  @PreAuthorize("hasAnyRole('OWNER','ADMIN','EDITOR','COMMENTER','VIEWER')")
   @GetMapping("/tables/{tableId}/relationships")
   public Mono<List<RelationshipResponse>> getRelationshipsByTableId(
       @PathVariable String tableId) {
@@ -126,7 +122,6 @@ public class RelationshipController {
             .toList());
   }
 
-  @PreAuthorize("hasAnyRole('OWNER','ADMIN','EDITOR')")
   @PatchMapping("/relationships/{relationshipId}/name")
   public Mono<MutationResponse<Void>> changeRelationshipName(
       @PathVariable String relationshipId,
@@ -142,7 +137,6 @@ public class RelationshipController {
             result.affectedTableIds(), result.operation()));
   }
 
-  @PreAuthorize("hasAnyRole('OWNER','ADMIN','EDITOR')")
   @PatchMapping("/relationships/{relationshipId}/kind")
   public Mono<MutationResponse<Void>> changeRelationshipKind(
       @PathVariable String relationshipId,
@@ -158,7 +152,6 @@ public class RelationshipController {
             result.affectedTableIds(), result.operation()));
   }
 
-  @PreAuthorize("hasAnyRole('OWNER','ADMIN','EDITOR')")
   @PatchMapping("/relationships/{relationshipId}/cardinality")
   public Mono<MutationResponse<Void>> changeRelationshipCardinality(
       @PathVariable String relationshipId,
@@ -174,7 +167,6 @@ public class RelationshipController {
             result.affectedTableIds(), result.operation()));
   }
 
-  @PreAuthorize("hasAnyRole('OWNER','ADMIN','EDITOR')")
   @PatchMapping("/relationships/{relationshipId}/extra")
   public Mono<MutationResponse<Void>> changeRelationshipExtra(
       @PathVariable String relationshipId,
@@ -190,7 +182,6 @@ public class RelationshipController {
             result.affectedTableIds(), result.operation()));
   }
 
-  @PreAuthorize("hasAnyRole('OWNER','ADMIN')")
   @DeleteMapping("/relationships/{relationshipId}")
   public Mono<MutationResponse<Void>> deleteRelationship(
       @PathVariable String relationshipId) {
@@ -203,7 +194,6 @@ public class RelationshipController {
             result.affectedTableIds(), result.operation()));
   }
 
-  @PreAuthorize("hasAnyRole('OWNER','ADMIN','EDITOR','COMMENTER','VIEWER')")
   @GetMapping("/relationships/{relationshipId}/columns")
   public Mono<List<RelationshipColumnResponse>> getRelationshipColumns(
       @PathVariable String relationshipId) {
@@ -215,7 +205,6 @@ public class RelationshipController {
             .toList());
   }
 
-  @PreAuthorize("hasAnyRole('OWNER','ADMIN','EDITOR')")
   @PostMapping("/relationships/{relationshipId}/columns")
   public Mono<MutationResponse<AddRelationshipColumnResponse>> addRelationshipColumn(
       @PathVariable String relationshipId,
@@ -235,7 +224,6 @@ public class RelationshipController {
             result.operation()));
   }
 
-  @PreAuthorize("hasAnyRole('OWNER','ADMIN','EDITOR')")
   @DeleteMapping("/relationship-columns/{relationshipColumnId}")
   public Mono<MutationResponse<Void>> removeRelationshipColumn(
       @PathVariable String relationshipColumnId) {
@@ -249,7 +237,6 @@ public class RelationshipController {
             result.affectedTableIds(), result.operation()));
   }
 
-  @PreAuthorize("hasAnyRole('OWNER','ADMIN','EDITOR','COMMENTER','VIEWER')")
   @GetMapping("/relationship-columns/{relationshipColumnId}")
   public Mono<RelationshipColumnResponse> getRelationshipColumn(
       @PathVariable String relationshipColumnId) {
@@ -258,7 +245,6 @@ public class RelationshipController {
         .map(RelationshipColumnResponse::from);
   }
 
-  @PreAuthorize("hasAnyRole('OWNER','ADMIN','EDITOR')")
   @PatchMapping("/relationship-columns/{relationshipColumnId}/position")
   public Mono<MutationResponse<Void>> changeRelationshipColumnPosition(
       @PathVariable String relationshipColumnId,

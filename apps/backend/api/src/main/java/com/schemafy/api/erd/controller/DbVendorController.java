@@ -2,7 +2,6 @@ package com.schemafy.api.erd.controller;
 
 import java.util.List;
 
-import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -28,7 +27,6 @@ public class DbVendorController {
   private final GetDbVendorUseCase getDbVendorUseCase;
   private final DbVendorApiResponseMapper vendorResponseMapper;
 
-  @PreAuthorize("hasAnyRole('OWNER','ADMIN','EDITOR','COMMENTER','VIEWER')")
   @GetMapping("/vendors")
   public Mono<List<DbVendorSummaryResponse>> listVendors() {
     return listDbVendorsUseCase.listDbVendors()
@@ -36,7 +34,6 @@ public class DbVendorController {
         .collectList();
   }
 
-  @PreAuthorize("hasAnyRole('OWNER','ADMIN','EDITOR','COMMENTER','VIEWER')")
   @GetMapping("/vendors/{displayName}")
   public Mono<DbVendorDetailResponse> getVendor(
       @PathVariable String displayName) {

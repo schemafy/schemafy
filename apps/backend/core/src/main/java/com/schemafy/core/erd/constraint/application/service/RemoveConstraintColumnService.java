@@ -27,12 +27,18 @@ import com.schemafy.core.erd.operation.application.inverse.RemoveConstraintColum
 import com.schemafy.core.erd.operation.application.service.ErdMutationCoordinator;
 import com.schemafy.core.erd.operation.application.service.StructuralSnapshotService;
 import com.schemafy.core.erd.operation.domain.ErdOperationType;
+import com.schemafy.core.project.application.access.AccessTarget;
+import com.schemafy.core.project.application.access.RequireProjectAccess;
+import com.schemafy.core.project.domain.ProjectRole;
 
 import lombok.RequiredArgsConstructor;
 import reactor.core.publisher.Mono;
 
+import static com.schemafy.core.project.application.access.ProjectAccessResourceType.CONSTRAINT_COLUMN;
+
 @Service
 @RequiredArgsConstructor
+@RequireProjectAccess(role = ProjectRole.EDITOR, target = @AccessTarget(value = CONSTRAINT_COLUMN, id = "constraintColumnId"))
 public class RemoveConstraintColumnService implements RemoveConstraintColumnUseCase {
 
   private final TransactionalOperator transactionalOperator;

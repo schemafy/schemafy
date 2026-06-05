@@ -23,12 +23,18 @@ import com.schemafy.core.erd.operation.application.inverse.RemoveIndexColumnInve
 import com.schemafy.core.erd.operation.application.service.ErdMutationCoordinator;
 import com.schemafy.core.erd.operation.application.service.StructuralSnapshotService;
 import com.schemafy.core.erd.operation.domain.ErdOperationType;
+import com.schemafy.core.project.application.access.AccessTarget;
+import com.schemafy.core.project.application.access.RequireProjectAccess;
+import com.schemafy.core.project.domain.ProjectRole;
 
 import lombok.RequiredArgsConstructor;
 import reactor.core.publisher.Mono;
 
+import static com.schemafy.core.project.application.access.ProjectAccessResourceType.INDEX_COLUMN;
+
 @Service
 @RequiredArgsConstructor
+@RequireProjectAccess(role = ProjectRole.EDITOR, target = @AccessTarget(value = INDEX_COLUMN, id = "indexColumnId"))
 public class RemoveIndexColumnService implements RemoveIndexColumnUseCase {
 
   private final TransactionalOperator transactionalOperator;

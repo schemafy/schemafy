@@ -183,10 +183,7 @@ class RelationshipCascadeDeleteIntegrationTest extends ErdProjectIntegrationSupp
           .verifyComplete();
 
       // FK 테이블 관련 관계는 없어야 함
-      StepVerifier.create(getRelationshipsByTableIdUseCase.getRelationshipsByTableId(
-          new GetRelationshipsByTableIdQuery(fkTableId)))
-          .assertNext(relationships -> assertThat(relationships).isEmpty())
-          .verifyComplete();
+      assertThat(countRelationshipsByTableId(fkTableId)).isZero();
 
       // PK 테이블은 여전히 존재
       StepVerifier.create(getRelationshipsByTableIdUseCase.getRelationshipsByTableId(

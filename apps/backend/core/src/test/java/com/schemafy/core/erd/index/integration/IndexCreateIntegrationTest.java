@@ -397,11 +397,8 @@ class IndexCreateIntegrationTest extends ErdProjectIntegrationSupport {
           .expectErrorMatches(DomainException.hasErrorCode(IndexErrorCode.NOT_FOUND))
           .verify();
 
-      StepVerifier.create(getIndexColumnsByIndexIdUseCase
-          .getIndexColumnsByIndexId(
-              new GetIndexColumnsByIndexIdQuery(result.indexId())))
-          .assertNext(columns -> assertThat(columns).isEmpty())
-          .verifyComplete();
+      assertThat(countRowsByColumn(
+          "db_index_columns", "index_id", result.indexId())).isZero();
     }
 
   }

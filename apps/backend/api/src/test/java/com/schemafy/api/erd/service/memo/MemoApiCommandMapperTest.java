@@ -1,7 +1,5 @@
 package com.schemafy.api.erd.service.memo;
 
-import java.util.Set;
-
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
@@ -12,7 +10,6 @@ import com.schemafy.api.erd.controller.dto.request.CreateMemoRequest;
 import com.schemafy.api.erd.controller.dto.request.UpdateMemoCommentRequest;
 import com.schemafy.api.erd.controller.dto.request.UpdateMemoRequest;
 import com.schemafy.core.common.json.JsonCodec;
-import com.schemafy.core.project.domain.ProjectRole;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -23,7 +20,6 @@ class MemoApiCommandMapperTest {
       .findAndRegisterModules();
 
   private final MemoApiCommandMapper sut = new MemoApiCommandMapper(
-      new MemoDeletePermissionPolicy(),
       new JsonCodec(objectMapper));
 
   @Test
@@ -44,30 +40,26 @@ class MemoApiCommandMapperTest {
   }
 
   @Test
-  @DisplayName("deleteMemo: ADMIN은 canDeleteOthers=true")
-  void deleteMemo_adminCanDeleteOthers() {
-    var admin = AuthenticatedUser.withRoles("admin-1",
-        Set.of(ProjectRole.ADMIN));
+  @DisplayName("deleteMemo: requester를 도메인 커맨드로 전달한다")
+  void deleteMemoMapping() {
+    var user = AuthenticatedUser.of("user-1");
 
-    var command = sut.toDeleteMemoCommand("memo-1", admin);
+    var command = sut.toDeleteMemoCommand("memo-1", user);
 
     assertThat(command.memoId()).isEqualTo("memo-1");
-    assertThat(command.requesterId()).isEqualTo("admin-1");
-    assertThat(command.canDeleteOthers()).isTrue();
+    assertThat(command.requesterId()).isEqualTo("user-1");
   }
 
   @Test
-  @DisplayName("deleteMemoComment: VIEWER는 canDeleteOthers=false")
-  void deleteMemoComment_viewerCannotDeleteOthers() {
-    var viewer = AuthenticatedUser.withRoles("viewer-1",
-        Set.of(ProjectRole.VIEWER));
+  @DisplayName("deleteMemoComment: requester를 도메인 커맨드로 전달한다")
+  void deleteMemoCommentMapping() {
+    var user = AuthenticatedUser.of("user-1");
 
     var command = sut.toDeleteMemoCommentCommand("comment-1",
-        viewer);
+        user);
 
     assertThat(command.commentId()).isEqualTo("comment-1");
-    assertThat(command.requesterId()).isEqualTo("viewer-1");
-    assertThat(command.canDeleteOthers()).isFalse();
+    assertThat(command.requesterId()).isEqualTo("user-1");
   }
 
   @Test
