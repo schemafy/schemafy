@@ -60,18 +60,31 @@ const convertRelationshipSnapshotToEdge = (
   } as Edge;
 };
 
+const isTableSnapshot = (
+  snapshot: TableSnapshotResponse | undefined,
+): snapshot is TableSnapshotResponse => snapshot !== undefined;
+
 export const convertSnapshotsToEdges = (
-  snapshots: Record<string, TableSnapshotResponse>,
+  snapshots: Record<string, TableSnapshotResponse | undefined>,
 ): Edge[] => {
   const seenRelationshipIds = new Set<string>();
+  const validSnapshots = Object.values(snapshots).filter(isTableSnapshot);
+  const tableIds = new Set(validSnapshots.map((snapshot) => snapshot.table.id));
 
-  return Object.values(snapshots).flatMap((snapshot) =>
+  return validSnapshots.flatMap((snapshot) =>
     snapshot.relationships
       .filter((relSnapshot) => {
-        if (seenRelationshipIds.has(relSnapshot.relationship.id)) {
+        const { relationship } = relSnapshot;
+
+        if (
+          !tableIds.has(relationship.fkTableId) ||
+          !tableIds.has(relationship.pkTableId) ||
+          seenRelationshipIds.has(relationship.id)
+        ) {
           return false;
         }
-        seenRelationshipIds.add(relSnapshot.relationship.id);
+
+        seenRelationshipIds.add(relationship.id);
         return true;
       })
       .map((relSnapshot) => convertRelationshipSnapshotToEdge(relSnapshot)),
