@@ -2,6 +2,8 @@ package com.schemafy.core.user.application.port.in;
 
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.MethodSource;
 
 import com.schemafy.core.common.exception.DomainException;
 import com.schemafy.core.user.domain.exception.UserErrorCode;
@@ -13,28 +15,15 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 @DisplayName("SignUpUserCommand")
 class SignUpUserCommandTest {
 
-  @Test
-  @DisplayName("raw password가 blank이면 INVALID_PARAMETER를 반환한다")
-  void rejectsBlankPassword() {
+  @ParameterizedTest
+  @MethodSource("invalidPasswords")
+  @DisplayName("raw password 정책을 만족하지 않으면 INVALID_PARAMETER를 반환한다")
+  void rejectsInvalidPassword(String password) {
     assertThatThrownBy(() -> new SignUpUserCommand(
         "test@example.com",
         "Tester",
-        " "))
-        .isInstanceOfSatisfying(DomainException.class,
-            error -> assertThat(error.getErrorCode())
-                .isEqualTo(UserErrorCode.INVALID_PARAMETER));
-  }
-
-  @Test
-  @DisplayName("raw password가 8자 미만이면 INVALID_PARAMETER를 반환한다")
-  void rejectsShortPassword() {
-    assertThatThrownBy(() -> new SignUpUserCommand(
-        "test@example.com",
-        "Tester",
-        "passwrd"))
-        .isInstanceOfSatisfying(DomainException.class,
-            error -> assertThat(error.getErrorCode())
-                .isEqualTo(UserErrorCode.INVALID_PARAMETER));
+        password))
+        .matches(DomainException.hasErrorCode(UserErrorCode.INVALID_PARAMETER));
   }
 
   @Test
@@ -60,6 +49,10 @@ class SignUpUserCommandTest {
     assertThat(changed.email()).isEqualTo("changed@example.com");
     assertThat(changed.name()).isEqualTo("Tester");
     assertThat(changed.password()).isEqualTo("password");
+  }
+
+  static String[] invalidPasswords() {
+    return new String[] { null, "", " ", "\t", "\n", "passwrd" };
   }
 
 }
