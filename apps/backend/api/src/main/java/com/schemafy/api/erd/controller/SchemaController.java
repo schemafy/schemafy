@@ -79,14 +79,12 @@ public class SchemaController {
         .map(result -> SchemaResponse.from(result.schema(), result.currentRevision()));
   }
 
-  @PreAuthorize("hasAnyRole('OWNER','ADMIN','EDITOR','COMMENTER','VIEWER')")
   @GetMapping("/schemas/{schemaId}/snapshots")
   public Mono<SchemaSnapshotsResponse> getSchemaSnapshots(
       @PathVariable String schemaId) {
     return schemaSnapshotOrchestrator.getSchemaSnapshots(schemaId);
   }
 
-  @PreAuthorize("hasAnyRole('OWNER','ADMIN','EDITOR','COMMENTER','VIEWER')")
   @GetMapping("/projects/{projectId}/schemas")
   public Mono<List<SchemaResponse>> getSchemasByProjectId(
       @PathVariable String projectId) {
