@@ -23,6 +23,8 @@ import com.schemafy.core.erd.index.application.port.out.GetIndexColumnsByIndexId
 import com.schemafy.core.erd.index.domain.exception.IndexErrorCode;
 import com.schemafy.core.erd.index.domain.type.SortDirection;
 import com.schemafy.core.erd.index.fixture.IndexFixture;
+import com.schemafy.core.erd.operation.application.inverse.StructuralSnapshot;
+import com.schemafy.core.erd.operation.application.service.StructuralSnapshotService;
 
 import reactor.core.publisher.Mono;
 import reactor.test.StepVerifier;
@@ -32,6 +34,7 @@ import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.then;
+import static org.mockito.Mockito.lenient;
 
 @ExtendWith(MockitoExtension.class)
 @DisplayName("RemoveIndexColumnService")
@@ -56,6 +59,9 @@ class RemoveIndexColumnServiceTest {
   GetIndexColumnsByIndexIdPort getIndexColumnsByIndexIdPort;
 
   @Mock
+  StructuralSnapshotService structuralSnapshotService;
+
+  @Mock
   TransactionalOperator transactionalOperator;
 
   @InjectMocks
@@ -65,6 +71,10 @@ class RemoveIndexColumnServiceTest {
   void setUpTransaction() {
     given(transactionalOperator.transactional(any(Mono.class)))
         .willAnswer(invocation -> invocation.getArgument(0));
+    lenient().when(structuralSnapshotService.captureByIndexColumnId(any()))
+        .thenReturn(Mono.just(structuralSnapshot()));
+    lenient().when(structuralSnapshotService.captureBySchemaId(any()))
+        .thenReturn(Mono.just(structuralSnapshot()));
   }
 
   @Nested
@@ -159,6 +169,11 @@ class RemoveIndexColumnServiceTest {
       then(deleteIndexColumnPort).shouldHaveNoInteractions();
     }
 
+  }
+
+  private static StructuralSnapshot structuralSnapshot() {
+    return new StructuralSnapshot("schema1", List.of(), List.of(), List.of(), List.of(), List.of(), List.of(), List
+        .of(), List.of());
   }
 
 }

@@ -8,6 +8,7 @@ import org.springframework.stereotype.Service;
 
 import com.schemafy.core.common.MutationResult;
 import com.schemafy.core.common.exception.DomainException;
+import com.schemafy.core.erd.operation.application.inverse.ChangeRelationshipNameInverse;
 import com.schemafy.core.erd.operation.application.service.ErdMutationCoordinator;
 import com.schemafy.core.erd.operation.domain.ErdOperationType;
 import com.schemafy.core.erd.relationship.application.port.in.ChangeRelationshipNameCommand;
@@ -17,12 +18,18 @@ import com.schemafy.core.erd.relationship.application.port.out.GetRelationshipBy
 import com.schemafy.core.erd.relationship.application.port.out.RelationshipExistsPort;
 import com.schemafy.core.erd.relationship.domain.exception.RelationshipErrorCode;
 import com.schemafy.core.erd.relationship.domain.validator.RelationshipValidator;
+import com.schemafy.core.project.application.access.AccessTarget;
+import com.schemafy.core.project.application.access.RequireProjectAccess;
+import com.schemafy.core.project.domain.ProjectRole;
 
 import lombok.RequiredArgsConstructor;
 import reactor.core.publisher.Mono;
 
+import static com.schemafy.core.project.application.access.ProjectAccessResourceType.RELATIONSHIP;
+
 @Service
 @RequiredArgsConstructor
+@RequireProjectAccess(role = ProjectRole.EDITOR, target = @AccessTarget(value = RELATIONSHIP, id = "relationshipId"))
 public class ChangeRelationshipNameService implements ChangeRelationshipNameUseCase {
 
   private final ChangeRelationshipNamePort changeRelationshipNamePort;
@@ -57,7 +64,10 @@ public class ChangeRelationshipNameService implements ChangeRelationshipNameUseC
                     affectedTableIds.add(relationship.pkTableId());
                     return changeRelationshipNamePort
                         .changeRelationshipName(relationship.id(), normalizedName)
-                        .thenReturn(MutationResult.<Void>of(null, affectedTableIds));
+                        .thenReturn(MutationResult.<Void>of(null, affectedTableIds)
+                            .withInverse(new ChangeRelationshipNameInverse(
+                                relationship.id(),
+                                relationship.name())));
                   }));
         }));
   }

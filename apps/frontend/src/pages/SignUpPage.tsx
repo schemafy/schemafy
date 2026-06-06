@@ -1,4 +1,4 @@
-import { Button } from '@/components';
+import { ButtonLink } from '@/components';
 import { SignUpForm } from '@/features/auth';
 
 export const SignUpPage = () => {
@@ -15,14 +15,14 @@ export const SignUpPage = () => {
         <p className="font-body-sm text-schemafy-dark-gray">
           Already have an account?
         </p>
-        <Button
+        <ButtonLink
           variant={'none'}
           size={'none'}
           className="text-schemafy-dark-gray"
           to="/signin"
         >
           Sign In
-        </Button>
+        </ButtonLink>
       </div>
     </div>
   );

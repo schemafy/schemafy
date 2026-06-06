@@ -6,6 +6,7 @@ import java.util.Map;
 import java.util.Objects;
 
 import com.schemafy.core.common.PersistenceAdapter;
+import com.schemafy.core.common.exception.DomainException;
 import com.schemafy.core.erd.relationship.application.port.out.ChangeRelationshipColumnPositionPort;
 import com.schemafy.core.erd.relationship.application.port.out.CreateRelationshipColumnPort;
 import com.schemafy.core.erd.relationship.application.port.out.DeleteRelationshipColumnPort;
@@ -14,7 +15,9 @@ import com.schemafy.core.erd.relationship.application.port.out.DeleteRelationshi
 import com.schemafy.core.erd.relationship.application.port.out.GetRelationshipColumnByIdPort;
 import com.schemafy.core.erd.relationship.application.port.out.GetRelationshipColumnsByColumnIdPort;
 import com.schemafy.core.erd.relationship.application.port.out.GetRelationshipColumnsByRelationshipIdPort;
+import com.schemafy.core.erd.relationship.application.port.out.RestoreRelationshipColumnPort;
 import com.schemafy.core.erd.relationship.domain.RelationshipColumn;
+import com.schemafy.core.erd.relationship.domain.exception.RelationshipErrorCode;
 
 import lombok.RequiredArgsConstructor;
 import reactor.core.publisher.Mono;
@@ -27,6 +30,7 @@ class RelationshipColumnPersistenceAdapter implements
     GetRelationshipColumnByIdPort,
     GetRelationshipColumnsByColumnIdPort,
     GetRelationshipColumnsByRelationshipIdPort,
+    RestoreRelationshipColumnPort,
     DeleteRelationshipColumnPort,
     DeleteRelationshipColumnsByRelationshipIdPort,
     DeleteRelationshipColumnsByColumnIdPort {
@@ -87,6 +91,19 @@ class RelationshipColumnPersistenceAdapter implements
   }
 
   @Override
+  public Mono<Void> restoreRelationshipColumn(RelationshipColumn relationshipColumn) {
+    return findRelationshipColumnOrError(relationshipColumn.id())
+        .flatMap(entity -> {
+          entity.setRelationshipId(relationshipColumn.relationshipId());
+          entity.setPkColumnId(relationshipColumn.pkColumnId());
+          entity.setFkColumnId(relationshipColumn.fkColumnId());
+          entity.setSeqNo(relationshipColumn.seqNo());
+          return relationshipColumnRepository.save(entity);
+        })
+        .then();
+  }
+
+  @Override
   public Mono<Void> deleteRelationshipColumn(String relationshipColumnId) {
     return relationshipColumnRepository.deleteById(relationshipColumnId);
   }
@@ -99,6 +116,13 @@ class RelationshipColumnPersistenceAdapter implements
   @Override
   public Mono<Void> deleteByColumnId(String columnId) {
     return relationshipColumnRepository.deleteByColumnId(columnId);
+  }
+
+  private Mono<RelationshipColumnEntity> findRelationshipColumnOrError(String relationshipColumnId) {
+    return relationshipColumnRepository.findById(relationshipColumnId)
+        .switchIfEmpty(Mono.error(new DomainException(
+            RelationshipErrorCode.COLUMN_NOT_FOUND,
+            "Relationship column not found: " + relationshipColumnId)));
   }
 
 }

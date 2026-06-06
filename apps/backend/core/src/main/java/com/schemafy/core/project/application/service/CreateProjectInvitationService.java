@@ -3,10 +3,12 @@ package com.schemafy.core.project.application.service;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.reactive.TransactionalOperator;
 
+import com.schemafy.core.project.application.access.RequireProjectAccess;
 import com.schemafy.core.project.application.port.in.CreateProjectInvitationCommand;
 import com.schemafy.core.project.application.port.in.CreateProjectInvitationUseCase;
 import com.schemafy.core.project.application.port.out.InvitationPort;
 import com.schemafy.core.project.domain.Invitation;
+import com.schemafy.core.project.domain.ProjectRole;
 import com.schemafy.core.ulid.application.port.out.UlidGeneratorPort;
 import com.schemafy.core.user.domain.Email;
 
@@ -23,12 +25,12 @@ class CreateProjectInvitationService implements CreateProjectInvitationUseCase {
   private final ProjectInvitationHelper projectInvitationHelper;
 
   @Override
+  @RequireProjectAccess(role = ProjectRole.ADMIN)
   public Mono<Invitation> createProjectInvitation(
       CreateProjectInvitationCommand command) {
     return Mono.fromSupplier(() -> Email.from(command.email()))
-        .flatMap(email -> projectInvitationHelper.validateProjectAdmin(
-            command.projectId(), command.requesterId())
-            .then(projectInvitationHelper.findProjectOrThrow(command.projectId()))
+        .flatMap(email -> projectInvitationHelper
+            .findProjectOrThrow(command.projectId())
             .flatMap(project -> projectInvitationHelper
                 .checkNotAlreadyProjectMemberByEmail(command.projectId(), email)
                 .then(projectInvitationHelper.checkDuplicatePendingInvitation(

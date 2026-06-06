@@ -58,7 +58,7 @@ class CreateSchemaIntegrationTest extends ErdProjectIntegrationSupport {
         "missing_project_schema",
         "utf8mb4",
         "utf8mb4_general_ci")))
-        .expectErrorMatches(DomainException.hasErrorCode(ProjectErrorCode.NOT_FOUND))
+        .expectErrorMatches(DomainException.hasErrorCode(ProjectErrorCode.ACCESS_DENIED))
         .verify();
   }
 

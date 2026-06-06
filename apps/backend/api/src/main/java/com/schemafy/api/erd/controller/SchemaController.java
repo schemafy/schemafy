@@ -5,7 +5,6 @@ import java.util.List;
 import jakarta.validation.Valid;
 
 import org.springframework.beans.factory.ObjectProvider;
-import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PatchMapping;
@@ -52,7 +51,6 @@ public class SchemaController {
 
   private final ObjectProvider<ErdMutationBroadcaster> broadcasterProvider;
 
-  @PreAuthorize("hasAnyRole('OWNER','ADMIN','EDITOR')")
   @PostMapping("/schemas")
   public Mono<MutationResponse<SchemaResponse>> createSchema(
       @Valid @RequestBody CreateSchemaRequest request) {
@@ -73,7 +71,6 @@ public class SchemaController {
             result.operation()));
   }
 
-  @PreAuthorize("hasAnyRole('OWNER','ADMIN','EDITOR','COMMENTER','VIEWER')")
   @GetMapping("/schemas/{schemaId}")
   public Mono<SchemaResponse> getSchema(
       @PathVariable String schemaId) {
@@ -99,7 +96,6 @@ public class SchemaController {
         .collectList();
   }
 
-  @PreAuthorize("hasAnyRole('OWNER','ADMIN','EDITOR')")
   @PatchMapping("/schemas/{schemaId}/name")
   public Mono<MutationResponse<Void>> changeSchemaName(
       @PathVariable String schemaId,
@@ -114,7 +110,6 @@ public class SchemaController {
             result.affectedTableIds(), result.operation()));
   }
 
-  @PreAuthorize("hasAnyRole('OWNER','ADMIN')")
   @DeleteMapping("/schemas/{schemaId}")
   public Mono<MutationResponse<Void>> deleteSchema(
       @PathVariable String schemaId) {

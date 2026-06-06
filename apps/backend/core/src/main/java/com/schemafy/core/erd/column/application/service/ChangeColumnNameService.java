@@ -16,6 +16,7 @@ import com.schemafy.core.erd.column.application.port.out.GetColumnsByTableIdPort
 import com.schemafy.core.erd.column.domain.Column;
 import com.schemafy.core.erd.column.domain.exception.ColumnErrorCode;
 import com.schemafy.core.erd.column.domain.validator.ColumnValidator;
+import com.schemafy.core.erd.operation.application.inverse.ChangeColumnNameInverse;
 import com.schemafy.core.erd.operation.application.service.ErdMutationCoordinator;
 import com.schemafy.core.erd.operation.domain.ErdOperationType;
 import com.schemafy.core.erd.schema.application.port.out.GetSchemaByIdPort;
@@ -24,13 +25,19 @@ import com.schemafy.core.erd.schema.domain.exception.SchemaErrorCode;
 import com.schemafy.core.erd.table.application.port.out.GetTableByIdPort;
 import com.schemafy.core.erd.table.domain.Table;
 import com.schemafy.core.erd.table.domain.exception.TableErrorCode;
+import com.schemafy.core.project.application.access.AccessTarget;
+import com.schemafy.core.project.application.access.RequireProjectAccess;
+import com.schemafy.core.project.domain.ProjectRole;
 
 import lombok.RequiredArgsConstructor;
 import reactor.core.publisher.Mono;
 import reactor.util.function.Tuple3;
 
+import static com.schemafy.core.project.application.access.ProjectAccessResourceType.COLUMN;
+
 @Service
 @RequiredArgsConstructor
+@RequireProjectAccess(role = ProjectRole.EDITOR, target = @AccessTarget(value = COLUMN, id = "columnId"))
 public class ChangeColumnNameService implements ChangeColumnNameUseCase {
 
   private final ChangeColumnNamePort changeColumnNamePort;
@@ -53,7 +60,8 @@ public class ChangeColumnNameService implements ChangeColumnNameUseCase {
             .switchIfEmpty(Mono.error(new DomainException(ColumnErrorCode.NOT_FOUND, "Column not found")))
             .flatMap(column -> fetchTableSchemaAndColumns(column)
                 .flatMap(tuple -> applyChange(column, tuple, command.newName()))
-                .thenReturn(MutationResult.<Void>of(null, column.tableId()))))
+                .thenReturn(MutationResult.<Void>of(null, column.tableId())
+                    .withInverse(new ChangeColumnNameInverse(column.id(), column.name())))))
         .as(transactionalOperator::transactional);
   }
 

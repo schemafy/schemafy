@@ -24,7 +24,6 @@ import lombok.RequiredArgsConstructor;
 @RequiredArgsConstructor
 public class MemoApiCommandMapper {
 
-  private final MemoDeletePermissionPolicy permissionPolicy;
   private final JsonCodec jsonCodec;
 
   public CreateMemoCommand toCreateMemoCommand(
@@ -60,8 +59,7 @@ public class MemoApiCommandMapper {
       AuthenticatedUser user) {
     return new DeleteMemoCommand(
         memoId,
-        user.userId(),
-        permissionPolicy.canDeleteOthers(user));
+        user.userId());
   }
 
   public CreateMemoCommentCommand toCreateMemoCommentCommand(
@@ -93,8 +91,7 @@ public class MemoApiCommandMapper {
       AuthenticatedUser user) {
     return new DeleteMemoCommentCommand(
         commentId,
-        user.userId(),
-        permissionPolicy.canDeleteOthers(user));
+        user.userId());
   }
 
 }

@@ -18,15 +18,22 @@ import com.schemafy.core.erd.index.domain.Index;
 import com.schemafy.core.erd.index.domain.IndexColumn;
 import com.schemafy.core.erd.index.domain.exception.IndexErrorCode;
 import com.schemafy.core.erd.index.domain.validator.IndexValidator;
+import com.schemafy.core.erd.operation.application.inverse.ChangeIndexTypeInverse;
 import com.schemafy.core.erd.operation.application.service.ErdMutationCoordinator;
 import com.schemafy.core.erd.operation.domain.ErdOperationType;
+import com.schemafy.core.project.application.access.AccessTarget;
+import com.schemafy.core.project.application.access.RequireProjectAccess;
+import com.schemafy.core.project.domain.ProjectRole;
 
 import lombok.RequiredArgsConstructor;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
+import static com.schemafy.core.project.application.access.ProjectAccessResourceType.INDEX;
+
 @Service
 @RequiredArgsConstructor
+@RequireProjectAccess(role = ProjectRole.EDITOR, target = @AccessTarget(value = INDEX, id = "indexId"))
 public class ChangeIndexTypeService implements ChangeIndexTypeUseCase {
 
   private final ChangeIndexTypePort changeIndexTypePort;
@@ -62,7 +69,8 @@ public class ChangeIndexTypeService implements ChangeIndexTypeUseCase {
                             index.id());
                         return changeIndexTypePort
                             .changeIndexType(index.id(), command.type())
-                            .thenReturn(MutationResult.<Void>of(null, index.tableId()));
+                            .thenReturn(MutationResult.<Void>of(null, index.tableId())
+                                .withInverse(new ChangeIndexTypeInverse(index.id(), index.type())));
                       }))));
     }));
   }

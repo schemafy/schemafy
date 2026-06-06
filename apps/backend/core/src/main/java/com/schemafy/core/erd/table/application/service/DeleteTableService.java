@@ -1,8 +1,8 @@
 package com.schemafy.core.erd.table.application.service;
 
+import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
-import java.util.concurrent.ConcurrentHashMap;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -14,7 +14,9 @@ import com.schemafy.core.erd.column.application.port.in.DeleteColumnCommand;
 import com.schemafy.core.erd.column.application.port.in.DeleteColumnUseCase;
 import com.schemafy.core.erd.column.application.port.out.GetColumnsByTableIdPort;
 import com.schemafy.core.erd.operation.ErdOperationContexts;
+import com.schemafy.core.erd.operation.application.inverse.DeleteTableInverse;
 import com.schemafy.core.erd.operation.application.service.ErdMutationCoordinator;
+import com.schemafy.core.erd.operation.application.service.StructuralSnapshotService;
 import com.schemafy.core.erd.operation.domain.ErdOperationType;
 import com.schemafy.core.erd.relationship.application.port.in.DeleteRelationshipCommand;
 import com.schemafy.core.erd.relationship.application.port.in.DeleteRelationshipUseCase;
@@ -25,13 +27,19 @@ import com.schemafy.core.erd.table.application.port.in.DeleteTableUseCase;
 import com.schemafy.core.erd.table.application.port.out.DeleteTablePort;
 import com.schemafy.core.erd.table.application.port.out.GetTableByIdPort;
 import com.schemafy.core.erd.table.domain.exception.TableErrorCode;
+import com.schemafy.core.project.application.access.AccessTarget;
+import com.schemafy.core.project.application.access.RequireProjectAccess;
+import com.schemafy.core.project.domain.ProjectRole;
 
 import lombok.RequiredArgsConstructor;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
+import static com.schemafy.core.project.application.access.ProjectAccessResourceType.TABLE;
+
 @Service
 @RequiredArgsConstructor
+@RequireProjectAccess(role = ProjectRole.EDITOR, target = @AccessTarget(value = TABLE, id = "tableId"))
 public class DeleteTableService implements DeleteTableUseCase {
 
   private final TransactionalOperator transactionalOperator;
@@ -41,6 +49,7 @@ public class DeleteTableService implements DeleteTableUseCase {
   private final DeleteRelationshipUseCase deleteRelationshipUseCase;
   private final GetColumnsByTableIdPort getColumnsByTableIdPort;
   private final DeleteColumnUseCase deleteColumnUseCase;
+  private final StructuralSnapshotService structuralSnapshotService;
   private ErdMutationCoordinator erdMutationCoordinator = ErdMutationCoordinator.noop();
 
   @Autowired
@@ -51,17 +60,40 @@ public class DeleteTableService implements DeleteTableUseCase {
   @Override
   public Mono<MutationResult<Void>> deleteTable(DeleteTableCommand command) {
     String tableId = command.tableId();
-    Set<String> affectedTableIds = ConcurrentHashMap.newKeySet();
+    return Mono.deferContextual(contextView -> ErdOperationContexts.isNestedMutationSuppressed(contextView)
+        ? deleteTableWithoutInverse(tableId)
+        : deleteTableWithInverse(command, tableId))
+        .as(transactionalOperator::transactional);
+  }
+
+  private Mono<MutationResult<Void>> deleteTableWithInverse(
+      DeleteTableCommand command,
+      String tableId) {
+    return erdMutationCoordinator.coordinate(ErdOperationType.DELETE_TABLE, command,
+        () -> structuralSnapshotService.captureByTableId(tableId)
+            .flatMap(beforeSnapshot -> deleteTableWithoutInverse(tableId)
+                .flatMap(result -> structuralSnapshotService.captureBySchemaId(beforeSnapshot.schemaId())
+                    .map(afterSnapshot -> result.withInverse(new DeleteTableInverse(
+                        beforeSnapshot.schemaId(),
+                        tableId,
+                        beforeSnapshot,
+                        afterSnapshot,
+                        result.sortedAffectedTableIds()))))));
+  }
+
+  private Mono<MutationResult<Void>> deleteTableWithoutInverse(String tableId) {
+    Set<String> affectedTableIds = new HashSet<>();
     affectedTableIds.add(tableId);
     Mono<Void> ensureExists = getTableByIdPort.findTableById(tableId)
         .switchIfEmpty(Mono.error(new DomainException(TableErrorCode.NOT_FOUND, "Table not found: " + tableId)))
         .then();
-    return erdMutationCoordinator.coordinate(ErdOperationType.DELETE_TABLE, command, () -> ensureExists
+    return ensureExists
         .then(getRelationshipsByTableIdPort.findRelationshipsByTableId(tableId)
             .defaultIfEmpty(List.of())
             .flatMapMany(Flux::fromIterable)
             // Identifying cascade can remove later relationships from the initial snapshot.
-            .concatMap(relationship -> deleteRelationshipIgnoringAlreadyDeleted(relationship.id(), affectedTableIds))
+            .concatMap(relationship -> deleteRelationshipIgnoringAlreadyDeleted(relationship.id(),
+                affectedTableIds))
             .then(Mono.defer(() -> getColumnsByTableIdPort.findColumnsByTableId(tableId)))
             .flatMapMany(Flux::fromIterable)
             .concatMap(column -> deleteColumnUseCase.deleteColumn(
@@ -70,8 +102,7 @@ public class DeleteTableService implements DeleteTableUseCase {
                 .doOnNext(result -> affectedTableIds.addAll(result.affectedTableIds()))
                 .then())
             .then(Mono.defer(() -> deleteTablePort.deleteTable(tableId)))
-            .then(Mono.fromCallable(() -> MutationResult.<Void>of(null, affectedTableIds)))))
-        .as(transactionalOperator::transactional);
+            .then(Mono.fromCallable(() -> MutationResult.<Void>of(null, affectedTableIds))));
   }
 
   private Mono<Void> deleteRelationshipIgnoringAlreadyDeleted(

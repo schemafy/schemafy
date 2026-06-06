@@ -8,6 +8,7 @@ import org.springframework.stereotype.Service;
 
 import com.schemafy.core.common.MutationResult;
 import com.schemafy.core.common.exception.DomainException;
+import com.schemafy.core.erd.operation.application.inverse.ChangeRelationshipCardinalityInverse;
 import com.schemafy.core.erd.operation.application.service.ErdMutationCoordinator;
 import com.schemafy.core.erd.operation.domain.ErdOperationType;
 import com.schemafy.core.erd.relationship.application.port.in.ChangeRelationshipCardinalityCommand;
@@ -15,12 +16,18 @@ import com.schemafy.core.erd.relationship.application.port.in.ChangeRelationship
 import com.schemafy.core.erd.relationship.application.port.out.ChangeRelationshipCardinalityPort;
 import com.schemafy.core.erd.relationship.application.port.out.GetRelationshipByIdPort;
 import com.schemafy.core.erd.relationship.domain.exception.RelationshipErrorCode;
+import com.schemafy.core.project.application.access.AccessTarget;
+import com.schemafy.core.project.application.access.RequireProjectAccess;
+import com.schemafy.core.project.domain.ProjectRole;
 
 import lombok.RequiredArgsConstructor;
 import reactor.core.publisher.Mono;
 
+import static com.schemafy.core.project.application.access.ProjectAccessResourceType.RELATIONSHIP;
+
 @Service
 @RequiredArgsConstructor
+@RequireProjectAccess(role = ProjectRole.EDITOR, target = @AccessTarget(value = RELATIONSHIP, id = "relationshipId"))
 public class ChangeRelationshipCardinalityService implements ChangeRelationshipCardinalityUseCase {
 
   private final ChangeRelationshipCardinalityPort changeRelationshipCardinalityPort;
@@ -48,7 +55,10 @@ public class ChangeRelationshipCardinalityService implements ChangeRelationshipC
               affectedTableIds.add(relationship.pkTableId());
               return changeRelationshipCardinalityPort
                   .changeRelationshipCardinality(relationship.id(), command.cardinality())
-                  .thenReturn(MutationResult.<Void>of(null, affectedTableIds));
+                  .thenReturn(MutationResult.<Void>of(null, affectedTableIds)
+                      .withInverse(new ChangeRelationshipCardinalityInverse(
+                          relationship.id(),
+                          relationship.cardinality())));
             }));
   }
 

@@ -27,19 +27,27 @@ import com.schemafy.core.erd.index.domain.Index;
 import com.schemafy.core.erd.index.domain.IndexColumn;
 import com.schemafy.core.erd.index.domain.exception.IndexErrorCode;
 import com.schemafy.core.erd.index.domain.validator.IndexValidator;
+import com.schemafy.core.erd.operation.application.inverse.CreateIndexInverse;
 import com.schemafy.core.erd.operation.application.service.ErdMutationCoordinator;
+import com.schemafy.core.erd.operation.application.service.StructuralSnapshotService;
 import com.schemafy.core.erd.operation.domain.ErdOperationType;
 import com.schemafy.core.erd.table.application.port.out.GetTableByIdPort;
 import com.schemafy.core.erd.table.domain.Table;
 import com.schemafy.core.erd.table.domain.exception.TableErrorCode;
+import com.schemafy.core.project.application.access.AccessTarget;
+import com.schemafy.core.project.application.access.RequireProjectAccess;
+import com.schemafy.core.project.domain.ProjectRole;
 import com.schemafy.core.ulid.application.port.out.UlidGeneratorPort;
 
 import lombok.RequiredArgsConstructor;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
+import static com.schemafy.core.project.application.access.ProjectAccessResourceType.TABLE;
+
 @Service
 @RequiredArgsConstructor
+@RequireProjectAccess(role = ProjectRole.EDITOR, target = @AccessTarget(value = TABLE, id = "tableId"))
 public class CreateIndexService implements CreateIndexUseCase {
 
   private final TransactionalOperator transactionalOperator;
@@ -51,6 +59,7 @@ public class CreateIndexService implements CreateIndexUseCase {
   private final GetColumnsByTableIdPort getColumnsByTableIdPort;
   private final GetIndexesByTableIdPort getIndexesByTableIdPort;
   private final GetIndexColumnsByIndexIdPort getIndexColumnsByIndexIdPort;
+  private final StructuralSnapshotService structuralSnapshotService;
   private ErdMutationCoordinator erdMutationCoordinator = ErdMutationCoordinator.noop();
 
   @Autowired
@@ -60,38 +69,47 @@ public class CreateIndexService implements CreateIndexUseCase {
 
   @Override
   public Mono<MutationResult<CreateIndexResult>> createIndex(CreateIndexCommand command) {
-    return erdMutationCoordinator.coordinate(ErdOperationType.CREATE_INDEX, command, () -> Mono.defer(() -> {
-      String normalizedName = normalizeName(command.name());
-      List<CreateIndexColumnCommand> columnCommands = resolveColumnSeqNos(normalizeColumns(command.columns()));
+    return erdMutationCoordinator.coordinate(ErdOperationType.CREATE_INDEX, command, () -> structuralSnapshotService
+        .captureByTableId(command.tableId()).flatMap(beforeSnapshot -> Mono.defer(() -> {
+          String normalizedName = normalizeName(command.name());
+          List<CreateIndexColumnCommand> columnCommands = resolveColumnSeqNos(normalizeColumns(command.columns()));
 
-      boolean autoName = normalizedName == null || normalizedName.isBlank();
-      if (!autoName) {
-        IndexValidator.validateName(normalizedName);
-      }
-      IndexValidator.validateType(command.type());
+          boolean autoName = normalizedName == null || normalizedName.isBlank();
+          if (!autoName) {
+            IndexValidator.validateName(normalizedName);
+          }
+          IndexValidator.validateType(command.type());
 
-      return getTableByIdPort.findTableById(command.tableId())
-          .switchIfEmpty(Mono.error(new DomainException(TableErrorCode.NOT_FOUND, "Table not found")))
-          .flatMap(table -> {
-            Mono<String> nameMono;
-            if (autoName) {
-              nameMono = resolveAutoIndexName(table);
-            } else {
-              nameMono = indexExistsPort.existsByTableIdAndName(table.id(), normalizedName)
-                  .flatMap(exists -> {
-                    if (exists) {
-                      return Mono.error(new DomainException(
-                          IndexErrorCode.NAME_DUPLICATE,
-                          "Index name '%s' already exists in table".formatted(normalizedName)));
-                    }
-                    return Mono.just(normalizedName);
-                  });
-            }
+          return getTableByIdPort.findTableById(command.tableId())
+              .switchIfEmpty(Mono.error(new DomainException(TableErrorCode.NOT_FOUND, "Table not found")))
+              .flatMap(table -> {
+                Mono<String> nameMono;
+                if (autoName) {
+                  nameMono = resolveAutoIndexName(table);
+                } else {
+                  nameMono = indexExistsPort.existsByTableIdAndName(table.id(), normalizedName)
+                      .flatMap(exists -> {
+                        if (exists) {
+                          return Mono.error(new DomainException(
+                              IndexErrorCode.NAME_DUPLICATE,
+                              "Index name '%s' already exists in table".formatted(normalizedName)));
+                        }
+                        return Mono.just(normalizedName);
+                      });
+                }
 
-            return nameMono.flatMap(resolvedName -> validateAndCreate(table, command, resolvedName, columnCommands)
-                .map(result -> MutationResult.of(result, table.id())));
-          });
-    })).as(transactionalOperator::transactional);
+                return nameMono.flatMap(resolvedName -> validateAndCreate(table, command, resolvedName, columnCommands)
+                    .map(result -> MutationResult.of(result, table.id())));
+              });
+        })
+            .flatMap(result -> structuralSnapshotService.captureBySchemaId(beforeSnapshot.schemaId())
+                .map(afterSnapshot -> result.withInverse(new CreateIndexInverse(
+                    beforeSnapshot.schemaId(),
+                    result.result().indexId(),
+                    beforeSnapshot,
+                    afterSnapshot,
+                    result.sortedAffectedTableIds()))))))
+        .as(transactionalOperator::transactional);
   }
 
   private Mono<CreateIndexResult> validateAndCreate(

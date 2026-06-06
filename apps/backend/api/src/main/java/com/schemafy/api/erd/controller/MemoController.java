@@ -4,7 +4,6 @@ import java.util.List;
 
 import jakarta.validation.Valid;
 
-import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -42,7 +41,6 @@ public class MemoController {
   private final DeleteMemoCommentUseCase deleteMemoCommentUseCase;
   private final MemoApiCommandMapper commandMapper;
 
-  @PreAuthorize("hasAnyRole('OWNER','ADMIN','EDITOR','COMMENTER')")
   @PostMapping("/memos")
   public Mono<MemoDetailResponse> createMemo(
       @AuthenticationPrincipal AuthenticatedUser user,
@@ -50,14 +48,12 @@ public class MemoController {
     return memoOrchestrator.createMemo(request, user);
   }
 
-  @PreAuthorize("hasAnyRole('OWNER','ADMIN','EDITOR','COMMENTER','VIEWER')")
   @GetMapping("/memos/{memoId}")
   public Mono<MemoDetailResponse> getMemo(
       @PathVariable String memoId) {
     return memoOrchestrator.getMemo(memoId);
   }
 
-  @PreAuthorize("hasAnyRole('OWNER','ADMIN','EDITOR','COMMENTER','VIEWER')")
   @GetMapping("/schemas/{schemaId}/memos")
   public Mono<List<MemoResponse>> getMemosBySchemaId(
       @PathVariable String schemaId) {
@@ -65,7 +61,6 @@ public class MemoController {
         .collectList();
   }
 
-  @PreAuthorize("hasAnyRole('OWNER','ADMIN','EDITOR','COMMENTER')")
   @PutMapping("/memos/{memoId}")
   public Mono<MemoResponse> updateMemo(
       @AuthenticationPrincipal AuthenticatedUser user,
@@ -74,7 +69,6 @@ public class MemoController {
     return memoOrchestrator.updateMemo(memoId, request, user);
   }
 
-  @PreAuthorize("hasAnyRole('OWNER','ADMIN','EDITOR','COMMENTER')")
   @DeleteMapping("/memos/{memoId}")
   public Mono<Void> deleteMemo(
       @AuthenticationPrincipal AuthenticatedUser user,
@@ -84,7 +78,6 @@ public class MemoController {
         .then();
   }
 
-  @PreAuthorize("hasAnyRole('OWNER','ADMIN','EDITOR','COMMENTER')")
   @PostMapping("/memos/{memoId}/comments")
   public Mono<MemoCommentResponse> createMemoComment(
       @AuthenticationPrincipal AuthenticatedUser user,
@@ -93,7 +86,6 @@ public class MemoController {
     return memoOrchestrator.createComment(memoId, request, user);
   }
 
-  @PreAuthorize("hasAnyRole('OWNER','ADMIN','EDITOR','COMMENTER','VIEWER')")
   @GetMapping("/memos/{memoId}/comments")
   public Mono<List<MemoCommentResponse>> getMemoComments(
       @PathVariable String memoId) {
@@ -101,7 +93,6 @@ public class MemoController {
         .collectList();
   }
 
-  @PreAuthorize("hasAnyRole('OWNER','ADMIN','EDITOR','COMMENTER')")
   @PutMapping("/memo-comments/{commentId}")
   public Mono<MemoCommentResponse> updateMemoComment(
       @AuthenticationPrincipal AuthenticatedUser user,
@@ -110,7 +101,6 @@ public class MemoController {
     return memoOrchestrator.updateComment(commentId, request, user);
   }
 
-  @PreAuthorize("hasAnyRole('OWNER','ADMIN','EDITOR','COMMENTER')")
   @DeleteMapping("/memo-comments/{commentId}")
   public Mono<Void> deleteMemoComment(
       @AuthenticationPrincipal AuthenticatedUser user,

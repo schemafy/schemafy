@@ -12,6 +12,11 @@ import {
 import { MemoProvider } from '@/features/memo/context';
 import { ChatInput, RemoteCursors } from '@/features/collaboration/components';
 import { observer } from 'mobx-react-lite';
+import { useNavigate, useParams } from '@tanstack/react-router';
+import { useEffect } from 'react';
+import axios from 'axios';
+import { NotFoundPage } from './NotFoundPage';
+import { useProject } from '@/features/project/hooks/useProject';
 
 const CanvasContent = observer(() => {
   const {
@@ -124,7 +129,21 @@ const CanvasContent = observer(() => {
 });
 
 export const CanvasPage = () => {
-  const projectId = '06EF3RWHVWADZEMACHXTSGA3Q0';
+  const { projectId } = useParams({ from: '/project/$projectId' });
+  const navigate = useNavigate();
+  const { isProjectError, isLoadingProject, projectError } =
+    useProject(projectId);
+  const isForbidden =
+    axios.isAxiosError(projectError) && projectError.response?.status === 403;
+
+  useEffect(() => {
+    if (!isProjectError || !isForbidden) return;
+
+    void navigate({ to: '/workspace', replace: true });
+  }, [isProjectError, isForbidden, navigate]);
+
+  if (isLoadingProject || isForbidden) return null;
+  if (isProjectError) return <NotFoundPage />;
 
   return (
     <SelectedSchemaProvider projectId={projectId}>

@@ -1,7 +1,7 @@
 package com.schemafy.core.erd.schema.application.service;
 
+import java.util.HashSet;
 import java.util.Set;
-import java.util.concurrent.ConcurrentHashMap;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -20,13 +20,19 @@ import com.schemafy.core.erd.schema.domain.exception.SchemaErrorCode;
 import com.schemafy.core.erd.table.application.port.in.DeleteTableCommand;
 import com.schemafy.core.erd.table.application.port.in.DeleteTableUseCase;
 import com.schemafy.core.erd.table.application.port.out.GetTablesBySchemaIdPort;
+import com.schemafy.core.project.application.access.AccessTarget;
+import com.schemafy.core.project.application.access.RequireProjectAccess;
+import com.schemafy.core.project.domain.ProjectRole;
 
 import lombok.RequiredArgsConstructor;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
+import static com.schemafy.core.project.application.access.ProjectAccessResourceType.SCHEMA;
+
 @Service
 @RequiredArgsConstructor
+@RequireProjectAccess(role = ProjectRole.ADMIN, target = @AccessTarget(value = SCHEMA, id = "schemaId"))
 public class DeleteSchemaService implements DeleteSchemaUseCase {
 
   private final TransactionalOperator transactionalOperator;
@@ -44,7 +50,7 @@ public class DeleteSchemaService implements DeleteSchemaUseCase {
   @Override
   public Mono<MutationResult<Void>> deleteSchema(DeleteSchemaCommand command) {
     String schemaId = command.schemaId();
-    Set<String> affectedTableIds = ConcurrentHashMap.newKeySet();
+    Set<String> affectedTableIds = new HashSet<>();
     Mono<Void> ensureExists = getSchemaByIdPort.findSchemaById(schemaId)
         .switchIfEmpty(Mono.error(new DomainException(SchemaErrorCode.NOT_FOUND, "Schema not found: " + schemaId)))
         .then();

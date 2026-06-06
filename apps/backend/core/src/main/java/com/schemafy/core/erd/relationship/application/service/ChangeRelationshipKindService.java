@@ -11,7 +11,9 @@ import org.springframework.transaction.reactive.TransactionalOperator;
 import com.schemafy.core.common.MutationResult;
 import com.schemafy.core.common.exception.DomainException;
 import com.schemafy.core.erd.constraint.application.service.PkCascadeHelper;
+import com.schemafy.core.erd.operation.application.inverse.ChangeRelationshipKindInverse;
 import com.schemafy.core.erd.operation.application.service.ErdMutationCoordinator;
+import com.schemafy.core.erd.operation.application.service.StructuralSnapshotService;
 import com.schemafy.core.erd.operation.domain.ErdOperationType;
 import com.schemafy.core.erd.relationship.application.port.in.ChangeRelationshipKindCommand;
 import com.schemafy.core.erd.relationship.application.port.in.ChangeRelationshipKindUseCase;
@@ -23,12 +25,18 @@ import com.schemafy.core.erd.relationship.domain.exception.RelationshipErrorCode
 import com.schemafy.core.erd.relationship.domain.type.RelationshipKind;
 import com.schemafy.core.erd.relationship.domain.validator.RelationshipValidator;
 import com.schemafy.core.erd.table.application.port.out.GetTableByIdPort;
+import com.schemafy.core.project.application.access.AccessTarget;
+import com.schemafy.core.project.application.access.RequireProjectAccess;
+import com.schemafy.core.project.domain.ProjectRole;
 
 import lombok.RequiredArgsConstructor;
 import reactor.core.publisher.Mono;
 
+import static com.schemafy.core.project.application.access.ProjectAccessResourceType.RELATIONSHIP;
+
 @Service
 @RequiredArgsConstructor
+@RequireProjectAccess(role = ProjectRole.EDITOR, target = @AccessTarget(value = RELATIONSHIP, id = "relationshipId"))
 public class ChangeRelationshipKindService implements ChangeRelationshipKindUseCase {
 
   private final TransactionalOperator transactionalOperator;
@@ -37,6 +45,7 @@ public class ChangeRelationshipKindService implements ChangeRelationshipKindUseC
   private final GetTableByIdPort getTableByIdPort;
   private final GetRelationshipsBySchemaIdPort getRelationshipsBySchemaIdPort;
   private final PkCascadeHelper pkCascadeHelper;
+  private final StructuralSnapshotService structuralSnapshotService;
   private ErdMutationCoordinator erdMutationCoordinator = ErdMutationCoordinator.noop();
 
   @Autowired
@@ -66,12 +75,20 @@ public class ChangeRelationshipKindService implements ChangeRelationshipKindUseC
           return erdMutationCoordinator.coordinate(
               ErdOperationType.CHANGE_RELATIONSHIP_KIND,
               command,
-              () -> changeRelationshipKind(
-                  relationship,
-                  oldKind,
-                  newKind,
-                  affectedTableIds)
-                  .then(Mono.fromCallable(() -> MutationResult.<Void>of(null, affectedTableIds))));
+              () -> structuralSnapshotService.captureByRelationshipId(command.relationshipId())
+                  .flatMap(beforeSnapshot -> changeRelationshipKind(
+                      relationship,
+                      oldKind,
+                      newKind,
+                      affectedTableIds)
+                      .then(Mono.fromCallable(() -> MutationResult.<Void>of(null, affectedTableIds)))
+                      .flatMap(result -> structuralSnapshotService.captureBySchemaId(beforeSnapshot.schemaId())
+                          .map(afterSnapshot -> result.withInverse(new ChangeRelationshipKindInverse(
+                              beforeSnapshot.schemaId(),
+                              relationship.id(),
+                              beforeSnapshot,
+                              afterSnapshot,
+                              result.sortedAffectedTableIds()))))));
         })
         .as(transactionalOperator::transactional);
   }
