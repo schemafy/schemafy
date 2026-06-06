@@ -22,6 +22,8 @@ import com.schemafy.core.erd.table.application.port.in.ChangeTableNameCommand;
 import com.schemafy.core.erd.table.application.port.in.ChangeTableNameUseCase;
 import com.schemafy.core.erd.table.application.port.in.CreateTableCommand;
 import com.schemafy.core.erd.table.application.port.in.CreateTableUseCase;
+import com.schemafy.core.project.application.access.ProjectAccessRequesterContext;
+import com.schemafy.core.project.domain.ProjectRole;
 
 import reactor.core.publisher.Mono;
 
@@ -33,6 +35,8 @@ import static org.mockito.Mockito.doAnswer;
 @SpringBootTest
 @DisplayName("SchemaSnapshotOrchestrator 통합 테스트")
 class SchemaSnapshotOrchestratorIntegrationTest extends ProjectHttpTestSupport {
+
+  private static final String TEST_REQUESTER_ID = "06F9R1TKJ2PSMTF1CZG8A2M2ZZ";
 
   @Autowired
   private SchemaSnapshotOrchestrator schemaSnapshotOrchestrator;
@@ -57,20 +61,21 @@ class SchemaSnapshotOrchestratorIntegrationTest extends ProjectHttpTestSupport {
         "schema_snapshot_project",
         "description")
         .getId();
+    addProjectMember(projectId, TEST_REQUESTER_ID, ProjectRole.ADMIN);
 
-    String schemaId = createSchemaUseCase.createSchema(new CreateSchemaCommand(
+    String schemaId = blockAsRequester(createSchemaUseCase.createSchema(new CreateSchemaCommand(
         projectId,
         "MySQL",
         "snapshot_schema",
         "utf8mb4",
-        "utf8mb4_general_ci")).block().result().id();
+        "utf8mb4_general_ci"))).result().id();
 
-    var tableResult = createTableUseCase.createTable(new CreateTableCommand(
+    var tableResult = blockAsRequester(createTableUseCase.createTable(new CreateTableCommand(
         schemaId,
         "users",
         "utf8mb4",
         "utf8mb4_general_ci",
-        null)).block().result();
+        null))).result();
 
     long revisionBeforeMutation = currentRevision(schemaId);
     String originalTableName = tableResult.name();
@@ -96,7 +101,7 @@ class SchemaSnapshotOrchestratorIntegrationTest extends ProjectHttpTestSupport {
     })).when(tableSnapshotOrchestrator).getTableSnapshotsStrict(anyList());
 
     CompletableFuture<SchemaSnapshotsResponse> responseFuture = CompletableFuture.supplyAsync(
-        () -> schemaSnapshotOrchestrator.getSchemaSnapshots(schemaId).block());
+        () -> blockAsRequester(schemaSnapshotOrchestrator.getSchemaSnapshots(schemaId)));
 
     await(snapshotReadStarted);
 
@@ -104,6 +109,7 @@ class SchemaSnapshotOrchestratorIntegrationTest extends ProjectHttpTestSupport {
         .changeTableName(new ChangeTableNameCommand(
             tableResult.tableId(),
             updatedTableName))
+        .contextWrite(ProjectAccessRequesterContext.withRequesterId(TEST_REQUESTER_ID))
         .block());
     allowSnapshotRead.countDown();
 
@@ -132,6 +138,12 @@ class SchemaSnapshotOrchestratorIntegrationTest extends ProjectHttpTestSupport {
 
   private void await(CountDownLatch latch) throws InterruptedException {
     assertThat(latch.await(5, TimeUnit.SECONDS)).isTrue();
+  }
+
+  private <T> T blockAsRequester(Mono<T> mono) {
+    return mono
+        .contextWrite(ProjectAccessRequesterContext.withRequesterId(TEST_REQUESTER_ID))
+        .block();
   }
 
 }
