@@ -460,7 +460,8 @@
   ],
   "apps/frontend/src/features/auth/components/SignUpForm.tsx": [
     361,
-    386
+    386,
+    390
   ],
   "apps/frontend/src/features/auth/hooks/useAuthBootstrap.ts": [
     361,
