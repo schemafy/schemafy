@@ -44,9 +44,6 @@ export const TypeSelector = ({
     Record<string, number | string[] | null>
   >({});
 
-  const currentTypeConfig = vendorTypes.find((t) => t.sqlType === value);
-  const prevCategory = getCategoryGroup(currentTypeConfig?.category ?? '');
-
   const displayType = pendingType ?? value;
   const displayTypeConfig = vendorTypes.find((t) => t.sqlType === displayType);
   const params: DatatypeParameter[] = displayTypeConfig?.parameters ?? [];
@@ -79,12 +76,7 @@ export const TypeSelector = ({
       setPendingType(null);
       setPendingParams({});
       onPendingChange?.(false);
-      onChange(
-        newType,
-        '{}',
-        getCategoryGroup(newTypeConfig?.category ?? ''),
-        prevCategory,
-      );
+      onChange(newType, '{}');
     } else {
       setPendingType(newType);
       setPendingParams({});
@@ -126,21 +118,11 @@ export const TypeSelector = ({
         setPendingType(null);
         setPendingParams({});
         onPendingChange?.(false);
-        onChange(
-          pendingType,
-          JSON.stringify(updated),
-          getCategoryGroup(displayTypeConfig?.category ?? ''),
-          prevCategory,
-        );
+        onChange(pendingType, JSON.stringify(updated));
       }
     } else {
       const updated = { ...parsed, [paramName]: paramVal };
-      onChange(
-        value,
-        JSON.stringify(updated),
-        getCategoryGroup(displayTypeConfig?.category ?? ''),
-        prevCategory,
-      );
+      onChange(value, JSON.stringify(updated));
     }
   };
 

@@ -3,6 +3,7 @@ package com.schemafy.core.erd.column.application.service;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Objects;
 import java.util.Set;
 
 import org.springframework.beans.factory.annotation.Autowired;
@@ -31,6 +32,12 @@ import com.schemafy.core.erd.operation.domain.ErdOperationType;
 import com.schemafy.core.erd.relationship.application.port.out.GetRelationshipColumnsByColumnIdPort;
 import com.schemafy.core.erd.relationship.application.port.out.GetRelationshipColumnsByRelationshipIdPort;
 import com.schemafy.core.erd.relationship.application.port.out.GetRelationshipsByPkTableIdPort;
+import com.schemafy.core.erd.schema.application.port.out.GetSchemaByIdPort;
+import com.schemafy.core.erd.schema.domain.Schema;
+import com.schemafy.core.erd.schema.domain.exception.SchemaErrorCode;
+import com.schemafy.core.erd.table.application.port.out.GetTableByIdPort;
+import com.schemafy.core.erd.table.domain.Table;
+import com.schemafy.core.erd.table.domain.exception.TableErrorCode;
 import com.schemafy.core.project.application.access.AccessTarget;
 import com.schemafy.core.project.application.access.RequireProjectAccess;
 import com.schemafy.core.project.domain.ProjectRole;
@@ -56,6 +63,8 @@ public class ChangeColumnTypeService implements ChangeColumnTypeUseCase {
   private final GetRelationshipColumnsByColumnIdPort getRelationshipColumnsByColumnIdPort;
   private final GetRelationshipsByPkTableIdPort getRelationshipsByPkTableIdPort;
   private final GetRelationshipColumnsByRelationshipIdPort getRelationshipColumnsByRelationshipIdPort;
+  private final GetTableByIdPort getTableByIdPort;
+  private final GetSchemaByIdPort getSchemaByIdPort;
   private ErdMutationCoordinator erdMutationCoordinator = ErdMutationCoordinator.noop();
 
   @Autowired
@@ -129,26 +138,33 @@ public class ChangeColumnTypeService implements ChangeColumnTypeUseCase {
         column.autoIncrement(),
         columns,
         column.id());
-    ColumnValidator.validateCharsetAndCollation(
-        normalizedDataType,
-        column.charset(),
-        column.collation());
 
-    return changeColumnTypePort.changeColumnType(column.id(), normalizedDataType, typeArguments)
-        .then(cascadeTypeToFkColumns(
-            column,
-            normalizedDataType,
-            typeArguments,
-            new HashSet<>(),
-            affectedTableIds,
-            fkRevertList,
-            capturedFkColumnIds));
+    return resolveTargetMeta(column, normalizedDataType)
+        .flatMap(targetMeta -> {
+          ColumnValidator.validateCharsetAndCollation(
+              normalizedDataType,
+              targetMeta.charset(),
+              targetMeta.collation());
+
+          return changeColumnTypePort.changeColumnType(column.id(), normalizedDataType, typeArguments)
+              .then(applyDerivedMetaIfNeeded(column, targetMeta))
+              .then(cascadeTypeToFkColumns(
+                  column,
+                  normalizedDataType,
+                  typeArguments,
+                  targetMeta,
+                  new HashSet<>(),
+                  affectedTableIds,
+                  fkRevertList,
+                  capturedFkColumnIds));
+        });
   }
 
   private Mono<Void> cascadeTypeToFkColumns(
       Column pkColumn,
       String dataType,
       ColumnTypeArguments typeArguments,
+      ResolvedColumnMeta targetMeta,
       Set<String> visited,
       Set<String> affectedTableIds,
       List<FkColumnTypeRevert> fkRevertList,
@@ -166,6 +182,7 @@ public class ChangeColumnTypeService implements ChangeColumnTypeUseCase {
                 pkColumn,
                 dataType,
                 typeArguments,
+                targetMeta,
                 visited,
                 affectedTableIds,
                 fkRevertList,
@@ -176,6 +193,7 @@ public class ChangeColumnTypeService implements ChangeColumnTypeUseCase {
       Column pkColumn,
       String dataType,
       ColumnTypeArguments typeArguments,
+      ResolvedColumnMeta targetMeta,
       Set<String> visited,
       Set<String> affectedTableIds,
       List<FkColumnTypeRevert> fkRevertList,
@@ -194,32 +212,37 @@ public class ChangeColumnTypeService implements ChangeColumnTypeUseCase {
                   .switchIfEmpty(Mono.error(new DomainException(
                       ColumnErrorCode.NOT_FOUND,
                       "Column not found: " + rc.fkColumnId())))
-                  .flatMap(fkCol -> {
-                    if (capturedFkColumnIds.add(fkCol.id())) {
+                  .flatMap(fkColumn -> {
+                    if (capturedFkColumnIds.add(fkColumn.id())) {
                       fkRevertList.add(new FkColumnTypeRevert(
-                          fkCol.id(),
-                          fkCol.dataType(),
-                          fkCol.typeArguments(),
-                          fkCol.charset(),
-                          fkCol.collation()));
+                          fkColumn.id(),
+                          fkColumn.dataType(),
+                          fkColumn.typeArguments(),
+                          fkColumn.charset(),
+                          fkColumn.collation()));
                     }
                     Mono<Void> changeType = changeColumnTypePort.changeColumnType(
                         rc.fkColumnId(), dataType, typeArguments);
-                    Mono<Void> clearCharsetCollation = ColumnValidator.isTextType(dataType)
-                        ? Mono.empty()
-                        : changeColumnMetaPort.changeColumnMeta(
-                            rc.fkColumnId(),
-                            null,
-                            "",
-                            "",
-                            null);
+                    Mono<Void> syncCharsetCollation = applyDerivedMetaIfNeeded(fkColumn, targetMeta);
+                    Column fkColumnForCascade = new Column(
+                        fkColumn.id(),
+                        fkColumn.tableId(),
+                        fkColumn.name(),
+                        dataType,
+                        typeArguments,
+                        fkColumn.seqNo(),
+                        fkColumn.autoIncrement(),
+                        targetMeta.charset(),
+                        targetMeta.collation(),
+                        fkColumn.comment());
 
                     return changeType
-                        .then(clearCharsetCollation)
+                        .then(syncCharsetCollation)
                         .then(cascadeTypeToFkColumns(
-                            fkCol,
+                            fkColumnForCascade,
                             dataType,
                             typeArguments,
+                            targetMeta,
                             visited,
                             affectedTableIds,
                             fkRevertList,
@@ -227,6 +250,68 @@ public class ChangeColumnTypeService implements ChangeColumnTypeUseCase {
                   }));
         })
         .then();
+  }
+
+  private Mono<ResolvedColumnMeta> resolveTargetMeta(Column column, String targetDataType) {
+    if (!ColumnValidator.isTextType(targetDataType)) {
+      return Mono.just(ResolvedColumnMeta.cleared());
+    }
+    if (ColumnValidator.isTextType(column.dataType())
+        && hasText(column.charset())
+        && hasText(column.collation())) {
+      return Mono.just(new ResolvedColumnMeta(column.charset(), column.collation()));
+    }
+
+    return getTableByIdPort.findTableById(column.tableId())
+        .switchIfEmpty(Mono.error(new DomainException(TableErrorCode.NOT_FOUND, "Table not found")))
+        .flatMap(table -> getSchemaByIdPort.findSchemaById(table.schemaId())
+            .switchIfEmpty(Mono.error(new DomainException(SchemaErrorCode.NOT_FOUND, "Schema not found")))
+            .map(schema -> resolveTextMeta(column, table, schema)));
+  }
+
+  private static ResolvedColumnMeta resolveTextMeta(Column column, Table table, Schema schema) {
+    return new ResolvedColumnMeta(
+        coalesce(column.charset(), table.charset(), schema.charset()),
+        coalesce(column.collation(), table.collation(), schema.collation()));
+  }
+
+  private Mono<Void> applyDerivedMetaIfNeeded(Column column, ResolvedColumnMeta targetMeta) {
+    if (Objects.equals(column.charset(), targetMeta.charset())
+        && Objects.equals(column.collation(), targetMeta.collation())) {
+      return Mono.empty();
+    }
+
+    return changeColumnMetaPort.changeColumnMeta(
+        column.id(),
+        null,
+        toPortValue(targetMeta.charset()),
+        toPortValue(targetMeta.collation()),
+        null);
+  }
+
+  private static String coalesce(String... candidates) {
+    for (String candidate : candidates) {
+      if (candidate != null && !candidate.isBlank()) {
+        return candidate.trim();
+      }
+    }
+    return null;
+  }
+
+  private static boolean hasText(String value) {
+    return value != null && !value.isBlank();
+  }
+
+  private static String toPortValue(String value) {
+    return value == null ? "" : value;
+  }
+
+  private record ResolvedColumnMeta(String charset, String collation) {
+
+    static ResolvedColumnMeta cleared() {
+      return new ResolvedColumnMeta(null, null);
+    }
+
   }
 
 }
