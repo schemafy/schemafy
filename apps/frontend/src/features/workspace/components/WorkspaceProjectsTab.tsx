@@ -14,6 +14,7 @@ import {
 } from '@/features/project/hooks/useProjects';
 import { ProjectFormDialog } from '@/features/project/components/ProjectFormDialog';
 import { ConfirmDialog } from './ConfirmDialog';
+import { formatDate } from '@/lib';
 import type { ProjectSummaryResponse } from '@/features/project/api';
 
 interface WorkspaceProjectsTabProps {
@@ -102,7 +103,7 @@ export const WorkspaceProjectsTab = ({
                     {project.name}
                   </td>
                   <td className="px-6 py-4 font-body-sm text-schemafy-dark-gray">
-                    {project.updatedAt}
+                    {formatDate(new Date(project.updatedAt))}
                   </td>
                   <td className="px-6 py-4">
                     <span className="px-3 py-1 bg-schemafy-secondary text-schemafy-dark-gray font-body-sm rounded-full">
