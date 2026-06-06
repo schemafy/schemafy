@@ -41,14 +41,23 @@ import com.schemafy.core.erd.relationship.domain.type.RelationshipKind;
 import com.schemafy.core.erd.relationship.domain.validator.RelationshipValidator;
 import com.schemafy.core.erd.table.application.port.out.GetTableByIdPort;
 import com.schemafy.core.erd.table.domain.Table;
+import com.schemafy.core.project.application.access.AccessTarget;
+import com.schemafy.core.project.application.access.RequireProjectAccess;
+import com.schemafy.core.project.domain.ProjectRole;
 import com.schemafy.core.ulid.application.port.out.UlidGeneratorPort;
 
 import lombok.RequiredArgsConstructor;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
+import static com.schemafy.core.project.application.access.ProjectAccessResourceType.TABLE;
+
 @Service
 @RequiredArgsConstructor
+@RequireProjectAccess(role = ProjectRole.EDITOR, targets = {
+  @AccessTarget(value = TABLE, id = "fkTableId"),
+  @AccessTarget(value = TABLE, id = "pkTableId")
+})
 public class CreateRelationshipService implements CreateRelationshipUseCase {
 
   private final TransactionalOperator transactionalOperator;

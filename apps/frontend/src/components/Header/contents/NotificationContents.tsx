@@ -5,16 +5,8 @@ import {
   DropdownMenuContent,
   DropdownMenuTrigger,
 } from '../../DropDown';
-import {
-  useAcceptWorkspaceInvitation,
-  useGetMyWorkspaceInvitations,
-  useRejectWorkspaceInvitation,
-} from '@/features/workspace/hooks/useWorkspaces';
-import {
-  useAcceptProjectInvitation,
-  useGetMyProjectInvitations,
-  useRejectProjectInvitation,
-} from '@/features/project/hooks/useProjects';
+import { useMyWorkspaceInvitations } from '@/features/workspace/hooks/useMyWorkspaceInvitations';
+import { useMyProjectInvitations } from '@/features/project/hooks/useMyProjectInvitations';
 
 type UnifiedInvitation =
   | {
@@ -33,25 +25,29 @@ type UnifiedInvitation =
     };
 
 export const NotificationContents = () => {
-  const { data: workspaceInvitations } = useGetMyWorkspaceInvitations(0, 20);
-  const { data: projectInvitations } = useGetMyProjectInvitations(0, 20);
-  const { mutate: acceptWorkspace, isPending: isAcceptingWorkspace } =
-    useAcceptWorkspaceInvitation();
-  const { mutate: rejectWorkspace, isPending: isRejectingWorkspace } =
-    useRejectWorkspaceInvitation();
-  const { mutate: acceptProject, isPending: isAcceptingProject } =
-    useAcceptProjectInvitation();
-  const { mutate: rejectProject, isPending: isRejectingProject } =
-    useRejectProjectInvitation();
+  const {
+    myWorkspaceInvitations,
+    acceptWorkspaceInvitation,
+    rejectWorkspaceInvitation,
+    isAcceptingWorkspaceInvitation,
+    isRejectingWorkspaceInvitation,
+  } = useMyWorkspaceInvitations(0, 20);
+  const {
+    myProjectInvitations,
+    acceptProjectInvitation,
+    rejectProjectInvitation,
+    isAcceptingProjectInvitation,
+    isRejectingProjectInvitation,
+  } = useMyProjectInvitations(0, 20);
 
   const isPending =
-    isAcceptingWorkspace ||
-    isRejectingWorkspace ||
-    isAcceptingProject ||
-    isRejectingProject;
+    isAcceptingWorkspaceInvitation ||
+    isRejectingWorkspaceInvitation ||
+    isAcceptingProjectInvitation ||
+    isRejectingProjectInvitation;
 
   const unified: UnifiedInvitation[] = [
-    ...(workspaceInvitations?.content ?? [])
+    ...myWorkspaceInvitations
       .filter((inv) => inv.status === 'PENDING')
       .map((inv) => ({
         type: 'workspace' as const,
@@ -60,7 +56,7 @@ export const NotificationContents = () => {
         invitedRole: inv.invitedRole,
         createdAt: inv.createdAt,
       })),
-    ...(projectInvitations?.content ?? [])
+    ...myProjectInvitations
       .filter((inv) => inv.status === 'PENDING')
       .map((inv) => ({
         type: 'project' as const,
@@ -74,13 +70,19 @@ export const NotificationContents = () => {
   );
 
   const handleAccept = (invitation: UnifiedInvitation) => {
-    if (invitation.type === 'workspace') acceptWorkspace(invitation.id);
-    else acceptProject(invitation.id);
+    if (invitation.type === 'workspace') {
+      acceptWorkspaceInvitation(invitation.id);
+    } else {
+      acceptProjectInvitation(invitation.id);
+    }
   };
 
   const handleReject = (invitation: UnifiedInvitation) => {
-    if (invitation.type === 'workspace') rejectWorkspace(invitation.id);
-    else rejectProject(invitation.id);
+    if (invitation.type === 'workspace') {
+      rejectWorkspaceInvitation(invitation.id);
+    } else {
+      rejectProjectInvitation(invitation.id);
+    }
   };
 
   return (

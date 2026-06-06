@@ -23,13 +23,19 @@ import com.schemafy.core.erd.operation.application.inverse.DeleteConstraintInver
 import com.schemafy.core.erd.operation.application.service.ErdMutationCoordinator;
 import com.schemafy.core.erd.operation.application.service.StructuralSnapshotService;
 import com.schemafy.core.erd.operation.domain.ErdOperationType;
+import com.schemafy.core.project.application.access.AccessTarget;
+import com.schemafy.core.project.application.access.RequireProjectAccess;
+import com.schemafy.core.project.domain.ProjectRole;
 
 import lombok.RequiredArgsConstructor;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
+import static com.schemafy.core.project.application.access.ProjectAccessResourceType.CONSTRAINT;
+
 @Service
 @RequiredArgsConstructor
+@RequireProjectAccess(role = ProjectRole.EDITOR, target = @AccessTarget(value = CONSTRAINT, id = "constraintId"))
 public class DeleteConstraintService implements DeleteConstraintUseCase {
 
   private final TransactionalOperator transactionalOperator;

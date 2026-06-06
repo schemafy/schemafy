@@ -23,6 +23,11 @@ import com.schemafy.core.erd.memo.application.port.out.SoftDeleteMemoPort;
 import com.schemafy.core.erd.memo.domain.Memo;
 import com.schemafy.core.erd.memo.domain.MemoComment;
 import com.schemafy.core.erd.memo.domain.exception.MemoErrorCode;
+import com.schemafy.core.erd.schema.application.port.out.GetSchemaByIdPort;
+import com.schemafy.core.erd.schema.domain.Schema;
+import com.schemafy.core.project.application.port.out.ProjectMemberPort;
+import com.schemafy.core.project.domain.ProjectMember;
+import com.schemafy.core.project.domain.ProjectRole;
 
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
@@ -44,6 +49,12 @@ class DeleteMemoCommentServiceTest {
 
   @Mock
   GetMemoCommentsByMemoIdPort getMemoCommentsByMemoIdPort;
+
+  @Mock
+  GetSchemaByIdPort getSchemaByIdPort;
+
+  @Mock
+  ProjectMemberPort projectMemberPort;
 
   @Mock
   SoftDeleteMemoCommentPort softDeleteMemoCommentPort;
@@ -88,8 +99,7 @@ class DeleteMemoCommentServiceTest {
 
     StepVerifier.create(sut.deleteMemoComment(new DeleteMemoCommentCommand(
         "comment-1",
-        "author-1",
-        false)))
+        "author-1")))
         .verifyComplete();
 
     then(softDeleteMemoPort).should().softDeleteMemo(any(), any());
@@ -126,8 +136,7 @@ class DeleteMemoCommentServiceTest {
 
     StepVerifier.create(sut.deleteMemoComment(new DeleteMemoCommentCommand(
         "comment-2",
-        "author-2",
-        false)))
+        "author-2")))
         .verifyComplete();
 
     then(softDeleteMemoCommentPort).should().softDeleteMemoComment(any(),
@@ -144,13 +153,30 @@ class DeleteMemoCommentServiceTest {
         Instant.parse("2026-01-01T00:00:00Z"),
         null);
 
+    Memo memo = new Memo(
+        "memo-1", "schema-1", "memo-author", "{}",
+        Instant.parse("2026-01-01T00:00:00Z"),
+        Instant.parse("2026-01-01T00:00:00Z"),
+        null);
+
     given(getMemoCommentByIdPort.findMemoCommentById("comment-1"))
         .willReturn(Mono.just(comment));
+    given(getMemoByIdPort.findMemoById("memo-1"))
+        .willReturn(Mono.just(memo));
+    given(getSchemaByIdPort.findSchemaById("schema-1"))
+        .willReturn(Mono.just(new Schema(
+            "schema-1",
+            "project-1",
+            "MySQL",
+            "schema",
+            "utf8mb4",
+            "utf8mb4_general_ci")));
+    given(projectMemberPort.findByProjectIdAndUserIdAndNotDeleted("project-1", "other-user"))
+        .willReturn(Mono.empty());
 
     StepVerifier.create(sut.deleteMemoComment(new DeleteMemoCommentCommand(
         "comment-1",
-        "other-user",
-        false)))
+        "other-user")))
         .expectErrorMatches(DomainException.hasErrorCode(
             MemoErrorCode.ACCESS_DENIED))
         .verify();
@@ -172,11 +198,62 @@ class DeleteMemoCommentServiceTest {
 
     StepVerifier.create(sut.deleteMemoComment(new DeleteMemoCommentCommand(
         "comment-1",
-        "author-1",
-        false)))
+        "author-1")))
         .expectErrorMatches(DomainException.hasErrorCode(
             MemoErrorCode.NOT_FOUND))
         .verify();
+  }
+
+  @Test
+  @DisplayName("프로젝트 ADMIN은 다른 사용자의 댓글을 삭제할 수 있다")
+  void deleteComment_projectAdminDeletesOthersComment() {
+    Memo memo = new Memo(
+        "memo-1", "schema-1", "memo-author", "{}",
+        Instant.parse("2026-01-01T00:00:00Z"),
+        Instant.parse("2026-01-01T00:00:00Z"),
+        null);
+    MemoComment target = new MemoComment(
+        "comment-2", "memo-1", "author-2", "reply",
+        Instant.parse("2026-01-01T00:00:00Z"),
+        Instant.parse("2026-01-01T00:00:00Z"),
+        null);
+    MemoComment first = new MemoComment(
+        "comment-1", "memo-1", "author-1", "body",
+        Instant.parse("2026-01-01T00:00:00Z"),
+        Instant.parse("2026-01-01T00:00:00Z"),
+        null);
+    Schema schema = new Schema(
+        "schema-1",
+        "project-1",
+        "MySQL",
+        "schema",
+        "utf8mb4",
+        "utf8mb4_general_ci");
+    ProjectMember adminMember = ProjectMember.create(
+        "member-1",
+        "project-1",
+        "admin-1",
+        ProjectRole.ADMIN);
+
+    given(getMemoCommentByIdPort.findMemoCommentById("comment-2"))
+        .willReturn(Mono.just(target));
+    given(getMemoByIdPort.findMemoById("memo-1"))
+        .willReturn(Mono.just(memo));
+    given(getSchemaByIdPort.findSchemaById("schema-1"))
+        .willReturn(Mono.just(schema));
+    given(projectMemberPort.findByProjectIdAndUserIdAndNotDeleted("project-1", "admin-1"))
+        .willReturn(Mono.just(adminMember));
+    given(getMemoCommentsByMemoIdPort.findMemoCommentsByMemoId("memo-1"))
+        .willReturn(Flux.fromIterable(List.of(first, target)));
+    given(softDeleteMemoCommentPort.softDeleteMemoComment(any(), any()))
+        .willReturn(Mono.empty());
+
+    StepVerifier.create(sut.deleteMemoComment(new DeleteMemoCommentCommand(
+        "comment-2",
+        "admin-1")))
+        .verifyComplete();
+
+    then(softDeleteMemoCommentPort).should().softDeleteMemoComment(any(), any());
   }
 
 }

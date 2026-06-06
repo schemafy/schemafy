@@ -334,11 +334,8 @@ class ConstraintCreateIntegrationTest extends ErdProjectIntegrationSupport {
           .expectErrorMatches(DomainException.hasErrorCode(ConstraintErrorCode.NOT_FOUND))
           .verify();
 
-      StepVerifier.create(getConstraintColumnsByConstraintIdUseCase
-          .getConstraintColumnsByConstraintId(
-              new GetConstraintColumnsByConstraintIdQuery(result.constraintId())))
-          .assertNext(columns -> assertThat(columns).isEmpty())
-          .verifyComplete();
+      assertThat(countRowsByColumn(
+          "db_constraint_columns", "constraint_id", result.constraintId())).isZero();
     }
 
   }

@@ -24,6 +24,7 @@ import com.schemafy.api.common.security.jwt.WebExchangeErrorWriter;
 import com.schemafy.core.common.json.JsonCodec;
 import com.schemafy.core.erd.operation.ErdOperationContexts;
 import com.schemafy.core.erd.operation.ErdOperationMetadata;
+import com.schemafy.core.project.application.access.ProjectAccessRequesterContext;
 
 import reactor.core.publisher.Mono;
 import reactor.test.StepVerifier;
@@ -112,6 +113,33 @@ class JwtAuthenticationFilterTest {
         null,
         null,
         userId));
+  }
+
+  @Test
+  @DisplayName("유효한 JWT 토큰이면 프로젝트 접근 requester context를 저장한다")
+  void storesRequesterIdInProjectAccessContext() {
+    String token = "valid-token";
+    String userId = "user123";
+    MockServerHttpRequest request = MockServerHttpRequest
+        .get("/api/test")
+        .header(HttpHeaders.AUTHORIZATION, "Bearer " + token)
+        .build();
+    MockServerWebExchange exchange = MockServerWebExchange.from(request);
+    AtomicReference<String> requesterIdRef = new AtomicReference<>();
+
+    when(jwtProvider.extractUserId(token)).thenReturn(userId);
+    when(jwtProvider.getTokenType(token))
+        .thenReturn(JwtProvider.ACCESS_TOKEN);
+    when(jwtProvider.validateToken(token, userId)).thenReturn(true);
+    when(filterChain.filter(any())).thenReturn(Mono.deferContextual(ctx -> {
+      requesterIdRef.set(ProjectAccessRequesterContext.requesterIdOrNull(ctx));
+      return Mono.empty();
+    }));
+
+    StepVerifier.create(jwtAuthenticationFilter.filter(exchange, filterChain))
+        .verifyComplete();
+
+    assertThat(requesterIdRef.get()).isEqualTo(userId);
   }
 
   @Test

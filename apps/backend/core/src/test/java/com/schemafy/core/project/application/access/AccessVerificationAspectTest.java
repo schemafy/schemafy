@@ -1,5 +1,7 @@
 package com.schemafy.core.project.application.access;
 
+import java.util.List;
+import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import org.springframework.aop.aspectj.annotation.AspectJProxyFactory;
@@ -8,6 +10,7 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
 import com.schemafy.core.common.exception.DomainException;
+import com.schemafy.core.erd.table.application.port.in.GetTableQuery;
 import com.schemafy.core.project.domain.ProjectRole;
 import com.schemafy.core.project.domain.WorkspaceRole;
 import com.schemafy.core.project.domain.exception.ProjectErrorCode;
@@ -16,6 +19,8 @@ import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 import reactor.test.StepVerifier;
 
+import static com.schemafy.core.project.application.access.ProjectAccessResourceType.MEMO;
+import static com.schemafy.core.project.application.access.ProjectAccessResourceType.TABLE;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.any;
 import static org.mockito.Mockito.anyString;
@@ -30,7 +35,22 @@ class AccessVerificationAspectTest {
   private TestService createProxy(AccessVerifier accessVerifier, TestService target) {
     AspectJProxyFactory factory = new AspectJProxyFactory(target);
     factory.setProxyTargetClass(true);
-    factory.addAspect(new AccessVerificationAspect(accessVerifier));
+    factory.addAspect(new AccessVerificationAspect(
+        accessVerifier,
+        new ProjectAccessTargetInference(),
+        null));
+    return factory.getProxy();
+  }
+
+  private TestService createErdProxy(AccessVerifier accessVerifier, TestService target) {
+    ProjectAccessTargetRegistry registry = new ProjectAccessTargetRegistry(
+        List.of(new TestTableResourceResolver()));
+    AspectJProxyFactory factory = new AspectJProxyFactory(target);
+    factory.setProxyTargetClass(true);
+    factory.addAspect(new AccessVerificationAspect(
+        accessVerifier,
+        new ProjectAccessTargetInference(),
+        new ErdProjectContextResolver(registry)));
     return factory.getProxy();
   }
 
@@ -110,6 +130,72 @@ class AccessVerificationAspectTest {
         .verify();
   }
 
+  @Test
+  @DisplayName("ERD resource access는 requester가 없으면 실패한다")
+  void erdResourceAccess_failsWithoutRequester() {
+    AccessVerifier verifier = mock(AccessVerifier.class);
+    TestService target = new TestService();
+    TestService proxy = createErdProxy(verifier, target);
+
+    StepVerifier.create(proxy.loadTable(new GetTableQuery("table-id")))
+        .expectErrorMatches(error -> error instanceof IllegalStateException
+            && error.getMessage().equals("Project access requester is missing"))
+        .verify();
+
+    assertThat(target.invocations.get()).isZero();
+  }
+
+  @Test
+  @DisplayName("ERD resource access는 requester context로 프로젝트 접근을 검증한다")
+  void erdResourceAccess_usesRequesterContext() {
+    AccessVerifier verifier = mock(AccessVerifier.class);
+    when(verifier.requireProjectAccess("project-id", "requester-id", ProjectRole.VIEWER))
+        .thenReturn(Mono.empty());
+    TestService proxy = createErdProxy(verifier, new TestService());
+
+    StepVerifier.create(proxy.loadTable(new GetTableQuery("table-id"))
+        .contextWrite(ProjectAccessRequesterContext.withRequesterId("requester-id")))
+        .expectNext("table")
+        .verifyComplete();
+
+    verify(verifier)
+        .requireProjectAccess(eq("project-id"), eq("requester-id"), eq(ProjectRole.VIEWER));
+  }
+
+  @Test
+  @DisplayName("ERD resource access는 command requesterId로 프로젝트 접근을 검증한다")
+  void erdResourceAccess_usesCommandRequesterId() {
+    AccessVerifier verifier = mock(AccessVerifier.class);
+    when(verifier.requireProjectAccess("project-id", "requester-id", ProjectRole.VIEWER))
+        .thenReturn(Mono.empty());
+    TestService proxy = createErdProxy(verifier, new TestService());
+
+    StepVerifier.create(proxy.loadMemo(
+        new MemoAccessCommand("memo-id", "requester-id")))
+        .expectNext("memo")
+        .verifyComplete();
+
+    verify(verifier)
+        .requireProjectAccess(eq("project-id"), eq("requester-id"), eq(ProjectRole.VIEWER));
+  }
+
+  @Test
+  @DisplayName("ERD resource access는 지정한 requester accessor 이름을 사용할 수 있다")
+  void erdResourceAccess_supportsCustomRequesterAccessor() {
+    AccessVerifier verifier = mock(AccessVerifier.class);
+    when(verifier.requireProjectAccess("project-id", "actor-id", ProjectRole.VIEWER))
+        .thenReturn(Mono.empty());
+    TestService proxy = createErdProxy(verifier, new TestService());
+
+    StepVerifier.create(proxy.loadAlternateMemo(
+        new AlternateMemoAccessCommand("memo-id", "actor-id")))
+        .expectNext("alternate-memo")
+        .verifyComplete();
+
+    verify(verifier)
+        .requireProjectAccess(eq("project-id"), eq("actor-id"), eq(ProjectRole.VIEWER));
+  }
+
   static class TestService {
 
     private final AtomicInteger invocations = new AtomicInteger();
@@ -144,6 +230,40 @@ class AccessVerificationAspectTest {
       return Mono.just("invalid");
     }
 
+    @RequireProjectAccess(target = @AccessTarget(value = TABLE, id = "tableId"))
+    public Mono<String> loadTable(GetTableQuery query) {
+      invocations.incrementAndGet();
+      return Mono.just("table");
+    }
+
+    @RequireProjectAccess(target = @AccessTarget(value = MEMO, id = "memoId"))
+    public Mono<String> loadMemo(MemoAccessCommand command) {
+      invocations.incrementAndGet();
+      return Mono.just("memo");
+    }
+
+    @RequireProjectAccess(target = @AccessTarget(value = MEMO, id = "memoId"), requesterId = "actorId")
+    public Mono<String> loadAlternateMemo(AlternateMemoAccessCommand command) {
+      invocations.incrementAndGet();
+      return Mono.just("alternate-memo");
+    }
+
+  }
+
+  static class TestTableResourceResolver implements ProjectAccessResourceResolver {
+
+    @Override
+    public Set<ProjectAccessResourceType> resourceTypes() {
+      return Set.of(ProjectAccessResourceType.TABLE, ProjectAccessResourceType.MEMO);
+    }
+
+    @Override
+    public Mono<ProjectAccessResourceRef> resolveParent(ProjectAccessResourceType type, String id) {
+      return Mono.just(new ProjectAccessResourceRef(
+          ProjectAccessResourceType.PROJECT,
+          "project-id"));
+    }
+
   }
 
   record ProjectCommand(String projectId, String requesterId) {
@@ -153,6 +273,12 @@ class AccessVerificationAspectTest {
   }
 
   record WorkspaceCommand(String workspaceId, String requesterId) {
+  }
+
+  record MemoAccessCommand(String memoId, String requesterId) {
+  }
+
+  record AlternateMemoAccessCommand(String memoId, String actorId) {
   }
 
 }

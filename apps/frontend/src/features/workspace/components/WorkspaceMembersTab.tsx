@@ -9,11 +9,7 @@ import {
 } from '@/components';
 import { ChangeRoleDialog } from './ChangeRoleDialog';
 import { ConfirmDialog } from './ConfirmDialog';
-import {
-  useGetMembers,
-  useRemoveMember,
-  useUpdateMemberRole,
-} from '../hooks/useWorkspaces';
+import { useWorkspaceMembers } from '../hooks/useWorkspaceMembers';
 import { formatDate } from '@/lib';
 import { availableRoles } from '@/features/workspace/utils/role';
 import type { WorkspaceMemberResponse } from '@/features/workspace/api';
@@ -38,19 +34,23 @@ export const WorkspaceMembersTab = ({
   const [removeTarget, setRemoveTarget] =
     useState<WorkspaceMemberResponse | null>(null);
 
-  const { data, isLoading } = useGetMembers(workspaceId, currentPage - 1);
-  const { mutate: removeMember } = useRemoveMember(workspaceId);
-  const { mutate: updateMemberRole, isPending: isUpdatingRole } =
-    useUpdateMemberRole(workspaceId);
+  const {
+    members: workspaceMembers,
+    membersData,
+    isLoadingMembers,
+    removeMember,
+    updateMemberRole,
+    isUpdatingMemberRole,
+  } = useWorkspaceMembers(workspaceId, currentPage - 1);
 
   const { user } = authStore;
 
-  const members = (data?.content ?? []).filter(
+  const members = workspaceMembers.filter(
     (m) =>
       m.userName.toLowerCase().includes(searchQuery.toLowerCase()) ||
       m.userEmail.toLowerCase().includes(searchQuery.toLowerCase()),
   );
-  const totalPages = data?.totalPages ?? 1;
+  const totalPages = membersData?.totalPages ?? 1;
 
   const roles = availableRoles(currentUserRole);
 
@@ -62,20 +62,19 @@ export const WorkspaceMembersTab = ({
   const handleRoleChange = () => {
     if (!roleChangeTarget || !selectedRole) return;
 
-    const variableData = {
-      userId: roleChangeTarget.userId,
-      data: {
-        role: selectedRole,
-      },
-    };
-
     const successAction = {
       onSuccess: () => {
         setRoleChangeTarget(null);
       },
     };
 
-    updateMemberRole(variableData, successAction);
+    updateMemberRole(
+      roleChangeTarget.userId,
+      {
+        role: selectedRole,
+      },
+      successAction,
+    );
   };
 
   return (
@@ -114,7 +113,7 @@ export const WorkspaceMembersTab = ({
             </tr>
           </thead>
           <tbody>
-            {isLoading ? (
+            {isLoadingMembers ? (
               <tr>
                 <td
                   colSpan={5}
@@ -144,13 +143,15 @@ export const WorkspaceMembersTab = ({
                     {formatDate(new Date(member.joinedAt))}
                   </td>
                   {currentUserRole === 'ADMIN' &&
-                    user?.id !== member.userId && (
+                    (user?.id !== member.userId ? (
                       <MemberOptions
                         handleOpenRoleChange={handleOpenRoleChange}
                         onRemoveClick={setRemoveTarget}
                         member={member}
                       />
-                    )}
+                    ) : (
+                      <td className="px-6 py-4" />
+                    ))}
                 </tr>
               ))
             )}
@@ -176,7 +177,7 @@ export const WorkspaceMembersTab = ({
         onSelectedRoleChange={setSelectedRole}
         availableRoles={roles}
         onSave={handleRoleChange}
-        isPending={isUpdatingRole}
+        isPending={isUpdatingMemberRole}
       />
 
       <ConfirmDialog

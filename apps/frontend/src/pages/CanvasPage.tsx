@@ -13,10 +13,10 @@ import { MemoProvider } from '@/features/memo/context';
 import { ChatInput, RemoteCursors } from '@/features/collaboration/components';
 import { observer } from 'mobx-react-lite';
 import { useNavigate, useParams } from '@tanstack/react-router';
-import { useGetProject } from '@/features/project/hooks/useProjects';
 import { useEffect } from 'react';
 import axios from 'axios';
 import { NotFoundPage } from './NotFoundPage';
+import { useProject } from '@/features/project/hooks/useProject';
 
 const CanvasContent = observer(() => {
   const {
@@ -131,18 +131,19 @@ const CanvasContent = observer(() => {
 export const CanvasPage = () => {
   const { projectId } = useParams({ from: '/project/$projectId' });
   const navigate = useNavigate();
-  const { isError, isLoading, error } = useGetProject(projectId);
+  const { isProjectError, isLoadingProject, projectError } =
+    useProject(projectId);
   const isForbidden =
-    axios.isAxiosError(error) && error.response?.status === 403;
+    axios.isAxiosError(projectError) && projectError.response?.status === 403;
 
   useEffect(() => {
-    if (!isError || !isForbidden) return;
+    if (!isProjectError || !isForbidden) return;
 
     void navigate({ to: '/workspace', replace: true });
-  }, [isError, isForbidden, navigate]);
+  }, [isProjectError, isForbidden, navigate]);
 
-  if (isLoading || isForbidden) return null;
-  if (isError) return <NotFoundPage />;
+  if (isLoadingProject || isForbidden) return null;
+  if (isProjectError) return <NotFoundPage />;
 
   return (
     <SelectedSchemaProvider projectId={projectId}>

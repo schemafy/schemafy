@@ -25,7 +25,6 @@ import com.schemafy.core.erd.index.application.port.in.GetIndexColumnsByIndexIdQ
 import com.schemafy.core.erd.index.application.port.in.GetIndexColumnsByIndexIdUseCase;
 import com.schemafy.core.erd.index.application.port.in.GetIndexQuery;
 import com.schemafy.core.erd.index.application.port.in.GetIndexUseCase;
-import com.schemafy.core.erd.index.application.port.in.GetIndexesByTableIdQuery;
 import com.schemafy.core.erd.index.application.port.in.GetIndexesByTableIdUseCase;
 import com.schemafy.core.erd.index.application.port.in.RemoveIndexColumnCommand;
 import com.schemafy.core.erd.index.application.port.in.RemoveIndexColumnUseCase;
@@ -161,10 +160,7 @@ class IndexCascadeDeleteIntegrationTest extends ErdProjectIntegrationSupport {
           .verifyComplete();
 
       // 모든 인덱스가 삭제되어야 함
-      StepVerifier.create(getIndexesByTableIdUseCase.getIndexesByTableId(
-          new GetIndexesByTableIdQuery(tableId)))
-          .assertNext(indexes -> assertThat(indexes).isEmpty())
-          .verifyComplete();
+      assertThat(countRowsByColumn("db_indexes", "table_id", tableId)).isZero();
     }
 
   }
@@ -222,11 +218,8 @@ class IndexCascadeDeleteIntegrationTest extends ErdProjectIntegrationSupport {
           .verifyComplete();
 
       // 첫 번째 인덱스의 컬럼은 모두 삭제됨
-      StepVerifier.create(getIndexColumnsByIndexIdUseCase
-          .getIndexColumnsByIndexId(
-              new GetIndexColumnsByIndexIdQuery(result1.indexId())))
-          .assertNext(columns -> assertThat(columns).isEmpty())
-          .verifyComplete();
+      assertThat(countRowsByColumn(
+          "db_index_columns", "index_id", result1.indexId())).isZero();
 
       // 두 번째 인덱스에는 columnId2만 남음
       StepVerifier.create(getIndexColumnsByIndexIdUseCase

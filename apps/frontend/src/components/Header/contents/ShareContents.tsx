@@ -14,12 +14,9 @@ import {
   SelectTrigger,
   SelectValue,
 } from '../../Select';
-import {
-  useCreateInvitation,
-  useGetMembers,
-  useGetProject,
-  useUpdateMemberRole,
-} from '@/features/project/hooks/useProjects';
+import { useProject } from '@/features/project/hooks/useProject';
+import { useProjectInvitations } from '@/features/project/hooks/useProjectInvitations';
+import { useProjectMembers } from '@/features/project/hooks/useProjectMembers';
 import { availableRoles } from '@/features/project/utils/role';
 import { authStore } from '@/store';
 
@@ -64,16 +61,16 @@ export const ShareContents = ({ projectId }: { projectId: string }) => {
   const [email, setEmail] = useState('');
   const [inviteRole, setInviteRole] = useState('VIEWER');
 
-  const { data: projectData } = useGetProject(projectId);
-  const { data: membersData } = useGetMembers(projectId);
-  const { mutate: createInvitation, isPending } =
-    useCreateInvitation(projectId);
-  const { mutate: updateMemberRole } = useUpdateMemberRole(projectId);
+  const { project } = useProject(projectId);
+  const { members, updateMemberRole } = useProjectMembers(projectId);
 
-  const currentUserRole = projectData?.currentUserRole ?? 'VIEWER';
-  const members = membersData?.content ?? [];
+  const currentUserRole = project?.currentUserRole ?? 'VIEWER';
   const canManageMembers = currentUserRole === 'ADMIN';
   const currentUserId = authStore.user?.id;
+  const { createInvitation, isCreatingInvitation } = useProjectInvitations(
+    projectId,
+    { enabled: canManageMembers },
+  );
   const currentMember = members.find(
     (member) => member.userId === currentUserId,
   );
@@ -125,7 +122,7 @@ export const ShareContents = ({ projectId }: { projectId: string }) => {
             <Button
               size={'dropdown'}
               onClick={handleInvite}
-              disabled={isPending}
+              disabled={isCreatingInvitation}
             >
               Invite
             </Button>
@@ -145,7 +142,7 @@ export const ShareContents = ({ projectId }: { projectId: string }) => {
               <RoleSelect
                 value={member.role}
                 onValueChange={(role) =>
-                  updateMemberRole({ userId: member.userId, data: { role } })
+                  updateMemberRole(member.userId, { role })
                 }
                 userRole={currentUserRole}
               />

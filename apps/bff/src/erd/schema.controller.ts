@@ -8,7 +8,6 @@ import {
   Post,
 } from '@nestjs/common';
 import { SchemaService } from './schema.service';
-import { TableService } from './table.service';
 import { AuthHeader } from '../common/decorators/auth-header.decorator';
 import { CollaborationHeaders } from '../common/decorators/collaboration-headers.decorator';
 import type { CollaborationRequestHeaders } from '../common/backend-client/backend-client.service';
@@ -20,10 +19,7 @@ import type {
 
 @Controller('api/v1.0')
 export class SchemaController {
-  constructor(
-    private readonly schemaService: SchemaService,
-    private readonly tableService: TableService,
-  ) {}
+  constructor(private readonly schemaService: SchemaService) {}
 
   @Post('schemas')
   async createSchema(
@@ -90,14 +86,6 @@ export class SchemaController {
     @Param('schemaId') schemaId: string,
     @AuthHeader() authHeader: string,
   ): Promise<SchemaSnapshotsResponse> {
-    const [schema, snapshots] = await Promise.all([
-      this.schemaService.getSchema(schemaId, authHeader),
-      this.tableService.getSchemaWithSnapshots(schemaId, authHeader),
-    ]);
-
-    return {
-      currentRevision: schema.currentRevision ?? 0,
-      snapshots,
-    };
+    return this.schemaService.getSchemaWithSnapshots(schemaId, authHeader);
   }
 }

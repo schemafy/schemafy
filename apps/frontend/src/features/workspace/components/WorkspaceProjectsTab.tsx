@@ -8,10 +8,7 @@ import {
   DropdownMenuTrigger,
   Pagination,
 } from '@/components';
-import {
-  useGetProjects,
-  useLeaveProject,
-} from '@/features/project/hooks/useProjects';
+import { useProjects } from '@/features/project/hooks/useProjects';
 import { ProjectFormDialog } from '@/features/project/components/ProjectFormDialog';
 import { ConfirmDialog } from './ConfirmDialog';
 import { formatDate } from '@/lib';
@@ -38,11 +35,12 @@ export const WorkspaceProjectsTab = ({
     null,
   );
 
-  const { data: projects } = useGetProjects(workspaceId, currentPage - 1);
+  const { projects, projectsData, leaveProject } = useProjects(
+    workspaceId,
+    currentPage - 1,
+  );
 
-  const { mutate: leaveProject } = useLeaveProject();
-
-  const filtered = projects?.content.filter((p) =>
+  const filtered = projects.filter((p) =>
     p.name.toLowerCase().includes(searchQuery.toLowerCase()),
   );
 
@@ -122,7 +120,7 @@ export const WorkspaceProjectsTab = ({
                 <div className="flex justify-center">
                   <Pagination
                     currentPage={currentPage}
-                    totalPages={projects?.totalPages ?? 1}
+                    totalPages={projectsData?.totalPages ?? 1}
                     onPageChange={setCurrentPage}
                   />
                 </div>

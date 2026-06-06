@@ -28,6 +28,15 @@ class SecurityConfigTest {
   }
 
   @Test
+  @DisplayName("ERD 엔드포인트는 인증 없이 401을 반환한다")
+  void erdEndpointsRequireAuth() {
+    webTestClient.get()
+        .uri("/api/v1/schemas/schema-id")
+        .exchange()
+        .expectStatus().isUnauthorized();
+  }
+
+  @Test
   @DisplayName("유효하지 않은 JWT 토큰은 거부된다")
   void invalidJwtTokenRejected() {
     webTestClient.get()

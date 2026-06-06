@@ -128,16 +128,4 @@ export class TableService {
     );
     return response.data;
   }
-
-  async getSchemaWithSnapshots(
-    schemaId: string,
-    authHeader: string,
-  ): Promise<Record<string, TableSnapshotResponse>> {
-    const tables = await this.getTablesBySchemaId(schemaId, authHeader);
-    const tableIds = tables.map((t) => t.id);
-    if (tableIds.length === 0) {
-      return {};
-    }
-    return this.getTableSnapshots(tableIds, authHeader);
-  }
 }
