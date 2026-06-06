@@ -8,13 +8,19 @@ import com.schemafy.core.erd.schema.application.port.in.GetSchemasByProjectIdUse
 import com.schemafy.core.erd.schema.application.port.out.ActiveProjectExistsPort;
 import com.schemafy.core.erd.schema.application.port.out.GetSchemasByProjectIdPort;
 import com.schemafy.core.erd.schema.domain.Schema;
+import com.schemafy.core.project.application.access.AccessTarget;
+import com.schemafy.core.project.application.access.RequireProjectAccess;
+import com.schemafy.core.project.domain.ProjectRole;
 import com.schemafy.core.project.domain.exception.ProjectErrorCode;
 
 import lombok.RequiredArgsConstructor;
 import reactor.core.publisher.Flux;
 
+import static com.schemafy.core.project.application.access.ProjectAccessResourceType.PROJECT;
+
 @Service
 @RequiredArgsConstructor
+@RequireProjectAccess(role = ProjectRole.VIEWER, target = @AccessTarget(value = PROJECT, id = "projectId"))
 public class GetSchemasByProjectIdService implements GetSchemasByProjectIdUseCase {
 
   private final ActiveProjectExistsPort activeProjectExistsPort;

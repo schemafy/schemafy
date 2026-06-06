@@ -122,6 +122,41 @@ class ProjectInvitationUseCaseIntegrationTest extends ProjectDomainIntegrationSu
   }
 
   @Test
+  @DisplayName("프로젝트 초대 생성 시 권한 없는 요청자는 이메일 형식 검증보다 먼저 거부한다")
+  void createProjectInvitation_rejectsUnauthorizedRequesterBeforeInvalidEmail() {
+    User admin = signUpUser("admin-pi-auth-order@test.com", "Admin");
+    User requester = signUpUser("requester-pi-auth-order@test.com", "Requester");
+    var workspace = saveWorkspace("Auth Order Project WS", "Description");
+    saveWorkspaceMember(workspace, admin, WorkspaceRole.ADMIN);
+    var project = saveProject(workspace, "Auth Order Project");
+    saveProjectMember(project, admin, ProjectRole.ADMIN);
+
+    StepVerifier.create(createProjectInvitationUseCase.createProjectInvitation(
+        new CreateProjectInvitationCommand(project.getId(), "not-an-email",
+            ProjectRole.EDITOR, requester.id())))
+        .expectErrorMatches(DomainException.hasErrorCode(ProjectErrorCode.ACCESS_DENIED))
+        .verify();
+  }
+
+  @Test
+  @DisplayName("프로젝트 초대 목록 조회 시 프로젝트 관리자가 아닌 요청자는 거부한다")
+  void getProjectInvitations_rejectsNonAdminRequester() {
+    User admin = signUpUser("admin-pi-list-auth@test.com", "Admin");
+    User viewer = signUpUser("viewer-pi-list-auth@test.com", "Viewer");
+    var workspace = saveWorkspace("List Auth Project WS", "Description");
+    saveWorkspaceMember(workspace, admin, WorkspaceRole.ADMIN);
+    saveWorkspaceMember(workspace, viewer, WorkspaceRole.MEMBER);
+    var project = saveProject(workspace, "List Auth Project");
+    saveProjectMember(project, admin, ProjectRole.ADMIN);
+    saveProjectMember(project, viewer, ProjectRole.VIEWER);
+
+    StepVerifier.create(getProjectInvitationsUseCase.getProjectInvitations(
+        new GetProjectInvitationsQuery(project.getId(), viewer.id(), 0, 10)))
+        .expectErrorMatches(DomainException.hasErrorCode(ProjectErrorCode.ADMIN_REQUIRED))
+        .verify();
+  }
+
+  @Test
   @DisplayName("프로젝트 초대 수락 시 soft delete 된 멤버십을 복원하고 형제 초대를 취소한다")
   void acceptProjectInvitation_restoresMembership() {
     User admin = signUpUser("admin-pi-restore@test.com", "Admin");
@@ -152,6 +187,28 @@ class ProjectInvitationUseCaseIntegrationTest extends ProjectDomainIntegrationSu
   }
 
   @Test
+  @DisplayName("프로젝트 초대 수락 시 초대 이메일과 다른 요청자는 거부한다")
+  void acceptProjectInvitation_rejectsRequesterWithDifferentEmail() {
+    User admin = signUpUser("admin-pi-accept-owner@test.com", "Admin");
+    User invitee = signUpUser("invitee-pi-accept-owner@test.com", "Invitee");
+    User requester = signUpUser("requester-pi-accept-owner@test.com", "Requester");
+    var workspace = saveWorkspace("Accept Owner Project WS", "Description");
+    saveWorkspaceMember(workspace, admin, WorkspaceRole.ADMIN);
+    saveWorkspaceMember(workspace, invitee, WorkspaceRole.MEMBER);
+    saveWorkspaceMember(workspace, requester, WorkspaceRole.MEMBER);
+    var project = saveProject(workspace, "Accept Owner Project");
+    saveProjectMember(project, admin, ProjectRole.ADMIN);
+    Invitation invitation = saveProjectInvitation(project, workspace, invitee.email(),
+        ProjectRole.VIEWER, admin);
+
+    StepVerifier.create(acceptProjectInvitationUseCase.acceptProjectInvitation(
+        new AcceptProjectInvitationCommand(invitation.getId(), requester.id())))
+        .expectErrorMatches(DomainException.hasErrorCode(
+            ProjectErrorCode.INVITATION_EMAIL_MISMATCH))
+        .verify();
+  }
+
+  @Test
   @DisplayName("프로젝트 초대 거절 시 초대 상태를 rejected로 바꾼다")
   void rejectProjectInvitation_marksResolved() {
     User admin = signUpUser("admin-pi-reject@test.com", "Admin");
@@ -171,6 +228,28 @@ class ProjectInvitationUseCaseIntegrationTest extends ProjectDomainIntegrationSu
     Invitation rejected = invitationRepository.findById(invitation.getId()).block();
     assertThat(rejected.getStatusAsEnum()).isEqualTo(InvitationStatus.REJECTED);
     assertThat(rejected.getResolvedAt()).isNotNull();
+  }
+
+  @Test
+  @DisplayName("프로젝트 초대 거절 시 초대 이메일과 다른 요청자는 거부한다")
+  void rejectProjectInvitation_rejectsRequesterWithDifferentEmail() {
+    User admin = signUpUser("admin-pi-reject-owner@test.com", "Admin");
+    User invitee = signUpUser("invitee-pi-reject-owner@test.com", "Invitee");
+    User requester = signUpUser("requester-pi-reject-owner@test.com", "Requester");
+    var workspace = saveWorkspace("Reject Owner Project WS", "Description");
+    saveWorkspaceMember(workspace, admin, WorkspaceRole.ADMIN);
+    saveWorkspaceMember(workspace, invitee, WorkspaceRole.MEMBER);
+    saveWorkspaceMember(workspace, requester, WorkspaceRole.MEMBER);
+    var project = saveProject(workspace, "Reject Owner Project");
+    saveProjectMember(project, admin, ProjectRole.ADMIN);
+    Invitation invitation = saveProjectInvitation(project, workspace, invitee.email(),
+        ProjectRole.VIEWER, admin);
+
+    StepVerifier.create(rejectProjectInvitationUseCase.rejectProjectInvitation(
+        new RejectProjectInvitationCommand(invitation.getId(), requester.id())))
+        .expectErrorMatches(DomainException.hasErrorCode(
+            ProjectErrorCode.INVITATION_EMAIL_MISMATCH))
+        .verify();
   }
 
 }

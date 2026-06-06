@@ -7,7 +7,6 @@ import java.util.Set;
 import jakarta.validation.Valid;
 
 import org.springframework.beans.factory.ObjectProvider;
-import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PatchMapping;
@@ -69,7 +68,6 @@ public class TableController {
 
   private final ObjectProvider<ErdMutationBroadcaster> broadcasterProvider;
 
-  @PreAuthorize("hasAnyRole('OWNER','ADMIN','EDITOR')")
   @PostMapping("/tables")
   public Mono<MutationResponse<TableResponse>> createTable(
       @Valid @RequestBody CreateTableRequest request) {
@@ -90,7 +88,6 @@ public class TableController {
             result.operation()));
   }
 
-  @PreAuthorize("hasAnyRole('OWNER','ADMIN','EDITOR','COMMENTER','VIEWER')")
   @GetMapping("/tables/{tableId}")
   public Mono<TableResponse> getTable(
       @PathVariable String tableId) {
@@ -99,21 +96,18 @@ public class TableController {
         .map(tableResponseMapper::toTableResponse);
   }
 
-  @PreAuthorize("hasAnyRole('OWNER','ADMIN','EDITOR','COMMENTER','VIEWER')")
   @GetMapping("/tables/{tableId}/snapshot")
   public Mono<TableSnapshotResponse> getTableSnapshot(
       @PathVariable String tableId) {
     return tableSnapshotOrchestrator.getTableSnapshot(tableId);
   }
 
-  @PreAuthorize("hasAnyRole('OWNER','ADMIN','EDITOR','COMMENTER','VIEWER')")
   @GetMapping("/tables/snapshots")
   public Mono<Map<String, TableSnapshotResponse>> getTableSnapshots(
       @RequestParam List<String> tableIds) {
     return tableSnapshotOrchestrator.getTableSnapshots(tableIds);
   }
 
-  @PreAuthorize("hasAnyRole('OWNER','ADMIN','EDITOR','COMMENTER','VIEWER')")
   @GetMapping("/schemas/{schemaId}/tables")
   public Mono<List<TableResponse>> getTablesBySchemaId(
       @PathVariable String schemaId) {
@@ -123,7 +117,6 @@ public class TableController {
         .collectList();
   }
 
-  @PreAuthorize("hasAnyRole('OWNER','ADMIN','EDITOR')")
   @PatchMapping("/tables/{tableId}/name")
   public Mono<MutationResponse<Void>> changeTableName(
       @PathVariable String tableId,
@@ -139,7 +132,6 @@ public class TableController {
             result.affectedTableIds(), result.operation()));
   }
 
-  @PreAuthorize("hasAnyRole('OWNER','ADMIN','EDITOR')")
   @PatchMapping("/tables/{tableId}/meta")
   public Mono<MutationResponse<Void>> changeTableMeta(
       @PathVariable String tableId,
@@ -156,7 +148,6 @@ public class TableController {
             result.affectedTableIds(), result.operation()));
   }
 
-  @PreAuthorize("hasAnyRole('OWNER','ADMIN','EDITOR')")
   @PatchMapping("/tables/{tableId}/extra")
   public Mono<MutationResponse<Void>> changeTableExtra(
       @PathVariable String tableId,
@@ -172,7 +163,6 @@ public class TableController {
             result.affectedTableIds(), result.operation()));
   }
 
-  @PreAuthorize("hasAnyRole('OWNER','ADMIN')")
   @DeleteMapping("/tables/{tableId}")
   public Mono<MutationResponse<Void>> deleteTable(
       @PathVariable String tableId) {

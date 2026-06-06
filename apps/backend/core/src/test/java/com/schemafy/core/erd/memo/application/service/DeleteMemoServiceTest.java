@@ -18,6 +18,11 @@ import com.schemafy.core.erd.memo.application.port.out.GetMemoByIdPort;
 import com.schemafy.core.erd.memo.application.port.out.SoftDeleteMemoPort;
 import com.schemafy.core.erd.memo.domain.Memo;
 import com.schemafy.core.erd.memo.domain.exception.MemoErrorCode;
+import com.schemafy.core.erd.schema.application.port.out.GetSchemaByIdPort;
+import com.schemafy.core.erd.schema.domain.Schema;
+import com.schemafy.core.project.application.port.out.ProjectMemberPort;
+import com.schemafy.core.project.domain.ProjectMember;
+import com.schemafy.core.project.domain.ProjectRole;
 
 import reactor.core.publisher.Mono;
 import reactor.test.StepVerifier;
@@ -35,6 +40,12 @@ class DeleteMemoServiceTest {
 
   @Mock
   SoftDeleteMemoPort softDeleteMemoPort;
+
+  @Mock
+  GetSchemaByIdPort getSchemaByIdPort;
+
+  @Mock
+  ProjectMemberPort projectMemberPort;
 
   @Mock
   TransactionalOperator transactionalOperator;
@@ -67,8 +78,7 @@ class DeleteMemoServiceTest {
 
     StepVerifier.create(sut.deleteMemo(new DeleteMemoCommand(
         "memo-1",
-        "author-1",
-        false)))
+        "author-1")))
         .verifyComplete();
 
     then(softDeleteMemoPort).should().softDeleteMemo(any(), any());
@@ -88,14 +98,64 @@ class DeleteMemoServiceTest {
 
     given(getMemoByIdPort.findMemoById("memo-1"))
         .willReturn(Mono.just(memo));
+    given(getSchemaByIdPort.findSchemaById("schema-1"))
+        .willReturn(Mono.just(new Schema(
+            "schema-1",
+            "project-1",
+            "MySQL",
+            "schema",
+            "utf8mb4",
+            "utf8mb4_general_ci")));
+    given(projectMemberPort.findByProjectIdAndUserIdAndNotDeleted("project-1", "other-user"))
+        .willReturn(Mono.empty());
 
     StepVerifier.create(sut.deleteMemo(new DeleteMemoCommand(
         "memo-1",
-        "other-user",
-        false)))
+        "other-user")))
         .expectErrorMatches(DomainException.hasErrorCode(
             MemoErrorCode.ACCESS_DENIED))
         .verify();
+  }
+
+  @Test
+  @DisplayName("프로젝트 ADMIN은 다른 사용자의 메모를 삭제할 수 있다")
+  void deleteMemo_projectAdminDeletesOthersMemo() {
+    Memo memo = new Memo(
+        "memo-1",
+        "schema-1",
+        "author-1",
+        "{}",
+        Instant.parse("2026-01-01T00:00:00Z"),
+        Instant.parse("2026-01-01T00:00:00Z"),
+        null);
+    Schema schema = new Schema(
+        "schema-1",
+        "project-1",
+        "MySQL",
+        "schema",
+        "utf8mb4",
+        "utf8mb4_general_ci");
+    ProjectMember adminMember = ProjectMember.create(
+        "member-1",
+        "project-1",
+        "admin-1",
+        ProjectRole.ADMIN);
+
+    given(getMemoByIdPort.findMemoById("memo-1"))
+        .willReturn(Mono.just(memo));
+    given(getSchemaByIdPort.findSchemaById("schema-1"))
+        .willReturn(Mono.just(schema));
+    given(projectMemberPort.findByProjectIdAndUserIdAndNotDeleted("project-1", "admin-1"))
+        .willReturn(Mono.just(adminMember));
+    given(softDeleteMemoPort.softDeleteMemo(any(), any()))
+        .willReturn(Mono.empty());
+
+    StepVerifier.create(sut.deleteMemo(new DeleteMemoCommand(
+        "memo-1",
+        "admin-1")))
+        .verifyComplete();
+
+    then(softDeleteMemoPort).should().softDeleteMemo(any(), any());
   }
 
 }

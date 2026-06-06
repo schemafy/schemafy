@@ -19,15 +19,23 @@ import com.schemafy.core.erd.constraint.application.port.out.GetConstraintColumn
 import com.schemafy.core.erd.constraint.domain.ConstraintColumn;
 import com.schemafy.core.erd.constraint.domain.exception.ConstraintErrorCode;
 import com.schemafy.core.erd.constraint.domain.type.ConstraintKind;
+import com.schemafy.core.erd.operation.application.inverse.DeleteConstraintInverse;
 import com.schemafy.core.erd.operation.application.service.ErdMutationCoordinator;
+import com.schemafy.core.erd.operation.application.service.StructuralSnapshotService;
 import com.schemafy.core.erd.operation.domain.ErdOperationType;
+import com.schemafy.core.project.application.access.AccessTarget;
+import com.schemafy.core.project.application.access.RequireProjectAccess;
+import com.schemafy.core.project.domain.ProjectRole;
 
 import lombok.RequiredArgsConstructor;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
+import static com.schemafy.core.project.application.access.ProjectAccessResourceType.CONSTRAINT;
+
 @Service
 @RequiredArgsConstructor
+@RequireProjectAccess(role = ProjectRole.EDITOR, target = @AccessTarget(value = CONSTRAINT, id = "constraintId"))
 public class DeleteConstraintService implements DeleteConstraintUseCase {
 
   private final TransactionalOperator transactionalOperator;
@@ -36,6 +44,7 @@ public class DeleteConstraintService implements DeleteConstraintUseCase {
   private final GetConstraintByIdPort getConstraintByIdPort;
   private final GetConstraintColumnsByConstraintIdPort getConstraintColumnsByConstraintIdPort;
   private final PkCascadeHelper pkCascadeHelper;
+  private final StructuralSnapshotService structuralSnapshotService;
   private ErdMutationCoordinator erdMutationCoordinator = ErdMutationCoordinator.noop();
 
   @Autowired
@@ -47,24 +56,32 @@ public class DeleteConstraintService implements DeleteConstraintUseCase {
   public Mono<MutationResult<Void>> deleteConstraint(DeleteConstraintCommand command) {
     String constraintId = command.constraintId();
     return erdMutationCoordinator.coordinate(ErdOperationType.DELETE_CONSTRAINT, command,
-        () -> getConstraintByIdPort.findConstraintById(constraintId)
-            .switchIfEmpty(Mono.error(new DomainException(ConstraintErrorCode.NOT_FOUND, "Constraint not found")))
-            .flatMap(constraint -> {
-              Set<String> affectedTableIds = new HashSet<>();
-              affectedTableIds.add(constraint.tableId());
-              if (constraint.kind() == ConstraintKind.PRIMARY_KEY) {
-                return cascadeDeleteFkColumns(
-                    constraint.tableId(),
-                    constraintId,
-                    affectedTableIds)
-                    .then(deleteConstraintColumnsPort.deleteByConstraintId(constraintId))
-                    .then(deleteConstraintPort.deleteConstraint(constraintId))
-                    .then(Mono.fromCallable(() -> MutationResult.<Void>of(null, affectedTableIds)));
-              }
-              return deleteConstraintColumnsPort.deleteByConstraintId(constraintId)
-                  .then(deleteConstraintPort.deleteConstraint(constraintId))
-                  .then(Mono.fromCallable(() -> MutationResult.<Void>of(null, affectedTableIds)));
-            }))
+        () -> structuralSnapshotService.captureByConstraintId(constraintId)
+            .flatMap(beforeSnapshot -> getConstraintByIdPort.findConstraintById(constraintId)
+                .switchIfEmpty(Mono.error(new DomainException(ConstraintErrorCode.NOT_FOUND, "Constraint not found")))
+                .flatMap(constraint -> {
+                  Set<String> affectedTableIds = new HashSet<>();
+                  affectedTableIds.add(constraint.tableId());
+                  if (constraint.kind() == ConstraintKind.PRIMARY_KEY) {
+                    return cascadeDeleteFkColumns(
+                        constraint.tableId(),
+                        constraintId,
+                        affectedTableIds)
+                        .then(deleteConstraintColumnsPort.deleteByConstraintId(constraintId))
+                        .then(deleteConstraintPort.deleteConstraint(constraintId))
+                        .then(Mono.fromCallable(() -> MutationResult.<Void>of(null, affectedTableIds)));
+                  }
+                  return deleteConstraintColumnsPort.deleteByConstraintId(constraintId)
+                      .then(deleteConstraintPort.deleteConstraint(constraintId))
+                      .then(Mono.fromCallable(() -> MutationResult.<Void>of(null, affectedTableIds)));
+                })
+                .flatMap(result -> structuralSnapshotService.captureBySchemaId(beforeSnapshot.schemaId())
+                    .map(afterSnapshot -> result.withInverse(new DeleteConstraintInverse(
+                        beforeSnapshot.schemaId(),
+                        constraintId,
+                        beforeSnapshot,
+                        afterSnapshot,
+                        result.sortedAffectedTableIds()))))))
         .as(transactionalOperator::transactional);
   }
 

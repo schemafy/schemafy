@@ -126,7 +126,7 @@ class DefaultUndoRedoEligibilityServiceTest {
             assertThat(result.targetRootOriginalOperation().opId()).isEqualTo("op-3");
             assertThat(result.currentChainTipOperation().opId()).isEqualTo("op-4");
             assertThat(result.currentRedoCandidateOperation().opId()).isEqualTo("op-3");
-            assertThat(result.executionBaseOperation().opId()).isEqualTo("op-3");
+            assertThat(result.executionBaseOperation().opId()).isEqualTo("op-4");
           })
           .verifyComplete();
     }
@@ -199,7 +199,7 @@ class DefaultUndoRedoEligibilityServiceTest {
             assertThat(result.currentChainTipOperation().opId()).isEqualTo("op-3");
             assertThat(result.currentUndoCandidateOperation().opId()).isEqualTo("op-1");
             assertThat(result.currentRedoCandidateOperation().opId()).isEqualTo("op-2");
-            assertThat(result.executionBaseOperation().opId()).isEqualTo("op-2");
+            assertThat(result.executionBaseOperation().opId()).isEqualTo("op-3");
           })
           .verifyComplete();
     }

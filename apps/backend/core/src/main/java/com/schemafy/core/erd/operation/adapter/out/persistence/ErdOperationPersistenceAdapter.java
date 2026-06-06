@@ -37,6 +37,12 @@ class ErdOperationPersistenceAdapter implements
   }
 
   @Override
+  public Mono<SchemaCollaborationState> findBySchemaIdForUpdate(String schemaId) {
+    return schemaCollaborationStateRepository.findByIdForUpdate(schemaId)
+        .map(schemaCollaborationStateMapper::toDomain);
+  }
+
+  @Override
   public Mono<SchemaCollaborationState> save(SchemaCollaborationState schemaCollaborationState) {
     return schemaCollaborationStateRepository.save(
         schemaCollaborationStateMapper.toEntity(schemaCollaborationState))
@@ -68,6 +74,24 @@ class ErdOperationPersistenceAdapter implements
           return schemaCollaborationStateRepository.findById(schemaId)
               .switchIfEmpty(Mono.error(new IllegalStateException(
                   "Schema collaboration state missing after increment: schemaId=" + schemaId)));
+        })
+        .map(schemaCollaborationStateMapper::toDomain);
+  }
+
+  @Override
+  public Mono<SchemaCollaborationState> incrementIfCurrentRevision(String schemaId, long expectedRevision) {
+    return schemaCollaborationStateRepository.incrementRevisionIfCurrentRevision(schemaId, expectedRevision)
+        .flatMap(rowsUpdated -> {
+          if (rowsUpdated == 0) {
+            return Mono.empty();
+          }
+          if (rowsUpdated != 1) {
+            return Mono.error(new IllegalStateException(
+                "Schema collaboration state guarded increment failed: schemaId=" + schemaId));
+          }
+          return schemaCollaborationStateRepository.findById(schemaId)
+              .switchIfEmpty(Mono.error(new IllegalStateException(
+                  "Schema collaboration state missing after guarded increment: schemaId=" + schemaId)));
         })
         .map(schemaCollaborationStateMapper::toDomain);
   }

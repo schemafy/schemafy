@@ -23,16 +23,27 @@ import com.schemafy.core.erd.index.domain.Index;
 import com.schemafy.core.erd.index.domain.IndexColumn;
 import com.schemafy.core.erd.index.domain.exception.IndexErrorCode;
 import com.schemafy.core.erd.index.domain.validator.IndexValidator;
+import com.schemafy.core.erd.operation.application.inverse.AddIndexColumnInverse;
 import com.schemafy.core.erd.operation.application.service.ErdMutationCoordinator;
+import com.schemafy.core.erd.operation.application.service.StructuralSnapshotService;
 import com.schemafy.core.erd.operation.domain.ErdOperationType;
+import com.schemafy.core.project.application.access.AccessTarget;
+import com.schemafy.core.project.application.access.RequireProjectAccess;
+import com.schemafy.core.project.domain.ProjectRole;
 import com.schemafy.core.ulid.application.port.out.UlidGeneratorPort;
 
 import lombok.RequiredArgsConstructor;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
+import static com.schemafy.core.project.application.access.ProjectAccessResourceType.COLUMN;
+import static com.schemafy.core.project.application.access.ProjectAccessResourceType.INDEX;
+
 @Service
 @RequiredArgsConstructor
+@RequireProjectAccess(role = ProjectRole.EDITOR, targets = {
+  @AccessTarget(value = INDEX, id = "indexId"),
+  @AccessTarget(value = COLUMN, id = "columnId") })
 public class AddIndexColumnService implements AddIndexColumnUseCase {
 
   private final TransactionalOperator transactionalOperator;
@@ -42,6 +53,7 @@ public class AddIndexColumnService implements AddIndexColumnUseCase {
   private final GetIndexColumnsByIndexIdPort getIndexColumnsByIndexIdPort;
   private final GetIndexesByTableIdPort getIndexesByTableIdPort;
   private final GetColumnsByTableIdPort getColumnsByTableIdPort;
+  private final StructuralSnapshotService structuralSnapshotService;
   private ErdMutationCoordinator erdMutationCoordinator = ErdMutationCoordinator.noop();
 
   @Autowired
@@ -51,12 +63,27 @@ public class AddIndexColumnService implements AddIndexColumnUseCase {
 
   @Override
   public Mono<MutationResult<AddIndexColumnResult>> addIndexColumn(AddIndexColumnCommand command) {
-    return erdMutationCoordinator.coordinate(ErdOperationType.ADD_INDEX_COLUMN, command, () -> getIndexByIdPort
+    return erdMutationCoordinator.coordinate(ErdOperationType.ADD_INDEX_COLUMN, command,
+        () -> {
+          return structuralSnapshotService.captureByIndexId(command.indexId())
+              .flatMap(beforeSnapshot -> addIndexColumnWithoutInverse(command)
+                  .flatMap(result -> structuralSnapshotService.captureBySchemaId(beforeSnapshot.schemaId())
+                      .map(afterSnapshot -> result.withInverse(new AddIndexColumnInverse(
+                          beforeSnapshot.schemaId(),
+                          result.result().indexColumnId(),
+                          beforeSnapshot,
+                          afterSnapshot,
+                          result.sortedAffectedTableIds())))));
+        })
+        .as(transactionalOperator::transactional);
+  }
+
+  private Mono<MutationResult<AddIndexColumnResult>> addIndexColumnWithoutInverse(AddIndexColumnCommand command) {
+    return getIndexByIdPort
         .findIndexById(command.indexId())
         .switchIfEmpty(Mono.error(new DomainException(IndexErrorCode.NOT_FOUND, "Index not found")))
         .flatMap(index -> validateAndAdd(index, command)
-            .map(result -> MutationResult.of(result, index.tableId()))))
-        .as(transactionalOperator::transactional);
+            .map(result -> MutationResult.of(result, index.tableId())));
   }
 
   private Mono<AddIndexColumnResult> validateAndAdd(Index index, AddIndexColumnCommand command) {

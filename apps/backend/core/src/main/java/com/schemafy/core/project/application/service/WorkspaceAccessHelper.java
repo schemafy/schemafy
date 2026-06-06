@@ -5,7 +5,6 @@ import java.util.function.Consumer;
 import org.springframework.stereotype.Component;
 
 import com.schemafy.core.common.exception.DomainException;
-import com.schemafy.core.project.application.access.AccessVerifier;
 import com.schemafy.core.project.application.port.in.WorkspaceDetail;
 import com.schemafy.core.project.application.port.out.ProjectPort;
 import com.schemafy.core.project.application.port.out.WorkspaceMemberPort;
@@ -26,7 +25,6 @@ import reactor.core.publisher.Mono;
 @RequiredArgsConstructor
 class WorkspaceAccessHelper {
 
-  private final AccessVerifier accessVerifier;
   private final WorkspacePort workspacePort;
   private final WorkspaceMemberPort workspaceMemberPort;
   private final ProjectPort projectPort;
@@ -49,14 +47,6 @@ class WorkspaceAccessHelper {
             workspace,
             tuple.getT1(),
             tuple.getT2()));
-  }
-
-  Mono<Void> validateMemberAccess(String workspaceId, String userId) {
-    return accessVerifier.requireWorkspaceAccess(workspaceId, userId, WorkspaceRole.MEMBER);
-  }
-
-  Mono<Void> validateAdminAccess(String workspaceId, String userId) {
-    return accessVerifier.requireWorkspaceAccess(workspaceId, userId, WorkspaceRole.ADMIN);
   }
 
   Mono<Workspace> findWorkspaceOrThrow(String workspaceId) {

@@ -7,9 +7,9 @@ import {
   Suspense,
   type ReactNode,
 } from 'react';
-import { Loader2, TriangleAlert, RotateCcw } from 'lucide-react';
+import { TriangleAlert, RotateCcw } from 'lucide-react';
 import { QueryErrorResetBoundary } from '@tanstack/react-query';
-import { ErrorBoundary } from '@/components';
+import { ErrorBoundary, LoadingState } from '@/components';
 import { SelectedSchemaContext } from './useSelectedSchema';
 import { useSchemas } from '../hooks/useSchemas';
 import { useCreateSchema } from '../hooks/useSchemaMutations';
@@ -17,12 +17,7 @@ import { useCreateSchema } from '../hooks/useSchemaMutations';
 const getStorageKey = (projectId: string) => `selectedSchemaId_${projectId}`;
 
 const SchemaLoading = () => (
-  <div className="flex flex-1 w-full items-center justify-center bg-schemafy-bg">
-    <div className="flex flex-col items-center gap-3">
-      <Loader2 className="h-8 w-8 animate-spin text-schemafy-text" />
-      <span className="text-sm text-schemafy-text">Loading schema...</span>
-    </div>
-  </div>
+  <LoadingState label="Loading schema..." spinnerClassName="h-8 w-8" />
 );
 
 const SchemaError = ({ onRetry }: { onRetry: () => void }) => (

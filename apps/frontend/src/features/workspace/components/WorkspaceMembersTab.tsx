@@ -9,11 +9,7 @@ import {
 } from '@/components';
 import { ChangeRoleDialog } from './ChangeRoleDialog';
 import { ConfirmDialog } from './ConfirmDialog';
-import {
-  useGetMembers,
-  useRemoveMember,
-  useUpdateMemberRole,
-} from '../hooks/useWorkspaces';
+import { useWorkspaceMembers } from '../hooks/useWorkspaceMembers';
 import { formatDateWithTime } from '@/lib';
 import { availableRoles } from '@/features/workspace/utils/role';
 import type { WorkspaceMemberResponse } from '@/features/workspace/api';
@@ -35,20 +31,26 @@ export const WorkspaceMembersTab = ({
     currentRole: string;
   } | null>(null);
   const [selectedRole, setSelectedRole] = useState('');
+  const [removeTarget, setRemoveTarget] =
+    useState<WorkspaceMemberResponse | null>(null);
 
-  const { data, isLoading } = useGetMembers(workspaceId, currentPage - 1);
-  const { mutate: removeMember } = useRemoveMember(workspaceId);
-  const { mutate: updateMemberRole, isPending: isUpdatingRole } =
-    useUpdateMemberRole(workspaceId);
+  const {
+    members: workspaceMembers,
+    membersData,
+    isLoadingMembers,
+    removeMember,
+    updateMemberRole,
+    isUpdatingMemberRole,
+  } = useWorkspaceMembers(workspaceId, currentPage - 1);
 
   const { user } = authStore;
 
-  const members = (data?.content ?? []).filter(
+  const members = workspaceMembers.filter(
     (m) =>
       m.userName.toLowerCase().includes(searchQuery.toLowerCase()) ||
       m.userEmail.toLowerCase().includes(searchQuery.toLowerCase()),
   );
-  const totalPages = data?.totalPages ?? 1;
+  const totalPages = membersData?.totalPages ?? 1;
 
   const roles = availableRoles(currentUserRole);
 
@@ -60,20 +62,19 @@ export const WorkspaceMembersTab = ({
   const handleRoleChange = () => {
     if (!roleChangeTarget || !selectedRole) return;
 
-    const variableData = {
-      userId: roleChangeTarget.userId,
-      data: {
-        role: selectedRole,
-      },
-    };
-
     const successAction = {
       onSuccess: () => {
         setRoleChangeTarget(null);
       },
     };
 
-    updateMemberRole(variableData, successAction);
+    updateMemberRole(
+      roleChangeTarget.userId,
+      {
+        role: selectedRole,
+      },
+      successAction,
+    );
   };
 
   return (
@@ -112,7 +113,7 @@ export const WorkspaceMembersTab = ({
             </tr>
           </thead>
           <tbody>
-            {isLoading ? (
+            {isLoadingMembers ? (
               <tr>
                 <td
                   colSpan={5}
@@ -142,13 +143,15 @@ export const WorkspaceMembersTab = ({
                     {formatDateWithTime(new Date(member.joinedAt))}
                   </td>
                   {currentUserRole === 'ADMIN' &&
-                    user?.id !== member.userId && (
+                    (user?.id !== member.userId ? (
                       <MemberOptions
                         handleOpenRoleChange={handleOpenRoleChange}
-                        removeMember={removeMember}
+                        onRemoveClick={setRemoveTarget}
                         member={member}
                       />
-                    )}
+                    ) : (
+                      <td className="px-6 py-4" />
+                    ))}
                 </tr>
               ))
             )}
@@ -174,7 +177,16 @@ export const WorkspaceMembersTab = ({
         onSelectedRoleChange={setSelectedRole}
         availableRoles={roles}
         onSave={handleRoleChange}
-        isPending={isUpdatingRole}
+        isPending={isUpdatingMemberRole}
+      />
+
+      <ConfirmDialog
+        open={!!removeTarget}
+        onOpenChange={(open) => !open && setRemoveTarget(null)}
+        title="Remove Member"
+        description={`Would you like to remove ${removeTarget?.userName}(${removeTarget?.userEmail}) from the workspace?`}
+        confirmLabel="Remove"
+        onConfirm={() => removeTarget && removeMember(removeTarget.userId)}
       />
     </div>
   );
@@ -182,15 +194,13 @@ export const WorkspaceMembersTab = ({
 
 const MemberOptions = ({
   handleOpenRoleChange,
-  removeMember,
+  onRemoveClick,
   member,
 }: {
   handleOpenRoleChange: (userId: string, currentRole: string) => void;
-  removeMember: (userId: string) => void;
+  onRemoveClick: (member: WorkspaceMemberResponse) => void;
   member: WorkspaceMemberResponse;
 }) => {
-  const [confirmOpen, setConfirmOpen] = useState(false);
-
   return (
     <td className="px-6 py-4">
       <DropdownMenu>
@@ -218,21 +228,12 @@ const MemberOptions = ({
             variant="none"
             size="none"
             className="text-schemafy-destructive font-caption-md px-2 py-1 whitespace-nowrap text-left"
-            onClick={() => setConfirmOpen(true)}
+            onClick={() => onRemoveClick(member)}
           >
             Delete
           </Button>
         </DropdownMenuContent>
       </DropdownMenu>
-
-      <ConfirmDialog
-        open={confirmOpen}
-        onOpenChange={setConfirmOpen}
-        title="Remove Member"
-        description={`Would you like to remove ${member.userName}(${member.userEmail}) from the workspace?`}
-        confirmLabel="Remove"
-        onConfirm={() => removeMember(member.userId)}
-      />
     </td>
   );
 };

@@ -28,16 +28,28 @@ import com.schemafy.core.erd.constraint.domain.ConstraintColumn;
 import com.schemafy.core.erd.constraint.domain.exception.ConstraintErrorCode;
 import com.schemafy.core.erd.constraint.domain.type.ConstraintKind;
 import com.schemafy.core.erd.constraint.domain.validator.ConstraintValidator;
+import com.schemafy.core.erd.operation.application.inverse.AddConstraintColumnInverse;
 import com.schemafy.core.erd.operation.application.service.ErdMutationCoordinator;
+import com.schemafy.core.erd.operation.application.service.StructuralSnapshotService;
 import com.schemafy.core.erd.operation.domain.ErdOperationType;
+import com.schemafy.core.project.application.access.AccessTarget;
+import com.schemafy.core.project.application.access.RequireProjectAccess;
+import com.schemafy.core.project.domain.ProjectRole;
 import com.schemafy.core.ulid.application.port.out.UlidGeneratorPort;
 
 import lombok.RequiredArgsConstructor;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
+import static com.schemafy.core.project.application.access.ProjectAccessResourceType.COLUMN;
+import static com.schemafy.core.project.application.access.ProjectAccessResourceType.CONSTRAINT;
+
 @Service
 @RequiredArgsConstructor
+@RequireProjectAccess(role = ProjectRole.EDITOR, targets = {
+  @AccessTarget(value = CONSTRAINT, id = "constraintId"),
+  @AccessTarget(value = COLUMN, id = "columnId")
+})
 public class AddConstraintColumnService implements AddConstraintColumnUseCase {
 
   private final TransactionalOperator transactionalOperator;
@@ -49,6 +61,7 @@ public class AddConstraintColumnService implements AddConstraintColumnUseCase {
   private final GetColumnsByTableIdPort getColumnsByTableIdPort;
   private final GetColumnByIdPort getColumnByIdPort;
   private final PkCascadeHelper pkCascadeHelper;
+  private final StructuralSnapshotService structuralSnapshotService;
   private ErdMutationCoordinator erdMutationCoordinator = ErdMutationCoordinator.noop();
 
   @Autowired
@@ -59,20 +72,33 @@ public class AddConstraintColumnService implements AddConstraintColumnUseCase {
   @Override
   public Mono<MutationResult<AddConstraintColumnResult>> addConstraintColumn(
       AddConstraintColumnCommand command) {
-    return erdMutationCoordinator.coordinate(ErdOperationType.ADD_CONSTRAINT_COLUMN, command, () -> Mono.defer(() -> {
-      return getConstraintByIdPort.findConstraintById(command.constraintId())
-          .switchIfEmpty(Mono.error(new DomainException(ConstraintErrorCode.NOT_FOUND, "Constraint not found")))
-          .flatMap(constraint -> {
-            Set<String> affectedTableIds = new HashSet<>();
-            affectedTableIds.add(constraint.tableId());
-            return fetchTableContext(constraint.tableId())
-                .flatMap(context -> addColumn(
-                    constraint,
-                    context,
-                    command,
-                    affectedTableIds));
-          });
-    })).as(transactionalOperator::transactional);
+    return erdMutationCoordinator.coordinate(ErdOperationType.ADD_CONSTRAINT_COLUMN, command, () -> Mono.defer(
+        () -> structuralSnapshotService.captureByConstraintId(command.constraintId())
+            .flatMap(beforeSnapshot -> addConstraintColumnWithoutInverse(command)
+                .flatMap(result -> structuralSnapshotService.captureBySchemaId(beforeSnapshot.schemaId())
+                    .map(afterSnapshot -> result.withInverse(new AddConstraintColumnInverse(
+                        beforeSnapshot.schemaId(),
+                        result.result().constraintColumnId(),
+                        beforeSnapshot,
+                        afterSnapshot,
+                        result.sortedAffectedTableIds())))))))
+        .as(transactionalOperator::transactional);
+  }
+
+  private Mono<MutationResult<AddConstraintColumnResult>> addConstraintColumnWithoutInverse(
+      AddConstraintColumnCommand command) {
+    return getConstraintByIdPort.findConstraintById(command.constraintId())
+        .switchIfEmpty(Mono.error(new DomainException(ConstraintErrorCode.NOT_FOUND, "Constraint not found")))
+        .flatMap(constraint -> {
+          Set<String> affectedTableIds = new HashSet<>();
+          affectedTableIds.add(constraint.tableId());
+          return fetchTableContext(constraint.tableId())
+              .flatMap(context -> addColumn(
+                  constraint,
+                  context,
+                  command,
+                  affectedTableIds));
+        });
   }
 
   private Mono<MutationResult<AddConstraintColumnResult>> addColumn(

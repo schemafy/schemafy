@@ -19,14 +19,22 @@ import com.schemafy.core.erd.index.application.port.out.GetIndexColumnByIdPort;
 import com.schemafy.core.erd.index.application.port.out.GetIndexColumnsByIndexIdPort;
 import com.schemafy.core.erd.index.domain.IndexColumn;
 import com.schemafy.core.erd.index.domain.exception.IndexErrorCode;
+import com.schemafy.core.erd.operation.application.inverse.RemoveIndexColumnInverse;
 import com.schemafy.core.erd.operation.application.service.ErdMutationCoordinator;
+import com.schemafy.core.erd.operation.application.service.StructuralSnapshotService;
 import com.schemafy.core.erd.operation.domain.ErdOperationType;
+import com.schemafy.core.project.application.access.AccessTarget;
+import com.schemafy.core.project.application.access.RequireProjectAccess;
+import com.schemafy.core.project.domain.ProjectRole;
 
 import lombok.RequiredArgsConstructor;
 import reactor.core.publisher.Mono;
 
+import static com.schemafy.core.project.application.access.ProjectAccessResourceType.INDEX_COLUMN;
+
 @Service
 @RequiredArgsConstructor
+@RequireProjectAccess(role = ProjectRole.EDITOR, target = @AccessTarget(value = INDEX_COLUMN, id = "indexColumnId"))
 public class RemoveIndexColumnService implements RemoveIndexColumnUseCase {
 
   private final TransactionalOperator transactionalOperator;
@@ -36,6 +44,7 @@ public class RemoveIndexColumnService implements RemoveIndexColumnUseCase {
   private final GetIndexByIdPort getIndexByIdPort;
   private final GetIndexColumnByIdPort getIndexColumnByIdPort;
   private final GetIndexColumnsByIndexIdPort getIndexColumnsByIndexIdPort;
+  private final StructuralSnapshotService structuralSnapshotService;
   private ErdMutationCoordinator erdMutationCoordinator = ErdMutationCoordinator.noop();
 
   @Autowired
@@ -46,15 +55,29 @@ public class RemoveIndexColumnService implements RemoveIndexColumnUseCase {
   @Override
   public Mono<MutationResult<Void>> removeIndexColumn(RemoveIndexColumnCommand command) {
     return erdMutationCoordinator.coordinate(ErdOperationType.REMOVE_INDEX_COLUMN, command,
-        () -> getIndexColumnByIdPort.findIndexColumnById(command.indexColumnId())
-            .switchIfEmpty(Mono.error(new DomainException(
-                IndexErrorCode.COLUMN_NOT_FOUND, "Index column not found")))
-            .flatMap(indexColumn -> getIndexByIdPort.findIndexById(indexColumn.indexId())
-                .switchIfEmpty(Mono.error(new DomainException(IndexErrorCode.NOT_FOUND, "Index not found")))
-                .flatMap(index -> deleteIndexColumnPort.deleteIndexColumn(indexColumn.id())
-                    .then(handleRemainingColumns(index.id()))
-                    .thenReturn(MutationResult.<Void>of(null, index.tableId())))))
+        () -> {
+          return structuralSnapshotService.captureByIndexColumnId(command.indexColumnId())
+              .flatMap(beforeSnapshot -> removeIndexColumnWithoutInverse(command)
+                  .flatMap(result -> structuralSnapshotService.captureBySchemaId(beforeSnapshot.schemaId())
+                      .map(afterSnapshot -> result.withInverse(new RemoveIndexColumnInverse(
+                          beforeSnapshot.schemaId(),
+                          command.indexColumnId(),
+                          beforeSnapshot,
+                          afterSnapshot,
+                          result.sortedAffectedTableIds())))));
+        })
         .as(transactionalOperator::transactional);
+  }
+
+  private Mono<MutationResult<Void>> removeIndexColumnWithoutInverse(RemoveIndexColumnCommand command) {
+    return getIndexColumnByIdPort.findIndexColumnById(command.indexColumnId())
+        .switchIfEmpty(Mono.error(new DomainException(
+            IndexErrorCode.COLUMN_NOT_FOUND, "Index column not found")))
+        .flatMap(indexColumn -> getIndexByIdPort.findIndexById(indexColumn.indexId())
+            .switchIfEmpty(Mono.error(new DomainException(IndexErrorCode.NOT_FOUND, "Index not found")))
+            .flatMap(index -> deleteIndexColumnPort.deleteIndexColumn(indexColumn.id())
+                .then(handleRemainingColumns(index.id()))
+                .thenReturn(MutationResult.<Void>of(null, index.tableId()))));
   }
 
   private Mono<Void> handleRemainingColumns(String indexId) {

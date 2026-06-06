@@ -13,7 +13,9 @@ import com.schemafy.core.common.MutationResult;
 import com.schemafy.core.common.exception.DomainException;
 import com.schemafy.core.erd.column.application.port.out.GetColumnsByTableIdPort;
 import com.schemafy.core.erd.column.domain.Column;
+import com.schemafy.core.erd.operation.application.inverse.AddRelationshipColumnInverse;
 import com.schemafy.core.erd.operation.application.service.ErdMutationCoordinator;
+import com.schemafy.core.erd.operation.application.service.StructuralSnapshotService;
 import com.schemafy.core.erd.operation.domain.ErdOperationType;
 import com.schemafy.core.erd.relationship.application.port.in.AddRelationshipColumnCommand;
 import com.schemafy.core.erd.relationship.application.port.in.AddRelationshipColumnResult;
@@ -27,13 +29,24 @@ import com.schemafy.core.erd.relationship.domain.exception.RelationshipErrorCode
 import com.schemafy.core.erd.relationship.domain.validator.RelationshipValidator;
 import com.schemafy.core.erd.table.application.port.out.GetTableByIdPort;
 import com.schemafy.core.erd.table.domain.Table;
+import com.schemafy.core.project.application.access.AccessTarget;
+import com.schemafy.core.project.application.access.RequireProjectAccess;
+import com.schemafy.core.project.domain.ProjectRole;
 import com.schemafy.core.ulid.application.port.out.UlidGeneratorPort;
 
 import lombok.RequiredArgsConstructor;
 import reactor.core.publisher.Mono;
 
+import static com.schemafy.core.project.application.access.ProjectAccessResourceType.COLUMN;
+import static com.schemafy.core.project.application.access.ProjectAccessResourceType.RELATIONSHIP;
+
 @Service
 @RequiredArgsConstructor
+@RequireProjectAccess(role = ProjectRole.EDITOR, targets = {
+  @AccessTarget(value = RELATIONSHIP, id = "relationshipId"),
+  @AccessTarget(value = COLUMN, id = "pkColumnId"),
+  @AccessTarget(value = COLUMN, id = "fkColumnId")
+})
 public class AddRelationshipColumnService implements AddRelationshipColumnUseCase {
 
   private final TransactionalOperator transactionalOperator;
@@ -43,6 +56,7 @@ public class AddRelationshipColumnService implements AddRelationshipColumnUseCas
   private final GetRelationshipColumnsByRelationshipIdPort getRelationshipColumnsByRelationshipIdPort;
   private final GetTableByIdPort getTableByIdPort;
   private final GetColumnsByTableIdPort getColumnsByTableIdPort;
+  private final StructuralSnapshotService structuralSnapshotService;
   private ErdMutationCoordinator erdMutationCoordinator = ErdMutationCoordinator.noop();
 
   @Autowired
@@ -54,21 +68,35 @@ public class AddRelationshipColumnService implements AddRelationshipColumnUseCas
   public Mono<MutationResult<AddRelationshipColumnResult>> addRelationshipColumn(
       AddRelationshipColumnCommand command) {
     return erdMutationCoordinator.coordinate(ErdOperationType.ADD_RELATIONSHIP_COLUMN, command,
-        () -> getRelationshipByIdPort.findRelationshipById(command.relationshipId())
-            .switchIfEmpty(Mono.error(new DomainException(RelationshipErrorCode.NOT_FOUND, "Relationship not found")))
-            .flatMap(relationship -> {
-              Set<String> affectedTableIds = new HashSet<>();
-              affectedTableIds.add(relationship.fkTableId());
-              affectedTableIds.add(relationship.pkTableId());
-              return loadTables(relationship)
-                  .flatMap(tables -> addColumn(
-                      relationship,
-                      tables.fkTable(),
-                      tables.pkTable(),
-                      command))
-                  .map(result -> MutationResult.of(result, affectedTableIds));
-            }))
+        () -> structuralSnapshotService.captureByRelationshipId(command.relationshipId())
+            .flatMap(beforeSnapshot -> addRelationshipColumnWithoutInverse(command)
+                .flatMap(result -> structuralSnapshotService.captureBySchemaId(beforeSnapshot.schemaId())
+                    .map(afterSnapshot -> result.withInverse(new AddRelationshipColumnInverse(
+                        beforeSnapshot.schemaId(),
+                        result.result().relationshipColumnId(),
+                        beforeSnapshot,
+                        afterSnapshot,
+                        result.sortedAffectedTableIds()))))))
         .as(transactionalOperator::transactional);
+  }
+
+  private Mono<MutationResult<AddRelationshipColumnResult>> addRelationshipColumnWithoutInverse(
+      AddRelationshipColumnCommand command) {
+    return getRelationshipByIdPort.findRelationshipById(command.relationshipId())
+        .switchIfEmpty(Mono.error(new DomainException(
+            RelationshipErrorCode.NOT_FOUND, "Relationship not found")))
+        .flatMap(relationship -> {
+          Set<String> affectedTableIds = new HashSet<>();
+          affectedTableIds.add(relationship.fkTableId());
+          affectedTableIds.add(relationship.pkTableId());
+          return loadTables(relationship)
+              .flatMap(tables -> addColumn(
+                  relationship,
+                  tables.fkTable(),
+                  tables.pkTable(),
+                  command))
+              .map(result -> MutationResult.of(result, affectedTableIds));
+        });
   }
 
   private Mono<TablePair> loadTables(Relationship relationship) {
