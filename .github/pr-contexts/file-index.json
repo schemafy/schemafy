@@ -518,7 +518,8 @@
   ],
   "apps/backend/core/src/main/java/com/schemafy/core/erd/column/application/service/ChangeColumnTypeService.java": [
     372,
-    383
+    383,
+    341
   ],
   "apps/backend/core/src/main/java/com/schemafy/core/erd/constraint/application/service/ChangeConstraintNameService.java": [
     372,
@@ -615,7 +616,8 @@
     372
   ],
   "apps/backend/core/src/test/java/com/schemafy/core/erd/operation/integration/ErdOperationLedgerIntegrationTest.java": [
-    372
+    372,
+    341
   ],
   "apps/backend/core/src/test/java/com/schemafy/core/erd/table/application/service/ChangeTableNameServiceTest.java": [
     372
@@ -810,7 +812,8 @@
     368
   ],
   "apps/frontend/src/store/preview.store.ts": [
-    368
+    368,
+    341
   ],
   "apps/frontend/src/store/preview.types.ts": [
     368
@@ -1300,7 +1303,8 @@
     386
   ],
   "apps/frontend/src/features/drawing/hooks/useColumn.ts": [
-    386
+    386,
+    341
   ],
   "apps/frontend/src/features/drawing/hooks/useErdCache.ts": [
     386,
@@ -1359,5 +1363,17 @@
   ],
   "apps/backend/core/src/test/java/com/schemafy/core/user/domain/UserTest.java": [
     387
+  ],
+  "apps/backend/core/src/test/java/com/schemafy/core/erd/column/application/service/ChangeColumnTypeServiceTest.java": [
+    341
+  ],
+  "apps/frontend/src/features/drawing/components/Column/EditModeColumn.tsx": [
+    341
+  ],
+  "apps/frontend/src/features/drawing/components/Column/TypeSelector.tsx": [
+    341
+  ],
+  "apps/frontend/src/features/drawing/types/column.ts": [
+    341
   ]
 }
