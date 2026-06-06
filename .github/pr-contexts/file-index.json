@@ -788,12 +788,14 @@
   ],
   "apps/frontend/src/features/workspace/components/WorkspaceMembersTab.tsx": [
     358,
-    382
+    382,
+    392
   ],
   "apps/frontend/src/features/workspace/components/WorkspaceProjectsTab.tsx": [
     358,
     361,
-    382
+    382,
+    392
   ],
   "apps/frontend/src/features/workspace/hooks/useWorkspaces.ts": [
     358,
