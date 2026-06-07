@@ -349,7 +349,8 @@
     337
   ],
   "apps/frontend/src/features/drawing/components/CustomSmoothStepEdge.tsx": [
-    331
+    331,
+    393
   ],
   "apps/frontend/src/features/drawing/components/ReactFlowCanvas.tsx": [
     331
@@ -382,7 +383,8 @@
   ],
   "apps/frontend/src/features/drawing/hooks/useRelationships.ts": [
     331,
-    291
+    291,
+    393
   ],
   "apps/frontend/src/features/drawing/hooks/useTables.ts": [
     331
@@ -1401,5 +1403,11 @@
   ],
   "apps/backend/api/src/test/java/com/schemafy/api/erd/service/TableSnapshotOrchestratorTest.java": [
     342
+  ],
+  "apps/frontend/src/features/drawing/utils/anchorGeometry.ts": [
+    393
+  ],
+  "apps/frontend/src/features/drawing/utils/relationshipHelpers.ts": [
+    393
   ]
 }
