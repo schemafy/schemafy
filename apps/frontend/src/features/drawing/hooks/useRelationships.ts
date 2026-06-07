@@ -225,13 +225,11 @@ export const useRelationships = (relationshipConfig: RelationshipConfig) => {
 
       const isSameDirection = connection.source === validation.fkTableId;
       const fkHandle =
-        (isSameDirection
-          ? connection.sourceHandle
-          : connection.targetHandle) ?? undefined;
+        (isSameDirection ? connection.sourceHandle : connection.targetHandle) ??
+        undefined;
       const pkHandle =
-        (isSameDirection
-          ? connection.targetHandle
-          : connection.sourceHandle) ?? undefined;
+        (isSameDirection ? connection.targetHandle : connection.sourceHandle) ??
+        undefined;
       const extra: RelationshipExtra = {
         fkHandle,
         pkHandle,

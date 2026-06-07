@@ -70,10 +70,7 @@ const toFlowPosition = (side: AnchorSide): Position => {
   }
 };
 
-const createAnchorPoint = (
-  side: AnchorSide,
-  point: Point,
-): AnchorPoint => ({
+const createAnchorPoint = (side: AnchorSide, point: Point): AnchorPoint => ({
   point,
   position: toFlowPosition(side),
 });
