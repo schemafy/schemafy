@@ -744,7 +744,8 @@
   "apps/frontend/src/components/Header/CanvasHeader.tsx": [
     358,
     361,
-    318
+    318,
+    396
   ],
   "apps/frontend/src/components/Header/contents/NotificationContents.tsx": [
     358,
