@@ -3,24 +3,12 @@ import { Avatar } from '../Avatar';
 import { ExportContents } from './contents/ExportContents';
 import { ShareContents } from './contents/ShareContents';
 import { SettingsContents } from './contents/SettingsContents';
-import { logout } from '@/features/auth/api';
-import { clearAuthSession } from '@/features/auth/lib/auth-session';
-import { useNavigate, useParams } from '@tanstack/react-router';
-import { toast } from 'sonner';
+import { useLogout } from '@/features/auth';
+import { useParams } from '@tanstack/react-router';
 
 export const CanvasHeader = () => {
   const { projectId } = useParams({ from: '/project/$projectId' });
-  const navigate = useNavigate();
-
-  const handleLogout = async () => {
-    try {
-      await logout();
-      clearAuthSession();
-      await navigate({ to: '/signin', search: { oauthError: null } });
-    } catch {
-      toast.error('Failed to sign out. Please try again.');
-    }
-  };
+  const handleLogout = useLogout();
 
   return (
     <div className="flex items-center gap-9">
