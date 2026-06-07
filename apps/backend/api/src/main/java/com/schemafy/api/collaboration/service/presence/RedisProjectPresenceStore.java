@@ -24,6 +24,21 @@ public class RedisProjectPresenceStore implements ProjectPresenceStore {
 
   private static final String ACTIVE_PROJECTS_KEY = "collaboration:presence:projects";
   private static final String PROJECT_KEY_PREFIX = "collaboration:presence:project:";
+  private static final RedisScript<Long> WRITE_SESSION_SCRIPT = RedisScript
+      .of("""
+          local participantsKey = KEYS[1]
+          local expiresKey = KEYS[2]
+          local activeProjectsKey = KEYS[3]
+          local sessionId = ARGV[1]
+          local payload = ARGV[2]
+          local expiresAt = tonumber(ARGV[3])
+          local projectId = ARGV[4]
+
+          redis.call('HSET', participantsKey, sessionId, payload)
+          redis.call('ZADD', expiresKey, expiresAt, sessionId)
+          redis.call('SADD', activeProjectsKey, projectId)
+          return 1
+          """, Long.class);
   private static final RedisScript<String> REMOVE_EXPIRED_SESSION_SCRIPT = RedisScript
       .of("""
           local participantsKey = KEYS[1]
@@ -158,15 +173,13 @@ public class RedisProjectPresenceStore implements ProjectPresenceStore {
   private Mono<ProjectPresenceSession> writeSession(String projectId,
       ProjectPresenceSession presenceSession) {
     return serializeSession(presenceSession)
-        .flatMap(payload -> redisTemplate.<String, String>opsForHash()
-            .put(participantsKey(projectId), presenceSession.sessionId(),
-                payload)
-            .then(redisTemplate.opsForZSet()
-                .add(expiresKey(projectId), presenceSession.sessionId(),
-                    expiresAt(presenceSession.lastSeenAt())))
-            .then(redisTemplate.opsForSet()
-                .add(ACTIVE_PROJECTS_KEY, projectId))
-            .thenReturn(presenceSession));
+        .flatMap(payload -> redisTemplate.execute(WRITE_SESSION_SCRIPT,
+            List.of(participantsKey(projectId), expiresKey(projectId),
+                ACTIVE_PROJECTS_KEY),
+            List.of(presenceSession.sessionId(), payload,
+                Double.toString(expiresAt(presenceSession.lastSeenAt())),
+                projectId))
+            .then(Mono.just(presenceSession)));
   }
 
   private Mono<Void> deleteSession(String projectId, String sessionId) {

@@ -5,7 +5,6 @@ import java.util.List;
 
 import org.springframework.data.domain.Range;
 import org.springframework.data.redis.core.ReactiveHashOperations;
-import org.springframework.data.redis.core.ReactiveSetOperations;
 import org.springframework.data.redis.core.ReactiveStringRedisTemplate;
 import org.springframework.data.redis.core.ReactiveZSetOperations;
 import org.springframework.data.redis.core.script.RedisScript;
@@ -15,7 +14,6 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
-import org.mockito.InOrder;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
@@ -28,12 +26,9 @@ import reactor.test.StepVerifier;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyDouble;
 import static org.mockito.ArgumentMatchers.anyList;
-import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.given;
-import static org.mockito.Mockito.inOrder;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
@@ -55,9 +50,6 @@ class RedisProjectPresenceStoreTest {
 
   @Mock
   private ReactiveHashOperations<String, String, String> hashOps;
-
-  @Mock
-  private ReactiveSetOperations<String, String> setOps;
 
   private JsonCodec jsonCodec;
   private RedisProjectPresenceStore presenceStore;
@@ -123,19 +115,13 @@ class RedisProjectPresenceStoreTest {
   }
 
   @Test
-  @DisplayName("presence 등록은 참가자 저장 후 만료 score와 active project marker를 순서대로 기록한다")
-  void register_writes_presence_before_active_project_marker() {
+  @DisplayName("presence 등록은 참가자, 만료 score, active project marker를 원자적으로 기록한다")
+  void register_writes_presence_metadata_atomically() {
     given(redisTemplate.<String, String>opsForHash()).willReturn(hashOps);
     given(hashOps.get(PARTICIPANTS_KEY, "session-1"))
         .willReturn(Mono.empty());
-    given(hashOps.put(eq(PARTICIPANTS_KEY), eq("session-1"), anyString()))
-        .willReturn(Mono.just(true));
-    given(redisTemplate.opsForZSet()).willReturn(zSetOps);
-    given(zSetOps.add(eq(EXPIRES_KEY), eq("session-1"), anyDouble()))
-        .willReturn(Mono.just(true));
-    given(redisTemplate.opsForSet()).willReturn(setOps);
-    given(setOps.add(ACTIVE_PROJECTS_KEY, "project-1"))
-        .willReturn(Mono.just(1L));
+    given(redisTemplate.execute(any(RedisScript.class), anyList(), anyList()))
+        .willReturn(Flux.just(1L));
 
     StepVerifier.create(presenceStore.register("project-1", "session-1",
         "user-1", "tester"))
@@ -143,13 +129,25 @@ class RedisProjectPresenceStoreTest {
             .isEqualTo("session-1"))
         .verifyComplete();
 
-    InOrder inOrder = inOrder(hashOps, zSetOps, setOps);
-    inOrder.verify(hashOps).get(PARTICIPANTS_KEY, "session-1");
-    inOrder.verify(hashOps).put(eq(PARTICIPANTS_KEY), eq("session-1"),
-        anyString());
-    inOrder.verify(zSetOps).add(eq(EXPIRES_KEY), eq("session-1"),
-        anyDouble());
-    inOrder.verify(setOps).add(ACTIVE_PROJECTS_KEY, "project-1");
+    ArgumentCaptor<List<String>> keysCaptor = ArgumentCaptor.forClass(
+        List.class);
+    ArgumentCaptor<List> argsCaptor = ArgumentCaptor.forClass(List.class);
+    verify(redisTemplate).execute(any(RedisScript.class), keysCaptor.capture(),
+        argsCaptor.capture());
+
+    assertThat(keysCaptor.getValue()).containsExactly(PARTICIPANTS_KEY,
+        EXPIRES_KEY, ACTIVE_PROJECTS_KEY);
+    assertThat(argsCaptor.getValue()).hasSize(4);
+    assertThat(argsCaptor.getValue().get(0)).isEqualTo("session-1");
+    assertThat(argsCaptor.getValue().get(1)).asString()
+        .contains("\"sessionId\":\"session-1\"");
+    assertThat(argsCaptor.getValue().get(2)).asString()
+        .isNotBlank();
+    assertThat(argsCaptor.getValue().get(3)).isEqualTo("project-1");
+
+    verify(hashOps, never()).put(eq(PARTICIPANTS_KEY), eq("session-1"), any());
+    verify(redisTemplate, never()).opsForZSet();
+    verify(redisTemplate, never()).opsForSet();
   }
 
 }
