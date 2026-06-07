@@ -47,6 +47,10 @@ export const handleApiError = (
     return Promise.reject(error);
   }
 
+  if ((error as HandledAxiosError).__handledByApiError) {
+    return Promise.reject(error);
+  }
+
   (error as HandledAxiosError).__handledByApiError = true;
 
   const errorData = error.response?.data;

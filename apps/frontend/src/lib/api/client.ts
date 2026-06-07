@@ -73,7 +73,7 @@ apiClient.interceptors.request.use(
       return config;
     }
 
-    const newToken = await refreshToken();
+    const newToken = await refreshToken({ errorPolicy: 'suppress-toast' });
     if (newToken) {
       setAuthorizationHeader(config, newToken);
     }
@@ -92,7 +92,7 @@ apiClient.interceptors.response.use(
 
     if (responseStatus === 401) {
       config._retry = true;
-      const newToken = await refreshToken();
+      const newToken = await refreshToken({ errorPolicy: 'suppress-toast' });
       if (newToken) {
         setAuthorizationHeader(config, newToken);
         return apiClient(config);
