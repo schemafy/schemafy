@@ -428,7 +428,8 @@
   ],
   "apps/frontend/src/components/Header/DashboardHeader.tsx": [
     361,
-    386
+    386,
+    396
   ],
   "apps/frontend/src/components/Header/Header.tsx": [
     361,
@@ -1443,5 +1444,11 @@
   ],
   "apps/frontend/src/styles/globals.css": [
     397
+  ],
+  "apps/frontend/src/features/auth/hooks/index.ts": [
+    396
+  ],
+  "apps/frontend/src/features/auth/hooks/useLogout.ts": [
+    396
   ]
 }
