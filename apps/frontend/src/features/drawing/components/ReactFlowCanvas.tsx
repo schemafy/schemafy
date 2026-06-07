@@ -201,7 +201,10 @@ const ReactFlowCanvasComponent = ({
           pannable
         />
         <CustomControls />
-        <Background variant={BackgroundVariant.Dots} />
+        <Background
+          variant={BackgroundVariant.Dots}
+          color="var(--color-schemafy-canvas-dot)"
+        />
         {activeTool === 'table' && <TablePreview />}
         {activeTool === 'memo' && <MemoPreview />}
       </ReactFlow>

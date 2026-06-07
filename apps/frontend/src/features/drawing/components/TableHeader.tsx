@@ -37,7 +37,7 @@ export const TableHeader = ({
   };
 
   return (
-    <div className="bg-schemafy-button-bg text-schemafy-button-text p-3 flex items-center justify-between gap-4">
+    <div className="bg-schemafy-table-header-bg text-schemafy-button-text p-3 flex items-center justify-between gap-4">
       <div className="flex items-center gap-2 flex-1">
         {isEditing ? (
           <div className="flex items-center gap-2 flex-1">

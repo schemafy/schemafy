@@ -40,8 +40,10 @@
   --color-schemafy-destructive: hsl(var(--schemafy-destructive));
   --color-schemafy-button-bg: hsl(var(--schemafy-button-bg));
   --color-schemafy-button-text: hsl(var(--schemafy-button-text));
+  --color-schemafy-table-header-bg: hsl(var(--schemafy-table-header-bg));
   --color-schemafy-bg-80: hsl(var(--schemafy-bg) / 0.8);
   --color-schemafy-tools: hsl(var(--schemafy-tools));
+  --color-schemafy-canvas-dot: hsl(var(--schemafy-canvas-dot));
   --color-schemafy-yellow: hsl(var(--schemafy-yellow));
   --color-schemafy-blue: hsl(var(--schemafy-blue));
   --color-schemafy-green: hsl(var(--schemafy-green));
@@ -83,7 +85,9 @@
     --schemafy-destructive: 0 84% 60%;
     --schemafy-button-bg: 0 0% 8%;
     --schemafy-button-text: 0 0% 100%;
+    --schemafy-table-header-bg: 0 0% 8%;
     --schemafy-tools: 0 0% 46% / 0.8;
+    --schemafy-canvas-dot: 0 0% 46% / 0.35;
     --schemafy-yellow: 40 96% 40%;
     --schemafy-blue: 218 70% 50%;
     --schemafy-green: 160 84% 36%;
@@ -197,39 +201,41 @@
   }
 
   .dark {
-    --background: 0 0% 12%;
-    --foreground: 0 0% 99%;
-    --card: 0 0% 12%;
-    --card-foreground: 0 0% 99%;
-    --popover: 0 0% 12%;
-    --popover-foreground: 0 0% 99%;
-    --primary: 240 1% 44%;
-    --primary-foreground: 0 0% 99%;
-    --secondary: 0 0% 30%;
-    --secondary-foreground: 0 0% 99%;
-    --muted: 0 0% 30%;
-    --muted-foreground: 240 1% 44%;
-    --accent: 0 0% 99%;
-    --accent-foreground: 0 0% 12%;
-    --destructive: 0 61% 39%;
-    --destructive-foreground: 0 0% 99%;
-    --border: 240 1% 44%;
-    --input: 0 0% 30%;
-    --ring: 0 0% 83%;
+    --background: 240 4% 11%;
+    --foreground: 0 0% 88%;
+    --card: 240 4% 14%;
+    --card-foreground: 0 0% 88%;
+    --popover: 240 4% 14%;
+    --popover-foreground: 0 0% 88%;
+    --primary: 0 0% 88%;
+    --primary-foreground: 240 4% 11%;
+    --secondary: 240 4% 18%;
+    --secondary-foreground: 0 0% 88%;
+    --muted: 240 4% 18%;
+    --muted-foreground: 0 0% 60%;
+    --accent: 240 4% 22%;
+    --accent-foreground: 0 0% 88%;
+    --destructive: 0 66% 58%;
+    --destructive-foreground: 0 0% 98%;
+    --border: 240 4% 26%;
+    --input: 240 4% 18%;
+    --ring: 0 0% 64%;
 
-    --schemafy-bg: 0 0% 12%;
-    --schemafy-text: 0 0% 99%;
-    --schemafy-secondary: 0 0% 30%;
-    --schemafy-dark-gray: 220 13% 91%;
-    --schemafy-light-gray: 240 1% 44%;
-    --schemafy-dark-gray-40: 240 1% 44% / 0.4;
-    --schemafy-destructive: 0 61% 39%;
-    --schemafy-button-bg: 240 1% 44%;
-    --schemafy-button-text: 0 0% 100%;
-    --schemafy-tools: 240 1% 44%;
-    --schemafy-yellow: 40 85% 65%;
-    --schemafy-blue: 218 70% 65%;
-    --schemafy-green: 160 70% 58%;
+    --schemafy-bg: 240 4% 11%;
+    --schemafy-text: 0 0% 88%;
+    --schemafy-secondary: 240 4% 18%;
+    --schemafy-dark-gray: 0 0% 60%;
+    --schemafy-light-gray: 240 4% 26%;
+    --schemafy-dark-gray-40: 0 0% 60% / 0.4;
+    --schemafy-destructive: 0 66% 58%;
+    --schemafy-button-bg: 240 4% 25%;
+    --schemafy-button-text: 0 0% 88%;
+    --schemafy-table-header-bg: 0 0% 22%;
+    --schemafy-tools: 0 0% 60% / 0.8;
+    --schemafy-canvas-dot: 0 0% 60% / 0.28;
+    --schemafy-yellow: 42 78% 58%;
+    --schemafy-blue: 218 58% 60%;
+    --schemafy-green: 160 54% 44%;
   }
 }
 
