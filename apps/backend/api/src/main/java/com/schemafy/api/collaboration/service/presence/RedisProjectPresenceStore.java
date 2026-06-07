@@ -1,9 +1,11 @@
 package com.schemafy.api.collaboration.service.presence;
 
 import java.util.Comparator;
+import java.util.List;
 
 import org.springframework.data.domain.Range;
 import org.springframework.data.redis.core.ReactiveStringRedisTemplate;
+import org.springframework.data.redis.core.script.RedisScript;
 import org.springframework.stereotype.Service;
 
 import com.schemafy.api.common.config.ConditionalOnRedisEnabled;
@@ -22,6 +24,23 @@ public class RedisProjectPresenceStore implements ProjectPresenceStore {
 
   private static final String ACTIVE_PROJECTS_KEY = "collaboration:presence:projects";
   private static final String PROJECT_KEY_PREFIX = "collaboration:presence:project:";
+  private static final RedisScript<String> REMOVE_EXPIRED_SESSION_SCRIPT = RedisScript
+      .of("""
+          local participantsKey = KEYS[1]
+          local expiresKey = KEYS[2]
+          local sessionId = ARGV[1]
+          local now = tonumber(ARGV[2])
+          local score = redis.call('ZSCORE', expiresKey, sessionId)
+
+          if not score or tonumber(score) > now then
+            return nil
+          end
+
+          local payload = redis.call('HGET', participantsKey, sessionId)
+          redis.call('HDEL', participantsKey, sessionId)
+          redis.call('ZREM', expiresKey, sessionId)
+          return payload
+          """, String.class);
 
   private final ReactiveStringRedisTemplate redisTemplate;
   private final JsonCodec jsonCodec;
@@ -98,8 +117,20 @@ public class RedisProjectPresenceStore implements ProjectPresenceStore {
             return cleanupProjectIfEmpty(projectId).thenMany(Flux.empty());
           }
           return Flux.fromIterable(sessionIds)
-              .flatMap(sessionId -> remove(projectId, sessionId));
+              .flatMap(sessionId -> removeExpiredSession(projectId, sessionId,
+                  now));
         });
+  }
+
+  private Mono<ProjectPresenceSession> removeExpiredSession(String projectId,
+      String sessionId, long now) {
+    return redisTemplate.execute(REMOVE_EXPIRED_SESSION_SCRIPT,
+        List.of(participantsKey(projectId), expiresKey(projectId)),
+        List.of(sessionId, Long.toString(now)))
+        .next()
+        .flatMap(this::deserializeSession)
+        .flatMap(presenceSession -> cleanupProjectIfEmpty(projectId)
+            .thenReturn(presenceSession));
   }
 
   private Mono<ProjectPresenceSession> findSession(String projectId,
