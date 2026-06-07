@@ -41,6 +41,21 @@ public class RedisProjectPresenceStore implements ProjectPresenceStore {
           redis.call('ZREM', expiresKey, sessionId)
           return payload
           """, String.class);
+  private static final RedisScript<Long> CLEANUP_EMPTY_PROJECT_SCRIPT = RedisScript
+      .of("""
+          local activeProjectsKey = KEYS[1]
+          local participantsKey = KEYS[2]
+          local expiresKey = KEYS[3]
+          local projectId = ARGV[1]
+
+          if redis.call('HLEN', participantsKey) > 0 then
+            return 0
+          end
+
+          redis.call('SREM', activeProjectsKey, projectId)
+          redis.call('DEL', participantsKey, expiresKey)
+          return 1
+          """, Long.class);
 
   private final ReactiveStringRedisTemplate redisTemplate;
   private final JsonCodec jsonCodec;
@@ -143,14 +158,13 @@ public class RedisProjectPresenceStore implements ProjectPresenceStore {
   private Mono<ProjectPresenceSession> writeSession(String projectId,
       ProjectPresenceSession presenceSession) {
     return serializeSession(presenceSession)
-        .flatMap(payload -> Mono.when(
-            redisTemplate.<String, String>opsForHash()
-                .put(participantsKey(projectId), presenceSession.sessionId(),
-                    payload),
-            redisTemplate.opsForZSet()
+        .flatMap(payload -> redisTemplate.<String, String>opsForHash()
+            .put(participantsKey(projectId), presenceSession.sessionId(),
+                payload)
+            .then(redisTemplate.opsForZSet()
                 .add(expiresKey(projectId), presenceSession.sessionId(),
-                    expiresAt(presenceSession.lastSeenAt())),
-            redisTemplate.opsForSet()
+                    expiresAt(presenceSession.lastSeenAt())))
+            .then(redisTemplate.opsForSet()
                 .add(ACTIVE_PROJECTS_KEY, projectId))
             .thenReturn(presenceSession));
   }
@@ -165,19 +179,11 @@ public class RedisProjectPresenceStore implements ProjectPresenceStore {
   }
 
   private Mono<Void> cleanupProjectIfEmpty(String projectId) {
-    return redisTemplate.<String, String>opsForHash()
-        .size(participantsKey(projectId))
-        .flatMap(size -> {
-          if (size > 0) {
-            return Mono.empty();
-          }
-          return Mono.when(
-              redisTemplate.opsForSet()
-                  .remove(ACTIVE_PROJECTS_KEY, projectId),
-              redisTemplate.delete(participantsKey(projectId)),
-              redisTemplate.delete(expiresKey(projectId)))
-              .then();
-        });
+    return redisTemplate.execute(CLEANUP_EMPTY_PROJECT_SCRIPT,
+        List.of(ACTIVE_PROJECTS_KEY, participantsKey(projectId),
+            expiresKey(projectId)),
+        List.of(projectId))
+        .then();
   }
 
   private Mono<String> serializeSession(
