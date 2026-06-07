@@ -235,8 +235,6 @@ export const useRelationships = (relationshipConfig: RelationshipConfig) => {
       const extra: RelationshipExtra = {
         fkHandle,
         pkHandle,
-        fkAnchor: { mode: 'floating' },
-        pkAnchor: { mode: 'floating' },
       };
 
       createRelationshipWithExtra({

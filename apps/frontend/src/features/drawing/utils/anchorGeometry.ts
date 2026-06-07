@@ -1,13 +1,10 @@
 import { Position, type InternalNode } from '@xyflow/react';
-import type {
-  AnchorSide,
-  FixedAnchor,
-  Point,
-  RelationshipAnchor,
-} from '../types';
+import type { Point } from '../types';
 
 const MIN_SIZE = 1;
 const CENTER_MATCH_EPSILON = 0.0001;
+
+type AnchorSide = 'top' | 'right' | 'bottom' | 'left';
 
 export type Rect = {
   x: number;
@@ -16,11 +13,9 @@ export type Rect = {
   height: number;
 };
 
-export type AnchorPoint = {
+type AnchorPoint = {
   point: Point;
-  side: AnchorSide;
   position: Position;
-  ratio: number;
 };
 
 const clamp = (value: number, min: number, max: number) =>
@@ -75,57 +70,15 @@ const toFlowPosition = (side: AnchorSide): Position => {
   }
 };
 
-const getSideRatio = (rect: Rect, side: AnchorSide, point: Point) => {
-  if (side === 'top' || side === 'bottom') {
-    return clamp((point.x - rect.x) / rect.width, 0, 1);
-  }
-
-  return clamp((point.y - rect.y) / rect.height, 0, 1);
-};
-
 const createAnchorPoint = (
-  rect: Rect,
   side: AnchorSide,
   point: Point,
 ): AnchorPoint => ({
   point,
-  side,
   position: toFlowPosition(side),
-  ratio: getSideRatio(rect, side, point),
 });
 
-const resolveFixedAnchor = (
-  rect: Rect,
-  anchor: FixedAnchor,
-): AnchorPoint => {
-  const safeRect = normalizeRect(rect);
-  const ratio = clamp(anchor.ratio, 0, 1);
-
-  switch (anchor.side) {
-    case 'top':
-      return createAnchorPoint(safeRect, anchor.side, {
-        x: safeRect.x + safeRect.width * ratio,
-        y: safeRect.y,
-      });
-    case 'right':
-      return createAnchorPoint(safeRect, anchor.side, {
-        x: safeRect.x + safeRect.width,
-        y: safeRect.y + safeRect.height * ratio,
-      });
-    case 'bottom':
-      return createAnchorPoint(safeRect, anchor.side, {
-        x: safeRect.x + safeRect.width * ratio,
-        y: safeRect.y + safeRect.height,
-      });
-    case 'left':
-      return createAnchorPoint(safeRect, anchor.side, {
-        x: safeRect.x,
-        y: safeRect.y + safeRect.height * ratio,
-      });
-  }
-};
-
-const resolveFloatingAnchor = (
+export const resolveRelationshipAnchor = (
   anchorRect: Rect,
   peerRect: Rect,
 ): AnchorPoint => {
@@ -139,10 +92,9 @@ const resolveFloatingAnchor = (
     Math.abs(dx) < CENTER_MATCH_EPSILON &&
     Math.abs(dy) < CENTER_MATCH_EPSILON
   ) {
-    return resolveFixedAnchor(safeRect, {
-      mode: 'fixed',
-      side: 'right',
-      ratio: 0.5,
+    return createAnchorPoint('right', {
+      x: safeRect.x + safeRect.width,
+      y: anchorCenter.y,
     });
   }
 
@@ -160,7 +112,7 @@ const resolveFloatingAnchor = (
       safeRect.y + safeRect.height,
     );
 
-    return createAnchorPoint(safeRect, side, { x, y });
+    return createAnchorPoint(side, { x, y });
   }
 
   const side: AnchorSide = dy >= 0 ? 'bottom' : 'top';
@@ -171,17 +123,5 @@ const resolveFloatingAnchor = (
   );
   const y = side === 'bottom' ? safeRect.y + safeRect.height : safeRect.y;
 
-  return createAnchorPoint(safeRect, side, { x, y });
-};
-
-export const resolveRelationshipAnchor = (
-  anchorRect: Rect,
-  peerRect: Rect,
-  anchor: RelationshipAnchor | undefined,
-): AnchorPoint => {
-  if (anchor?.mode === 'fixed') {
-    return resolveFixedAnchor(anchorRect, anchor);
-  }
-
-  return resolveFloatingAnchor(anchorRect, peerRect);
+  return createAnchorPoint(side, { x, y });
 };

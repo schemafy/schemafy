@@ -52,8 +52,6 @@ const convertRelationshipSnapshotToEdge = (
     data: {
       relationshipType,
       isNonIdentifying,
-      fkAnchor: extra.fkAnchor,
-      pkAnchor: extra.pkAnchor,
       controlPoint1: extra.controlPoint1,
       controlPoint2: extra.controlPoint2,
     },

@@ -38,11 +38,11 @@ export const CustomSmoothStepEdge = memo(
     const targetRect = getInternalNodeRect(targetNode);
     const sourceAnchor =
       sourceRect && targetRect
-        ? resolveRelationshipAnchor(sourceRect, targetRect, data?.fkAnchor)
+        ? resolveRelationshipAnchor(sourceRect, targetRect)
         : null;
     const targetAnchor =
       sourceRect && targetRect
-        ? resolveRelationshipAnchor(targetRect, sourceRect, data?.pkAnchor)
+        ? resolveRelationshipAnchor(targetRect, sourceRect)
         : null;
 
     const {
