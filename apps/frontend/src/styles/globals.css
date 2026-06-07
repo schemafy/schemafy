@@ -85,7 +85,7 @@
     --schemafy-destructive: 0 84% 60%;
     --schemafy-button-bg: 0 0% 8%;
     --schemafy-button-text: 0 0% 100%;
-    --schemafy-table-header-bg: 0 0% 8%;
+    --schemafy-table-header-bg: var(--schemafy-button-bg);
     --schemafy-tools: 0 0% 46% / 0.8;
     --schemafy-canvas-dot: 0 0% 46% / 0.35;
     --schemafy-yellow: 40 96% 40%;
