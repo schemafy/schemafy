@@ -25,7 +25,6 @@ import com.schemafy.core.erd.constraint.application.port.in.GetConstraintColumns
 import com.schemafy.core.erd.constraint.application.port.in.GetConstraintColumnsByConstraintIdUseCase;
 import com.schemafy.core.erd.constraint.application.port.in.GetConstraintQuery;
 import com.schemafy.core.erd.constraint.application.port.in.GetConstraintUseCase;
-import com.schemafy.core.erd.constraint.application.port.in.GetConstraintsByTableIdQuery;
 import com.schemafy.core.erd.constraint.application.port.in.GetConstraintsByTableIdUseCase;
 import com.schemafy.core.erd.constraint.application.port.in.RemoveConstraintColumnCommand;
 import com.schemafy.core.erd.constraint.application.port.in.RemoveConstraintColumnUseCase;
@@ -160,10 +159,7 @@ class ConstraintCascadeDeleteIntegrationTest extends ErdProjectIntegrationSuppor
           .verifyComplete();
 
       // 모든 제약조건이 삭제되어야 함
-      StepVerifier.create(getConstraintsByTableIdUseCase.getConstraintsByTableId(
-          new GetConstraintsByTableIdQuery(tableId)))
-          .assertNext(constraints -> assertThat(constraints).isEmpty())
-          .verifyComplete();
+      assertThat(countRowsByColumn("db_constraints", "table_id", tableId)).isZero();
     }
 
   }
@@ -221,11 +217,8 @@ class ConstraintCascadeDeleteIntegrationTest extends ErdProjectIntegrationSuppor
           .verifyComplete();
 
       // PRIMARY KEY 제약조건의 컬럼은 모두 삭제됨
-      StepVerifier.create(getConstraintColumnsByConstraintIdUseCase
-          .getConstraintColumnsByConstraintId(
-              new GetConstraintColumnsByConstraintIdQuery(result1.constraintId())))
-          .assertNext(columns -> assertThat(columns).isEmpty())
-          .verifyComplete();
+      assertThat(countRowsByColumn(
+          "db_constraint_columns", "constraint_id", result1.constraintId())).isZero();
 
       // UNIQUE 제약조건에는 columnId2만 남음
       StepVerifier.create(getConstraintColumnsByConstraintIdUseCase

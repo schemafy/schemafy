@@ -88,7 +88,10 @@ class AccessVerificationAspectSpringContextTest {
 
     @Bean
     AccessVerificationAspect accessVerificationAspect(AccessVerifier accessVerifier) {
-      return new AccessVerificationAspect(accessVerifier);
+      return new AccessVerificationAspect(
+          accessVerifier,
+          new ProjectAccessTargetInference(),
+          null);
     }
 
     @Bean

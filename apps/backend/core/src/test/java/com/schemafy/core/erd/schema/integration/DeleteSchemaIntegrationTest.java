@@ -20,7 +20,6 @@ import com.schemafy.core.erd.schema.domain.exception.SchemaErrorCode;
 import com.schemafy.core.erd.support.ErdProjectIntegrationSupport;
 import com.schemafy.core.erd.table.application.port.in.CreateTableCommand;
 import com.schemafy.core.erd.table.application.port.in.CreateTableUseCase;
-import com.schemafy.core.erd.table.application.port.in.GetTablesBySchemaIdQuery;
 import com.schemafy.core.erd.table.application.port.in.GetTablesBySchemaIdUseCase;
 
 import reactor.test.StepVerifier;
@@ -85,11 +84,7 @@ class DeleteSchemaIntegrationTest extends ErdProjectIntegrationSupport {
             .expectErrorMatches(DomainException.hasErrorCode(SchemaErrorCode.NOT_FOUND))
             .verify();
 
-        StepVerifier.create(getTablesBySchemaIdUseCase.getTablesBySchemaId(
-            new GetTablesBySchemaIdQuery(schemaId))
-            .collectList())
-            .assertNext(tables -> assertThat(tables).isEmpty())
-            .verifyComplete();
+        assertThat(countRowsByColumn("db_tables", "schema_id", schemaId)).isZero();
       }
 
     }

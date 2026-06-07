@@ -6,7 +6,6 @@ import java.util.Set;
 import jakarta.validation.Valid;
 
 import org.springframework.beans.factory.ObjectProvider;
-import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PatchMapping;
@@ -64,7 +63,6 @@ public class ColumnController {
 
   private final ObjectProvider<ErdMutationBroadcaster> broadcasterProvider;
 
-  @PreAuthorize("hasAnyRole('OWNER','ADMIN','EDITOR')")
   @PostMapping("/columns")
   public Mono<MutationResponse<ColumnResponse>> createColumn(
       @Valid @RequestBody CreateColumnRequest request) {
@@ -90,7 +88,6 @@ public class ColumnController {
             result.operation()));
   }
 
-  @PreAuthorize("hasAnyRole('OWNER','ADMIN','EDITOR','COMMENTER','VIEWER')")
   @GetMapping("/columns/{columnId}")
   public Mono<ColumnResponse> getColumn(
       @PathVariable String columnId) {
@@ -99,7 +96,6 @@ public class ColumnController {
         .map(ColumnResponse::from);
   }
 
-  @PreAuthorize("hasAnyRole('OWNER','ADMIN','EDITOR','COMMENTER','VIEWER')")
   @GetMapping("/tables/{tableId}/columns")
   public Mono<List<ColumnResponse>> getColumnsByTableId(
       @PathVariable String tableId) {
@@ -110,7 +106,6 @@ public class ColumnController {
             .toList());
   }
 
-  @PreAuthorize("hasAnyRole('OWNER','ADMIN','EDITOR')")
   @PatchMapping("/columns/{columnId}/name")
   public Mono<MutationResponse<Void>> changeColumnName(
       @PathVariable String columnId,
@@ -126,7 +121,6 @@ public class ColumnController {
             result.affectedTableIds(), result.operation()));
   }
 
-  @PreAuthorize("hasAnyRole('OWNER','ADMIN','EDITOR')")
   @PatchMapping("/columns/{columnId}/type")
   public Mono<MutationResponse<Void>> changeColumnType(
       @PathVariable String columnId,
@@ -146,7 +140,6 @@ public class ColumnController {
             result.affectedTableIds(), result.operation()));
   }
 
-  @PreAuthorize("hasAnyRole('OWNER','ADMIN','EDITOR')")
   @PatchMapping("/columns/{columnId}/meta")
   public Mono<MutationResponse<Void>> changeColumnMeta(
       @PathVariable String columnId,
@@ -165,7 +158,6 @@ public class ColumnController {
             result.affectedTableIds(), result.operation()));
   }
 
-  @PreAuthorize("hasAnyRole('OWNER','ADMIN','EDITOR')")
   @PatchMapping("/columns/{columnId}/position")
   public Mono<MutationResponse<Void>> changeColumnPosition(
       @PathVariable String columnId,
@@ -181,7 +173,6 @@ public class ColumnController {
             result.affectedTableIds(), result.operation()));
   }
 
-  @PreAuthorize("hasAnyRole('OWNER','ADMIN')")
   @DeleteMapping("/columns/{columnId}")
   public Mono<MutationResponse<Void>> deleteColumn(
       @PathVariable String columnId) {

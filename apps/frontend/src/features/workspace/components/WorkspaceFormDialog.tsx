@@ -1,5 +1,5 @@
 import { EntityFormDialog } from '@/components';
-import { useCreateWorkspace, useUpdateWorkspace } from '../hooks/useWorkspaces';
+import { useWorkspaces } from '../hooks/useWorkspaces';
 
 interface WorkspaceFormDialogProps {
   open: boolean;
@@ -18,16 +18,20 @@ export const WorkspaceFormDialog = ({
   initialName = '',
   initialDescription = '',
 }: WorkspaceFormDialogProps) => {
-  const { mutate: createWorkspace, isPending: isCreating } =
-    useCreateWorkspace();
-  const { mutate: updateWorkspace, isPending: isUpdating } =
-    useUpdateWorkspace(workspaceId);
+  const {
+    createWorkspace,
+    updateWorkspace,
+    isCreatingWorkspace,
+    isUpdatingWorkspace,
+  } = useWorkspaces();
 
   const handleSubmit = (data: { name: string; description: string }) => {
     if (mode === 'create') {
       createWorkspace(data, { onSuccess: () => onOpenChange(false) });
     } else {
-      updateWorkspace(data, { onSuccess: () => onOpenChange(false) });
+      updateWorkspace(workspaceId, data, {
+        onSuccess: () => onOpenChange(false),
+      });
     }
   };
 
@@ -39,7 +43,7 @@ export const WorkspaceFormDialog = ({
       submitLabel={mode === 'create' ? 'Create' : 'Save'}
       initialName={initialName}
       initialDescription={initialDescription}
-      isPending={isCreating || isUpdating}
+      isPending={isCreatingWorkspace || isUpdatingWorkspace}
       onSubmit={handleSubmit}
       namePlaceholder="Workspace name"
     />

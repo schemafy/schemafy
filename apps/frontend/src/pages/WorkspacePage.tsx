@@ -9,11 +9,8 @@ import {
   WorkspaceProjectsTab,
   WorkspaceSidebar,
 } from '@/features/workspace/components';
-import {
-  useGetWorkspace,
-  useGetWorkspaces,
-  useLeaveWorkspace,
-} from '@/features/workspace/hooks/useWorkspaces';
+import { useWorkspace } from '@/features/workspace/hooks/useWorkspace';
+import { useWorkspaces } from '@/features/workspace/hooks/useWorkspaces';
 
 type TabType = 'projects' | 'members';
 
@@ -27,15 +24,15 @@ export const WorkspacePage = () => {
   const [isLeaveConfirmOpen, setIsLeaveConfirmOpen] = useState(false);
 
   const {
-    data: workspacesData,
-    isPending: isWorkspacesPending,
-    isError: isWorkspacesError,
-    refetch: refetchWorkspaces,
-  } = useGetWorkspaces();
-  const { data: selectedWorkspace } = useGetWorkspace(selectedWorkspaceId);
-  const { mutate: leaveWorkspace } = useLeaveWorkspace();
+    workspacesData,
+    workspaces,
+    isPendingWorkspaces,
+    isWorkspacesError,
+    refetchWorkspaces,
+    leaveWorkspace,
+  } = useWorkspaces();
+  const { workspace: selectedWorkspace } = useWorkspace(selectedWorkspaceId);
 
-  const workspaces = workspacesData?.content ?? [];
   const currentUserRole =
     selectedWorkspace?.currentUserRole.toUpperCase() ?? '';
 
@@ -61,7 +58,7 @@ export const WorkspacePage = () => {
   return (
     <QueryStateBoundary
       data={workspacesData}
-      isPending={isWorkspacesPending}
+      isPending={isPendingWorkspaces}
       isError={isWorkspacesError}
       onRetry={() => void refetchWorkspaces()}
     >
@@ -99,20 +96,22 @@ export const WorkspacePage = () => {
                   </div>
                   <div className="flex items-center gap-2">
                     {currentUserRole === 'ADMIN' && (
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => setIsEditDialogOpen(true)}
-                      >
-                        Edit
-                      </Button>
+                      <>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => setIsEditDialogOpen(true)}
+                        >
+                          Edit
+                        </Button>
+                        <Button
+                          size="sm"
+                          onClick={() => setIsInviteDialogOpen(true)}
+                        >
+                          Invite
+                        </Button>
+                      </>
                     )}
-                    <Button
-                      size="sm"
-                      onClick={() => setIsInviteDialogOpen(true)}
-                    >
-                      Invite
-                    </Button>
                   </div>
                 </div>
 

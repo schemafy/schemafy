@@ -23,6 +23,7 @@ import com.schemafy.core.project.adapter.out.persistence.ProjectRepository;
 import com.schemafy.core.project.adapter.out.persistence.ShareLinkRepository;
 import com.schemafy.core.project.adapter.out.persistence.WorkspaceMemberRepository;
 import com.schemafy.core.project.adapter.out.persistence.WorkspaceRepository;
+import com.schemafy.core.project.application.access.ProjectAccessRequesterContext;
 import com.schemafy.core.project.domain.Invitation;
 import com.schemafy.core.project.domain.Project;
 import com.schemafy.core.project.domain.ProjectMember;
@@ -216,12 +217,18 @@ abstract class ProjectDomainIntegrationSupport {
   }
 
   protected CreateSchemaResult createSchema(Project project, String name) {
+    String requesterId = projectMemberRepository
+        .findByProjectIdAndNotDeleted(project.getId(), 1, 0)
+        .next()
+        .map(ProjectMember::getUserId)
+        .block();
     return createSchemaUseCase.createSchema(new CreateSchemaCommand(
         project.getId(),
         "MySQL",
         name,
         "utf8mb4",
         "utf8mb4_general_ci"))
+        .contextWrite(ProjectAccessRequesterContext.withRequesterId(requesterId))
         .block()
         .result();
   }

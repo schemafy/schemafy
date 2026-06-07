@@ -512,7 +512,7 @@ class ProjectUseCaseIntegrationTest extends ProjectDomainIntegrationSupport {
     Workspace workspace = saveWorkspace("Last Project WS", "Description");
     saveWorkspaceMember(workspace, member, WorkspaceRole.MEMBER);
     var project = saveProject(workspace, "Last Project");
-    saveProjectMember(project, member, ProjectRole.VIEWER);
+    saveProjectMember(project, member, ProjectRole.ADMIN);
     createSchema(project, "last_member_schema");
 
     leaveProjectUseCase.leaveProject(new LeaveProjectCommand(project.getId(), member.id())).block();

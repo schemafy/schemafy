@@ -5,7 +5,6 @@ import java.util.List;
 import jakarta.validation.Valid;
 
 import org.springframework.beans.factory.ObjectProvider;
-import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PatchMapping;
@@ -21,6 +20,8 @@ import com.schemafy.api.erd.broadcast.ErdMutationBroadcaster;
 import com.schemafy.api.erd.controller.dto.request.ChangeSchemaNameRequest;
 import com.schemafy.api.erd.controller.dto.request.CreateSchemaRequest;
 import com.schemafy.api.erd.controller.dto.response.SchemaResponse;
+import com.schemafy.api.erd.controller.dto.response.SchemaSnapshotsResponse;
+import com.schemafy.api.erd.service.SchemaSnapshotOrchestrator;
 import com.schemafy.core.erd.operation.domain.CommittedErdOperation;
 import com.schemafy.core.erd.schema.application.port.in.ChangeSchemaNameCommand;
 import com.schemafy.core.erd.schema.application.port.in.ChangeSchemaNameUseCase;
@@ -46,10 +47,10 @@ public class SchemaController {
   private final GetSchemasByProjectIdUseCase getSchemasByProjectIdUseCase;
   private final ChangeSchemaNameUseCase changeSchemaNameUseCase;
   private final DeleteSchemaUseCase deleteSchemaUseCase;
+  private final SchemaSnapshotOrchestrator schemaSnapshotOrchestrator;
 
   private final ObjectProvider<ErdMutationBroadcaster> broadcasterProvider;
 
-  @PreAuthorize("hasAnyRole('OWNER','ADMIN','EDITOR')")
   @PostMapping("/schemas")
   public Mono<MutationResponse<SchemaResponse>> createSchema(
       @Valid @RequestBody CreateSchemaRequest request) {
@@ -70,7 +71,6 @@ public class SchemaController {
             result.operation()));
   }
 
-  @PreAuthorize("hasAnyRole('OWNER','ADMIN','EDITOR','COMMENTER','VIEWER')")
   @GetMapping("/schemas/{schemaId}")
   public Mono<SchemaResponse> getSchema(
       @PathVariable String schemaId) {
@@ -79,7 +79,12 @@ public class SchemaController {
         .map(result -> SchemaResponse.from(result.schema(), result.currentRevision()));
   }
 
-  @PreAuthorize("hasAnyRole('OWNER','ADMIN','EDITOR','COMMENTER','VIEWER')")
+  @GetMapping("/schemas/{schemaId}/snapshots")
+  public Mono<SchemaSnapshotsResponse> getSchemaSnapshots(
+      @PathVariable String schemaId) {
+    return schemaSnapshotOrchestrator.getSchemaSnapshots(schemaId);
+  }
+
   @GetMapping("/projects/{projectId}/schemas")
   public Mono<List<SchemaResponse>> getSchemasByProjectId(
       @PathVariable String projectId) {
@@ -89,7 +94,6 @@ public class SchemaController {
         .collectList();
   }
 
-  @PreAuthorize("hasAnyRole('OWNER','ADMIN','EDITOR')")
   @PatchMapping("/schemas/{schemaId}/name")
   public Mono<MutationResponse<Void>> changeSchemaName(
       @PathVariable String schemaId,
@@ -104,7 +108,6 @@ public class SchemaController {
             result.affectedTableIds(), result.operation()));
   }
 
-  @PreAuthorize("hasAnyRole('OWNER','ADMIN')")
   @DeleteMapping("/schemas/{schemaId}")
   public Mono<MutationResponse<Void>> deleteSchema(
       @PathVariable String schemaId) {

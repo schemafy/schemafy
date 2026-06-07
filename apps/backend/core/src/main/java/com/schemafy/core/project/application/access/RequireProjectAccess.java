@@ -7,7 +7,7 @@ import java.lang.annotation.Target;
 
 import com.schemafy.core.project.domain.ProjectRole;
 
-@Target(ElementType.METHOD)
+@Target({ ElementType.METHOD, ElementType.TYPE })
 @Retention(RetentionPolicy.RUNTIME)
 public @interface RequireProjectAccess {
 
@@ -16,5 +16,9 @@ public @interface RequireProjectAccess {
   String projectId() default "projectId";
 
   String requesterId() default "requesterId";
+
+  AccessTarget target() default @AccessTarget(value = ProjectAccessResourceType.NONE, id = "");
+
+  AccessTarget[] targets() default {};
 
 }

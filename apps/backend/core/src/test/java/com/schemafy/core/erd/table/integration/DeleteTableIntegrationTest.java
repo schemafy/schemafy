@@ -20,13 +20,11 @@ import com.schemafy.core.erd.column.application.port.in.GetColumnsByTableIdUseCa
 import com.schemafy.core.erd.constraint.application.port.in.CreateConstraintColumnCommand;
 import com.schemafy.core.erd.constraint.application.port.in.CreateConstraintCommand;
 import com.schemafy.core.erd.constraint.application.port.in.CreateConstraintUseCase;
-import com.schemafy.core.erd.constraint.application.port.in.GetConstraintsByTableIdQuery;
 import com.schemafy.core.erd.constraint.application.port.in.GetConstraintsByTableIdUseCase;
 import com.schemafy.core.erd.constraint.domain.type.ConstraintKind;
 import com.schemafy.core.erd.index.application.port.in.CreateIndexColumnCommand;
 import com.schemafy.core.erd.index.application.port.in.CreateIndexCommand;
 import com.schemafy.core.erd.index.application.port.in.CreateIndexUseCase;
-import com.schemafy.core.erd.index.application.port.in.GetIndexesByTableIdQuery;
 import com.schemafy.core.erd.index.application.port.in.GetIndexesByTableIdUseCase;
 import com.schemafy.core.erd.index.domain.type.IndexType;
 import com.schemafy.core.erd.index.domain.type.SortDirection;
@@ -170,25 +168,13 @@ class DeleteTableIntegrationTest extends ErdProjectIntegrationSupport {
             .expectErrorMatches(DomainException.hasErrorCode(TableErrorCode.NOT_FOUND))
             .verify();
 
-        StepVerifier.create(getColumnsByTableIdUseCase.getColumnsByTableId(
-            new GetColumnsByTableIdQuery(fkTableId)))
-            .assertNext(columns -> assertThat(columns).isEmpty())
-            .verifyComplete();
+        assertThat(countRowsByColumn("db_columns", "table_id", fkTableId)).isZero();
 
-        StepVerifier.create(getConstraintsByTableIdUseCase.getConstraintsByTableId(
-            new GetConstraintsByTableIdQuery(fkTableId)))
-            .assertNext(constraints -> assertThat(constraints).isEmpty())
-            .verifyComplete();
+        assertThat(countRowsByColumn("db_constraints", "table_id", fkTableId)).isZero();
 
-        StepVerifier.create(getIndexesByTableIdUseCase.getIndexesByTableId(
-            new GetIndexesByTableIdQuery(fkTableId)))
-            .assertNext(indexes -> assertThat(indexes).isEmpty())
-            .verifyComplete();
+        assertThat(countRowsByColumn("db_indexes", "table_id", fkTableId)).isZero();
 
-        StepVerifier.create(getRelationshipsByTableIdUseCase.getRelationshipsByTableId(
-            new GetRelationshipsByTableIdQuery(fkTableId)))
-            .assertNext(relationships -> assertThat(relationships).isEmpty())
-            .verifyComplete();
+        assertThat(countRelationshipsByTableId(fkTableId)).isZero();
       }
 
     }

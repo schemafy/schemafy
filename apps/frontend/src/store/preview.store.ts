@@ -59,6 +59,14 @@ export class PreviewStore {
     this.previews.clear();
   }
 
+  dispose() {
+    if (this.sweepIntervalId !== null) {
+      clearInterval(this.sweepIntervalId);
+      this.sweepIntervalId = null;
+    }
+    this.clearAll();
+  }
+
   private scheduleTtl(previewId: string, ttlMs: number) {
     this.clearTimer(previewId);
     const timer = setTimeout(() => {
