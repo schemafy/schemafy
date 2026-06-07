@@ -353,16 +353,19 @@
     393
   ],
   "apps/frontend/src/features/drawing/components/ReactFlowCanvas.tsx": [
-    331
+    331,
+    397
   ],
   "apps/frontend/src/features/drawing/components/SchemaSelector.tsx": [
     331
   ],
   "apps/frontend/src/features/drawing/components/TableNode/index.tsx": [
-    331
+    331,
+    397
   ],
   "apps/frontend/src/features/drawing/components/TablePreview.tsx": [
-    331
+    331,
+    397
   ],
   "apps/frontend/src/features/drawing/contexts/SelectedSchemaContext.tsx": [
     331,
@@ -1428,5 +1431,17 @@
   ],
   "apps/backend/core/src/test/java/com/schemafy/core/user/application/port/in/LoginOrSignUpOAuthCommandTest.java": [
     387
+  ],
+  "apps/frontend/src/features/drawing/components/ConstraintSection.tsx": [
+    397
+  ],
+  "apps/frontend/src/features/drawing/components/IndexSection.tsx": [
+    397
+  ],
+  "apps/frontend/src/features/drawing/components/TableHeader.tsx": [
+    397
+  ],
+  "apps/frontend/src/styles/globals.css": [
+    397
   ]
 }
