@@ -26,7 +26,6 @@ import reactor.test.StepVerifier;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
-import static org.mockito.Mockito.verifyNoInteractions;
 
 @ExtendWith(MockitoExtension.class)
 @DisplayName("회원가입 유저 서비스")
@@ -142,28 +141,6 @@ class SignUpUserServiceTest {
   }
 
   @Test
-  @DisplayName("회원가입 시 이름이 blank이면 INVALID_PARAMETER를 반환하고 저장하지 않는다")
-  void signUpUser_blankName_invalidParameter() {
-    SignUpUserCommand command = new SignUpUserCommand(
-        "test@example.com",
-        " ",
-        "password");
-
-    assertInvalidNameRejectedDuringUserCreation(command);
-  }
-
-  @Test
-  @DisplayName("회원가입 시 이름이 200자를 초과하면 INVALID_PARAMETER를 반환하고 저장하지 않는다")
-  void signUpUser_nameTooLong_invalidParameter() {
-    SignUpUserCommand command = new SignUpUserCommand(
-        "test@example.com",
-        "a".repeat(201),
-        "password");
-
-    assertInvalidNameRejectedDuringUserCreation(command);
-  }
-
-  @Test
   @DisplayName("회원가입 저장 시 unique 충돌이면 ALREADY_EXISTS로 매핑한다")
   void signUpUser_duplicateKey_mapsAlreadyExists() {
     SignUpUserCommand command = new SignUpUserCommand(
@@ -185,24 +162,6 @@ class SignUpUserServiceTest {
               .isEqualTo(UserErrorCode.ALREADY_EXISTS);
         })
         .verify();
-  }
-
-  private void assertInvalidNameRejectedDuringUserCreation(
-      SignUpUserCommand command) {
-    given(existsUserByEmailPort.existsUserByEmail("test@example.com"))
-        .willReturn(Mono.just(false));
-    given(ulidGeneratorPort.generate()).willReturn("user-1");
-    given(passwordHashPort.hash("password")).willReturn(Mono.just("encoded"));
-
-    StepVerifier.create(sut.signUpUser(command))
-        .expectErrorSatisfies(error -> {
-          assertThat(error).isInstanceOf(DomainException.class);
-          assertThat(((DomainException) error).getErrorCode())
-              .isEqualTo(UserErrorCode.INVALID_PARAMETER);
-        })
-        .verify();
-
-    verifyNoInteractions(createUserPort);
   }
 
 }

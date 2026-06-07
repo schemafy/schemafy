@@ -14,7 +14,6 @@ import com.schemafy.core.user.application.port.out.CreateUserPort;
 import com.schemafy.core.user.application.port.out.FindUserAuthProviderPort;
 import com.schemafy.core.user.application.port.out.FindUserByEmailPort;
 import com.schemafy.core.user.application.port.out.FindUserByIdPort;
-import com.schemafy.core.user.domain.Email;
 import com.schemafy.core.user.domain.User;
 import com.schemafy.core.user.domain.UserAuthProvider;
 import com.schemafy.core.user.domain.exception.UserErrorCode;
@@ -37,16 +36,11 @@ class LoginOrSignUpOAuthService implements LoginOrSignUpOAuthUseCase {
   @Override
   public Mono<LoginOrSignUpOAuthResult> loginOrSignUpOAuth(
       LoginOrSignUpOAuthCommand command) {
-    return Mono.fromSupplier(() -> Email.from(command.email()))
-        .flatMap(email -> {
-          LoginOrSignUpOAuthCommand normalizedCommand = command.withEmail(
-              email.address());
-          return findUserAuthProviderPort.findUserAuthProvider(
-              normalizedCommand.provider(), normalizedCommand.providerUserId())
-              .flatMap(authProvider -> findUserByIdPort.findUserById(authProvider.userId()))
-              .map(user -> new LoginOrSignUpOAuthResult(user, false))
-              .switchIfEmpty(linkOrCreateOAuthUser(normalizedCommand));
-        })
+    return findUserAuthProviderPort.findUserAuthProvider(
+        command.provider(), command.providerUserId())
+        .flatMap(authProvider -> findUserByIdPort.findUserById(authProvider.userId()))
+        .map(user -> new LoginOrSignUpOAuthResult(user, false))
+        .switchIfEmpty(linkOrCreateOAuthUser(command))
         .as(transactionalOperator::transactional);
   }
 
