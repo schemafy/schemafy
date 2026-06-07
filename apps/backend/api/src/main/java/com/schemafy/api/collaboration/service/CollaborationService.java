@@ -134,34 +134,35 @@ public class CollaborationService {
   }
 
   public Mono<Void> removeSession(String projectId, String sessionId) {
-    cursorDedupeCache.remove(sessionId);
+    return Mono.defer(() -> {
+      cursorDedupeCache.remove(sessionId);
 
-    Optional<SessionEntry> localEntry = sessionRegistry
-        .getSessionEntry(projectId, sessionId);
+      Optional<SessionEntry> localEntry = sessionRegistry
+          .getSessionEntry(projectId, sessionId);
+      if (localEntry.isEmpty()) {
+        log.warn(
+            "[CollaborationService] Session not found for local removal: sessionId={}",
+            sessionId);
+      }
+      sessionRegistry.removeSession(projectId, sessionId);
 
-    Mono<ProjectPresenceSession> participant = presenceStore
-        .remove(projectId, sessionId)
-        .switchIfEmpty(Mono.defer(() -> Mono.justOrEmpty(localEntry)
-            .map(entry -> new ProjectPresenceSession(sessionId,
-                entry.authInfo().getUserId(), entry.authInfo().getUserName(),
-                System.currentTimeMillis(), System.currentTimeMillis()))));
+      Mono<ProjectPresenceSession> participant = presenceStore
+          .remove(projectId, sessionId)
+          .switchIfEmpty(Mono.defer(() -> Mono.justOrEmpty(localEntry)
+              .map(entry -> new ProjectPresenceSession(sessionId,
+                  entry.authInfo().getUserId(), entry.authInfo().getUserName(),
+                  System.currentTimeMillis(), System.currentTimeMillis()))));
 
-    return participant
-        .flatMap(presence -> eventPublisher.publish(projectId,
-            CollaborationOutboundFactory.leave(presence.sessionId(),
-                presence.userId(), presence.userName())))
-        .doOnError(e -> log.warn(
-            "[CollaborationService] Failed to remove presence: projectId={}, sessionId={}, error={}",
-            projectId, sessionId, e.getMessage()))
-        .onErrorResume(e -> Mono.empty())
-        .then(Mono.fromRunnable(() -> {
-          if (localEntry.isEmpty()) {
-            log.warn(
-                "[CollaborationService] Session not found for local removal: sessionId={}",
-                sessionId);
-          }
-          sessionRegistry.removeSession(projectId, sessionId);
-        }));
+      return participant
+          .flatMap(presence -> eventPublisher.publish(projectId,
+              CollaborationOutboundFactory.leave(presence.sessionId(),
+                  presence.userId(), presence.userName())))
+          .doOnError(e -> log.warn(
+              "[CollaborationService] Failed to remove presence: projectId={}, sessionId={}, error={}",
+              projectId, sessionId, e.getMessage()))
+          .onErrorResume(e -> Mono.empty())
+          .then();
+    });
   }
 
   public Mono<Void> notifyJoin(String projectId, String sessionId,

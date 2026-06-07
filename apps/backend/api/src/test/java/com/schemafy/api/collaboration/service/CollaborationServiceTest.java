@@ -8,6 +8,7 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
+import org.mockito.InOrder;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
@@ -19,12 +20,14 @@ import com.schemafy.api.collaboration.dto.PreviewAction;
 import com.schemafy.api.collaboration.dto.ProjectPresenceParticipant;
 import com.schemafy.api.collaboration.dto.event.CollaborationOutboundFactory;
 import com.schemafy.api.collaboration.dto.event.CursorEvent;
+import com.schemafy.api.collaboration.dto.event.LeaveEvent;
 import com.schemafy.api.collaboration.security.WebSocketAuthInfo;
 import com.schemafy.api.collaboration.service.model.SessionEntry;
 import com.schemafy.api.collaboration.service.presence.ProjectPresenceSession;
 import com.schemafy.api.collaboration.service.presence.ProjectPresenceStore;
 import com.schemafy.core.common.json.JsonCodec;
 
+import reactor.core.Disposable;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 import reactor.test.StepVerifier;
@@ -34,6 +37,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.given;
+import static org.mockito.Mockito.inOrder;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
@@ -250,6 +254,56 @@ class CollaborationServiceTest {
     verify(eventPublisher, times(1)).publish(
         eq("project-1"),
         argThat(event -> event.sessionId().equals("session-2")));
+  }
+
+  @Test
+  @DisplayName("세션 제거는 Redis cleanup이 지연되어도 로컬 세션을 먼저 제거한다")
+  void removeSession_removes_local_session_before_remote_cleanup() {
+    given(sessionRegistry.getSessionEntry("project-1", "session-1"))
+        .willReturn(Optional.empty());
+    given(presenceStore.remove("project-1", "session-1"))
+        .willReturn(Mono.never());
+
+    Disposable subscription = collaborationService.removeSession("project-1",
+        "session-1")
+        .subscribe();
+
+    InOrder inOrder = inOrder(sessionRegistry, presenceStore);
+    inOrder.verify(sessionRegistry).getSessionEntry("project-1",
+        "session-1");
+    inOrder.verify(sessionRegistry).removeSession("project-1",
+        "session-1");
+    inOrder.verify(presenceStore).remove("project-1", "session-1");
+
+    subscription.dispose();
+  }
+
+  @Test
+  @DisplayName("Redis presence가 없어도 로컬 세션 정보로 LEAVE를 발행한다")
+  void removeSession_publishes_leave_from_local_entry_when_presence_missing() {
+    SessionEntry entry = mock(SessionEntry.class);
+    given(sessionRegistry.getSessionEntry("project-1", "session-1"))
+        .willReturn(Optional.of(entry));
+    given(entry.authInfo()).willReturn(WebSocketAuthInfo.of("user-1",
+        "tester"));
+    given(presenceStore.remove("project-1", "session-1"))
+        .willReturn(Mono.empty());
+    given(eventPublisher.publish(eq("project-1"), any()))
+        .willReturn(Mono.empty());
+
+    StepVerifier.create(collaborationService.removeSession("project-1",
+        "session-1"))
+        .verifyComplete();
+
+    InOrder inOrder = inOrder(sessionRegistry, presenceStore, eventPublisher);
+    inOrder.verify(sessionRegistry).removeSession("project-1",
+        "session-1");
+    inOrder.verify(presenceStore).remove("project-1", "session-1");
+    inOrder.verify(eventPublisher).publish(eq("project-1"),
+        argThat(event -> event instanceof LeaveEvent.Outbound leave
+            && leave.sessionId().equals("session-1")
+            && leave.userId().equals("user-1")
+            && leave.userName().equals("tester")));
   }
 
 }
