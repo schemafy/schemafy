@@ -1,18 +1,21 @@
 package com.schemafy.api.collaboration.dto.event;
 
+import java.util.List;
 import java.util.Set;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.schemafy.api.collaboration.dto.CursorPosition;
 import com.schemafy.api.collaboration.dto.PreviewAction;
+import com.schemafy.api.collaboration.dto.ProjectPresenceParticipant;
 import com.schemafy.core.erd.operation.domain.CommittedErdOperation;
 
 public final class CollaborationOutboundFactory {
 
   private CollaborationOutboundFactory() {}
 
-  public static SessionReadyEvent.Outbound sessionReady(String sessionId) {
-    return SessionReadyEvent.Outbound.of(sessionId);
+  public static SessionReadyEvent.Outbound sessionReady(String sessionId,
+      List<ProjectPresenceParticipant> participants) {
+    return SessionReadyEvent.Outbound.of(sessionId, participants);
   }
 
   public static JoinEvent.Outbound join(String sessionId, String userId,
