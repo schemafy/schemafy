@@ -89,10 +89,12 @@
   ],
   "apps/backend/api/src/docs/asciidoc/api-guide.adoc": [
     337,
-    358
+    358,
+    398
   ],
   "apps/backend/api/src/main/java/com/schemafy/api/collaboration/dto/event/CollaborationOutboundFactory.java": [
-    337
+    337,
+    398
   ],
   "apps/backend/api/src/main/java/com/schemafy/api/collaboration/dto/event/ErdMutatedEvent.java": [
     337
@@ -818,7 +820,8 @@
     377
   ],
   "apps/backend/api/src/main/resources/application.yml": [
-    377
+    377,
+    398
   ],
   "apps/backend/api/build.gradle": [
     377
@@ -1450,5 +1453,62 @@
   ],
   "apps/frontend/src/features/auth/hooks/useLogout.ts": [
     396
+  ],
+  "apps/backend/api/src/main/java/com/schemafy/api/collaboration/dto/ProjectPresenceParticipant.java": [
+    398
+  ],
+  "apps/backend/api/src/main/java/com/schemafy/api/collaboration/dto/event/SessionReadyEvent.java": [
+    398
+  ],
+  "apps/backend/api/src/main/java/com/schemafy/api/collaboration/handler/CollaborationWebSocketHandler.java": [
+    398
+  ],
+  "apps/backend/api/src/main/java/com/schemafy/api/collaboration/service/CollaborationDirectMessageSender.java": [
+    398
+  ],
+  "apps/backend/api/src/main/java/com/schemafy/api/collaboration/service/CollaborationService.java": [
+    398
+  ],
+  "apps/backend/api/src/main/java/com/schemafy/api/collaboration/service/presence/CollaborationPresenceProperties.java": [
+    398
+  ],
+  "apps/backend/api/src/main/java/com/schemafy/api/collaboration/service/presence/ProjectPresenceCleanupService.java": [
+    398
+  ],
+  "apps/backend/api/src/main/java/com/schemafy/api/collaboration/service/presence/ProjectPresenceRedisScripts.java": [
+    398
+  ],
+  "apps/backend/api/src/main/java/com/schemafy/api/collaboration/service/presence/ProjectPresenceSession.java": [
+    398
+  ],
+  "apps/backend/api/src/main/java/com/schemafy/api/collaboration/service/presence/ProjectPresenceStore.java": [
+    398
+  ],
+  "apps/backend/api/src/main/java/com/schemafy/api/collaboration/service/presence/RedisProjectPresenceStore.java": [
+    398
+  ],
+  "apps/backend/api/src/main/resources/redis/presence/cleanup-empty-project.lua": [
+    398
+  ],
+  "apps/backend/api/src/main/resources/redis/presence/remove-expired-session.lua": [
+    398
+  ],
+  "apps/backend/api/src/main/resources/redis/presence/write-session.lua": [
+    398
+  ],
+  "apps/backend/api/src/test/java/com/schemafy/api/collaboration/dto/event/SessionReadyEventTest.java": [
+    398
+  ],
+  "apps/backend/api/src/test/java/com/schemafy/api/collaboration/handler/CollaborationWebSocketHandlerTest.java": [
+    398
+  ],
+  "apps/backend/api/src/test/java/com/schemafy/api/collaboration/service/CollaborationDirectMessageSenderTest.java": [
+    398
+  ],
+  "apps/backend/api/src/test/java/com/schemafy/api/collaboration/service/CollaborationServiceTest.java": [
+    398
+  ],
+  "apps/backend/api/src/test/java/com/schemafy/api/collaboration/service/presence/RedisProjectPresenceStoreTest.java": [
+    398
   ]
 }
