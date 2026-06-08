@@ -112,7 +112,9 @@ public class RedisProjectPresenceStore implements ProjectPresenceStore {
         .next()
         .flatMap(this::deserializeSession)
         .flatMap(presenceSession -> cleanupProjectIfEmpty(projectId)
-            .thenReturn(presenceSession));
+            .thenReturn(presenceSession))
+        .switchIfEmpty(Mono.defer(() -> cleanupProjectIfEmpty(projectId)
+            .then(Mono.empty())));
   }
 
   private Mono<ProjectPresenceSession> findSession(String projectId,

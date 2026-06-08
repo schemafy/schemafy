@@ -64,18 +64,54 @@ class RedisProjectPresenceStoreTest {
   }
 
   @Test
-  @DisplayName("만료 후보가 heartbeat로 갱신되면 삭제 결과를 반환하지 않는다")
+  @DisplayName("만료 후보가 heartbeat로 갱신되면 결과 없이 빈 프로젝트 cleanup만 확인한다")
   void removeExpired_ignores_session_refreshed_after_candidate_scan() {
     given(redisTemplate.opsForZSet()).willReturn(zSetOps);
     given(zSetOps.rangeByScore(eq(EXPIRES_KEY), any(Range.class)))
         .willReturn(Flux.just("session-1"));
     given(redisTemplate.execute(any(RedisScript.class), anyList(), anyList()))
-        .willReturn(Flux.empty());
+        .willReturn(Flux.empty(), Flux.just(0L));
 
     StepVerifier.create(presenceStore.removeExpired("project-1"))
         .verifyComplete();
 
+    ArgumentCaptor<List<String>> keysCaptor = ArgumentCaptor.forClass(
+        List.class);
+    ArgumentCaptor<List> argsCaptor = ArgumentCaptor.forClass(List.class);
+    verify(redisTemplate, times(2)).execute(any(RedisScript.class),
+        keysCaptor.capture(), argsCaptor.capture());
+
+    assertThat(keysCaptor.getAllValues().get(0)).containsExactly(PARTICIPANTS_KEY,
+        EXPIRES_KEY);
+    assertThat(argsCaptor.getAllValues().get(0)).first().isEqualTo("session-1");
+    assertThat(keysCaptor.getAllValues().get(1)).containsExactly(
+        ACTIVE_PROJECTS_KEY, PARTICIPANTS_KEY, EXPIRES_KEY);
+    assertThat(argsCaptor.getAllValues().get(1)).first().isEqualTo("project-1");
+
     verify(zSetOps, never()).remove(EXPIRES_KEY, "session-1");
+  }
+
+  @Test
+  @DisplayName("만료 payload 역직렬화가 실패해도 빈 프로젝트 cleanup을 확인한다")
+  void removeExpired_checks_empty_project_when_expired_payload_is_invalid() {
+    given(redisTemplate.opsForZSet()).willReturn(zSetOps);
+    given(zSetOps.rangeByScore(eq(EXPIRES_KEY), any(Range.class)))
+        .willReturn(Flux.just("session-1"));
+    given(redisTemplate.execute(any(RedisScript.class), anyList(), anyList()))
+        .willReturn(Flux.just("{"), Flux.just(0L));
+
+    StepVerifier.create(presenceStore.removeExpired("project-1"))
+        .verifyComplete();
+
+    ArgumentCaptor<List<String>> keysCaptor = ArgumentCaptor.forClass(
+        List.class);
+    verify(redisTemplate, times(2)).execute(any(RedisScript.class),
+        keysCaptor.capture(), anyList());
+
+    assertThat(keysCaptor.getAllValues().get(0)).containsExactly(PARTICIPANTS_KEY,
+        EXPIRES_KEY);
+    assertThat(keysCaptor.getAllValues().get(1)).containsExactly(
+        ACTIVE_PROJECTS_KEY, PARTICIPANTS_KEY, EXPIRES_KEY);
   }
 
   @Test
