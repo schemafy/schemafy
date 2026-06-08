@@ -5,7 +5,6 @@ import java.util.List;
 
 import org.springframework.data.domain.Range;
 import org.springframework.data.redis.core.ReactiveStringRedisTemplate;
-import org.springframework.data.redis.core.script.RedisScript;
 import org.springframework.stereotype.Service;
 
 import com.schemafy.api.common.config.ConditionalOnRedisEnabled;
@@ -24,53 +23,6 @@ public class RedisProjectPresenceStore implements ProjectPresenceStore {
 
   private static final String ACTIVE_PROJECTS_KEY = "collaboration:presence:projects";
   private static final String PROJECT_KEY_PREFIX = "collaboration:presence:project:";
-  private static final RedisScript<Long> WRITE_SESSION_SCRIPT = RedisScript
-      .of("""
-          local participantsKey = KEYS[1]
-          local expiresKey = KEYS[2]
-          local activeProjectsKey = KEYS[3]
-          local sessionId = ARGV[1]
-          local payload = ARGV[2]
-          local expiresAt = tonumber(ARGV[3])
-          local projectId = ARGV[4]
-
-          redis.call('HSET', participantsKey, sessionId, payload)
-          redis.call('ZADD', expiresKey, expiresAt, sessionId)
-          redis.call('SADD', activeProjectsKey, projectId)
-          return 1
-          """, Long.class);
-  private static final RedisScript<String> REMOVE_EXPIRED_SESSION_SCRIPT = RedisScript
-      .of("""
-          local participantsKey = KEYS[1]
-          local expiresKey = KEYS[2]
-          local sessionId = ARGV[1]
-          local now = tonumber(ARGV[2])
-          local score = redis.call('ZSCORE', expiresKey, sessionId)
-
-          if not score or tonumber(score) > now then
-            return nil
-          end
-
-          local payload = redis.call('HGET', participantsKey, sessionId)
-          redis.call('HDEL', participantsKey, sessionId)
-          redis.call('ZREM', expiresKey, sessionId)
-          return payload
-          """, String.class);
-  private static final RedisScript<Long> CLEANUP_EMPTY_PROJECT_SCRIPT = RedisScript
-      .of("""
-          local activeProjectsKey = KEYS[1]
-          local participantsKey = KEYS[2]
-          local expiresKey = KEYS[3]
-          local projectId = ARGV[1]
-
-          if redis.call('HLEN', participantsKey) > 0 then
-            return 0
-          end
-
-          redis.call('SREM', activeProjectsKey, projectId)
-          redis.call('DEL', participantsKey, expiresKey)
-          return 1
-          """, Long.class);
 
   private final ReactiveStringRedisTemplate redisTemplate;
   private final JsonCodec jsonCodec;
@@ -154,7 +106,7 @@ public class RedisProjectPresenceStore implements ProjectPresenceStore {
 
   private Mono<ProjectPresenceSession> removeExpiredSession(String projectId,
       String sessionId, long now) {
-    return redisTemplate.execute(REMOVE_EXPIRED_SESSION_SCRIPT,
+    return redisTemplate.execute(ProjectPresenceRedisScripts.REMOVE_EXPIRED_SESSION,
         List.of(participantsKey(projectId), expiresKey(projectId)),
         List.of(sessionId, Long.toString(now)))
         .next()
@@ -173,7 +125,8 @@ public class RedisProjectPresenceStore implements ProjectPresenceStore {
   private Mono<ProjectPresenceSession> writeSession(String projectId,
       ProjectPresenceSession presenceSession) {
     return serializeSession(presenceSession)
-        .flatMap(payload -> redisTemplate.execute(WRITE_SESSION_SCRIPT,
+        .flatMap(payload -> redisTemplate.execute(
+            ProjectPresenceRedisScripts.WRITE_SESSION,
             List.of(participantsKey(projectId), expiresKey(projectId),
                 ACTIVE_PROJECTS_KEY),
             List.of(presenceSession.sessionId(), payload,
@@ -192,7 +145,7 @@ public class RedisProjectPresenceStore implements ProjectPresenceStore {
   }
 
   private Mono<Void> cleanupProjectIfEmpty(String projectId) {
-    return redisTemplate.execute(CLEANUP_EMPTY_PROJECT_SCRIPT,
+    return redisTemplate.execute(ProjectPresenceRedisScripts.CLEANUP_EMPTY_PROJECT,
         List.of(ACTIVE_PROJECTS_KEY, participantsKey(projectId),
             expiresKey(projectId)),
         List.of(projectId))

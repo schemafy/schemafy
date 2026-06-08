@@ -150,4 +150,17 @@ class RedisProjectPresenceStoreTest {
     verify(redisTemplate, never()).opsForSet();
   }
 
+  @Test
+  @DisplayName("presence Redis script 리소스를 classpath에서 로드한다")
+  void redisScripts_are_loaded_from_classpath_resources() {
+    assertThat(ProjectPresenceRedisScripts.WRITE_SESSION.getScriptAsString())
+        .contains("HSET", "ZADD", "SADD");
+    assertThat(ProjectPresenceRedisScripts.REMOVE_EXPIRED_SESSION
+        .getScriptAsString())
+        .contains("ZSCORE", "HDEL", "ZREM");
+    assertThat(ProjectPresenceRedisScripts.CLEANUP_EMPTY_PROJECT
+        .getScriptAsString())
+        .contains("HLEN", "SREM", "DEL");
+  }
+
 }
