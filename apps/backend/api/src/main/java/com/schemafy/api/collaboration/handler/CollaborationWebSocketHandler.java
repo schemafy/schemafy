@@ -72,7 +72,7 @@ public class CollaborationWebSocketHandler implements WebSocketHandler {
           return validateProjectAccess(session, authInfo,
               projectIdOpt.get());
         })
-        .switchIfEmpty(handleUnauthenticated(session));
+        .switchIfEmpty(Mono.defer(() -> handleUnauthenticated(session)));
   }
 
   private Optional<String> extractProjectId(URI uri) {

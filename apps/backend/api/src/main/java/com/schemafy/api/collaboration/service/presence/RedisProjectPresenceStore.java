@@ -66,8 +66,8 @@ public class RedisProjectPresenceStore implements ProjectPresenceStore {
     return findSession(projectId, sessionId)
         .flatMap(presenceSession -> deleteSession(projectId, sessionId)
             .thenReturn(presenceSession))
-        .switchIfEmpty(deleteSession(projectId, sessionId)
-            .then(Mono.<ProjectPresenceSession>empty()));
+        .switchIfEmpty(Mono.defer(() -> deleteSession(projectId, sessionId)
+            .then(Mono.<ProjectPresenceSession>empty())));
   }
 
   @Override
