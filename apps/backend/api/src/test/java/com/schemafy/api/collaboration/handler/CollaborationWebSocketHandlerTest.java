@@ -39,6 +39,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.inOrder;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.timeout;
 import static org.mockito.Mockito.verify;
 
@@ -95,7 +96,6 @@ class CollaborationWebSocketHandlerTest {
     given(session.receive()).willReturn(Flux.never());
     given(entry.outboundFlux()).willReturn(Flux.never());
     given(session.send(any())).willReturn(Mono.never());
-    given(session.close(any())).willReturn(Mono.empty());
     given(session.closeStatus()).willReturn(Mono.never());
     given(entry.sampledCursorFlux()).willReturn(Flux.never());
     given(collaborationService.removeSession("project-1", "session-1"))
@@ -149,7 +149,6 @@ class CollaborationWebSocketHandlerTest {
         WebSocketMessage.Type.PONG)));
     given(entry.outboundFlux()).willReturn(Flux.never());
     given(session.send(any())).willReturn(Mono.never());
-    given(session.close(any())).willReturn(Mono.empty());
     given(session.closeStatus()).willReturn(Mono.never());
     given(entry.sampledCursorFlux()).willReturn(Flux.never());
     given(collaborationService.refreshPresence("project-1", "session-1"))
@@ -163,6 +162,8 @@ class CollaborationWebSocketHandlerTest {
         "session-1");
 
     subscription.dispose();
+
+    verify(session, never()).close(any());
   }
 
   @Test
@@ -200,7 +201,6 @@ class CollaborationWebSocketHandlerTest {
         .willReturn(Mono.empty());
     given(session.receive()).willReturn(Flux.never());
     given(entry.outboundFlux()).willReturn(Flux.never());
-    given(session.close(any())).willReturn(Mono.empty());
     given(session.closeStatus()).willReturn(Mono.never());
     given(entry.sampledCursorFlux()).willReturn(Flux.never());
     given(session.pingMessage(any())).willReturn(message(

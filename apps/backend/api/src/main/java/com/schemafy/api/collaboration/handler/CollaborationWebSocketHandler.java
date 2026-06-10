@@ -52,27 +52,32 @@ public class CollaborationWebSocketHandler implements WebSocketHandler {
     return session.getHandshakeInfo()
         .getPrincipal()
         .ofType(Authentication.class)
-        .flatMap(authentication -> {
-          Object principal = authentication.getPrincipal();
-          if (!(principal instanceof AuthenticatedUser user)) {
-            return handleUnauthenticated(session);
-          }
+        .map(Optional::of)
+        .defaultIfEmpty(Optional.empty())
+        .flatMap(authenticationOpt -> authenticationOpt
+            .map(authentication -> handleAuthentication(session, authentication,
+                projectIdOpt.get()))
+            .orElseGet(() -> handleUnauthenticated(session)));
+  }
 
-          String userId = user.userId();
-          String userName = user.userName();
-          if (userId == null || userId.isBlank()) {
-            return handleUnauthenticated(session);
-          }
-          if (userName == null || userName.isBlank()) {
-            return handleUnauthenticated(session);
-          }
+  private Mono<Void> handleAuthentication(WebSocketSession session,
+      Authentication authentication, String projectId) {
+    Object principal = authentication.getPrincipal();
+    if (!(principal instanceof AuthenticatedUser user)) {
+      return handleUnauthenticated(session);
+    }
 
-          WebSocketAuthInfo authInfo = WebSocketAuthInfo.of(userId,
-              userName);
-          return validateProjectAccess(session, authInfo,
-              projectIdOpt.get());
-        })
-        .switchIfEmpty(Mono.defer(() -> handleUnauthenticated(session)));
+    String userId = user.userId();
+    String userName = user.userName();
+    if (userId == null || userId.isBlank()) {
+      return handleUnauthenticated(session);
+    }
+    if (userName == null || userName.isBlank()) {
+      return handleUnauthenticated(session);
+    }
+
+    WebSocketAuthInfo authInfo = WebSocketAuthInfo.of(userId, userName);
+    return validateProjectAccess(session, authInfo, projectId);
   }
 
   private Optional<String> extractProjectId(URI uri) {
@@ -170,7 +175,7 @@ public class CollaborationWebSocketHandler implements WebSocketHandler {
                 "[CollaborationWebSocketHandler] Failed to send session ready: sessionId={}, error={}",
                 sessionId, e.getMessage()))
             .then(notifyJoin))
-        .then(Mono.zip(inbound, outbound, cursorPipeline).then())
+        .then(Mono.when(inbound, outbound, cursorPipeline))
         .doFinally(signalType -> {
           log.info(
               "[CollaborationWebSocketHandler] WebSocket disconnected: sessionId={}, signal={}",
