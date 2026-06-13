@@ -11,14 +11,12 @@ export class OperationHistoryStore {
   operationsByClientId: Map<string, LocalOperationMetadata> = new Map();
   clientIdsByOpId: Map<string, string> = new Map();
   undoableOpIdsBySchemaId: Map<string, string[]> = new Map();
-  lastRemoteOperationBySchemaId: Map<string, ErdOperation> = new Map();
 
   constructor() {
     makeObservable(this, {
       operationsByClientId: observable.shallow,
       clientIdsByOpId: observable.shallow,
       undoableOpIdsBySchemaId: observable.shallow,
-      lastRemoteOperationBySchemaId: observable.shallow,
       pendingOperations: computed,
       undoableOperations: computed,
       markPending: action,
@@ -130,9 +128,6 @@ export class OperationHistoryStore {
       );
       return;
     }
-
-    this.lastRemoteOperationBySchemaId.set(message.schemaId, message.operation);
-    this.clearSchemaUndoableHistory(message.schemaId);
   }
 
   getUndoableOpIds(schemaId: string) {
@@ -164,14 +159,12 @@ export class OperationHistoryStore {
       },
     );
     this.undoableOpIdsBySchemaId.delete(schemaId);
-    this.lastRemoteOperationBySchemaId.delete(schemaId);
   }
 
   clearAll() {
     this.operationsByClientId.clear();
     this.clientIdsByOpId.clear();
     this.undoableOpIdsBySchemaId.clear();
-    this.lastRemoteOperationBySchemaId.clear();
   }
 
   private filterByStatus(status: LocalOperationStatus) {
@@ -206,21 +199,6 @@ export class OperationHistoryStore {
       : null;
 
     return committedRevision ?? Number.NEGATIVE_INFINITY;
-  }
-
-  private clearSchemaUndoableHistory(schemaId: string) {
-    const undoableOpIds = this.undoableOpIdsBySchemaId.get(schemaId) ?? [];
-
-    undoableOpIds.forEach((opId) => {
-      const clientOperationId = this.clientIdsByOpId.get(opId);
-
-      if (!clientOperationId) return;
-
-      this.operationsByClientId.delete(clientOperationId);
-      this.clientIdsByOpId.delete(opId);
-    });
-
-    this.undoableOpIdsBySchemaId.delete(schemaId);
   }
 }
 

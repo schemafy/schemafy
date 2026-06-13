@@ -42,11 +42,6 @@ export const useChangeSchemaName = (projectId: string) => {
       queryClient.invalidateQueries({
         queryKey: erdKeys.schemas(projectId),
       });
-      if (syncStatus === 'gap') {
-        queryClient.invalidateQueries({
-          queryKey: erdKeys.schemaSnapshots(schemaId),
-        });
-      }
     },
   });
 };
@@ -60,16 +55,6 @@ export const useDeleteSchema = (projectId: string) => {
       const syncStatus = syncCommittedRevision(deletedSchemaId, result);
 
       if (syncStatus === 'stale') return;
-
-      if (syncStatus === 'gap') {
-        queryClient.invalidateQueries({
-          queryKey: erdKeys.schemas(projectId),
-        });
-        queryClient.invalidateQueries({
-          queryKey: erdKeys.schemaSnapshots(deletedSchemaId),
-        });
-        return;
-      }
 
       queryClient.removeQueries({
         queryKey: erdKeys.schemaSnapshots(deletedSchemaId),

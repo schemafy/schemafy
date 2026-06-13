@@ -45,11 +45,6 @@ export const syncCommittedRevision = (
 
   if (syncStatus === 'stale') return syncStatus;
 
-  if (syncStatus === 'gap') {
-    operationHistoryStore.clearSchemaHistory(schemaId);
-    return syncStatus;
-  }
-
   operationHistoryStore.markUndoable(
     schemaId,
     result.operation,

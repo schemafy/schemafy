@@ -29,7 +29,7 @@ const MAX_RECONNECT_ATTEMPTS = 10;
 const BASE_RECONNECT_DELAY_MS = 3000;
 const MAX_RECONNECT_DELAY_MS = 60000;
 
-export type RevisionSyncStatus = 'applied' | 'stale' | 'gap';
+export type RevisionSyncStatus = 'applied' | 'stale';
 
 export class CollaborationStore {
   cursors: Map<string, CursorPosition> = new Map();
@@ -80,9 +80,8 @@ export class CollaborationStore {
 
     if (currentRevision === null) return 'applied';
     if (committedRevision <= currentRevision) return 'stale';
-    if (committedRevision === currentRevision + 1) return 'applied';
 
-    return 'gap';
+    return 'applied';
   }
 
   setSchemaRevision(schemaId: string, revision: number) {
@@ -333,14 +332,6 @@ export class CollaborationStore {
     );
 
     if (syncStatus === 'stale') return;
-
-    if (syncStatus === 'gap') {
-      operationHistoryStore.clearSchemaHistory(message.schemaId);
-      this.erdMutatedListeners.forEach((listener) =>
-        listener(message, syncStatus),
-      );
-      return;
-    }
 
     this.setSchemaRevision(
       message.schemaId,

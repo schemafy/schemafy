@@ -43,13 +43,7 @@ export const useErdMutationSync = (schemaId: string, projectId: string) => {
 
     const unsubscribe = collaborationStore.onErdMutated((event, syncStatus) => {
       if (event.schemaId !== schemaId) return;
-
-      if (syncStatus === 'gap') {
-        pendingTableIds.current.clear();
-        pendingSchemaChange.current = true;
-        scheduleFlush();
-        return;
-      }
+      if (syncStatus === 'stale') return;
 
       if (event.affectedTableIds.length > 0) {
         event.affectedTableIds.forEach((id) => pendingTableIds.current.add(id));

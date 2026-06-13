@@ -85,13 +85,11 @@ export const useErdCache = (schemaId: string) => {
 
       if (syncStatus === 'applied') {
         await updateAffectedTables(result.affectedTableIds);
-      } else if (syncStatus === 'gap') {
-        resyncSchemaSnapshots();
       }
 
       return syncStatus;
     },
-    [schemaId, updateAffectedTables, resyncSchemaSnapshots],
+    [schemaId, updateAffectedTables],
   );
 
   const syncRemovedTable = useCallback(
@@ -100,13 +98,11 @@ export const useErdCache = (schemaId: string) => {
 
       if (syncStatus === 'applied') {
         await removeAndUpdate(removedTableId, result.affectedTableIds);
-      } else if (syncStatus === 'gap') {
-        resyncSchemaSnapshots();
       }
 
       return syncStatus;
     },
-    [schemaId, removeAndUpdate, resyncSchemaSnapshots],
+    [schemaId, removeAndUpdate],
   );
 
   return {
