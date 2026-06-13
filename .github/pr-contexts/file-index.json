@@ -15,7 +15,8 @@
   ],
   "apps/frontend/src/features/collaboration/components/RemoteCursors.tsx": [
     291,
-    400
+    400,
+    403
   ],
   "apps/frontend/src/features/collaboration/components/index.ts": [
     291
@@ -61,7 +62,8 @@
   "apps/frontend/src/features/drawing/hooks/useCanvasController.ts": [
     331,
     291,
-    380
+    380,
+    403
   ],
   "apps/frontend/src/features/drawing/hooks/useCanvasKeyboard.ts": [
     331,
