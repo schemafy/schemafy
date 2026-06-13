@@ -7,13 +7,15 @@
     291
   ],
   "apps/frontend/src/features/collaboration/components/ChatInput.tsx": [
-    291
+    291,
+    400
   ],
   "apps/frontend/src/features/collaboration/components/ChatOverlay.tsx": [
     291
   ],
   "apps/frontend/src/features/collaboration/components/RemoteCursors.tsx": [
-    291
+    291,
+    400
   ],
   "apps/frontend/src/features/collaboration/components/index.ts": [
     291
@@ -66,7 +68,8 @@
     291
   ],
   "apps/frontend/src/hooks/useChatMessages.ts": [
-    291
+    291,
+    400
   ],
   "apps/frontend/src/pages/CanvasPage.tsx": [
     331,
@@ -79,7 +82,8 @@
     291,
     374,
     368,
-    386
+    386,
+    400
   ],
   ".github/workflows/test.yml": [
     346
