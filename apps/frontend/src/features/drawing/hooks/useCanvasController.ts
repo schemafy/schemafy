@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { useReactFlow } from '@xyflow/react';
+import { useKeyPress, useReactFlow } from '@xyflow/react';
 import { useRelationships } from './useRelationships';
 import { useTables } from './useTables';
 import { useViewport } from './useViewport';
@@ -36,6 +36,7 @@ export const useCanvasController = () => {
   tempMemoPositionRef.current = tempMemoPosition;
   const chat = useChatInputAnchor();
   const [isShortcutPanelOpen, setIsShortcutPanelOpen] = useState(false);
+  const isSpacePanKeyPressed = useKeyPress('Space');
 
   useEffect(() => {
     collaborationStore.connect(projectId);
@@ -140,9 +141,12 @@ export const useCanvasController = () => {
   const handleMouseMove = useCallback(
     (e: React.MouseEvent) => {
       mousePositionRef.current = { x: e.clientX, y: e.clientY };
+      if ((activeTool === 'hand' || isSpacePanKeyPressed) && e.buttons === 1)
+        return;
+
       sendCursorThrottled(e.clientX, e.clientY);
     },
-    [sendCursorThrottled],
+    [activeTool, isSpacePanKeyPressed, sendCursorThrottled],
   );
 
   return {
