@@ -5,19 +5,16 @@ import {
   getCursorColor,
 } from '@/features/collaboration/utils';
 import { collaborationStore } from '@/store/collaboration.store';
-import { useChatAnimation } from '@/features/collaboration/hooks/useChatAnimation';
 import { useInactivityTimer } from '@/features/collaboration/hooks/useInactivityTimer';
+import type { ChatMessage } from '@/features/collaboration/api';
 
 const INACTIVITY_CLOSE_MS = 3500;
+const MESSAGE_FADE_OUT_START_MS = 3500;
 
 const SLIDE_STYLES = `
-  @keyframes chat-slide-in {
+  @keyframes chat-message-in {
     from { transform: translateY(120%); opacity: 0; }
     to   { transform: translateY(0);    opacity: 1; }
-  }
-  @keyframes chat-slide-out {
-    from { transform: translateY(0);     opacity: 1; }
-    to   { transform: translateY(-120%); opacity: 0; }
   }
   @keyframes chat-container-in {
     from { transform: scale(0.9); opacity: 0; }
@@ -31,6 +28,7 @@ const SLIDE_STYLES = `
 
 const ANIMATION_MS = 250;
 const CONTAINER_ANIMATION_MS = 200;
+const FADE_OUT_MS = 500;
 
 interface ChatInputProps {
   position: { x: number; y: number };
@@ -39,17 +37,47 @@ interface ChatInputProps {
   onCancel: () => void;
 }
 
+interface ChatMessageItemProps {
+  message: ChatMessage;
+}
+
+const ChatMessageItem = ({ message }: ChatMessageItemProps) => {
+  const [isFadingOut, setIsFadingOut] = useState(false);
+
+  useEffect(() => {
+    setIsFadingOut(false);
+    const timer = setTimeout(
+      () => setIsFadingOut(true),
+      MESSAGE_FADE_OUT_START_MS,
+    );
+
+    return () => clearTimeout(timer);
+  }, [message.messageId]);
+
+  return (
+    <div
+      className="h-8 px-2.5 flex items-center font-body-sm text-white"
+      style={{
+        animation: `chat-message-in ${ANIMATION_MS}ms ease forwards`,
+        opacity: isFadingOut ? 0 : 1,
+        transition: `opacity ${FADE_OUT_MS}ms ease`,
+      }}
+    >
+      {message.content}
+    </div>
+  );
+};
+
 export const ChatInput = observer(
   ({ position, isExiting, onSend, onCancel }: ChatInputProps) => {
     const [message, setMessage] = useState('');
     const inputRef = useRef<HTMLInputElement>(null);
 
     const sessionId = collaborationStore.sessionId ?? '';
-    const activeMessage = collaborationStore.activeChatMessages.get(sessionId);
+    const activeMessages =
+      collaborationStore.activeChatMessages.get(sessionId) ?? [];
     const color = getCursorColor(sessionId);
 
-    const { displayedMessage, exitingMessage, isEntering } =
-      useChatAnimation(activeMessage);
     const resetInactivityTimer = useInactivityTimer(
       onCancel,
       INACTIVITY_CLOSE_MS,
@@ -76,7 +104,7 @@ export const ChatInput = observer(
       }
     };
 
-    const hasMessage = displayedMessage || exitingMessage;
+    const hasMessages = activeMessages.length > 0;
 
     return (
       <>
@@ -92,7 +120,7 @@ export const ChatInput = observer(
           }}
         >
           <div
-            className="rounded-lg shadow-lg overflow-hidden min-w-[180px] max-w-xs"
+            className="relative rounded-lg shadow-lg min-w-[180px] max-w-xs"
             style={{
               backgroundColor: color,
               animation: isExiting
@@ -100,35 +128,17 @@ export const ChatInput = observer(
                 : `chat-container-in ${CONTAINER_ANIMATION_MS}ms ease forwards`,
             }}
           >
-            {hasMessage && (
+            {hasMessages && (
               <div
-                className="relative overflow-hidden border-b border-white/20"
-                style={{ height: '2rem' }}
+                className="absolute bottom-full left-0 right-0 mb-1 flex flex-col overflow-hidden rounded-lg shadow-lg"
+                style={{ backgroundColor: color, maxHeight: '6rem' }}
               >
-                {exitingMessage && (
-                  <div
-                    key={`exit-${exitingMessage.messageId}`}
-                    className="absolute inset-0 px-2.5 flex items-center font-body-sm text-white"
-                    style={{
-                      animation: `chat-slide-out ${ANIMATION_MS}ms ease forwards`,
-                    }}
-                  >
-                    {exitingMessage.content}
-                  </div>
-                )}
-                {displayedMessage && (
-                  <div
-                    key={`enter-${displayedMessage.messageId}`}
-                    className="absolute inset-0 px-2.5 flex items-center font-body-sm text-white"
-                    style={{
-                      animation: isEntering
-                        ? `chat-slide-in ${ANIMATION_MS}ms ease forwards`
-                        : undefined,
-                    }}
-                  >
-                    {displayedMessage.content}
-                  </div>
-                )}
+                {activeMessages.map((activeMessage) => (
+                  <ChatMessageItem
+                    key={activeMessage.messageId}
+                    message={activeMessage}
+                  />
+                ))}
               </div>
             )}
             <input
@@ -138,7 +148,7 @@ export const ChatInput = observer(
               onChange={(e) => setMessage(e.target.value)}
               onKeyDown={handleKeyDown}
               placeholder="메시지 입력..."
-              className="w-full px-2.5 py-1.5 bg-transparent text-white placeholder:text-white/50 font-body-sm focus:outline-none"
+              className="w-full px-2.5 py-1.5 bg-transparent text-white placeholder:text-white/50 font-body-sm focus:outline-none rounded-lg"
               maxLength={500}
             />
           </div>
