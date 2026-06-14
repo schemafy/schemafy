@@ -44,6 +44,12 @@ cache:
     default-ttl-minutes: 30
     key-prefix: 'cache::'
 
+collaboration:
+  presence:
+    session-ttl: ${COLLABORATION_PRESENCE_SESSION_TTL:90s}
+    heartbeat-interval: ${COLLABORATION_PRESENCE_HEARTBEAT_INTERVAL:30s}
+    cleanup-interval: ${COLLABORATION_PRESENCE_CLEANUP_INTERVAL:30s}
+
 hmac:
   secret: ${HMAC_SECRET:default-hmac-secret-change-me-in-production}
   previous-secret: ${HMAC_PREVIOUS_SECRET:}

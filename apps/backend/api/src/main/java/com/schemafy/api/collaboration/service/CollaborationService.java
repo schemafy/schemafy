@@ -2,6 +2,7 @@ package com.schemafy.api.collaboration.service;
 
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Function;
 import java.util.stream.Collectors;
@@ -11,6 +12,7 @@ import org.springframework.stereotype.Service;
 import com.schemafy.api.collaboration.dto.BroadcastMessage;
 import com.schemafy.api.collaboration.dto.CollaborationEventType;
 import com.schemafy.api.collaboration.dto.CursorPosition;
+import com.schemafy.api.collaboration.dto.ProjectPresenceParticipant;
 import com.schemafy.api.collaboration.dto.event.CollaborationInbound;
 import com.schemafy.api.collaboration.dto.event.CollaborationOutbound;
 import com.schemafy.api.collaboration.dto.event.CollaborationOutboundFactory;
@@ -18,6 +20,8 @@ import com.schemafy.api.collaboration.dto.event.CursorEvent;
 import com.schemafy.api.collaboration.service.handler.InboundMessageHandler;
 import com.schemafy.api.collaboration.service.handler.MessageContext;
 import com.schemafy.api.collaboration.service.model.SessionEntry;
+import com.schemafy.api.collaboration.service.presence.ProjectPresenceSession;
+import com.schemafy.api.collaboration.service.presence.ProjectPresenceStore;
 import com.schemafy.api.common.config.ConditionalOnRedisEnabled;
 import com.schemafy.core.common.json.JsonCodec;
 
@@ -34,6 +38,7 @@ public class CollaborationService {
   private final SessionRegistry sessionRegistry;
   private final CollaborationEventPublisher eventPublisher;
   private final CollaborationPayloadSerializer payloadSerializer;
+  private final ProjectPresenceStore presenceStore;
   private final JsonCodec jsonCodec;
   private final Map<CollaborationEventType, InboundMessageHandler> handlers;
   private final Map<String, CursorPosition> cursorDedupeCache = new ConcurrentHashMap<>();
@@ -42,11 +47,13 @@ public class CollaborationService {
       SessionRegistry sessionRegistry,
       CollaborationEventPublisher eventPublisher,
       CollaborationPayloadSerializer payloadSerializer,
+      ProjectPresenceStore presenceStore,
       JsonCodec jsonCodec,
       List<InboundMessageHandler> handlerList) {
     this.sessionRegistry = sessionRegistry;
     this.eventPublisher = eventPublisher;
     this.payloadSerializer = payloadSerializer;
+    this.presenceStore = presenceStore;
     this.jsonCodec = jsonCodec;
     this.handlers = handlerList.stream()
         .collect(Collectors.toMap(
@@ -80,36 +87,102 @@ public class CollaborationService {
         CollaborationOutboundFactory.cursor(sessionId, userInfo, cursor));
   }
 
+  public Mono<List<ProjectPresenceParticipant>> registerSession(
+      String projectId, String sessionId, String userId, String userName) {
+    return presenceStore.register(projectId, sessionId, userId, userName)
+        .thenMany(presenceStore.removeExpired(projectId))
+        .flatMap(participant -> eventPublisher.publish(projectId,
+            CollaborationOutboundFactory.leave(participant.sessionId(),
+                participant.userId(), participant.userName()))
+            .thenReturn(participant))
+        .thenMany(presenceStore.findParticipants(projectId))
+        .map(CollaborationService::toParticipant)
+        .collectList()
+        .onErrorResume(e -> {
+          log.warn(
+              "[CollaborationService] Failed to register presence: projectId={}, sessionId={}, error={}",
+              projectId, sessionId, e.getMessage());
+          return Mono.just(List.of(new ProjectPresenceParticipant(sessionId,
+              userId, userName, null)));
+        });
+  }
+
+  public Mono<Void> refreshPresence(String projectId, String sessionId) {
+    return presenceStore.refresh(projectId, sessionId)
+        .switchIfEmpty(Mono.defer(() -> reRegisterPresence(projectId,
+            sessionId)))
+        .doOnError(e -> log.warn(
+            "[CollaborationService] Failed to refresh presence: projectId={}, sessionId={}, error={}",
+            projectId, sessionId, e.getMessage()))
+        .onErrorResume(e -> Mono.empty())
+        .then();
+  }
+
+  private Mono<ProjectPresenceSession> reRegisterPresence(String projectId,
+      String sessionId) {
+    return Mono.justOrEmpty(sessionRegistry.getSessionEntry(projectId,
+        sessionId))
+        .flatMap(entry -> {
+          String userId = entry.authInfo().getUserId();
+          String userName = entry.authInfo().getUserName();
+          return presenceStore.register(projectId, sessionId, userId, userName)
+              .flatMap(presence -> eventPublisher.publish(projectId,
+                  CollaborationOutboundFactory.join(sessionId, userId,
+                      userName))
+                  .thenReturn(presence));
+        });
+  }
+
   public Mono<Void> removeSession(String projectId, String sessionId) {
-    cursorDedupeCache.remove(sessionId);
+    return Mono.defer(() -> {
+      cursorDedupeCache.remove(sessionId);
 
-    SessionEntry entry = sessionRegistry
-        .getSessionEntry(projectId, sessionId)
-        .orElse(null);
-    if (entry == null) {
-      log.warn(
-          "[CollaborationService] Session not found for removal: sessionId={}",
-          sessionId);
-      return Mono.fromRunnable(
-          () -> sessionRegistry.removeSession(projectId, sessionId))
+      Optional<SessionEntry> localEntry = sessionRegistry
+          .getSessionEntry(projectId, sessionId);
+      if (localEntry.isEmpty()) {
+        log.warn(
+            "[CollaborationService] Session not found for local removal: sessionId={}",
+            sessionId);
+      }
+      sessionRegistry.removeSession(projectId, sessionId);
+
+      Mono<ProjectPresenceSession> participant = presenceStore
+          .remove(projectId, sessionId)
+          .switchIfEmpty(Mono.defer(() -> Mono.justOrEmpty(localEntry)
+              .map(entry -> new ProjectPresenceSession(sessionId,
+                  entry.authInfo().getUserId(), entry.authInfo().getUserName(),
+                  System.currentTimeMillis(), System.currentTimeMillis()))));
+
+      return participant
+          .flatMap(presence -> eventPublisher.publish(projectId,
+              CollaborationOutboundFactory.leave(presence.sessionId(),
+                  presence.userId(), presence.userName())))
+          .doOnError(e -> log.warn(
+              "[CollaborationService] Failed to remove presence: projectId={}, sessionId={}, error={}",
+              projectId, sessionId, e.getMessage()))
+          .onErrorResume(e -> Mono.empty())
           .then();
-    }
-
-    String userId = entry.authInfo().getUserId();
-    String userName = entry.authInfo().getUserName();
-
-    return Mono
-        .fromRunnable(() -> sessionRegistry.removeSession(projectId,
-            sessionId))
-        .then(eventPublisher.publish(projectId,
-            CollaborationOutboundFactory.leave(sessionId, userId,
-                userName)));
+    });
   }
 
   public Mono<Void> notifyJoin(String projectId, String sessionId,
       String userId, String userName) {
     return eventPublisher.publish(projectId,
         CollaborationOutboundFactory.join(sessionId, userId, userName));
+  }
+
+  public Mono<Void> removeExpiredPresenceSessions() {
+    return presenceStore.findActiveProjectIds()
+        .flatMap(projectId -> presenceStore.removeExpired(projectId)
+            .flatMap(participant -> eventPublisher.publish(projectId,
+                CollaborationOutboundFactory.leave(participant.sessionId(),
+                    participant.userId(), participant.userName())))
+            .then())
+        .doOnError(e -> log.warn(
+            "[CollaborationService] Failed to remove expired presence sessions: {}",
+            e.getMessage()))
+        .onErrorResume(e -> Mono.empty())
+        .then();
   }
 
   /** handle inbound message */
@@ -189,6 +262,12 @@ public class CollaborationService {
         .onErrorMap(IllegalArgumentException.class,
             e -> new RuntimeException("[CollaborationService] failed to deserialize JSON",
                 e));
+  }
+
+  private static ProjectPresenceParticipant toParticipant(
+      ProjectPresenceSession session) {
+    return new ProjectPresenceParticipant(session.sessionId(),
+        session.userId(), session.userName(), null);
   }
 
   private boolean isDuplicateCursor(CursorPosition first,

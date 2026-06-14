@@ -1,7 +1,10 @@
 package com.schemafy.api.collaboration.service;
 
+import java.util.List;
+
 import org.springframework.stereotype.Component;
 
+import com.schemafy.api.collaboration.dto.ProjectPresenceParticipant;
 import com.schemafy.api.collaboration.dto.event.CollaborationOutbound;
 import com.schemafy.api.collaboration.dto.event.CollaborationOutboundFactory;
 import com.schemafy.api.collaboration.service.model.SessionEntry;
@@ -18,8 +21,10 @@ public class CollaborationDirectMessageSender {
 
   private final CollaborationPayloadSerializer payloadSerializer;
 
-  public Mono<Void> sendSessionReady(SessionEntry entry, String sessionId) {
-    return send(entry, CollaborationOutboundFactory.sessionReady(sessionId));
+  public Mono<Void> sendSessionReady(SessionEntry entry, String sessionId,
+      List<ProjectPresenceParticipant> participants) {
+    return send(entry,
+        CollaborationOutboundFactory.sessionReady(sessionId, participants));
   }
 
   public Mono<Void> send(SessionEntry entry, CollaborationOutbound event) {
