@@ -31,7 +31,7 @@ const MAX_RECONNECT_DELAY_MS = 60000;
 export class CollaborationStore {
   cursors: Map<string, CursorPosition> = new Map();
   schemaRevisions: Map<string, number> = new Map();
-  activeChatMessages: Map<string, ChatMessage> = new Map();
+  activeChatMessages: Map<string, ChatMessage[]> = new Map();
   projectId: string | null = null;
   sessionId: string | null = null;
   private ws: WebSocket | null = null;
@@ -186,11 +186,36 @@ export class CollaborationStore {
   }
 
   setActiveChatMessage(sessionId: string, message: ChatMessage) {
-    this.activeChatMessages.set(sessionId, message);
+    const currentMessages = this.activeChatMessages.get(sessionId) ?? [];
+    const nextMessages = [
+      ...currentMessages.filter(
+        (currentMessage) => currentMessage.messageId !== message.messageId,
+      ),
+      message,
+    ].slice(-3);
+
+    this.activeChatMessages.set(sessionId, nextMessages);
   }
 
-  clearActiveChatMessage(sessionId: string) {
-    this.activeChatMessages.delete(sessionId);
+  clearActiveChatMessage(sessionId: string, messageId?: string) {
+    if (!messageId) {
+      this.activeChatMessages.delete(sessionId);
+      return;
+    }
+
+    const currentMessages = this.activeChatMessages.get(sessionId);
+    if (!currentMessages) return;
+
+    const nextMessages = currentMessages.filter(
+      (message) => message.messageId !== messageId,
+    );
+
+    if (nextMessages.length === 0) {
+      this.activeChatMessages.delete(sessionId);
+      return;
+    }
+
+    this.activeChatMessages.set(sessionId, nextMessages);
   }
 
   onChatMessage(listener: (message: ChatMessage) => void) {
@@ -343,6 +368,7 @@ export class CollaborationStore {
     previewStore.clearBySession(message.sessionId);
     runInAction(() => {
       this.cursors.delete(message.sessionId);
+      this.activeChatMessages.delete(message.sessionId);
     });
   }
 }
