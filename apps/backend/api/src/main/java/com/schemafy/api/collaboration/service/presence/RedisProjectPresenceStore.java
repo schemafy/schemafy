@@ -50,14 +50,13 @@ public class RedisProjectPresenceStore implements ProjectPresenceStore {
       String sessionId) {
     long now = now();
 
-    return findSession(projectId, sessionId)
-        .map(existing -> new ProjectPresenceSession(
-            existing.sessionId(),
-            existing.userId(),
-            existing.userName(),
-            existing.joinedAt(),
-            now))
-        .flatMap(session -> writeSession(projectId, session));
+    return redisTemplate.execute(ProjectPresenceRedisScripts.REFRESH_SESSION,
+        List.of(participantsKey(projectId), expiresKey(projectId),
+            ACTIVE_PROJECTS_KEY),
+        List.of(sessionId, Long.toString(now), Double.toString(expiresAt(now)),
+            projectId))
+        .next()
+        .flatMap(this::deserializeSession);
   }
 
   @Override

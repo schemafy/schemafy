@@ -9,6 +9,10 @@ final class ProjectPresenceRedisScripts {
       new ClassPathResource("redis/presence/write-session.lua"),
       Long.class);
 
+  static final RedisScript<String> REFRESH_SESSION = RedisScript.of(
+      new ClassPathResource("redis/presence/refresh-session.lua"),
+      String.class);
+
   static final RedisScript<String> REMOVE_EXPIRED_SESSION = RedisScript.of(
       new ClassPathResource("redis/presence/remove-expired-session.lua"),
       String.class);

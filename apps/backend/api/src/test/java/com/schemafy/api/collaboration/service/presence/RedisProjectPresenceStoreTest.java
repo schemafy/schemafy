@@ -151,6 +151,59 @@ class RedisProjectPresenceStoreTest {
   }
 
   @Test
+  @DisplayName("presence refresh는 Redis script 한 번으로 payload와 만료 score를 갱신한다")
+  void refresh_updates_presence_metadata_atomically() {
+    ProjectPresenceSession refreshed = new ProjectPresenceSession(
+        "session-1", "user-1", "tester", 1000L, 2000L);
+    String payload = jsonCodec.serialize(refreshed);
+
+    given(redisTemplate.execute(eq(ProjectPresenceRedisScripts.REFRESH_SESSION),
+        anyList(), anyList()))
+        .willReturn(Flux.just(payload));
+
+    StepVerifier.create(presenceStore.refresh("project-1", "session-1"))
+        .assertNext(session -> {
+          assertThat(session.sessionId()).isEqualTo("session-1");
+          assertThat(session.lastSeenAt()).isEqualTo(2000L);
+        })
+        .verifyComplete();
+
+    ArgumentCaptor<List<String>> keysCaptor = ArgumentCaptor.forClass(
+        List.class);
+    ArgumentCaptor<List> argsCaptor = ArgumentCaptor.forClass(List.class);
+    verify(redisTemplate).execute(eq(ProjectPresenceRedisScripts.REFRESH_SESSION),
+        keysCaptor.capture(), argsCaptor.capture());
+
+    assertThat(keysCaptor.getValue()).containsExactly(PARTICIPANTS_KEY,
+        EXPIRES_KEY, ACTIVE_PROJECTS_KEY);
+    assertThat(argsCaptor.getValue()).hasSize(4);
+    assertThat(argsCaptor.getValue().get(0)).isEqualTo("session-1");
+    long lastSeenAt = Long.parseLong((String) argsCaptor.getValue().get(1));
+    double expiresAt = Double.parseDouble((String) argsCaptor.getValue().get(2));
+    assertThat(expiresAt).isEqualTo(lastSeenAt + Duration.ofSeconds(90)
+        .toMillis());
+    assertThat(argsCaptor.getValue().get(3)).isEqualTo("project-1");
+
+    verify(redisTemplate, never()).opsForHash();
+    verify(redisTemplate, never()).opsForZSet();
+  }
+
+  @Test
+  @DisplayName("presence refresh가 세션을 찾지 못하면 재등록 경로를 위해 empty로 끝낸다")
+  void refresh_returns_empty_when_session_is_missing() {
+    given(redisTemplate.execute(eq(ProjectPresenceRedisScripts.REFRESH_SESSION),
+        anyList(), anyList()))
+        .willReturn(Flux.empty());
+
+    StepVerifier.create(presenceStore.refresh("project-1", "session-1"))
+        .verifyComplete();
+
+    verify(redisTemplate).execute(eq(ProjectPresenceRedisScripts.REFRESH_SESSION),
+        anyList(), anyList());
+    verify(redisTemplate, never()).opsForHash();
+  }
+
+  @Test
   @DisplayName("presence 등록은 참가자, 만료 score, active project marker를 원자적으로 기록한다")
   void register_writes_presence_metadata_atomically() {
     given(redisTemplate.<String, String>opsForHash()).willReturn(hashOps);
@@ -191,6 +244,8 @@ class RedisProjectPresenceStoreTest {
   void redisScripts_are_loaded_from_classpath_resources() {
     assertThat(ProjectPresenceRedisScripts.WRITE_SESSION.getScriptAsString())
         .contains("HSET", "ZADD", "SADD");
+    assertThat(ProjectPresenceRedisScripts.REFRESH_SESSION.getScriptAsString())
+        .contains("HGET", "HSET", "ZADD", "cjson.decode");
     assertThat(ProjectPresenceRedisScripts.REMOVE_EXPIRED_SESSION
         .getScriptAsString())
         .contains("ZSCORE", "HDEL", "ZREM");
