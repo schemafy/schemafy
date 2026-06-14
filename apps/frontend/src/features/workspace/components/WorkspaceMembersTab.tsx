@@ -10,7 +10,7 @@ import {
 import { ChangeRoleDialog } from './ChangeRoleDialog';
 import { ConfirmDialog } from './ConfirmDialog';
 import { useWorkspaceMembers } from '../hooks/useWorkspaceMembers';
-import { formatDateWithTime } from '@/lib';
+import { formatDate } from '@/lib';
 import { availableRoles } from '@/features/workspace/utils/role';
 import type { WorkspaceMemberResponse } from '@/features/workspace/api';
 import { authStore } from '@/store';
@@ -140,7 +140,7 @@ export const WorkspaceMembersTab = ({
                     </span>
                   </td>
                   <td className="px-6 py-4 font-body-sm text-schemafy-dark-gray text-nowrap">
-                    {formatDateWithTime(new Date(member.joinedAt))}
+                    {formatDate(new Date(member.joinedAt))}
                   </td>
                   {currentUserRole === 'ADMIN' &&
                     (user?.id !== member.userId ? (
