@@ -1,10 +1,6 @@
 import { type ColumnType, CONSTRAINT_PREFIX_MAP } from '../types';
 import type { Constraint } from '@/types';
-import {
-  useChangeColumnMeta,
-  useChangeColumnName,
-  useChangeColumnType,
-} from './useColumnMutations';
+import { useChangeColumnName, useChangeColumnType } from './useColumnMutations';
 import {
   useCreateConstraint,
   useDeleteConstraint,
@@ -12,9 +8,6 @@ import {
   useRemoveConstraintColumn,
 } from './useConstraintMutations';
 import { useDebouncedMutation } from './useDebouncedMutation';
-import { useQueryClient } from '@tanstack/react-query';
-import { erdKeys } from './query-keys';
-import { reportUnexpectedError } from '@/lib';
 
 export const useColumn = (
   schemaId: string,
@@ -22,12 +15,10 @@ export const useColumn = (
   tableName: string,
   tableConstraints: Constraint[],
 ) => {
-  const queryClient = useQueryClient();
   const changeColumnNameMutation = useChangeColumnName(schemaId);
   const debouncedChangeColumnName = useDebouncedMutation(
     changeColumnNameMutation,
   );
-  const changeColumnMetaMutation = useChangeColumnMeta(schemaId);
   const changeColumnTypeMutation = useChangeColumnType(schemaId);
   const createConstraintMutation = useCreateConstraint(schemaId);
   const deleteConstraintMutation = useDeleteConstraint(schemaId);
@@ -41,19 +32,14 @@ export const useColumn = (
     });
   };
 
-  const saveColumnType = async (columnId: string, typeData: string) => {
+  const saveColumnType = (columnId: string, typeData: string) => {
     let parsed;
     try {
       parsed = JSON.parse(typeData);
     } catch {
       return;
     }
-    const {
-      dataType,
-      typeArguments: typeArgsStr,
-      category,
-      prevCategory,
-    } = parsed;
+    const { dataType, typeArguments: typeArgsStr } = parsed;
 
     let params: {
       length?: number | null;
@@ -78,46 +64,7 @@ export const useColumn = (
       },
     };
 
-    const isTextToNonText = prevCategory === 'string' && category !== 'string';
-    const isNonTextToText = prevCategory !== 'string' && category === 'string';
-
-    if (isTextToNonText) {
-      try {
-        await changeColumnMetaMutation.mutateAsync({
-          columnId,
-          data: { charset: '', collation: '' },
-        });
-      } catch (error) {
-        reportUnexpectedError(error, {
-          context: 'Unexpected non-text column type update failure.',
-        });
-        void queryClient.invalidateQueries({
-          queryKey: erdKeys.schemaSnapshots(schemaId),
-        });
-        return;
-      }
-      changeColumnTypeMutation.mutate(typePayload);
-    } else if (isNonTextToText) {
-      try {
-        await changeColumnTypeMutation.mutateAsync(typePayload);
-        await changeColumnMetaMutation.mutateAsync({
-          columnId,
-          data: {
-            charset: 'utf8mb4',
-            collation: 'utf8mb4_general_ci',
-          },
-        });
-      } catch (error) {
-        reportUnexpectedError(error, {
-          context: 'Unexpected text column type update failure.',
-        });
-        void queryClient.invalidateQueries({
-          queryKey: erdKeys.schemaSnapshots(schemaId),
-        });
-      }
-    } else {
-      changeColumnTypeMutation.mutate(typePayload);
-    }
+    changeColumnTypeMutation.mutate(typePayload);
   };
 
   const saveColumnConstraint = (
