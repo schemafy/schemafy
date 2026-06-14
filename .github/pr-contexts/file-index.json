@@ -1516,5 +1516,8 @@
   ],
   "apps/backend/api/src/test/java/com/schemafy/api/collaboration/service/presence/RedisProjectPresenceStoreTest.java": [
     398
+  ],
+  "apps/backend/api/src/main/resources/redis/presence/refresh-session.lua": [
+    398
   ]
 }
