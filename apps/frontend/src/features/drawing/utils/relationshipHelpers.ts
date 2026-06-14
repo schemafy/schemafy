@@ -58,7 +58,7 @@ const convertRelationshipSnapshotToEdge = (
   } as Edge;
 };
 
-const isTableSnapshot = (
+const isDefinedTableSnapshot = (
   snapshot: TableSnapshotResponse | undefined,
 ): snapshot is TableSnapshotResponse => snapshot !== undefined;
 
@@ -66,7 +66,9 @@ export const convertSnapshotsToEdges = (
   snapshots: Record<string, TableSnapshotResponse | undefined>,
 ): Edge[] => {
   const seenRelationshipIds = new Set<string>();
-  const validSnapshots = Object.values(snapshots).filter(isTableSnapshot);
+  const validSnapshots = Object.values(snapshots).filter(
+    isDefinedTableSnapshot,
+  );
   const tableIds = new Set(validSnapshots.map((snapshot) => snapshot.table.id));
 
   return validSnapshots.flatMap((snapshot) =>
