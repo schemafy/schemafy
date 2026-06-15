@@ -19,11 +19,12 @@ import { useProjectInvitations } from '@/features/project/hooks/useProjectInvita
 import { useProjectMembers } from '@/features/project/hooks/useProjectMembers';
 import { availableRoles } from '@/features/project/utils/role';
 import { authStore } from '@/store';
+import { toCapitalized } from "@/lib";
 
 const RoleText = ({ role }: { role: string }) => {
   return (
     <span className="font-body-xs text-schemafy-dark-gray">
-      {role[0].toUpperCase() + role.toLowerCase().slice(1, role.length)}
+      {toCapitalized(role)}
     </span>
   );
 };
@@ -48,7 +49,7 @@ const RoleSelect = ({
         <SelectGroup>
           {roles.map((role) => (
             <SelectItem key={role} value={role}>
-              {role[0].toUpperCase() + role.toLowerCase().slice(1, role.length)}
+              {toCapitalized(role)}
             </SelectItem>
           ))}
         </SelectGroup>

@@ -14,6 +14,7 @@ import {
 } from '@/components';
 import { useWorkspaceInvitations } from '../hooks/useWorkspaceInvitations';
 import { availableRoles } from '@/features/workspace/utils/role';
+import { toCapitalized } from "@/lib";
 
 interface InviteDialogProps {
   open: boolean;
@@ -83,7 +84,7 @@ export const InviteDialog = ({
               <SelectContent>
                 {roles.map((r) => (
                   <SelectItem key={r} value={r}>
-                    {r}
+                    {toCapitalized(r)}
                   </SelectItem>
                 ))}
               </SelectContent>
