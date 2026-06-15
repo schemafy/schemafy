@@ -514,7 +514,8 @@
   "apps/frontend/src/pages/WorkspacePage.tsx": [
     361,
     358,
-    382
+    382,
+    405
   ],
   "apps/frontend/src/pages/index.ts": [
     361,
@@ -766,7 +767,8 @@
   "apps/frontend/src/components/Header/contents/ShareContents.tsx": [
     358,
     318,
-    382
+    382,
+    405
   ],
   "apps/frontend/src/features/project/api/api.ts": [
     358
@@ -804,13 +806,15 @@
   "apps/frontend/src/features/workspace/components/WorkspaceMembersTab.tsx": [
     358,
     382,
-    392
+    392,
+    405
   ],
   "apps/frontend/src/features/workspace/components/WorkspaceProjectsTab.tsx": [
     358,
     361,
     382,
-    392
+    392,
+    405
   ],
   "apps/frontend/src/features/workspace/hooks/useWorkspaces.ts": [
     358,
@@ -1134,7 +1138,8 @@
     382
   ],
   "apps/frontend/src/features/workspace/components/InviteDialog.tsx": [
-    382
+    382,
+    405
   ],
   "apps/frontend/src/features/workspace/hooks/useMyWorkspaceInvitations.ts": [
     382
@@ -1338,7 +1343,8 @@
     386
   ],
   "apps/frontend/src/lib/utils/index.ts": [
-    386
+    386,
+    405
   ],
   "apps/frontend/src/lib/utils/reportUnexpectedError.ts": [
     386
@@ -1519,5 +1525,8 @@
   ],
   "apps/backend/api/src/main/resources/redis/presence/refresh-session.lua": [
     398
+  ],
+  "apps/frontend/src/lib/utils/role.ts": [
+    405
   ]
 }
