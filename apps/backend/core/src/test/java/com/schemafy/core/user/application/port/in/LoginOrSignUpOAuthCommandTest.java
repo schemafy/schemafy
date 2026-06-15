@@ -5,6 +5,7 @@ import org.junit.jupiter.api.Test;
 
 import com.schemafy.core.common.exception.DomainException;
 import com.schemafy.core.user.domain.AuthProvider;
+import com.schemafy.core.user.domain.UserPolicy;
 import com.schemafy.core.user.domain.exception.UserErrorCode;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -14,13 +15,25 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 class LoginOrSignUpOAuthCommandTest {
 
   @Test
-  @DisplayName("name 정책을 만족하지 않으면 INVALID_PARAMETER를 반환한다")
-  void rejectsInvalidName() {
+  @DisplayName("OAuth name이 비어 있으면 provider 정보로 대체한다")
+  void replacesBlankNameWithProviderName() {
+    LoginOrSignUpOAuthCommand command = new LoginOrSignUpOAuthCommand(
+        "test@example.com",
+        " ",
+        AuthProvider.GITHUB,
+        "1");
+
+    assertThat(command.name()).isEqualTo("github-1");
+  }
+
+  @Test
+  @DisplayName("OAuth name 대체가 불가능하면 INVALID_PARAMETER를 반환한다")
+  void rejectsInvalidNameWhenFallbackUnavailable() {
     assertThatThrownBy(() -> new LoginOrSignUpOAuthCommand(
         "test@example.com",
         " ",
         AuthProvider.GITHUB,
-        "github-1"))
+        " "))
         .matches(DomainException.hasErrorCode(UserErrorCode.INVALID_PARAMETER));
   }
 
@@ -45,6 +58,18 @@ class LoginOrSignUpOAuthCommandTest {
         "github-1");
 
     assertThat(command.email()).isEqualTo("test@example.com");
+  }
+
+  @Test
+  @DisplayName("OAuth name이 정책 길이를 초과하면 최대 길이로 자른다")
+  void truncatesLongName() {
+    LoginOrSignUpOAuthCommand command = new LoginOrSignUpOAuthCommand(
+        "test@example.com",
+        "a".repeat(UserPolicy.MAX_NAME_LENGTH + 1),
+        AuthProvider.GITHUB,
+        "github-1");
+
+    assertThat(command.name()).hasSize(UserPolicy.MAX_NAME_LENGTH);
   }
 
 }

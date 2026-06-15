@@ -1,10 +1,10 @@
 package com.schemafy.core.user.application.port.in;
 
-import com.schemafy.core.common.exception.DomainException;
+import java.util.Locale;
+
 import com.schemafy.core.user.domain.AuthProvider;
 import com.schemafy.core.user.domain.Email;
 import com.schemafy.core.user.domain.UserPolicy;
-import com.schemafy.core.user.domain.exception.UserErrorCode;
 
 public record LoginOrSignUpOAuthCommand(
     String email,
@@ -14,10 +14,24 @@ public record LoginOrSignUpOAuthCommand(
 
   public LoginOrSignUpOAuthCommand {
     email = Email.from(email).address();
-    if (name == null || name.isBlank()
-        || name.length() > UserPolicy.MAX_NAME_LENGTH) {
-      throw new DomainException(UserErrorCode.INVALID_PARAMETER);
+    name = normalizeOAuthName(name, provider, providerUserId);
+  }
+
+  private static String normalizeOAuthName(
+      String name,
+      AuthProvider provider,
+      String providerUserId) {
+    String resolvedName = name;
+
+    if ((resolvedName == null || resolvedName.isBlank())
+        && provider != null
+        && providerUserId != null
+        && !providerUserId.isBlank()) {
+      resolvedName = provider.name().toLowerCase(Locale.ROOT) + "-" + providerUserId;
     }
+    resolvedName = UserPolicy.truncateName(resolvedName);
+    UserPolicy.validateName(resolvedName);
+    return resolvedName;
   }
 
 }

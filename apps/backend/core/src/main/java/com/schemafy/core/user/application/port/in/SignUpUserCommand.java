@@ -9,13 +9,11 @@ public record SignUpUserCommand(String email, String name, String password) {
 
   public SignUpUserCommand {
     email = Email.from(email).address();
-    if (name == null || name.isBlank()
-        || name.length() > UserPolicy.MAX_NAME_LENGTH) {
-      throw new DomainException(UserErrorCode.INVALID_PARAMETER);
-    }
+    UserPolicy.validateName(name);
+
     if (password == null || password.isBlank()
         || password.length() < UserPolicy.MIN_SIGN_UP_PASSWORD_LENGTH) {
-      throw new DomainException(UserErrorCode.INVALID_PARAMETER);
+      throw new DomainException(UserErrorCode.INVALID_PARAMETER, "Invalid password");
     }
   }
 
