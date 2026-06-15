@@ -5,6 +5,7 @@ import com.schemafy.core.project.application.port.in.InvitationSummary;
 import com.schemafy.core.project.application.port.out.InvitationPort;
 import com.schemafy.core.project.domain.Invitation;
 import com.schemafy.core.project.domain.InvitationStatus;
+import com.schemafy.core.project.domain.InvitationType;
 
 import lombok.RequiredArgsConstructor;
 import reactor.core.publisher.Flux;
@@ -27,10 +28,14 @@ public class InvitationPersistenceAdapter implements InvitationPort {
   }
 
   @Override
-  public Flux<Invitation> findInvitationsByTargetAndId(String targetType,
+  public Flux<InvitationSummary> findInvitationSummariesByTargetAndId(String targetType,
       String targetId, int limit, int offset) {
-    return invitationRepository.findInvitationsByTargetAndId(targetType,
-        targetId, limit, offset);
+    return switch (InvitationType.fromString(targetType)) {
+      case WORKSPACE -> invitationRepository
+          .findWorkspaceInvitationSummariesByTargetId(targetId, limit, offset);
+      case PROJECT -> invitationRepository
+          .findProjectInvitationSummariesByTargetId(targetId, limit, offset);
+    };
   }
 
   @Override
@@ -46,10 +51,16 @@ public class InvitationPersistenceAdapter implements InvitationPort {
   }
 
   @Override
-  public Flux<Invitation> findByEmailAndTypeAndStatus(String email,
+  public Flux<InvitationSummary> findInvitationSummariesByEmailAndTypeAndStatus(String email,
       String targetType, String status, int limit, int offset) {
-    return invitationRepository.findByEmailAndTypeAndStatus(email, targetType,
-        status, limit, offset);
+    return switch (InvitationType.fromString(targetType)) {
+      case WORKSPACE -> invitationRepository
+          .findWorkspaceInvitationSummariesByEmailAndStatus(email, status, limit,
+              offset);
+      case PROJECT -> invitationRepository
+          .findProjectInvitationSummariesByEmailAndStatus(email, status, limit,
+              offset);
+    };
   }
 
   @Override
@@ -67,8 +78,12 @@ public class InvitationPersistenceAdapter implements InvitationPort {
   @Override
   public Mono<Long> countByEmailAndTypeAndStatus(String email,
       String targetType, String status) {
-    return invitationRepository.countByEmailAndTypeAndStatus(email, targetType,
-        status);
+    return switch (InvitationType.fromString(targetType)) {
+      case WORKSPACE -> invitationRepository.countWorkspaceByEmailAndStatus(
+          email, status);
+      case PROJECT -> invitationRepository.countProjectByEmailAndStatus(email,
+          status);
+    };
   }
 
   @Override

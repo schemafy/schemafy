@@ -12,7 +12,7 @@ public interface InvitationPort {
 
   Mono<Invitation> findByIdAndNotDeleted(String invitationId);
 
-  Flux<Invitation> findInvitationsByTargetAndId(
+  Flux<InvitationSummary> findInvitationSummariesByTargetAndId(
       String targetType,
       String targetId,
       int limit,
@@ -26,7 +26,7 @@ public interface InvitationPort {
       String email,
       String status);
 
-  Flux<Invitation> findByEmailAndTypeAndStatus(
+  Flux<InvitationSummary> findInvitationSummariesByEmailAndTypeAndStatus(
       String email,
       String targetType,
       String status,

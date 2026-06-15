@@ -18,6 +18,8 @@ import com.schemafy.core.user.domain.UserAuthProvider;
 
 import reactor.core.publisher.Mono;
 
+import static org.assertj.core.api.Assertions.assertThat;
+
 public abstract class UserHttpTestSupport {
 
   @Autowired
@@ -86,6 +88,16 @@ public abstract class UserHttpTestSupport {
 
   protected User getUserByEmail(String email) {
     return findUserByEmailPort.findUserByEmail(email).block();
+  }
+
+  protected void softDeleteUser(String userId) {
+    Long rowsUpdated = databaseClient.sql(
+        "UPDATE users SET deleted_at = CURRENT_TIMESTAMP WHERE id = :id")
+        .bind("id", userId)
+        .fetch()
+        .rowsUpdated()
+        .block();
+    assertThat(rowsUpdated).isEqualTo(1);
   }
 
   protected String generateAccessToken(String userId) {
