@@ -6,6 +6,7 @@ import { useNavigate } from '@tanstack/react-router';
 import { signIn } from '@/features/auth/api';
 import { authStore } from '@/store/auth.store';
 import { gitHubLogin } from '@/features/auth/lib/oauth';
+import { reportUnexpectedError } from '@/lib';
 
 const formFields = [
   {
@@ -76,7 +77,10 @@ export const SignInForm = ({ oauthError }: SignInFormProps) => {
       authStore.setUser(user);
       resetForm();
       navigate({ to: '/' });
-    } catch {
+    } catch (error) {
+      reportUnexpectedError(error, {
+        context: 'Unexpected sign-in form failure.',
+      });
     } finally {
       setIsSubmitting(false);
     }

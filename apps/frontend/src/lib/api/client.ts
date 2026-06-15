@@ -1,4 +1,9 @@
-import axios, { type AxiosError, type InternalAxiosRequestConfig } from 'axios';
+import axios, {
+  AxiosHeaders,
+  type AxiosError,
+  type InternalAxiosRequestConfig,
+  type AxiosRequestConfig,
+} from 'axios';
 import { authStore } from '../../store/auth.store';
 import { refreshToken } from '@/features/auth/api';
 import { handleApiError } from './error-handler';
@@ -9,6 +14,8 @@ const API_BASE_URL: string =
 const PUBLIC_BASE_URL: string =
   import.meta.env.VITE_PUBLIC_BASE_URL ||
   'http://localhost:8080/public/api/v1.0';
+
+export type ErrorPolicy = 'default' | 'suppress-toast' | 'bypass';
 
 const commonConfig = {
   timeout: 10000,
@@ -39,45 +46,55 @@ export const publicClient = axios.create({
   baseURL: PUBLIC_BASE_URL,
 });
 
-type RequestConfigWithMeta = InternalAxiosRequestConfig & {
+type RequestConfigMeta = {
   _retry?: boolean;
   _skipAuth?: boolean;
+  errorPolicy?: ErrorPolicy;
 };
 
-apiClient.interceptors.request.use(async (config: RequestConfigWithMeta) => {
-  const currentToken = authStore.accessToken;
-  if (currentToken) {
-    config.headers = config.headers ?? {};
-    (config.headers as Record<string, string>)['Authorization'] =
-      `Bearer ${currentToken}`;
-    return config;
-  }
+export type RequestConfigWithMeta = AxiosRequestConfig & RequestConfigMeta;
 
-  const newToken = await refreshToken();
-  if (newToken) {
-    config.headers = config.headers ?? {};
-    (config.headers as Record<string, string>)['Authorization'] =
-      `Bearer ${newToken}`;
-  }
-  return config;
-});
+type InternalRequestConfigWithMeta = InternalAxiosRequestConfig &
+  RequestConfigMeta;
+
+const setAuthorizationHeader = (
+  config: InternalRequestConfigWithMeta,
+  token: string,
+) => {
+  config.headers = AxiosHeaders.from(config.headers);
+  config.headers.set('Authorization', `Bearer ${token}`);
+};
+
+apiClient.interceptors.request.use(
+  async (config: InternalRequestConfigWithMeta) => {
+    const currentToken = authStore.accessToken;
+    if (currentToken) {
+      setAuthorizationHeader(config, currentToken);
+      return config;
+    }
+
+    const newToken = await refreshToken({ errorPolicy: 'suppress-toast' });
+    if (newToken) {
+      setAuthorizationHeader(config, newToken);
+    }
+    return config;
+  },
+);
 
 apiClient.interceptors.response.use(
   (response) => response,
   async (error: AxiosError) => {
     const responseStatus = error.response?.status;
-    const config = error.config as RequestConfigWithMeta | undefined;
+    const config = error.config as InternalRequestConfigWithMeta | undefined;
     if (!config || config._retry) {
       return Promise.reject(error);
     }
 
     if (responseStatus === 401) {
       config._retry = true;
-      const newToken = await refreshToken();
+      const newToken = await refreshToken({ errorPolicy: 'suppress-toast' });
       if (newToken) {
-        config.headers = config.headers ?? {};
-        (config.headers as Record<string, string>)['Authorization'] =
-          `Bearer ${newToken}`;
+        setAuthorizationHeader(config, newToken);
         return apiClient(config);
       }
     }
@@ -86,4 +103,30 @@ apiClient.interceptors.response.use(
   },
 );
 
-apiClient.interceptors.response.use((response) => response, handleApiError);
+apiClient.interceptors.response.use(
+  (response) => response,
+  (error) => {
+    const config = error.config as InternalRequestConfigWithMeta | undefined;
+    if (config?.errorPolicy === 'bypass') {
+      return Promise.reject(error);
+    }
+
+    return handleApiError(error, {
+      suppressToast: config?.errorPolicy === 'suppress-toast',
+    });
+  },
+);
+
+publicClient.interceptors.response.use(
+  (response) => response,
+  (error) => {
+    const config = error.config as RequestConfigWithMeta | undefined;
+    if (config?.errorPolicy === 'bypass') {
+      return Promise.reject(error);
+    }
+
+    return handleApiError(error, {
+      suppressToast: config?.errorPolicy === 'suppress-toast',
+    });
+  },
+);
