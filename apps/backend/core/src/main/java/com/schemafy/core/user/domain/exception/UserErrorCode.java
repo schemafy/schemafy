@@ -13,6 +13,7 @@ public enum UserErrorCode implements DomainErrorCode {
 
   NOT_FOUND(HttpStatus.NOT_FOUND),
   ALREADY_EXISTS(HttpStatus.CONFLICT),
+  INVALID_PARAMETER(HttpStatus.BAD_REQUEST),
   LOGIN_FAILED(HttpStatus.BAD_REQUEST),
   OAUTH_LINK_INCONSISTENT(HttpStatus.INTERNAL_SERVER_ERROR);
 
