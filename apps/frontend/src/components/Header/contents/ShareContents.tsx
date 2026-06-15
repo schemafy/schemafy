@@ -19,7 +19,7 @@ import { useProjectInvitations } from '@/features/project/hooks/useProjectInvita
 import { useProjectMembers } from '@/features/project/hooks/useProjectMembers';
 import { availableRoles } from '@/features/project/utils/role';
 import { authStore } from '@/store';
-import { toCapitalized } from "@/lib";
+import { toCapitalized } from '@/lib';
 
 const RoleText = ({ role }: { role: string }) => {
   return (
@@ -43,7 +43,7 @@ const RoleSelect = ({
   return (
     <Select value={value} onValueChange={onValueChange}>
       <SelectTrigger className="w-[3.75rem] border-none font-body-xs">
-        <SelectValue/>
+        <SelectValue />
       </SelectTrigger>
       <SelectContent>
         <SelectGroup>
@@ -77,9 +77,9 @@ export const ShareContents = ({ projectId }: { projectId: string }) => {
   );
   const orderedMembers = currentMember
     ? [
-      currentMember,
-      ...members.filter((member) => member.userId !== currentUserId),
-    ]
+        currentMember,
+        ...members.filter((member) => member.userId !== currentUserId),
+      ]
     : members;
 
   const handleInvite = () => {
@@ -136,7 +136,7 @@ export const ShareContents = ({ projectId }: { projectId: string }) => {
             className="flex justify-between items-center"
           >
             <div className="flex gap-2.5 items-center">
-              <Avatar size={'dropdown'}/>
+              <Avatar size={'dropdown'} />
               <p>{member.userName}</p>
             </div>
             {canManageMembers && member.userId !== currentUserId ? (
@@ -148,7 +148,7 @@ export const ShareContents = ({ projectId }: { projectId: string }) => {
                 userRole={currentUserRole}
               />
             ) : (
-              <RoleText role={member.role}/>
+              <RoleText role={member.role} />
             )}
           </div>
         ))}

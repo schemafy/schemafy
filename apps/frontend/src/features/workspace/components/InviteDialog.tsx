@@ -14,7 +14,7 @@ import {
 } from '@/components';
 import { useWorkspaceInvitations } from '../hooks/useWorkspaceInvitations';
 import { availableRoles } from '@/features/workspace/utils/role';
-import { toCapitalized } from "@/lib";
+import { toCapitalized } from '@/lib';
 
 interface InviteDialogProps {
   open: boolean;
