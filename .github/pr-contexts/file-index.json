@@ -1528,5 +1528,8 @@
   ],
   "apps/frontend/src/lib/utils/role.ts": [
     405
+  ],
+  "apps/backend/core/src/test/java/com/schemafy/core/user/domain/UserPolicyTest.java": [
+    387
   ]
 }
