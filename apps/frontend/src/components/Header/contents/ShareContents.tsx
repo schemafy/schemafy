@@ -23,7 +23,7 @@ import { authStore } from '@/store';
 const RoleText = ({ role }: { role: string }) => {
   return (
     <span className="font-body-xs text-schemafy-dark-gray">
-      {role.toLowerCase()}
+      {role[0].toUpperCase() + role.toLowerCase().slice(1, role.length)}
     </span>
   );
 };
@@ -42,13 +42,13 @@ const RoleSelect = ({
   return (
     <Select value={value} onValueChange={onValueChange}>
       <SelectTrigger className="w-[3.75rem] border-none font-body-xs">
-        <SelectValue />
+        <SelectValue/>
       </SelectTrigger>
       <SelectContent>
         <SelectGroup>
           {roles.map((role) => (
             <SelectItem key={role} value={role}>
-              {role.toLowerCase()}
+              {role[0].toUpperCase() + role.toLowerCase().slice(1, role.length)}
             </SelectItem>
           ))}
         </SelectGroup>
@@ -76,9 +76,9 @@ export const ShareContents = ({ projectId }: { projectId: string }) => {
   );
   const orderedMembers = currentMember
     ? [
-        currentMember,
-        ...members.filter((member) => member.userId !== currentUserId),
-      ]
+      currentMember,
+      ...members.filter((member) => member.userId !== currentUserId),
+    ]
     : members;
 
   const handleInvite = () => {
@@ -135,7 +135,7 @@ export const ShareContents = ({ projectId }: { projectId: string }) => {
             className="flex justify-between items-center"
           >
             <div className="flex gap-2.5 items-center">
-              <Avatar size={'dropdown'} />
+              <Avatar size={'dropdown'}/>
               <p>{member.userName}</p>
             </div>
             {canManageMembers && member.userId !== currentUserId ? (
@@ -147,7 +147,7 @@ export const ShareContents = ({ projectId }: { projectId: string }) => {
                 userRole={currentUserRole}
               />
             ) : (
-              <RoleText role={member.role} />
+              <RoleText role={member.role}/>
             )}
           </div>
         ))}
