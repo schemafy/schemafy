@@ -29,8 +29,10 @@ export type ProjectMemberResponse = {
 
 export type ProjectInvitationResponse = {
   id: string;
-  workspaceId: string;
-  projectId: string;
+  type: string;
+  targetId: string;
+  targetName: string;
+  targetDescription?: string;
   invitedEmail: string;
   invitedRole: string;
   invitedBy: string;
