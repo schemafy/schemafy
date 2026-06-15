@@ -11,7 +11,7 @@ import {
 import { useProjects } from '@/features/project/hooks/useProjects';
 import { ProjectFormDialog } from '@/features/project/components/ProjectFormDialog';
 import { ConfirmDialog } from './ConfirmDialog';
-import { formatDate } from '@/lib';
+import { formatDate, toCapitalized } from '@/lib';
 import type { ProjectSummaryResponse } from '@/features/project/api';
 
 interface WorkspaceProjectsTabProps {
@@ -105,7 +105,7 @@ export const WorkspaceProjectsTab = ({
                   </td>
                   <td className="px-6 py-4">
                     <span className="px-3 py-1 bg-schemafy-secondary text-schemafy-dark-gray font-body-sm rounded-full">
-                      {project.myRole.toUpperCase()}
+                      {toCapitalized(project.myRole)}
                     </span>
                   </td>
                   <ProjectOption
