@@ -17,22 +17,20 @@ import type {
   ChangeIndexColumnPositionRequest,
   ChangeIndexColumnSortDirectionRequest,
 } from '../api';
-import { syncCommittedRevision } from '../api/mutation-request';
 import { useErdCache } from './useErdCache';
 
 export const useCreateIndex = (schemaId: string) => {
-  const { updateAffectedTables } = useErdCache(schemaId);
+  const { syncAffectedTables } = useErdCache(schemaId);
   return useMutation({
     mutationFn: (data: CreateIndexRequest) => createIndex(data, schemaId),
     onSuccess: (result) => {
-      syncCommittedRevision(schemaId, result);
-      updateAffectedTables(result.affectedTableIds);
+      syncAffectedTables(result);
     },
   });
 };
 
 export const useChangeIndexName = (schemaId: string) => {
-  const { updateAffectedTables } = useErdCache(schemaId);
+  const { syncAffectedTables } = useErdCache(schemaId);
   return useMutation({
     mutationFn: ({
       indexId,
@@ -42,14 +40,13 @@ export const useChangeIndexName = (schemaId: string) => {
       data: ChangeIndexNameRequest;
     }) => changeIndexName(indexId, data, schemaId),
     onSuccess: (result) => {
-      syncCommittedRevision(schemaId, result);
-      updateAffectedTables(result.affectedTableIds);
+      syncAffectedTables(result);
     },
   });
 };
 
 export const useChangeIndexType = (schemaId: string) => {
-  const { updateAffectedTables } = useErdCache(schemaId);
+  const { syncAffectedTables } = useErdCache(schemaId);
   return useMutation({
     mutationFn: ({
       indexId,
@@ -59,25 +56,23 @@ export const useChangeIndexType = (schemaId: string) => {
       data: ChangeIndexTypeRequest;
     }) => changeIndexType(indexId, data, schemaId),
     onSuccess: (result) => {
-      syncCommittedRevision(schemaId, result);
-      updateAffectedTables(result.affectedTableIds);
+      syncAffectedTables(result);
     },
   });
 };
 
 export const useDeleteIndex = (schemaId: string) => {
-  const { updateAffectedTables } = useErdCache(schemaId);
+  const { syncAffectedTables } = useErdCache(schemaId);
   return useMutation({
     mutationFn: (indexId: string) => deleteIndex(indexId, schemaId),
     onSuccess: (result) => {
-      syncCommittedRevision(schemaId, result);
-      updateAffectedTables(result.affectedTableIds);
+      syncAffectedTables(result);
     },
   });
 };
 
 export const useAddIndexColumn = (schemaId: string) => {
-  const { updateAffectedTables } = useErdCache(schemaId);
+  const { syncAffectedTables } = useErdCache(schemaId);
   return useMutation({
     mutationFn: ({
       indexId,
@@ -87,26 +82,24 @@ export const useAddIndexColumn = (schemaId: string) => {
       data: AddIndexColumnRequest;
     }) => addIndexColumn(indexId, data, schemaId),
     onSuccess: (result) => {
-      syncCommittedRevision(schemaId, result);
-      updateAffectedTables(result.affectedTableIds);
+      syncAffectedTables(result);
     },
   });
 };
 
 export const useRemoveIndexColumn = (schemaId: string) => {
-  const { updateAffectedTables } = useErdCache(schemaId);
+  const { syncAffectedTables } = useErdCache(schemaId);
   return useMutation({
     mutationFn: (indexColumnId: string) =>
       removeIndexColumn(indexColumnId, schemaId),
     onSuccess: (result) => {
-      syncCommittedRevision(schemaId, result);
-      updateAffectedTables(result.affectedTableIds);
+      syncAffectedTables(result);
     },
   });
 };
 
 export const useChangeIndexColumnPosition = (schemaId: string) => {
-  const { updateAffectedTables } = useErdCache(schemaId);
+  const { syncAffectedTables } = useErdCache(schemaId);
   return useMutation({
     mutationFn: ({
       indexColumnId,
@@ -116,14 +109,13 @@ export const useChangeIndexColumnPosition = (schemaId: string) => {
       data: ChangeIndexColumnPositionRequest;
     }) => changeIndexColumnPosition(indexColumnId, data, schemaId),
     onSuccess: (result) => {
-      syncCommittedRevision(schemaId, result);
-      updateAffectedTables(result.affectedTableIds);
+      syncAffectedTables(result);
     },
   });
 };
 
 export const useChangeIndexColumnSortDirection = (schemaId: string) => {
-  const { updateAffectedTables } = useErdCache(schemaId);
+  const { syncAffectedTables } = useErdCache(schemaId);
   return useMutation({
     mutationFn: ({
       indexColumnId,
@@ -133,8 +125,7 @@ export const useChangeIndexColumnSortDirection = (schemaId: string) => {
       data: ChangeIndexColumnSortDirectionRequest;
     }) => changeIndexColumnSortDirection(indexColumnId, data, schemaId),
     onSuccess: (result) => {
-      syncCommittedRevision(schemaId, result);
-      updateAffectedTables(result.affectedTableIds);
+      syncAffectedTables(result);
     },
   });
 };
