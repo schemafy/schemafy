@@ -151,8 +151,7 @@ const NotificationItem = ({
           <span className="break-words font-semibold">
             {invitation.targetName}
           </span>{' '}
-          as{' '}
-          <span className="font-semibold">{invitation.invitedRole}</span>
+          as <span className="font-semibold">{invitation.invitedRole}</span>
         </div>
       </div>
       <Button

@@ -31,10 +31,10 @@ public class InvitationPersistenceAdapter implements InvitationPort {
   public Flux<InvitationSummary> findInvitationSummariesByTargetAndId(String targetType,
       String targetId, int limit, int offset) {
     return switch (InvitationType.fromString(targetType)) {
-      case WORKSPACE -> invitationRepository
-          .findWorkspaceInvitationSummariesByTargetId(targetId, limit, offset);
-      case PROJECT -> invitationRepository
-          .findProjectInvitationSummariesByTargetId(targetId, limit, offset);
+    case WORKSPACE -> invitationRepository
+        .findWorkspaceInvitationSummariesByTargetId(targetId, limit, offset);
+    case PROJECT -> invitationRepository
+        .findProjectInvitationSummariesByTargetId(targetId, limit, offset);
     };
   }
 
@@ -54,12 +54,12 @@ public class InvitationPersistenceAdapter implements InvitationPort {
   public Flux<InvitationSummary> findInvitationSummariesByEmailAndTypeAndStatus(String email,
       String targetType, String status, int limit, int offset) {
     return switch (InvitationType.fromString(targetType)) {
-      case WORKSPACE -> invitationRepository
-          .findWorkspaceInvitationSummariesByEmailAndStatus(email, status, limit,
-              offset);
-      case PROJECT -> invitationRepository
-          .findProjectInvitationSummariesByEmailAndStatus(email, status, limit,
-              offset);
+    case WORKSPACE -> invitationRepository
+        .findWorkspaceInvitationSummariesByEmailAndStatus(email, status, limit,
+            offset);
+    case PROJECT -> invitationRepository
+        .findProjectInvitationSummariesByEmailAndStatus(email, status, limit,
+            offset);
     };
   }
 
@@ -79,10 +79,10 @@ public class InvitationPersistenceAdapter implements InvitationPort {
   public Mono<Long> countByEmailAndTypeAndStatus(String email,
       String targetType, String status) {
     return switch (InvitationType.fromString(targetType)) {
-      case WORKSPACE -> invitationRepository.countWorkspaceByEmailAndStatus(
-          email, status);
-      case PROJECT -> invitationRepository.countProjectByEmailAndStatus(email,
-          status);
+    case WORKSPACE -> invitationRepository.countWorkspaceByEmailAndStatus(
+        email, status);
+    case PROJECT -> invitationRepository.countProjectByEmailAndStatus(email,
+        status);
     };
   }
 
