@@ -197,19 +197,22 @@
     354
   ],
   "apps/backend/api/src/test/java/com/schemafy/api/project/controller/ProjectInvitationControllerTest.java": [
-    354
+    354,
+    407
   ],
   "apps/backend/api/src/test/java/com/schemafy/api/project/controller/WorkspaceControllerTest.java": [
     354
   ],
   "apps/backend/api/src/test/java/com/schemafy/api/project/controller/WorkspaceInvitationControllerTest.java": [
-    354
+    354,
+    407
   ],
   "apps/backend/api/src/test/java/com/schemafy/api/project/docs/ProjectApiSnippets.java": [
     354
   ],
   "apps/backend/api/src/test/java/com/schemafy/api/project/docs/ProjectInvitationApiSnippets.java": [
-    354
+    354,
+    407
   ],
   "apps/backend/api/src/test/java/com/schemafy/api/project/docs/ShareLinkApiSnippets.java": [
     354
@@ -218,7 +221,8 @@
     354
   ],
   "apps/backend/api/src/test/java/com/schemafy/api/project/docs/WorkspaceInvitationApiSnippets.java": [
-    354
+    354,
+    407
   ],
   "apps/backend/api/src/test/java/com/schemafy/api/testsupport/project/ProjectHttpTestSupport.java": [
     354,
@@ -688,22 +692,27 @@
     358
   ],
   "apps/backend/api/src/main/java/com/schemafy/api/project/controller/dto/response/MyInvitationResponse.java": [
-    358
+    358,
+    407
   ],
   "apps/backend/api/src/test/java/com/schemafy/api/project/controller/InvitationControllerTest.java": [
-    358
+    358,
+    407
   ],
   "apps/backend/api/src/test/java/com/schemafy/api/project/docs/MyInvitationApiSnippets.java": [
-    358
+    358,
+    407
   ],
   "apps/backend/core/src/main/java/com/schemafy/core/common/CursorResult.java": [
     358
   ],
   "apps/backend/core/src/main/java/com/schemafy/core/project/adapter/out/persistence/InvitationPersistenceAdapter.java": [
-    358
+    358,
+    407
   ],
   "apps/backend/core/src/main/java/com/schemafy/core/project/adapter/out/persistence/InvitationRepository.java": [
-    358
+    358,
+    407
   ],
   "apps/backend/core/src/main/java/com/schemafy/core/project/application/port/in/GetMyInvitationsQuery.java": [
     358
@@ -712,10 +721,12 @@
     358
   ],
   "apps/backend/core/src/main/java/com/schemafy/core/project/application/port/in/InvitationSummary.java": [
-    358
+    358,
+    407
   ],
   "apps/backend/core/src/main/java/com/schemafy/core/project/application/port/out/InvitationPort.java": [
-    358
+    358,
+    407
   ],
   "apps/backend/core/src/main/java/com/schemafy/core/project/application/service/GetMyInvitationsService.java": [
     358
@@ -743,13 +754,15 @@
     358
   ],
   "apps/bff/src/project/project.types.ts": [
-    358
+    358,
+    407
   ],
   "apps/bff/src/workspace/workspace.service.ts": [
     358
   ],
   "apps/bff/src/workspace/workspace.types.ts": [
-    358
+    358,
+    407
   ],
   "apps/frontend/src/components/EntityFormDialog.tsx": [
     358
@@ -762,7 +775,8 @@
   ],
   "apps/frontend/src/components/Header/contents/NotificationContents.tsx": [
     358,
-    382
+    382,
+    407
   ],
   "apps/frontend/src/components/Header/contents/ShareContents.tsx": [
     358,
@@ -777,7 +791,8 @@
     358
   ],
   "apps/frontend/src/features/project/api/types.ts": [
-    358
+    358,
+    407
   ],
   "apps/frontend/src/features/project/components/ProjectFormDialog.tsx": [
     358,
@@ -797,7 +812,8 @@
     358
   ],
   "apps/frontend/src/features/workspace/api/types.ts": [
-    358
+    358,
+    407
   ],
   "apps/frontend/src/features/workspace/components/WorkspaceFormDialog.tsx": [
     358,
@@ -1048,7 +1064,8 @@
     369
   ],
   "apps/backend/core/src/main/java/com/schemafy/core/project/application/service/GetProjectInvitationsService.java": [
-    369
+    369,
+    407
   ],
   "apps/backend/core/src/main/java/com/schemafy/core/project/application/service/GetProjectsService.java": [
     369
@@ -1060,7 +1077,8 @@
     369
   ],
   "apps/backend/core/src/main/java/com/schemafy/core/project/application/service/GetWorkspaceInvitationsService.java": [
-    369
+    369,
+    407
   ],
   "apps/backend/core/src/main/java/com/schemafy/core/project/application/service/GetWorkspaceMembersService.java": [
     369
@@ -1108,7 +1126,8 @@
     369
   ],
   "apps/backend/core/src/test/java/com/schemafy/core/project/integration/ProjectInvitationUseCaseIntegrationTest.java": [
-    369
+    369,
+    407
   ],
   "apps/backend/core/src/test/java/com/schemafy/core/project/integration/ProjectUseCaseIntegrationTest.java": [
     369
@@ -1117,7 +1136,8 @@
     369
   ],
   "apps/backend/core/src/test/java/com/schemafy/core/project/integration/WorkspaceInvitationUseCaseIntegrationTest.java": [
-    369
+    369,
+    407
   ],
   "apps/backend/core/src/test/java/com/schemafy/core/project/integration/WorkspaceUseCaseIntegrationTest.java": [
     369
@@ -1531,5 +1551,32 @@
   ],
   "apps/backend/core/src/test/java/com/schemafy/core/user/domain/UserPolicyTest.java": [
     387
+  ],
+  "apps/backend/api/src/main/java/com/schemafy/api/project/controller/dto/response/ProjectInvitationResponse.java": [
+    407
+  ],
+  "apps/backend/api/src/main/java/com/schemafy/api/project/controller/dto/response/WorkspaceInvitationResponse.java": [
+    407
+  ],
+  "apps/backend/api/src/test/java/com/schemafy/api/testsupport/user/UserHttpTestSupport.java": [
+    407
+  ],
+  "apps/backend/core/src/main/java/com/schemafy/core/project/application/port/in/GetMyProjectInvitationsUseCase.java": [
+    407
+  ],
+  "apps/backend/core/src/main/java/com/schemafy/core/project/application/port/in/GetMyWorkspaceInvitationsUseCase.java": [
+    407
+  ],
+  "apps/backend/core/src/main/java/com/schemafy/core/project/application/port/in/GetProjectInvitationsUseCase.java": [
+    407
+  ],
+  "apps/backend/core/src/main/java/com/schemafy/core/project/application/port/in/GetWorkspaceInvitationsUseCase.java": [
+    407
+  ],
+  "apps/backend/core/src/main/java/com/schemafy/core/project/application/service/GetMyProjectInvitationsService.java": [
+    407
+  ],
+  "apps/backend/core/src/main/java/com/schemafy/core/project/application/service/GetMyWorkspaceInvitationsService.java": [
+    407
   ]
 }
