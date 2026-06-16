@@ -128,7 +128,6 @@ class DefaultErdMutationCoordinator implements ErdMutationCoordinator {
       ErdOperationMetadata metadata) {
     FinalizedErdMutationTarget finalizedTarget = erdMutationTargetFinalizer.finalizeTarget(
         operationType,
-        payload,
         resolvedTarget,
         mutationResult);
 
@@ -215,9 +214,6 @@ class DefaultErdMutationCoordinator implements ErdMutationCoordinator {
         mutationResult.inversePayload() == null
             ? null
             : jsonCodec.serialize(mutationResult.inversePayload(), InversePayload.class),
-        jsonCodec.serialize(finalizedTarget.touchedEntity() == null
-            ? List.of()
-            : List.of(finalizedTarget.touchedEntity())),
         jsonCodec.serialize(affectedTableIds));
   }
 

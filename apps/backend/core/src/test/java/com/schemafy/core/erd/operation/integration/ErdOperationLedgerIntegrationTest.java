@@ -1035,7 +1035,6 @@ class ErdOperationLedgerIntegrationTest extends ErdProjectIntegrationSupport {
             lifecycle_state,
             payload_json,
             inverse_payload_json,
-            touched_entities_json,
             affected_table_ids_json
         ) VALUES (
             :opId,
@@ -1052,7 +1051,6 @@ class ErdOperationLedgerIntegrationTest extends ErdProjectIntegrationSupport {
             'COMMITTED',
             '{}',
             NULL,
-            '[]',
             '[]'
         )
         """)
