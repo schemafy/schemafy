@@ -1592,7 +1592,8 @@
     409
   ],
   "apps/frontend/src/features/drawing/components/RelationshipSelector.tsx": [
-    409
+    409,
+    413
   ],
   "apps/backend/core/src/main/java/com/schemafy/core/erd/operation/adapter/out/persistence/ErdOperationLogEntity.java": [
     412
