@@ -1582,5 +1582,8 @@
   ],
   "apps/frontend/src/assets/logo.svg": [
     409
+  ],
+  "apps/frontend/src/features/drawing/components/RelationshipSelector.tsx": [
+    409
   ]
 }
