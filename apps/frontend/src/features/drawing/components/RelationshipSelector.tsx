@@ -37,7 +37,10 @@ export const RelationshipSelector = ({
               ${config.type === key ? 'bg-schemafy-secondary border border-schemafy-light-gray' : ''}
             `}
           >
-            <LinePreview isNonIdentifying={config.isNonIdentifying} />
+            <LinePreview
+              isNonIdentifying={config.isNonIdentifying}
+              type={key as RelationshipType}
+            />
             {typeInfo.label}
           </button>
         ))}
@@ -58,20 +61,35 @@ export const RelationshipSelector = ({
   );
 };
 
-const LinePreview = ({ isNonIdentifying }: { isNonIdentifying: boolean }) => {
+const LinePreview = ({
+  isNonIdentifying,
+  type,
+}: {
+  isNonIdentifying: boolean;
+  type: RelationshipType;
+}) => {
   const color = 'var(--color-schemafy-dark-gray)';
+  const isMany = type === 'one-to-many';
+  const lineEnd = isMany ? 16 : 24;
 
   return (
-    <svg width="24" height="4" className="flex-shrink-0">
+    <svg width="24" height="12" className="flex-shrink-0">
       <line
         x1="0"
-        y1="2"
-        x2="24"
-        y2="2"
+        y1="6"
+        x2={lineEnd}
+        y2="6"
         stroke={color}
         strokeWidth="2"
         strokeDasharray={isNonIdentifying ? '5 5' : 'none'}
       />
+      {isMany && (
+        <>
+          <line x1="24" y1="1" x2="16" y2="6" stroke={color} strokeWidth="2" />
+          <line x1="24" y1="6" x2="16" y2="6" stroke={color} strokeWidth="2" />
+          <line x1="24" y1="11" x2="16" y2="6" stroke={color} strokeWidth="2" />
+        </>
+      )}
     </svg>
   );
 };
