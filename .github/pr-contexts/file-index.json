@@ -251,7 +251,8 @@
     337,
     372,
     375,
-    376
+    376,
+    412
   ],
   "apps/backend/core/src/main/java/com/schemafy/core/erd/operation/application/service/DefaultUndoRedoEligibilityService.java": [
     352
@@ -287,11 +288,13 @@
   ],
   "apps/backend/core/src/test/java/com/schemafy/core/erd/operation/application/service/DefaultUndoRedoEligibilityServiceTest.java": [
     352,
-    372
+    372,
+    412
   ],
   "apps/backend/core/src/test/java/com/schemafy/core/erd/operation/integration/UndoRedoEligibilityIntegrationTest.java": [
     352,
-    372
+    372,
+    412
   ],
   "apps/backend/core/src/test/java/com/schemafy/core/erd/schema/application/service/GetSchemaWithRevisionServiceTest.java": [
     337
@@ -643,16 +646,19 @@
   ],
   "apps/backend/core/src/test/java/com/schemafy/core/erd/operation/integration/ErdOperationLedgerIntegrationTest.java": [
     372,
-    341
+    341,
+    412
   ],
   "apps/backend/core/src/test/java/com/schemafy/core/erd/table/application/service/ChangeTableNameServiceTest.java": [
     372
   ],
   "apps/backend/sql-resources/ddl/h2/erd_operation_log.sql": [
-    372
+    372,
+    412
   ],
   "apps/backend/sql-resources/ddl/mariadb/erd_operation_log.sql": [
-    372
+    372,
+    412
   ],
   ".agents/skills/perf-audit-canvas-ops/SKILL.md": [
     373
@@ -951,7 +957,8 @@
     376
   ],
   "apps/backend/core/src/main/java/com/schemafy/core/erd/operation/application/service/ErdMutationTargetFinalizer.java": [
-    375
+    375,
+    412
   ],
   "apps/backend/core/src/main/java/com/schemafy/core/erd/operation/application/service/ErdMutationTargetLookup.java": [
     375
@@ -960,7 +967,8 @@
     375
   ],
   "apps/backend/core/src/main/java/com/schemafy/core/erd/operation/application/service/FinalizedErdMutationTarget.java": [
-    375
+    375,
+    412
   ],
   "apps/backend/core/src/main/java/com/schemafy/core/erd/operation/application/service/IndexMutationTargetResolver.java": [
     375,
@@ -1585,5 +1593,32 @@
   ],
   "apps/frontend/src/features/drawing/components/RelationshipSelector.tsx": [
     409
+  ],
+  "apps/backend/core/src/main/java/com/schemafy/core/erd/operation/adapter/out/persistence/ErdOperationLogEntity.java": [
+    412
+  ],
+  "apps/backend/core/src/main/java/com/schemafy/core/erd/operation/adapter/out/persistence/ErdOperationLogMapper.java": [
+    412
+  ],
+  "apps/backend/core/src/main/java/com/schemafy/core/erd/operation/domain/ErdOperationLog.java": [
+    412
+  ],
+  "apps/backend/core/src/main/java/com/schemafy/core/erd/operation/domain/ErdOperationType.java": [
+    412
+  ],
+  "apps/backend/core/src/main/java/com/schemafy/core/erd/operation/domain/ErdTouchedEntity.java": [
+    412
+  ],
+  "apps/backend/core/src/main/java/com/schemafy/core/erd/operation/domain/ErdTouchedEntityType.java": [
+    412
+  ],
+  "apps/backend/core/src/test/java/com/schemafy/core/erd/operation/application/service/DefaultErdMutationCoordinatorTest.java": [
+    412
+  ],
+  "apps/backend/core/src/test/java/com/schemafy/core/erd/operation/application/service/UndoRedoErdOperationServiceTest.java": [
+    412
+  ],
+  "apps/backend/core/src/test/java/com/schemafy/core/project/adapter/out/persistence/ErdProjectIdByAccessResourceAdapterTest.java": [
+    412
   ]
 }
