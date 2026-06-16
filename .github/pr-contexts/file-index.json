@@ -445,7 +445,8 @@
   ],
   "apps/frontend/src/components/Header/Header.tsx": [
     361,
-    318
+    318,
+    409
   ],
   "apps/frontend/src/components/Header/LandingHeader.tsx": [
     361
@@ -1578,5 +1579,8 @@
   ],
   "apps/backend/core/src/main/java/com/schemafy/core/project/application/service/GetMyWorkspaceInvitationsService.java": [
     407
+  ],
+  "apps/frontend/src/assets/logo.svg": [
+    409
   ]
 }
