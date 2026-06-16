@@ -181,7 +181,6 @@ class UndoRedoEligibilityIntegrationTest extends ErdProjectIntegrationSupport {
         ErdOperationLifecycleState.COMMITTED,
         "{}",
         "{}",
-        "[]",
         "[]");
 
     return appendErdOperationLogPort.append(operationLog).block();

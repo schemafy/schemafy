@@ -230,7 +230,6 @@ class ErdProjectIdByAccessResourceAdapterTest {
             derivation_kind,
             lifecycle_state,
             payload_json,
-            touched_entities_json,
             affected_table_ids_json
         ) VALUES (
             :opId,
@@ -242,7 +241,6 @@ class ErdProjectIdByAccessResourceAdapterTest {
             'ORIGINAL',
             'COMMITTED',
             '{}',
-            '[]',
             '[]'
         )
         """)

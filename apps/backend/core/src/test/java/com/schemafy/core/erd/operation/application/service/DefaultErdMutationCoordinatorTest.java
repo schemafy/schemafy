@@ -25,8 +25,6 @@ import com.schemafy.core.erd.operation.domain.ErdOperationDerivationKind;
 import com.schemafy.core.erd.operation.domain.ErdOperationLifecycleState;
 import com.schemafy.core.erd.operation.domain.ErdOperationLog;
 import com.schemafy.core.erd.operation.domain.ErdOperationType;
-import com.schemafy.core.erd.operation.domain.ErdTouchedEntity;
-import com.schemafy.core.erd.operation.domain.ErdTouchedEntityType;
 import com.schemafy.core.erd.operation.domain.SchemaCollaborationState;
 import com.schemafy.core.ulid.application.port.out.UlidGeneratorPort;
 
@@ -36,7 +34,6 @@ import reactor.test.StepVerifier;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
-import static org.mockito.ArgumentMatchers.same;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.then;
 import static org.mockito.Mockito.lenient;
@@ -116,8 +113,7 @@ class DefaultErdMutationCoordinatorTest {
         null);
     FinalizedErdMutationTarget finalizedTarget = new FinalizedErdMutationTarget(
         "project1",
-        "schema1",
-        new ErdTouchedEntity(ErdTouchedEntityType.TABLE, "table1"));
+        "schema1");
     List<String> events = new ArrayList<>();
 
     given(erdMutationTargetResolver.resolveBefore(ErdOperationType.CREATE_TABLE, payload))
@@ -128,7 +124,7 @@ class DefaultErdMutationCoordinatorTest {
           return Mono.just(lockedState);
         });
     given(erdMutationTargetFinalizer.finalizeTarget(eq(ErdOperationType.CREATE_TABLE),
-        same(payload), eq(resolvedTarget), any()))
+        eq(resolvedTarget), any()))
         .willReturn(finalizedTarget);
     given(incrementSchemaCollaborationRevisionPort.increment("schema1"))
         .willReturn(Mono.just(updatedState));
@@ -172,7 +168,6 @@ class DefaultErdMutationCoordinatorTest {
         ErdOperationLifecycleState.COMMITTED,
         "{}",
         null,
-        "{}",
         "{}"));
   }
 

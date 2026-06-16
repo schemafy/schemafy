@@ -26,7 +26,6 @@ class ErdOperationLogMapper {
         .lifecycleState(erdOperationLog.lifecycleState().name())
         .payloadJson(erdOperationLog.payloadJson())
         .inversePayloadJson(erdOperationLog.inversePayloadJson())
-        .touchedEntitiesJson(erdOperationLog.touchedEntitiesJson())
         .affectedTableIdsJson(erdOperationLog.affectedTableIdsJson())
         .build();
   }
@@ -47,7 +46,6 @@ class ErdOperationLogMapper {
         ErdOperationLifecycleState.valueOf(entity.getLifecycleState()),
         entity.getPayloadJson(),
         entity.getInversePayloadJson(),
-        entity.getTouchedEntitiesJson(),
         entity.getAffectedTableIdsJson());
   }
 
