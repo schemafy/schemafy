@@ -43,13 +43,13 @@ export const syncCommittedRevision = (
     committedRevision,
   );
 
-  if (syncStatus === 'stale') return syncStatus;
-
   operationHistoryStore.markUndoable(
     schemaId,
     result.operation,
     result.affectedTableIds ?? [],
   );
+
+  if (syncStatus === 'stale') return syncStatus;
 
   collaborationStore.setSchemaRevision(schemaId, committedRevision);
 
