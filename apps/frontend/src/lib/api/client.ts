@@ -55,12 +55,12 @@ const getHeaderValue = (
     typeof headers.get === 'function'
       ? headers.get(name)
       : (() => {
-        const record = headers as Record<string, unknown>;
-        const key = Object.keys(record).find(
-          (k) => k.toLowerCase() === name.toLowerCase(),
-        );
-        return key ? record[key] : undefined;
-      })();
+          const record = headers as Record<string, unknown>;
+          const key = Object.keys(record).find(
+            (k) => k.toLowerCase() === name.toLowerCase(),
+          );
+          return key ? record[key] : undefined;
+        })();
 
   if (typeof value === 'string') return value;
   if (typeof value === 'number') return String(value);
