@@ -48,6 +48,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.then;
+import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
 
@@ -106,8 +107,9 @@ class ChangeColumnTypeServiceTest {
 
     @BeforeEach
     void setUpFkCheck() {
-      given(getRelationshipColumnsByColumnIdPort.findRelationshipColumnsByColumnId(any()))
-          .willReturn(Mono.just(List.of()));
+      lenient()
+          .when(getRelationshipColumnsByColumnIdPort.findRelationshipColumnsByColumnId(any()))
+          .thenReturn(Mono.just(List.of()));
     }
 
     @Nested
@@ -191,6 +193,54 @@ class ChangeColumnTypeServiceTest {
             .changeColumnType(eq(command.columnId()), eq("ENUM"), any());
       }
 
+      @Test
+      @DisplayName("직접 컬럼 type 결과가 같으면 주변 조회 없이 변경 없이 성공한다")
+      void succeedsWithoutCascadeCheckWhenDirectTypeResultIsSame() {
+        var command = ColumnFixture.changeTypeCommand("INT", null, null, null);
+        var column = ColumnFixture.intColumn();
+
+        given(getColumnByIdPort.findColumnById(command.columnId()))
+            .willReturn(Mono.just(column));
+
+        StepVerifier.create(sut.changeColumnType(command))
+            .expectNextMatches(result -> result.operation() == null)
+            .verifyComplete();
+
+        then(getColumnsByTableIdPort).shouldHaveNoInteractions();
+        then(getRelationshipColumnsByColumnIdPort).shouldHaveNoInteractions();
+        then(changeColumnTypePort).shouldHaveNoInteractions();
+        then(changeColumnMetaPort).shouldHaveNoInteractions();
+        then(getConstraintColumnsByColumnIdPort).shouldHaveNoInteractions();
+        then(getRelationshipsByPkTableIdPort).shouldHaveNoInteractions();
+      }
+
+      @Test
+      @DisplayName("FK 컬럼의 type을 실제 변경하면 예외가 발생한다")
+      void rejectsForeignKeyColumnWhenDirectTypeWouldChange() {
+        var command = ColumnFixture.changeTypeCommand("BIGINT", null, null, null);
+        var column = ColumnFixture.intColumn();
+        var relationshipColumn = new RelationshipColumn(
+            "relationship-column-1",
+            "relationship-1",
+            "pk-column-1",
+            column.id(),
+            0);
+
+        given(getColumnByIdPort.findColumnById(command.columnId()))
+            .willReturn(Mono.just(column));
+        given(getColumnsByTableIdPort.findColumnsByTableId(column.tableId()))
+            .willReturn(Mono.just(List.of(column)));
+        given(getRelationshipColumnsByColumnIdPort.findRelationshipColumnsByColumnId(any()))
+            .willReturn(Mono.just(List.of(relationshipColumn)));
+
+        StepVerifier.create(sut.changeColumnType(command))
+            .expectErrorMatches(DomainException.hasErrorCode(ColumnErrorCode.FK_PROTECTED))
+            .verify();
+
+        then(changeColumnTypePort).shouldHaveNoInteractions();
+        then(changeColumnMetaPort).shouldHaveNoInteractions();
+      }
+
     }
 
     @Nested
@@ -226,8 +276,6 @@ class ChangeColumnTypeServiceTest {
 
         given(getColumnByIdPort.findColumnById(any()))
             .willReturn(Mono.just(column));
-        given(getColumnsByTableIdPort.findColumnsByTableId(any()))
-            .willReturn(Mono.just(List.of(column)));
 
         StepVerifier.create(sut.changeColumnType(command))
             .expectErrorMatches(DomainException.hasErrorCode(ColumnErrorCode.PRECISION_REQUIRED))
@@ -250,8 +298,6 @@ class ChangeColumnTypeServiceTest {
 
         given(getColumnByIdPort.findColumnById(any()))
             .willReturn(Mono.just(column));
-        given(getColumnsByTableIdPort.findColumnsByTableId(any()))
-            .willReturn(Mono.just(List.of(column)));
 
         StepVerifier.create(sut.changeColumnType(command))
             .expectErrorMatches(DomainException.hasErrorCode(ColumnErrorCode.INVALID_VALUE))
@@ -274,8 +320,6 @@ class ChangeColumnTypeServiceTest {
 
         given(getColumnByIdPort.findColumnById(any()))
             .willReturn(Mono.just(column));
-        given(getColumnsByTableIdPort.findColumnsByTableId(any()))
-            .willReturn(Mono.just(List.of(column)));
 
         StepVerifier.create(sut.changeColumnType(command))
             .expectErrorMatches(DomainException.hasErrorCode(ColumnErrorCode.AUTO_INCREMENT_NOT_ALLOWED))

@@ -73,6 +73,24 @@ class ChangeIndexTypeServiceTest {
     }
 
     @Test
+    @DisplayName("현재 타입과 같으면 주변 index 조회 없이 변경 없이 성공한다")
+    void succeedsWithoutDefinitionLookupWhenTypeIsSame() {
+      var index = IndexFixture.defaultIndex();
+      var command = IndexFixture.changeTypeCommand(index.id(), index.type());
+
+      given(getIndexByIdPort.findIndexById(index.id()))
+          .willReturn(Mono.just(index));
+
+      StepVerifier.create(sut.changeIndexType(command))
+          .expectNextMatches(result -> result.operation() == null)
+          .verifyComplete();
+
+      then(getIndexesByTableIdPort).shouldHaveNoInteractions();
+      then(getIndexColumnsByIndexIdPort).shouldHaveNoInteractions();
+      then(changeIndexTypePort).shouldHaveNoInteractions();
+    }
+
+    @Test
     @DisplayName("타입이 null이면 예외가 발생한다")
     void throwsWhenTypeIsNull() {
       var command = IndexFixture.changeTypeCommand("index1", null);

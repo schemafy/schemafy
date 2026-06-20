@@ -19,7 +19,6 @@ import reactor.test.StepVerifier;
 
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
-import static org.mockito.ArgumentMatchers.isNull;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.then;
 
@@ -60,41 +59,35 @@ class ChangeRelationshipExtraServiceTest {
     }
 
     @Test
-    @DisplayName("extra 값을 null로 설정할 수 있다")
+    @DisplayName("extra 값이 이미 null이면 변경 없이 성공한다")
     void allowsNullExtra() {
       var command = RelationshipFixture.changeExtraCommand(null);
       var relationship = RelationshipFixture.defaultRelationship();
 
       given(getRelationshipByIdPort.findRelationshipById(any()))
           .willReturn(Mono.just(relationship));
-      given(changeRelationshipExtraPort.changeRelationshipExtra(any(), any()))
-          .willReturn(Mono.empty());
 
       StepVerifier.create(sut.changeRelationshipExtra(command))
-          .expectNextCount(1)
+          .expectNextMatches(result -> result.operation() == null)
           .verifyComplete();
 
-      then(changeRelationshipExtraPort).should()
-          .changeRelationshipExtra(eq(relationship.id()), isNull());
+      then(changeRelationshipExtraPort).shouldHaveNoInteractions();
     }
 
     @Test
-    @DisplayName("빈 문자열은 null로 정규화된다")
+    @DisplayName("빈 문자열이 현재 null로 정규화되면 변경 없이 성공한다")
     void normalizesBlankToNull() {
       var command = RelationshipFixture.changeExtraCommand("   ");
       var relationship = RelationshipFixture.defaultRelationship();
 
       given(getRelationshipByIdPort.findRelationshipById(any()))
           .willReturn(Mono.just(relationship));
-      given(changeRelationshipExtraPort.changeRelationshipExtra(any(), any()))
-          .willReturn(Mono.empty());
 
       StepVerifier.create(sut.changeRelationshipExtra(command))
-          .expectNextCount(1)
+          .expectNextMatches(result -> result.operation() == null)
           .verifyComplete();
 
-      then(changeRelationshipExtraPort).should()
-          .changeRelationshipExtra(eq(relationship.id()), isNull());
+      then(changeRelationshipExtraPort).shouldHaveNoInteractions();
     }
 
     @Test

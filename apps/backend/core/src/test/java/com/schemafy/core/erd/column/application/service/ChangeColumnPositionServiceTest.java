@@ -98,7 +98,7 @@ class ChangeColumnPositionServiceTest {
       }
 
       @Test
-      @DisplayName("같은 위치로 이동해도 정상 처리된다")
+      @DisplayName("같은 위치로 이동하면 변경 없이 성공한다")
       void changesPositionToSameIndex() {
         var command = ColumnFixture.changePositionCommand(0);
         var column = ColumnFixture.defaultColumn();
@@ -120,15 +120,12 @@ class ChangeColumnPositionServiceTest {
             .willReturn(Mono.just(column));
         given(getColumnsByTableIdPort.findColumnsByTableId(any()))
             .willReturn(Mono.just(columns));
-        given(changeColumnPositionPort.changeColumnPositions(any(), anyList()))
-            .willReturn(Mono.empty());
 
         StepVerifier.create(sut.changeColumnPosition(command))
-            .expectNextCount(1)
+            .expectNextMatches(result -> result.operation() == null)
             .verifyComplete();
 
-        then(changeColumnPositionPort).should()
-            .changeColumnPositions(eq(column.tableId()), anyList());
+        then(changeColumnPositionPort).shouldHaveNoInteractions();
       }
 
     }
@@ -138,7 +135,7 @@ class ChangeColumnPositionServiceTest {
     class WithNegativePosition {
 
       @Test
-      @DisplayName("첫 번째 위치로 clamp되어 정상 처리된다")
+      @DisplayName("첫 번째 위치로 clamp되어 변경 없이 성공한다")
       void clampsToFirstPosition() {
         var command = ColumnFixture.changePositionCommand(-1);
         var column = ColumnFixture.defaultColumn();
@@ -160,15 +157,12 @@ class ChangeColumnPositionServiceTest {
             .willReturn(Mono.just(column));
         given(getColumnsByTableIdPort.findColumnsByTableId(any()))
             .willReturn(Mono.just(columns));
-        given(changeColumnPositionPort.changeColumnPositions(any(), anyList()))
-            .willReturn(Mono.empty());
 
         StepVerifier.create(sut.changeColumnPosition(command))
-            .expectNextCount(1)
+            .expectNextMatches(result -> result.operation() == null)
             .verifyComplete();
 
-        then(changeColumnPositionPort).should()
-            .changeColumnPositions(eq(column.tableId()), anyList());
+        then(changeColumnPositionPort).shouldHaveNoInteractions();
       }
 
     }

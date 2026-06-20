@@ -83,60 +83,71 @@ public class ChangeColumnTypeService implements ChangeColumnTypeUseCase {
     Set<String> capturedFkColumnIds = new HashSet<>();
     List<FkColumnTypeRevert> fkRevertList = new ArrayList<>();
 
-    return erdMutationCoordinator.coordinate(ErdOperationType.CHANGE_COLUMN_TYPE, command,
-        () -> rejectIfForeignKeyColumn(command.columnId())
-            .then(getColumnByIdPort.findColumnById(command.columnId()))
-            .switchIfEmpty(Mono.error(new DomainException(ColumnErrorCode.NOT_FOUND, "Column not found")))
-            .flatMap(column -> {
-              affectedTableIds.add(column.tableId());
-              return getColumnsByTableIdPort.findColumnsByTableId(column.tableId())
-                  .defaultIfEmpty(List.of())
-                  .flatMap(columns -> applyChange(
-                      column,
-                      columns,
-                      command.dataType(),
-                      typeArguments,
-                      affectedTableIds,
-                      fkRevertList,
-                      capturedFkColumnIds)
-                      .then(Mono.fromCallable(() -> MutationResult.<Void>of(null, affectedTableIds)
-                          .withInverse(new ChangeColumnTypeInverse(
-                              column.id(),
-                              column.dataType(),
-                              column.typeArguments(),
-                              fkRevertList)))));
-            }))
+    return getColumnByIdPort.findColumnById(command.columnId())
+        .switchIfEmpty(Mono.error(new DomainException(ColumnErrorCode.NOT_FOUND, "Column not found")))
+        .flatMap(column -> {
+          affectedTableIds.add(column.tableId());
+          return resolveDirectChange(column, command.dataType(), typeArguments)
+              .flatMap(change -> {
+                if (!change.hasDirectChange()) {
+                  return Mono.just(MutationResult.<Void>of(null, affectedTableIds));
+                }
+                return validateCrossColumnRules(column, change)
+                    .then(rejectIfForeignKeyColumn(command.columnId()))
+                    .then(Mono.defer(() -> erdMutationCoordinator.coordinate(
+                        ErdOperationType.CHANGE_COLUMN_TYPE,
+                        command,
+                        () -> applyChange(
+                            column,
+                            change,
+                            affectedTableIds,
+                            fkRevertList,
+                            capturedFkColumnIds)
+                            .then(Mono.fromCallable(() -> MutationResult.<Void>of(null, affectedTableIds)
+                                .withInverse(new ChangeColumnTypeInverse(
+                                    column.id(),
+                                    column.dataType(),
+                                    column.typeArguments(),
+                                    fkRevertList)))))));
+              });
+        })
         .as(transactionalOperator::transactional);
-  }
-
-  private Mono<Void> rejectIfForeignKeyColumn(String columnId) {
-    return getRelationshipColumnsByColumnIdPort.findRelationshipColumnsByColumnId(columnId)
-        .flatMap(relationshipColumns -> {
-          boolean isFk = relationshipColumns.stream()
-              .anyMatch(rc -> rc.fkColumnId().equals(columnId));
-          if (isFk) {
-            return Mono.error(new DomainException(ColumnErrorCode.FK_PROTECTED,
-                "Foreign key column type cannot be changed directly"));
-          }
-          return Mono.empty();
-        });
   }
 
   private Mono<Void> applyChange(
       Column column,
-      List<Column> columns,
-      String dataType,
-      ColumnTypeArguments typeArguments,
+      DirectColumnTypeChange change,
       Set<String> affectedTableIds,
       List<FkColumnTypeRevert> fkRevertList,
       Set<String> capturedFkColumnIds) {
+    String normalizedDataType = change.dataType();
+    ColumnTypeArguments typeArguments = change.typeArguments();
+    ResolvedColumnMeta targetMeta = change.targetMeta();
+
+    return changeColumnTypePort.changeColumnType(column.id(), normalizedDataType, typeArguments)
+        .then(applyDerivedMetaIfNeeded(column, targetMeta))
+        .then(cascadeTypeToFkColumns(
+            column,
+            normalizedDataType,
+            typeArguments,
+            targetMeta,
+            new HashSet<>(),
+            affectedTableIds,
+            fkRevertList,
+            capturedFkColumnIds));
+  }
+
+  private Mono<DirectColumnTypeChange> resolveDirectChange(
+      Column column,
+      String dataType,
+      ColumnTypeArguments typeArguments) {
     String normalizedDataType = ColumnValidator.normalizeDataType(dataType);
     ColumnValidator.validateDataType(normalizedDataType);
     ColumnValidator.validateTypeArguments(normalizedDataType, typeArguments);
     ColumnValidator.validateAutoIncrement(
         normalizedDataType,
         column.autoIncrement(),
-        columns,
+        null,
         column.id());
 
     return resolveTargetMeta(column, normalizedDataType)
@@ -145,18 +156,40 @@ public class ChangeColumnTypeService implements ChangeColumnTypeUseCase {
               normalizedDataType,
               targetMeta.charset(),
               targetMeta.collation());
+          DirectColumnTypeChange directChange = new DirectColumnTypeChange(
+              normalizedDataType,
+              typeArguments,
+              targetMeta,
+              !Objects.equals(column.dataType(), normalizedDataType)
+                  || !Objects.equals(column.typeArguments(), typeArguments)
+                  || !Objects.equals(column.charset(), targetMeta.charset())
+                  || !Objects.equals(column.collation(), targetMeta.collation()));
+          return Mono.just(directChange);
+        });
+  }
 
-          return changeColumnTypePort.changeColumnType(column.id(), normalizedDataType, typeArguments)
-              .then(applyDerivedMetaIfNeeded(column, targetMeta))
-              .then(cascadeTypeToFkColumns(
-                  column,
-                  normalizedDataType,
-                  typeArguments,
-                  targetMeta,
-                  new HashSet<>(),
-                  affectedTableIds,
-                  fkRevertList,
-                  capturedFkColumnIds));
+  private Mono<Void> validateCrossColumnRules(Column column, DirectColumnTypeChange change) {
+    return getColumnsByTableIdPort.findColumnsByTableId(column.tableId())
+        .defaultIfEmpty(List.of())
+        .doOnNext(columns -> ColumnValidator.validateAutoIncrement(
+            change.dataType(),
+            column.autoIncrement(),
+            columns,
+            column.id()))
+        .then();
+  }
+
+  private Mono<Void> rejectIfForeignKeyColumn(String columnId) {
+    return getRelationshipColumnsByColumnIdPort.findRelationshipColumnsByColumnId(columnId)
+        .defaultIfEmpty(List.of())
+        .flatMap(relationshipColumns -> {
+          boolean isFk = relationshipColumns.stream()
+              .anyMatch(rc -> rc.fkColumnId().equals(columnId));
+          if (isFk) {
+            return Mono.error(new DomainException(ColumnErrorCode.FK_PROTECTED,
+                "Foreign key column type cannot be changed directly"));
+          }
+          return Mono.empty();
         });
   }
 
@@ -312,6 +345,13 @@ public class ChangeColumnTypeService implements ChangeColumnTypeUseCase {
       return new ResolvedColumnMeta(null, null);
     }
 
+  }
+
+  private record DirectColumnTypeChange(
+      String dataType,
+      ColumnTypeArguments typeArguments,
+      ResolvedColumnMeta targetMeta,
+      boolean hasDirectChange) {
   }
 
 }

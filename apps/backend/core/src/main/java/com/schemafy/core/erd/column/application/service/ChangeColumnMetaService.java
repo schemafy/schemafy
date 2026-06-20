@@ -62,22 +62,30 @@ public class ChangeColumnMetaService implements ChangeColumnMetaUseCase {
   @Override
   public Mono<MutationResult<Void>> changeColumnMeta(ChangeColumnMetaCommand command) {
     Set<String> affectedTableIds = ConcurrentHashMap.newKeySet();
-    return erdMutationCoordinator.coordinate(ErdOperationType.CHANGE_COLUMN_META, command,
-        () -> rejectIfForeignKeyColumn(command.columnId())
-            .then(getColumnByIdPort.findColumnById(command.columnId()))
-            .switchIfEmpty(Mono.error(new DomainException(ColumnErrorCode.NOT_FOUND, "Column not found")))
-            .flatMap(column -> {
-              affectedTableIds.add(column.tableId());
-              return getColumnsByTableIdPort.findColumnsByTableId(column.tableId())
-                  .defaultIfEmpty(List.of())
-                  .flatMap(columns -> applyChange(column, columns, command, affectedTableIds));
-            })
-            .then(Mono.fromCallable(() -> MutationResult.<Void>of(null, affectedTableIds))))
+    return getColumnByIdPort.findColumnById(command.columnId())
+        .switchIfEmpty(Mono.error(new DomainException(ColumnErrorCode.NOT_FOUND, "Column not found")))
+        .flatMap(column -> {
+          affectedTableIds.add(column.tableId());
+          return resolveDirectChange(column, command)
+              .flatMap(change -> {
+                if (!change.hasDirectChange()) {
+                  return Mono.just(MutationResult.<Void>of(null, affectedTableIds));
+                }
+                return validateCrossColumnRules(column, change)
+                    .then(rejectIfForeignKeyColumn(command.columnId()))
+                    .then(Mono.defer(() -> erdMutationCoordinator.coordinate(
+                        ErdOperationType.CHANGE_COLUMN_META,
+                        command,
+                        () -> applyChange(column, change, affectedTableIds)
+                            .then(Mono.fromCallable(() -> MutationResult.<Void>of(null, affectedTableIds))))));
+              });
+        })
         .as(transactionalOperator::transactional);
   }
 
   private Mono<Void> rejectIfForeignKeyColumn(String columnId) {
     return getRelationshipColumnsByColumnIdPort.findRelationshipColumnsByColumnId(columnId)
+        .defaultIfEmpty(List.of())
         .flatMap(relationshipColumns -> {
           boolean isFk = relationshipColumns.stream()
               .anyMatch(rc -> rc.fkColumnId().equals(columnId));
@@ -89,11 +97,9 @@ public class ChangeColumnMetaService implements ChangeColumnMetaUseCase {
         });
   }
 
-  private Mono<Void> applyChange(
+  private Mono<DirectColumnMetaChange> resolveDirectChange(
       Column column,
-      List<Column> columns,
-      ChangeColumnMetaCommand command,
-      Set<String> affectedTableIds) {
+      ChangeColumnMetaCommand command) {
 
     boolean effectiveAutoIncrement = command.autoIncrement().orElse(column.autoIncrement());
     String effectiveCharset = command.charset().isPresent()
@@ -110,31 +116,55 @@ public class ChangeColumnMetaService implements ChangeColumnMetaUseCase {
     ColumnValidator.validateAutoIncrement(
         normalizedDataType,
         effectiveAutoIncrement,
-        columns,
+        null,
         column.id());
     ColumnValidator.validateCharsetAndCollation(normalizedDataType, effectiveCharset, effectiveCollation);
 
-    Boolean portAutoIncrement = command.autoIncrement().isPresent() ? effectiveAutoIncrement : null;
-    String portCharset = command.charset().isPresent()
-        ? Objects.toString(effectiveCharset, "")
-        : null;
-    String portCollation = command.collation().isPresent()
-        ? Objects.toString(effectiveCollation, "")
-        : null;
-    String portComment = command.comment().isPresent()
-        ? Objects.toString(effectiveComment, "")
-        : null;
+    DirectColumnMetaChange directChange = new DirectColumnMetaChange(
+        command.autoIncrement().isPresent() ? effectiveAutoIncrement : null,
+        command.charset().isPresent()
+            ? Objects.toString(effectiveCharset, "")
+            : null,
+        command.collation().isPresent()
+            ? Objects.toString(effectiveCollation, "")
+            : null,
+        command.comment().isPresent()
+            ? Objects.toString(effectiveComment, "")
+            : null,
+        effectiveAutoIncrement,
+        (command.autoIncrement().isPresent() && column.autoIncrement() != effectiveAutoIncrement)
+            || (command.charset().isPresent() && !Objects.equals(column.charset(), effectiveCharset))
+            || (command.collation().isPresent() && !Objects.equals(column.collation(), effectiveCollation))
+            || (command.comment().isPresent() && !Objects.equals(column.comment(), effectiveComment)));
 
+    return Mono.just(directChange);
+  }
+
+  private Mono<Void> validateCrossColumnRules(Column column, DirectColumnMetaChange change) {
+    return getColumnsByTableIdPort.findColumnsByTableId(column.tableId())
+        .defaultIfEmpty(List.of())
+        .doOnNext(columns -> ColumnValidator.validateAutoIncrement(
+            ColumnValidator.normalizeDataType(column.dataType()),
+            change.effectiveAutoIncrement(),
+            columns,
+            column.id()))
+        .then();
+  }
+
+  private Mono<Void> applyChange(
+      Column column,
+      DirectColumnMetaChange change,
+      Set<String> affectedTableIds) {
     return changeColumnMetaPort.changeColumnMeta(
         column.id(),
-        portAutoIncrement,
-        portCharset,
-        portCollation,
-        portComment)
+        change.portAutoIncrement(),
+        change.portCharset(),
+        change.portCollation(),
+        change.portComment())
         .then(cascadeCharsetCollationToFkColumns(
             column,
-            portCharset,
-            portCollation,
+            change.portCharset(),
+            change.portCollation(),
             new HashSet<>(),
             affectedTableIds));
   }
@@ -188,6 +218,15 @@ public class ChangeColumnMetaService implements ChangeColumnMetaUseCase {
       return null;
     }
     return value.trim();
+  }
+
+  private record DirectColumnMetaChange(
+      Boolean portAutoIncrement,
+      String portCharset,
+      String portCollation,
+      String portComment,
+      boolean effectiveAutoIncrement,
+      boolean hasDirectChange) {
   }
 
 }

@@ -62,6 +62,23 @@ class ChangeIndexNameServiceTest {
     }
 
     @Test
+    @DisplayName("현재 이름과 같으면 중복 조회 없이 변경 없이 성공한다")
+    void returnsSuccessWithoutMutationWhenNameIsUnchanged() {
+      var index = IndexFixture.indexWithId("index1");
+      var command = IndexFixture.changeNameCommand("index1", index.name());
+
+      given(getIndexByIdPort.findIndexById("index1"))
+          .willReturn(Mono.just(index));
+
+      StepVerifier.create(sut.changeIndexName(command))
+          .expectNextMatches(result -> result.operation() == null)
+          .verifyComplete();
+
+      then(indexExistsPort).shouldHaveNoInteractions();
+      then(changeIndexNamePort).shouldHaveNoInteractions();
+    }
+
+    @Test
     @DisplayName("이름이 null이면 예외가 발생한다")
     void throwsWhenNameIsNull() {
       var command = IndexFixture.changeNameCommand("index1", null);

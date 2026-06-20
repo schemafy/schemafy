@@ -9,6 +9,7 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import com.schemafy.core.erd.table.application.port.out.ChangeTableExtraPort;
+import com.schemafy.core.erd.table.application.port.out.GetTableByIdPort;
 import com.schemafy.core.erd.table.fixture.TableFixture;
 
 import reactor.core.publisher.Mono;
@@ -24,6 +25,9 @@ class ChangeTableExtraServiceTest {
 
   @Mock
   ChangeTableExtraPort changeTableExtraPort;
+
+  @Mock
+  GetTableByIdPort getTableByIdPort;
 
   @InjectMocks
   ChangeTableExtraService sut;
@@ -41,6 +45,8 @@ class ChangeTableExtraServiceTest {
       void changesExtra() {
         var command = TableFixture.changeExtraCommand("{\"ui\": {\"x\": 100, \"y\": 200}}");
 
+        given(getTableByIdPort.findTableById(any()))
+            .willReturn(Mono.just(TableFixture.defaultTable()));
         given(changeTableExtraPort.changeTableExtra(any(), any()))
             .willReturn(Mono.empty());
 
@@ -50,6 +56,36 @@ class ChangeTableExtraServiceTest {
 
         then(changeTableExtraPort).should()
             .changeTableExtra(command.tableId(), command.extra());
+      }
+
+      @Test
+      @DisplayName("extra 값이 이미 null이면 변경 없이 성공한다")
+      void returnsSuccessWithoutMutationWhenExtraIsAlreadyNull() {
+        var command = TableFixture.changeExtraCommand(null);
+
+        given(getTableByIdPort.findTableById(any()))
+            .willReturn(Mono.just(TableFixture.defaultTable()));
+
+        StepVerifier.create(sut.changeTableExtra(command))
+            .expectNextMatches(result -> result.operation() == null)
+            .verifyComplete();
+
+        then(changeTableExtraPort).shouldHaveNoInteractions();
+      }
+
+      @Test
+      @DisplayName("빈 문자열이 현재 null로 정규화되면 변경 없이 성공한다")
+      void returnsSuccessWithoutMutationWhenBlankExtraNormalizesToCurrentNull() {
+        var command = TableFixture.changeExtraCommand("   ");
+
+        given(getTableByIdPort.findTableById(any()))
+            .willReturn(Mono.just(TableFixture.defaultTable()));
+
+        StepVerifier.create(sut.changeTableExtra(command))
+            .expectNextMatches(result -> result.operation() == null)
+            .verifyComplete();
+
+        then(changeTableExtraPort).shouldHaveNoInteractions();
       }
 
     }

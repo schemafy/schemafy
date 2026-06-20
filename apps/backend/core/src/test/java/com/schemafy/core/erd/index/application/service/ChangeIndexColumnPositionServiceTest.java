@@ -145,7 +145,7 @@ class ChangeIndexColumnPositionServiceTest {
     }
 
     @Test
-    @DisplayName("음수 위치면 첫 번째 위치로 clamp된다")
+    @DisplayName("음수 위치가 현재 위치로 clamp되면 변경 없이 성공한다")
     void clampsWhenNegativePosition() {
       var command = IndexFixture.changeColumnPositionCommand("ic1", -1);
       var indexColumn = IndexFixture.indexColumn("ic1", "index1", "col1", 0, SortDirection.ASC);
@@ -160,15 +160,12 @@ class ChangeIndexColumnPositionServiceTest {
           .willReturn(Mono.just(IndexFixture.indexWithId("index1")));
       given(getIndexColumnsByIndexIdPort.findIndexColumnsByIndexId(any()))
           .willReturn(Mono.just(columns));
-      given(changeIndexColumnPositionPort.changeIndexColumnPositions(any(), anyList()))
-          .willReturn(Mono.empty());
 
       StepVerifier.create(sut.changeIndexColumnPosition(command))
-          .expectNextCount(1)
+          .expectNextMatches(result -> result.operation() == null)
           .verifyComplete();
 
-      then(changeIndexColumnPositionPort).should()
-          .changeIndexColumnPositions(eq("index1"), anyList());
+      then(changeIndexColumnPositionPort).shouldHaveNoInteractions();
     }
 
     @Test
@@ -233,7 +230,7 @@ class ChangeIndexColumnPositionServiceTest {
     }
 
     @Test
-    @DisplayName("같은 위치로 이동하면 정상적으로 처리된다")
+    @DisplayName("같은 위치로 이동하면 변경 없이 성공한다")
     void handlesSamePositionMove() {
       var command = IndexFixture.changeColumnPositionCommand("ic1", 0);
       var indexColumn = IndexFixture.indexColumn("ic1", "index1", "col1", 0, SortDirection.ASC);
@@ -247,15 +244,12 @@ class ChangeIndexColumnPositionServiceTest {
           .willReturn(Mono.just(IndexFixture.indexWithId("index1")));
       given(getIndexColumnsByIndexIdPort.findIndexColumnsByIndexId(any()))
           .willReturn(Mono.just(columns));
-      given(changeIndexColumnPositionPort.changeIndexColumnPositions(any(), anyList()))
-          .willReturn(Mono.empty());
 
       StepVerifier.create(sut.changeIndexColumnPosition(command))
-          .expectNextCount(1)
+          .expectNextMatches(result -> result.operation() == null)
           .verifyComplete();
 
-      then(changeIndexColumnPositionPort).should()
-          .changeIndexColumnPositions(eq("index1"), anyList());
+      then(changeIndexColumnPositionPort).shouldHaveNoInteractions();
     }
 
   }

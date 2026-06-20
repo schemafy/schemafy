@@ -98,7 +98,7 @@ class ChangeConstraintColumnPositionServiceTest {
     }
 
     @Test
-    @DisplayName("음수 위치면 첫 번째 위치로 clamp된다")
+    @DisplayName("음수 위치가 현재 위치로 clamp되면 변경 없이 성공한다")
     void clampsWhenNegativePosition() {
       var command = ConstraintFixture.changeColumnPositionCommand("cc1", -1);
       var constraintColumn = ConstraintFixture.constraintColumn("cc1", "constraint1", "col1", 0);
@@ -120,15 +120,12 @@ class ChangeConstraintColumnPositionServiceTest {
                   null)));
       given(getConstraintColumnsByConstraintIdPort.findConstraintColumnsByConstraintId(any()))
           .willReturn(Mono.just(columns));
-      given(changeConstraintColumnPositionPort.changeConstraintColumnPositions(any(), anyList()))
-          .willReturn(Mono.empty());
 
       StepVerifier.create(sut.changeConstraintColumnPosition(command))
-          .expectNextCount(1)
+          .expectNextMatches(result -> result.operation() == null)
           .verifyComplete();
 
-      then(changeConstraintColumnPositionPort).should()
-          .changeConstraintColumnPositions(eq("constraint1"), anyList());
+      then(changeConstraintColumnPositionPort).shouldHaveNoInteractions();
     }
 
     @Test

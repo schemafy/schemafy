@@ -150,6 +150,27 @@ class ChangeIndexColumnSortDirectionServiceTest {
     }
 
     @Test
+    @DisplayName("현재 정렬 방향과 같으면 정의 조회 없이 변경 없이 성공한다")
+    void returnsSuccessWithoutMutationWhenSortDirectionIsUnchanged() {
+      var command = IndexFixture.changeSortDirectionCommand("ic1", SortDirection.ASC);
+      var indexColumn = IndexFixture.indexColumn("ic1", "index1", "col1", 0, SortDirection.ASC);
+      var index = IndexFixture.index("index1", "table1", "idx_test", IndexType.BTREE);
+
+      given(getIndexColumnByIdPort.findIndexColumnById("ic1"))
+          .willReturn(Mono.just(indexColumn));
+      given(getIndexByIdPort.findIndexById("index1"))
+          .willReturn(Mono.just(index));
+
+      StepVerifier.create(sut.changeIndexColumnSortDirection(command))
+          .expectNextMatches(result -> result.operation() == null)
+          .verifyComplete();
+
+      then(getIndexColumnsByIndexIdPort).shouldHaveNoInteractions();
+      then(getIndexesByTableIdPort).shouldHaveNoInteractions();
+      then(changeIndexColumnSortDirectionPort).shouldHaveNoInteractions();
+    }
+
+    @Test
     @DisplayName("정렬 방향이 null이면 예외가 발생한다")
     void throwsWhenSortDirectionIsNull() {
       var command = IndexFixture.changeSortDirectionCommand("ic1", null);

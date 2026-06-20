@@ -162,7 +162,7 @@ class ChangeRelationshipKindServiceTest {
             .willReturn(Mono.just(relationship));
 
         StepVerifier.create(sut.changeRelationshipKind(command))
-            .expectNextCount(1)
+            .expectNextMatches(result -> result.operation() == null)
             .verifyComplete();
 
         then(getRelationshipByIdPort).should().findRelationshipById(eq(command.relationshipId()));

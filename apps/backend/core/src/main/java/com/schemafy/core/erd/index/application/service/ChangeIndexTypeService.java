@@ -49,30 +49,36 @@ public class ChangeIndexTypeService implements ChangeIndexTypeUseCase {
 
   @Override
   public Mono<MutationResult<Void>> changeIndexType(ChangeIndexTypeCommand command) {
-    return erdMutationCoordinator.coordinate(ErdOperationType.CHANGE_INDEX_TYPE, command, () -> Mono.defer(() -> {
+    return Mono.defer(() -> {
       IndexValidator.validateType(command.type());
       return getIndexByIdPort.findIndexById(command.indexId())
           .switchIfEmpty(Mono.error(new DomainException(IndexErrorCode.NOT_FOUND, "Index not found")))
-          .flatMap(index -> getIndexesByTableIdPort.findIndexesByTableId(index.tableId())
-              .defaultIfEmpty(List.of())
-              .flatMap(indexes -> fetchIndexColumns(indexes)
-                  .flatMap(indexColumnsByIndexId -> getIndexColumnsByIndexIdPort
-                      .findIndexColumnsByIndexId(index.id())
-                      .defaultIfEmpty(List.of())
-                      .flatMap(columns -> {
-                        IndexValidator.validateDefinitionUniqueness(
-                            indexes,
-                            indexColumnsByIndexId,
-                            command.type(),
-                            columns,
-                            index.name(),
-                            index.id());
-                        return changeIndexTypePort
-                            .changeIndexType(index.id(), command.type())
-                            .thenReturn(MutationResult.<Void>of(null, index.tableId())
-                                .withInverse(new ChangeIndexTypeInverse(index.id(), index.type())));
-                      }))));
-    }));
+          .flatMap(index -> {
+            if (index.type() == command.type()) {
+              return Mono.just(MutationResult.<Void>of(null, index.tableId()));
+            }
+            return getIndexesByTableIdPort.findIndexesByTableId(index.tableId())
+                .defaultIfEmpty(List.of())
+                .flatMap(indexes -> fetchIndexColumns(indexes)
+                    .flatMap(indexColumnsByIndexId -> getIndexColumnsByIndexIdPort
+                        .findIndexColumnsByIndexId(index.id())
+                        .defaultIfEmpty(List.of())
+                        .flatMap(columns -> {
+                          IndexValidator.validateDefinitionUniqueness(
+                              indexes,
+                              indexColumnsByIndexId,
+                              command.type(),
+                              columns,
+                              index.name(),
+                              index.id());
+                          return erdMutationCoordinator.coordinate(ErdOperationType.CHANGE_INDEX_TYPE, command,
+                              () -> changeIndexTypePort
+                                  .changeIndexType(index.id(), command.type())
+                                  .thenReturn(MutationResult.<Void>of(null, index.tableId())
+                                      .withInverse(new ChangeIndexTypeInverse(index.id(), index.type()))));
+                        })));
+          });
+    });
   }
 
   private Mono<Map<String, List<IndexColumn>>> fetchIndexColumns(List<Index> indexes) {

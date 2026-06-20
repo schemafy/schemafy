@@ -48,34 +48,49 @@ public class ChangeIndexColumnPositionService implements ChangeIndexColumnPositi
   @Override
   public Mono<MutationResult<Void>> changeIndexColumnPosition(
       ChangeIndexColumnPositionCommand command) {
-    return erdMutationCoordinator.coordinate(ErdOperationType.CHANGE_INDEX_COLUMN_POSITION, command,
-        () -> getIndexColumnByIdPort.findIndexColumnById(command.indexColumnId())
-            .switchIfEmpty(Mono.error(new DomainException(IndexErrorCode.POSITION_INVALID, "Index column not found")))
-            .flatMap(indexColumn -> getIndexByIdPort.findIndexById(indexColumn.indexId())
-                .switchIfEmpty(Mono.error(new DomainException(IndexErrorCode.NOT_FOUND, "Index not found")))
-                .flatMap(index -> getIndexColumnsByIndexIdPort
-                    .findIndexColumnsByIndexId(indexColumn.indexId())
-                    .defaultIfEmpty(List.of())
-                    .flatMap(columns -> reorderColumns(indexColumn, columns, command.seqNo()))
-                    .thenReturn(MutationResult.<Void>of(null, index.tableId())))))
+    return getIndexColumnByIdPort.findIndexColumnById(command.indexColumnId())
+        .switchIfEmpty(Mono.error(new DomainException(IndexErrorCode.POSITION_INVALID, "Index column not found")))
+        .flatMap(indexColumn -> getIndexByIdPort.findIndexById(indexColumn.indexId())
+            .switchIfEmpty(Mono.error(new DomainException(IndexErrorCode.NOT_FOUND, "Index not found")))
+            .flatMap(index -> getIndexColumnsByIndexIdPort
+                .findIndexColumnsByIndexId(indexColumn.indexId())
+                .defaultIfEmpty(List.of())
+                .flatMap(columns -> {
+                  int currentPosition = resolveCurrentPosition(indexColumn, columns);
+                  int normalizedPosition = Math.clamp(command.seqNo(), 0, columns.size() - 1);
+                  if (currentPosition == normalizedPosition) {
+                    return Mono.just(MutationResult.<Void>of(null, index.tableId()));
+                  }
+                  List<IndexColumn> reordered = reorderColumns(columns, currentPosition, normalizedPosition);
+                  return erdMutationCoordinator.coordinate(
+                      ErdOperationType.CHANGE_INDEX_COLUMN_POSITION,
+                      command,
+                      () -> changeIndexColumnPositionPort
+                          .changeIndexColumnPositions(indexColumn.indexId(), reordered)
+                          .thenReturn(MutationResult.<Void>of(null, index.tableId())));
+                })))
         .as(transactionalOperator::transactional);
   }
 
-  private Mono<Void> reorderColumns(
+  private int resolveCurrentPosition(
       IndexColumn indexColumn,
-      List<IndexColumn> columns,
-      int nextPosition) {
+      List<IndexColumn> columns) {
     if (columns.isEmpty()) {
-      return Mono.error(new DomainException(IndexErrorCode.POSITION_INVALID, "Index column not found"));
+      throw new DomainException(IndexErrorCode.POSITION_INVALID, "Index column not found");
     }
+    int currentPosition = findIndex(columns, indexColumn.id());
+    if (currentPosition < 0) {
+      throw new DomainException(IndexErrorCode.POSITION_INVALID, "Index column not found");
+    }
+    return currentPosition;
+  }
 
+  private List<IndexColumn> reorderColumns(
+      List<IndexColumn> columns,
+      int currentIndex,
+      int normalizedPosition) {
     List<IndexColumn> reordered = new ArrayList<>(columns);
-    int currentIndex = findIndex(reordered, indexColumn.id());
-    if (currentIndex < 0) {
-      return Mono.error(new DomainException(IndexErrorCode.POSITION_INVALID, "Index column not found"));
-    }
     IndexColumn movingColumn = reordered.remove(currentIndex);
-    int normalizedPosition = Math.clamp(nextPosition, 0, columns.size() - 1);
     reordered.add(normalizedPosition, movingColumn);
 
     List<IndexColumn> updated = new ArrayList<>(reordered.size());
@@ -89,7 +104,7 @@ public class ChangeIndexColumnPositionService implements ChangeIndexColumnPositi
           column.sortDirection()));
     }
 
-    return changeIndexColumnPositionPort.changeIndexColumnPositions(indexColumn.indexId(), updated);
+    return updated;
   }
 
   private static int findIndex(List<IndexColumn> columns, String indexColumnId) {

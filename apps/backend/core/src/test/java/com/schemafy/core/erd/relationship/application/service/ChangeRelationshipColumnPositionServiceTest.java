@@ -129,7 +129,7 @@ class ChangeRelationshipColumnPositionServiceTest {
     }
 
     @Test
-    @DisplayName("음수 위치면 첫 번째 위치로 clamp된다")
+    @DisplayName("음수 위치가 현재 위치로 clamp되면 변경 없이 성공한다")
     void clampsWhenNegativePosition() {
       var command = new ChangeRelationshipColumnPositionCommand(
           RelationshipFixture.DEFAULT_COLUMN_ID, -1);
@@ -144,19 +144,16 @@ class ChangeRelationshipColumnPositionServiceTest {
           .willReturn(Mono.just(RelationshipFixture.defaultRelationship()));
       given(getRelationshipColumnsByRelationshipIdPort.findRelationshipColumnsByRelationshipId(any()))
           .willReturn(Mono.just(List.of(column1, column2)));
-      given(changeRelationshipColumnPositionPort.changeRelationshipColumnPositions(any(), anyList()))
-          .willReturn(Mono.empty());
 
       StepVerifier.create(sut.changeRelationshipColumnPosition(command))
-          .expectNextCount(1)
+          .expectNextMatches(result -> result.operation() == null)
           .verifyComplete();
 
-      then(changeRelationshipColumnPositionPort).should()
-          .changeRelationshipColumnPositions(eq(RelationshipFixture.DEFAULT_ID), anyList());
+      then(changeRelationshipColumnPositionPort).shouldHaveNoInteractions();
     }
 
     @Test
-    @DisplayName("범위를 초과하는 위치면 마지막 위치로 clamp된다")
+    @DisplayName("범위를 초과하는 위치가 현재 위치로 clamp되면 변경 없이 성공한다")
     void clampsWhenPositionOutOfRange() {
       var command = new ChangeRelationshipColumnPositionCommand(
           RelationshipFixture.DEFAULT_COLUMN_ID, 5);
@@ -168,15 +165,12 @@ class ChangeRelationshipColumnPositionServiceTest {
           .willReturn(Mono.just(RelationshipFixture.defaultRelationship()));
       given(getRelationshipColumnsByRelationshipIdPort.findRelationshipColumnsByRelationshipId(any()))
           .willReturn(Mono.just(List.of(column)));
-      given(changeRelationshipColumnPositionPort.changeRelationshipColumnPositions(any(), anyList()))
-          .willReturn(Mono.empty());
 
       StepVerifier.create(sut.changeRelationshipColumnPosition(command))
-          .expectNextCount(1)
+          .expectNextMatches(result -> result.operation() == null)
           .verifyComplete();
 
-      then(changeRelationshipColumnPositionPort).should()
-          .changeRelationshipColumnPositions(eq(RelationshipFixture.DEFAULT_ID), anyList());
+      then(changeRelationshipColumnPositionPort).shouldHaveNoInteractions();
     }
 
   }

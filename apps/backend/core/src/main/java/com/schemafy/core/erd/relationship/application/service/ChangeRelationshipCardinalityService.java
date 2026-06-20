@@ -46,20 +46,23 @@ public class ChangeRelationshipCardinalityService implements ChangeRelationshipC
       return Mono.error(new DomainException(RelationshipErrorCode.INVALID_VALUE,
           "Relationship cardinality is required"));
     }
-    return erdMutationCoordinator.coordinate(ErdOperationType.CHANGE_RELATIONSHIP_CARDINALITY, command,
-        () -> getRelationshipByIdPort.findRelationshipById(command.relationshipId())
-            .switchIfEmpty(Mono.error(new DomainException(RelationshipErrorCode.NOT_FOUND, "Relationship not found")))
-            .flatMap(relationship -> {
-              Set<String> affectedTableIds = new HashSet<>();
-              affectedTableIds.add(relationship.fkTableId());
-              affectedTableIds.add(relationship.pkTableId());
-              return changeRelationshipCardinalityPort
+    return getRelationshipByIdPort.findRelationshipById(command.relationshipId())
+        .switchIfEmpty(Mono.error(new DomainException(RelationshipErrorCode.NOT_FOUND, "Relationship not found")))
+        .flatMap(relationship -> {
+          Set<String> affectedTableIds = new HashSet<>();
+          affectedTableIds.add(relationship.fkTableId());
+          affectedTableIds.add(relationship.pkTableId());
+          if (relationship.cardinality() == command.cardinality()) {
+            return Mono.just(MutationResult.<Void>of(null, affectedTableIds));
+          }
+          return erdMutationCoordinator.coordinate(ErdOperationType.CHANGE_RELATIONSHIP_CARDINALITY, command,
+              () -> changeRelationshipCardinalityPort
                   .changeRelationshipCardinality(relationship.id(), command.cardinality())
                   .thenReturn(MutationResult.<Void>of(null, affectedTableIds)
                       .withInverse(new ChangeRelationshipCardinalityInverse(
                           relationship.id(),
-                          relationship.cardinality())));
-            }));
+                          relationship.cardinality()))));
+        });
   }
 
 }

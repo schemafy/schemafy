@@ -80,6 +80,22 @@ class ChangeRelationshipCardinalityServiceTest {
     }
 
     @Test
+    @DisplayName("현재 cardinality와 같으면 변경 없이 성공한다")
+    void returnsSuccessWithoutMutationWhenCardinalityIsUnchanged() {
+      var command = RelationshipFixture.changeCardinalityCommand(Cardinality.ONE_TO_MANY);
+      var relationship = RelationshipFixture.relationshipWithCardinality(Cardinality.ONE_TO_MANY);
+
+      given(getRelationshipByIdPort.findRelationshipById(any()))
+          .willReturn(Mono.just(relationship));
+
+      StepVerifier.create(sut.changeRelationshipCardinality(command))
+          .expectNextMatches(result -> result.operation() == null)
+          .verifyComplete();
+
+      then(changeRelationshipCardinalityPort).shouldHaveNoInteractions();
+    }
+
+    @Test
     @DisplayName("관계가 존재하지 않으면 예외가 발생한다")
     void throwsWhenRelationshipNotExists() {
       var command = RelationshipFixture.changeCardinalityCommand(Cardinality.ONE_TO_ONE);
