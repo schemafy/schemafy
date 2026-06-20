@@ -113,7 +113,8 @@
   ],
   "apps/backend/api/src/main/java/com/schemafy/api/erd/broadcast/ErdMutationBroadcaster.java": [
     337,
-    376
+    376,
+    419
   ],
   "apps/backend/api/src/main/java/com/schemafy/api/erd/controller/ColumnController.java": [
     337,
@@ -169,7 +170,8 @@
   ],
   "apps/backend/api/src/test/java/com/schemafy/api/erd/broadcast/ErdMutationBroadcasterTest.java": [
     337,
-    376
+    376,
+    419
   ],
   "apps/backend/api/src/test/java/com/schemafy/api/erd/controller/ColumnControllerTest.java": [
     337
@@ -546,24 +548,29 @@
   ],
   "apps/backend/core/src/main/java/com/schemafy/core/erd/column/application/service/ChangeColumnNameService.java": [
     372,
-    383
+    383,
+    419
   ],
   "apps/backend/core/src/main/java/com/schemafy/core/erd/column/application/service/ChangeColumnTypeService.java": [
     372,
     383,
-    341
+    341,
+    419
   ],
   "apps/backend/core/src/main/java/com/schemafy/core/erd/constraint/application/service/ChangeConstraintNameService.java": [
     372,
-    383
+    383,
+    419
   ],
   "apps/backend/core/src/main/java/com/schemafy/core/erd/index/application/service/ChangeIndexNameService.java": [
     372,
-    383
+    383,
+    419
   ],
   "apps/backend/core/src/main/java/com/schemafy/core/erd/index/application/service/ChangeIndexTypeService.java": [
     372,
-    383
+    383,
+    419
   ],
   "apps/backend/core/src/main/java/com/schemafy/core/erd/operation/ErdOperationContexts.java": [
     372
@@ -639,21 +646,26 @@
     375
   ],
   "apps/backend/core/src/main/java/com/schemafy/core/erd/relationship/application/service/ChangeRelationshipCardinalityService.java": [
-    372
+    372,
+    419
   ],
   "apps/backend/core/src/main/java/com/schemafy/core/erd/relationship/application/service/ChangeRelationshipNameService.java": [
-    372
+    372,
+    419
   ],
   "apps/backend/core/src/main/java/com/schemafy/core/erd/table/application/service/ChangeTableNameService.java": [
-    372
+    372,
+    419
   ],
   "apps/backend/core/src/test/java/com/schemafy/core/erd/operation/integration/ErdOperationLedgerIntegrationTest.java": [
     372,
     341,
-    412
+    412,
+    419
   ],
   "apps/backend/core/src/test/java/com/schemafy/core/erd/table/application/service/ChangeTableNameServiceTest.java": [
-    372
+    372,
+    419
   ],
   "apps/backend/sql-resources/ddl/h2/erd_operation_log.sql": [
     372,
@@ -1301,10 +1313,12 @@
     383
   ],
   "apps/backend/core/src/main/java/com/schemafy/core/erd/column/application/service/ChangeColumnMetaService.java": [
-    383
+    383,
+    419
   ],
   "apps/backend/core/src/main/java/com/schemafy/core/erd/column/application/service/ChangeColumnPositionService.java": [
-    383
+    383,
+    419
   ],
   "apps/backend/core/src/main/java/com/schemafy/core/erd/column/application/service/GetColumnService.java": [
     383
@@ -1313,10 +1327,12 @@
     383
   ],
   "apps/backend/core/src/main/java/com/schemafy/core/erd/constraint/application/service/ChangeConstraintColumnPositionService.java": [
-    383
+    383,
+    419
   ],
   "apps/backend/core/src/main/java/com/schemafy/core/erd/constraint/application/service/ChangeConstraintExpressionService.java": [
-    383
+    383,
+    419
   ],
   "apps/backend/core/src/main/java/com/schemafy/core/erd/constraint/application/service/GetConstraintColumnService.java": [
     383
@@ -1331,10 +1347,12 @@
     383
   ],
   "apps/backend/core/src/main/java/com/schemafy/core/erd/index/application/service/ChangeIndexColumnPositionService.java": [
-    383
+    383,
+    419
   ],
   "apps/backend/core/src/main/java/com/schemafy/core/erd/index/application/service/ChangeIndexColumnSortDirectionService.java": [
-    383
+    383,
+    419
   ],
   "apps/backend/core/src/main/java/com/schemafy/core/erd/index/application/service/GetIndexColumnService.java": [
     383
@@ -1427,7 +1445,8 @@
     387
   ],
   "apps/backend/core/src/test/java/com/schemafy/core/erd/column/application/service/ChangeColumnTypeServiceTest.java": [
-    341
+    341,
+    419
   ],
   "apps/frontend/src/features/drawing/components/Column/EditModeColumn.tsx": [
     341,
@@ -1630,5 +1649,74 @@
   ],
   "apps/frontend/src/pages/SettingsPage.tsx": [
     418
+  ],
+  "apps/backend/core/src/main/java/com/schemafy/core/erd/relationship/application/service/ChangeRelationshipColumnPositionService.java": [
+    419
+  ],
+  "apps/backend/core/src/main/java/com/schemafy/core/erd/relationship/application/service/ChangeRelationshipExtraService.java": [
+    419
+  ],
+  "apps/backend/core/src/main/java/com/schemafy/core/erd/schema/application/service/ChangeSchemaNameService.java": [
+    419
+  ],
+  "apps/backend/core/src/main/java/com/schemafy/core/erd/table/application/service/ChangeTableExtraService.java": [
+    419
+  ],
+  "apps/backend/core/src/main/java/com/schemafy/core/erd/table/application/service/ChangeTableMetaService.java": [
+    419
+  ],
+  "apps/backend/core/src/test/java/com/schemafy/core/erd/column/application/service/ChangeColumnMetaServiceTest.java": [
+    419
+  ],
+  "apps/backend/core/src/test/java/com/schemafy/core/erd/column/application/service/ChangeColumnNameServiceTest.java": [
+    419
+  ],
+  "apps/backend/core/src/test/java/com/schemafy/core/erd/column/application/service/ChangeColumnPositionServiceTest.java": [
+    419
+  ],
+  "apps/backend/core/src/test/java/com/schemafy/core/erd/constraint/application/service/ChangeConstraintColumnPositionServiceTest.java": [
+    419
+  ],
+  "apps/backend/core/src/test/java/com/schemafy/core/erd/constraint/application/service/ChangeConstraintExpressionServiceTest.java": [
+    419
+  ],
+  "apps/backend/core/src/test/java/com/schemafy/core/erd/constraint/application/service/ChangeConstraintNameServiceTest.java": [
+    419
+  ],
+  "apps/backend/core/src/test/java/com/schemafy/core/erd/index/application/service/ChangeIndexColumnPositionServiceTest.java": [
+    419
+  ],
+  "apps/backend/core/src/test/java/com/schemafy/core/erd/index/application/service/ChangeIndexColumnSortDirectionServiceTest.java": [
+    419
+  ],
+  "apps/backend/core/src/test/java/com/schemafy/core/erd/index/application/service/ChangeIndexNameServiceTest.java": [
+    419
+  ],
+  "apps/backend/core/src/test/java/com/schemafy/core/erd/index/application/service/ChangeIndexTypeServiceTest.java": [
+    419
+  ],
+  "apps/backend/core/src/test/java/com/schemafy/core/erd/relationship/application/service/ChangeRelationshipCardinalityServiceTest.java": [
+    419
+  ],
+  "apps/backend/core/src/test/java/com/schemafy/core/erd/relationship/application/service/ChangeRelationshipColumnPositionServiceTest.java": [
+    419
+  ],
+  "apps/backend/core/src/test/java/com/schemafy/core/erd/relationship/application/service/ChangeRelationshipExtraServiceTest.java": [
+    419
+  ],
+  "apps/backend/core/src/test/java/com/schemafy/core/erd/relationship/application/service/ChangeRelationshipKindServiceTest.java": [
+    419
+  ],
+  "apps/backend/core/src/test/java/com/schemafy/core/erd/relationship/application/service/ChangeRelationshipNameServiceTest.java": [
+    419
+  ],
+  "apps/backend/core/src/test/java/com/schemafy/core/erd/schema/application/service/ChangeSchemaNameServiceTest.java": [
+    419
+  ],
+  "apps/backend/core/src/test/java/com/schemafy/core/erd/table/application/service/ChangeTableExtraServiceTest.java": [
+    419
+  ],
+  "apps/backend/core/src/test/java/com/schemafy/core/erd/table/application/service/ChangeTableMetaServiceTest.java": [
+    419
   ]
 }
