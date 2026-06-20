@@ -27,10 +27,7 @@ export const SettingsPage = observer(() => {
             src="https://picsum.photos/200/300?random=1"
             className="w-40 h-40"
           />
-          <button
-            type="button"
-            className="font-body-md text-schemafy-text"
-          >
+          <button type="button" className="font-body-md text-schemafy-text">
             Edit
           </button>
         </div>
