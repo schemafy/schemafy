@@ -96,7 +96,8 @@
   "apps/backend/api/src/docs/asciidoc/api-guide.adoc": [
     337,
     358,
-    398
+    398,
+    423
   ],
   "apps/backend/api/src/main/java/com/schemafy/api/collaboration/dto/event/CollaborationOutboundFactory.java": [
     337,
@@ -764,7 +765,8 @@
     358
   ],
   "apps/backend/core/src/test/java/com/schemafy/core/project/integration/ProjectDomainIntegrationSupport.java": [
-    358
+    358,
+    423
   ],
   "apps/bff/src/app.module.ts": [
     358,
@@ -876,10 +878,12 @@
   ],
   "apps/backend/api/src/main/resources/application.yml": [
     377,
-    398
+    398,
+    423
   ],
   "apps/backend/api/build.gradle": [
-    377
+    377,
+    423
   ],
   "apps/frontend/src/features/drawing/hooks/useSchemaSnapshots.ts": [
     368
@@ -1316,7 +1320,8 @@
     383
   ],
   "apps/backend/api/src/test/java/com/schemafy/api/common/config/SecurityConfigTest.java": [
-    383
+    383,
+    423
   ],
   "apps/backend/api/src/test/java/com/schemafy/api/erd/service/MemoOrchestratorTest.java": [
     383
@@ -1430,25 +1435,32 @@
     374
   ],
   "apps/backend/api/src/main/java/com/schemafy/api/user/controller/dto/request/SignUpRequest.java": [
-    387
+    387,
+    423
   ],
   "apps/backend/api/src/test/java/com/schemafy/api/user/controller/AuthControllerTest.java": [
-    387
+    387,
+    423
   ],
   "apps/backend/api/src/test/java/com/schemafy/api/user/docs/UserApiSnippets.java": [
-    387
+    387,
+    423
   ],
   "apps/backend/core/src/main/java/com/schemafy/core/user/application/port/in/SignUpUserCommand.java": [
-    387
+    387,
+    423
   ],
   "apps/backend/core/src/main/java/com/schemafy/core/user/domain/User.java": [
-    387
+    387,
+    423
   ],
   "apps/backend/core/src/main/java/com/schemafy/core/user/domain/exception/UserErrorCode.java": [
-    387
+    387,
+    423
   ],
   "apps/backend/core/src/test/java/com/schemafy/core/user/application/port/in/SignUpUserCommandTest.java": [
-    387
+    387,
+    423
   ],
   "apps/backend/core/src/test/java/com/schemafy/core/user/application/service/SignUpUserServiceTest.java": [
     387
@@ -1503,7 +1515,8 @@
     387
   ],
   "apps/backend/core/src/main/java/com/schemafy/core/user/application/service/SignUpUserService.java": [
-    387
+    387,
+    423
   ],
   "apps/backend/core/src/main/java/com/schemafy/core/user/domain/UserPolicy.java": [
     387
@@ -1794,5 +1807,116 @@
   ],
   "apps/backend/core/src/test/java/com/schemafy/core/erd/operation/application/inverse/InversePayloadJsonTest.java": [
     422
+  ],
+  "apps/backend/api/src/main/java/com/schemafy/api/user/adapter/out/AuthTokenRedisAdapter.java": [
+    423
+  ],
+  "apps/backend/api/src/main/java/com/schemafy/api/user/adapter/out/AuthTokenRedisScripts.java": [
+    423
+  ],
+  "apps/backend/api/src/main/java/com/schemafy/api/user/adapter/out/EmailVerificationMailAdapter.java": [
+    423
+  ],
+  "apps/backend/api/src/main/java/com/schemafy/api/user/adapter/out/EmailVerificationMailTemplate.java": [
+    423
+  ],
+  "apps/backend/api/src/main/java/com/schemafy/api/user/controller/AuthController.java": [
+    423
+  ],
+  "apps/backend/api/src/main/java/com/schemafy/api/user/controller/dto/request/SendSignUpEmailCodeRequest.java": [
+    423
+  ],
+  "apps/backend/api/src/main/java/com/schemafy/api/user/controller/dto/request/VerifySignUpEmailRequest.java": [
+    423
+  ],
+  "apps/backend/api/src/main/java/com/schemafy/api/user/controller/dto/response/SignUpChallengeResponse.java": [
+    423
+  ],
+  "apps/backend/api/src/main/java/com/schemafy/api/user/controller/dto/response/VerifySignUpEmailResponse.java": [
+    423
+  ],
+  "apps/backend/api/src/main/resources/redis/auth/consume-token.lua": [
+    423
+  ],
+  "apps/backend/api/src/test/java/com/schemafy/api/testsupport/user/CapturingEmailVerificationTestAdapter.java": [
+    423
+  ],
+  "apps/backend/api/src/test/java/com/schemafy/api/testsupport/user/InMemoryAuthTokenTestAdapter.java": [
+    423
+  ],
+  "apps/backend/api/src/test/java/com/schemafy/api/user/adapter/out/AuthTokenRedisAdapterTest.java": [
+    423
+  ],
+  "apps/backend/api/src/test/java/com/schemafy/api/user/adapter/out/AuthTokenRedisScriptsTest.java": [
+    423
+  ],
+  "apps/backend/api/src/test/java/com/schemafy/api/user/adapter/out/EmailVerificationMailAdapterTest.java": [
+    423
+  ],
+  "apps/backend/api/src/test/java/com/schemafy/api/user/adapter/out/EmailVerificationMailTemplateTest.java": [
+    423
+  ],
+  "apps/backend/api/src/test/java/com/schemafy/api/user/controller/UserControllerTest.java": [
+    423
+  ],
+  "apps/backend/api/src/test/resources/application.yml": [
+    423
+  ],
+  "apps/backend/core/src/main/java/com/schemafy/core/user/application/port/in/SendSignUpEmailCodeCommand.java": [
+    423
+  ],
+  "apps/backend/core/src/main/java/com/schemafy/core/user/application/port/in/SendSignUpEmailCodeUseCase.java": [
+    423
+  ],
+  "apps/backend/core/src/main/java/com/schemafy/core/user/application/port/in/SignUpUserResult.java": [
+    423
+  ],
+  "apps/backend/core/src/main/java/com/schemafy/core/user/application/port/in/VerifySignUpEmailCommand.java": [
+    423
+  ],
+  "apps/backend/core/src/main/java/com/schemafy/core/user/application/port/in/VerifySignUpEmailResult.java": [
+    423
+  ],
+  "apps/backend/core/src/main/java/com/schemafy/core/user/application/port/in/VerifySignUpEmailUseCase.java": [
+    423
+  ],
+  "apps/backend/core/src/main/java/com/schemafy/core/user/application/port/out/AuthTokenPort.java": [
+    423
+  ],
+  "apps/backend/core/src/main/java/com/schemafy/core/user/application/port/out/SendEmailVerificationPort.java": [
+    423
+  ],
+  "apps/backend/core/src/main/java/com/schemafy/core/user/application/security/SignupVerificationTokenGenerator.java": [
+    423
+  ],
+  "apps/backend/core/src/main/java/com/schemafy/core/user/application/security/VerificationCodeGenerator.java": [
+    423
+  ],
+  "apps/backend/core/src/main/java/com/schemafy/core/user/application/service/GetUserByIdService.java": [
+    423
+  ],
+  "apps/backend/core/src/main/java/com/schemafy/core/user/application/service/LoginUserService.java": [
+    423
+  ],
+  "apps/backend/core/src/main/java/com/schemafy/core/user/application/service/SendSignUpEmailCodeService.java": [
+    423
+  ],
+  "apps/backend/core/src/main/java/com/schemafy/core/user/application/service/VerifySignUpEmailService.java": [
+    423
+  ],
+  "apps/backend/core/src/main/java/com/schemafy/core/user/domain/AuthPolicy.java": [
+    423
+  ],
+  "apps/backend/core/src/main/java/com/schemafy/core/user/domain/AuthToken.java": [
+    423
+  ],
+  "apps/backend/core/src/main/java/com/schemafy/core/user/domain/AuthTokenConsumeResult.java": [
+    423
+  ],
+  "apps/backend/core/src/main/java/com/schemafy/core/user/domain/AuthTokenType.java": [
+    423
+  ],
+  "apps/backend/core/src/test/java/com/schemafy/core/config/PasswordHashTestConfiguration.java": [
+    423
   ]
 }
