@@ -387,7 +387,8 @@
   "apps/frontend/src/features/drawing/contexts/SelectedSchemaContext.tsx": [
     331,
     361,
-    386
+    386,
+    420
   ],
   "apps/frontend/src/features/drawing/hooks/index.ts": [
     331
@@ -1718,5 +1719,8 @@
   ],
   "apps/backend/core/src/test/java/com/schemafy/core/erd/table/application/service/ChangeTableMetaServiceTest.java": [
     419
+  ],
+  "apps/frontend/src/features/drawing/contexts/useSelectedSchema.ts": [
+    420
   ]
 }
