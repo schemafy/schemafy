@@ -4,10 +4,8 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.restdocs.AutoConfigureRestDocs;
 import org.springframework.boot.test.autoconfigure.web.reactive.AutoConfigureWebTestClient;
 import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.http.MediaType;
 import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.context.ActiveProfiles;
-import org.springframework.test.web.reactive.server.EntityExchangeResult;
 import org.springframework.test.web.reactive.server.WebTestClient;
 
 import org.junit.jupiter.api.Assertions;
@@ -15,10 +13,8 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
-import com.jayway.jsonpath.JsonPath;
 import com.schemafy.api.common.constant.ApiPath;
 import com.schemafy.api.testsupport.user.UserHttpTestSupport;
-import com.schemafy.api.user.controller.dto.request.SignUpRequest;
 import com.schemafy.core.ulid.application.service.UlidGenerator;
 import com.schemafy.core.user.domain.User;
 import com.schemafy.core.user.domain.exception.UserErrorCode;
@@ -36,8 +32,6 @@ class UserControllerTest extends UserHttpTestSupport {
 
   private static final String API_BASE_PATH = ApiPath.API.replace("{version}",
       "v1.0");
-  private static final String PUBLIC_API_BASE_PATH = ApiPath.PUBLIC_API
-      .replace("{version}", "v1.0");
 
   @Autowired
   private WebTestClient webTestClient;
@@ -51,9 +45,7 @@ class UserControllerTest extends UserHttpTestSupport {
   @DisplayName("ID로 회원 조회에 성공한다")
   @WithMockUser(username = "test-user-id")
   void getUserSuccess() {
-    SignUpRequest request = new SignUpRequest("test@example.com",
-        "Test User", "password");
-    User user = createUser(request.email(), request.name(), request.password());
+    User user = createUser("test@example.com", "Test User", "password");
 
     String userId = user.id();
     Assertions.assertNotNull(userId);
@@ -96,15 +88,8 @@ class UserControllerTest extends UserHttpTestSupport {
   @Test
   @DisplayName("인증된 사용자는 타인의 회원 정보 조회에 성공한다")
   void getUserSuccessWhenAccessingOtherUser() {
-    SignUpRequest userARequest = new SignUpRequest("userA@example.com",
-        "User A", "password");
-    User userA = createUser(userARequest.email(), userARequest.name(),
-        userARequest.password());
-
-    SignUpRequest userBRequest = new SignUpRequest("userB@example.com",
-        "User B", "password");
-    User userB = createUser(userBRequest.email(), userBRequest.name(),
-        userBRequest.password());
+    User userA = createUser("userA@example.com", "User A", "password");
+    User userB = createUser("userB@example.com", "User B", "password");
 
     String userAId = userA.id();
     String userBId = userB.id();
@@ -126,9 +111,7 @@ class UserControllerTest extends UserHttpTestSupport {
   @Test
   @DisplayName("인증 없이 회원 정보 조회 시 실패한다")
   void getUserFailWhenNotAuthenticated() {
-    SignUpRequest request = new SignUpRequest("test@example.com",
-        "Test User", "password");
-    User user = createUser(request.email(), request.name(), request.password());
+    User user = createUser("test@example.com", "Test User", "password");
 
     webTestClient
         .get()
@@ -140,19 +123,8 @@ class UserControllerTest extends UserHttpTestSupport {
   @Test
   @DisplayName("내 정보 조회에 성공한다")
   void getMyInfoSuccess() {
-    SignUpRequest signUpRequest = new SignUpRequest("TEST-ME@EXAMPLE.COM",
-        "Test User Me", "password");
-
-    EntityExchangeResult<byte[]> result = webTestClient.post()
-        .uri(PUBLIC_API_BASE_PATH + "/users/signup")
-        .contentType(MediaType.APPLICATION_JSON)
-        .bodyValue(signUpRequest)
-        .exchange()
-        .expectStatus().isOk()
-        .expectBody(byte[].class).returnResult();
-
-    String responseBody = new String(result.getResponseBody());
-    String userId = JsonPath.read(responseBody, "$.id");
+    User user = createUser("TEST-ME@EXAMPLE.COM", "Test User Me", "password");
+    String userId = user.id();
     String accessToken = generateAccessToken(userId);
 
     webTestClient.get().uri(API_BASE_PATH + "/users")
@@ -171,10 +143,7 @@ class UserControllerTest extends UserHttpTestSupport {
   @Test
   @DisplayName("로그아웃에 성공한다 (인증된 사용자)")
   void logoutSuccess() {
-    SignUpRequest signUpRequest = new SignUpRequest("logout-test@example.com",
-        "Logout User", "password");
-    User user = createUser(signUpRequest.email(), signUpRequest.name(),
-        signUpRequest.password());
+    User user = createUser("logout-test@example.com", "Logout User", "password");
 
     String userId = user.id();
     String accessToken = generateAccessToken(userId);
@@ -212,15 +181,8 @@ class UserControllerTest extends UserHttpTestSupport {
   @Test
   @DisplayName("사용자 A의 로그아웃이 사용자 B에게 영향을 주지 않는다")
   void logoutDoesNotAffectOtherUsers() {
-    SignUpRequest userARequest = new SignUpRequest("userA@example.com",
-        "UserA", "password");
-    User userA = createUser(userARequest.email(), userARequest.name(),
-        userARequest.password());
-
-    SignUpRequest userBRequest = new SignUpRequest("userB@example.com",
-        "UserB", "password");
-    User userB = createUser(userBRequest.email(), userBRequest.name(),
-        userBRequest.password());
+    User userA = createUser("userA@example.com", "UserA", "password");
+    User userB = createUser("userB@example.com", "UserB", "password");
 
     String userAId = userA.id();
     String userBId = userB.id();

@@ -43,6 +43,9 @@ dependencies {
 	// redis
 	implementation 'org.springframework.boot:spring-boot-starter-data-redis-reactive'
 
+	// mail
+	implementation 'org.springframework.boot:spring-boot-starter-mail'
+
 	// db
 	implementation 'org.springframework.boot:spring-boot-starter-data-r2dbc'
 	runtimeOnly "io.r2dbc:r2dbc-h2"
@@ -57,6 +60,7 @@ dependencies {
 	// test
 	testImplementation 'org.springframework.boot:spring-boot-starter-test'
 	testImplementation 'io.projectreactor:reactor-test'
+	testImplementation 'org.testcontainers:junit-jupiter'
 	testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
 
 	// actuator
