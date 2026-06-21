@@ -130,7 +130,8 @@
   ],
   "apps/backend/api/src/main/java/com/schemafy/api/erd/controller/RelationshipController.java": [
     337,
-    383
+    383,
+    422
   ],
   "apps/backend/api/src/main/java/com/schemafy/api/erd/controller/SchemaController.java": [
     337,
@@ -139,7 +140,8 @@
   ],
   "apps/backend/api/src/main/java/com/schemafy/api/erd/controller/TableController.java": [
     337,
-    383
+    383,
+    422
   ],
   "apps/backend/api/src/main/java/com/schemafy/api/erd/controller/dto/response/SchemaResponse.java": [
     337
@@ -254,7 +256,8 @@
     372,
     375,
     376,
-    412
+    412,
+    422
   ],
   "apps/backend/core/src/main/java/com/schemafy/core/erd/operation/application/service/DefaultUndoRedoEligibilityService.java": [
     352
@@ -545,7 +548,8 @@
     361
   ],
   "apps/backend/core/src/main/java/com/schemafy/core/common/json/JsonCodec.java": [
-    372
+    372,
+    422
   ],
   "apps/backend/core/src/main/java/com/schemafy/core/erd/column/application/service/ChangeColumnNameService.java": [
     372,
@@ -616,7 +620,8 @@
     372
   ],
   "apps/backend/core/src/main/java/com/schemafy/core/erd/operation/application/service/AbstractUndoRedoErdOperationHandler.java": [
-    372
+    372,
+    422
   ],
   "apps/backend/core/src/main/java/com/schemafy/core/erd/operation/application/service/ChangeColumnNameUndoRedoHandler.java": [
     372
@@ -662,7 +667,8 @@
     372,
     341,
     412,
-    419
+    419,
+    422
   ],
   "apps/backend/core/src/test/java/com/schemafy/core/erd/table/application/service/ChangeTableNameServiceTest.java": [
     372,
@@ -1014,7 +1020,8 @@
   ],
   "apps/backend/core/src/main/java/com/schemafy/core/erd/operation/application/service/StructuralUndoRedoHandler.java": [
     375,
-    376
+    376,
+    422
   ],
   "apps/backend/core/src/main/java/com/schemafy/core/erd/operation/application/service/TableMutationTargetResolver.java": [
     375,
@@ -1299,7 +1306,8 @@
     383
   ],
   "apps/backend/api/src/main/java/com/schemafy/api/erd/service/memo/MemoApiCommandMapper.java": [
-    383
+    383,
+    422
   ],
   "apps/backend/api/src/main/java/com/schemafy/api/erd/service/memo/MemoDeletePermissionPolicy.java": [
     383
@@ -1534,7 +1542,8 @@
     398
   ],
   "apps/backend/api/src/main/java/com/schemafy/api/collaboration/service/CollaborationService.java": [
-    398
+    398,
+    422
   ],
   "apps/backend/api/src/main/java/com/schemafy/api/collaboration/service/presence/CollaborationPresenceProperties.java": [
     398
@@ -1552,7 +1561,8 @@
     398
   ],
   "apps/backend/api/src/main/java/com/schemafy/api/collaboration/service/presence/RedisProjectPresenceStore.java": [
-    398
+    398,
+    422
   ],
   "apps/backend/api/src/main/resources/redis/presence/cleanup-empty-project.lua": [
     398
@@ -1576,7 +1586,8 @@
     398
   ],
   "apps/backend/api/src/test/java/com/schemafy/api/collaboration/service/presence/RedisProjectPresenceStoreTest.java": [
-    398
+    398,
+    422
   ],
   "apps/backend/api/src/main/resources/redis/presence/refresh-session.lua": [
     398
@@ -1640,7 +1651,8 @@
     412
   ],
   "apps/backend/core/src/test/java/com/schemafy/core/erd/operation/application/service/DefaultErdMutationCoordinatorTest.java": [
-    412
+    412,
+    422
   ],
   "apps/backend/core/src/test/java/com/schemafy/core/erd/operation/application/service/UndoRedoErdOperationServiceTest.java": [
     412
@@ -1746,5 +1758,41 @@
   ],
   "apps/backend/core/src/test/java/com/schemafy/core/erd/table/application/service/DeleteTableServiceTest.java": [
     421
+  ],
+  "apps/backend/api/src/main/java/com/schemafy/api/collaboration/service/CollaborationEventPublisher.java": [
+    422
+  ],
+  "apps/backend/api/src/main/java/com/schemafy/api/collaboration/service/CollaborationPayloadSerializer.java": [
+    422
+  ],
+  "apps/backend/api/src/main/java/com/schemafy/api/common/security/jwt/WebExchangeErrorWriter.java": [
+    422
+  ],
+  "apps/backend/api/src/main/java/com/schemafy/api/erd/service/MemoOrchestrator.java": [
+    422
+  ],
+  "apps/backend/api/src/main/java/com/schemafy/api/erd/service/memo/MemoApiResponseMapper.java": [
+    422
+  ],
+  "apps/backend/api/src/main/java/com/schemafy/api/erd/service/relationship/RelationshipApiResponseMapper.java": [
+    422
+  ],
+  "apps/backend/api/src/main/java/com/schemafy/api/erd/service/table/TableApiResponseMapper.java": [
+    422
+  ],
+  "apps/backend/api/src/main/java/com/schemafy/api/erd/service/vendor/DbVendorApiResponseMapper.java": [
+    422
+  ],
+  "apps/backend/api/src/test/java/com/schemafy/api/common/security/jwt/WebExchangeErrorWriterTest.java": [
+    422
+  ],
+  "apps/backend/core/src/main/java/com/schemafy/core/erd/column/adapter/out/persistence/ColumnMapper.java": [
+    422
+  ],
+  "apps/backend/core/src/test/java/com/schemafy/core/common/json/JsonCodecTest.java": [
+    422
+  ],
+  "apps/backend/core/src/test/java/com/schemafy/core/erd/operation/application/inverse/InversePayloadJsonTest.java": [
+    422
   ]
 }
