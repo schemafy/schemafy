@@ -21,7 +21,10 @@ class GetUserByIdService implements GetUserByIdUseCase {
   @Override
   public Mono<User> getUserById(GetUserByIdQuery query) {
     return findUserByIdPort.findUserById(query.userId())
-        .switchIfEmpty(Mono.error(new DomainException(UserErrorCode.NOT_FOUND)));
+        .switchIfEmpty(Mono.error(new DomainException(UserErrorCode.NOT_FOUND)))
+        .flatMap(user -> user.isActive()
+            ? Mono.just(user)
+            : Mono.error(new DomainException(UserErrorCode.ACCOUNT_NOT_ACTIVE)));
   }
 
 }

@@ -27,6 +27,9 @@ class LoginUserService implements LoginUserUseCase {
         .flatMap(email -> findUserByEmailPort.findUserByEmail(email.address())
             .switchIfEmpty(Mono.error(new DomainException(UserErrorCode.NOT_FOUND)))
             .flatMap(user -> {
+              if (!user.isActive()) {
+                return Mono.error(new DomainException(UserErrorCode.ACCOUNT_NOT_ACTIVE));
+              }
               if (user.password() == null) {
                 return Mono.error(new DomainException(UserErrorCode.LOGIN_FAILED));
               }
