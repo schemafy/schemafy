@@ -1,0 +1,3 @@
+rootProject.name = 'mcp'
+include ':core'
+project(':core').projectDir = file('../core')

@@ -1,0 +1,172 @@
+plugins {
+    id 'java'
+    id 'org.springframework.boot' version '3.5.5'
+    id 'io.spring.dependency-management' version '1.1.7'
+    id 'com.github.spotbugs' version '6.0.26'
+    id 'com.diffplug.spotless' version '6.25.0'
+}
+
+group = 'com.schemafy'
+version = '0.0.1-SNAPSHOT'
+description = 'mcp module of the backend application'
+
+java {
+    toolchain {
+        languageVersion = JavaLanguageVersion.of(21)
+    }
+    withJavadocJar()
+    withSourcesJar()
+}
+
+configurations {
+    compileOnly {
+        extendsFrom annotationProcessor
+    }
+}
+
+repositories {
+    mavenCentral()
+}
+
+ext {
+    set('springAiVersion', '1.1.8')
+}
+
+dependencyManagement {
+    imports {
+        mavenBom "org.springframework.ai:spring-ai-bom:${springAiVersion}"
+    }
+}
+
+dependencies {
+    implementation project(':core')
+
+    implementation 'org.springframework.boot:spring-boot-starter-webflux'
+    implementation 'org.springframework.boot:spring-boot-starter-data-r2dbc'
+    implementation 'org.springframework.boot:spring-boot-starter-actuator'
+    implementation 'org.springframework.boot:spring-boot-starter-validation'
+    implementation 'org.springframework.ai:spring-ai-starter-mcp-server-webflux'
+
+    runtimeOnly 'io.r2dbc:r2dbc-h2'
+    runtimeOnly 'org.mariadb:r2dbc-mariadb:1.4.0'
+
+    compileOnly 'org.projectlombok:lombok'
+    annotationProcessor 'org.projectlombok:lombok'
+    annotationProcessor 'org.springframework.boot:spring-boot-configuration-processor'
+
+    testImplementation 'org.springframework.boot:spring-boot-starter-test'
+    testImplementation 'io.projectreactor:reactor-test'
+    testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
+
+    spotbugs 'com.github.spotbugs:spotbugs:4.8.6'
+    spotbugsPlugins 'com.h3xstream.findsecbugs:findsecbugs-plugin:1.13.0'
+}
+
+tasks.withType(JavaCompile).configureEach {
+    options.compilerArgs += ["-parameters"]
+}
+
+tasks.named('test') {
+    useJUnitPlatform()
+}
+
+tasks.named('bootJar') {
+    exclude('ddl/**')
+}
+
+tasks.named('bootRun') {
+    workingDir = rootProject.projectDir
+}
+
+spotbugs {
+    toolVersion = '4.8.6'
+    effort = 'max'
+    reportLevel = 'medium'
+    ignoreFailures = false
+    omitVisitors = ['FindReturnRef']
+}
+
+tasks.withType(com.github.spotbugs.snom.SpotBugsTask) {
+    enabled = true
+    classes = classes.filter {
+        !it.path.contains('/lombok/') && !it.path.contains('/grpc/')
+    }
+
+    jvmArgs = [
+        '-Dspotbugs.sf.comment=true',
+        '-Dfindbugs.verbose=true'
+    ]
+    maxHeapSize = '1024m'
+
+    reports {
+        html {
+            required = true
+            outputLocation = layout.buildDirectory.file('reports/spotbugs/main.html')
+            stylesheet = 'fancy-hist.xsl'
+        }
+        xml {
+            required = true
+            outputLocation = layout.buildDirectory.file('reports/spotbugs/main.xml')
+        }
+        sarif {
+            required = true
+            outputLocation = layout.buildDirectory.file('reports/spotbugs/main.sarif')
+        }
+    }
+}
+
+tasks.named('spotbugsTest') {
+    enabled = false
+}
+
+def formatterConfig = file("${projectDir}/../../../gradle/format/java-formatter.xml")
+
+spotless {
+    java {
+        target 'src/**/*.java'
+        eclipse().configFile(formatterConfig)
+        removeUnusedImports()
+        importOrder(
+                'java',
+                'jakarta',
+                'org.springframework',
+                'org',
+                'com',
+                '',
+                '\\#'
+        )
+        trimTrailingWhitespace()
+        endWithNewline()
+    }
+}
+
+tasks.named('check') {
+    dependsOn 'spotlessCheck'
+}
+
+sourceSets {
+    main {
+        resources {
+            srcDir 'src/main/resources'
+            srcDir '../sql-resources'
+        }
+    }
+    test {
+        resources {
+            srcDir 'src/test/resources'
+            srcDir '../sql-resources'
+        }
+    }
+}
+
+tasks.named('processResources') {
+    duplicatesStrategy = DuplicatesStrategy.EXCLUDE
+}
+
+tasks.named('processTestResources') {
+    duplicatesStrategy = DuplicatesStrategy.EXCLUDE
+}
+
+tasks.withType(Jar).configureEach {
+    duplicatesStrategy = DuplicatesStrategy.EXCLUDE
+}
