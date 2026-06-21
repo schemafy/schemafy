@@ -1,7 +1,15 @@
 import type { AxiosResponse } from 'axios';
 import { apiClient, publicClient } from '@/lib/api/client';
 import { handleApiError } from '@/lib/api/error-handler';
-import type { SignInRequest, SignUpRequest, AuthResponse } from './types';
+import type {
+  AuthResponse,
+  SendSignUpEmailCodeRequest,
+  SignInRequest,
+  SignUpChallengeResponse,
+  SignUpRequest,
+  VerifySignUpEmailRequest,
+  VerifySignUpEmailResponse,
+} from './types';
 
 import { authStore } from '@/store/auth.store';
 import { clearAuthSession } from '../lib/auth-session';
@@ -16,6 +24,36 @@ const handleTokenResponse = (response: AxiosResponse): string => {
     return token;
   } else {
     throw new Error('Failed to get token');
+  }
+};
+
+export const sendSignUpEmailCode = async (
+  data: SendSignUpEmailCodeRequest,
+): Promise<SignUpChallengeResponse> => {
+  try {
+    const response = await publicClient.post<SignUpChallengeResponse>(
+      '/users/signup/email-code',
+      data,
+    );
+
+    return response.data;
+  } catch (error) {
+    return handleApiError(error);
+  }
+};
+
+export const verifySignUpEmail = async (
+  data: VerifySignUpEmailRequest,
+): Promise<VerifySignUpEmailResponse> => {
+  try {
+    const response = await publicClient.post<VerifySignUpEmailResponse>(
+      '/users/signup/email-code/verify',
+      data,
+    );
+
+    return response.data;
+  } catch (error) {
+    return handleApiError(error);
   }
 };
 
