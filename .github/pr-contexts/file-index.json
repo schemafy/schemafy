@@ -1038,7 +1038,8 @@
   ],
   "apps/backend/core/src/main/java/com/schemafy/core/erd/relationship/application/service/RemoveRelationshipColumnService.java": [
     375,
-    376
+    376,
+    421
   ],
   "apps/backend/core/src/test/java/com/schemafy/core/erd/constraint/application/service/AddConstraintColumnServiceTest.java": [
     375
@@ -1275,10 +1276,12 @@
     376
   ],
   "apps/backend/core/src/main/java/com/schemafy/core/erd/relationship/application/service/DeleteRelationshipService.java": [
-    376
+    376,
+    421
   ],
   "apps/backend/core/src/main/java/com/schemafy/core/erd/schema/application/service/DeleteSchemaService.java": [
-    376
+    376,
+    421
   ],
   "apps/backend/core/src/main/java/com/schemafy/core/erd/table/adapter/out/persistence/TablePersistenceAdapter.java": [
     376
@@ -1722,5 +1725,26 @@
   ],
   "apps/frontend/src/features/drawing/contexts/useSelectedSchema.ts": [
     420
+  ],
+  "apps/backend/core/src/main/java/com/schemafy/core/erd/constraint/application/service/PkCascadeHelper.java": [
+    421
+  ],
+  "apps/backend/core/src/main/java/com/schemafy/core/erd/operation/application/service/NestedErdMutations.java": [
+    421
+  ],
+  "apps/backend/core/src/main/java/com/schemafy/core/erd/table/application/service/DeleteTableService.java": [
+    421
+  ],
+  "apps/backend/core/src/test/java/com/schemafy/core/erd/column/application/service/DeleteColumnServiceTest.java": [
+    421
+  ],
+  "apps/backend/core/src/test/java/com/schemafy/core/erd/operation/application/service/NestedErdMutationsTest.java": [
+    421
+  ],
+  "apps/backend/core/src/test/java/com/schemafy/core/erd/relationship/application/service/DeleteRelationshipServiceTest.java": [
+    421
+  ],
+  "apps/backend/core/src/test/java/com/schemafy/core/erd/table/application/service/DeleteTableServiceTest.java": [
+    421
   ]
 }
