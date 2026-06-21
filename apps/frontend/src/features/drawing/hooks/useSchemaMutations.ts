@@ -2,7 +2,9 @@ import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { createSchema, changeSchemaName, deleteSchema } from '../api';
 import type { CreateSchemaRequest, ChangeSchemaNameRequest } from '../api';
 import { collaborationStore } from '@/store/collaboration.store';
+import { operationHistoryStore } from '@/store/operation-history.store';
 import { erdKeys } from './query-keys';
+import { syncCommittedRevision } from '../api/mutation-request';
 
 export const useCreateSchema = (projectId: string) => {
   const queryClient = useQueryClient();
@@ -10,10 +12,10 @@ export const useCreateSchema = (projectId: string) => {
   return useMutation({
     mutationFn: (data: CreateSchemaRequest) => createSchema(data),
     onSuccess: (result) => {
-      collaborationStore.setSchemaRevision(
-        result.data.id,
-        result.operation.committedRevision,
-      );
+      const syncStatus = syncCommittedRevision(result.data.id, result);
+
+      if (syncStatus === 'stale') return;
+
       queryClient.invalidateQueries({
         queryKey: erdKeys.schemas(projectId),
       });
@@ -33,10 +35,10 @@ export const useChangeSchemaName = (projectId: string) => {
       data: ChangeSchemaNameRequest;
     }) => changeSchemaName(schemaId, data),
     onSuccess: (result, { schemaId }) => {
-      collaborationStore.setSchemaRevision(
-        schemaId,
-        result.operation.committedRevision,
-      );
+      const syncStatus = syncCommittedRevision(schemaId, result);
+
+      if (syncStatus === 'stale') return;
+
       queryClient.invalidateQueries({
         queryKey: erdKeys.schemas(projectId),
       });
@@ -49,7 +51,11 @@ export const useDeleteSchema = (projectId: string) => {
 
   return useMutation({
     mutationFn: (schemaId: string) => deleteSchema(schemaId),
-    onSuccess: (_, deletedSchemaId) => {
+    onSuccess: (result, deletedSchemaId) => {
+      const syncStatus = syncCommittedRevision(deletedSchemaId, result);
+
+      if (syncStatus === 'stale') return;
+
       queryClient.removeQueries({
         queryKey: erdKeys.schemaSnapshots(deletedSchemaId),
       });
@@ -57,6 +63,7 @@ export const useDeleteSchema = (projectId: string) => {
         queryKey: erdKeys.schemas(projectId),
       });
       collaborationStore.clearSchemaRevision(deletedSchemaId);
+      operationHistoryStore.clearSchemaHistory(deletedSchemaId);
     },
   });
 };
