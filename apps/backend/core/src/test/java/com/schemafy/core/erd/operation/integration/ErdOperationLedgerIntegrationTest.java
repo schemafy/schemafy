@@ -1316,7 +1316,7 @@ class ErdOperationLedgerIntegrationTest extends ErdProjectIntegrationSupport {
   }
 
   private List<String> parseStringArray(String rawJson) {
-    JsonNode node = jsonCodec.parsePersistedNode(rawJson);
+    JsonNode node = jsonCodec.fromPersistedJson(rawJson, JsonNode.class);
     assertThat(node.isArray()).isTrue();
     return StreamSupport.stream(node.spliterator(), false)
         .map(JsonNode::asText)

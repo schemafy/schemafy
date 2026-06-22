@@ -87,7 +87,7 @@ class DefaultErdMutationCoordinatorTest {
 
     lenient().when(transactionalOperator.transactional(any(Mono.class)))
         .thenAnswer(invocation -> invocation.getArgument(0));
-    lenient().when(jsonCodec.serialize(any())).thenReturn("{}");
+    lenient().when(jsonCodec.toJson(any())).thenReturn("{}");
     lenient().when(ulidGeneratorPort.generate()).thenReturn("operation1");
   }
 

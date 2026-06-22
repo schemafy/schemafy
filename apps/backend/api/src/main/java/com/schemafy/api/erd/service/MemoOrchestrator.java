@@ -8,6 +8,7 @@ import java.util.stream.Collectors;
 
 import org.springframework.stereotype.Service;
 
+import com.fasterxml.jackson.databind.JsonNode;
 import com.schemafy.api.common.security.principal.AuthenticatedUser;
 import com.schemafy.api.erd.controller.dto.request.CreateMemoCommentRequest;
 import com.schemafy.api.erd.controller.dto.request.CreateMemoRequest;
@@ -126,7 +127,8 @@ public class MemoOrchestrator {
               .id(detail.memo().id())
               .schemaId(detail.memo().schemaId())
               .author(getUserFromMap(userMap, detail.memo().authorId()))
-              .positions(jsonCodec.parseNode(detail.memo().positions()))
+              .positions(jsonCodec.fromJson(detail.memo().positions(),
+                  JsonNode.class))
               .createdAt(detail.memo().createdAt())
               .updatedAt(detail.memo().updatedAt())
               .comments(comments)
