@@ -124,6 +124,8 @@ export const SelectedSchemaProvider = ({
       return;
     }
 
+    initializationAttempted.current = false;
+
     if (activeSchemaId && selectedSchemaId !== activeSchemaId) {
       setSelectedSchemaId(activeSchemaId);
     }
