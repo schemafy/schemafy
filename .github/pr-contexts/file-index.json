@@ -425,7 +425,8 @@
     346
   ],
   "package.json": [
-    346
+    346,
+    431
   ],
   "pnpm-lock.yaml": [
     346,
@@ -1918,5 +1919,41 @@
   ],
   "apps/backend/core/src/test/java/com/schemafy/core/config/PasswordHashTestConfiguration.java": [
     423
+  ],
+  ".github/workflows/spotbugs.yml": [
+    431
+  ],
+  "apps/backend/mcp/build.gradle": [
+    431
+  ],
+  "apps/backend/mcp/settings.gradle": [
+    431
+  ],
+  "apps/backend/mcp/src/main/java/com/schemafy/mcp/McpApplication.java": [
+    431
+  ],
+  "apps/backend/mcp/src/main/java/com/schemafy/mcp/common/config/R2dbcConfig.java": [
+    431
+  ],
+  "apps/backend/mcp/src/main/resources/application-local.yml": [
+    431
+  ],
+  "apps/backend/mcp/src/main/resources/application-server.yml": [
+    431
+  ],
+  "apps/backend/mcp/src/main/resources/application.yml": [
+    431
+  ],
+  "apps/backend/mcp/src/test/java/com/schemafy/mcp/McpApplicationTests.java": [
+    431
+  ],
+  "apps/backend/mcp/src/test/resources/application-test.yml": [
+    431
+  ],
+  "apps/backend/package.json": [
+    431
+  ],
+  "settings.gradle": [
+    431
   ]
 }
