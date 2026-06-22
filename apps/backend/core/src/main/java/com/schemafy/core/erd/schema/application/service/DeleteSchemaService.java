@@ -9,8 +9,8 @@ import org.springframework.transaction.reactive.TransactionalOperator;
 
 import com.schemafy.core.common.MutationResult;
 import com.schemafy.core.common.exception.DomainException;
-import com.schemafy.core.erd.operation.ErdOperationContexts;
 import com.schemafy.core.erd.operation.application.service.ErdMutationCoordinator;
+import com.schemafy.core.erd.operation.application.service.NestedErdMutations;
 import com.schemafy.core.erd.operation.domain.ErdOperationType;
 import com.schemafy.core.erd.schema.application.port.in.DeleteSchemaCommand;
 import com.schemafy.core.erd.schema.application.port.in.DeleteSchemaUseCase;
@@ -60,8 +60,7 @@ public class DeleteSchemaService implements DeleteSchemaUseCase {
         .flatMapMany(Flux::fromIterable)
         .concatMap(table -> {
           affectedTableIds.add(table.id());
-          return deleteTableUseCase.deleteTable(new DeleteTableCommand(table.id()))
-              .contextWrite(ErdOperationContexts.suppressNestedMutation())
+          return NestedErdMutations.run(deleteTableUseCase.deleteTable(new DeleteTableCommand(table.id())))
               .doOnNext(result -> affectedTableIds.addAll(result.affectedTableIds()))
               .then();
         })
