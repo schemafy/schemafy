@@ -15,6 +15,7 @@ import com.schemafy.core.project.application.port.in.GetMyProjectInvitationsQuer
 import com.schemafy.core.project.application.port.in.GetMyProjectInvitationsUseCase;
 import com.schemafy.core.project.application.port.in.GetProjectInvitationsQuery;
 import com.schemafy.core.project.application.port.in.GetProjectInvitationsUseCase;
+import com.schemafy.core.project.application.port.in.InvitationSummary;
 import com.schemafy.core.project.application.port.in.RejectProjectInvitationCommand;
 import com.schemafy.core.project.application.port.in.RejectProjectInvitationUseCase;
 import com.schemafy.core.project.domain.Invitation;
@@ -63,18 +64,26 @@ class ProjectInvitationUseCaseIntegrationTest extends ProjectDomainIntegrationSu
             admin.id()))
         .block();
 
-    PageResult<Invitation> targetInvitations = getProjectInvitationsUseCase.getProjectInvitations(
+    PageResult<InvitationSummary> targetInvitations = getProjectInvitationsUseCase.getProjectInvitations(
         new GetProjectInvitationsQuery(project.getId(), admin.id(), 0, 10))
         .block();
-    PageResult<Invitation> myInvitations = getMyProjectInvitationsUseCase.getMyProjectInvitations(
+    PageResult<InvitationSummary> myInvitations = getMyProjectInvitationsUseCase.getMyProjectInvitations(
         new GetMyProjectInvitationsQuery(invitee.id(), 0, 10))
         .block();
 
     assertThat(invitation).isNotNull();
-    assertThat(targetInvitations.content()).extracting(Invitation::getId)
+    assertThat(targetInvitations.content()).extracting(InvitationSummary::id)
         .contains(invitation.getId());
-    assertThat(myInvitations.content()).extracting(Invitation::getId)
+    assertThat(targetInvitations.content()).extracting(InvitationSummary::targetName)
+        .contains(project.getName());
+    assertThat(targetInvitations.content()).extracting(InvitationSummary::invitedBy)
+        .contains(admin.name());
+    assertThat(myInvitations.content()).extracting(InvitationSummary::id)
         .contains(invitation.getId());
+    assertThat(myInvitations.content()).extracting(InvitationSummary::targetName)
+        .contains(project.getName());
+    assertThat(myInvitations.content()).extracting(InvitationSummary::invitedBy)
+        .contains(admin.name());
   }
 
   @Test
@@ -154,6 +163,37 @@ class ProjectInvitationUseCaseIntegrationTest extends ProjectDomainIntegrationSu
         new GetProjectInvitationsQuery(project.getId(), viewer.id(), 0, 10)))
         .expectErrorMatches(DomainException.hasErrorCode(ProjectErrorCode.ADMIN_REQUIRED))
         .verify();
+  }
+
+  @Test
+  @DisplayName("내 프로젝트 초대 목록은 삭제된 프로젝트 초대를 totalElements에서도 제외한다")
+  void getMyProjectInvitations_excludesDeletedProjectFromTotalElements() {
+    User admin = signUpUser("admin-pi-deleted-total@test.com", "Admin");
+    User invitee = signUpUser("invitee-pi-deleted-total@test.com", "Invitee");
+    var workspace = saveWorkspace("Project Invitation Total WS", "Description");
+    saveWorkspaceMember(workspace, admin, WorkspaceRole.ADMIN);
+    saveWorkspaceMember(workspace, invitee, WorkspaceRole.MEMBER);
+
+    var activeProject = saveProject(workspace, "Active Invitation Project");
+    saveProjectMember(activeProject, admin, ProjectRole.ADMIN);
+    Invitation activeInvitation = saveProjectInvitation(activeProject,
+        workspace, invitee.email(), ProjectRole.EDITOR, admin);
+
+    var deletedProject = saveProject(workspace, "Deleted Invitation Project");
+    saveProjectMember(deletedProject, admin, ProjectRole.ADMIN);
+    saveProjectInvitation(deletedProject, workspace, invitee.email(),
+        ProjectRole.VIEWER, admin);
+    softDeleteProject(deletedProject.getId());
+
+    PageResult<InvitationSummary> result = getMyProjectInvitationsUseCase
+        .getMyProjectInvitations(new GetMyProjectInvitationsQuery(
+            invitee.id(), 0, 10))
+        .block();
+
+    assertThat(result.content()).extracting(InvitationSummary::id)
+        .containsExactly(activeInvitation.getId());
+    assertThat(result.totalElements()).isEqualTo(1);
+    assertThat(result.totalPages()).isEqualTo(1);
   }
 
   @Test

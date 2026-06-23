@@ -6,8 +6,8 @@ import com.schemafy.core.common.PageResult;
 import com.schemafy.core.project.application.access.RequireProjectAccess;
 import com.schemafy.core.project.application.port.in.GetProjectInvitationsQuery;
 import com.schemafy.core.project.application.port.in.GetProjectInvitationsUseCase;
+import com.schemafy.core.project.application.port.in.InvitationSummary;
 import com.schemafy.core.project.application.port.out.InvitationPort;
-import com.schemafy.core.project.domain.Invitation;
 import com.schemafy.core.project.domain.InvitationType;
 import com.schemafy.core.project.domain.ProjectRole;
 
@@ -22,13 +22,13 @@ class GetProjectInvitationsService implements GetProjectInvitationsUseCase {
 
   @Override
   @RequireProjectAccess(role = ProjectRole.ADMIN)
-  public Mono<PageResult<Invitation>> getProjectInvitations(
+  public Mono<PageResult<InvitationSummary>> getProjectInvitations(
       GetProjectInvitationsQuery query) {
     String targetType = InvitationType.PROJECT.name();
 
     return invitationPort.countByTarget(targetType, query.projectId())
         .flatMap(totalElements -> invitationPort
-            .findInvitationsByTargetAndId(targetType, query.projectId(),
+            .findInvitationSummariesByTargetAndId(targetType, query.projectId(),
                 query.size(), query.page() * query.size())
             .collectList()
             .map(invitations -> PageResult.of(invitations, query.page(),

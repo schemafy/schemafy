@@ -44,14 +44,20 @@ public class WorkspaceInvitationApiSnippets extends RestDocsSnippets {
     return new FieldDescriptor[] {
       fieldWithPath(prefix + "id").type(JsonFieldType.STRING)
           .description("초대 고유 ID"),
-      fieldWithPath(prefix + "workspaceId").type(JsonFieldType.STRING)
-          .description("워크스페이스 ID"),
+      fieldWithPath(prefix + "type").type(JsonFieldType.STRING)
+          .description("초대 대상 타입 (WORKSPACE/PROJECT)"),
+      fieldWithPath(prefix + "targetId").type(JsonFieldType.STRING)
+          .description("초대 대상 ID"),
+      fieldWithPath(prefix + "targetName").type(JsonFieldType.STRING)
+          .description("초대 대상 이름"),
+      fieldWithPath(prefix + "targetDescription").type(JsonFieldType.VARIES)
+          .description("초대 대상 설명 (nullable)"),
       fieldWithPath(prefix + "invitedEmail").type(JsonFieldType.STRING)
           .description("초대된 사용자 이메일"),
       fieldWithPath(prefix + "invitedRole").type(JsonFieldType.STRING)
           .description("초대된 역할 (admin/member)"),
       fieldWithPath(prefix + "invitedBy").type(JsonFieldType.STRING)
-          .description("초대한 사용자 ID"),
+          .description("초대한 사용자 이름"),
       fieldWithPath(prefix + "status").type(JsonFieldType.STRING)
           .description("초대 상태 (pending/accepted/rejected)"),
       fieldWithPath(prefix + "expiresAt").type(JsonFieldType.STRING)
