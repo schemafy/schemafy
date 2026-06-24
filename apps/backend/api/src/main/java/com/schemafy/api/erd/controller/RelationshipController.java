@@ -15,6 +15,7 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import com.fasterxml.jackson.databind.JsonNode;
 import com.schemafy.api.common.constant.ApiPath;
 import com.schemafy.api.common.type.MutationResponse;
 import com.schemafy.api.erd.broadcast.ErdMutationBroadcaster;
@@ -92,7 +93,7 @@ public class RelationshipController {
         request.pkTableId(),
         request.kind(),
         request.cardinality(),
-        jsonCodec.canonicalizeOptional(request.extra()));
+        toOptionalJson(request.extra()));
     return createRelationshipUseCase.createRelationship(command)
         .flatMap(result -> broadcastMutation(result.affectedTableIds(),
             result.operation())
@@ -173,7 +174,7 @@ public class RelationshipController {
       @Valid @RequestBody ChangeRelationshipExtraRequest request) {
     ChangeRelationshipExtraCommand command = new ChangeRelationshipExtraCommand(
         relationshipId,
-        jsonCodec.canonicalizeOptional(request.extra()));
+        toOptionalJson(request.extra()));
     return changeRelationshipExtraUseCase.changeRelationshipExtra(command)
         .flatMap(result -> broadcastMutation(result.affectedTableIds(),
             result.operation())
@@ -267,6 +268,13 @@ public class RelationshipController {
       return Mono.empty();
     }
     return broadcaster.broadcast(affectedTableIds, operation);
+  }
+
+  private String toOptionalJson(JsonNode node) {
+    if (node == null || node.isNull()) {
+      return null;
+    }
+    return jsonCodec.toJson(node);
   }
 
 }

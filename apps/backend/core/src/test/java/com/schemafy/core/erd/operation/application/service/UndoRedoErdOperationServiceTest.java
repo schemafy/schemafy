@@ -221,7 +221,6 @@ class UndoRedoErdOperationServiceTest {
         ErdOperationLifecycleState.COMMITTED,
         "{}",
         null,
-        "[]",
         "[]");
   }
 

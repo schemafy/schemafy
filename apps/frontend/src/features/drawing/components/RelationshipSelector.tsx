@@ -33,7 +33,7 @@ export const RelationshipSelector = ({
             key={key}
             onClick={() => handleTypeChange(key as RelationshipType)}
             className={`
-              w-full text-left px-2 py-1 rounded text-sm hover:bg-schemafy-secondary flex items-center gap-2
+              w-full text-left px-2 py-1 rounded text-sm text-schemafy-text hover:bg-schemafy-secondary flex items-center gap-2
               ${config.type === key ? 'bg-schemafy-secondary border border-schemafy-light-gray' : ''}
             `}
           >

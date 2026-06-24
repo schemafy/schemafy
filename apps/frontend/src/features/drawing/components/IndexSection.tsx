@@ -19,7 +19,7 @@ export const IndexSection = ({
   }
 
   return (
-    <div className="border-t-2 border-schemafy-button-bg">
+    <div className="border-t-2 border-schemafy-table-header-bg">
       <div className="bg-schemafy-dark-gray-40 p-2 flex items-center justify-between">
         <span className="text-xs font-medium text-schemafy-text">INDEXES</span>
         {isEditMode && (

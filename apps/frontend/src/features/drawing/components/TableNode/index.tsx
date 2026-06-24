@@ -123,7 +123,7 @@ const TableNodeComponent = ({ data, id }: TableProps) => {
   };
 
   return (
-    <div className="group bg-schemafy-bg border-2 border-schemafy-button-bg rounded-lg shadow-md min-w-48 overflow-hidden">
+    <div className="group bg-schemafy-bg border-2 border-schemafy-table-header-bg rounded-lg shadow-md min-w-48 overflow-hidden">
       <ConnectionHandles nodeId={id} />
       <TableHeader
         tableName={data.tableName}

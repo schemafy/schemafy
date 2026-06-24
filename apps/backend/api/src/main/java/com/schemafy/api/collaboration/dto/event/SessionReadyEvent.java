@@ -1,7 +1,10 @@
 package com.schemafy.api.collaboration.dto.event;
 
+import java.util.List;
+
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.schemafy.api.collaboration.dto.CollaborationEventType;
+import com.schemafy.api.collaboration.dto.ProjectPresenceParticipant;
 
 public final class SessionReadyEvent {
 
@@ -10,10 +13,13 @@ public final class SessionReadyEvent {
   @JsonIgnoreProperties(ignoreUnknown = true)
   public record Outbound(
       String sessionId,
+      List<ProjectPresenceParticipant> participants,
       long timestamp) implements CollaborationOutbound {
 
-    public static Outbound of(String sessionId) {
-      return new Outbound(sessionId, System.currentTimeMillis());
+    public static Outbound of(String sessionId,
+        List<ProjectPresenceParticipant> participants) {
+      List<ProjectPresenceParticipant> snapshot = List.copyOf(participants);
+      return new Outbound(sessionId, snapshot, System.currentTimeMillis());
     }
 
     @Override

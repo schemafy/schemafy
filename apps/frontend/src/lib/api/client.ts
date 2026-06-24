@@ -2,6 +2,7 @@ import axios, { type AxiosError, type InternalAxiosRequestConfig } from 'axios';
 import { authStore } from '../../store/auth.store';
 import { refreshToken } from '@/features/auth/api';
 import { handleApiError } from './error-handler';
+import { operationHistoryStore } from '@/store/operation-history.store';
 
 const API_BASE_URL: string =
   import.meta.env.VITE_BASE_URL || 'http://localhost:4000/api/v1.0';
@@ -44,6 +45,32 @@ type RequestConfigWithMeta = InternalAxiosRequestConfig & {
   _skipAuth?: boolean;
 };
 
+const getHeaderValue = (
+  headers: InternalAxiosRequestConfig['headers'] | undefined,
+  name: string,
+): string | null => {
+  if (!headers) return null;
+
+  const value =
+    typeof headers.get === 'function'
+      ? headers.get(name)
+      : (() => {
+          const record = headers as Record<string, unknown>;
+          const key = Object.keys(record).find(
+            (k) => k.toLowerCase() === name.toLowerCase(),
+          );
+          return key ? record[key] : undefined;
+        })();
+
+  if (typeof value === 'string') return value;
+  if (typeof value === 'number') return String(value);
+  if (Array.isArray(value)) {
+    const firstValue = value[0];
+    return typeof firstValue === 'string' ? firstValue : null;
+  }
+  return null;
+};
+
 apiClient.interceptors.request.use(async (config: RequestConfigWithMeta) => {
   const currentToken = authStore.accessToken;
   if (currentToken) {
@@ -73,12 +100,16 @@ apiClient.interceptors.response.use(
 
     if (responseStatus === 401) {
       config._retry = true;
-      const newToken = await refreshToken();
-      if (newToken) {
-        config.headers = config.headers ?? {};
-        (config.headers as Record<string, string>)['Authorization'] =
-          `Bearer ${newToken}`;
-        return apiClient(config);
+      try {
+        const newToken = await refreshToken();
+        if (newToken) {
+          config.headers = config.headers ?? {};
+          (config.headers as Record<string, string>)['Authorization'] =
+            `Bearer ${newToken}`;
+          return apiClient(config);
+        }
+      } catch {
+        return Promise.reject(error);
       }
     }
 
@@ -86,4 +117,19 @@ apiClient.interceptors.response.use(
   },
 );
 
-apiClient.interceptors.response.use((response) => response, handleApiError);
+apiClient.interceptors.response.use(
+  (response) => response,
+  (error) => {
+    const axiosError = error as AxiosError;
+    const clientOperationId = getHeaderValue(
+      axiosError.config?.headers,
+      'X-Client-Op-Id',
+    );
+
+    if (clientOperationId) {
+      operationHistoryStore.markFailed(clientOperationId, error);
+    }
+
+    return handleApiError(axiosError);
+  },
+);

@@ -30,8 +30,8 @@ class InversePayloadJsonTest {
             "utf8mb4",
             "utf8mb4_general_ci")));
 
-    String json = jsonCodec.serialize(payload, InversePayload.class);
-    InversePayload parsed = jsonCodec.parse(json, InversePayload.class);
+    String json = jsonCodec.toJson(payload);
+    InversePayload parsed = jsonCodec.fromJson(json, InversePayload.class);
 
     assertThat(json).doesNotContain("\"empty\"");
     assertThat(parsed).isEqualTo(payload);
@@ -67,8 +67,8 @@ class InversePayloadJsonTest {
         snapshot,
         List.of("table-1"));
 
-    String json = jsonCodec.serialize(payload, InversePayload.class);
-    InversePayload parsed = jsonCodec.parse(json, InversePayload.class);
+    String json = jsonCodec.toJson(payload);
+    InversePayload parsed = jsonCodec.fromJson(json, InversePayload.class);
 
     assertThat(json).doesNotContain("\"empty\"");
     assertThat(parsed).isEqualTo(payload);
@@ -110,8 +110,8 @@ class InversePayloadJsonTest {
         afterSnapshot,
         List.of("table-1"));
 
-    String json = jsonCodec.serialize(payload, InversePayload.class);
-    InversePayload parsed = jsonCodec.parse(json, InversePayload.class);
+    String json = jsonCodec.toJson(payload);
+    InversePayload parsed = jsonCodec.fromJson(json, InversePayload.class);
 
     assertThat(json).contains("\"kind\":\"CREATE_TABLE\"");
     assertThat(json).contains("\"tables\"");
@@ -137,7 +137,7 @@ class InversePayloadJsonTest {
         }
         """;
 
-    InversePayload parsed = jsonCodec.parse(json, InversePayload.class);
+    InversePayload parsed = jsonCodec.fromJson(json, InversePayload.class);
 
     assertThat(parsed).isEqualTo(new ChangeColumnTypeInverse(
         "column-1",

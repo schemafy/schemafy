@@ -45,13 +45,20 @@ const collectRelationshipSnapshots = (
   snapshots: Record<string, TableSnapshotResponse>,
 ) => {
   const relationshipSnapshots = new Map<string, RelationshipSnapshotResponse>();
+  const tableIds = new Set(Object.keys(snapshots));
 
   Object.values(snapshots).forEach((snapshot) => {
     snapshot.relationships.forEach((relationshipSnapshot) => {
-      relationshipSnapshots.set(
-        relationshipSnapshot.relationship.id,
-        relationshipSnapshot,
-      );
+      const { relationship } = relationshipSnapshot;
+
+      if (
+        !tableIds.has(relationship.fkTableId) ||
+        !tableIds.has(relationship.pkTableId)
+      ) {
+        return;
+      }
+
+      relationshipSnapshots.set(relationship.id, relationshipSnapshot);
     });
   });
 
@@ -217,15 +224,15 @@ export const useRelationships = (relationshipConfig: RelationshipConfig) => {
         : 'IDENTIFYING';
 
       const isSameDirection = connection.source === validation.fkTableId;
+      const fkHandle =
+        (isSameDirection ? connection.sourceHandle : connection.targetHandle) ??
+        undefined;
+      const pkHandle =
+        (isSameDirection ? connection.targetHandle : connection.sourceHandle) ??
+        undefined;
       const extra: RelationshipExtra = {
-        fkHandle:
-          (isSameDirection
-            ? connection.sourceHandle
-            : connection.targetHandle) ?? undefined,
-        pkHandle:
-          (isSameDirection
-            ? connection.targetHandle
-            : connection.sourceHandle) ?? undefined,
+        fkHandle,
+        pkHandle,
       };
 
       createRelationshipWithExtra({

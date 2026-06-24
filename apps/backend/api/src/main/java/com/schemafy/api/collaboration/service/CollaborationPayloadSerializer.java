@@ -17,7 +17,7 @@ public class CollaborationPayloadSerializer {
   private final JsonCodec jsonCodec;
 
   public Mono<String> serialize(CollaborationOutbound event) {
-    return Mono.fromCallable(() -> jsonCodec.serialize(event))
+    return Mono.fromCallable(() -> jsonCodec.toJson(event))
         .onErrorMap(IllegalArgumentException.class,
             e -> new RuntimeException("[CollaborationPayloadSerializer] failed to serialize JSON",
                 e));

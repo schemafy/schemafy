@@ -11,7 +11,6 @@ import com.schemafy.core.user.application.port.in.SignUpUserUseCase;
 import com.schemafy.core.user.application.port.out.CreateUserPort;
 import com.schemafy.core.user.application.port.out.ExistsUserByEmailPort;
 import com.schemafy.core.user.application.port.out.PasswordHashPort;
-import com.schemafy.core.user.domain.Email;
 import com.schemafy.core.user.domain.User;
 import com.schemafy.core.user.domain.exception.UserErrorCode;
 
@@ -30,13 +29,11 @@ class SignUpUserService implements SignUpUserUseCase {
 
   @Override
   public Mono<User> signUpUser(SignUpUserCommand command) {
-    return Mono.fromSupplier(() -> Email.from(command.email()))
-        .map(email -> command.withEmail(email.address()))
-        .flatMap(normalizedCommand -> existsUserByEmailPort
-            .existsUserByEmail(normalizedCommand.email())
-            .flatMap(exists -> exists
-                ? Mono.error(new DomainException(UserErrorCode.ALREADY_EXISTS))
-                : createNewUser(normalizedCommand)))
+    return existsUserByEmailPort
+        .existsUserByEmail(command.email())
+        .flatMap(exists -> exists
+            ? Mono.error(new DomainException(UserErrorCode.ALREADY_EXISTS))
+            : createNewUser(command))
         .onErrorMap(DuplicateKeyException.class,
             e -> new DomainException(UserErrorCode.ALREADY_EXISTS))
         .as(transactionalOperator::transactional);

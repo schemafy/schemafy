@@ -31,7 +31,7 @@ public class MemoApiCommandMapper {
       AuthenticatedUser user) {
     return new CreateMemoCommand(
         request.schemaId(),
-        jsonCodec.canonicalize(request.positions()),
+        jsonCodec.toJson(request.positions()),
         request.body(),
         user.userId());
   }
@@ -50,7 +50,7 @@ public class MemoApiCommandMapper {
       AuthenticatedUser user) {
     return new UpdateMemoPositionCommand(
         memoId,
-        jsonCodec.canonicalize(request.positions()),
+        jsonCodec.toJson(request.positions()),
         user.userId());
   }
 

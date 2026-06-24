@@ -3,6 +3,7 @@ package com.schemafy.core.common.json;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
+import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -15,12 +16,19 @@ class JsonCodecTest {
       new ObjectMapper().findAndRegisterModules());
 
   @Test
-  @DisplayName("persisted textual JSON을 object node로 복원한다")
-  void parsePersistedNode_unwrapsTextualJson() {
-    var node = sut.parsePersistedNode("\"{\\\"x\\\":1}\"");
+  @DisplayName("toJson은 JSON을 compact canonical string으로 직렬화한다")
+  void toJson_returnsCompactJson() {
+    JsonNode node = sut.fromJson("{\"b\":2, \"a\":1}", JsonNode.class);
 
-    assertThat(node.isObject()).isTrue();
-    assertThat(node.get("x").intValue()).isEqualTo(1);
+    assertThat(sut.toJson(node)).isEqualTo("{\"b\":2,\"a\":1}");
+  }
+
+  @Test
+  @DisplayName("fromJson은 raw JSON을 지정 타입으로 역직렬화한다")
+  void fromJson_parsesRawJson() {
+    TestPayload payload = sut.fromJson("{\"x\":1}", TestPayload.class);
+
+    assertThat(payload).isEqualTo(new TestPayload(1));
   }
 
   @Test
@@ -30,27 +38,75 @@ class JsonCodecTest {
   }
 
   @Test
-  @DisplayName("serialize null은 IllegalArgumentException을 던진다")
-  void serialize_nullThrowsIllegalArgumentException() {
-    assertThatThrownBy(() -> sut.serialize(null))
+  @DisplayName("normalizePersistedJson은 persisted textual JSON을 canonical JSON으로 정규화한다")
+  void normalizePersistedJson_unwrapsTextualJson() {
+    assertThat(sut.normalizePersistedJson("\"{\\\"x\\\":1}\""))
+        .isEqualTo("{\"x\":1}");
+  }
+
+  @Test
+  @DisplayName("normalizePersistedJson JSON null은 null로 정규화한다")
+  void normalizePersistedJson_jsonNullReturnsNull() {
+    assertThat(sut.normalizePersistedJson("null")).isNull();
+  }
+
+  @Test
+  @DisplayName("fromPersistedJson은 persisted textual JSON을 지정 타입으로 복원한다")
+  void fromPersistedJson_unwrapsTextualJson() {
+    JsonNode node = sut.fromPersistedJson("\"{\\\"x\\\":1}\"",
+        JsonNode.class);
+
+    assertThat(node.isObject()).isTrue();
+    assertThat(node.get("x").intValue()).isEqualTo(1);
+  }
+
+  @Test
+  @DisplayName("fromPersistedJson blank는 null로 복원한다")
+  void fromPersistedJson_blankReturnsNull() {
+    assertThat(sut.fromPersistedJson("  ", TestPayload.class)).isNull();
+  }
+
+  @Test
+  @DisplayName("toJson null은 IllegalArgumentException을 던진다")
+  void toJson_nullThrowsIllegalArgumentException() {
+    assertThatThrownBy(() -> sut.toJson(null))
         .isInstanceOf(IllegalArgumentException.class)
         .hasMessage("value must not be null");
   }
 
   @Test
-  @DisplayName("serializeBytes null은 IllegalArgumentException을 던진다")
-  void serializeBytes_nullThrowsIllegalArgumentException() {
-    assertThatThrownBy(() -> sut.serializeBytes(null))
+  @DisplayName("toJson type null은 IllegalArgumentException을 던진다")
+  void toJson_nullTypeThrowsIllegalArgumentException() {
+    assertThatThrownBy(() -> sut.toJson(new TestPayload(1), null))
+        .isInstanceOf(IllegalArgumentException.class)
+        .hasMessage("type must not be null");
+  }
+
+  @Test
+  @DisplayName("fromJson null은 IllegalArgumentException을 던진다")
+  void fromJson_nullThrowsIllegalArgumentException() {
+    assertThatThrownBy(() -> sut.fromJson(null, TestPayload.class))
+        .isInstanceOf(IllegalArgumentException.class)
+        .hasMessage("rawJson must not be null");
+  }
+
+  @Test
+  @DisplayName("toJsonBytes null은 IllegalArgumentException을 던진다")
+  void toJsonBytes_nullThrowsIllegalArgumentException() {
+    assertThatThrownBy(() -> sut.toJsonBytes(null))
         .isInstanceOf(IllegalArgumentException.class)
         .hasMessage("value must not be null");
   }
 
   @Test
-  @DisplayName("toObjectNode null은 IllegalArgumentException을 던진다")
-  void toObjectNode_nullThrowsIllegalArgumentException() {
-    assertThatThrownBy(() -> sut.toObjectNode(null))
+  @DisplayName("fromPersistedJson type null은 IllegalArgumentException을 던진다")
+  void fromPersistedJson_nullTypeThrowsIllegalArgumentException() {
+    assertThatThrownBy(() -> sut.fromPersistedJson("{}", null))
         .isInstanceOf(IllegalArgumentException.class)
-        .hasMessage("value must not be null");
+        .hasMessage("type must not be null");
+  }
+
+  private record TestPayload(int x) {
   }
 
 }
