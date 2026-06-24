@@ -1,6 +1,6 @@
 export type ProjectResponse = {
   id: string;
-  workspaceId: string;
+  workspaceId: string | null;
   name: string;
   description?: string;
   createdAt: string;
@@ -10,7 +10,7 @@ export type ProjectResponse = {
 
 export type ProjectSummaryResponse = {
   id: string;
-  workspaceId: string;
+  workspaceId: string | null;
   name: string;
   description?: string;
   myRole: string;

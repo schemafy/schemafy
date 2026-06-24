@@ -45,6 +45,20 @@ export class ProjectService {
     return response.data;
   }
 
+  async getMySharedProjects(
+    page: number,
+    size: number,
+    authHeader: string,
+  ): Promise<PageResponse<ProjectSummaryResponse>> {
+    const response = await this.backendClient.client.get<
+      PageResponse<ProjectSummaryResponse>
+    >('/api/v1.0/projects/shared/me', {
+      ...this.backendClient.getAuthConfig(authHeader),
+      params: { page, size },
+    });
+    return response.data;
+  }
+
   async getProject(
     projectId: string,
     authHeader: string,
