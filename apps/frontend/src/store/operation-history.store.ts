@@ -21,6 +21,7 @@ export class OperationHistoryStore {
       undoableOperations: computed,
       markPending: action,
       markUndoable: action,
+      markNoOp: action,
       markFailed: action,
       handleErdMutated: action,
       clearSchemaHistory: action,
@@ -103,6 +104,14 @@ export class OperationHistoryStore {
       schemaId,
       this.sortUndoableOpIdsByCommittedRevision(nextUndoableOpIds),
     );
+  }
+
+  markNoOp(clientOperationId: string) {
+    const existing = this.operationsByClientId.get(clientOperationId);
+
+    if (!existing || existing.status !== 'pending') return;
+
+    this.operationsByClientId.delete(clientOperationId);
   }
 
   markFailed(clientOperationId: string, error?: unknown) {
