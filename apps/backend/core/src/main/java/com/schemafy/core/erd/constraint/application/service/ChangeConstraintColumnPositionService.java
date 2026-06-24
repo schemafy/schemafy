@@ -69,18 +69,31 @@ public class ChangeConstraintColumnPositionService implements ChangeConstraintCo
                     return Mono.just(MutationResult.<Void>of(null,
                         constraint.tableId()));
                   }
-                  List<ConstraintColumn> reordered = reorderColumns(
-                      columns,
-                      currentPosition,
-                      normalizedPosition);
                   return erdMutationCoordinator.coordinate(
                       ErdOperationType.CHANGE_CONSTRAINT_COLUMN_POSITION,
                       command,
-                      () -> changeConstraintColumnPositionPort
-                          .changeConstraintColumnPositions(
-                              constraintColumn.constraintId(), reordered)
-                          .thenReturn(MutationResult.<Void>of(null,
-                              constraint.tableId())));
+                      () -> getConstraintColumnsByConstraintIdPort
+                          .findConstraintColumnsByConstraintId(
+                              constraintColumn.constraintId())
+                          .defaultIfEmpty(List.of())
+                          .flatMap(lockedColumns -> {
+                            int lockedCurrentPosition = resolveCurrentPosition(
+                                constraintColumn,
+                                lockedColumns);
+                            int lockedNormalizedPosition = Math.clamp(
+                                command.seqNo(),
+                                0,
+                                lockedColumns.size() - 1);
+                            List<ConstraintColumn> reordered = reorderColumns(
+                                lockedColumns,
+                                lockedCurrentPosition,
+                                lockedNormalizedPosition);
+                            return changeConstraintColumnPositionPort
+                                .changeConstraintColumnPositions(
+                                    constraintColumn.constraintId(), reordered)
+                                .thenReturn(MutationResult.<Void>of(null,
+                                    constraint.tableId()));
+                          }));
                 })))
         .as(transactionalOperator::transactional);
   }

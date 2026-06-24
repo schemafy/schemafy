@@ -92,23 +92,23 @@ public class ChangeColumnTypeService implements ChangeColumnTypeUseCase {
                 if (!change.hasDirectChange()) {
                   return Mono.just(MutationResult.<Void>of(null, affectedTableIds));
                 }
-                return validateCrossColumnRules(column, change)
-                    .then(rejectIfForeignKeyColumn(command.columnId()))
-                    .then(Mono.defer(() -> erdMutationCoordinator.coordinate(
-                        ErdOperationType.CHANGE_COLUMN_TYPE,
-                        command,
-                        () -> applyChange(
+                return erdMutationCoordinator.coordinate(
+                    ErdOperationType.CHANGE_COLUMN_TYPE,
+                    command,
+                    () -> validateCrossColumnRules(column, change)
+                        .then(rejectIfForeignKeyColumn(command.columnId()))
+                        .then(Mono.defer(() -> applyChange(
                             column,
                             change,
                             affectedTableIds,
                             fkRevertList,
-                            capturedFkColumnIds)
-                            .then(Mono.fromCallable(() -> MutationResult.<Void>of(null, affectedTableIds)
-                                .withInverse(new ChangeColumnTypeInverse(
-                                    column.id(),
-                                    column.dataType(),
-                                    column.typeArguments(),
-                                    fkRevertList)))))));
+                            capturedFkColumnIds)))
+                        .then(Mono.fromCallable(() -> MutationResult.<Void>of(null, affectedTableIds)
+                            .withInverse(new ChangeColumnTypeInverse(
+                                column.id(),
+                                column.dataType(),
+                                column.typeArguments(),
+                                fkRevertList)))));
               });
         })
         .as(transactionalOperator::transactional);

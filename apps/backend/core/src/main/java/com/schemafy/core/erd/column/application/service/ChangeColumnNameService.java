@@ -64,14 +64,14 @@ public class ChangeColumnNameService implements ChangeColumnNameUseCase {
             if (normalizedName.equals(column.name())) {
               return Mono.just(MutationResult.<Void>of(null, column.tableId()));
             }
-            return fetchTableSchemaAndColumns(column)
-                .flatMap(tuple -> {
-                  validateNameChange(tuple, normalizedName, column.id());
-                  return erdMutationCoordinator.coordinate(ErdOperationType.CHANGE_COLUMN_NAME, command,
-                      () -> changeColumnNamePort.changeColumnName(column.id(), normalizedName)
+            return erdMutationCoordinator.coordinate(ErdOperationType.CHANGE_COLUMN_NAME, command,
+                () -> fetchTableSchemaAndColumns(column)
+                    .flatMap(tuple -> {
+                      validateNameChange(tuple, normalizedName, column.id());
+                      return changeColumnNamePort.changeColumnName(column.id(), normalizedName)
                           .thenReturn(MutationResult.<Void>of(null, column.tableId())
-                              .withInverse(new ChangeColumnNameInverse(column.id(), column.name()))));
-                });
+                              .withInverse(new ChangeColumnNameInverse(column.id(), column.name())));
+                    }));
           });
     }).as(transactionalOperator::transactional);
   }

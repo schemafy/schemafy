@@ -61,13 +61,23 @@ public class ChangeIndexColumnPositionService implements ChangeIndexColumnPositi
                   if (currentPosition == normalizedPosition) {
                     return Mono.just(MutationResult.<Void>of(null, index.tableId()));
                   }
-                  List<IndexColumn> reordered = reorderColumns(columns, currentPosition, normalizedPosition);
                   return erdMutationCoordinator.coordinate(
                       ErdOperationType.CHANGE_INDEX_COLUMN_POSITION,
                       command,
-                      () -> changeIndexColumnPositionPort
-                          .changeIndexColumnPositions(indexColumn.indexId(), reordered)
-                          .thenReturn(MutationResult.<Void>of(null, index.tableId())));
+                      () -> getIndexColumnsByIndexIdPort
+                          .findIndexColumnsByIndexId(indexColumn.indexId())
+                          .defaultIfEmpty(List.of())
+                          .flatMap(lockedColumns -> {
+                            int lockedCurrentPosition = resolveCurrentPosition(indexColumn, lockedColumns);
+                            int lockedNormalizedPosition = Math.clamp(command.seqNo(), 0, lockedColumns.size() - 1);
+                            List<IndexColumn> reordered = reorderColumns(
+                                lockedColumns,
+                                lockedCurrentPosition,
+                                lockedNormalizedPosition);
+                            return changeIndexColumnPositionPort
+                                .changeIndexColumnPositions(indexColumn.indexId(), reordered)
+                                .thenReturn(MutationResult.<Void>of(null, index.tableId()));
+                          }));
                 })))
         .as(transactionalOperator::transactional);
   }

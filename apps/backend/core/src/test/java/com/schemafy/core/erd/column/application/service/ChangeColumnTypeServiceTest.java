@@ -1,6 +1,8 @@
 package com.schemafy.core.erd.column.application.service;
 
 import java.util.List;
+import java.util.concurrent.atomic.AtomicReference;
+import java.util.function.Supplier;
 
 import org.springframework.transaction.reactive.TransactionalOperator;
 
@@ -13,6 +15,7 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+import com.schemafy.core.common.MutationResult;
 import com.schemafy.core.common.exception.DomainException;
 import com.schemafy.core.erd.column.application.port.in.ChangeColumnTypeCommand;
 import com.schemafy.core.erd.column.application.port.out.ChangeColumnMetaPort;
@@ -28,6 +31,8 @@ import com.schemafy.core.erd.constraint.application.port.out.GetConstraintColumn
 import com.schemafy.core.erd.constraint.domain.Constraint;
 import com.schemafy.core.erd.constraint.domain.ConstraintColumn;
 import com.schemafy.core.erd.constraint.domain.type.ConstraintKind;
+import com.schemafy.core.erd.operation.application.service.ErdMutationCoordinator;
+import com.schemafy.core.erd.operation.domain.ErdOperationType;
 import com.schemafy.core.erd.relationship.application.port.out.GetRelationshipColumnsByColumnIdPort;
 import com.schemafy.core.erd.relationship.application.port.out.GetRelationshipColumnsByRelationshipIdPort;
 import com.schemafy.core.erd.relationship.application.port.out.GetRelationshipsByPkTableIdPort;
@@ -137,6 +142,46 @@ class ChangeColumnTypeServiceTest {
 
         then(changeColumnTypePort).should()
             .changeColumnType(eq(command.columnId()), eq("BIGINT"), any());
+      }
+
+      @Test
+      @DisplayName("cross-column 검증은 coordinator supplier 내부에서 실행한다")
+      void validatesCrossColumnRulesInsideCoordinatorSupplier() {
+        var command = ColumnFixture.changeTypeCommand("BIGINT", null, null, null);
+        var column = ColumnFixture.intColumn();
+        AtomicReference<Supplier<Mono<?>>> mutationSupplierRef = new AtomicReference<>();
+        sut.setErdMutationCoordinator(new ErdMutationCoordinator() {
+
+          @Override
+          public <T> Mono<MutationResult<T>> coordinate(
+              ErdOperationType operationType,
+              Object payload,
+              Supplier<Mono<MutationResult<T>>> mutationSupplier) {
+            mutationSupplierRef.set(mutationSupplier::get);
+            return Mono.empty();
+          }
+
+        });
+
+        given(getColumnByIdPort.findColumnById(command.columnId()))
+            .willReturn(Mono.just(column));
+        given(getColumnsByTableIdPort.findColumnsByTableId(column.tableId()))
+            .willReturn(Mono.just(List.of(column)));
+        given(changeColumnTypePort.changeColumnType(any(), any(), any()))
+            .willReturn(Mono.empty());
+        given(getConstraintColumnsByColumnIdPort.findConstraintColumnsByColumnId(any()))
+            .willReturn(Mono.just(List.of()));
+
+        StepVerifier.create(sut.changeColumnType(command))
+            .verifyComplete();
+
+        then(getColumnsByTableIdPort).shouldHaveNoInteractions();
+        then(getRelationshipColumnsByColumnIdPort).shouldHaveNoInteractions();
+        then(changeColumnTypePort).shouldHaveNoInteractions();
+
+        StepVerifier.create(mutationSupplierRef.get().get())
+            .expectNextCount(1)
+            .verifyComplete();
       }
 
       @Test

@@ -69,17 +69,29 @@ public class ChangeRelationshipColumnPositionService
                   if (currentPosition == normalizedPosition) {
                     return Mono.just(MutationResult.<Void>of(null, affectedTableIds));
                   }
-                  List<RelationshipColumn> reordered = reorderColumns(
-                      columns,
-                      currentPosition,
-                      normalizedPosition);
                   return erdMutationCoordinator.coordinate(
                       ErdOperationType.CHANGE_RELATIONSHIP_COLUMN_POSITION,
                       command,
-                      () -> changeRelationshipColumnPositionPort
-                          .changeRelationshipColumnPositions(
-                              relationshipColumn.relationshipId(), reordered)
-                          .thenReturn(MutationResult.<Void>of(null, affectedTableIds)));
+                      () -> getRelationshipColumnsByRelationshipIdPort
+                          .findRelationshipColumnsByRelationshipId(relationshipColumn.relationshipId())
+                          .defaultIfEmpty(List.of())
+                          .flatMap(lockedColumns -> {
+                            int lockedCurrentPosition = resolveCurrentPosition(
+                                relationshipColumn,
+                                lockedColumns);
+                            int lockedNormalizedPosition = Math.clamp(
+                                command.seqNo(),
+                                0,
+                                lockedColumns.size() - 1);
+                            List<RelationshipColumn> reordered = reorderColumns(
+                                lockedColumns,
+                                lockedCurrentPosition,
+                                lockedNormalizedPosition);
+                            return changeRelationshipColumnPositionPort
+                                .changeRelationshipColumnPositions(
+                                    relationshipColumn.relationshipId(), reordered)
+                                .thenReturn(MutationResult.<Void>of(null, affectedTableIds));
+                          }));
                 })))
         .as(transactionalOperator::transactional);
   }

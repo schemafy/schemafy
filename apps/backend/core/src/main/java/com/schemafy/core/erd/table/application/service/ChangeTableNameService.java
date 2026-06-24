@@ -75,23 +75,23 @@ public class ChangeTableNameService implements ChangeTableNameUseCase {
           if (Objects.equals(table.name(), command.newName())) {
             return Mono.just(MutationResult.<Void>of(null, table.id()));
           }
-          return tableExistsPort.existsBySchemaIdAndName(table.schemaId(), command.newName())
-              .flatMap(exists -> {
-                if (exists) {
-                  return Mono.error(new DomainException(TableErrorCode.NAME_DUPLICATE,
-                      "A table with the name '" + command.newName() + "' already exists in the schema."));
-                }
+          return erdMutationCoordinator.coordinate(ErdOperationType.CHANGE_TABLE_NAME, command,
+              () -> tableExistsPort.existsBySchemaIdAndName(table.schemaId(), command.newName())
+                  .flatMap(exists -> {
+                    if (exists) {
+                      return Mono.error(new DomainException(TableErrorCode.NAME_DUPLICATE,
+                          "A table with the name '" + command.newName() + "' already exists in the schema."));
+                    }
 
-                return buildRenamePlan(table, command.newName())
-                    .flatMap(plan -> erdMutationCoordinator.coordinate(ErdOperationType.CHANGE_TABLE_NAME, command,
-                        () -> changeTableNamePort.changeTableName(
+                    return buildRenamePlan(table, command.newName())
+                        .flatMap(plan -> changeTableNamePort.changeTableName(
                             command.tableId(),
                             command.newName())
                             .then(applyConstraintRenames(plan.constraintRenames()))
                             .then(applyRelationshipRenames(plan.relationshipRenames()))
                             .thenReturn(MutationResult.<Void>of(null, plan.affectedTableIds(table.id()))
-                                .withInverse(plan.toInverse(table)))));
-              });
+                                .withInverse(plan.toInverse(table))));
+                  }));
         })
         .as(transactionalOperator::transactional);
   }

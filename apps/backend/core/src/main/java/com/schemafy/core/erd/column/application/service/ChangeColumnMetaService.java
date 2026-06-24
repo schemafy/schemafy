@@ -71,13 +71,13 @@ public class ChangeColumnMetaService implements ChangeColumnMetaUseCase {
                 if (!change.hasDirectChange()) {
                   return Mono.just(MutationResult.<Void>of(null, affectedTableIds));
                 }
-                return validateCrossColumnRules(column, change)
-                    .then(rejectIfForeignKeyColumn(command.columnId()))
-                    .then(Mono.defer(() -> erdMutationCoordinator.coordinate(
-                        ErdOperationType.CHANGE_COLUMN_META,
-                        command,
-                        () -> applyChange(column, change, affectedTableIds)
-                            .then(Mono.fromCallable(() -> MutationResult.<Void>of(null, affectedTableIds))))));
+                return erdMutationCoordinator.coordinate(
+                    ErdOperationType.CHANGE_COLUMN_META,
+                    command,
+                    () -> validateCrossColumnRules(column, change)
+                        .then(rejectIfForeignKeyColumn(command.columnId()))
+                        .then(Mono.defer(() -> applyChange(column, change, affectedTableIds)))
+                        .then(Mono.fromCallable(() -> MutationResult.<Void>of(null, affectedTableIds))));
               });
         })
         .as(transactionalOperator::transactional);

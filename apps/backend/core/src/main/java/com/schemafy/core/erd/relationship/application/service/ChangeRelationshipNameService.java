@@ -56,23 +56,23 @@ public class ChangeRelationshipNameService implements ChangeRelationshipNameUseC
             if (normalizedName.equals(relationship.name())) {
               return Mono.just(MutationResult.<Void>of(null, affectedTableIds));
             }
-            return relationshipExistsPort.existsByFkTableIdAndNameExcludingId(
-                relationship.fkTableId(),
-                normalizedName,
-                relationship.id())
-                .flatMap(exists -> {
-                  if (exists) {
-                    return Mono.error(new DomainException(RelationshipErrorCode.NAME_DUPLICATE,
-                        "Relationship name '%s' already exists in table".formatted(normalizedName)));
-                  }
-                  return erdMutationCoordinator.coordinate(ErdOperationType.CHANGE_RELATIONSHIP_NAME, command,
-                      () -> changeRelationshipNamePort
+            return erdMutationCoordinator.coordinate(ErdOperationType.CHANGE_RELATIONSHIP_NAME, command,
+                () -> relationshipExistsPort.existsByFkTableIdAndNameExcludingId(
+                    relationship.fkTableId(),
+                    normalizedName,
+                    relationship.id())
+                    .flatMap(exists -> {
+                      if (exists) {
+                        return Mono.error(new DomainException(RelationshipErrorCode.NAME_DUPLICATE,
+                            "Relationship name '%s' already exists in table".formatted(normalizedName)));
+                      }
+                      return changeRelationshipNamePort
                           .changeRelationshipName(relationship.id(), normalizedName)
                           .thenReturn(MutationResult.<Void>of(null, affectedTableIds)
                               .withInverse(new ChangeRelationshipNameInverse(
                                   relationship.id(),
-                                  relationship.name()))));
-                });
+                                  relationship.name())));
+                    }));
           });
     });
   }

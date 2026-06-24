@@ -50,22 +50,22 @@ public class ChangeIndexNameService implements ChangeIndexNameUseCase {
             if (normalizedName.equals(index.name())) {
               return Mono.just(MutationResult.<Void>of(null, index.tableId()));
             }
-            return indexExistsPort.existsByTableIdAndNameExcludingId(
-                index.tableId(),
-                normalizedName,
-                index.id())
-                .flatMap(exists -> {
-                  if (exists) {
-                    return Mono.error(new DomainException(
-                        IndexErrorCode.NAME_DUPLICATE,
-                        "Index name '%s' already exists in table".formatted(normalizedName)));
-                  }
-                  return erdMutationCoordinator.coordinate(ErdOperationType.CHANGE_INDEX_NAME, command,
-                      () -> changeIndexNamePort
+            return erdMutationCoordinator.coordinate(ErdOperationType.CHANGE_INDEX_NAME, command,
+                () -> indexExistsPort.existsByTableIdAndNameExcludingId(
+                    index.tableId(),
+                    normalizedName,
+                    index.id())
+                    .flatMap(exists -> {
+                      if (exists) {
+                        return Mono.error(new DomainException(
+                            IndexErrorCode.NAME_DUPLICATE,
+                            "Index name '%s' already exists in table".formatted(normalizedName)));
+                      }
+                      return changeIndexNamePort
                           .changeIndexName(index.id(), normalizedName)
                           .thenReturn(MutationResult.<Void>of(null, index.tableId())
-                              .withInverse(new ChangeIndexNameInverse(index.id(), index.name()))));
-                });
+                              .withInverse(new ChangeIndexNameInverse(index.id(), index.name())));
+                    }));
           });
     });
   }

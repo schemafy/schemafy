@@ -55,11 +55,20 @@ public class ChangeColumnPositionService implements ChangeColumnPositionUseCase 
               if (currentPosition == normalizedPosition) {
                 return Mono.just(MutationResult.<Void>of(null, column.tableId()));
               }
-              List<Column> reordered = reorderColumns(columns, currentPosition, normalizedPosition);
               return erdMutationCoordinator.coordinate(ErdOperationType.CHANGE_COLUMN_POSITION, command,
-                  () -> changeColumnPositionPort
-                      .changeColumnPositions(column.tableId(), reordered)
-                      .thenReturn(MutationResult.<Void>of(null, column.tableId())));
+                  () -> getColumnsByTableIdPort.findColumnsByTableId(column.tableId())
+                      .defaultIfEmpty(List.of())
+                      .flatMap(lockedColumns -> {
+                        int lockedCurrentPosition = resolveCurrentPosition(column, lockedColumns);
+                        int lockedNormalizedPosition = Math.clamp(command.seqNo(), 0, lockedColumns.size() - 1);
+                        List<Column> reordered = reorderColumns(
+                            lockedColumns,
+                            lockedCurrentPosition,
+                            lockedNormalizedPosition);
+                        return changeColumnPositionPort
+                            .changeColumnPositions(column.tableId(), reordered)
+                            .thenReturn(MutationResult.<Void>of(null, column.tableId()));
+                      }));
             }))
         .as(transactionalOperator::transactional);
   }
