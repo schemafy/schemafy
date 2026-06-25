@@ -4,6 +4,7 @@ import { Button, QueryStateBoundary } from '@/components';
 import {
   ConfirmDialog,
   InviteDialog,
+  SharedProjectsTab,
   WorkspaceFormDialog,
   WorkspaceMembersTab,
   WorkspaceProjectsTab,
@@ -13,6 +14,8 @@ import { useWorkspace } from '@/features/workspace/hooks/useWorkspace';
 import { useWorkspaces } from '@/features/workspace/hooks/useWorkspaces';
 
 type TabType = 'projects' | 'members';
+
+const MY_PROJECTS_ID = '__my_projects__';
 
 export const WorkspacePage = () => {
   const [selectedWorkspaceId, setSelectedWorkspaceId] = useState('');
@@ -31,19 +34,27 @@ export const WorkspacePage = () => {
     refetchWorkspaces,
     leaveWorkspace,
   } = useWorkspaces();
-  const { workspace: selectedWorkspace } = useWorkspace(selectedWorkspaceId);
+  const isMyProjectsSelected = selectedWorkspaceId === MY_PROJECTS_ID;
+  const { workspace: selectedWorkspace } = useWorkspace(
+    isMyProjectsSelected ? '' : selectedWorkspaceId,
+  );
 
   const currentUserRole =
     selectedWorkspace?.currentUserRole.toUpperCase() ?? '';
 
   useEffect(() => {
+    if (!workspacesData || isMyProjectsSelected) return;
+
     if (workspaces.length > 0) {
       const isInList = workspaces.some((w) => w.id === selectedWorkspaceId);
       if (!selectedWorkspaceId || !isInList) {
         setSelectedWorkspaceId(workspaces[0].id);
       }
+      return;
     }
-  }, [workspaces, selectedWorkspaceId]);
+
+    setSelectedWorkspaceId(MY_PROJECTS_ID);
+  }, [isMyProjectsSelected, selectedWorkspaceId, workspaces, workspacesData]);
 
   const handleWorkspaceSelect = (id: string) => {
     setSelectedWorkspaceId(id);
@@ -65,17 +76,38 @@ export const WorkspacePage = () => {
       {(loadedWorkspacesData) => (
         <div className="flex w-full min-h-full">
           <WorkspaceSidebar
+            pinnedItem={{
+              id: MY_PROJECTS_ID,
+              name: 'Invited Projects',
+              description: 'Invited Projects',
+            }}
             workspaces={workspaces}
-            selectedId={selectedWorkspaceId}
+            selectedId={
+              selectedWorkspaceId ||
+              (loadedWorkspacesData.totalElements === 0 ? MY_PROJECTS_ID : '')
+            }
             onSelect={handleWorkspaceSelect}
             onAdd={() => setIsCreateDialogOpen(true)}
             isOpen={isSidebarOpen}
             onToggle={() => setIsSidebarOpen((prev) => !prev)}
           />
 
-          {loadedWorkspacesData.totalElements === 0 ? (
-            <div className="flex w-full min-h-full justify-center items-center">
-              워크스페이스를 추가해 주세요
+          {isMyProjectsSelected || loadedWorkspacesData.totalElements === 0 ? (
+            <div className="flex-1 flex justify-center py-6 px-8 overflow-hidden">
+              <div
+                className={cn(
+                  'w-full max-w-2xl flex flex-col gap-6 transition-transform duration-300',
+                  isSidebarOpen ? '-translate-x-32' : '-translate-x-6',
+                )}
+              >
+                <div className="flex items-center justify-between">
+                  <h1 className="font-heading-xl text-schemafy-text">
+                    Invited Projects
+                  </h1>
+                </div>
+
+                <SharedProjectsTab />
+              </div>
             </div>
           ) : (
             <div className="flex-1 flex justify-center py-6 px-8 overflow-hidden">
@@ -159,30 +191,34 @@ export const WorkspacePage = () => {
             mode="create"
           />
 
-          <WorkspaceFormDialog
-            open={isEditDialogOpen}
-            onOpenChange={setIsEditDialogOpen}
-            mode="edit"
-            workspaceId={selectedWorkspaceId}
-            initialName={selectedWorkspace?.name ?? ''}
-            initialDescription={selectedWorkspace?.description ?? ''}
-          />
+          {!isMyProjectsSelected && loadedWorkspacesData.totalElements > 0 && (
+            <>
+              <WorkspaceFormDialog
+                open={isEditDialogOpen}
+                onOpenChange={setIsEditDialogOpen}
+                mode="edit"
+                workspaceId={selectedWorkspaceId}
+                initialName={selectedWorkspace?.name ?? ''}
+                initialDescription={selectedWorkspace?.description ?? ''}
+              />
 
-          <InviteDialog
-            open={isInviteDialogOpen}
-            onOpenChange={setIsInviteDialogOpen}
-            workspaceId={selectedWorkspaceId}
-            currentUserRole={currentUserRole}
-          />
+              <InviteDialog
+                open={isInviteDialogOpen}
+                onOpenChange={setIsInviteDialogOpen}
+                workspaceId={selectedWorkspaceId}
+                currentUserRole={currentUserRole}
+              />
 
-          <ConfirmDialog
-            open={isLeaveConfirmOpen}
-            onOpenChange={setIsLeaveConfirmOpen}
-            title="Leave Workspace"
-            description="If you leave the workspace, you will lose access to all projects and resources. Are you sure you want to leave?"
-            confirmLabel="Leave"
-            onConfirm={() => leaveWorkspace(selectedWorkspaceId)}
-          />
+              <ConfirmDialog
+                open={isLeaveConfirmOpen}
+                onOpenChange={setIsLeaveConfirmOpen}
+                title="Leave Workspace"
+                description="If you leave the workspace, you will lose access to all projects and resources. Are you sure you want to leave?"
+                confirmLabel="Leave"
+                onConfirm={() => leaveWorkspace(selectedWorkspaceId)}
+              />
+            </>
+          )}
         </div>
       )}
     </QueryStateBoundary>

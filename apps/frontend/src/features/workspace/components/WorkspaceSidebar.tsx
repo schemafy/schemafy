@@ -9,6 +9,7 @@ export type WorkspaceItem = {
 
 interface WorkspaceSidebarProps {
   workspaces: WorkspaceItem[];
+  pinnedItem?: WorkspaceItem;
   selectedId: string;
   onSelect: (id: string) => void;
   onAdd?: () => void;
@@ -18,6 +19,7 @@ interface WorkspaceSidebarProps {
 
 export const WorkspaceSidebar = ({
   workspaces,
+  pinnedItem,
   selectedId,
   onSelect,
   onAdd,
@@ -66,6 +68,28 @@ export const WorkspaceSidebar = ({
           isOpen ? 'opacity-100' : 'opacity-0 pointer-events-none',
         )}
       >
+        {pinnedItem && (
+          <li>
+            <button
+              onClick={() => onSelect(pinnedItem.id)}
+              className={cn(
+                'w-full text-left px-3 py-2.5 rounded-[10px] transition-colors',
+                selectedId === pinnedItem.id
+                  ? 'bg-schemafy-secondary'
+                  : 'hover:bg-schemafy-secondary',
+              )}
+            >
+              <p className="font-overline-sm text-schemafy-text">
+                {pinnedItem.name}
+              </p>
+              {pinnedItem.description && (
+                <p className="font-caption-sm text-schemafy-dark-gray mt-0.5 truncate">
+                  {pinnedItem.description}
+                </p>
+              )}
+            </button>
+          </li>
+        )}
         {workspaces.map((workspace) => (
           <li key={workspace.id}>
             <button
