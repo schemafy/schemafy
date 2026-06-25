@@ -90,25 +90,36 @@ public class ChangeColumnTypeService implements ChangeColumnTypeUseCase {
           return resolveDirectChange(column, command.dataType(), typeArguments)
               .flatMap(change -> {
                 if (!change.hasDirectChange()) {
-                  return Mono.just(MutationResult.<Void>of(null, affectedTableIds));
+                  return Mono.just(MutationResult.<Void>noop(null, affectedTableIds));
                 }
                 return erdMutationCoordinator.coordinate(
                     ErdOperationType.CHANGE_COLUMN_TYPE,
                     command,
-                    () -> validateCrossColumnRules(column, change)
-                        .then(rejectIfForeignKeyColumn(command.columnId()))
-                        .then(Mono.defer(() -> applyChange(
-                            column,
-                            change,
-                            affectedTableIds,
-                            fkRevertList,
-                            capturedFkColumnIds)))
-                        .then(Mono.fromCallable(() -> MutationResult.<Void>of(null, affectedTableIds)
-                            .withInverse(new ChangeColumnTypeInverse(
-                                column.id(),
-                                column.dataType(),
-                                column.typeArguments(),
-                                fkRevertList)))));
+                    () -> getColumnByIdPort.findColumnById(command.columnId())
+                        .switchIfEmpty(Mono.error(new DomainException(ColumnErrorCode.NOT_FOUND, "Column not found")))
+                        .flatMap(lockedColumn -> {
+                          affectedTableIds.add(lockedColumn.tableId());
+                          return resolveDirectChange(lockedColumn, command.dataType(), typeArguments)
+                              .flatMap(lockedChange -> {
+                                if (!lockedChange.hasDirectChange()) {
+                                  return Mono.just(MutationResult.<Void>noop(null, affectedTableIds));
+                                }
+                                return validateCrossColumnRules(lockedColumn, lockedChange)
+                                    .then(rejectIfForeignKeyColumn(command.columnId()))
+                                    .then(Mono.defer(() -> applyChange(
+                                        lockedColumn,
+                                        lockedChange,
+                                        affectedTableIds,
+                                        fkRevertList,
+                                        capturedFkColumnIds)))
+                                    .then(Mono.fromCallable(() -> MutationResult.<Void>of(null, affectedTableIds)
+                                        .withInverse(new ChangeColumnTypeInverse(
+                                            lockedColumn.id(),
+                                            lockedColumn.dataType(),
+                                            lockedColumn.typeArguments(),
+                                            fkRevertList))));
+                              });
+                        }));
               });
         })
         .as(transactionalOperator::transactional);

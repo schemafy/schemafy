@@ -69,15 +69,29 @@ public class ChangeColumnMetaService implements ChangeColumnMetaUseCase {
           return resolveDirectChange(column, command)
               .flatMap(change -> {
                 if (!change.hasDirectChange()) {
-                  return Mono.just(MutationResult.<Void>of(null, affectedTableIds));
+                  return Mono.just(MutationResult.<Void>noop(null, affectedTableIds));
                 }
                 return erdMutationCoordinator.coordinate(
                     ErdOperationType.CHANGE_COLUMN_META,
                     command,
-                    () -> validateCrossColumnRules(column, change)
-                        .then(rejectIfForeignKeyColumn(command.columnId()))
-                        .then(Mono.defer(() -> applyChange(column, change, affectedTableIds)))
-                        .then(Mono.fromCallable(() -> MutationResult.<Void>of(null, affectedTableIds))));
+                    () -> getColumnByIdPort.findColumnById(command.columnId())
+                        .switchIfEmpty(Mono.error(new DomainException(ColumnErrorCode.NOT_FOUND, "Column not found")))
+                        .flatMap(lockedColumn -> {
+                          affectedTableIds.add(lockedColumn.tableId());
+                          return resolveDirectChange(lockedColumn, command)
+                              .flatMap(lockedChange -> {
+                                if (!lockedChange.hasDirectChange()) {
+                                  return Mono.just(MutationResult.<Void>noop(null, affectedTableIds));
+                                }
+                                return validateCrossColumnRules(lockedColumn, lockedChange)
+                                    .then(rejectIfForeignKeyColumn(command.columnId()))
+                                    .then(Mono.defer(() -> applyChange(
+                                        lockedColumn,
+                                        lockedChange,
+                                        affectedTableIds)))
+                                    .then(Mono.fromCallable(() -> MutationResult.<Void>of(null, affectedTableIds)));
+                              });
+                        }));
               });
         })
         .as(transactionalOperator::transactional);

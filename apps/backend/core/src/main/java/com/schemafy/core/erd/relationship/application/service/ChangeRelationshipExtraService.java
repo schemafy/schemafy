@@ -49,13 +49,31 @@ public class ChangeRelationshipExtraService implements ChangeRelationshipExtraUs
           affectedTableIds.add(relationship.fkTableId());
           affectedTableIds.add(relationship.pkTableId());
           if (Objects.equals(relationship.extra(), normalizedExtra)) {
-            return Mono.just(MutationResult.<Void>of(null, affectedTableIds));
+            return Mono.just(MutationResult.<Void>noop(null, affectedTableIds));
           }
           return erdMutationCoordinator.coordinate(ErdOperationType.CHANGE_RELATIONSHIP_EXTRA, command,
-              () -> changeRelationshipExtraPort
-                  .changeRelationshipExtra(relationship.id(), normalizedExtra)
-                  .thenReturn(MutationResult.<Void>of(null, affectedTableIds)));
+              () -> getRelationshipByIdPort.findRelationshipById(command.relationshipId())
+                  .switchIfEmpty(Mono.error(new DomainException(
+                      RelationshipErrorCode.NOT_FOUND,
+                      "Relationship not found")))
+                  .flatMap(lockedRelationship -> {
+                    Set<String> lockedAffectedTableIds = affectedTableIds(lockedRelationship.fkTableId(),
+                        lockedRelationship.pkTableId());
+                    if (Objects.equals(lockedRelationship.extra(), normalizedExtra)) {
+                      return Mono.just(MutationResult.<Void>noop(null, lockedAffectedTableIds));
+                    }
+                    return changeRelationshipExtraPort
+                        .changeRelationshipExtra(lockedRelationship.id(), normalizedExtra)
+                        .thenReturn(MutationResult.<Void>of(null, lockedAffectedTableIds));
+                  }));
         });
+  }
+
+  private static Set<String> affectedTableIds(String fkTableId, String pkTableId) {
+    Set<String> affectedTableIds = new HashSet<>();
+    affectedTableIds.add(fkTableId);
+    affectedTableIds.add(pkTableId);
+    return affectedTableIds;
   }
 
   private static String normalizeOptional(String value) {

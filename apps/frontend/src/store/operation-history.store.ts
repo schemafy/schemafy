@@ -22,6 +22,7 @@ export class OperationHistoryStore {
       markPending: action,
       markUndoable: action,
       markNoOp: action,
+      markSuperseded: action,
       markFailed: action,
       handleErdMutated: action,
       clearSchemaHistory: action,
@@ -112,6 +113,28 @@ export class OperationHistoryStore {
     if (!existing || existing.status !== 'pending') return;
 
     this.operationsByClientId.delete(clientOperationId);
+  }
+
+  markSuperseded(
+    clientOperationId: string,
+    operation?: ErdOperation | null,
+    affectedTableIds: string[] = [],
+  ) {
+    const existing = this.operationsByClientId.get(clientOperationId);
+
+    if (!existing || existing.status === 'undoable') return;
+
+    this.operationsByClientId.set(clientOperationId, {
+      ...existing,
+      opId: operation?.opId ?? existing.opId,
+      committedRevision:
+        operation?.committedRevision ?? existing.committedRevision,
+      derivationKind: operation?.derivationKind ?? existing.derivationKind,
+      status: 'superseded',
+      affectedTableIds,
+      failureMessage: null,
+      committedAt: existing.committedAt ?? Date.now(),
+    });
   }
 
   markFailed(clientOperationId: string, error?: unknown) {

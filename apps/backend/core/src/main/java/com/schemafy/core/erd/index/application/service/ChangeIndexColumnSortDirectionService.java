@@ -67,15 +67,27 @@ public class ChangeIndexColumnSortDirectionService
             .switchIfEmpty(Mono.error(new DomainException(IndexErrorCode.NOT_FOUND, "Index not found")))
             .flatMap(index -> {
               if (indexColumn.sortDirection() == command.sortDirection()) {
-                return Mono.just(MutationResult.<Void>of(null, index.tableId()));
+                return Mono.just(MutationResult.<Void>noop(null, index.tableId()));
               }
-              return validateSortDirectionChange(index, indexColumn, command)
-                  .then(Mono.defer(() -> erdMutationCoordinator.coordinate(
-                      ErdOperationType.CHANGE_INDEX_COLUMN_SORT_DIRECTION,
-                      command,
-                      () -> changeIndexColumnSortDirectionPort
-                          .changeIndexColumnSortDirection(indexColumn.id(), command.sortDirection())
-                          .thenReturn(MutationResult.<Void>of(null, index.tableId())))));
+              return erdMutationCoordinator.coordinate(
+                  ErdOperationType.CHANGE_INDEX_COLUMN_SORT_DIRECTION,
+                  command,
+                  () -> getIndexColumnByIdPort.findIndexColumnById(command.indexColumnId())
+                      .switchIfEmpty(Mono.error(new DomainException(
+                          IndexErrorCode.COLUMN_NOT_FOUND, "Index column not found")))
+                      .flatMap(lockedIndexColumn -> getIndexByIdPort.findIndexById(lockedIndexColumn.indexId())
+                          .switchIfEmpty(Mono.error(new DomainException(IndexErrorCode.NOT_FOUND, "Index not found")))
+                          .flatMap(lockedIndex -> {
+                            if (lockedIndexColumn.sortDirection() == command.sortDirection()) {
+                              return Mono.just(MutationResult.<Void>noop(null, lockedIndex.tableId()));
+                            }
+                            return validateSortDirectionChange(lockedIndex, lockedIndexColumn, command)
+                                .then(Mono.defer(() -> changeIndexColumnSortDirectionPort
+                                    .changeIndexColumnSortDirection(
+                                        lockedIndexColumn.id(),
+                                        command.sortDirection())))
+                                .thenReturn(MutationResult.<Void>of(null, lockedIndex.tableId()));
+                          })));
             }))
         .as(transactionalOperator::transactional);
   }

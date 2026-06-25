@@ -53,16 +53,34 @@ public class ChangeRelationshipCardinalityService implements ChangeRelationshipC
           affectedTableIds.add(relationship.fkTableId());
           affectedTableIds.add(relationship.pkTableId());
           if (relationship.cardinality() == command.cardinality()) {
-            return Mono.just(MutationResult.<Void>of(null, affectedTableIds));
+            return Mono.just(MutationResult.<Void>noop(null, affectedTableIds));
           }
           return erdMutationCoordinator.coordinate(ErdOperationType.CHANGE_RELATIONSHIP_CARDINALITY, command,
-              () -> changeRelationshipCardinalityPort
-                  .changeRelationshipCardinality(relationship.id(), command.cardinality())
-                  .thenReturn(MutationResult.<Void>of(null, affectedTableIds)
-                      .withInverse(new ChangeRelationshipCardinalityInverse(
-                          relationship.id(),
-                          relationship.cardinality()))));
+              () -> getRelationshipByIdPort.findRelationshipById(command.relationshipId())
+                  .switchIfEmpty(Mono.error(new DomainException(
+                      RelationshipErrorCode.NOT_FOUND,
+                      "Relationship not found")))
+                  .flatMap(lockedRelationship -> {
+                    Set<String> lockedAffectedTableIds = affectedTableIds(lockedRelationship.fkTableId(),
+                        lockedRelationship.pkTableId());
+                    if (lockedRelationship.cardinality() == command.cardinality()) {
+                      return Mono.just(MutationResult.<Void>noop(null, lockedAffectedTableIds));
+                    }
+                    return changeRelationshipCardinalityPort
+                        .changeRelationshipCardinality(lockedRelationship.id(), command.cardinality())
+                        .thenReturn(MutationResult.<Void>of(null, lockedAffectedTableIds)
+                            .withInverse(new ChangeRelationshipCardinalityInverse(
+                                lockedRelationship.id(),
+                                lockedRelationship.cardinality())));
+                  }));
         });
+  }
+
+  private static Set<String> affectedTableIds(String fkTableId, String pkTableId) {
+    Set<String> affectedTableIds = new HashSet<>();
+    affectedTableIds.add(fkTableId);
+    affectedTableIds.add(pkTableId);
+    return affectedTableIds;
   }
 
 }

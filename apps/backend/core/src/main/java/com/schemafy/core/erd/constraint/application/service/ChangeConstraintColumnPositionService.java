@@ -66,7 +66,7 @@ public class ChangeConstraintColumnPositionService implements ChangeConstraintCo
                   int currentPosition = resolveCurrentPosition(constraintColumn, columns);
                   int normalizedPosition = Math.clamp(command.seqNo(), 0, columns.size() - 1);
                   if (currentPosition == normalizedPosition) {
-                    return Mono.just(MutationResult.<Void>of(null,
+                    return Mono.just(MutationResult.<Void>noop(null,
                         constraint.tableId()));
                   }
                   return erdMutationCoordinator.coordinate(
@@ -84,6 +84,10 @@ public class ChangeConstraintColumnPositionService implements ChangeConstraintCo
                                 command.seqNo(),
                                 0,
                                 lockedColumns.size() - 1);
+                            if (lockedCurrentPosition == lockedNormalizedPosition) {
+                              return Mono.just(MutationResult.<Void>noop(null,
+                                  constraint.tableId()));
+                            }
                             List<ConstraintColumn> reordered = reorderColumns(
                                 lockedColumns,
                                 lockedCurrentPosition,

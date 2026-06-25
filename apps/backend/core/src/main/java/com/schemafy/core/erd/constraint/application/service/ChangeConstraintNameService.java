@@ -51,27 +51,36 @@ public class ChangeConstraintNameService implements ChangeConstraintNameUseCase 
           .switchIfEmpty(Mono.error(new DomainException(ConstraintErrorCode.NOT_FOUND, "Constraint not found")))
           .flatMap(constraint -> {
             if (normalizedName.equals(constraint.name())) {
-              return Mono.just(MutationResult.<Void>of(null, constraint.tableId()));
+              return Mono.just(MutationResult.<Void>noop(null, constraint.tableId()));
             }
             return erdMutationCoordinator.coordinate(ErdOperationType.CHANGE_CONSTRAINT_NAME, command,
-                () -> getTableByIdPort.findTableById(constraint.tableId())
-                    .switchIfEmpty(Mono.error(new DomainException(TableErrorCode.NOT_FOUND, "Table not found")))
-                    .flatMap(table -> constraintExistsPort.existsBySchemaIdAndNameExcludingId(
-                        table.schemaId(),
-                        normalizedName,
-                        constraint.id())
-                        .flatMap(exists -> {
-                          if (exists) {
-                            return Mono.error(new DomainException(ConstraintErrorCode.NAME_DUPLICATE,
-                                "Constraint name '%s' already exists in schema".formatted(normalizedName)));
-                          }
-                          return changeConstraintNamePort
-                              .changeConstraintName(constraint.id(), normalizedName)
-                              .thenReturn(MutationResult.<Void>of(null, constraint.tableId())
-                                  .withInverse(new ChangeConstraintNameInverse(
-                                      constraint.id(),
-                                      constraint.name())));
-                        })));
+                () -> getConstraintByIdPort.findConstraintById(command.constraintId())
+                    .switchIfEmpty(Mono.error(new DomainException(
+                        ConstraintErrorCode.NOT_FOUND,
+                        "Constraint not found")))
+                    .flatMap(lockedConstraint -> {
+                      if (normalizedName.equals(lockedConstraint.name())) {
+                        return Mono.just(MutationResult.<Void>noop(null, lockedConstraint.tableId()));
+                      }
+                      return getTableByIdPort.findTableById(lockedConstraint.tableId())
+                          .switchIfEmpty(Mono.error(new DomainException(TableErrorCode.NOT_FOUND, "Table not found")))
+                          .flatMap(table -> constraintExistsPort.existsBySchemaIdAndNameExcludingId(
+                              table.schemaId(),
+                              normalizedName,
+                              lockedConstraint.id())
+                              .flatMap(exists -> {
+                                if (exists) {
+                                  return Mono.error(new DomainException(ConstraintErrorCode.NAME_DUPLICATE,
+                                      "Constraint name '%s' already exists in schema".formatted(normalizedName)));
+                                }
+                                return changeConstraintNamePort
+                                    .changeConstraintName(lockedConstraint.id(), normalizedName)
+                                    .thenReturn(MutationResult.<Void>of(null, lockedConstraint.tableId())
+                                        .withInverse(new ChangeConstraintNameInverse(
+                                            lockedConstraint.id(),
+                                            lockedConstraint.name())));
+                              }));
+                    }));
           });
     });
   }

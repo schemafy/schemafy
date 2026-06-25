@@ -96,6 +96,23 @@ class ChangeRelationshipCardinalityServiceTest {
     }
 
     @Test
+    @DisplayName("락 획득 후 cardinality가 이미 요청값이면 no-op으로 성공한다")
+    void returnsNoOpWhenLockedRelationshipAlreadyHasRequestedCardinality() {
+      var command = RelationshipFixture.changeCardinalityCommand(Cardinality.ONE_TO_MANY);
+      var initialRelationship = RelationshipFixture.relationshipWithCardinality(Cardinality.ONE_TO_ONE);
+      var lockedRelationship = RelationshipFixture.relationshipWithCardinality(Cardinality.ONE_TO_MANY);
+
+      given(getRelationshipByIdPort.findRelationshipById(any()))
+          .willReturn(Mono.just(initialRelationship), Mono.just(lockedRelationship));
+
+      StepVerifier.create(sut.changeRelationshipCardinality(command))
+          .expectNextMatches(result -> result.noOp() && result.operation() == null)
+          .verifyComplete();
+
+      then(changeRelationshipCardinalityPort).shouldHaveNoInteractions();
+    }
+
+    @Test
     @DisplayName("관계가 존재하지 않으면 예외가 발생한다")
     void throwsWhenRelationshipNotExists() {
       var command = RelationshipFixture.changeCardinalityCommand(Cardinality.ONE_TO_ONE);

@@ -44,12 +44,19 @@ public class ChangeTableExtraService implements ChangeTableExtraUseCase {
         .switchIfEmpty(Mono.error(new DomainException(TableErrorCode.NOT_FOUND, "Table not found")))
         .flatMap(table -> {
           if (Objects.equals(table.extra(), normalizedExtra)) {
-            return Mono.just(MutationResult.<Void>of(null, table.id()));
+            return Mono.just(MutationResult.<Void>noop(null, table.id()));
           }
           return erdMutationCoordinator.coordinate(ErdOperationType.CHANGE_TABLE_EXTRA, command,
-              () -> changeTableExtraPort
-                  .changeTableExtra(command.tableId(), normalizedExtra)
-                  .thenReturn(MutationResult.<Void>of(null, table.id())));
+              () -> getTableByIdPort.findTableById(command.tableId())
+                  .switchIfEmpty(Mono.error(new DomainException(TableErrorCode.NOT_FOUND, "Table not found")))
+                  .flatMap(lockedTable -> {
+                    if (Objects.equals(lockedTable.extra(), normalizedExtra)) {
+                      return Mono.just(MutationResult.<Void>noop(null, lockedTable.id()));
+                    }
+                    return changeTableExtraPort
+                        .changeTableExtra(command.tableId(), normalizedExtra)
+                        .thenReturn(MutationResult.<Void>of(null, lockedTable.id()));
+                  }));
         });
   }
 

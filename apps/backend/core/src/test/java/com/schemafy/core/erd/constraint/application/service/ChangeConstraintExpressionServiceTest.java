@@ -94,6 +94,25 @@ class ChangeConstraintExpressionServiceTest {
     }
 
     @Test
+    @DisplayName("lock 이후 CHECK 표현식이 이미 요청값이면 정의 조회 없이 변경 없이 성공한다")
+    void returnsNoOpWhenLockedCheckExprAlreadyHasRequestedValue() {
+      var initialConstraint = ConstraintFixture.checkConstraintWithExpr("column1 > 0");
+      var lockedConstraint = ConstraintFixture.checkConstraintWithExpr("column1 > 10");
+      var command = ConstraintFixture.changeCheckExprCommand(initialConstraint.id(), "  column1 > 10  ");
+
+      given(getConstraintByIdPort.findConstraintById(initialConstraint.id()))
+          .willReturn(Mono.just(initialConstraint), Mono.just(lockedConstraint));
+
+      StepVerifier.create(sut.changeConstraintCheckExpr(command))
+          .expectNextMatches(result -> result.operation() == null && result.noOp())
+          .verifyComplete();
+
+      then(getConstraintsByTableIdPort).shouldHaveNoInteractions();
+      then(getConstraintColumnsByConstraintIdPort).shouldHaveNoInteractions();
+      then(changeConstraintExpressionPort).shouldHaveNoInteractions();
+    }
+
+    @Test
     @DisplayName("제약조건이 존재하지 않으면 예외가 발생한다")
     void throwsWhenConstraintNotExists() {
       var command = ConstraintFixture.changeCheckExprCommand("non-existent-id", "column1 > 10");

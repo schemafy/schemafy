@@ -91,6 +91,23 @@ class ChangeRelationshipExtraServiceTest {
     }
 
     @Test
+    @DisplayName("락 획득 후 extra가 이미 요청값이면 no-op으로 성공한다")
+    void returnsNoOpWhenLockedRelationshipAlreadyHasRequestedExtra() {
+      var command = RelationshipFixture.changeExtraCommand("some extra info");
+      var initialRelationship = RelationshipFixture.defaultRelationship();
+      var lockedRelationship = RelationshipFixture.relationshipWithExtra("some extra info");
+
+      given(getRelationshipByIdPort.findRelationshipById(any()))
+          .willReturn(Mono.just(initialRelationship), Mono.just(lockedRelationship));
+
+      StepVerifier.create(sut.changeRelationshipExtra(command))
+          .expectNextMatches(result -> result.noOp() && result.operation() == null)
+          .verifyComplete();
+
+      then(changeRelationshipExtraPort).shouldHaveNoInteractions();
+    }
+
+    @Test
     @DisplayName("관계가 존재하지 않으면 예외가 발생한다")
     void throwsWhenRelationshipNotExists() {
       var command = RelationshipFixture.changeExtraCommand("some info");

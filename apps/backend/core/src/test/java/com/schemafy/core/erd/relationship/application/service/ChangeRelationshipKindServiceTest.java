@@ -172,6 +172,27 @@ class ChangeRelationshipKindServiceTest {
         then(getRelationshipsBySchemaIdPort).shouldHaveNoInteractions();
       }
 
+      @Test
+      @DisplayName("락 획득 후 kind가 이미 요청값이면 스냅샷 없이 no-op으로 성공한다")
+      void returnsNoOpWhenLockedRelationshipAlreadyHasRequestedKind() {
+        var command = RelationshipFixture.changeKindCommand(RelationshipKind.IDENTIFYING);
+        var initialRelationship = RelationshipFixture.nonIdentifyingRelationship();
+        var lockedRelationship = RelationshipFixture.identifyingRelationship();
+
+        given(getRelationshipByIdPort.findRelationshipById(any()))
+            .willReturn(Mono.just(initialRelationship), Mono.just(lockedRelationship));
+
+        StepVerifier.create(sut.changeRelationshipKind(command))
+            .expectNextMatches(result -> result.noOp() && result.operation() == null)
+            .verifyComplete();
+
+        then(structuralSnapshotService).shouldHaveNoInteractions();
+        then(pkCascadeHelper).shouldHaveNoInteractions();
+        then(changeRelationshipKindPort).shouldHaveNoInteractions();
+        then(getTableByIdPort).shouldHaveNoInteractions();
+        then(getRelationshipsBySchemaIdPort).shouldHaveNoInteractions();
+      }
+
     }
 
     @Nested

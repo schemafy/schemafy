@@ -73,24 +73,32 @@ public class ChangeTableNameService implements ChangeTableNameUseCase {
             new DomainException(TableErrorCode.NOT_FOUND, "Table not found: " + command.tableId())))
         .flatMap(table -> {
           if (Objects.equals(table.name(), command.newName())) {
-            return Mono.just(MutationResult.<Void>of(null, table.id()));
+            return Mono.just(MutationResult.<Void>noop(null, table.id()));
           }
           return erdMutationCoordinator.coordinate(ErdOperationType.CHANGE_TABLE_NAME, command,
-              () -> tableExistsPort.existsBySchemaIdAndName(table.schemaId(), command.newName())
-                  .flatMap(exists -> {
-                    if (exists) {
-                      return Mono.error(new DomainException(TableErrorCode.NAME_DUPLICATE,
-                          "A table with the name '" + command.newName() + "' already exists in the schema."));
+              () -> getTableByIdPort.findTableById(command.tableId())
+                  .switchIfEmpty(Mono.error(
+                      new DomainException(TableErrorCode.NOT_FOUND, "Table not found: " + command.tableId())))
+                  .flatMap(lockedTable -> {
+                    if (Objects.equals(lockedTable.name(), command.newName())) {
+                      return Mono.just(MutationResult.<Void>noop(null, lockedTable.id()));
                     }
+                    return tableExistsPort.existsBySchemaIdAndName(lockedTable.schemaId(), command.newName())
+                        .flatMap(exists -> {
+                          if (exists) {
+                            return Mono.error(new DomainException(TableErrorCode.NAME_DUPLICATE,
+                                "A table with the name '" + command.newName() + "' already exists in the schema."));
+                          }
 
-                    return buildRenamePlan(table, command.newName())
-                        .flatMap(plan -> changeTableNamePort.changeTableName(
-                            command.tableId(),
-                            command.newName())
-                            .then(applyConstraintRenames(plan.constraintRenames()))
-                            .then(applyRelationshipRenames(plan.relationshipRenames()))
-                            .thenReturn(MutationResult.<Void>of(null, plan.affectedTableIds(table.id()))
-                                .withInverse(plan.toInverse(table))));
+                          return buildRenamePlan(lockedTable, command.newName())
+                              .flatMap(plan -> changeTableNamePort.changeTableName(
+                                  command.tableId(),
+                                  command.newName())
+                                  .then(applyConstraintRenames(plan.constraintRenames()))
+                                  .then(applyRelationshipRenames(plan.relationshipRenames()))
+                                  .thenReturn(MutationResult.<Void>of(null, plan.affectedTableIds(lockedTable.id()))
+                                      .withInverse(plan.toInverse(lockedTable))));
+                        });
                   }));
         })
         .as(transactionalOperator::transactional);

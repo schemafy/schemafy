@@ -245,6 +245,31 @@ class ChangeColumnMetaServiceTest {
       }
 
       @Test
+      @DisplayName("lock 이후 직접 컬럼 meta 결과가 같으면 주변 조회 없이 변경 없이 성공한다")
+      void succeedsWithoutCascadeCheckWhenLockedDirectMetaResultIsSame() {
+        var command = ColumnFixture.changeMetaCommand(
+            PatchField.absent(),
+            PatchField.of("utf8mb4"),
+            PatchField.of("utf8mb4_unicode_ci"),
+            PatchField.absent());
+        var initialColumn = ColumnFixture.varcharColumnWithCharset("utf8mb4", "utf8mb4_general_ci");
+        var lockedColumn = ColumnFixture.varcharColumnWithCharset("utf8mb4", "utf8mb4_unicode_ci");
+
+        given(getColumnByIdPort.findColumnById(command.columnId()))
+            .willReturn(Mono.just(initialColumn), Mono.just(lockedColumn));
+
+        StepVerifier.create(sut.changeColumnMeta(command))
+            .expectNextMatches(result -> result.operation() == null && result.noOp())
+            .verifyComplete();
+
+        then(getColumnsByTableIdPort).shouldHaveNoInteractions();
+        then(getRelationshipColumnsByColumnIdPort).shouldHaveNoInteractions();
+        then(changeColumnMetaPort).shouldHaveNoInteractions();
+        then(getConstraintColumnsByColumnIdPort).shouldHaveNoInteractions();
+        then(getRelationshipsByPkTableIdPort).shouldHaveNoInteractions();
+      }
+
+      @Test
       @DisplayName("FK 컬럼의 meta를 실제 변경하면 예외가 발생한다")
       void rejectsForeignKeyColumnWhenDirectMetaWouldChange() {
         var command = ColumnFixture.changeMetaCommand(

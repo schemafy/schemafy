@@ -260,6 +260,28 @@ class ChangeColumnTypeServiceTest {
       }
 
       @Test
+      @DisplayName("lock 이후 직접 컬럼 type 결과가 같으면 주변 조회 없이 변경 없이 성공한다")
+      void succeedsWithoutCascadeCheckWhenLockedDirectTypeResultIsSame() {
+        var command = ColumnFixture.changeTypeCommand("BIGINT", null, null, null);
+        var initialColumn = ColumnFixture.intColumn();
+        var lockedColumn = ColumnFixture.columnWithDataType("BIGINT", null);
+
+        given(getColumnByIdPort.findColumnById(command.columnId()))
+            .willReturn(Mono.just(initialColumn), Mono.just(lockedColumn));
+
+        StepVerifier.create(sut.changeColumnType(command))
+            .expectNextMatches(result -> result.operation() == null && result.noOp())
+            .verifyComplete();
+
+        then(getColumnsByTableIdPort).shouldHaveNoInteractions();
+        then(getRelationshipColumnsByColumnIdPort).shouldHaveNoInteractions();
+        then(changeColumnTypePort).shouldHaveNoInteractions();
+        then(changeColumnMetaPort).shouldHaveNoInteractions();
+        then(getConstraintColumnsByColumnIdPort).shouldHaveNoInteractions();
+        then(getRelationshipsByPkTableIdPort).shouldHaveNoInteractions();
+      }
+
+      @Test
       @DisplayName("FK 컬럼의 type을 실제 변경하면 예외가 발생한다")
       void rejectsForeignKeyColumnWhenDirectTypeWouldChange() {
         var command = ColumnFixture.changeTypeCommand("BIGINT", null, null, null);

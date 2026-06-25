@@ -98,6 +98,47 @@ class ChangeColumnPositionServiceTest {
       }
 
       @Test
+      @DisplayName("lock 이후 이미 목표 위치면 변경 없이 성공한다")
+      void returnsNoOpWhenLockedStateAlreadyMovedToRequestedPosition() {
+        var command = ColumnFixture.changePositionCommand(1);
+        var column = ColumnFixture.defaultColumn();
+        var otherColumn = new Column(
+            "01ARZ3NDEKTSV4RRFFQ69G5C02",
+            ColumnFixture.DEFAULT_TABLE_ID,
+            "col_2",
+            "VARCHAR",
+            column.typeArguments(),
+            1,
+            false,
+            null,
+            null,
+            null);
+        var initialColumns = List.of(column, otherColumn);
+        var lockedColumns = List.of(otherColumn, new Column(
+            column.id(),
+            column.tableId(),
+            column.name(),
+            column.dataType(),
+            column.typeArguments(),
+            1,
+            column.autoIncrement(),
+            column.charset(),
+            column.collation(),
+            column.comment()));
+
+        given(getColumnByIdPort.findColumnById(any()))
+            .willReturn(Mono.just(column));
+        given(getColumnsByTableIdPort.findColumnsByTableId(any()))
+            .willReturn(Mono.just(initialColumns), Mono.just(lockedColumns));
+
+        StepVerifier.create(sut.changeColumnPosition(command))
+            .expectNextMatches(result -> result.operation() == null && result.noOp())
+            .verifyComplete();
+
+        then(changeColumnPositionPort).shouldHaveNoInteractions();
+      }
+
+      @Test
       @DisplayName("같은 위치로 이동하면 변경 없이 성공한다")
       void changesPositionToSameIndex() {
         var command = ColumnFixture.changePositionCommand(0);

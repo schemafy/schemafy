@@ -126,6 +126,24 @@ class ChangeRelationshipNameServiceTest {
       then(changeRelationshipNamePort).shouldHaveNoInteractions();
     }
 
+    @Test
+    @DisplayName("락 획득 후 이름이 이미 요청값이면 중복 조회 없이 no-op으로 성공한다")
+    void returnsNoOpWhenLockedRelationshipAlreadyHasRequestedName() {
+      var command = RelationshipFixture.changeNameCommand("new_name");
+      var initialRelationship = RelationshipFixture.defaultRelationship();
+      var lockedRelationship = RelationshipFixture.relationshipWithName("new_name");
+
+      given(getRelationshipByIdPort.findRelationshipById(any()))
+          .willReturn(Mono.just(initialRelationship), Mono.just(lockedRelationship));
+
+      StepVerifier.create(sut.changeRelationshipName(command))
+          .expectNextMatches(result -> result.noOp() && result.operation() == null)
+          .verifyComplete();
+
+      then(relationshipExistsPort).shouldHaveNoInteractions();
+      then(changeRelationshipNamePort).shouldHaveNoInteractions();
+    }
+
   }
 
 }

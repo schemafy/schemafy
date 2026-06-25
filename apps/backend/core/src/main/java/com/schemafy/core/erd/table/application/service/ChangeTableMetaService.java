@@ -51,14 +51,21 @@ public class ChangeTableMetaService implements ChangeTableMetaUseCase {
         .switchIfEmpty(Mono.error(new DomainException(TableErrorCode.NOT_FOUND, "Table not found")))
         .flatMap(table -> {
           if (isNoOp(command, table)) {
-            return Mono.just(MutationResult.<Void>of(null, table.id()));
+            return Mono.just(MutationResult.<Void>noop(null, table.id()));
           }
           return erdMutationCoordinator.coordinate(ErdOperationType.CHANGE_TABLE_META, command,
-              () -> changeTableMetaPort.changeTableMeta(
-                  command.tableId(),
-                  portCharset,
-                  portCollation)
-                  .thenReturn(MutationResult.<Void>of(null, table.id())));
+              () -> getTableByIdPort.findTableById(command.tableId())
+                  .switchIfEmpty(Mono.error(new DomainException(TableErrorCode.NOT_FOUND, "Table not found")))
+                  .flatMap(lockedTable -> {
+                    if (isNoOp(command, lockedTable)) {
+                      return Mono.just(MutationResult.<Void>noop(null, lockedTable.id()));
+                    }
+                    return changeTableMetaPort.changeTableMeta(
+                        command.tableId(),
+                        portCharset,
+                        portCollation)
+                        .thenReturn(MutationResult.<Void>of(null, lockedTable.id()));
+                  }));
         });
   }
 

@@ -46,19 +46,27 @@ public class ChangeSchemaNameService implements ChangeSchemaNameUseCase {
             .schemaId())))
         .flatMap(schema -> {
           if (Objects.equals(schema.name(), command.newName())) {
-            return Mono.just(MutationResult.<Void>empty(null));
+            return Mono.just(MutationResult.<Void>noop(null));
           }
-          return schemaExistsPort.existsActiveByProjectIdAndName(schema.projectId(), command.newName())
-              .flatMap(exists -> {
-                if (exists) {
-                  return Mono.error(new DomainException(SchemaErrorCode.NAME_DUPLICATE,
-                      "A schema with the name '" + command.newName() + "' already exists in the project."));
-                }
+          return erdMutationCoordinator.coordinate(ErdOperationType.CHANGE_SCHEMA_NAME, command,
+              () -> getSchemaByIdPort.findSchemaById(command.schemaId())
+                  .switchIfEmpty(Mono.error(new DomainException(SchemaErrorCode.NOT_FOUND, "Schema not found: "
+                      + command.schemaId())))
+                  .flatMap(lockedSchema -> {
+                    if (Objects.equals(lockedSchema.name(), command.newName())) {
+                      return Mono.just(MutationResult.<Void>noop(null));
+                    }
+                    return schemaExistsPort.existsActiveByProjectIdAndName(lockedSchema.projectId(), command.newName())
+                        .flatMap(exists -> {
+                          if (exists) {
+                            return Mono.error(new DomainException(SchemaErrorCode.NAME_DUPLICATE,
+                                "A schema with the name '" + command.newName() + "' already exists in the project."));
+                          }
 
-                return erdMutationCoordinator.coordinate(ErdOperationType.CHANGE_SCHEMA_NAME, command,
-                    () -> changeSchemaNamePort.changeSchemaName(command.schemaId(), command.newName())
-                        .thenReturn(MutationResult.empty(null)));
-              });
+                          return changeSchemaNamePort.changeSchemaName(command.schemaId(), command.newName())
+                              .thenReturn(MutationResult.empty(null));
+                        });
+                  }));
         });
   }
 

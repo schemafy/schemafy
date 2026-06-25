@@ -53,7 +53,7 @@ public class ChangeColumnPositionService implements ChangeColumnPositionUseCase 
               int currentPosition = resolveCurrentPosition(column, columns);
               int normalizedPosition = Math.clamp(command.seqNo(), 0, columns.size() - 1);
               if (currentPosition == normalizedPosition) {
-                return Mono.just(MutationResult.<Void>of(null, column.tableId()));
+                return Mono.just(MutationResult.<Void>noop(null, column.tableId()));
               }
               return erdMutationCoordinator.coordinate(ErdOperationType.CHANGE_COLUMN_POSITION, command,
                   () -> getColumnsByTableIdPort.findColumnsByTableId(column.tableId())
@@ -61,6 +61,9 @@ public class ChangeColumnPositionService implements ChangeColumnPositionUseCase 
                       .flatMap(lockedColumns -> {
                         int lockedCurrentPosition = resolveCurrentPosition(column, lockedColumns);
                         int lockedNormalizedPosition = Math.clamp(command.seqNo(), 0, lockedColumns.size() - 1);
+                        if (lockedCurrentPosition == lockedNormalizedPosition) {
+                          return Mono.just(MutationResult.<Void>noop(null, column.tableId()));
+                        }
                         List<Column> reordered = reorderColumns(
                             lockedColumns,
                             lockedCurrentPosition,

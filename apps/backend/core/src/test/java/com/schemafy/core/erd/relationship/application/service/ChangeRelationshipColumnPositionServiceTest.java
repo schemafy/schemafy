@@ -65,7 +65,7 @@ class ChangeRelationshipColumnPositionServiceTest {
 
     @Test
     @DisplayName("컬럼 위치를 변경한다")
-    void changesColumnPosition() {
+      void changesColumnPosition() {
       var command = new ChangeRelationshipColumnPositionCommand(
           RelationshipFixture.DEFAULT_COLUMN_ID, 1);
       var column1 = RelationshipFixture.relationshipColumn(
@@ -86,12 +86,40 @@ class ChangeRelationshipColumnPositionServiceTest {
           .expectNextCount(1)
           .verifyComplete();
 
-      then(changeRelationshipColumnPositionPort).should()
-          .changeRelationshipColumnPositions(eq(RelationshipFixture.DEFAULT_ID), anyList());
-    }
+        then(changeRelationshipColumnPositionPort).should()
+            .changeRelationshipColumnPositions(eq(RelationshipFixture.DEFAULT_ID), anyList());
+      }
 
-    @Test
-    @DisplayName("첫 번째 위치로 이동할 수 있다")
+      @Test
+      @DisplayName("lock 이후 이미 목표 위치면 변경 없이 성공한다")
+      void returnsNoOpWhenLockedStateAlreadyMovedToRequestedPosition() {
+        var command = new ChangeRelationshipColumnPositionCommand(
+            RelationshipFixture.DEFAULT_COLUMN_ID, 1);
+        var column1 = RelationshipFixture.relationshipColumn(
+            RelationshipFixture.DEFAULT_COLUMN_ID, RelationshipFixture.DEFAULT_ID, "pk1", "fk1", 0);
+        var column2 = RelationshipFixture.relationshipColumn(
+            "col2", RelationshipFixture.DEFAULT_ID, "pk2", "fk2", 1);
+        var lockedColumn1 = RelationshipFixture.relationshipColumn(
+            RelationshipFixture.DEFAULT_COLUMN_ID, RelationshipFixture.DEFAULT_ID, "pk1", "fk1", 1);
+
+        given(getRelationshipColumnByIdPort.findRelationshipColumnById(any()))
+            .willReturn(Mono.just(column1));
+        given(getRelationshipByIdPort.findRelationshipById(RelationshipFixture.DEFAULT_ID))
+            .willReturn(Mono.just(RelationshipFixture.defaultRelationship()));
+        given(getRelationshipColumnsByRelationshipIdPort.findRelationshipColumnsByRelationshipId(any()))
+            .willReturn(
+                Mono.just(List.of(column1, column2)),
+                Mono.just(List.of(column2, lockedColumn1)));
+
+        StepVerifier.create(sut.changeRelationshipColumnPosition(command))
+            .expectNextMatches(result -> result.operation() == null && result.noOp())
+            .verifyComplete();
+
+        then(changeRelationshipColumnPositionPort).shouldHaveNoInteractions();
+      }
+
+      @Test
+      @DisplayName("첫 번째 위치로 이동할 수 있다")
     void canMoveToFirstPosition() {
       var command = new ChangeRelationshipColumnPositionCommand("col2", 0);
       var column1 = RelationshipFixture.relationshipColumn(

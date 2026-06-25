@@ -65,7 +65,7 @@ class ChangeConstraintColumnPositionServiceTest {
 
     @Test
     @DisplayName("유효한 위치로 컬럼 순서를 변경한다")
-    void changesPositionWithValidSeqNo() {
+      void changesPositionWithValidSeqNo() {
       var command = ConstraintFixture.changeColumnPositionCommand("cc1", 1);
       var constraintColumn = ConstraintFixture.constraintColumn("cc1", "constraint1", "col1", 0);
       var columns = List.of(
@@ -93,12 +93,43 @@ class ChangeConstraintColumnPositionServiceTest {
           .expectNextCount(1)
           .verifyComplete();
 
-      then(changeConstraintColumnPositionPort).should()
-          .changeConstraintColumnPositions(eq("constraint1"), anyList());
-    }
+        then(changeConstraintColumnPositionPort).should()
+            .changeConstraintColumnPositions(eq("constraint1"), anyList());
+      }
 
-    @Test
-    @DisplayName("음수 위치가 현재 위치로 clamp되면 변경 없이 성공한다")
+      @Test
+      @DisplayName("lock 이후 이미 목표 위치면 변경 없이 성공한다")
+      void returnsNoOpWhenLockedStateAlreadyMovedToRequestedPosition() {
+        var command = ConstraintFixture.changeColumnPositionCommand("cc1", 1);
+        var constraintColumn = ConstraintFixture.constraintColumn("cc1", "constraint1", "col1", 0);
+        var otherColumn = ConstraintFixture.constraintColumn("cc2", "constraint1", "col2", 1);
+        var lockedConstraintColumn = ConstraintFixture.constraintColumn("cc1", "constraint1", "col1", 1);
+
+        given(getConstraintColumnByIdPort.findConstraintColumnById(any()))
+            .willReturn(Mono.just(constraintColumn));
+        given(getConstraintByIdPort.findConstraintById("constraint1"))
+            .willReturn(Mono.just(
+                ConstraintFixture.constraint(
+                    "constraint1",
+                    "table1",
+                    "pk_test",
+                    ConstraintKind.PRIMARY_KEY,
+                    null,
+                    null)));
+        given(getConstraintColumnsByConstraintIdPort.findConstraintColumnsByConstraintId(any()))
+            .willReturn(
+                Mono.just(List.of(constraintColumn, otherColumn)),
+                Mono.just(List.of(otherColumn, lockedConstraintColumn)));
+
+        StepVerifier.create(sut.changeConstraintColumnPosition(command))
+            .expectNextMatches(result -> result.operation() == null && result.noOp())
+            .verifyComplete();
+
+        then(changeConstraintColumnPositionPort).shouldHaveNoInteractions();
+      }
+
+      @Test
+      @DisplayName("음수 위치가 현재 위치로 clamp되면 변경 없이 성공한다")
     void clampsWhenNegativePosition() {
       var command = ConstraintFixture.changeColumnPositionCommand("cc1", -1);
       var constraintColumn = ConstraintFixture.constraintColumn("cc1", "constraint1", "col1", 0);

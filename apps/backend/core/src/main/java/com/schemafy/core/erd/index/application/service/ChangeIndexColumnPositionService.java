@@ -59,7 +59,7 @@ public class ChangeIndexColumnPositionService implements ChangeIndexColumnPositi
                   int currentPosition = resolveCurrentPosition(indexColumn, columns);
                   int normalizedPosition = Math.clamp(command.seqNo(), 0, columns.size() - 1);
                   if (currentPosition == normalizedPosition) {
-                    return Mono.just(MutationResult.<Void>of(null, index.tableId()));
+                    return Mono.just(MutationResult.<Void>noop(null, index.tableId()));
                   }
                   return erdMutationCoordinator.coordinate(
                       ErdOperationType.CHANGE_INDEX_COLUMN_POSITION,
@@ -70,6 +70,9 @@ public class ChangeIndexColumnPositionService implements ChangeIndexColumnPositi
                           .flatMap(lockedColumns -> {
                             int lockedCurrentPosition = resolveCurrentPosition(indexColumn, lockedColumns);
                             int lockedNormalizedPosition = Math.clamp(command.seqNo(), 0, lockedColumns.size() - 1);
+                            if (lockedCurrentPosition == lockedNormalizedPosition) {
+                              return Mono.just(MutationResult.<Void>noop(null, index.tableId()));
+                            }
                             List<IndexColumn> reordered = reorderColumns(
                                 lockedColumns,
                                 lockedCurrentPosition,

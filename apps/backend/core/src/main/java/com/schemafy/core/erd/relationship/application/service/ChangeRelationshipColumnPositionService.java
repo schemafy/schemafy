@@ -67,7 +67,7 @@ public class ChangeRelationshipColumnPositionService
                   int currentPosition = resolveCurrentPosition(relationshipColumn, columns);
                   int normalizedPosition = Math.clamp(command.seqNo(), 0, columns.size() - 1);
                   if (currentPosition == normalizedPosition) {
-                    return Mono.just(MutationResult.<Void>of(null, affectedTableIds));
+                    return Mono.just(MutationResult.<Void>noop(null, affectedTableIds));
                   }
                   return erdMutationCoordinator.coordinate(
                       ErdOperationType.CHANGE_RELATIONSHIP_COLUMN_POSITION,
@@ -83,6 +83,10 @@ public class ChangeRelationshipColumnPositionService
                                 command.seqNo(),
                                 0,
                                 lockedColumns.size() - 1);
+                            if (lockedCurrentPosition == lockedNormalizedPosition) {
+                              return Mono.just(MutationResult.<Void>noop(null,
+                                  affectedTableIds));
+                            }
                             List<RelationshipColumn> reordered = reorderColumns(
                                 lockedColumns,
                                 lockedCurrentPosition,
