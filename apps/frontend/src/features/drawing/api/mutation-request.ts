@@ -50,26 +50,13 @@ export const syncCommittedRevision = (
     committedRevision,
   );
 
-  if (syncStatus === 'stale') {
-    const clientOperationId =
-      result.operation.clientOperationId ?? result.requestClientOperationId;
-
-    if (clientOperationId) {
-      operationHistoryStore.markSuperseded(
-        clientOperationId,
-        result.operation,
-        result.affectedTableIds ?? [],
-      );
-    }
-
-    return syncStatus;
-  }
-
   operationHistoryStore.markUndoable(
     schemaId,
     result.operation,
     result.affectedTableIds ?? [],
   );
+
+  if (syncStatus === 'stale') return syncStatus;
 
   collaborationStore.setSchemaRevision(schemaId, committedRevision);
 
