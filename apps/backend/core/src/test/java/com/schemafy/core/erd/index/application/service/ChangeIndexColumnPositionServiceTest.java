@@ -65,7 +65,7 @@ class ChangeIndexColumnPositionServiceTest {
 
     @Test
     @DisplayName("유효한 위치로 컬럼 순서를 변경한다")
-      void changesPositionWithValidSeqNo() {
+    void changesPositionWithValidSeqNo() {
       var command = IndexFixture.changeColumnPositionCommand("ic1", 1);
       var indexColumn = IndexFixture.indexColumn("ic1", "index1", "col1", 0, SortDirection.ASC);
       var columns = List.of(
@@ -86,36 +86,36 @@ class ChangeIndexColumnPositionServiceTest {
           .expectNextCount(1)
           .verifyComplete();
 
-        then(changeIndexColumnPositionPort).should()
-            .changeIndexColumnPositions(eq("index1"), anyList());
-      }
+      then(changeIndexColumnPositionPort).should()
+          .changeIndexColumnPositions(eq("index1"), anyList());
+    }
 
-      @Test
-      @DisplayName("lock 이후 이미 목표 위치면 변경 없이 성공한다")
-      void returnsNoOpWhenLockedStateAlreadyMovedToRequestedPosition() {
-        var command = IndexFixture.changeColumnPositionCommand("ic1", 1);
-        var indexColumn = IndexFixture.indexColumn("ic1", "index1", "col1", 0, SortDirection.ASC);
-        var otherColumn = IndexFixture.indexColumn("ic2", "index1", "col2", 1, SortDirection.ASC);
-        var lockedIndexColumn = IndexFixture.indexColumn("ic1", "index1", "col1", 1, SortDirection.ASC);
+    @Test
+    @DisplayName("lock 이후 이미 목표 위치면 변경 없이 성공한다")
+    void returnsNoOpWhenLockedStateAlreadyMovedToRequestedPosition() {
+      var command = IndexFixture.changeColumnPositionCommand("ic1", 1);
+      var indexColumn = IndexFixture.indexColumn("ic1", "index1", "col1", 0, SortDirection.ASC);
+      var otherColumn = IndexFixture.indexColumn("ic2", "index1", "col2", 1, SortDirection.ASC);
+      var lockedIndexColumn = IndexFixture.indexColumn("ic1", "index1", "col1", 1, SortDirection.ASC);
 
-        given(getIndexColumnByIdPort.findIndexColumnById(any()))
-            .willReturn(Mono.just(indexColumn));
-        given(getIndexByIdPort.findIndexById("index1"))
-            .willReturn(Mono.just(IndexFixture.indexWithId("index1")));
-        given(getIndexColumnsByIndexIdPort.findIndexColumnsByIndexId(any()))
-            .willReturn(
-                Mono.just(List.of(indexColumn, otherColumn)),
-                Mono.just(List.of(otherColumn, lockedIndexColumn)));
+      given(getIndexColumnByIdPort.findIndexColumnById(any()))
+          .willReturn(Mono.just(indexColumn));
+      given(getIndexByIdPort.findIndexById("index1"))
+          .willReturn(Mono.just(IndexFixture.indexWithId("index1")));
+      given(getIndexColumnsByIndexIdPort.findIndexColumnsByIndexId(any()))
+          .willReturn(
+              Mono.just(List.of(indexColumn, otherColumn)),
+              Mono.just(List.of(otherColumn, lockedIndexColumn)));
 
-        StepVerifier.create(sut.changeIndexColumnPosition(command))
-            .expectNextMatches(result -> result.operation() == null && result.noOp())
-            .verifyComplete();
+      StepVerifier.create(sut.changeIndexColumnPosition(command))
+          .expectNextMatches(result -> result.operation() == null && result.noOp())
+          .verifyComplete();
 
-        then(changeIndexColumnPositionPort).shouldHaveNoInteractions();
-      }
+      then(changeIndexColumnPositionPort).shouldHaveNoInteractions();
+    }
 
-      @Test
-      @DisplayName("첫 번째 위치(0)로 컬럼을 이동한다")
+    @Test
+    @DisplayName("첫 번째 위치(0)로 컬럼을 이동한다")
     void movesColumnToFirstPosition() {
       var command = IndexFixture.changeColumnPositionCommand("ic2", 0);
       var indexColumn = IndexFixture.indexColumn("ic2", "index1", "col2", 1, SortDirection.ASC);

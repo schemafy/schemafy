@@ -60,28 +60,28 @@ public class ChangeColumnNameService implements ChangeColumnNameUseCase {
       ColumnValidator.validateName(normalizedName);
       return getColumnByIdPort.findColumnById(command.columnId())
           .switchIfEmpty(Mono.error(new DomainException(ColumnErrorCode.NOT_FOUND, "Column not found")))
-        .flatMap(column -> {
-          if (normalizedName.equals(column.name())) {
-            return Mono.just(MutationResult.<Void>noop(null, column.tableId()));
-          }
-          return erdMutationCoordinator.coordinate(ErdOperationType.CHANGE_COLUMN_NAME, command,
-              () -> getColumnByIdPort.findColumnById(command.columnId())
-                  .switchIfEmpty(Mono.error(new DomainException(ColumnErrorCode.NOT_FOUND, "Column not found")))
-                  .flatMap(lockedColumn -> {
-                    if (normalizedName.equals(lockedColumn.name())) {
-                      return Mono.just(MutationResult.<Void>noop(null, lockedColumn.tableId()));
-                    }
-                    return fetchTableSchemaAndColumns(lockedColumn)
-                        .flatMap(tuple -> {
-                          validateNameChange(tuple, normalizedName, lockedColumn.id());
-                          return changeColumnNamePort.changeColumnName(lockedColumn.id(), normalizedName)
-                              .thenReturn(MutationResult.<Void>of(null, lockedColumn.tableId())
-                                  .withInverse(new ChangeColumnNameInverse(
-                                      lockedColumn.id(),
-                                      lockedColumn.name())));
-                        });
-                  }));
-        });
+          .flatMap(column -> {
+            if (normalizedName.equals(column.name())) {
+              return Mono.just(MutationResult.<Void>noop(null, column.tableId()));
+            }
+            return erdMutationCoordinator.coordinate(ErdOperationType.CHANGE_COLUMN_NAME, command,
+                () -> getColumnByIdPort.findColumnById(command.columnId())
+                    .switchIfEmpty(Mono.error(new DomainException(ColumnErrorCode.NOT_FOUND, "Column not found")))
+                    .flatMap(lockedColumn -> {
+                      if (normalizedName.equals(lockedColumn.name())) {
+                        return Mono.just(MutationResult.<Void>noop(null, lockedColumn.tableId()));
+                      }
+                      return fetchTableSchemaAndColumns(lockedColumn)
+                          .flatMap(tuple -> {
+                            validateNameChange(tuple, normalizedName, lockedColumn.id());
+                            return changeColumnNamePort.changeColumnName(lockedColumn.id(), normalizedName)
+                                .thenReturn(MutationResult.<Void>of(null, lockedColumn.tableId())
+                                    .withInverse(new ChangeColumnNameInverse(
+                                        lockedColumn.id(),
+                                        lockedColumn.name())));
+                          });
+                    }));
+          });
     }).as(transactionalOperator::transactional);
   }
 
