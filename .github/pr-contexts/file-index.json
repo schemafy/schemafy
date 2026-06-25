@@ -236,7 +236,8 @@
   "apps/backend/core/src/main/java/com/schemafy/core/common/MutationResult.java": [
     337,
     372,
-    376
+    376,
+    419
   ],
   "apps/backend/core/src/main/java/com/schemafy/core/erd/operation/adapter/out/persistence/ErdOperationLogRepository.java": [
     352
@@ -258,7 +259,8 @@
     375,
     376,
     412,
-    422
+    422,
+    419
   ],
   "apps/backend/core/src/main/java/com/schemafy/core/erd/operation/application/service/DefaultUndoRedoEligibilityService.java": [
     352
@@ -694,21 +696,24 @@
     373
   ],
   "apps/frontend/src/features/drawing/api/mutation-request.ts": [
-    374
+    374,
+    419
   ],
   "apps/frontend/src/features/drawing/hooks/useSchemaMutations.ts": [
     374
   ],
   "apps/frontend/src/lib/api/client.ts": [
     374,
-    386
+    386,
+    419
   ],
   "apps/frontend/src/store/index.ts": [
     374,
     368
   ],
   "apps/frontend/src/store/operation-history.store.ts": [
-    374
+    374,
+    419
   ],
   "apps/frontend/src/types/operation.types.ts": [
     374
@@ -1282,7 +1287,8 @@
     376
   ],
   "apps/backend/core/src/main/java/com/schemafy/core/erd/relationship/application/service/ChangeRelationshipKindService.java": [
-    376
+    376,
+    419
   ],
   "apps/backend/core/src/main/java/com/schemafy/core/erd/relationship/application/service/CreateRelationshipService.java": [
     376
@@ -1666,7 +1672,8 @@
   ],
   "apps/backend/core/src/test/java/com/schemafy/core/erd/operation/application/service/DefaultErdMutationCoordinatorTest.java": [
     412,
-    422
+    422,
+    419
   ],
   "apps/backend/core/src/test/java/com/schemafy/core/erd/operation/application/service/UndoRedoErdOperationServiceTest.java": [
     412
@@ -1955,5 +1962,8 @@
   ],
   "settings.gradle": [
     431
+  ],
+  "apps/frontend/src/features/drawing/api/types.ts": [
+    419
   ]
 }
