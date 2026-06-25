@@ -1,7 +1,7 @@
 import { useQuery } from '@tanstack/react-query';
 import { getMySharedProjects } from '../api';
 import { projectKeys } from './query-keys';
-import { useLeaveMySharedProjectMutation } from './useProjectMutations';
+import { useLeaveMySharedProjectMutation } from './useMySharedProjectMutations';
 
 export const useMySharedProjects = (page = 0, size = 5) => {
   const projectsQuery = useQuery({

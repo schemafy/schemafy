@@ -79,20 +79,6 @@ export const useLeaveProjectMutation = () => {
   });
 };
 
-export const useLeaveMySharedProjectMutation = () => {
-  const queryClient = useQueryClient();
-
-  return useMutation({
-    mutationFn: (projectId: string) => leaveProject(projectId),
-    onSuccess: (_, projectId) => {
-      queryClient.removeQueries({ queryKey: projectKeys.detail(projectId) });
-      queryClient.invalidateQueries({
-        queryKey: projectKeys.mySharedLists(),
-      });
-    },
-  });
-};
-
 export const useRemoveMemberMutation = (projectId: string) => {
   const queryClient = useQueryClient();
 
