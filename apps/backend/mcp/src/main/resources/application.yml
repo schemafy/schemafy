@@ -9,6 +9,12 @@ spring:
   application:
     name: schemafy-mcp
 
+  data:
+    redis:
+      enabled: ${REDIS_ENABLED:true}
+      host: ${REDIS_HOST:localhost}
+      port: ${REDIS_PORT:6379}
+
   ai:
     mcp:
       server:
@@ -39,6 +45,25 @@ spring:
 
 server:
   port: ${MCP_SERVER_PORT:8081}
+
+mcp:
+  security:
+    token:
+      secret: ${MCP_TOKEN_SECRET:schemafy-mcp-local-secret-minimum-256-bit-key-value}
+      issuer: ${MCP_TOKEN_ISSUER:schemafy-mcp}
+      audience: ${MCP_TOKEN_AUDIENCE:schemafy-mcp}
+      token-type: ${MCP_TOKEN_TYPE:MCP}
+      required-scope: ${MCP_TOKEN_REQUIRED_SCOPE:mcp}
+      revocation-key-prefix: ${MCP_TOKEN_REVOCATION_KEY_PREFIX:mcp:token:revoked:}
+      clock-skew-seconds: ${MCP_TOKEN_CLOCK_SKEW_SECONDS:30}
+    rate-limit:
+      enabled: ${MCP_RATE_LIMIT_ENABLED:true}
+      requests: ${MCP_RATE_LIMIT_REQUESTS:120}
+      key-prefix: ${MCP_RATE_LIMIT_KEY_PREFIX:mcp:rate-limit:user:}
+      window: ${MCP_RATE_LIMIT_WINDOW:1m}
+
+problem:
+  type-base-uri: about:blank
 
 management:
   endpoints:
