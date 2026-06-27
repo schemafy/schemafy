@@ -46,7 +46,7 @@ class McpTokenServiceTest {
     properties.setSecret("test-schemafy-mcp-secret-minimum-256-bit-key-value");
     properties.setIssuer("schemafy-mcp-test");
     properties.setAudience("schemafy-mcp-test");
-    properties.setExpiresIn(Duration.ofMinutes(15));
+    properties.setExpiresIn(Duration.ofDays(7));
     revocationCache = new FakeMcpTokenRevocationCache();
     mcpTokenUseCase = new FakeMcpTokenUseCase();
     tokenService = new McpTokenService(
@@ -67,8 +67,8 @@ class McpTokenServiceTest {
     assertThat(result.tokenId()).isEqualTo(claims.getId());
     assertThat(result.scope()).isEqualTo("mcp");
     assertThat(result.issuedAt()).isEqualTo(NOW);
-    assertThat(result.expiresAt()).isEqualTo(NOW.plus(Duration.ofMinutes(15)));
-    assertThat(result.expiresInSeconds()).isEqualTo(900);
+    assertThat(result.expiresAt()).isEqualTo(NOW.plus(Duration.ofDays(7)));
+    assertThat(result.expiresInSeconds()).isEqualTo(604800);
     assertThat(claims.getSubject()).isEqualTo("user-1");
     assertThat(claims.getIssuer()).isEqualTo("schemafy-mcp-test");
     assertThat(claims.getAudience()).contains("schemafy-mcp-test");
@@ -82,7 +82,7 @@ class McpTokenServiceTest {
           assertThat(savedToken.getScope()).isEqualTo("mcp");
           assertThat(savedToken.getIssuedAt()).isEqualTo(NOW);
           assertThat(savedToken.getExpiresAt())
-              .isEqualTo(NOW.plus(Duration.ofMinutes(15)));
+              .isEqualTo(NOW.plus(Duration.ofDays(7)));
         });
   }
 
@@ -105,7 +105,7 @@ class McpTokenServiceTest {
         .singleElement()
         .satisfies(revoked -> {
           assertThat(revoked.tokenId()).isEqualTo(result.tokenId());
-          assertThat(revoked.ttl()).isEqualTo(Duration.ofMinutes(15));
+          assertThat(revoked.ttl()).isEqualTo(Duration.ofDays(7));
         });
   }
 

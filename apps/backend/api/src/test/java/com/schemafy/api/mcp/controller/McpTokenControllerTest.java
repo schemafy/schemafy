@@ -79,7 +79,7 @@ class McpTokenControllerTest extends UserHttpTestSupport {
             McpTokenApiSnippets.issueMcpTokenResponse()))
         .jsonPath("$.token").isNotEmpty()
         .jsonPath("$.tokenType").isEqualTo("Bearer")
-        .jsonPath("$.expiresInSeconds").isEqualTo(900)
+        .jsonPath("$.expiresInSeconds").isEqualTo(604800)
         .jsonPath("$.tokenId").doesNotExist()
         .jsonPath("$.scope").doesNotExist()
         .jsonPath("$.issuedAt").doesNotExist()

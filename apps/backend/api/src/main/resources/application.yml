@@ -79,7 +79,7 @@ mcp:
       token-type: ${MCP_TOKEN_TYPE:MCP}
       required-scope: ${MCP_TOKEN_REQUIRED_SCOPE:mcp}
       revocation-key-prefix: "${MCP_TOKEN_REVOCATION_KEY_PREFIX:mcp:token:revoked:}"
-      expires-in: ${MCP_TOKEN_EXPIRES_IN:15m}
+      expires-in: ${MCP_TOKEN_EXPIRES_IN:7d}
 
 management:
   endpoints:

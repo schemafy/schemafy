@@ -82,7 +82,7 @@ mcp:
       token-type: MCP
       required-scope: mcp
       revocation-key-prefix: "mcp:token:revoked:"
-      expires-in: 15m
+      expires-in: 7d
 
 logging:
   level:

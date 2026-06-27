@@ -38,6 +38,6 @@ public class McpTokenProperties {
   private String revocationKeyPrefix = "mcp:token:revoked:";
 
   @NotNull
-  private Duration expiresIn = Duration.ofMinutes(15);
+  private Duration expiresIn = Duration.ofDays(7);
 
 }
