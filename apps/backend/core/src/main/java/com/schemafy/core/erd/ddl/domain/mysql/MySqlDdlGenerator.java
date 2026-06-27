@@ -224,8 +224,8 @@ public class MySqlDdlGenerator implements DdlGenerator {
     }
 
     if (column.autoIncrement()) {
-      if (!columnRules.indexedColumnIds().contains(column.id())) {
-        throw invalid("AUTO_INCREMENT column '%s' must be indexed"
+      if (!columnRules.leftmostKeyColumnIds().contains(column.id())) {
+        throw invalid("AUTO_INCREMENT column '%s' must be the first column of a key"
             .formatted(column.name()));
       }
       ddl.append(" AUTO_INCREMENT");
@@ -425,7 +425,7 @@ public class MySqlDdlGenerator implements DdlGenerator {
         .append(" (")
         .append(snapshot.columns().stream()
             .sorted(comparingSeqNo(IndexColumn::seqNo, IndexColumn::id))
-            .map(column -> indexColumnClause(column, context))
+            .map(column -> indexColumnClause(column, index.type(), context))
             .collect(Collectors.joining(", ")))
         .append(")");
 
@@ -437,9 +437,10 @@ public class MySqlDdlGenerator implements DdlGenerator {
     return ddl.toString();
   }
 
-  private String indexColumnClause(IndexColumn column, DdlContext context) {
+  private static String indexColumnClause(IndexColumn column, IndexType indexType,
+      DdlContext context) {
     String clause = quoteColumn(context, column.columnId());
-    if (column.sortDirection() != null) {
+    if (indexType == IndexType.BTREE && column.sortDirection() != null) {
       clause += " " + column.sortDirection().name();
     }
     return clause;
@@ -530,8 +531,8 @@ public class MySqlDdlGenerator implements DdlGenerator {
       throw invalid("AUTO_INCREMENT is only allowed for integer types: "
           + dataType);
     }
-    if (!columnRules.indexedColumnIds().contains(column.id())) {
-      throw invalid("AUTO_INCREMENT column '%s' must be indexed"
+    if (!columnRules.leftmostKeyColumnIds().contains(column.id())) {
+      throw invalid("AUTO_INCREMENT column '%s' must be the first column of a key"
           .formatted(column.name()));
     }
     if (columnRules.defaultExpressionsByColumnId().containsKey(column.id())) {
@@ -684,9 +685,6 @@ public class MySqlDdlGenerator implements DdlGenerator {
     }
     Table table = requireTable(tableSnapshot);
     IndexColumn indexColumn = columns.getFirst();
-    if (indexColumn.sortDirection() != null) {
-      throw invalid("SPATIAL index columns must not define sort direction");
-    }
     Column column = columnInTable(context, table.id(), indexColumn.columnId());
     String dataType = sanitizeDataType(column.dataType());
     if (!SPATIAL_TYPES.contains(dataType)) {
@@ -1175,7 +1173,7 @@ public class MySqlDdlGenerator implements DdlGenerator {
   private record ColumnRules(
       Set<String> notNullColumnIds,
       Map<String, String> defaultExpressionsByColumnId,
-      Set<String> indexedColumnIds,
+      Set<String> leftmostKeyColumnIds,
       Set<String> autoIncrementColumnIds) {
 
     private static ColumnRules from(TableSnapshot snapshot,
@@ -1192,7 +1190,7 @@ public class MySqlDdlGenerator implements DdlGenerator {
 
       Map<String, String> defaultExpressions = collectDefaultExpressions(
           snapshot);
-      Set<String> indexedColumnIds = collectIndexedColumnIds(snapshot);
+      Set<String> leftmostKeyColumnIds = collectLeftmostKeyColumnIds(snapshot);
       Set<String> autoIncrementColumnIds = collectAutoIncrementColumnIds(
           snapshot);
 
@@ -1202,7 +1200,7 @@ public class MySqlDdlGenerator implements DdlGenerator {
       for (String columnId : defaultExpressions.keySet()) {
         quoteColumn(context, snapshot.table().id(), columnId);
       }
-      for (String columnId : indexedColumnIds) {
+      for (String columnId : leftmostKeyColumnIds) {
         quoteColumn(context, snapshot.table().id(), columnId);
       }
       for (String columnId : autoIncrementColumnIds) {
@@ -1210,7 +1208,7 @@ public class MySqlDdlGenerator implements DdlGenerator {
       }
 
       return new ColumnRules(notNullColumnIds, defaultExpressions,
-          indexedColumnIds, autoIncrementColumnIds);
+          leftmostKeyColumnIds, autoIncrementColumnIds);
     }
 
     private static Set<String> collectAutoIncrementColumnIds(
@@ -1226,23 +1224,43 @@ public class MySqlDdlGenerator implements DdlGenerator {
       return Set.copyOf(autoIncrementColumnIds);
     }
 
-    private static Set<String> collectIndexedColumnIds(TableSnapshot snapshot) {
-      Set<String> indexedColumnIds = collectColumnIds(
-          constraintsOf(snapshot, ConstraintKind.PRIMARY_KEY));
-      indexedColumnIds.addAll(collectColumnIds(
-          constraintsOf(snapshot, ConstraintKind.UNIQUE)));
-      indexedColumnIds.addAll(snapshot.indexes().stream()
+    private static Set<String> collectLeftmostKeyColumnIds(
+        TableSnapshot snapshot) {
+      Set<String> columnIds = new HashSet<>();
+      for (ConstraintKind kind : List.of(
+          ConstraintKind.PRIMARY_KEY, ConstraintKind.UNIQUE)) {
+        for (ConstraintSnapshot constraint : constraintsOf(snapshot, kind)) {
+          firstConstraintColumnId(constraint).ifPresent(columnIds::add);
+        }
+      }
+      snapshot.indexes().stream()
           .map(MySqlDdlGenerator::requireIndex)
-          .flatMap(index -> {
-            if (index.columns().isEmpty()) {
-              throw invalid("Index '%s' must contain at least one column"
-                  .formatted(index.index().name()));
-            }
-            return index.columns().stream();
-          })
+          .filter(index -> index.index().type() == IndexType.BTREE)
+          .map(ColumnRules::firstIndexColumnId)
+          .flatMap(Optional::stream)
+          .forEach(columnIds::add);
+      return columnIds;
+    }
+
+    private static Optional<String> firstConstraintColumnId(
+        ConstraintSnapshot constraint) {
+      return requireConstraintColumns(
+          constraint, constraint.constraint().name()).stream()
+          .sorted(comparingSeqNo(ConstraintColumn::seqNo,
+              ConstraintColumn::id))
+          .map(ConstraintColumn::columnId)
+          .findFirst();
+    }
+
+    private static Optional<String> firstIndexColumnId(IndexSnapshot index) {
+      if (index.columns().isEmpty()) {
+        throw invalid("Index '%s' must contain at least one column"
+            .formatted(index.index().name()));
+      }
+      return index.columns().stream()
+          .sorted(comparingSeqNo(IndexColumn::seqNo, IndexColumn::id))
           .map(IndexColumn::columnId)
-          .collect(Collectors.toSet()));
-      return indexedColumnIds;
+          .findFirst();
     }
 
     private static Map<String, String> collectDefaultExpressions(

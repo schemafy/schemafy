@@ -277,6 +277,31 @@ class MySqlDdlGeneratorTest {
   }
 
   @Test
+  @DisplayName("AUTO_INCREMENT 컬럼이 key의 첫 번째 컬럼이 아니면 예외가 발생한다")
+  void throwsWhenAutoIncrementColumnIsNotLeftmostInAnyKey() {
+    TableSnapshot table = new TableSnapshot(
+        table("orders", "orders"),
+        List.of(
+            column("tenant_id", "orders", "tenant_id", "BIGINT", null, 0,
+                false),
+            column("order_id", "orders", "id", "BIGINT", null, 1, true)),
+        List.of(),
+        List.of(),
+        List.of(new IndexSnapshot(
+            new Index("idx-orders-tenant-id", "orders",
+                "idx_orders_tenant_id", IndexType.BTREE),
+            List.of(
+                new IndexColumn("ic-orders-tenant", "idx-orders-tenant-id",
+                    "tenant_id", 0, SortDirection.ASC),
+                new IndexColumn("ic-orders-id", "idx-orders-tenant-id",
+                    "order_id", 1, SortDirection.ASC)))));
+
+    assertThatThrownBy(() -> sut.generate(schema(table)))
+        .isInstanceOf(DomainException.class)
+        .matches(DomainException.hasErrorCode(DdlErrorCode.INVALID_VALUE));
+  }
+
+  @Test
   @DisplayName("statement separator가 있는 CHECK expression은 거부한다")
   void throwsWhenCheckExpressionContainsStatementSeparator() {
     ConstraintSnapshot check = constraint(
@@ -442,6 +467,45 @@ class MySqlDdlGeneratorTest {
     assertThatThrownBy(() -> sut.generate(schema(table)))
         .isInstanceOf(DomainException.class)
         .matches(DomainException.hasErrorCode(DdlErrorCode.INVALID_VALUE));
+  }
+
+  @Test
+  @DisplayName("FULLTEXT와 SPATIAL index는 sort direction이 있어도 MySQL DDL에 출력하지 않는다")
+  void omitsSortDirectionForFulltextAndSpatialIndexes() {
+    TableSnapshot table = new TableSnapshot(
+        table("places", "places"),
+        List.of(
+            column("place_id", "places", "id", "BIGINT", null, 0, false),
+            column("place_description", "places", "description", "TEXT",
+                null, 1, false),
+            column("place_location", "places", "location", "POINT", null,
+                2, false)),
+        List.of(
+            pk("pk-places", "places", "place_id"),
+            notNull("nn-places-location", "places", "place_location")),
+        List.of(),
+        List.of(
+            new IndexSnapshot(
+                new Index("ft-places-description", "places",
+                    "ft_places_description", IndexType.FULLTEXT),
+                List.of(new IndexColumn("ic-places-description",
+                    "ft-places-description", "place_description", 0,
+                    SortDirection.ASC))),
+            new IndexSnapshot(
+                new Index("sp-places-location", "places",
+                    "sp_places_location", IndexType.SPATIAL),
+                List.of(new IndexColumn("ic-places-location",
+                    "sp-places-location", "place_location", 0,
+                    SortDirection.DESC)))));
+
+    String ddl = sut.generate(schema(table));
+
+    assertThat(ddl).contains(
+        "ALTER TABLE `places` ADD FULLTEXT INDEX `ft_places_description` (`description`);",
+        "ALTER TABLE `places` ADD SPATIAL INDEX `sp_places_location` (`location`);");
+    assertThat(ddl).doesNotContain(
+        "`description` ASC",
+        "`location` DESC");
   }
 
   @Test
