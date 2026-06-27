@@ -1662,10 +1662,12 @@
     413
   ],
   "apps/backend/core/src/main/java/com/schemafy/core/erd/operation/adapter/out/persistence/ErdOperationLogEntity.java": [
-    412
+    412,
+    437
   ],
   "apps/backend/core/src/main/java/com/schemafy/core/erd/operation/adapter/out/persistence/ErdOperationLogMapper.java": [
-    412
+    412,
+    437
   ],
   "apps/backend/core/src/main/java/com/schemafy/core/erd/operation/domain/ErdOperationLog.java": [
     412
@@ -2183,5 +2185,23 @@
   ],
   "apps/backend/core/src/test/java/com/schemafy/core/erd/ddl/domain/mysql/MySqlDdlGeneratorTest.java": [
     436
+  ],
+  "apps/backend/core/src/main/java/com/schemafy/core/erd/operation/adapter/out/persistence/SchemaCollaborationStateEntity.java": [
+    437
+  ],
+  "apps/backend/core/src/main/java/com/schemafy/core/erd/operation/adapter/out/persistence/SchemaCollaborationStateMapper.java": [
+    437
+  ],
+  "apps/backend/core/src/main/java/com/schemafy/core/erd/schema/adapter/out/persistence/SchemaEntity.java": [
+    437
+  ],
+  "apps/backend/core/src/main/java/com/schemafy/core/erd/schema/adapter/out/persistence/SchemaMapper.java": [
+    437
+  ],
+  "apps/backend/core/src/main/java/com/schemafy/core/erd/table/adapter/out/persistence/TableEntity.java": [
+    437
+  ],
+  "apps/backend/core/src/main/java/com/schemafy/core/erd/table/adapter/out/persistence/TableMapper.java": [
+    437
   ]
 }
