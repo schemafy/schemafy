@@ -2103,5 +2103,8 @@
   ],
   "apps/backend/mcp/src/main/java/com/schemafy/mcp/common/security/McpTokenRevocationCache.java": [
     435
+  ],
+  "apps/backend/api/src/main/java/com/schemafy/api/mcp/config/McpTokenConfig.java": [
+    435
   ]
 }
