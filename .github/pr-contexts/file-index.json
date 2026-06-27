@@ -98,7 +98,8 @@
     358,
     398,
     423,
-    435
+    435,
+    436
   ],
   "apps/backend/api/src/main/java/com/schemafy/api/collaboration/dto/event/CollaborationOutboundFactory.java": [
     337,
@@ -138,7 +139,8 @@
   "apps/backend/api/src/main/java/com/schemafy/api/erd/controller/SchemaController.java": [
     337,
     383,
-    342
+    342,
+    436
   ],
   "apps/backend/api/src/main/java/com/schemafy/api/erd/controller/TableController.java": [
     337,
@@ -171,7 +173,8 @@
   ],
   "apps/backend/api/src/test/java/com/schemafy/api/common/exception/DomainErrorCodeUniquenessTest.java": [
     352,
-    435
+    435,
+    436
   ],
   "apps/backend/api/src/test/java/com/schemafy/api/erd/broadcast/ErdMutationBroadcasterTest.java": [
     337,
@@ -195,7 +198,8 @@
   ],
   "apps/backend/api/src/test/java/com/schemafy/api/erd/controller/SchemaControllerTest.java": [
     337,
-    342
+    342,
+    436
   ],
   "apps/backend/api/src/test/java/com/schemafy/api/erd/controller/TableControllerTest.java": [
     337
@@ -1502,7 +1506,8 @@
     342
   ],
   "apps/backend/api/src/main/java/com/schemafy/api/erd/service/TableSnapshotOrchestrator.java": [
-    342
+    342,
+    436
   ],
   "apps/backend/api/src/test/java/com/schemafy/api/erd/service/SchemaSnapshotOrchestratorIntegrationTest.java": [
     342
@@ -2106,5 +2111,77 @@
   ],
   "apps/backend/api/src/main/java/com/schemafy/api/mcp/config/McpTokenConfig.java": [
     435
+  ],
+  "apps/backend/api/src/main/java/com/schemafy/api/erd/controller/dto/response/SchemaDdlExportResponse.java": [
+    436
+  ],
+  "apps/backend/api/src/main/java/com/schemafy/api/erd/service/SchemaDdlExportOrchestrator.java": [
+    436
+  ],
+  "apps/backend/api/src/main/java/com/schemafy/api/erd/service/ddl/DdlExportSnapshotMapper.java": [
+    436
+  ],
+  "apps/backend/api/src/main/java/com/schemafy/api/erd/service/util/DdlGenerator.java": [
+    436
+  ],
+  "apps/backend/api/src/main/java/com/schemafy/api/erd/service/util/mysql/MySqlDdlUtils.java": [
+    436
+  ],
+  "apps/backend/api/src/main/java/com/schemafy/api/erd/service/util/mysql/MySqlForeignKeyGenerator.java": [
+    436
+  ],
+  "apps/backend/api/src/main/java/com/schemafy/api/erd/service/util/mysql/MySqlPrimaryKeyGenerator.java": [
+    436
+  ],
+  "apps/backend/api/src/main/java/com/schemafy/api/erd/service/util/mysql/MySqlUniqueKeyGenerator.java": [
+    436
+  ],
+  "apps/backend/api/src/test/java/com/schemafy/api/erd/service/SchemaDdlExportOrchestratorTest.java": [
+    436
+  ],
+  "apps/backend/api/src/test/java/com/schemafy/api/erd/service/util/mysql/MySqlDdlUtilsTest.java": [
+    436
+  ],
+  "apps/backend/api/src/test/java/com/schemafy/api/erd/service/util/mysql/MySqlForeignKeyGeneratorTest.java": [
+    436
+  ],
+  "apps/backend/api/src/test/java/com/schemafy/api/erd/service/util/mysql/MySqlPrimaryKeyGeneratorTest.java": [
+    436
+  ],
+  "apps/backend/api/src/test/java/com/schemafy/api/erd/service/util/mysql/MySqlUniqueKeyGeneratorTest.java": [
+    436
+  ],
+  "apps/backend/core/src/main/java/com/schemafy/core/erd/ddl/application/port/in/GenerateSchemaDdlCommand.java": [
+    436
+  ],
+  "apps/backend/core/src/main/java/com/schemafy/core/erd/ddl/application/port/in/GenerateSchemaDdlUseCase.java": [
+    436
+  ],
+  "apps/backend/core/src/main/java/com/schemafy/core/erd/ddl/application/service/GenerateSchemaDdlService.java": [
+    436
+  ],
+  "apps/backend/core/src/main/java/com/schemafy/core/erd/ddl/domain/DdlExportVendor.java": [
+    436
+  ],
+  "apps/backend/core/src/main/java/com/schemafy/core/erd/ddl/domain/DdlGenerator.java": [
+    436
+  ],
+  "apps/backend/core/src/main/java/com/schemafy/core/erd/ddl/domain/DdlSchemaSnapshot.java": [
+    436
+  ],
+  "apps/backend/core/src/main/java/com/schemafy/core/erd/ddl/domain/exception/DdlErrorCode.java": [
+    436
+  ],
+  "apps/backend/core/src/main/java/com/schemafy/core/erd/ddl/domain/mysql/MySqlDdlGenerator.java": [
+    436
+  ],
+  "apps/backend/core/src/test/java/com/schemafy/core/erd/ddl/application/service/GenerateSchemaDdlServiceTest.java": [
+    436
+  ],
+  "apps/backend/core/src/test/java/com/schemafy/core/erd/ddl/domain/DdlExportVendorTest.java": [
+    436
+  ],
+  "apps/backend/core/src/test/java/com/schemafy/core/erd/ddl/domain/mysql/MySqlDdlGeneratorTest.java": [
+    436
   ]
 }
