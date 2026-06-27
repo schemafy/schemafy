@@ -97,7 +97,8 @@
     337,
     358,
     398,
-    423
+    423,
+    435
   ],
   "apps/backend/api/src/main/java/com/schemafy/api/collaboration/dto/event/CollaborationOutboundFactory.java": [
     337,
@@ -169,7 +170,8 @@
     337
   ],
   "apps/backend/api/src/test/java/com/schemafy/api/common/exception/DomainErrorCodeUniquenessTest.java": [
-    352
+    352,
+    435
   ],
   "apps/backend/api/src/test/java/com/schemafy/api/erd/broadcast/ErdMutationBroadcasterTest.java": [
     337,
@@ -880,12 +882,14 @@
     377
   ],
   "apps/backend/api/src/main/resources/application-server.yml": [
-    377
+    377,
+    435
   ],
   "apps/backend/api/src/main/resources/application.yml": [
     377,
     398,
-    423
+    423,
+    435
   ],
   "apps/backend/api/build.gradle": [
     377,
@@ -1868,7 +1872,8 @@
     423
   ],
   "apps/backend/api/src/test/resources/application.yml": [
-    423
+    423,
+    435
   ],
   "apps/backend/core/src/main/java/com/schemafy/core/user/application/port/in/SendSignUpEmailCodeCommand.java": [
     423
@@ -1931,7 +1936,8 @@
     431
   ],
   "apps/backend/mcp/build.gradle": [
-    431
+    431,
+    435
   ],
   "apps/backend/mcp/settings.gradle": [
     431
@@ -1965,5 +1971,137 @@
   ],
   "apps/frontend/src/features/drawing/api/types.ts": [
     419
+  ],
+  "apps/backend/api/src/main/java/com/schemafy/api/mcp/controller/McpTokenController.java": [
+    435
+  ],
+  "apps/backend/api/src/main/java/com/schemafy/api/mcp/controller/dto/request/McpTokenRevokeRequest.java": [
+    435
+  ],
+  "apps/backend/api/src/main/java/com/schemafy/api/mcp/controller/dto/response/McpTokenIssueResponse.java": [
+    435
+  ],
+  "apps/backend/api/src/main/java/com/schemafy/api/mcp/exception/McpTokenErrorCode.java": [
+    435
+  ],
+  "apps/backend/api/src/main/java/com/schemafy/api/mcp/service/McpTokenIssueResult.java": [
+    435
+  ],
+  "apps/backend/api/src/main/java/com/schemafy/api/mcp/service/McpTokenProperties.java": [
+    435
+  ],
+  "apps/backend/api/src/main/java/com/schemafy/api/mcp/service/McpTokenRevocationCache.java": [
+    435
+  ],
+  "apps/backend/api/src/main/java/com/schemafy/api/mcp/service/McpTokenService.java": [
+    435
+  ],
+  "apps/backend/api/src/main/java/com/schemafy/api/mcp/service/RedisMcpTokenRevocationCache.java": [
+    435
+  ],
+  "apps/backend/api/src/test/java/com/schemafy/api/mcp/controller/McpTokenControllerTest.java": [
+    435
+  ],
+  "apps/backend/api/src/test/java/com/schemafy/api/mcp/docs/McpTokenApiSnippets.java": [
+    435
+  ],
+  "apps/backend/api/src/test/java/com/schemafy/api/mcp/service/McpTokenServiceTest.java": [
+    435
+  ],
+  "apps/backend/core/src/main/java/com/schemafy/core/common/config/ClockConfig.java": [
+    435
+  ],
+  "apps/backend/core/src/main/java/com/schemafy/core/mcp/adapter/out/persistence/McpTokenPersistenceAdapter.java": [
+    435
+  ],
+  "apps/backend/core/src/main/java/com/schemafy/core/mcp/adapter/out/persistence/McpTokenRepository.java": [
+    435
+  ],
+  "apps/backend/core/src/main/java/com/schemafy/core/mcp/application/port/in/GetMcpTokenQuery.java": [
+    435
+  ],
+  "apps/backend/core/src/main/java/com/schemafy/core/mcp/application/port/in/GetMcpTokenUseCase.java": [
+    435
+  ],
+  "apps/backend/core/src/main/java/com/schemafy/core/mcp/application/port/in/RegisterMcpTokenCommand.java": [
+    435
+  ],
+  "apps/backend/core/src/main/java/com/schemafy/core/mcp/application/port/in/RegisterMcpTokenUseCase.java": [
+    435
+  ],
+  "apps/backend/core/src/main/java/com/schemafy/core/mcp/application/port/in/RevokeMcpTokenCommand.java": [
+    435
+  ],
+  "apps/backend/core/src/main/java/com/schemafy/core/mcp/application/port/in/RevokeMcpTokenUseCase.java": [
+    435
+  ],
+  "apps/backend/core/src/main/java/com/schemafy/core/mcp/application/port/out/FindMcpTokenByIdPort.java": [
+    435
+  ],
+  "apps/backend/core/src/main/java/com/schemafy/core/mcp/application/port/out/RegisterMcpTokenPort.java": [
+    435
+  ],
+  "apps/backend/core/src/main/java/com/schemafy/core/mcp/application/port/out/RevokeMcpTokenPort.java": [
+    435
+  ],
+  "apps/backend/core/src/main/java/com/schemafy/core/mcp/application/service/McpTokenRegistryService.java": [
+    435
+  ],
+  "apps/backend/core/src/main/java/com/schemafy/core/mcp/domain/McpToken.java": [
+    435
+  ],
+  "apps/backend/core/src/main/java/com/schemafy/core/mcp/domain/McpTokenClaimSupport.java": [
+    435
+  ],
+  "apps/backend/core/src/test/java/com/schemafy/core/mcp/adapter/out/persistence/McpTokenPersistenceAdapterTest.java": [
+    435
+  ],
+  "apps/backend/core/src/test/java/com/schemafy/core/mcp/application/service/McpTokenRegistryServiceTest.java": [
+    435
+  ],
+  "apps/backend/core/src/test/java/com/schemafy/core/mcp/domain/McpTokenClaimSupportTest.java": [
+    435
+  ],
+  "apps/backend/mcp/src/main/java/com/schemafy/mcp/common/security/McpAccessDeniedHandler.java": [
+    435
+  ],
+  "apps/backend/mcp/src/main/java/com/schemafy/mcp/common/security/McpAuthenticatedPrincipal.java": [
+    435
+  ],
+  "apps/backend/mcp/src/main/java/com/schemafy/mcp/common/security/McpAuthenticationEntryPoint.java": [
+    435
+  ],
+  "apps/backend/mcp/src/main/java/com/schemafy/mcp/common/security/McpAuthenticationWebFilter.java": [
+    435
+  ],
+  "apps/backend/mcp/src/main/java/com/schemafy/mcp/common/security/McpProblemProperties.java": [
+    435
+  ],
+  "apps/backend/mcp/src/main/java/com/schemafy/mcp/common/security/McpRateLimiter.java": [
+    435
+  ],
+  "apps/backend/mcp/src/main/java/com/schemafy/mcp/common/security/McpSecurityAuditLogger.java": [
+    435
+  ],
+  "apps/backend/mcp/src/main/java/com/schemafy/mcp/common/security/McpSecurityConfig.java": [
+    435
+  ],
+  "apps/backend/mcp/src/main/java/com/schemafy/mcp/common/security/McpSecurityError.java": [
+    435
+  ],
+  "apps/backend/mcp/src/main/java/com/schemafy/mcp/common/security/McpSecurityErrorWriter.java": [
+    435
+  ],
+  "apps/backend/mcp/src/main/java/com/schemafy/mcp/common/security/McpSecurityProperties.java": [
+    435
+  ],
+  "apps/backend/mcp/src/main/java/com/schemafy/mcp/common/security/McpSecurityRedisScripts.java": [
+    435
+  ],
+  "apps/backend/mcp/src/main/java/com/schemafy/mcp/common/security/McpTokenClaims.java": [
+    435
+  ],
+  "apps/backend/mcp/src/main/java/com/schemafy/mcp/common/security/McpTokenRevocationCache.java": [
+    435
   ]
 }
