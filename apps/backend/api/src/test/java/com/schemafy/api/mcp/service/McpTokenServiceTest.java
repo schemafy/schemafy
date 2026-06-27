@@ -46,7 +46,6 @@ class McpTokenServiceTest {
     properties.setIssuer("schemafy-mcp-test");
     properties.setAudience("schemafy-mcp-test");
     properties.setExpiresIn(Duration.ofMinutes(15));
-    properties.setClockSkewSeconds(0);
     revocationStore = new FakeMcpTokenRevocationStore();
     mcpTokenUseCase = new FakeMcpTokenUseCase();
     tokenService = new McpTokenService(

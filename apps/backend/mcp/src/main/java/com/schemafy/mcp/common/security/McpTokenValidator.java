@@ -69,7 +69,6 @@ public class McpTokenValidator {
     return Jwts.parser()
         .verifyWith(secretKey)
         .clock(() -> Date.from(clock.instant()))
-        .clockSkewSeconds(properties.getToken().getClockSkewSeconds())
         .build()
         .parseSignedClaims(token)
         .getPayload();

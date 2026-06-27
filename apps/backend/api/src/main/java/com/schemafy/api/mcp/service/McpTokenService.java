@@ -135,7 +135,6 @@ public class McpTokenService {
       return Jwts.parser()
           .verifyWith(secretKey)
           .clock(() -> Date.from(clock.instant()))
-          .clockSkewSeconds(properties.getClockSkewSeconds())
           .build()
           .parseSignedClaims(token)
           .getPayload();

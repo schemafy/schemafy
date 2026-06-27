@@ -55,7 +55,6 @@ mcp:
       token-type: ${MCP_TOKEN_TYPE:MCP}
       required-scope: ${MCP_TOKEN_REQUIRED_SCOPE:mcp}
       revocation-key-prefix: ${MCP_TOKEN_REVOCATION_KEY_PREFIX:mcp:token:revoked:}
-      clock-skew-seconds: ${MCP_TOKEN_CLOCK_SKEW_SECONDS:30}
     rate-limit:
       enabled: ${MCP_RATE_LIMIT_ENABLED:true}
       requests: ${MCP_RATE_LIMIT_REQUESTS:120}

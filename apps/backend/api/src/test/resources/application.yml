@@ -83,7 +83,6 @@ mcp:
       required-scope: mcp
       revocation-key-prefix: "mcp:token:revoked:"
       expires-in: 15m
-      clock-skew-seconds: 0
 
 logging:
   level:

@@ -5,7 +5,6 @@ import java.time.Duration;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Positive;
-import jakarta.validation.constraints.PositiveOrZero;
 import jakarta.validation.constraints.Size;
 
 import org.springframework.boot.context.properties.ConfigurationProperties;
@@ -50,9 +49,6 @@ public class McpSecurityProperties {
     @NotBlank
     private String revocationKeyPrefix = "mcp:token:revoked:";
 
-    @PositiveOrZero
-    private long clockSkewSeconds = 30;
-
     public String getSecret() { return secret; }
 
     public void setSecret(String secret) { this.secret = secret; }
@@ -76,10 +72,6 @@ public class McpSecurityProperties {
     public String getRevocationKeyPrefix() { return revocationKeyPrefix; }
 
     public void setRevocationKeyPrefix(String revocationKeyPrefix) { this.revocationKeyPrefix = revocationKeyPrefix; }
-
-    public long getClockSkewSeconds() { return clockSkewSeconds; }
-
-    public void setClockSkewSeconds(long clockSkewSeconds) { this.clockSkewSeconds = clockSkewSeconds; }
 
   }
 

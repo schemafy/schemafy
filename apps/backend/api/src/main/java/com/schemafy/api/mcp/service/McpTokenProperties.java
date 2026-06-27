@@ -4,7 +4,6 @@ import java.time.Duration;
 
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
-import jakarta.validation.constraints.PositiveOrZero;
 import jakarta.validation.constraints.Size;
 
 import org.springframework.boot.context.properties.ConfigurationProperties;
@@ -40,8 +39,5 @@ public class McpTokenProperties {
 
   @NotNull
   private Duration expiresIn = Duration.ofMinutes(15);
-
-  @PositiveOrZero
-  private long clockSkewSeconds = 30;
 
 }

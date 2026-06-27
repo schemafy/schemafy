@@ -37,7 +37,6 @@ class McpTokenValidatorTest {
     properties.getToken().setSecret("test-schemafy-mcp-secret-minimum-256-bit-key-value");
     properties.getToken().setIssuer("schemafy-mcp-test");
     properties.getToken().setAudience("schemafy-mcp-test");
-    properties.getToken().setClockSkewSeconds(0);
     revocationStore = new TestMcpTokenRevocationStore();
     Clock clock = Clock.fixed(NOW, ZoneOffset.UTC);
     getMcpTokenUseCase = new TestGetMcpTokenUseCase(properties, clock);

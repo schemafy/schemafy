@@ -46,7 +46,6 @@ mcp:
       audience: schemafy-mcp-test
       token-type: MCP
       required-scope: mcp
-      clock-skew-seconds: 0
     rate-limit:
       enabled: false
       requests: 100
