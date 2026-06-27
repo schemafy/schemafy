@@ -21,6 +21,7 @@ import com.schemafy.core.mcp.application.port.in.RegisterMcpTokenUseCase;
 import com.schemafy.core.mcp.application.port.in.RevokeMcpTokenCommand;
 import com.schemafy.core.mcp.application.port.in.RevokeMcpTokenUseCase;
 import com.schemafy.core.mcp.domain.McpToken;
+import com.schemafy.core.mcp.domain.McpTokenClaimSupport;
 
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jwts;
@@ -35,7 +36,7 @@ class McpTokenServiceTest {
   private static final Instant NOW = Instant.parse("2026-06-27T00:00:00Z");
 
   McpTokenProperties properties;
-  FakeMcpTokenRevocationStore revocationStore;
+  FakeMcpTokenRevocationCache revocationCache;
   FakeMcpTokenUseCase mcpTokenUseCase;
   McpTokenService tokenService;
 
@@ -46,11 +47,11 @@ class McpTokenServiceTest {
     properties.setIssuer("schemafy-mcp-test");
     properties.setAudience("schemafy-mcp-test");
     properties.setExpiresIn(Duration.ofMinutes(15));
-    revocationStore = new FakeMcpTokenRevocationStore();
+    revocationCache = new FakeMcpTokenRevocationCache();
     mcpTokenUseCase = new FakeMcpTokenUseCase();
     tokenService = new McpTokenService(
         properties,
-        revocationStore,
+        revocationCache,
         mcpTokenUseCase,
         mcpTokenUseCase,
         Clock.fixed(NOW, ZoneOffset.UTC));
@@ -71,8 +72,8 @@ class McpTokenServiceTest {
     assertThat(claims.getSubject()).isEqualTo("user-1");
     assertThat(claims.getIssuer()).isEqualTo("schemafy-mcp-test");
     assertThat(claims.getAudience()).contains("schemafy-mcp-test");
-    assertThat(claims.get("type", String.class)).isEqualTo("MCP");
-    assertThat(claims.get("scope", String.class)).isEqualTo("mcp");
+    assertThat(claims.get(McpTokenClaimSupport.TYPE, String.class)).isEqualTo("MCP");
+    assertThat(claims.get(McpTokenClaimSupport.SCOPE, String.class)).isEqualTo("mcp");
     assertThat(mcpTokenUseCase.savedTokens())
         .singleElement()
         .satisfies(savedToken -> {
@@ -100,7 +101,7 @@ class McpTokenServiceTest {
           assertThat(revoked.userId()).isEqualTo("user-1");
           assertThat(revoked.revokedAt()).isEqualTo(NOW);
         });
-    assertThat(revocationStore.revokedTokens())
+    assertThat(revocationCache.revokedTokens())
         .singleElement()
         .satisfies(revoked -> {
           assertThat(revoked.tokenId()).isEqualTo(result.tokenId());
@@ -121,7 +122,7 @@ class McpTokenServiceTest {
         })
         .verify();
     assertThat(mcpTokenUseCase.revokedTokens()).isEmpty();
-    assertThat(revocationStore.revokedTokens()).isEmpty();
+    assertThat(revocationCache.revokedTokens()).isEmpty();
   }
 
   @Test
@@ -156,15 +157,15 @@ class McpTokenServiceTest {
   @Test
   @DisplayName("Redis revocation cache가 없어도 DB registry에 revoke를 저장한다")
   void revokesWhenRevocationCacheUnavailable() {
-    McpTokenService serviceWithoutStore = new McpTokenService(
+    McpTokenService serviceWithoutCache = new McpTokenService(
         properties,
         null,
         mcpTokenUseCase,
         mcpTokenUseCase,
         Clock.fixed(NOW, ZoneOffset.UTC));
-    McpTokenIssueResult result = serviceWithoutStore.issue("user-1").block();
+    McpTokenIssueResult result = serviceWithoutCache.issue("user-1").block();
 
-    StepVerifier.create(serviceWithoutStore.revoke("user-1", result.token()))
+    StepVerifier.create(serviceWithoutCache.revoke("user-1", result.token()))
         .verifyComplete();
     assertThat(mcpTokenUseCase.revokedTokens())
         .singleElement()
@@ -183,13 +184,13 @@ class McpTokenServiceTest {
         .getPayload();
   }
 
-  private static class FakeMcpTokenRevocationStore
-      implements McpTokenRevocationStore {
+  private static class FakeMcpTokenRevocationCache
+      implements McpTokenRevocationCache {
 
     private final List<RevokedToken> revokedTokens = new ArrayList<>();
 
     @Override
-    public Mono<Void> revoke(String tokenId, Duration ttl) {
+    public Mono<Void> cacheRevocation(String tokenId, Duration ttl) {
       revokedTokens.add(new RevokedToken(tokenId, ttl));
       return Mono.empty();
     }

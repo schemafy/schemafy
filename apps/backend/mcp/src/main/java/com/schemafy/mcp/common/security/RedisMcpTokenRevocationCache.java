@@ -9,12 +9,12 @@ import reactor.core.publisher.Mono;
 
 @Component
 @ConditionalOnProperty(name = "spring.data.redis.enabled", havingValue = "true", matchIfMissing = true)
-public class RedisMcpTokenRevocationStore implements McpTokenRevocationStore {
+public class RedisMcpTokenRevocationCache implements McpTokenRevocationCache {
 
   private final ReactiveStringRedisTemplate redisTemplate;
   private final McpSecurityProperties properties;
 
-  public RedisMcpTokenRevocationStore(
+  public RedisMcpTokenRevocationCache(
       ReactiveStringRedisTemplate redisTemplate,
       McpSecurityProperties properties) {
     this.redisTemplate = redisTemplate;

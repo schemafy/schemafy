@@ -7,6 +7,8 @@ import java.util.Date;
 import java.util.List;
 import javax.crypto.SecretKey;
 
+import com.schemafy.core.mcp.domain.McpTokenClaimSupport;
+
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.security.Keys;
 
@@ -35,7 +37,7 @@ final class McpTokenTestFactory {
   }
 
   String tokenWithoutRequiredScope() {
-    return token(builder().claim("scope", "schema:read"));
+    return token(builder().claim(McpTokenClaimSupport.SCOPE, "schema:read"));
   }
 
   String expiredToken() {
@@ -58,12 +60,12 @@ final class McpTokenTestFactory {
         .audience().add("wrong-audience").and()
         .issuedAt(Date.from(now))
         .expiration(Date.from(now.plusSeconds(3600)))
-        .claim("type", properties.getToken().getTokenType())
-        .claim("scope", properties.getToken().getRequiredScope()));
+        .claim(McpTokenClaimSupport.TYPE, properties.getToken().getTokenType())
+        .claim(McpTokenClaimSupport.SCOPE, properties.getToken().getRequiredScope()));
   }
 
   String wrongTokenTypeToken() {
-    return token(builder().claim("type", "ACCESS"));
+    return token(builder().claim(McpTokenClaimSupport.TYPE, "ACCESS"));
   }
 
   String revokedToken(String tokenId) {
@@ -79,8 +81,8 @@ final class McpTokenTestFactory {
         .audience().add(properties.getToken().getAudience()).and()
         .issuedAt(Date.from(now))
         .expiration(Date.from(now.plusSeconds(3600)))
-        .claim("type", properties.getToken().getTokenType())
-        .claim("scope", String.join(" ", List.of(
+        .claim(McpTokenClaimSupport.TYPE, properties.getToken().getTokenType())
+        .claim(McpTokenClaimSupport.SCOPE, String.join(" ", List.of(
             properties.getToken().getRequiredScope(),
             "schema:read")));
   }

@@ -20,7 +20,7 @@ class McpRedisDisabledFallbackIntegrationTest {
   McpRateLimiter rateLimiter;
 
   @Autowired
-  McpTokenRevocationStore revocationStore;
+  McpTokenRevocationCache revocationCache;
 
   @Test
   @DisplayName("Redis가 비활성화되어도 no-op fallback으로 보안 Bean을 구성한다")
@@ -30,7 +30,7 @@ class McpRedisDisabledFallbackIntegrationTest {
     StepVerifier.create(rateLimiter.tryAcquire(claims))
         .expectNext(true)
         .verifyComplete();
-    StepVerifier.create(revocationStore.isRevoked(claims.tokenId()))
+    StepVerifier.create(revocationCache.isRevoked(claims.tokenId()))
         .expectNext(false)
         .verifyComplete();
   }

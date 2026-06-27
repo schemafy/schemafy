@@ -2,10 +2,7 @@ package com.schemafy.mcp.common.security;
 
 import java.nio.charset.StandardCharsets;
 import java.time.Clock;
-import java.util.Arrays;
-import java.util.Collection;
 import java.util.Date;
-import java.util.LinkedHashSet;
 import java.util.Objects;
 import java.util.Set;
 import javax.crypto.SecretKey;
@@ -16,6 +13,7 @@ import org.springframework.util.StringUtils;
 import com.schemafy.core.mcp.application.port.in.GetMcpTokenQuery;
 import com.schemafy.core.mcp.application.port.in.GetMcpTokenUseCase;
 import com.schemafy.core.mcp.domain.McpToken;
+import com.schemafy.core.mcp.domain.McpTokenClaimSupport;
 
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.ExpiredJwtException;
@@ -27,24 +25,19 @@ import reactor.core.publisher.Mono;
 @Component
 public class McpTokenValidator {
 
-  private static final String CLAIM_TYPE = "type";
-  private static final String CLAIM_SCOPE = "scope";
-  private static final String CLAIM_SCOPES = "scopes";
-  private static final String CLAIM_SCP = "scp";
-
   private final McpSecurityProperties properties;
-  private final McpTokenRevocationStore revocationStore;
+  private final McpTokenRevocationCache revocationCache;
   private final GetMcpTokenUseCase getMcpTokenUseCase;
   private final Clock clock;
   private final SecretKey secretKey;
 
   public McpTokenValidator(
       McpSecurityProperties properties,
-      McpTokenRevocationStore revocationStore,
+      McpTokenRevocationCache revocationCache,
       GetMcpTokenUseCase getMcpTokenUseCase,
       Clock clock) {
     this.properties = properties;
-    this.revocationStore = revocationStore;
+    this.revocationCache = revocationCache;
     this.getMcpTokenUseCase = getMcpTokenUseCase;
     this.clock = clock;
     this.secretKey = Keys.hmacShaKeyFor(
@@ -86,21 +79,21 @@ public class McpTokenValidator {
       return Mono.just(McpTokenValidationResult.failure(McpSecurityError.TOKEN_INVALID));
     }
     if (!Objects.equals(properties.getToken().getTokenType(),
-        claims.get(CLAIM_TYPE, String.class))) {
+        claims.get(McpTokenClaimSupport.TYPE, String.class))) {
       return Mono.just(McpTokenValidationResult.failure(McpSecurityError.TOKEN_INVALID));
     }
     if (!StringUtils.hasText(claims.getId())) {
       return Mono.just(McpTokenValidationResult.failure(McpSecurityError.TOKEN_INVALID));
     }
 
-    Set<String> scopes = extractScopes(claims);
+    Set<String> scopes = McpTokenClaimSupport.extractScopes(claims::get);
     if (!scopes.contains(properties.getToken().getRequiredScope())) {
       return Mono.just(McpTokenValidationResult.failure(McpSecurityError.INSUFFICIENT_SCOPE));
     }
 
     McpTokenClaims tokenClaims = new McpTokenClaims(claims.getId(), claims.getSubject(),
         Set.copyOf(scopes));
-    return revocationStore.isRevoked(claims.getId())
+    return revocationCache.isRevoked(claims.getId())
         .flatMap(revoked -> revoked
             ? Mono.just(McpTokenValidationResult.failure(McpSecurityError.TOKEN_REVOKED))
             : validateRegisteredToken(tokenClaims))
@@ -130,30 +123,6 @@ public class McpTokenValidator {
       return McpTokenValidationResult.failure(McpSecurityError.TOKEN_REVOKED);
     }
     return McpTokenValidationResult.success(claims);
-  }
-
-  private Set<String> extractScopes(Claims claims) {
-    Set<String> scopes = new LinkedHashSet<>();
-    addScopes(scopes, claims.get(CLAIM_SCOPE));
-    addScopes(scopes, claims.get(CLAIM_SCOPES));
-    addScopes(scopes, claims.get(CLAIM_SCP));
-    return scopes;
-  }
-
-  private void addScopes(Set<String> scopes, Object value) {
-    if (value instanceof String stringValue) {
-      Arrays.stream(stringValue.split("[\\s,]+"))
-          .filter(StringUtils::hasText)
-          .forEach(scopes::add);
-      return;
-    }
-    if (value instanceof Collection<?> values) {
-      values.stream()
-          .filter(Objects::nonNull)
-          .map(Object::toString)
-          .filter(StringUtils::hasText)
-          .forEach(scopes::add);
-    }
   }
 
 }

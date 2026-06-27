@@ -46,13 +46,13 @@ class McpSecurityIntegrationTest {
   McpSecurityProperties properties;
 
   @Autowired
-  TestMcpTokenRevocationStore revocationStore;
+  TestMcpTokenRevocationCache revocationCache;
 
   McpTokenTestFactory tokenFactory;
 
   @BeforeEach
   void setUp() {
-    revocationStore.reset();
+    revocationCache.reset();
     tokenFactory = new McpTokenTestFactory(properties);
   }
 
@@ -98,7 +98,7 @@ class McpSecurityIntegrationTest {
   @Test
   @DisplayName("revocation 상태를 확인할 수 없으면 503을 반환한다")
   void rejectsWhenRevocationCheckUnavailable() {
-    revocationStore.fail();
+    revocationCache.fail();
 
     webTestClient.post()
         .uri("/mcp")
@@ -226,8 +226,8 @@ class McpSecurityIntegrationTest {
 
     @Bean
     @Primary
-    TestMcpTokenRevocationStore tokenRevocationStore() {
-      return new TestMcpTokenRevocationStore();
+    TestMcpTokenRevocationCache tokenRevocationCache() {
+      return new TestMcpTokenRevocationCache();
     }
 
     @Bean
@@ -255,7 +255,7 @@ class McpSecurityIntegrationTest {
 
   }
 
-  static class TestMcpTokenRevocationStore implements McpTokenRevocationStore {
+  static class TestMcpTokenRevocationCache implements McpTokenRevocationCache {
 
     private boolean fail;
 

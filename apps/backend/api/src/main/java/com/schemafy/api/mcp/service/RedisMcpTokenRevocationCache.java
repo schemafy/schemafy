@@ -13,13 +13,13 @@ import reactor.core.publisher.Mono;
 @Service
 @ConditionalOnRedisEnabled
 @RequiredArgsConstructor
-public class RedisMcpTokenRevocationStore implements McpTokenRevocationStore {
+public class RedisMcpTokenRevocationCache implements McpTokenRevocationCache {
 
   private final ReactiveStringRedisTemplate redisTemplate;
   private final McpTokenProperties properties;
 
   @Override
-  public Mono<Void> revoke(String tokenId, Duration ttl) {
+  public Mono<Void> cacheRevocation(String tokenId, Duration ttl) {
     return redisTemplate.opsForValue()
         .set(properties.getRevocationKeyPrefix() + tokenId, "1", ttl)
         .then();

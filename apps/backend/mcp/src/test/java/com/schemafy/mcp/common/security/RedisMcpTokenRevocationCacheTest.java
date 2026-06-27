@@ -17,16 +17,16 @@ import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
-class RedisMcpTokenRevocationStoreTest {
+class RedisMcpTokenRevocationCacheTest {
 
   @Mock
   ReactiveStringRedisTemplate redisTemplate;
 
-  RedisMcpTokenRevocationStore revocationStore;
+  RedisMcpTokenRevocationCache revocationCache;
 
   @BeforeEach
   void setUp() {
-    revocationStore = new RedisMcpTokenRevocationStore(
+    revocationCache = new RedisMcpTokenRevocationCache(
         redisTemplate,
         new McpSecurityProperties());
   }
@@ -37,7 +37,7 @@ class RedisMcpTokenRevocationStoreTest {
     when(redisTemplate.hasKey("mcp:token:revoked:token-1"))
         .thenReturn(Mono.just(true));
 
-    StepVerifier.create(revocationStore.isRevoked("token-1"))
+    StepVerifier.create(revocationCache.isRevoked("token-1"))
         .expectNext(true)
         .verifyComplete();
 
@@ -47,7 +47,7 @@ class RedisMcpTokenRevocationStoreTest {
   @Test
   @DisplayName("토큰 ID가 비어 있으면 Redis를 조회하지 않는다")
   void skipsRedisLookupForBlankTokenId() {
-    StepVerifier.create(revocationStore.isRevoked(" "))
+    StepVerifier.create(revocationCache.isRevoked(" "))
         .expectNext(false)
         .verifyComplete();
 

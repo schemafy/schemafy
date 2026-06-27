@@ -4,8 +4,8 @@ import java.time.Duration;
 
 import reactor.core.publisher.Mono;
 
-public interface McpTokenRevocationStore {
+public interface McpTokenRevocationCache {
 
-  Mono<Void> revoke(String tokenId, Duration ttl);
+  Mono<Void> cacheRevocation(String tokenId, Duration ttl);
 
 }

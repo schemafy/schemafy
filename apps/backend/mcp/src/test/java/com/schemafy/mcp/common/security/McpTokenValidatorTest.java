@@ -28,7 +28,7 @@ class McpTokenValidatorTest {
   McpSecurityProperties properties;
   McpTokenTestFactory tokenFactory;
   McpTokenValidator validator;
-  TestMcpTokenRevocationStore revocationStore;
+  TestMcpTokenRevocationCache revocationCache;
   TestGetMcpTokenUseCase getMcpTokenUseCase;
 
   @BeforeEach
@@ -37,10 +37,10 @@ class McpTokenValidatorTest {
     properties.getToken().setSecret("test-schemafy-mcp-secret-minimum-256-bit-key-value");
     properties.getToken().setIssuer("schemafy-mcp-test");
     properties.getToken().setAudience("schemafy-mcp-test");
-    revocationStore = new TestMcpTokenRevocationStore();
+    revocationCache = new TestMcpTokenRevocationCache();
     Clock clock = Clock.fixed(NOW, ZoneOffset.UTC);
     getMcpTokenUseCase = new TestGetMcpTokenUseCase(properties, clock);
-    validator = new McpTokenValidator(properties, revocationStore,
+    validator = new McpTokenValidator(properties, revocationCache,
         getMcpTokenUseCase, clock);
     tokenFactory = new McpTokenTestFactory(properties, clock);
   }
@@ -103,7 +103,7 @@ class McpTokenValidatorTest {
   @Test
   @DisplayName("폐기된 토큰을 거부한다")
   void rejectsRevokedToken() {
-    revocationStore.revoke(REVOKED_TOKEN_ID).block();
+    revocationCache.revoke(REVOKED_TOKEN_ID).block();
 
     expectFailure(validator.validate(tokenFactory.revokedToken(REVOKED_TOKEN_ID)),
         McpSecurityError.TOKEN_REVOKED);
@@ -112,7 +112,7 @@ class McpTokenValidatorTest {
   @Test
   @DisplayName("Redis revocation 조회가 실패하면 fail-closed로 거부한다")
   void rejectsWhenRevocationCheckUnavailable() {
-    revocationStore.fail();
+    revocationCache.fail();
 
     expectFailure(validator.validate(tokenFactory.validToken()),
         McpSecurityError.REVOCATION_CHECK_UNAVAILABLE);
@@ -154,8 +154,8 @@ class McpTokenValidatorTest {
         .verifyComplete();
   }
 
-  private static class TestMcpTokenRevocationStore
-      implements McpTokenRevocationStore {
+  private static class TestMcpTokenRevocationCache
+      implements McpTokenRevocationCache {
 
     private final Set<String> revokedTokenIds = ConcurrentHashMap.newKeySet();
     private boolean fail;

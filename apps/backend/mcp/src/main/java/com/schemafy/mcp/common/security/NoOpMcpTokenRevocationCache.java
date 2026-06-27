@@ -7,7 +7,7 @@ import reactor.core.publisher.Mono;
 
 @Component
 @ConditionalOnProperty(name = "spring.data.redis.enabled", havingValue = "false")
-class NoOpMcpTokenRevocationStore implements McpTokenRevocationStore {
+class NoOpMcpTokenRevocationCache implements McpTokenRevocationCache {
 
   @Override
   public Mono<Boolean> isRevoked(String tokenId) {

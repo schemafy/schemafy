@@ -4,12 +4,8 @@ import java.nio.charset.StandardCharsets;
 import java.time.Clock;
 import java.time.Duration;
 import java.time.Instant;
-import java.util.Arrays;
-import java.util.Collection;
 import java.util.Date;
-import java.util.LinkedHashSet;
 import java.util.Objects;
-import java.util.Set;
 import java.util.function.Predicate;
 import javax.crypto.SecretKey;
 
@@ -23,6 +19,7 @@ import com.schemafy.core.mcp.application.port.in.RegisterMcpTokenCommand;
 import com.schemafy.core.mcp.application.port.in.RegisterMcpTokenUseCase;
 import com.schemafy.core.mcp.application.port.in.RevokeMcpTokenCommand;
 import com.schemafy.core.mcp.application.port.in.RevokeMcpTokenUseCase;
+import com.schemafy.core.mcp.domain.McpTokenClaimSupport;
 import com.schemafy.core.ulid.application.service.UlidGenerator;
 
 import io.jsonwebtoken.Claims;
@@ -37,14 +34,9 @@ import reactor.core.publisher.Mono;
 @Service
 public class McpTokenService {
 
-  private static final String CLAIM_TYPE = "type";
-  private static final String CLAIM_SCOPE = "scope";
-  private static final String CLAIM_SCOPES = "scopes";
-  private static final String CLAIM_SCP = "scp";
-
   private final McpTokenProperties properties;
   @Nullable
-  private final McpTokenRevocationStore revocationStore;
+  private final McpTokenRevocationCache revocationCache;
   private final RegisterMcpTokenUseCase registerMcpTokenUseCase;
   private final RevokeMcpTokenUseCase revokeMcpTokenUseCase;
   private final Clock clock;
@@ -52,12 +44,12 @@ public class McpTokenService {
 
   public McpTokenService(
       McpTokenProperties properties,
-      @Nullable McpTokenRevocationStore revocationStore,
+      @Nullable McpTokenRevocationCache revocationCache,
       RegisterMcpTokenUseCase registerMcpTokenUseCase,
       RevokeMcpTokenUseCase revokeMcpTokenUseCase,
       Clock clock) {
     this.properties = properties;
-    this.revocationStore = revocationStore;
+    this.revocationCache = revocationCache;
     this.registerMcpTokenUseCase = registerMcpTokenUseCase;
     this.revokeMcpTokenUseCase = revokeMcpTokenUseCase;
     this.clock = clock;
@@ -78,8 +70,8 @@ public class McpTokenService {
         .audience().add(properties.getAudience()).and()
         .issuedAt(Date.from(issuedAt))
         .expiration(Date.from(expiresAt))
-        .claim(CLAIM_TYPE, properties.getTokenType())
-        .claim(CLAIM_SCOPE, scope)
+        .claim(McpTokenClaimSupport.TYPE, properties.getTokenType())
+        .claim(McpTokenClaimSupport.SCOPE, scope)
         .signWith(secretKey)
         .compact();
 
@@ -151,10 +143,11 @@ public class McpTokenService {
         || claims.getAudience() == null
         || !claims.getAudience().contains(properties.getAudience())
         || !Objects.equals(properties.getTokenType(),
-            claims.get(CLAIM_TYPE, String.class))
+            claims.get(McpTokenClaimSupport.TYPE, String.class))
         || !StringUtils.hasText(claims.getId())
         || claims.getExpiration() == null
-        || !extractScopes(claims).contains(properties.getRequiredScope())) {
+        || !McpTokenClaimSupport.extractScopes(claims::get)
+            .contains(properties.getRequiredScope())) {
       throw new DomainException(McpTokenErrorCode.INVALID,
           "MCP token is invalid");
     }
@@ -165,10 +158,10 @@ public class McpTokenService {
   }
 
   private Mono<Void> cacheRevocation(String tokenId, Duration ttl) {
-    if (revocationStore == null) {
+    if (revocationCache == null) {
       return Mono.empty();
     }
-    return revocationStore.revoke(tokenId, ttl)
+    return revocationCache.cacheRevocation(tokenId, ttl)
         .onErrorResume(error -> {
           log.warn("Failed to cache MCP token revocation: tokenId={}", tokenId,
               error);
@@ -178,30 +171,6 @@ public class McpTokenService {
 
   private Predicate<Throwable> notDomainException() {
     return error -> !(error instanceof DomainException);
-  }
-
-  private Set<String> extractScopes(Claims claims) {
-    Set<String> scopes = new LinkedHashSet<>();
-    addScopes(scopes, claims.get(CLAIM_SCOPE));
-    addScopes(scopes, claims.get(CLAIM_SCOPES));
-    addScopes(scopes, claims.get(CLAIM_SCP));
-    return scopes;
-  }
-
-  private void addScopes(Set<String> scopes, Object value) {
-    if (value instanceof String stringValue) {
-      Arrays.stream(stringValue.split("[\\s,]+"))
-          .filter(StringUtils::hasText)
-          .forEach(scopes::add);
-      return;
-    }
-    if (value instanceof Collection<?> values) {
-      values.stream()
-          .filter(Objects::nonNull)
-          .map(Object::toString)
-          .filter(StringUtils::hasText)
-          .forEach(scopes::add);
-    }
   }
 
 }

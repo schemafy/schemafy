@@ -25,7 +25,7 @@ import com.jayway.jsonpath.JsonPath;
 import com.schemafy.api.common.constant.ApiPath;
 import com.schemafy.api.mcp.docs.McpTokenApiSnippets;
 import com.schemafy.api.mcp.exception.McpTokenErrorCode;
-import com.schemafy.api.mcp.service.McpTokenRevocationStore;
+import com.schemafy.api.mcp.service.McpTokenRevocationCache;
 import com.schemafy.api.testsupport.user.UserHttpTestSupport;
 import com.schemafy.core.user.domain.User;
 
@@ -48,7 +48,7 @@ class McpTokenControllerTest extends UserHttpTestSupport {
   WebTestClient webTestClient;
 
   @Autowired
-  TestMcpTokenRevocationStore revocationStore;
+  TestMcpTokenRevocationCache revocationCache;
 
   @BeforeEach
   void setUp() {
@@ -57,7 +57,7 @@ class McpTokenControllerTest extends UserHttpTestSupport {
         .rowsUpdated()
         .then(cleanupUserFixtures())
         .block();
-    revocationStore.clear();
+    revocationCache.clear();
   }
 
   @Test
@@ -124,7 +124,7 @@ class McpTokenControllerTest extends UserHttpTestSupport {
             McpTokenApiSnippets.revokeMcpTokenRequest()))
         .isEmpty();
 
-    assertThat(revocationStore.revokedTokens())
+    assertThat(revocationCache.revokedTokens())
         .singleElement()
         .satisfies(revoked -> assertThat(revoked.tokenId()).isEqualTo(issuedTokenRow.id()));
     assertThat(findTokenRow(issuedTokenRow.id()).revokedAt()).isNotNull();
@@ -152,7 +152,7 @@ class McpTokenControllerTest extends UserHttpTestSupport {
         .jsonPath("$.reason")
         .isEqualTo(McpTokenErrorCode.OWNER_MISMATCH.code());
 
-    assertThat(revocationStore.revokedTokens()).isEmpty();
+    assertThat(revocationCache.revokedTokens()).isEmpty();
   }
 
   private EntityExchangeResult<byte[]> issueToken(String accessToken) {
@@ -201,19 +201,19 @@ class McpTokenControllerTest extends UserHttpTestSupport {
   static class McpTokenControllerTestConfig {
 
     @Bean
-    TestMcpTokenRevocationStore testMcpTokenRevocationStore() {
-      return new TestMcpTokenRevocationStore();
+    TestMcpTokenRevocationCache testMcpTokenRevocationCache() {
+      return new TestMcpTokenRevocationCache();
     }
 
   }
 
-  static class TestMcpTokenRevocationStore
-      implements McpTokenRevocationStore {
+  static class TestMcpTokenRevocationCache
+      implements McpTokenRevocationCache {
 
     private final List<RevokedToken> revokedTokens = new ArrayList<>();
 
     @Override
-    public Mono<Void> revoke(String tokenId, Duration ttl) {
+    public Mono<Void> cacheRevocation(String tokenId, Duration ttl) {
       revokedTokens.add(new RevokedToken(tokenId, ttl));
       return Mono.empty();
     }
