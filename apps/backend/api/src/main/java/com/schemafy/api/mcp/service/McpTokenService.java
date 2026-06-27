@@ -1,6 +1,5 @@
 package com.schemafy.api.mcp.service;
 
-import java.nio.charset.StandardCharsets;
 import java.time.Clock;
 import java.time.Duration;
 import java.time.Instant;
@@ -9,6 +8,7 @@ import java.util.Objects;
 import java.util.function.Predicate;
 import javax.crypto.SecretKey;
 
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.lang.Nullable;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
@@ -26,7 +26,6 @@ import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.ExpiredJwtException;
 import io.jsonwebtoken.JwtException;
 import io.jsonwebtoken.Jwts;
-import io.jsonwebtoken.security.Keys;
 import lombok.extern.slf4j.Slf4j;
 import reactor.core.publisher.Mono;
 
@@ -47,14 +46,14 @@ public class McpTokenService {
       @Nullable McpTokenRevocationCache revocationCache,
       RegisterMcpTokenUseCase registerMcpTokenUseCase,
       RevokeMcpTokenUseCase revokeMcpTokenUseCase,
-      Clock clock) {
+      Clock clock,
+      @Qualifier("mcpTokenSecretKey") SecretKey secretKey) {
     this.properties = properties;
     this.revocationCache = revocationCache;
     this.registerMcpTokenUseCase = registerMcpTokenUseCase;
     this.revokeMcpTokenUseCase = revokeMcpTokenUseCase;
     this.clock = clock;
-    this.secretKey = Keys.hmacShaKeyFor(
-        properties.getSecret().getBytes(StandardCharsets.UTF_8));
+    this.secretKey = secretKey;
   }
 
   public Mono<McpTokenIssueResult> issue(String userId) {

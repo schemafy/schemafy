@@ -1,12 +1,12 @@
 package com.schemafy.mcp.common.security;
 
-import java.nio.charset.StandardCharsets;
 import java.time.Clock;
 import java.util.Date;
 import java.util.Objects;
 import java.util.Set;
 import javax.crypto.SecretKey;
 
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Component;
 import org.springframework.util.StringUtils;
 
@@ -19,7 +19,6 @@ import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.ExpiredJwtException;
 import io.jsonwebtoken.JwtException;
 import io.jsonwebtoken.Jwts;
-import io.jsonwebtoken.security.Keys;
 import reactor.core.publisher.Mono;
 
 @Component
@@ -35,13 +34,13 @@ public class McpTokenValidator {
       McpSecurityProperties properties,
       McpTokenRevocationCache revocationCache,
       GetMcpTokenUseCase getMcpTokenUseCase,
-      Clock clock) {
+      Clock clock,
+      @Qualifier("mcpTokenSecretKey") SecretKey secretKey) {
     this.properties = properties;
     this.revocationCache = revocationCache;
     this.getMcpTokenUseCase = getMcpTokenUseCase;
     this.clock = clock;
-    this.secretKey = Keys.hmacShaKeyFor(
-        properties.getToken().getSecret().getBytes(StandardCharsets.UTF_8));
+    this.secretKey = secretKey;
   }
 
   public Mono<McpTokenValidationResult> validate(String token) {

@@ -38,6 +38,7 @@ class McpTokenServiceTest {
   McpTokenProperties properties;
   FakeMcpTokenRevocationCache revocationCache;
   FakeMcpTokenUseCase mcpTokenUseCase;
+  SecretKey secretKey;
   McpTokenService tokenService;
 
   @BeforeEach
@@ -47,6 +48,8 @@ class McpTokenServiceTest {
     properties.setIssuer("schemafy-mcp-test");
     properties.setAudience("schemafy-mcp-test");
     properties.setExpiresIn(Duration.ofDays(7));
+    secretKey = Keys.hmacShaKeyFor(
+        properties.getSecret().getBytes(StandardCharsets.UTF_8));
     revocationCache = new FakeMcpTokenRevocationCache();
     mcpTokenUseCase = new FakeMcpTokenUseCase();
     tokenService = new McpTokenService(
@@ -54,7 +57,8 @@ class McpTokenServiceTest {
         revocationCache,
         mcpTokenUseCase,
         mcpTokenUseCase,
-        Clock.fixed(NOW, ZoneOffset.UTC));
+        Clock.fixed(NOW, ZoneOffset.UTC),
+        secretKey);
   }
 
   @Test
@@ -162,7 +166,8 @@ class McpTokenServiceTest {
         null,
         mcpTokenUseCase,
         mcpTokenUseCase,
-        Clock.fixed(NOW, ZoneOffset.UTC));
+        Clock.fixed(NOW, ZoneOffset.UTC),
+        secretKey);
     McpTokenIssueResult result = serviceWithoutCache.issue("user-1").block();
 
     StepVerifier.create(serviceWithoutCache.revoke("user-1", result.token()))
@@ -174,8 +179,6 @@ class McpTokenServiceTest {
   }
 
   private Claims parseClaims(String token) {
-    SecretKey secretKey = Keys.hmacShaKeyFor(
-        properties.getSecret().getBytes(StandardCharsets.UTF_8));
     return Jwts.parser()
         .verifyWith(secretKey)
         .clock(() -> Date.from(NOW))

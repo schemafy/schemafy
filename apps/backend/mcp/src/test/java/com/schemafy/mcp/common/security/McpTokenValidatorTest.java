@@ -1,11 +1,13 @@
 package com.schemafy.mcp.common.security;
 
+import java.nio.charset.StandardCharsets;
 import java.time.Clock;
 import java.time.Instant;
 import java.time.ZoneOffset;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
+import javax.crypto.SecretKey;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -15,6 +17,7 @@ import com.schemafy.core.mcp.application.port.in.GetMcpTokenQuery;
 import com.schemafy.core.mcp.application.port.in.GetMcpTokenUseCase;
 import com.schemafy.core.mcp.domain.McpToken;
 
+import io.jsonwebtoken.security.Keys;
 import reactor.core.publisher.Mono;
 import reactor.test.StepVerifier;
 
@@ -39,9 +42,11 @@ class McpTokenValidatorTest {
     properties.getToken().setAudience("schemafy-mcp-test");
     revocationCache = new TestMcpTokenRevocationCache();
     Clock clock = Clock.fixed(NOW, ZoneOffset.UTC);
+    SecretKey secretKey = Keys.hmacShaKeyFor(
+        properties.getToken().getSecret().getBytes(StandardCharsets.UTF_8));
     getMcpTokenUseCase = new TestGetMcpTokenUseCase(properties, clock);
     validator = new McpTokenValidator(properties, revocationCache,
-        getMcpTokenUseCase, clock);
+        getMcpTokenUseCase, clock, secretKey);
     tokenFactory = new McpTokenTestFactory(properties, clock);
   }
 
