@@ -10,7 +10,13 @@ public enum McpSecurityError {
   TOKEN_INVALID(HttpStatus.UNAUTHORIZED, "MCP_TOKEN_INVALID", "MCP token is invalid"),
   TOKEN_REVOKED(HttpStatus.UNAUTHORIZED, "MCP_TOKEN_REVOKED", "MCP token is revoked"),
   INSUFFICIENT_SCOPE(HttpStatus.FORBIDDEN, "MCP_INSUFFICIENT_SCOPE", "MCP token scope is insufficient"),
-  RATE_LIMIT_EXCEEDED(HttpStatus.TOO_MANY_REQUESTS, "MCP_RATE_LIMIT_EXCEEDED", "MCP rate limit exceeded");
+  RATE_LIMIT_EXCEEDED(HttpStatus.TOO_MANY_REQUESTS, "MCP_RATE_LIMIT_EXCEEDED", "MCP rate limit exceeded"),
+  REVOCATION_CHECK_UNAVAILABLE(HttpStatus.SERVICE_UNAVAILABLE,
+      "MCP_REVOCATION_CHECK_UNAVAILABLE",
+      "MCP token revocation status is temporarily unavailable"),
+  TOKEN_REGISTRY_UNAVAILABLE(HttpStatus.SERVICE_UNAVAILABLE,
+      "MCP_TOKEN_REGISTRY_UNAVAILABLE",
+      "MCP token registry is temporarily unavailable");
 
   private final HttpStatus status;
   private final String code;

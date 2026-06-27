@@ -1,6 +1,7 @@
 package com.schemafy.mcp.common.security;
 
 import java.nio.charset.StandardCharsets;
+import java.time.Clock;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Date;
@@ -11,6 +12,10 @@ import javax.crypto.SecretKey;
 
 import org.springframework.stereotype.Component;
 import org.springframework.util.StringUtils;
+
+import com.schemafy.core.mcp.application.port.in.GetMcpTokenQuery;
+import com.schemafy.core.mcp.application.port.in.GetMcpTokenUseCase;
+import com.schemafy.core.mcp.domain.McpToken;
 
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.ExpiredJwtException;
@@ -29,13 +34,19 @@ public class McpTokenValidator {
 
   private final McpSecurityProperties properties;
   private final McpTokenRevocationStore revocationStore;
+  private final GetMcpTokenUseCase getMcpTokenUseCase;
+  private final Clock clock;
   private final SecretKey secretKey;
 
   public McpTokenValidator(
       McpSecurityProperties properties,
-      McpTokenRevocationStore revocationStore) {
+      McpTokenRevocationStore revocationStore,
+      GetMcpTokenUseCase getMcpTokenUseCase,
+      Clock clock) {
     this.properties = properties;
     this.revocationStore = revocationStore;
+    this.getMcpTokenUseCase = getMcpTokenUseCase;
+    this.clock = clock;
     this.secretKey = Keys.hmacShaKeyFor(
         properties.getToken().getSecret().getBytes(StandardCharsets.UTF_8));
   }
@@ -57,6 +68,7 @@ public class McpTokenValidator {
   private Claims parseClaims(String token) {
     return Jwts.parser()
         .verifyWith(secretKey)
+        .clock(() -> Date.from(clock.instant()))
         .clockSkewSeconds(properties.getToken().getClockSkewSeconds())
         .build()
         .parseSignedClaims(token)
@@ -68,7 +80,7 @@ public class McpTokenValidator {
         || claims.getAudience() == null
         || !claims.getAudience().contains(properties.getToken().getAudience())
         || claims.getExpiration() == null
-        || claims.getExpiration().before(new Date())) {
+        || claims.getExpiration().before(Date.from(clock.instant()))) {
       return Mono.just(McpTokenValidationResult.failure(McpSecurityError.TOKEN_INVALID));
     }
     if (!StringUtils.hasText(claims.getSubject())) {
@@ -90,9 +102,35 @@ public class McpTokenValidator {
     McpTokenClaims tokenClaims = new McpTokenClaims(claims.getId(), claims.getSubject(),
         Set.copyOf(scopes));
     return revocationStore.isRevoked(claims.getId())
-        .map(revoked -> revoked
-            ? McpTokenValidationResult.failure(McpSecurityError.TOKEN_REVOKED)
-            : McpTokenValidationResult.success(tokenClaims));
+        .flatMap(revoked -> revoked
+            ? Mono.just(McpTokenValidationResult.failure(McpSecurityError.TOKEN_REVOKED))
+            : validateRegisteredToken(tokenClaims))
+        .onErrorResume(error -> Mono.just(McpTokenValidationResult.failure(
+            McpSecurityError.REVOCATION_CHECK_UNAVAILABLE)));
+  }
+
+  private Mono<McpTokenValidationResult> validateRegisteredToken(
+      McpTokenClaims tokenClaims) {
+    return getMcpTokenUseCase.getMcpToken(new GetMcpTokenQuery(tokenClaims.tokenId()))
+        .map(token -> validateRegisteredToken(tokenClaims, token))
+        .defaultIfEmpty(McpTokenValidationResult.failure(McpSecurityError.TOKEN_INVALID))
+        .onErrorResume(error -> Mono.just(McpTokenValidationResult.failure(
+            McpSecurityError.TOKEN_REGISTRY_UNAVAILABLE)));
+  }
+
+  private McpTokenValidationResult validateRegisteredToken(
+      McpTokenClaims claims,
+      McpToken token) {
+    if (!token.belongsTo(claims.userId())
+        || !claims.hasScope(token.getScope())
+        || token.isDeleted()
+        || token.isExpiredAt(clock.instant())) {
+      return McpTokenValidationResult.failure(McpSecurityError.TOKEN_INVALID);
+    }
+    if (token.isRevoked()) {
+      return McpTokenValidationResult.failure(McpSecurityError.TOKEN_REVOKED);
+    }
+    return McpTokenValidationResult.success(claims);
   }
 
   private Set<String> extractScopes(Claims claims) {

@@ -1,6 +1,7 @@
 package com.schemafy.mcp.common.security;
 
 import java.nio.charset.StandardCharsets;
+import java.time.Clock;
 import java.time.Instant;
 import java.util.Date;
 import java.util.List;
@@ -15,10 +16,16 @@ final class McpTokenTestFactory {
   private static final String DEFAULT_USER_ID = "user-1";
 
   private final McpSecurityProperties properties;
+  private final Clock clock;
   private final SecretKey secretKey;
 
   McpTokenTestFactory(McpSecurityProperties properties) {
+    this(properties, Clock.systemUTC());
+  }
+
+  McpTokenTestFactory(McpSecurityProperties properties, Clock clock) {
     this.properties = properties;
+    this.clock = clock;
     this.secretKey = Keys.hmacShaKeyFor(
         properties.getToken().getSecret().getBytes(StandardCharsets.UTF_8));
   }
@@ -32,7 +39,7 @@ final class McpTokenTestFactory {
   }
 
   String expiredToken() {
-    Instant now = Instant.now();
+    Instant now = clock.instant();
     return token(builder()
         .issuedAt(Date.from(now.minusSeconds(120)))
         .expiration(Date.from(now.minusSeconds(60))));
@@ -43,7 +50,7 @@ final class McpTokenTestFactory {
   }
 
   String wrongAudienceToken() {
-    Instant now = Instant.now();
+    Instant now = clock.instant();
     return token(Jwts.builder()
         .id(DEFAULT_TOKEN_ID)
         .subject(DEFAULT_USER_ID)
@@ -64,7 +71,7 @@ final class McpTokenTestFactory {
   }
 
   private io.jsonwebtoken.JwtBuilder builder() {
-    Instant now = Instant.now();
+    Instant now = clock.instant();
     return Jwts.builder()
         .id(DEFAULT_TOKEN_ID)
         .subject(DEFAULT_USER_ID)

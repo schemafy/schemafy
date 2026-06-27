@@ -1,5 +1,6 @@
 package com.schemafy.mcp.common.security;
 
+import java.time.Clock;
 import java.util.Map;
 
 import org.springframework.beans.factory.annotation.Autowired;
@@ -7,6 +8,7 @@ import org.springframework.boot.test.autoconfigure.web.reactive.AutoConfigureWeb
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.context.TestConfiguration;
 import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Primary;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.security.core.context.ReactiveSecurityContextHolder;
@@ -22,6 +24,9 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
 import com.schemafy.core.erd.operation.ErdOperationContexts;
+import com.schemafy.core.mcp.application.port.in.GetMcpTokenQuery;
+import com.schemafy.core.mcp.application.port.in.GetMcpTokenUseCase;
+import com.schemafy.core.mcp.domain.McpToken;
 import com.schemafy.core.project.application.access.ProjectAccessRequesterContext;
 
 import reactor.core.publisher.Mono;
@@ -40,10 +45,14 @@ class McpSecurityIntegrationTest {
   @Autowired
   McpSecurityProperties properties;
 
+  @Autowired
+  TestMcpTokenRevocationStore revocationStore;
+
   McpTokenTestFactory tokenFactory;
 
   @BeforeEach
   void setUp() {
+    revocationStore.reset();
     tokenFactory = new McpTokenTestFactory(properties);
   }
 
@@ -83,6 +92,29 @@ class McpSecurityIntegrationTest {
         .jsonPath("$.status").isEqualTo(401)
         .jsonPath("$.title").isEqualTo("Unauthorized")
         .jsonPath("$.detail").isEqualTo("MCP token is malformed")
+        .jsonPath("$.instance").isEqualTo("/mcp");
+  }
+
+  @Test
+  @DisplayName("revocation 상태를 확인할 수 없으면 503을 반환한다")
+  void rejectsWhenRevocationCheckUnavailable() {
+    revocationStore.fail();
+
+    webTestClient.post()
+        .uri("/mcp")
+        .header(HttpHeaders.AUTHORIZATION, "Bearer " + tokenFactory.validToken())
+        .contentType(MediaType.APPLICATION_JSON)
+        .accept(MediaType.APPLICATION_JSON, MediaType.TEXT_EVENT_STREAM)
+        .bodyValue(initializeRequest())
+        .exchange()
+        .expectStatus().is5xxServerError()
+        .expectHeader().contentTypeCompatibleWith(MediaType.APPLICATION_PROBLEM_JSON)
+        .expectBody()
+        .jsonPath("$.reason").isEqualTo("MCP_REVOCATION_CHECK_UNAVAILABLE")
+        .jsonPath("$.status").isEqualTo(503)
+        .jsonPath("$.title").isEqualTo("Service Unavailable")
+        .jsonPath("$.detail")
+        .isEqualTo("MCP token revocation status is temporarily unavailable")
         .jsonPath("$.instance").isEqualTo("/mcp");
   }
 
@@ -193,8 +225,17 @@ class McpSecurityIntegrationTest {
   static class ContextProbeConfiguration {
 
     @Bean
-    McpTokenRevocationStore tokenRevocationStore() {
-      return tokenId -> Mono.just(false);
+    @Primary
+    TestMcpTokenRevocationStore tokenRevocationStore() {
+      return new TestMcpTokenRevocationStore();
+    }
+
+    @Bean
+    @Primary
+    GetMcpTokenUseCase getMcpTokenUseCase(
+        McpSecurityProperties properties,
+        Clock clock) {
+      return new TestGetMcpTokenUseCase(properties, clock);
     }
 
     @Bean
@@ -210,6 +251,51 @@ class McpSecurityIntegrationTest {
                   "requesterId", ProjectAccessRequesterContext.requesterIdOrNull(context),
                   "actorUserId", ErdOperationContexts.metadata(context).actorUserIdOr(null),
                   "authenticationName", securityContext.getAuthentication().getName())))));
+    }
+
+  }
+
+  static class TestMcpTokenRevocationStore implements McpTokenRevocationStore {
+
+    private boolean fail;
+
+    @Override
+    public Mono<Boolean> isRevoked(String tokenId) {
+      if (fail) {
+        return Mono.error(new IllegalStateException("Redis unavailable"));
+      }
+      return Mono.just(false);
+    }
+
+    void fail() {
+      this.fail = true;
+    }
+
+    void reset() {
+      this.fail = false;
+    }
+
+  }
+
+  static class TestGetMcpTokenUseCase implements GetMcpTokenUseCase {
+
+    private final McpToken token;
+
+    TestGetMcpTokenUseCase(McpSecurityProperties properties, Clock clock) {
+      this.token = McpToken.issue(
+          "token-1",
+          "user-1",
+          properties.getToken().getRequiredScope(),
+          clock.instant().minusSeconds(60),
+          clock.instant().plusSeconds(3600));
+    }
+
+    @Override
+    public Mono<McpToken> getMcpToken(GetMcpTokenQuery query) {
+      if (token.getId().equals(query.tokenId())) {
+        return Mono.just(token);
+      }
+      return Mono.empty();
     }
 
   }

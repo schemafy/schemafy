@@ -1,11 +1,19 @@
 package com.schemafy.mcp.common.security;
 
+import java.time.Clock;
+import java.time.Instant;
+import java.time.ZoneOffset;
+import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
+
+import com.schemafy.core.mcp.application.port.in.GetMcpTokenQuery;
+import com.schemafy.core.mcp.application.port.in.GetMcpTokenUseCase;
+import com.schemafy.core.mcp.domain.McpToken;
 
 import reactor.core.publisher.Mono;
 import reactor.test.StepVerifier;
@@ -15,11 +23,13 @@ import static org.assertj.core.api.Assertions.assertThat;
 class McpTokenValidatorTest {
 
   private static final String REVOKED_TOKEN_ID = "revoked-token";
+  private static final Instant NOW = Instant.parse("2026-06-27T00:00:00Z");
 
   McpSecurityProperties properties;
   McpTokenTestFactory tokenFactory;
   McpTokenValidator validator;
   TestMcpTokenRevocationStore revocationStore;
+  TestGetMcpTokenUseCase getMcpTokenUseCase;
 
   @BeforeEach
   void setUp() {
@@ -29,8 +39,11 @@ class McpTokenValidatorTest {
     properties.getToken().setAudience("schemafy-mcp-test");
     properties.getToken().setClockSkewSeconds(0);
     revocationStore = new TestMcpTokenRevocationStore();
-    validator = new McpTokenValidator(properties, revocationStore);
-    tokenFactory = new McpTokenTestFactory(properties);
+    Clock clock = Clock.fixed(NOW, ZoneOffset.UTC);
+    getMcpTokenUseCase = new TestGetMcpTokenUseCase(properties, clock);
+    validator = new McpTokenValidator(properties, revocationStore,
+        getMcpTokenUseCase, clock);
+    tokenFactory = new McpTokenTestFactory(properties, clock);
   }
 
   @Test
@@ -97,6 +110,42 @@ class McpTokenValidatorTest {
         McpSecurityError.TOKEN_REVOKED);
   }
 
+  @Test
+  @DisplayName("Redis revocation 조회가 실패하면 fail-closed로 거부한다")
+  void rejectsWhenRevocationCheckUnavailable() {
+    revocationStore.fail();
+
+    expectFailure(validator.validate(tokenFactory.validToken()),
+        McpSecurityError.REVOCATION_CHECK_UNAVAILABLE);
+  }
+
+  @Test
+  @DisplayName("DB token registry에 등록되지 않은 토큰을 거부한다")
+  void rejectsUnregisteredToken() {
+    getMcpTokenUseCase.clear();
+
+    expectFailure(validator.validate(tokenFactory.validToken()),
+        McpSecurityError.TOKEN_INVALID);
+  }
+
+  @Test
+  @DisplayName("DB token registry에서 폐기된 토큰을 거부한다")
+  void rejectsTokenRevokedInRegistry() {
+    getMcpTokenUseCase.revoke("token-1");
+
+    expectFailure(validator.validate(tokenFactory.validToken()),
+        McpSecurityError.TOKEN_REVOKED);
+  }
+
+  @Test
+  @DisplayName("DB token registry 조회가 실패하면 fail-closed로 거부한다")
+  void rejectsWhenTokenRegistryUnavailable() {
+    getMcpTokenUseCase.fail();
+
+    expectFailure(validator.validate(tokenFactory.validToken()),
+        McpSecurityError.TOKEN_REGISTRY_UNAVAILABLE);
+  }
+
   private void expectFailure(Mono<McpTokenValidationResult> actual, McpSecurityError error) {
     StepVerifier.create(actual)
         .assertNext(result -> {
@@ -110,9 +159,13 @@ class McpTokenValidatorTest {
       implements McpTokenRevocationStore {
 
     private final Set<String> revokedTokenIds = ConcurrentHashMap.newKeySet();
+    private boolean fail;
 
     @Override
     public Mono<Boolean> isRevoked(String tokenId) {
+      if (fail) {
+        return Mono.error(new IllegalStateException("Redis unavailable"));
+      }
       return Mono.just(tokenId != null && !tokenId.isBlank()
           && revokedTokenIds.contains(tokenId));
     }
@@ -120,6 +173,49 @@ class McpTokenValidatorTest {
     Mono<Void> revoke(String tokenId) {
       revokedTokenIds.add(tokenId);
       return Mono.empty();
+    }
+
+    void fail() {
+      this.fail = true;
+    }
+
+  }
+
+  private static class TestGetMcpTokenUseCase implements GetMcpTokenUseCase {
+
+    private final Map<String, McpToken> tokens = new ConcurrentHashMap<>();
+    private final Clock clock;
+    private boolean fail;
+
+    TestGetMcpTokenUseCase(McpSecurityProperties properties, Clock clock) {
+      this.clock = clock;
+      McpToken token = McpToken.issue(
+          "token-1",
+          "user-1",
+          properties.getToken().getRequiredScope(),
+          clock.instant().minusSeconds(60),
+          clock.instant().plusSeconds(3600));
+      tokens.put(token.getId(), token);
+    }
+
+    @Override
+    public Mono<McpToken> getMcpToken(GetMcpTokenQuery query) {
+      if (fail) {
+        return Mono.error(new IllegalStateException("Token registry unavailable"));
+      }
+      return Mono.justOrEmpty(tokens.get(query.tokenId()));
+    }
+
+    void clear() {
+      tokens.clear();
+    }
+
+    void revoke(String tokenId) {
+      tokens.get(tokenId).revoke(clock.instant());
+    }
+
+    void fail() {
+      this.fail = true;
     }
 
   }
