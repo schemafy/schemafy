@@ -2,7 +2,6 @@ package com.schemafy.api.erd.service;
 
 import java.util.Map;
 
-import com.schemafy.core.erd.table.domain.Table;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.ReactiveTransactionManager;
 import org.springframework.transaction.TransactionDefinition;
@@ -20,6 +19,7 @@ import com.schemafy.core.erd.schema.application.port.in.GetSchemaQuery;
 import com.schemafy.core.erd.schema.application.port.in.GetSchemaWithRevisionUseCase;
 import com.schemafy.core.erd.table.application.port.in.GetTablesBySchemaIdQuery;
 import com.schemafy.core.erd.table.application.port.in.GetTablesBySchemaIdUseCase;
+import com.schemafy.core.erd.table.domain.Table;
 
 import reactor.core.publisher.Mono;
 
