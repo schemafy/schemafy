@@ -118,7 +118,29 @@ apiClient.interceptors.response.use(
 );
 
 apiClient.interceptors.response.use(
-  (response) => response,
+  (response) => {
+    const clientOperationId = getHeaderValue(
+      response.config.headers,
+      'X-Client-Op-Id',
+    );
+
+    if (
+      clientOperationId &&
+      response.data &&
+      typeof response.data === 'object' &&
+      !Array.isArray(response.data)
+    ) {
+      return {
+        ...response,
+        data: {
+          ...response.data,
+          requestClientOperationId: clientOperationId,
+        },
+      };
+    }
+
+    return response;
+  },
   (error) => {
     const axiosError = error as AxiosError;
     const clientOperationId = getHeaderValue(

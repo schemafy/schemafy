@@ -132,7 +132,7 @@ class ErdMutationBroadcasterTest {
     @Test
     @DisplayName("빈 affectedTableIds이면 skip한다")
     void skips_when_empty_table_ids() {
-      StepVerifier.create(broadcaster.broadcast(Set.of(), null))
+      StepVerifier.create(broadcaster.broadcast(Set.of(), OPERATION))
           .verifyComplete();
 
       verify(getTableByIdPort, never()).findTableById(any());
@@ -141,7 +141,16 @@ class ErdMutationBroadcasterTest {
     @Test
     @DisplayName("null이면 skip한다")
     void skips_when_null() {
-      StepVerifier.create(broadcaster.broadcast(null, null))
+      StepVerifier.create(broadcaster.broadcast(null, OPERATION))
+          .verifyComplete();
+
+      verify(getTableByIdPort, never()).findTableById(any());
+    }
+
+    @Test
+    @DisplayName("operation이 null이면 skip한다")
+    void skips_when_operation_null() {
+      StepVerifier.create(broadcaster.broadcast(Set.of("table-1"), null))
           .verifyComplete();
 
       verify(getTableByIdPort, never()).findTableById(any());
@@ -156,7 +165,7 @@ class ErdMutationBroadcasterTest {
       given(getTableByIdPort.findTableById(tableId))
           .willReturn(Mono.error(new RuntimeException("DB down")));
 
-      StepVerifier.create(broadcaster.broadcast(tableIds, null))
+      StepVerifier.create(broadcaster.broadcast(tableIds, OPERATION))
           .verifyComplete();
 
       verify(eventPublisher, never()).publish(any(), any());
@@ -180,7 +189,7 @@ class ErdMutationBroadcasterTest {
           any(CollaborationOutbound.class)))
           .willReturn(Mono.error(new RuntimeException("Redis down")));
 
-      StepVerifier.create(broadcaster.broadcast(tableIds, null))
+      StepVerifier.create(broadcaster.broadcast(tableIds, OPERATION))
           .verifyComplete();
     }
 
@@ -213,6 +222,16 @@ class ErdMutationBroadcasterTest {
       ErdMutatedEvent.Outbound event = (ErdMutatedEvent.Outbound) captor
           .getValue();
       assertThat(event.operation()).isEqualTo(OPERATION);
+    }
+
+    @Test
+    @DisplayName("operation이 null이면 skip한다")
+    void skips_when_operation_null() {
+      StepVerifier.create(broadcaster.broadcastSchemaChange("schema-1",
+          null))
+          .verifyComplete();
+
+      verify(getSchemaByIdPort, never()).findSchemaById(any());
     }
 
   }
@@ -250,6 +269,16 @@ class ErdMutationBroadcasterTest {
       assertThat(event.affectedTableIds()).containsExactly("deleted-table");
     }
 
+    @Test
+    @DisplayName("operation이 null이면 skip한다")
+    void skips_when_operation_null() {
+      StepVerifier.create(broadcaster.broadcastSchemaMutation("schema-1",
+          Set.of("table-1"), null))
+          .verifyComplete();
+
+      verify(getSchemaByIdPort, never()).findSchemaById(any());
+    }
+
   }
 
   @Nested
@@ -279,6 +308,19 @@ class ErdMutationBroadcasterTest {
       ErdMutatedEvent.Outbound event = (ErdMutatedEvent.Outbound) captor
           .getValue();
       assertThat(event.operation()).isEqualTo(OPERATION);
+    }
+
+    @Test
+    @DisplayName("operation이 null이면 skip한다")
+    void skips_when_operation_null() {
+      var ctx = new ErdMutationBroadcaster.ResolvedContext("project-1",
+          "schema-1");
+
+      StepVerifier.create(
+          broadcaster.broadcastWithContext(ctx, Set.of("table-1"), null))
+          .verifyComplete();
+
+      verify(eventPublisher, never()).publish(any(), any());
     }
 
   }

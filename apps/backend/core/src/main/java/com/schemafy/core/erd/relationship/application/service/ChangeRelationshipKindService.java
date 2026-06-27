@@ -69,28 +69,48 @@ public class ChangeRelationshipKindService implements ChangeRelationshipKindUseC
           RelationshipKind newKind = command.kind();
 
           if (oldKind == newKind) {
-            return Mono.just(MutationResult.<Void>of(null, affectedTableIds));
+            return Mono.just(MutationResult.<Void>noop(null, affectedTableIds));
           }
 
           return erdMutationCoordinator.coordinate(
               ErdOperationType.CHANGE_RELATIONSHIP_KIND,
               command,
-              () -> structuralSnapshotService.captureByRelationshipId(command.relationshipId())
-                  .flatMap(beforeSnapshot -> changeRelationshipKind(
-                      relationship,
-                      oldKind,
-                      newKind,
-                      affectedTableIds)
-                      .then(Mono.fromCallable(() -> MutationResult.<Void>of(null, affectedTableIds)))
-                      .flatMap(result -> structuralSnapshotService.captureBySchemaId(beforeSnapshot.schemaId())
-                          .map(afterSnapshot -> result.withInverse(new ChangeRelationshipKindInverse(
-                              beforeSnapshot.schemaId(),
-                              relationship.id(),
-                              beforeSnapshot,
-                              afterSnapshot,
-                              result.sortedAffectedTableIds()))))));
+              () -> getRelationshipByIdPort.findRelationshipById(command.relationshipId())
+                  .switchIfEmpty(Mono.error(new DomainException(
+                      RelationshipErrorCode.NOT_FOUND,
+                      "Relationship not found")))
+                  .flatMap(lockedRelationship -> {
+                    Set<String> lockedAffectedTableIds = affectedTableIds(
+                        lockedRelationship.fkTableId(),
+                        lockedRelationship.pkTableId());
+                    RelationshipKind lockedOldKind = lockedRelationship.kind();
+                    if (lockedOldKind == newKind) {
+                      return Mono.just(MutationResult.<Void>noop(null, lockedAffectedTableIds));
+                    }
+                    return structuralSnapshotService.captureByRelationshipId(command.relationshipId())
+                        .flatMap(beforeSnapshot -> changeRelationshipKind(
+                            lockedRelationship,
+                            lockedOldKind,
+                            newKind,
+                            lockedAffectedTableIds)
+                            .then(Mono.fromCallable(() -> MutationResult.<Void>of(null, lockedAffectedTableIds)))
+                            .flatMap(result -> structuralSnapshotService.captureBySchemaId(beforeSnapshot.schemaId())
+                                .map(afterSnapshot -> result.withInverse(new ChangeRelationshipKindInverse(
+                                    beforeSnapshot.schemaId(),
+                                    lockedRelationship.id(),
+                                    beforeSnapshot,
+                                    afterSnapshot,
+                                    result.sortedAffectedTableIds())))));
+                  }));
         })
         .as(transactionalOperator::transactional);
+  }
+
+  private static Set<String> affectedTableIds(String fkTableId, String pkTableId) {
+    Set<String> affectedTableIds = new HashSet<>();
+    affectedTableIds.add(fkTableId);
+    affectedTableIds.add(pkTableId);
+    return affectedTableIds;
   }
 
   private Mono<Void> changeRelationshipKind(

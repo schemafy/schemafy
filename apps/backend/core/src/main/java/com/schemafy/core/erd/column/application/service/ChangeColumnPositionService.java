@@ -45,31 +45,51 @@ public class ChangeColumnPositionService implements ChangeColumnPositionUseCase 
 
   @Override
   public Mono<MutationResult<Void>> changeColumnPosition(ChangeColumnPositionCommand command) {
-    return erdMutationCoordinator.coordinate(ErdOperationType.CHANGE_COLUMN_POSITION, command, () -> Mono.defer(() -> {
-      return getColumnByIdPort.findColumnById(command.columnId())
-          .switchIfEmpty(Mono.error(new DomainException(ColumnErrorCode.NOT_FOUND, "Column not found")))
-          .flatMap(column -> getColumnsByTableIdPort.findColumnsByTableId(column.tableId())
-              .defaultIfEmpty(List.of())
-              .flatMap(columns -> reorderColumns(column, columns, command.seqNo()))
-              .flatMap(reordered -> changeColumnPositionPort
-                  .changeColumnPositions(column.tableId(), reordered))
-              .thenReturn(MutationResult.<Void>of(null, column.tableId())));
-    })).as(transactionalOperator::transactional);
+    return getColumnByIdPort.findColumnById(command.columnId())
+        .switchIfEmpty(Mono.error(new DomainException(ColumnErrorCode.NOT_FOUND, "Column not found")))
+        .flatMap(column -> getColumnsByTableIdPort.findColumnsByTableId(column.tableId())
+            .defaultIfEmpty(List.of())
+            .flatMap(columns -> {
+              int currentPosition = resolveCurrentPosition(column, columns);
+              int normalizedPosition = Math.clamp(command.seqNo(), 0, columns.size() - 1);
+              if (currentPosition == normalizedPosition) {
+                return Mono.just(MutationResult.<Void>noop(null, column.tableId()));
+              }
+              return erdMutationCoordinator.coordinate(ErdOperationType.CHANGE_COLUMN_POSITION, command,
+                  () -> getColumnsByTableIdPort.findColumnsByTableId(column.tableId())
+                      .defaultIfEmpty(List.of())
+                      .flatMap(lockedColumns -> {
+                        int lockedCurrentPosition = resolveCurrentPosition(column, lockedColumns);
+                        int lockedNormalizedPosition = Math.clamp(command.seqNo(), 0, lockedColumns.size() - 1);
+                        if (lockedCurrentPosition == lockedNormalizedPosition) {
+                          return Mono.just(MutationResult.<Void>noop(null, column.tableId()));
+                        }
+                        List<Column> reordered = reorderColumns(
+                            lockedColumns,
+                            lockedCurrentPosition,
+                            lockedNormalizedPosition);
+                        return changeColumnPositionPort
+                            .changeColumnPositions(column.tableId(), reordered)
+                            .thenReturn(MutationResult.<Void>of(null, column.tableId()));
+                      }));
+            }))
+        .as(transactionalOperator::transactional);
   }
 
-  private Mono<List<Column>> reorderColumns(Column targetColumn, List<Column> columns, int nextPosition) {
+  private int resolveCurrentPosition(Column targetColumn, List<Column> columns) {
     if (columns.isEmpty()) {
-      return Mono.error(new DomainException(ColumnErrorCode.POSITION_INVALID, "Column not found"));
+      throw new DomainException(ColumnErrorCode.POSITION_INVALID, "Column not found");
     }
+    int currentPosition = findIndex(columns, targetColumn.id());
+    if (currentPosition < 0) {
+      throw new DomainException(ColumnErrorCode.NOT_FOUND, "Column not found");
+    }
+    return currentPosition;
+  }
 
+  private List<Column> reorderColumns(List<Column> columns, int currentIndex, int normalizedPosition) {
     List<Column> reordered = new ArrayList<>(columns);
-    int currentIndex = findIndex(reordered, targetColumn.id());
-    if (currentIndex < 0) {
-      return Mono.error(new DomainException(ColumnErrorCode.NOT_FOUND, "Column not found"));
-    }
-
     Column movingColumn = reordered.remove(currentIndex);
-    int normalizedPosition = Math.clamp(nextPosition, 0, columns.size() - 1);
     reordered.add(normalizedPosition, movingColumn);
 
     List<Column> updated = new ArrayList<>(reordered.size());
@@ -88,7 +108,7 @@ public class ChangeColumnPositionService implements ChangeColumnPositionUseCase 
           column.comment()));
     }
 
-    return Mono.just(updated);
+    return updated;
   }
 
   private static int findIndex(List<Column> columns, String columnId) {

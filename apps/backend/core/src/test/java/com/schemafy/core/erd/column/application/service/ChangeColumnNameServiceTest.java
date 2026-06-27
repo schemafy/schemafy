@@ -98,6 +98,25 @@ class ChangeColumnNameServiceTest {
             .changeColumnName(command.columnId(), newName);
       }
 
+      @Test
+      @DisplayName("현재 이름과 같으면 주변 context 조회 없이 변경 없이 성공한다")
+      void succeedsWithoutContextLookupWhenNameIsSame() {
+        var command = ColumnFixture.changeNameCommand(ColumnFixture.DEFAULT_NAME);
+        var column = ColumnFixture.defaultColumn();
+
+        given(getColumnByIdPort.findColumnById(command.columnId()))
+            .willReturn(Mono.just(column));
+
+        StepVerifier.create(sut.changeColumnName(command))
+            .expectNextMatches(result -> result.operation() == null)
+            .verifyComplete();
+
+        then(getTableByIdPort).shouldHaveNoInteractions();
+        then(getSchemaByIdPort).shouldHaveNoInteractions();
+        then(getColumnsByTableIdPort).shouldHaveNoInteractions();
+        then(changeColumnNamePort).shouldHaveNoInteractions();
+      }
+
     }
 
     @Nested
@@ -192,18 +211,6 @@ class ChangeColumnNameServiceTest {
       @DisplayName("ColumnNameInvalidException이 발생한다")
       void throwsColumnNameInvalidException() {
         var command = ColumnFixture.changeNameCommand("123invalid");
-        var column = ColumnFixture.defaultColumn();
-        var table = TableFixture.defaultTable();
-        var schema = SchemaFixture.defaultSchema();
-
-        given(getColumnByIdPort.findColumnById(any()))
-            .willReturn(Mono.just(column));
-        given(getTableByIdPort.findTableById(any()))
-            .willReturn(Mono.just(table));
-        given(getSchemaByIdPort.findSchemaById(any()))
-            .willReturn(Mono.just(schema));
-        given(getColumnsByTableIdPort.findColumnsByTableId(any()))
-            .willReturn(Mono.just(List.of(column)));
 
         StepVerifier.create(sut.changeColumnName(command))
             .expectErrorMatches(DomainException.hasErrorCode(ColumnErrorCode.NAME_INVALID))

@@ -6,7 +6,7 @@ import { operationHistoryStore } from '@/store/operation-history.store';
 
 export type CommittedMutationResult = Pick<
   MutationResponse<unknown>,
-  'operation' | 'affectedTableIds'
+  'operation' | 'affectedTableIds' | 'requestClientOperationId'
 >;
 
 export const createErdMutationConfig = (
@@ -37,6 +37,13 @@ export const syncCommittedRevision = (
   schemaId: string,
   result: CommittedMutationResult,
 ) => {
+  if (!result.operation) {
+    if (result.requestClientOperationId) {
+      operationHistoryStore.markNoOp(result.requestClientOperationId);
+    }
+    return 'applied';
+  }
+
   const committedRevision = result.operation.committedRevision;
   const syncStatus = collaborationStore.getRevisionSyncStatus(
     schemaId,

@@ -14,6 +14,8 @@ import org.junit.jupiter.api.Test;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.schemafy.core.common.exception.DomainException;
 import com.schemafy.core.common.json.JsonCodec;
+import com.schemafy.core.erd.column.application.port.in.ChangeColumnPositionCommand;
+import com.schemafy.core.erd.column.application.port.in.ChangeColumnPositionUseCase;
 import com.schemafy.core.erd.column.application.port.in.ChangeColumnTypeCommand;
 import com.schemafy.core.erd.column.application.port.in.ChangeColumnTypeUseCase;
 import com.schemafy.core.erd.column.application.port.in.CreateColumnCommand;
@@ -22,6 +24,8 @@ import com.schemafy.core.erd.constraint.application.port.in.CreateConstraintColu
 import com.schemafy.core.erd.constraint.application.port.in.CreateConstraintCommand;
 import com.schemafy.core.erd.constraint.application.port.in.CreateConstraintUseCase;
 import com.schemafy.core.erd.constraint.domain.type.ConstraintKind;
+import com.schemafy.core.erd.index.application.port.in.ChangeIndexColumnSortDirectionCommand;
+import com.schemafy.core.erd.index.application.port.in.ChangeIndexColumnSortDirectionUseCase;
 import com.schemafy.core.erd.index.application.port.in.CreateIndexColumnCommand;
 import com.schemafy.core.erd.index.application.port.in.CreateIndexCommand;
 import com.schemafy.core.erd.index.application.port.in.CreateIndexUseCase;
@@ -39,6 +43,10 @@ import com.schemafy.core.erd.operation.application.port.out.IncrementSchemaColla
 import com.schemafy.core.erd.operation.application.service.StructuralSnapshotService;
 import com.schemafy.core.erd.operation.domain.ErdOperationDerivationKind;
 import com.schemafy.core.erd.operation.domain.exception.OperationErrorCode;
+import com.schemafy.core.erd.relationship.application.port.in.ChangeRelationshipCardinalityCommand;
+import com.schemafy.core.erd.relationship.application.port.in.ChangeRelationshipCardinalityUseCase;
+import com.schemafy.core.erd.relationship.application.port.in.ChangeRelationshipExtraCommand;
+import com.schemafy.core.erd.relationship.application.port.in.ChangeRelationshipExtraUseCase;
 import com.schemafy.core.erd.relationship.application.port.in.ChangeRelationshipKindCommand;
 import com.schemafy.core.erd.relationship.application.port.in.ChangeRelationshipKindUseCase;
 import com.schemafy.core.erd.relationship.application.port.in.CreateRelationshipCommand;
@@ -99,10 +107,16 @@ class ErdOperationLedgerIntegrationTest extends ErdProjectIntegrationSupport {
   ChangeColumnTypeUseCase changeColumnTypeUseCase;
 
   @Autowired
+  ChangeColumnPositionUseCase changeColumnPositionUseCase;
+
+  @Autowired
   CreateConstraintUseCase createConstraintUseCase;
 
   @Autowired
   CreateIndexUseCase createIndexUseCase;
+
+  @Autowired
+  ChangeIndexColumnSortDirectionUseCase changeIndexColumnSortDirectionUseCase;
 
   @Autowired
   RemoveIndexColumnUseCase removeIndexColumnUseCase;
@@ -115,6 +129,12 @@ class ErdOperationLedgerIntegrationTest extends ErdProjectIntegrationSupport {
 
   @Autowired
   ChangeRelationshipKindUseCase changeRelationshipKindUseCase;
+
+  @Autowired
+  ChangeRelationshipCardinalityUseCase changeRelationshipCardinalityUseCase;
+
+  @Autowired
+  ChangeRelationshipExtraUseCase changeRelationshipExtraUseCase;
 
   @Autowired
   JsonCodec jsonCodec;
@@ -386,6 +406,211 @@ class ErdOperationLedgerIntegrationTest extends ErdProjectIntegrationSupport {
 
     assertThat(operationCount(schemaId)).isEqualTo(beforeChangeCount);
     assertThat(currentRevision(schemaId)).isEqualTo(beforeChangeRevision);
+  }
+
+  @Test
+  @DisplayName("같은 schema와 table 이름 재요청은 revision과 operation log를 늘리지 않는다")
+  void doesNotRecordLedgerForNoOpSchemaAndTableNameChanges() {
+    String projectId = createActiveProjectId("erd_operation_noop_schema_table_name");
+    String schemaName = "noop_schema_table_name_schema";
+
+    String schemaId = createSchemaUseCase.createSchema(new CreateSchemaCommand(
+        projectId,
+        "MySQL",
+        schemaName,
+        "utf8mb4",
+        "utf8mb4_general_ci")).block().result().id();
+
+    long beforeSchemaNameRevision = currentRevision(schemaId);
+    long beforeSchemaNameCount = operationCount(schemaId);
+
+    StepVerifier.create(changeSchemaNameUseCase.changeSchemaName(
+        new ChangeSchemaNameCommand(schemaId, schemaName)))
+        .expectNextMatches(result -> result.operation() == null)
+        .verifyComplete();
+
+    assertThat(currentRevision(schemaId)).isEqualTo(beforeSchemaNameRevision);
+    assertThat(operationCount(schemaId)).isEqualTo(beforeSchemaNameCount);
+
+    String tableName = "noop_schema_table_name_table";
+    String tableId = createTableUseCase.createTable(new CreateTableCommand(
+        schemaId,
+        tableName,
+        "utf8mb4",
+        "utf8mb4_general_ci",
+        null)).block().result().tableId();
+
+    long beforeTableNameRevision = currentRevision(schemaId);
+    long beforeTableNameCount = operationCount(schemaId);
+
+    StepVerifier.create(changeTableNameUseCase.changeTableName(
+        new ChangeTableNameCommand(tableId, tableName)))
+        .expectNextMatches(result -> result.operation() == null)
+        .verifyComplete();
+
+    assertThat(currentRevision(schemaId)).isEqualTo(beforeTableNameRevision);
+    assertThat(operationCount(schemaId)).isEqualTo(beforeTableNameCount);
+  }
+
+  @Test
+  @DisplayName("같은 컬럼 type과 position 재요청은 revision과 operation log를 늘리지 않는다")
+  void doesNotRecordLedgerForNoOpColumnTypeAndPositionChanges() {
+    String projectId = createActiveProjectId("erd_operation_noop_column_type_position");
+
+    String schemaId = createSchemaUseCase.createSchema(new CreateSchemaCommand(
+        projectId,
+        "MySQL",
+        "noop_column_type_position_schema",
+        "utf8mb4",
+        "utf8mb4_general_ci")).block().result().id();
+
+    String tableId = createTableUseCase.createTable(new CreateTableCommand(
+        schemaId,
+        "noop_column_type_position_table",
+        "utf8mb4",
+        "utf8mb4_general_ci",
+        null)).block().result().tableId();
+
+    String columnId = createColumnUseCase.createColumn(new CreateColumnCommand(
+        tableId,
+        "name",
+        "VARCHAR",
+        255,
+        null,
+        null,
+        false,
+        "utf8mb4",
+        "utf8mb4_general_ci",
+        null)).block().result().columnId();
+
+    createColumnUseCase.createColumn(new CreateColumnCommand(
+        tableId,
+        "email",
+        "VARCHAR",
+        255,
+        null,
+        null,
+        false,
+        "utf8mb4",
+        "utf8mb4_general_ci",
+        null)).block();
+
+    long beforeTypeRevision = currentRevision(schemaId);
+    long beforeTypeCount = operationCount(schemaId);
+
+    var typeResult = changeColumnTypeUseCase.changeColumnType(new ChangeColumnTypeCommand(
+        columnId,
+        "VARCHAR",
+        255,
+        null,
+        null)).block();
+
+    assertThat(typeResult.operation()).isNull();
+    assertThat(currentRevision(schemaId)).isEqualTo(beforeTypeRevision);
+    assertThat(operationCount(schemaId)).isEqualTo(beforeTypeCount);
+
+    long beforePositionRevision = currentRevision(schemaId);
+    long beforePositionCount = operationCount(schemaId);
+
+    var positionResult = changeColumnPositionUseCase.changeColumnPosition(
+        new ChangeColumnPositionCommand(columnId, 0)).block();
+
+    assertThat(positionResult.operation()).isNull();
+    assertThat(currentRevision(schemaId)).isEqualTo(beforePositionRevision);
+    assertThat(operationCount(schemaId)).isEqualTo(beforePositionCount);
+  }
+
+  @Test
+  @DisplayName("같은 index sort direction과 relationship 속성 재요청은 revision과 operation log를 늘리지 않는다")
+  void doesNotRecordLedgerForNoOpIndexAndRelationshipChanges() {
+    String projectId = createActiveProjectId("erd_operation_noop_index_relationship");
+
+    String schemaId = createSchemaUseCase.createSchema(new CreateSchemaCommand(
+        projectId,
+        "MySQL",
+        "noop_index_relationship_schema",
+        "utf8mb4",
+        "utf8mb4_general_ci")).block().result().id();
+
+    String pkTableId = createTableUseCase.createTable(new CreateTableCommand(
+        schemaId,
+        "users",
+        "utf8mb4",
+        "utf8mb4_general_ci",
+        null)).block().result().tableId();
+
+    String fkTableId = createTableUseCase.createTable(new CreateTableCommand(
+        schemaId,
+        "orders",
+        "utf8mb4",
+        "utf8mb4_general_ci",
+        null)).block().result().tableId();
+
+    String pkColumnId = createColumnUseCase.createColumn(new CreateColumnCommand(
+        pkTableId,
+        "id",
+        "INT",
+        null,
+        null,
+        null,
+        true,
+        null,
+        null,
+        null)).block().result().columnId();
+
+    createConstraintUseCase.createConstraint(new CreateConstraintCommand(
+        pkTableId,
+        "pk_users",
+        ConstraintKind.PRIMARY_KEY,
+        null,
+        null,
+        List.of(new CreateConstraintColumnCommand(pkColumnId, 0)))).block();
+
+    String indexId = createIndexUseCase.createIndex(new CreateIndexCommand(
+        pkTableId,
+        "idx_users_id",
+        IndexType.BTREE,
+        List.of(new CreateIndexColumnCommand(pkColumnId, 0, SortDirection.ASC)))).block().result().indexId();
+    String indexColumnId = firstIndexColumnId(indexId);
+
+    var relationshipResult = createRelationshipUseCase.createRelationship(new CreateRelationshipCommand(
+        fkTableId,
+        pkTableId,
+        RelationshipKind.NON_IDENTIFYING,
+        Cardinality.ONE_TO_MANY,
+        null)).block().result();
+
+    long beforeSortRevision = currentRevision(schemaId);
+    long beforeSortCount = operationCount(schemaId);
+
+    var sortResult = changeIndexColumnSortDirectionUseCase.changeIndexColumnSortDirection(
+        new ChangeIndexColumnSortDirectionCommand(indexColumnId, SortDirection.ASC)).block();
+
+    assertThat(sortResult.operation()).isNull();
+    assertThat(currentRevision(schemaId)).isEqualTo(beforeSortRevision);
+    assertThat(operationCount(schemaId)).isEqualTo(beforeSortCount);
+
+    long beforeCardinalityRevision = currentRevision(schemaId);
+    long beforeCardinalityCount = operationCount(schemaId);
+
+    var cardinalityResult = changeRelationshipCardinalityUseCase.changeRelationshipCardinality(
+        new ChangeRelationshipCardinalityCommand(
+            relationshipResult.relationshipId(),
+            relationshipResult.cardinality())).block();
+
+    assertThat(cardinalityResult.operation()).isNull();
+    assertThat(currentRevision(schemaId)).isEqualTo(beforeCardinalityRevision);
+    assertThat(operationCount(schemaId)).isEqualTo(beforeCardinalityCount);
+
+    long beforeExtraRevision = currentRevision(schemaId);
+    long beforeExtraCount = operationCount(schemaId);
+
+    var extraResult = changeRelationshipExtraUseCase.changeRelationshipExtra(
+        new ChangeRelationshipExtraCommand(relationshipResult.relationshipId(), null)).block();
+
+    assertThat(extraResult.operation()).isNull();
+    assertThat(currentRevision(schemaId)).isEqualTo(beforeExtraRevision);
+    assertThat(operationCount(schemaId)).isEqualTo(beforeExtraCount);
   }
 
   @Test

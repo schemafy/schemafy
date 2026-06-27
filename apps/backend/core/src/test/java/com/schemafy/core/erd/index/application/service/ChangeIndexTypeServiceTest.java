@@ -73,6 +73,43 @@ class ChangeIndexTypeServiceTest {
     }
 
     @Test
+    @DisplayName("현재 타입과 같으면 주변 index 조회 없이 변경 없이 성공한다")
+    void succeedsWithoutDefinitionLookupWhenTypeIsSame() {
+      var index = IndexFixture.defaultIndex();
+      var command = IndexFixture.changeTypeCommand(index.id(), index.type());
+
+      given(getIndexByIdPort.findIndexById(index.id()))
+          .willReturn(Mono.just(index));
+
+      StepVerifier.create(sut.changeIndexType(command))
+          .expectNextMatches(result -> result.operation() == null)
+          .verifyComplete();
+
+      then(getIndexesByTableIdPort).shouldHaveNoInteractions();
+      then(getIndexColumnsByIndexIdPort).shouldHaveNoInteractions();
+      then(changeIndexTypePort).shouldHaveNoInteractions();
+    }
+
+    @Test
+    @DisplayName("lock 이후 이미 요청 타입이면 정의 조회 없이 변경 없이 성공한다")
+    void succeedsWithoutDefinitionLookupWhenLockedIndexAlreadyHasRequestedType() {
+      var command = IndexFixture.changeTypeCommand("index1", IndexType.HASH);
+      var initialIndex = IndexFixture.btreeIndexWithId("index1");
+      var lockedIndex = IndexFixture.hashIndexWithId("index1");
+
+      given(getIndexByIdPort.findIndexById("index1"))
+          .willReturn(Mono.just(initialIndex), Mono.just(lockedIndex));
+
+      StepVerifier.create(sut.changeIndexType(command))
+          .expectNextMatches(result -> result.operation() == null && result.noOp())
+          .verifyComplete();
+
+      then(getIndexesByTableIdPort).shouldHaveNoInteractions();
+      then(getIndexColumnsByIndexIdPort).shouldHaveNoInteractions();
+      then(changeIndexTypePort).shouldHaveNoInteractions();
+    }
+
+    @Test
     @DisplayName("타입이 null이면 예외가 발생한다")
     void throwsWhenTypeIsNull() {
       var command = IndexFixture.changeTypeCommand("index1", null);
