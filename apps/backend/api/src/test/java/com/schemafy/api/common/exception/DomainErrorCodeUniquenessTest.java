@@ -6,6 +6,7 @@ import java.util.Map;
 
 import org.junit.jupiter.api.Test;
 
+import com.schemafy.api.mcp.exception.McpTokenErrorCode;
 import com.schemafy.core.common.exception.DomainErrorCode;
 import com.schemafy.core.erd.column.domain.exception.ColumnErrorCode;
 import com.schemafy.core.erd.constraint.domain.exception.ConstraintErrorCode;
@@ -32,6 +33,7 @@ class DomainErrorCodeUniquenessTest {
       OAuthErrorCode.class,
       ValidationErrorCode.class,
       HmacErrorCode.class,
+      McpTokenErrorCode.class,
       UserErrorCode.class,
       WorkspaceErrorCode.class,
       ProjectErrorCode.class,

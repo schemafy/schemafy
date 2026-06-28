@@ -3,6 +3,11 @@ spring:
     activate:
       on-profile: server
 
+mcp:
+  security:
+    token:
+      secret: ${MCP_TOKEN_SECRET}
+
 management:
   endpoints:
     web:
