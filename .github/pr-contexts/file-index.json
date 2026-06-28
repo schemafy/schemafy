@@ -707,7 +707,8 @@
     419
   ],
   "apps/frontend/src/features/drawing/hooks/useSchemaMutations.ts": [
-    374
+    374,
+    440
   ],
   "apps/frontend/src/lib/api/client.ts": [
     374,
