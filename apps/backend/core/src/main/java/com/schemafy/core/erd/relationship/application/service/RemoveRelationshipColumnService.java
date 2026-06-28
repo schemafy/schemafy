@@ -13,9 +13,9 @@ import com.schemafy.core.common.MutationResult;
 import com.schemafy.core.common.exception.DomainException;
 import com.schemafy.core.erd.column.application.port.in.DeleteColumnCommand;
 import com.schemafy.core.erd.column.application.port.in.DeleteColumnUseCase;
-import com.schemafy.core.erd.operation.ErdOperationContexts;
 import com.schemafy.core.erd.operation.application.inverse.RemoveRelationshipColumnInverse;
 import com.schemafy.core.erd.operation.application.service.ErdMutationCoordinator;
+import com.schemafy.core.erd.operation.application.service.NestedErdMutations;
 import com.schemafy.core.erd.operation.application.service.StructuralSnapshotService;
 import com.schemafy.core.erd.operation.domain.ErdOperationType;
 import com.schemafy.core.erd.relationship.application.port.in.RemoveRelationshipColumnCommand;
@@ -91,8 +91,8 @@ public class RemoveRelationshipColumnService implements RemoveRelationshipColumn
               return deleteRelationshipColumnPort
                   .deleteRelationshipColumn(relationshipColumn.id())
                   .then(handleRemainingColumns(relationship.id()))
-                  .then(deleteColumnUseCase.deleteColumn(new DeleteColumnCommand(fkColumnId))
-                      .contextWrite(ErdOperationContexts.suppressNestedMutation()))
+                  .then(NestedErdMutations.run(deleteColumnUseCase.deleteColumn(
+                      new DeleteColumnCommand(fkColumnId))))
                   .doOnNext(result -> affectedTableIds.addAll(result.affectedTableIds()))
                   .then(Mono.fromCallable(() -> MutationResult.<Void>of(null, affectedTableIds)));
             }));

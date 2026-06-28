@@ -19,11 +19,13 @@ import com.schemafy.api.collaboration.service.CollaborationDirectMessageSender;
 import com.schemafy.api.collaboration.service.CollaborationService;
 import com.schemafy.api.collaboration.service.SessionRegistry;
 import com.schemafy.api.collaboration.service.model.SessionEntry;
+import com.schemafy.api.collaboration.service.presence.CollaborationPresenceProperties;
 import com.schemafy.api.common.config.ConditionalOnRedisEnabled;
 import com.schemafy.api.common.security.principal.AuthenticatedUser;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
 @Slf4j
@@ -36,6 +38,7 @@ public class CollaborationWebSocketHandler implements WebSocketHandler {
   private final CollaborationService collaborationService;
   private final SessionRegistry sessionRegistry;
   private final ProjectAccessValidator projectAccessValidator;
+  private final CollaborationPresenceProperties presenceProperties;
 
   @Override
   public Mono<Void> handle(WebSocketSession session) {
@@ -49,27 +52,32 @@ public class CollaborationWebSocketHandler implements WebSocketHandler {
     return session.getHandshakeInfo()
         .getPrincipal()
         .ofType(Authentication.class)
-        .flatMap(authentication -> {
-          Object principal = authentication.getPrincipal();
-          if (!(principal instanceof AuthenticatedUser user)) {
-            return handleUnauthenticated(session);
-          }
+        .map(Optional::of)
+        .defaultIfEmpty(Optional.empty())
+        .flatMap(authenticationOpt -> authenticationOpt
+            .map(authentication -> handleAuthentication(session, authentication,
+                projectIdOpt.get()))
+            .orElseGet(() -> handleUnauthenticated(session)));
+  }
 
-          String userId = user.userId();
-          String userName = user.userName();
-          if (userId == null || userId.isBlank()) {
-            return handleUnauthenticated(session);
-          }
-          if (userName == null || userName.isBlank()) {
-            return handleUnauthenticated(session);
-          }
+  private Mono<Void> handleAuthentication(WebSocketSession session,
+      Authentication authentication, String projectId) {
+    Object principal = authentication.getPrincipal();
+    if (!(principal instanceof AuthenticatedUser user)) {
+      return handleUnauthenticated(session);
+    }
 
-          WebSocketAuthInfo authInfo = WebSocketAuthInfo.of(userId,
-              userName);
-          return validateProjectAccess(session, authInfo,
-              projectIdOpt.get());
-        })
-        .switchIfEmpty(handleUnauthenticated(session));
+    String userId = user.userId();
+    String userName = user.userName();
+    if (userId == null || userId.isBlank()) {
+      return handleUnauthenticated(session);
+    }
+    if (userName == null || userName.isBlank()) {
+      return handleUnauthenticated(session);
+    }
+
+    WebSocketAuthInfo authInfo = WebSocketAuthInfo.of(userId, userName);
+    return validateProjectAccess(session, authInfo, projectId);
   }
 
   private Optional<String> extractProjectId(URI uri) {
@@ -119,38 +127,37 @@ public class CollaborationWebSocketHandler implements WebSocketHandler {
     SessionEntry entry = sessionRegistry.addSession(projectId, sessionId,
         session, authInfo);
 
-    Mono<Void> sessionReady = directMessageSender
-        .sendSessionReady(entry, sessionId)
-        .doOnError(e -> log.warn(
-            "[CollaborationWebSocketHandler] Failed to send session ready: sessionId={}, error={}",
-            sessionId, e.getMessage()));
-
-    Mono<Void> notifyJoin = collaborationService
-        .notifyJoin(projectId, sessionId, userId, userName)
+    Mono<Void> notifyJoin = Mono.defer(() -> collaborationService
+        .notifyJoin(projectId, sessionId, userId, userName))
         .doOnError(e -> log.warn(
             "[CollaborationWebSocketHandler] Failed to notify join: sessionId={}, error={}",
             sessionId, e.getMessage()))
         .onErrorResume(e -> Mono.empty());
 
+    Mono<Void> closeSignal = session.closeStatus().then();
+
     Mono<Void> inbound = session.receive()
-        .map(WebSocketMessage::getPayloadAsText)
-        .flatMap(payload -> collaborationService
-            .handleMessage(projectId, sessionId, payload)
-            .doOnError(e -> log.warn(
-                "[CollaborationWebSocketHandler] Failed to handle message: sessionId={}, error={}",
-                sessionId, e.getMessage()))
-            .onErrorResume(e -> Mono.empty()))
+        .flatMap(message -> handleInboundMessage(projectId, sessionId,
+            message))
         .doOnError(error -> log.error(
             "[CollaborationWebSocketHandler] Inbound error: sessionId={}",
             sessionId, error))
         .then();
 
-    Mono<Void> outbound = session.send(entry.outboundFlux())
+    Flux<WebSocketMessage> presencePings = Flux
+        .interval(presenceProperties.getHeartbeatInterval())
+        .takeUntilOther(closeSignal)
+        .map(tick -> session.pingMessage(bufferFactory -> bufferFactory.wrap(new byte[0])))
+        .doOnError(error -> log.error(
+            "[CollaborationWebSocketHandler] Presence ping error: sessionId={}",
+            sessionId, error));
+
+    Mono<Void> outbound = session
+        .send(Flux.merge(entry.outboundFlux(), presencePings))
         .doOnError(error -> log.error(
             "[CollaborationWebSocketHandler] Outbound error: sessionId={}",
             sessionId, error));
 
-    Mono<Void> closeSignal = session.closeStatus().then();
     Mono<Void> cursorPipeline = entry.sampledCursorFlux()
         .takeUntilOther(closeSignal)
         .flatMap(cursor -> collaborationService
@@ -160,9 +167,15 @@ public class CollaborationWebSocketHandler implements WebSocketHandler {
             sessionId, error))
         .then();
 
-    return sessionReady
-        .then(notifyJoin)
-        .then(Mono.zip(inbound, outbound, cursorPipeline).then())
+    return collaborationService
+        .registerSession(projectId, sessionId, userId, userName)
+        .flatMap(participants -> directMessageSender
+            .sendSessionReady(entry, sessionId, participants)
+            .doOnError(e -> log.warn(
+                "[CollaborationWebSocketHandler] Failed to send session ready: sessionId={}, error={}",
+                sessionId, e.getMessage()))
+            .then(notifyJoin))
+        .then(Mono.when(inbound, outbound, cursorPipeline))
         .doFinally(signalType -> {
           log.info(
               "[CollaborationWebSocketHandler] WebSocket disconnected: sessionId={}, signal={}",
@@ -175,6 +188,28 @@ public class CollaborationWebSocketHandler implements WebSocketHandler {
               .onErrorResume(e -> Mono.empty())
               .subscribe();
         });
+  }
+
+  private Mono<Void> handleInboundMessage(String projectId,
+      String sessionId, WebSocketMessage message) {
+    if (message.getType() == WebSocketMessage.Type.PONG) {
+      return collaborationService.refreshPresence(projectId, sessionId)
+          .doOnError(e -> log.warn(
+              "[CollaborationWebSocketHandler] Failed to refresh presence from pong: sessionId={}, error={}",
+              sessionId, e.getMessage()))
+          .onErrorResume(e -> Mono.empty());
+    }
+
+    if (message.getType() != WebSocketMessage.Type.TEXT) {
+      return Mono.empty();
+    }
+
+    return collaborationService
+        .handleMessage(projectId, sessionId, message.getPayloadAsText())
+        .doOnError(e -> log.warn(
+            "[CollaborationWebSocketHandler] Failed to handle message: sessionId={}, error={}",
+            sessionId, e.getMessage()))
+        .onErrorResume(e -> Mono.empty());
   }
 
   private Mono<Void> handleUnauthenticated(WebSocketSession session) {

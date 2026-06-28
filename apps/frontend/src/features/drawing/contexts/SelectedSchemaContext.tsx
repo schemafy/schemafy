@@ -13,6 +13,7 @@ import { ErrorBoundary, LoadingState } from '@/components';
 import { SelectedSchemaContext } from './useSelectedSchema';
 import { useSchemas } from '../hooks/useSchemas';
 import { useCreateSchema } from '../hooks/useSchemaMutations';
+import { reportUnexpectedError } from '@/lib';
 
 const getStorageKey = (projectId: string) => `selectedSchemaId_${projectId}`;
 
@@ -55,7 +56,10 @@ export const SelectedSchemaProvider = ({
       try {
         const stored = localStorage.getItem(storageKey);
         return stored;
-      } catch {
+      } catch (error) {
+        reportUnexpectedError(error, {
+          context: `Failed to read localStorage key "${storageKey}".`,
+        });
         return null;
       }
     },
@@ -73,10 +77,16 @@ export const SelectedSchemaProvider = ({
   const setSelectedSchemaId = useCallback(
     (schemaId: string | null) => {
       setSelectedSchemaIdState(schemaId);
-      if (schemaId) {
-        localStorage.setItem(storageKey, schemaId);
-      } else {
-        localStorage.removeItem(storageKey);
+      try {
+        if (schemaId) {
+          localStorage.setItem(storageKey, schemaId);
+        } else {
+          localStorage.removeItem(storageKey);
+        }
+      } catch (error) {
+        reportUnexpectedError(error, {
+          context: `Failed to write localStorage key "${storageKey}".`,
+        });
       }
     },
     [storageKey],
@@ -101,36 +111,36 @@ export const SelectedSchemaProvider = ({
     );
   }, [createSchema, projectId, setSelectedSchemaId]);
 
+  const activeSchemaId = useMemo(() => {
+    if (!schemas || schemas.length === 0) return null;
+
+    const selectedSchema = schemas.find(
+      (schema) => schema.id === selectedSchemaId,
+    );
+    return selectedSchema?.id ?? schemas[0].id;
+  }, [schemas, selectedSchemaId]);
+
   useEffect(() => {
-    if (
-      selectedSchemaId &&
-      !isSchemasLoading &&
-      schemas &&
-      schemas.length > 0
-    ) {
-      const isValid = schemas.some((s) => s.id === selectedSchemaId);
-      if (!isValid) {
-        setSelectedSchemaId(schemas[0]?.id ?? null);
+    if (isSchemasLoading || !schemas) return;
+
+    if (schemas.length === 0) {
+      if (selectedSchemaId !== null) {
+        setSelectedSchemaId(null);
       }
-    }
-  }, [selectedSchemaId, schemas, isSchemasLoading, setSelectedSchemaId]);
-
-  useEffect(() => {
-    if (
-      !selectedSchemaId &&
-      !isSchemasLoading &&
-      schemas &&
-      !initializationAttempted.current
-    ) {
-      initializationAttempted.current = true;
-
-      if (schemas.length === 0) {
+      if (!initializationAttempted.current) {
+        initializationAttempted.current = true;
         createInitialSchema();
-      } else {
-        setSelectedSchemaId(schemas[0].id);
       }
+      return;
+    }
+
+    initializationAttempted.current = false;
+
+    if (activeSchemaId && selectedSchemaId !== activeSchemaId) {
+      setSelectedSchemaId(activeSchemaId);
     }
   }, [
+    activeSchemaId,
     selectedSchemaId,
     schemas,
     isSchemasLoading,
@@ -141,13 +151,13 @@ export const SelectedSchemaProvider = ({
   const contextValue = useMemo(
     () => ({
       projectId,
-      selectedSchemaId: selectedSchemaId as string,
+      selectedSchemaId: activeSchemaId as string,
       setSelectedSchemaId,
     }),
-    [projectId, selectedSchemaId, setSelectedSchemaId],
+    [projectId, activeSchemaId, setSelectedSchemaId],
   );
 
-  if (!selectedSchemaId && (isCreateSchemaError || isSchemasError)) {
+  if (!activeSchemaId && (isSchemasError || isCreateSchemaError)) {
     return (
       <SchemaError
         onRetry={isSchemasError ? () => refetchSchemas() : createInitialSchema}
@@ -155,7 +165,7 @@ export const SelectedSchemaProvider = ({
     );
   }
 
-  if (!selectedSchemaId) {
+  if (isSchemasLoading || !activeSchemaId) {
     return <SchemaLoading />;
   }
 

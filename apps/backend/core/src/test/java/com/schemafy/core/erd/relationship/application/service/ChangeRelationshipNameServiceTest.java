@@ -110,22 +110,38 @@ class ChangeRelationshipNameServiceTest {
     }
 
     @Test
-    @DisplayName("같은 이름으로 변경 시도해도 자기 자신은 제외하고 검사한다")
+    @DisplayName("같은 이름으로 변경 시도하면 변경 없이 성공한다")
     void excludesSelfWhenCheckingDuplicate() {
       var command = RelationshipFixture.changeNameCommand(RelationshipFixture.DEFAULT_NAME);
       var relationship = RelationshipFixture.defaultRelationship();
 
       given(getRelationshipByIdPort.findRelationshipById(any()))
           .willReturn(Mono.just(relationship));
-      given(relationshipExistsPort.existsByFkTableIdAndNameExcludingId(
-          eq(relationship.fkTableId()), eq(RelationshipFixture.DEFAULT_NAME), eq(relationship.id())))
-          .willReturn(Mono.just(false));
-      given(changeRelationshipNamePort.changeRelationshipName(any(), any()))
-          .willReturn(Mono.empty());
 
       StepVerifier.create(sut.changeRelationshipName(command))
-          .expectNextCount(1)
+          .expectNextMatches(result -> result.operation() == null)
           .verifyComplete();
+
+      then(relationshipExistsPort).shouldHaveNoInteractions();
+      then(changeRelationshipNamePort).shouldHaveNoInteractions();
+    }
+
+    @Test
+    @DisplayName("락 획득 후 이름이 이미 요청값이면 중복 조회 없이 no-op으로 성공한다")
+    void returnsNoOpWhenLockedRelationshipAlreadyHasRequestedName() {
+      var command = RelationshipFixture.changeNameCommand("new_name");
+      var initialRelationship = RelationshipFixture.defaultRelationship();
+      var lockedRelationship = RelationshipFixture.relationshipWithName("new_name");
+
+      given(getRelationshipByIdPort.findRelationshipById(any()))
+          .willReturn(Mono.just(initialRelationship), Mono.just(lockedRelationship));
+
+      StepVerifier.create(sut.changeRelationshipName(command))
+          .expectNextMatches(result -> result.noOp() && result.operation() == null)
+          .verifyComplete();
+
+      then(relationshipExistsPort).shouldHaveNoInteractions();
+      then(changeRelationshipNamePort).shouldHaveNoInteractions();
     }
 
   }

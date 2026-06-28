@@ -63,9 +63,6 @@ public class ErdOperationLogEntity implements Persistable<String> {
   @Column("inverse_payload_json")
   private String inversePayloadJson;
 
-  @Column("touched_entities_json")
-  private String touchedEntitiesJson;
-
   @Column("affected_table_ids_json")
   private String affectedTableIdsJson;
 
@@ -88,7 +85,6 @@ public class ErdOperationLogEntity implements Persistable<String> {
       String lifecycleState,
       String payloadJson,
       String inversePayloadJson,
-      String touchedEntitiesJson,
       String affectedTableIdsJson) {
     this.opId = opId;
     this.projectId = projectId;
@@ -104,7 +100,6 @@ public class ErdOperationLogEntity implements Persistable<String> {
     this.lifecycleState = lifecycleState;
     this.payloadJson = payloadJson;
     this.inversePayloadJson = inversePayloadJson;
-    this.touchedEntitiesJson = touchedEntitiesJson;
     this.affectedTableIdsJson = affectedTableIdsJson;
   }
 

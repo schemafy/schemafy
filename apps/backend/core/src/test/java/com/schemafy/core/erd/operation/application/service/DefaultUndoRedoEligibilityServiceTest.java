@@ -324,7 +324,6 @@ class DefaultUndoRedoEligibilityServiceTest {
         ErdOperationLifecycleState.COMMITTED,
         "{}",
         "{}",
-        "[]",
         "[]");
   }
 

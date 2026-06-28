@@ -55,14 +55,34 @@ public class ChangeColumnNameService implements ChangeColumnNameUseCase {
 
   @Override
   public Mono<MutationResult<Void>> changeColumnName(ChangeColumnNameCommand command) {
-    return erdMutationCoordinator.coordinate(ErdOperationType.CHANGE_COLUMN_NAME, command,
-        () -> getColumnByIdPort.findColumnById(command.columnId())
-            .switchIfEmpty(Mono.error(new DomainException(ColumnErrorCode.NOT_FOUND, "Column not found")))
-            .flatMap(column -> fetchTableSchemaAndColumns(column)
-                .flatMap(tuple -> applyChange(column, tuple, command.newName()))
-                .thenReturn(MutationResult.<Void>of(null, column.tableId())
-                    .withInverse(new ChangeColumnNameInverse(column.id(), column.name())))))
-        .as(transactionalOperator::transactional);
+    return Mono.defer(() -> {
+      String normalizedName = normalizeName(command.newName());
+      ColumnValidator.validateName(normalizedName);
+      return getColumnByIdPort.findColumnById(command.columnId())
+          .switchIfEmpty(Mono.error(new DomainException(ColumnErrorCode.NOT_FOUND, "Column not found")))
+          .flatMap(column -> {
+            if (normalizedName.equals(column.name())) {
+              return Mono.just(MutationResult.<Void>noop(null, column.tableId()));
+            }
+            return erdMutationCoordinator.coordinate(ErdOperationType.CHANGE_COLUMN_NAME, command,
+                () -> getColumnByIdPort.findColumnById(command.columnId())
+                    .switchIfEmpty(Mono.error(new DomainException(ColumnErrorCode.NOT_FOUND, "Column not found")))
+                    .flatMap(lockedColumn -> {
+                      if (normalizedName.equals(lockedColumn.name())) {
+                        return Mono.just(MutationResult.<Void>noop(null, lockedColumn.tableId()));
+                      }
+                      return fetchTableSchemaAndColumns(lockedColumn)
+                          .flatMap(tuple -> {
+                            validateNameChange(tuple, normalizedName, lockedColumn.id());
+                            return changeColumnNamePort.changeColumnName(lockedColumn.id(), normalizedName)
+                                .thenReturn(MutationResult.<Void>of(null, lockedColumn.tableId())
+                                    .withInverse(new ChangeColumnNameInverse(
+                                        lockedColumn.id(),
+                                        lockedColumn.name())));
+                          });
+                    }));
+          });
+    }).as(transactionalOperator::transactional);
   }
 
   private Mono<Tuple3<Table, Schema, List<Column>>> fetchTableSchemaAndColumns(Column column) {
@@ -78,18 +98,15 @@ public class ChangeColumnNameService implements ChangeColumnNameUseCase {
     });
   }
 
-  private Mono<Void> applyChange(
-      Column column,
+  private void validateNameChange(
       Tuple3<Table, Schema, List<Column>> tuple,
-      String newName) {
+      String normalizedName,
+      String columnId) {
     Schema schema = tuple.getT2();
     List<Column> columns = tuple.getT3();
 
-    String normalizedName = normalizeName(newName);
-    ColumnValidator.validateName(normalizedName);
     ColumnValidator.validateReservedKeyword(schema.dbVendorName(), normalizedName);
-    ColumnValidator.validateNameUniqueness(columns, normalizedName, column.id());
-    return changeColumnNamePort.changeColumnName(column.id(), normalizedName);
+    ColumnValidator.validateNameUniqueness(columns, normalizedName, columnId);
   }
 
   private static String normalizeName(String name) {

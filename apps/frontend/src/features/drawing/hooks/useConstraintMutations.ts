@@ -17,23 +17,21 @@ import type {
   AddConstraintColumnRequest,
   ChangeConstraintColumnPositionRequest,
 } from '../api';
-import { syncCommittedRevision } from '../api/mutation-request';
 import { useErdCache } from './useErdCache';
 
 export const useCreateConstraint = (schemaId: string) => {
-  const { updateAffectedTables } = useErdCache(schemaId);
+  const { syncAffectedTables } = useErdCache(schemaId);
   return useMutation({
     mutationFn: (data: CreateConstraintRequest) =>
       createConstraint(data, schemaId),
     onSuccess: (result) => {
-      syncCommittedRevision(schemaId, result);
-      updateAffectedTables(result.affectedTableIds);
+      syncAffectedTables(result);
     },
   });
 };
 
 export const useChangeConstraintName = (schemaId: string) => {
-  const { updateAffectedTables } = useErdCache(schemaId);
+  const { syncAffectedTables } = useErdCache(schemaId);
   return useMutation({
     mutationFn: ({
       constraintId,
@@ -43,14 +41,13 @@ export const useChangeConstraintName = (schemaId: string) => {
       data: ChangeConstraintNameRequest;
     }) => changeConstraintName(constraintId, data, schemaId),
     onSuccess: (result) => {
-      syncCommittedRevision(schemaId, result);
-      updateAffectedTables(result.affectedTableIds);
+      syncAffectedTables(result);
     },
   });
 };
 
 export const useChangeConstraintCheckExpr = (schemaId: string) => {
-  const { updateAffectedTables } = useErdCache(schemaId);
+  const { syncAffectedTables } = useErdCache(schemaId);
   return useMutation({
     mutationFn: ({
       constraintId,
@@ -60,14 +57,13 @@ export const useChangeConstraintCheckExpr = (schemaId: string) => {
       data: ChangeConstraintCheckExprRequest;
     }) => changeConstraintCheckExpr(constraintId, data, schemaId),
     onSuccess: (result) => {
-      syncCommittedRevision(schemaId, result);
-      updateAffectedTables(result.affectedTableIds);
+      syncAffectedTables(result);
     },
   });
 };
 
 export const useChangeConstraintDefaultExpr = (schemaId: string) => {
-  const { updateAffectedTables } = useErdCache(schemaId);
+  const { syncAffectedTables } = useErdCache(schemaId);
   return useMutation({
     mutationFn: ({
       constraintId,
@@ -77,26 +73,24 @@ export const useChangeConstraintDefaultExpr = (schemaId: string) => {
       data: ChangeConstraintDefaultExprRequest;
     }) => changeConstraintDefaultExpr(constraintId, data, schemaId),
     onSuccess: (result) => {
-      syncCommittedRevision(schemaId, result);
-      updateAffectedTables(result.affectedTableIds);
+      syncAffectedTables(result);
     },
   });
 };
 
 export const useDeleteConstraint = (schemaId: string) => {
-  const { updateAffectedTables } = useErdCache(schemaId);
+  const { syncAffectedTables } = useErdCache(schemaId);
   return useMutation({
     mutationFn: (constraintId: string) =>
       deleteConstraint(constraintId, schemaId),
     onSuccess: (result) => {
-      syncCommittedRevision(schemaId, result);
-      updateAffectedTables(result.affectedTableIds);
+      syncAffectedTables(result);
     },
   });
 };
 
 export const useAddConstraintColumn = (schemaId: string) => {
-  const { updateAffectedTables } = useErdCache(schemaId);
+  const { syncAffectedTables } = useErdCache(schemaId);
   return useMutation({
     mutationFn: ({
       constraintId,
@@ -106,26 +100,24 @@ export const useAddConstraintColumn = (schemaId: string) => {
       data: AddConstraintColumnRequest;
     }) => addConstraintColumn(constraintId, data, schemaId),
     onSuccess: (result) => {
-      syncCommittedRevision(schemaId, result);
-      updateAffectedTables(result.affectedTableIds);
+      syncAffectedTables(result);
     },
   });
 };
 
 export const useRemoveConstraintColumn = (schemaId: string) => {
-  const { updateAffectedTables } = useErdCache(schemaId);
+  const { syncAffectedTables } = useErdCache(schemaId);
   return useMutation({
     mutationFn: (constraintColumnId: string) =>
       removeConstraintColumn(constraintColumnId, schemaId),
     onSuccess: (result) => {
-      syncCommittedRevision(schemaId, result);
-      updateAffectedTables(result.affectedTableIds);
+      syncAffectedTables(result);
     },
   });
 };
 
 export const useChangeConstraintColumnPosition = (schemaId: string) => {
-  const { updateAffectedTables } = useErdCache(schemaId);
+  const { syncAffectedTables } = useErdCache(schemaId);
   return useMutation({
     mutationFn: ({
       constraintColumnId,
@@ -135,8 +127,7 @@ export const useChangeConstraintColumnPosition = (schemaId: string) => {
       data: ChangeConstraintColumnPositionRequest;
     }) => changeConstraintColumnPosition(constraintColumnId, data, schemaId),
     onSuccess: (result) => {
-      syncCommittedRevision(schemaId, result);
-      updateAffectedTables(result.affectedTableIds);
+      syncAffectedTables(result);
     },
   });
 };

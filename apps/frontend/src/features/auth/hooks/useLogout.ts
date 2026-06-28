@@ -1,9 +1,9 @@
 import { useCallback } from 'react';
 import { useNavigate } from '@tanstack/react-router';
-import { toast } from 'sonner';
 
 import { logout } from '@/features/auth/api';
 import { clearAuthSession } from '@/features/auth/lib/auth-session';
+import { reportUnexpectedError } from '@/lib';
 
 export const useLogout = () => {
   const navigate = useNavigate();
@@ -13,8 +13,11 @@ export const useLogout = () => {
       await logout();
       clearAuthSession();
       await navigate({ to: '/signin', search: { oauthError: null } });
-    } catch {
-      toast.error('Failed to sign out. Please try again.');
+    } catch (error) {
+      reportUnexpectedError(error, {
+        context: 'Unexpected sign-out failure.',
+        userMessage: 'Failed to sign out. Please try again.',
+      });
     }
   }, [navigate]);
 };

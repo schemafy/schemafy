@@ -69,6 +69,22 @@ class ChangeSchemaNameServiceTest {
             .changeSchemaName(command.schemaId(), command.newName());
       }
 
+      @Test
+      @DisplayName("현재 이름과 같으면 변경 없이 성공한다")
+      void succeedsWithoutChangeWhenNameIsSame() {
+        var command = SchemaFixture.changeNameCommand(SchemaFixture.DEFAULT_NAME);
+
+        given(getSchemaByIdPort.findSchemaById(command.schemaId()))
+            .willReturn(Mono.just(SchemaFixture.defaultSchema()));
+
+        StepVerifier.create(sut.changeSchemaName(command))
+            .expectNextMatches(result -> result.operation() == null)
+            .verifyComplete();
+
+        then(schemaExistsPort).shouldHaveNoInteractions();
+        then(changeSchemaNamePort).shouldHaveNoInteractions();
+      }
+
     }
 
     @Nested

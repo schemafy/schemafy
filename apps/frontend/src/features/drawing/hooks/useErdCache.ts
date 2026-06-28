@@ -2,8 +2,11 @@ import { useCallback } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import { getTableSnapshots } from '../api';
 import type { SchemaSnapshotsResponse } from '../api';
+import type { CommittedMutationResult } from '../api/mutation-request';
+import { syncCommittedRevision } from '../api/mutation-request';
 import { erdKeys } from './query-keys';
 import { collaborationStore } from '@/store/collaboration.store';
+import { reportUnexpectedError } from '@/lib';
 
 export const useErdCache = (schemaId: string) => {
   const queryClient = useQueryClient();
@@ -43,7 +46,10 @@ export const useErdCache = (schemaId: string) => {
             };
           },
         );
-      } catch {
+      } catch (error) {
+        reportUnexpectedError(error, {
+          context: 'Unexpected diagram cache refresh failure.',
+        });
         queryClient.invalidateQueries({
           queryKey: erdKeys.schemaSnapshots(schemaId),
         });
@@ -52,24 +58,62 @@ export const useErdCache = (schemaId: string) => {
     [schemaId, queryClient],
   );
 
-  const removeAndUpdate = async (
-    removedTableId: string,
-    affectedTableIds: string[],
-  ) => {
-    queryClient.setQueryData<SchemaSnapshotsResponse>(
-      erdKeys.schemaSnapshots(schemaId),
-      (old) => {
-        if (!old) return old;
-        const { [removedTableId]: _, ...rest } = old.snapshots;
+  const removeAndUpdate = useCallback(
+    async (removedTableId: string, affectedTableIds: string[]) => {
+      queryClient.setQueryData<SchemaSnapshotsResponse>(
+        erdKeys.schemaSnapshots(schemaId),
+        (old) => {
+          if (!old) return old;
+          const { [removedTableId]: _, ...rest } = old.snapshots;
 
-        return {
-          ...old,
-          snapshots: rest,
-        };
-      },
-    );
-    await updateAffectedTables(affectedTableIds);
+          return {
+            ...old,
+            snapshots: rest,
+          };
+        },
+      );
+      await updateAffectedTables(affectedTableIds);
+    },
+    [schemaId, queryClient, updateAffectedTables],
+  );
+
+  const resyncSchemaSnapshots = useCallback(() => {
+    queryClient.invalidateQueries({
+      queryKey: erdKeys.schemaSnapshots(schemaId),
+    });
+  }, [schemaId, queryClient]);
+
+  const syncAffectedTables = useCallback(
+    async (result: CommittedMutationResult) => {
+      const syncStatus = syncCommittedRevision(schemaId, result);
+
+      if (syncStatus === 'applied') {
+        await updateAffectedTables(result.affectedTableIds);
+      }
+
+      return syncStatus;
+    },
+    [schemaId, updateAffectedTables],
+  );
+
+  const syncRemovedTable = useCallback(
+    async (removedTableId: string, result: CommittedMutationResult) => {
+      const syncStatus = syncCommittedRevision(schemaId, result);
+
+      if (syncStatus === 'applied') {
+        await removeAndUpdate(removedTableId, result.affectedTableIds);
+      }
+
+      return syncStatus;
+    },
+    [schemaId, removeAndUpdate],
+  );
+
+  return {
+    updateAffectedTables,
+    removeAndUpdate,
+    syncAffectedTables,
+    syncRemovedTable,
+    resyncSchemaSnapshots,
   };
-
-  return { updateAffectedTables, removeAndUpdate };
 };

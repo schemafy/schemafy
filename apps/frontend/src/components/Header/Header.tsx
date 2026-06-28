@@ -31,8 +31,12 @@ export const Header = observer(
         >
           <Link to="/">
             <div className="flex items-center gap-4">
-              <img src={logoImg} alt="schemafy-logo" className="w-4 h-4" />
-              <h1 className="font-heading-md">Schemafy</h1>
+              <img
+                src={logoImg}
+                alt="schemafy-logo"
+                className="w-4 h-4 dark:invert"
+              />
+              <h1 className="font-heading-md dark:invert">Schemafy</h1>
             </div>
           </Link>
           {contents}

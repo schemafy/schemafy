@@ -38,9 +38,9 @@ public class UserApiSnippets extends RestDocsSnippets {
         fieldWithPath("email").type(JsonFieldType.STRING)
             .description("사용자 이메일 (형식: example@domain.com)"),
         fieldWithPath("name").type(JsonFieldType.STRING)
-            .description("사용자 이름"),
+            .description("사용자 이름 (최대 200자)"),
         fieldWithPath("password").type(JsonFieldType.STRING)
-            .description("비밀번호"));
+            .description("비밀번호 (8자 이상)"));
   }
 
   public static Snippet signUpResponseHeaders() {

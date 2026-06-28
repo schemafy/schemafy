@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { cn } from '@/lib';
+import { cn, toCapitalized } from '@/lib';
 import { Button, QueryStateBoundary } from '@/components';
 import {
   ConfirmDialog,
@@ -91,7 +91,7 @@ export const WorkspacePage = () => {
                       {selectedWorkspace?.name}
                     </h1>
                     <span className="px-3 py-1 bg-schemafy-button-bg text-schemafy-button-text font-caption-md rounded-full">
-                      {currentUserRole}
+                      {toCapitalized(currentUserRole)}
                     </span>
                   </div>
                   <div className="flex items-center gap-2">

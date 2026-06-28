@@ -31,6 +31,9 @@ public class ErdMutationBroadcaster {
 
   public Mono<Void> broadcast(Set<String> affectedTableIds,
       CommittedErdOperation operation) {
+    if (operation == null) {
+      return Mono.empty();
+    }
     if (affectedTableIds == null || affectedTableIds.isEmpty()) {
       return Mono.empty();
     }
@@ -45,6 +48,9 @@ public class ErdMutationBroadcaster {
 
   public Mono<Void> broadcastSchemaChange(String schemaId,
       CommittedErdOperation operation) {
+    if (operation == null) {
+      return Mono.empty();
+    }
     return resolveFromSchemaId(schemaId)
         .flatMap(ctx -> publish(ctx, Set.of(), operation))
         .doOnError(e -> log.warn(
@@ -56,6 +62,9 @@ public class ErdMutationBroadcaster {
   public Mono<Void> broadcastSchemaMutation(String schemaId,
       Set<String> affectedTableIds,
       CommittedErdOperation operation) {
+    if (operation == null) {
+      return Mono.empty();
+    }
     return resolveFromSchemaId(schemaId)
         .flatMap(ctx -> publish(ctx, affectedTableIds, operation))
         .doOnError(e -> log.warn(
@@ -67,6 +76,9 @@ public class ErdMutationBroadcaster {
   public Mono<Void> broadcastWithContext(ResolvedContext ctx,
       Set<String> affectedTableIds,
       CommittedErdOperation operation) {
+    if (operation == null) {
+      return Mono.empty();
+    }
     return publish(ctx, affectedTableIds, operation)
         .doOnError(e -> log.warn(
             "[ErdMutationBroadcaster] broadcastWithContext failed: {}",

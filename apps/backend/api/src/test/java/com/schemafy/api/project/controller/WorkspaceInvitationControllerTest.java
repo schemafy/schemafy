@@ -212,6 +212,10 @@ class WorkspaceInvitationControllerTest extends ProjectHttpTestSupport {
               WorkspaceInvitationApiSnippets.listInvitationsResponseHeaders(),
               WorkspaceInvitationApiSnippets.listInvitationsResponse()))
           .jsonPath("$.content.length()").isEqualTo(2)
+          .jsonPath("$.content[0].type").isEqualTo("WORKSPACE")
+          .jsonPath("$.content[0].targetId").isEqualTo(testWorkspace.getId())
+          .jsonPath("$.content[0].targetName").isEqualTo(testWorkspace.getName())
+          .jsonPath("$.content[0].invitedBy").isEqualTo("Admin")
           .jsonPath("$.totalElements").isEqualTo(2)
           .jsonPath("$.page").isEqualTo(0)
           .jsonPath("$.size").isEqualTo(10);
@@ -305,7 +309,13 @@ class WorkspaceInvitationControllerTest extends ProjectHttpTestSupport {
               WorkspaceInvitationApiSnippets.listMyInvitationsResponse()))
           .jsonPath("$.content.length()").isEqualTo(2)
           .jsonPath("$.totalElements").isEqualTo(2)
+          .jsonPath("$.content[0].type").isEqualTo("WORKSPACE")
+          .jsonPath("$.content[0].targetName").isEqualTo(workspace2.getName())
+          .jsonPath("$.content[0].invitedBy").isEqualTo("Admin")
           .jsonPath("$.content[0].invitedEmail").isEqualTo(invited.email())
+          .jsonPath("$.content[1].type").isEqualTo("WORKSPACE")
+          .jsonPath("$.content[1].targetName").isEqualTo(testWorkspace.getName())
+          .jsonPath("$.content[1].invitedBy").isEqualTo("Admin")
           .jsonPath("$.content[1].invitedEmail").isEqualTo(invited.email());
     }
 

@@ -2,16 +2,23 @@ import { memo } from 'react';
 import {
   BaseEdge,
   EdgeLabelRenderer,
+  useInternalNode,
   type EdgeProps,
   type Edge,
 } from '@xyflow/react';
 import { Move } from 'lucide-react';
 import type { Point, EdgeData } from '../types';
 import { useControlPointDrag } from '../hooks/useControlPointDrag';
+import {
+  getInternalNodeRect,
+  resolveRelationshipAnchor,
+} from '../utils/anchorGeometry';
 
 export const CustomSmoothStepEdge = memo(
   ({
     id,
+    source,
+    target,
     sourceX,
     sourceY,
     targetX,
@@ -25,6 +32,19 @@ export const CustomSmoothStepEdge = memo(
     labelStyle,
     data,
   }: EdgeProps<Edge<EdgeData>>) => {
+    const sourceNode = useInternalNode(source);
+    const targetNode = useInternalNode(target);
+    const sourceRect = getInternalNodeRect(sourceNode);
+    const targetRect = getInternalNodeRect(targetNode);
+    const sourceAnchor =
+      sourceRect && targetRect
+        ? resolveRelationshipAnchor(sourceRect, targetRect)
+        : null;
+    const targetAnchor =
+      sourceRect && targetRect
+        ? resolveRelationshipAnchor(targetRect, sourceRect)
+        : null;
+
     const {
       path,
       handle1Position,
@@ -34,12 +54,12 @@ export const CustomSmoothStepEdge = memo(
       handleMouseDown,
     } = useControlPointDrag({
       id,
-      sourceX,
-      sourceY,
-      targetX,
-      targetY,
-      sourcePosition,
-      targetPosition,
+      sourceX: sourceAnchor?.point.x ?? sourceX,
+      sourceY: sourceAnchor?.point.y ?? sourceY,
+      targetX: targetAnchor?.point.x ?? targetX,
+      targetY: targetAnchor?.point.y ?? targetY,
+      sourcePosition: sourceAnchor?.position ?? sourcePosition,
+      targetPosition: targetAnchor?.position ?? targetPosition,
       data,
     });
 

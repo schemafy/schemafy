@@ -15,6 +15,7 @@ import com.schemafy.core.project.application.port.in.GetMyWorkspaceInvitationsQu
 import com.schemafy.core.project.application.port.in.GetMyWorkspaceInvitationsUseCase;
 import com.schemafy.core.project.application.port.in.GetWorkspaceInvitationsQuery;
 import com.schemafy.core.project.application.port.in.GetWorkspaceInvitationsUseCase;
+import com.schemafy.core.project.application.port.in.InvitationSummary;
 import com.schemafy.core.project.application.port.in.RejectWorkspaceInvitationCommand;
 import com.schemafy.core.project.application.port.in.RejectWorkspaceInvitationUseCase;
 import com.schemafy.core.project.domain.Invitation;
@@ -64,18 +65,26 @@ class WorkspaceInvitationUseCaseIntegrationTest
             admin.id()))
         .block();
 
-    PageResult<Invitation> targetInvitations = getWorkspaceInvitationsUseCase.getWorkspaceInvitations(
+    PageResult<InvitationSummary> targetInvitations = getWorkspaceInvitationsUseCase.getWorkspaceInvitations(
         new GetWorkspaceInvitationsQuery(workspace.getId(), admin.id(), 0, 10))
         .block();
-    PageResult<Invitation> myInvitations = getMyWorkspaceInvitationsUseCase.getMyWorkspaceInvitations(
+    PageResult<InvitationSummary> myInvitations = getMyWorkspaceInvitationsUseCase.getMyWorkspaceInvitations(
         new GetMyWorkspaceInvitationsQuery(invitee.id(), 0, 10))
         .block();
 
     assertThat(invitation).isNotNull();
-    assertThat(targetInvitations.content()).extracting(Invitation::getId)
+    assertThat(targetInvitations.content()).extracting(InvitationSummary::id)
         .contains(invitation.getId());
-    assertThat(myInvitations.content()).extracting(Invitation::getId)
+    assertThat(targetInvitations.content()).extracting(InvitationSummary::targetName)
+        .contains(workspace.getName());
+    assertThat(targetInvitations.content()).extracting(InvitationSummary::invitedBy)
+        .contains(admin.name());
+    assertThat(myInvitations.content()).extracting(InvitationSummary::id)
         .contains(invitation.getId());
+    assertThat(myInvitations.content()).extracting(InvitationSummary::targetName)
+        .contains(workspace.getName());
+    assertThat(myInvitations.content()).extracting(InvitationSummary::invitedBy)
+        .contains(admin.name());
   }
 
   @Test
@@ -142,6 +151,33 @@ class WorkspaceInvitationUseCaseIntegrationTest
         new GetWorkspaceInvitationsQuery(workspace.getId(), requester.id(), 0, 10)))
         .expectErrorMatches(DomainException.hasErrorCode(WorkspaceErrorCode.ADMIN_REQUIRED))
         .verify();
+  }
+
+  @Test
+  @DisplayName("내 워크스페이스 초대 목록은 삭제된 워크스페이스 초대를 totalElements에서도 제외한다")
+  void getMyWorkspaceInvitations_excludesDeletedWorkspaceFromTotalElements() {
+    User admin = signUpUser("admin-wi-deleted-total@test.com", "Admin");
+    User invitee = signUpUser("invitee-wi-deleted-total@test.com", "Invitee");
+    var activeWorkspace = saveWorkspace("Active Invitation WS", "Description");
+    saveWorkspaceMember(activeWorkspace, admin, WorkspaceRole.ADMIN);
+    Invitation activeInvitation = saveWorkspaceInvitation(activeWorkspace,
+        invitee.email(), WorkspaceRole.MEMBER, admin);
+
+    var deletedWorkspace = saveWorkspace("Deleted Invitation WS", "Description");
+    saveWorkspaceMember(deletedWorkspace, admin, WorkspaceRole.ADMIN);
+    saveWorkspaceInvitation(deletedWorkspace, invitee.email(),
+        WorkspaceRole.MEMBER, admin);
+    softDeleteWorkspace(deletedWorkspace.getId());
+
+    PageResult<InvitationSummary> result = getMyWorkspaceInvitationsUseCase
+        .getMyWorkspaceInvitations(new GetMyWorkspaceInvitationsQuery(
+            invitee.id(), 0, 10))
+        .block();
+
+    assertThat(result.content()).extracting(InvitationSummary::id)
+        .containsExactly(activeInvitation.getId());
+    assertThat(result.totalElements()).isEqualTo(1);
+    assertThat(result.totalPages()).isEqualTo(1);
   }
 
   @Test
