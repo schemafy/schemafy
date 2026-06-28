@@ -136,7 +136,7 @@ public class TableSnapshotOrchestrator {
   public Mono<Map<String, TableSnapshotResponse>> getTableSnapshots(
       List<String> tableIds) {
     return Flux.fromIterable(tableIds)
-        .flatMap(tableId -> getTableSnapshot(tableId)
+        .concatMap(tableId -> getTableSnapshot(tableId)
             .onErrorResume(e -> Mono.empty()))
         .collectMap(snapshot -> snapshot.table().id(), Function.identity());
   }
@@ -145,7 +145,7 @@ public class TableSnapshotOrchestrator {
       List<String> tableIds) {
     // Initial load must fail fast on the first snapshot error instead of silently dropping it.
     return Flux.fromIterable(tableIds)
-        .flatMap(this::getTableSnapshot)
+        .concatMap(this::getTableSnapshot)
         .collectMap(snapshot -> snapshot.table().id(), Function.identity());
   }
 

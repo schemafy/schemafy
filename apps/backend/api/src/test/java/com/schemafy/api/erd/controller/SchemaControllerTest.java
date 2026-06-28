@@ -18,9 +18,11 @@ import com.schemafy.api.common.constant.ApiPath;
 import com.schemafy.api.common.security.WithMockCustomUser;
 import com.schemafy.api.erd.controller.dto.request.ChangeSchemaNameRequest;
 import com.schemafy.api.erd.controller.dto.request.CreateSchemaRequest;
+import com.schemafy.api.erd.controller.dto.response.SchemaDdlExportResponse;
 import com.schemafy.api.erd.controller.dto.response.SchemaSnapshotsResponse;
 import com.schemafy.api.erd.controller.dto.response.TableResponse;
 import com.schemafy.api.erd.controller.dto.response.TableSnapshotResponse;
+import com.schemafy.api.erd.service.SchemaDdlExportOrchestrator;
 import com.schemafy.api.erd.service.SchemaSnapshotOrchestrator;
 import com.schemafy.core.common.MutationResult;
 import com.schemafy.core.common.exception.DomainException;
@@ -48,6 +50,7 @@ import static com.schemafy.api.erd.controller.ErdOperationFixtures.OP_ID;
 import static com.schemafy.api.erd.controller.ErdOperationFixtures.committedOperation;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
+import static org.mockito.BDDMockito.then;
 import static org.springframework.restdocs.headers.HeaderDocumentation.headerWithName;
 import static org.springframework.restdocs.headers.HeaderDocumentation.requestHeaders;
 import static org.springframework.restdocs.headers.HeaderDocumentation.responseHeaders;
@@ -57,6 +60,7 @@ import static org.springframework.restdocs.payload.PayloadDocumentation.response
 import static org.springframework.restdocs.payload.PayloadDocumentation.subsectionWithPath;
 import static org.springframework.restdocs.request.RequestDocumentation.parameterWithName;
 import static org.springframework.restdocs.request.RequestDocumentation.pathParameters;
+import static org.springframework.restdocs.request.RequestDocumentation.queryParameters;
 import static org.springframework.restdocs.webtestclient.WebTestClientRestDocumentation.document;
 
 @ActiveProfiles("test")
@@ -93,6 +97,9 @@ class SchemaControllerTest {
 
   @MockitoBean
   private SchemaSnapshotOrchestrator schemaSnapshotOrchestrator;
+
+  @MockitoBean
+  private SchemaDdlExportOrchestrator schemaDdlExportOrchestrator;
 
   @Test
   @DisplayName("스키마 생성 API 문서화")
@@ -281,6 +288,74 @@ class SchemaControllerTest {
                 fieldWithPath("currentRevision").description("초기 로드 기준 schema revision"),
                 subsectionWithPath("snapshots")
                     .description("테이블 ID keyed snapshot map. 각 value 구조는 table snapshot 응답과 동일"))));
+  }
+
+  @Test
+  @DisplayName("스키마 DDL export API 문서화")
+  void exportSchemaDdl() {
+    String schemaId = "06D6W1GAHD51T5NJPK29Q6BCR8";
+    SchemaDdlExportResponse response = new SchemaDdlExportResponse(
+        schemaId,
+        42L,
+        "mysql",
+        """
+            -- Schemafy MySQL DDL Export
+            CREATE TABLE `users` (
+              `id` BIGINT NOT NULL AUTO_INCREMENT,
+              PRIMARY KEY (`id`)
+            ) ENGINE=InnoDB;
+            """.trim());
+
+    given(schemaDdlExportOrchestrator.exportSchemaDdl(schemaId, "mysql"))
+        .willReturn(Mono.just(response));
+
+    webTestClient.get()
+        .uri(API_BASE_PATH
+            + "/schemas/{schemaId}/exports/ddl?targetDbVendor={targetDbVendor}",
+            schemaId, "mysql")
+        .header("Accept", "application/json")
+        .exchange()
+        .expectStatus().isOk()
+        .expectBody()
+        .jsonPath("$.schemaId").isEqualTo(schemaId)
+        .jsonPath("$.currentRevision").isEqualTo(42)
+        .jsonPath("$.targetDbVendor").isEqualTo("mysql")
+        .jsonPath("$.ddl").value(org.hamcrest.Matchers.containsString(
+            "CREATE TABLE `users`"))
+        .consumeWith(document("schema-ddl-export",
+            pathParameters(
+                parameterWithName("schemaId")
+                    .description("DDL을 export할 스키마 ID")),
+            queryParameters(
+                parameterWithName("targetDbVendor")
+                    .description("DDL export 대상 DB vendor. 현재 지원: mysql")),
+            requestHeaders(
+                headerWithName("Accept")
+                    .description("응답 포맷 (application/json)")),
+            responseHeaders(
+                headerWithName("Content-Type")
+                    .description("응답 컨텐츠 타입")),
+            responseFields(
+                fieldWithPath("schemaId").description("스키마 ID"),
+                fieldWithPath("currentRevision")
+                    .description("DDL 생성 기준 schema revision"),
+                fieldWithPath("targetDbVendor")
+                    .description("DDL export 대상 DB vendor"),
+                fieldWithPath("ddl").description("생성된 DDL 문자열"))));
+  }
+
+  @Test
+  @DisplayName("스키마 DDL export API는 targetDbVendor query parameter를 요구한다")
+  void exportSchemaDdlRequiresTargetDbVendor() {
+    String schemaId = "06D6W1GAHD51T5NJPK29Q6BCR8";
+
+    webTestClient.get()
+        .uri(API_BASE_PATH + "/schemas/{schemaId}/exports/ddl", schemaId)
+        .header("Accept", "application/json")
+        .exchange()
+        .expectStatus().isBadRequest();
+
+    then(schemaDdlExportOrchestrator).shouldHaveNoInteractions();
   }
 
   @Test

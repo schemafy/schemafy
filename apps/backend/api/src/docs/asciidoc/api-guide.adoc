@@ -1730,6 +1730,38 @@ include::{snippets}/schema-get/response-fields.adoc[]
 
 ---
 
+==== Schema DDL Export
+
+스키마를 지정한 DB vendor용 DDL로 export합니다.
+
+[source]
+----
+GET /api/v1.0/schemas/{schemaId}/exports/ddl?targetDbVendor=mysql
+----
+
+[discrete]
+==== 요청
+
+include::{snippets}/schema-ddl-export/http-request.adoc[]
+include::{snippets}/schema-ddl-export/request-headers.adoc[]
+include::{snippets}/schema-ddl-export/path-parameters.adoc[]
+include::{snippets}/schema-ddl-export/query-parameters.adoc[]
+include::{snippets}/schema-ddl-export/curl-request.adoc[]
+
+[discrete]
+==== 응답
+
+include::{snippets}/schema-ddl-export/response-headers.adoc[]
+include::{snippets}/schema-ddl-export/response-body.adoc[]
+include::{snippets}/schema-ddl-export/http-response.adoc[]
+
+[discrete]
+==== 응답 필드
+
+include::{snippets}/schema-ddl-export/response-fields.adoc[]
+
+---
+
 ==== Schema 이름 변경
 
 스키마 이름을 변경합니다.
