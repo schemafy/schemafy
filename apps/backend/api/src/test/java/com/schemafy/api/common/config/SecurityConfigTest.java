@@ -1,14 +1,21 @@
 package com.schemafy.api.common.config;
 
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.reactive.AutoConfigureWebTestClient;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.http.HttpHeaders;
+import org.springframework.http.MediaType;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.reactive.server.WebTestClient;
 
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
+
+import static org.assertj.core.api.Assertions.assertThat;
 
 @ActiveProfiles("dev")
 @SpringBootTest
@@ -63,6 +70,95 @@ class SecurityConfigTest {
         .uri("/api/v1/protected/resource")
         .exchange()
         .expectStatus().isUnauthorized();
+  }
+
+  @Test
+  @DisplayName("dev 프로파일에서 REST Docs 기반 OpenAPI 정적 문서는 인증 없이 조회할 수 있다")
+  void generatedOpenApiDocsEndpointAllowedInDev() throws IOException {
+    Path specPath = Path.of("build/api-spec/openapi3.json");
+    Files.createDirectories(specPath.getParent());
+    Files.writeString(specPath, """
+        {
+          "openapi": "3.0.1",
+          "info": {
+            "title": "Schemafy API",
+            "version": "v1.0"
+          },
+          "paths": {
+            "/public/api/v1.0/users/login": {},
+            "/api/v1.0/users": {}
+          },
+          "components": {
+            "securitySchemes": {
+              "bearerAuth": {
+                "type": "http",
+                "scheme": "bearer"
+              }
+            }
+          }
+        }
+        """);
+
+    webTestClient.get()
+        .uri("/openapi/openapi3.json")
+        .accept(MediaType.APPLICATION_JSON)
+        .exchange()
+        .expectStatus().isOk()
+        .expectHeader().contentTypeCompatibleWith(MediaType.APPLICATION_JSON)
+        .expectBody()
+        .jsonPath("$.info.title").isEqualTo("Schemafy API")
+        .jsonPath("$.components.securitySchemes.bearerAuth.scheme")
+        .isEqualTo("bearer")
+        .jsonPath("$.paths['/public/api/v1.0/users/login']").exists()
+        .jsonPath("$.paths['/api/v1.0/users']").exists();
+  }
+
+  @Test
+  @DisplayName("OpenAPI 정적 문서는 낡은 Bearer 토큰이 있어도 조회할 수 있다")
+  void generatedOpenApiDocsEndpointAllowedWithStaleBearerToken()
+      throws IOException {
+    Path specPath = Path.of("build/api-spec/openapi3.json");
+    Files.createDirectories(specPath.getParent());
+    Files.writeString(specPath, """
+        {
+          "openapi": "3.0.1",
+          "info": {
+            "title": "Schemafy API",
+            "version": "v1.0"
+          },
+          "paths": {}
+        }
+        """);
+
+    webTestClient.get()
+        .uri("/openapi/openapi3.json")
+        .header(HttpHeaders.AUTHORIZATION, "Bearer stale-token")
+        .accept(MediaType.APPLICATION_JSON)
+        .exchange()
+        .expectStatus().isOk()
+        .expectHeader().contentTypeCompatibleWith(MediaType.APPLICATION_JSON)
+        .expectBody()
+        .jsonPath("$.info.title").isEqualTo("Schemafy API");
+  }
+
+  @Test
+  @DisplayName("dev 프로파일에서 Swagger UI는 인증 없이 접근할 수 있다")
+  void swaggerUiEndpointAllowedInDev() {
+    webTestClient.get()
+        .uri("/swagger-ui.html")
+        .exchange()
+        .expectStatus()
+        .value(status -> assertThat(status).isIn(200, 301, 302, 303, 307, 308));
+  }
+
+  @Test
+  @DisplayName("dev 프로파일에서 HMAC 개발용 Swagger UI는 인증 없이 접근할 수 있다")
+  void swaggerUiHmacEndpointAllowedInDev() {
+    webTestClient.get()
+        .uri("/swagger-ui-hmac.html")
+        .exchange()
+        .expectStatus().isOk()
+        .expectHeader().contentTypeCompatibleWith(MediaType.TEXT_HTML);
   }
 
 }
