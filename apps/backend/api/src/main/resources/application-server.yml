@@ -15,6 +15,12 @@ jwt:
 cors:
   allowed-origins: ${JWT_ALLOWED_ORIGINS:http://localhost:3000}
 
+springdoc:
+  api-docs:
+    enabled: false
+  swagger-ui:
+    enabled: false
+
 management:
   endpoints:
     web:

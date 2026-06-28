@@ -85,6 +85,7 @@ public class SecurityConfig {
 
     return http
         .authorizeExchange(exchanges -> exchanges
+            .pathMatchers(ApiPath.openApiDocsPathPatterns()).permitAll()
             .pathMatchers(
                 ApiPath.PUBLIC_API.replace("{version}", "**"))
             .permitAll()
