@@ -85,7 +85,8 @@
     374,
     368,
     386,
-    400
+    400,
+    439
   ],
   ".github/workflows/test.yml": [
     346
@@ -2203,5 +2204,8 @@
   ],
   "apps/backend/core/src/main/java/com/schemafy/core/erd/table/adapter/out/persistence/TableMapper.java": [
     437
+  ],
+  "apps/frontend/eslint.config.js": [
+    439
   ]
 }
