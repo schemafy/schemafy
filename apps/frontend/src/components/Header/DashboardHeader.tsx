@@ -2,26 +2,10 @@ import { authStore } from '@/store/auth.store';
 import { Button, ButtonLink } from '../Button';
 import { Avatar } from '../Avatar';
 import { NotificationContents } from './contents/NotificationContents';
-import { logout } from '@/features/auth/api';
-import { reportUnexpectedError } from '@/lib';
-import { clearAuthSession } from '@/features/auth/lib/auth-session';
-import { useNavigate } from '@tanstack/react-router';
+import { useLogout } from '@/features/auth';
 
 export const DashboardHeader = () => {
-  const navigate = useNavigate();
-
-  const handleLogout = async () => {
-    try {
-      await logout();
-      clearAuthSession();
-      await navigate({ to: '/signin', search: { oauthError: null } });
-    } catch (error) {
-      reportUnexpectedError(error, {
-        context: 'Unexpected sign-out failure.',
-        userMessage: 'Failed to sign out. Please try again.',
-      });
-    }
-  };
+  const handleLogout = useLogout();
 
   return (
     <div className="flex items-center justify-end gap-5 w-full">
