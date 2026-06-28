@@ -1430,7 +1430,8 @@
     405
   ],
   "apps/frontend/src/lib/utils/reportUnexpectedError.ts": [
-    386
+    386,
+    439
   ],
   "apps/frontend/src/features/drawing/hooks/useColumnMutations.ts": [
     374
