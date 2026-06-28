@@ -15,14 +15,13 @@ class TableMapper {
   }
 
   TableEntity toEntity(Table table) {
-    return TableEntity.builder()
-        .id(table.id())
-        .schemaId(table.schemaId())
-        .name(table.name())
-        .charset(table.charset())
-        .collation(table.collation())
-        .extra(table.extra())
-        .build();
+    return new TableEntity(
+        table.id(),
+        table.schemaId(),
+        table.name(),
+        table.charset(),
+        table.collation(),
+        table.extra());
   }
 
   Table toDomain(TableEntity entity) {
