@@ -2,6 +2,7 @@ package com.schemafy.core.erd.table.application.service;
 
 import java.util.HashSet;
 import java.util.List;
+import java.util.Objects;
 import java.util.OptionalInt;
 import java.util.Set;
 
@@ -67,26 +68,39 @@ public class ChangeTableNameService implements ChangeTableNameUseCase {
 
   @Override
   public Mono<MutationResult<Void>> changeTableName(ChangeTableNameCommand command) {
-    return erdMutationCoordinator.coordinate(ErdOperationType.CHANGE_TABLE_NAME, command,
-        () -> getTableByIdPort.findTableById(command.tableId())
-            .switchIfEmpty(Mono.error(
-                new DomainException(TableErrorCode.NOT_FOUND, "Table not found: " + command.tableId())))
-            .flatMap(table -> tableExistsPort.existsBySchemaIdAndName(table.schemaId(), command.newName())
-                .flatMap(exists -> {
-                  if (exists) {
-                    return Mono.error(new DomainException(TableErrorCode.NAME_DUPLICATE,
-                        "A table with the name '" + command.newName() + "' already exists in the schema."));
-                  }
+    return getTableByIdPort.findTableById(command.tableId())
+        .switchIfEmpty(Mono.error(
+            new DomainException(TableErrorCode.NOT_FOUND, "Table not found: " + command.tableId())))
+        .flatMap(table -> {
+          if (Objects.equals(table.name(), command.newName())) {
+            return Mono.just(MutationResult.<Void>noop(null, table.id()));
+          }
+          return erdMutationCoordinator.coordinate(ErdOperationType.CHANGE_TABLE_NAME, command,
+              () -> getTableByIdPort.findTableById(command.tableId())
+                  .switchIfEmpty(Mono.error(
+                      new DomainException(TableErrorCode.NOT_FOUND, "Table not found: " + command.tableId())))
+                  .flatMap(lockedTable -> {
+                    if (Objects.equals(lockedTable.name(), command.newName())) {
+                      return Mono.just(MutationResult.<Void>noop(null, lockedTable.id()));
+                    }
+                    return tableExistsPort.existsBySchemaIdAndName(lockedTable.schemaId(), command.newName())
+                        .flatMap(exists -> {
+                          if (exists) {
+                            return Mono.error(new DomainException(TableErrorCode.NAME_DUPLICATE,
+                                "A table with the name '" + command.newName() + "' already exists in the schema."));
+                          }
 
-                  return buildRenamePlan(table, command.newName())
-                      .flatMap(plan -> changeTableNamePort.changeTableName(
-                          command.tableId(),
-                          command.newName())
-                          .then(applyConstraintRenames(plan.constraintRenames()))
-                          .then(applyRelationshipRenames(plan.relationshipRenames()))
-                          .thenReturn(MutationResult.<Void>of(null, plan.affectedTableIds(table.id()))
-                              .withInverse(plan.toInverse(table))));
-                })))
+                          return buildRenamePlan(lockedTable, command.newName())
+                              .flatMap(plan -> changeTableNamePort.changeTableName(
+                                  command.tableId(),
+                                  command.newName())
+                                  .then(applyConstraintRenames(plan.constraintRenames()))
+                                  .then(applyRelationshipRenames(plan.relationshipRenames()))
+                                  .thenReturn(MutationResult.<Void>of(null, plan.affectedTableIds(lockedTable.id()))
+                                      .withInverse(plan.toInverse(lockedTable))));
+                        });
+                  }));
+        })
         .as(transactionalOperator::transactional);
   }
 

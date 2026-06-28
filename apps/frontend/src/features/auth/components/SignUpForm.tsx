@@ -3,6 +3,7 @@ import { useFormState } from '../hooks';
 import { useState } from 'react';
 import { useNavigate } from '@tanstack/react-router';
 import { signUp } from '@/features/auth/api';
+import { authStore } from '@/store/auth.store';
 import type { ValidationRules, SignUpFormValues } from '../types';
 import { reportUnexpectedError } from '@/lib';
 
@@ -85,12 +86,13 @@ export const SignUpForm = () => {
     setIsSubmitting(true);
 
     try {
-      await signUp({
+      const user = await signUp({
         email: form.email,
         name: form.name,
         password: form.password,
       });
 
+      authStore.setUser(user);
       resetForm();
       navigate({ to: '/' });
     } catch (error) {

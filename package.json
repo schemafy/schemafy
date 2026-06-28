@@ -4,7 +4,7 @@
   "scripts": {
     "build": "turbo run build",
     "build:frontend": "cd apps/frontend && pnpm run build",
-    "build:backend": "./gradlew :core:build :api:build",
+    "build:backend": "./gradlew :core:build :api:build :mcp:build",
     "infra": "podman compose up -d mariadb redis || true",
     "dev": "pnpm run infra && turbo run dev --parallel",
     "dev:frontend": "cd apps/frontend && pnpm run dev",

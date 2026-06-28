@@ -8,7 +8,8 @@ export type ErdOperation = {
 export type MutationResponse<T = null> = {
   data: T;
   affectedTableIds: string[];
-  operation: ErdOperation;
+  operation?: ErdOperation | null;
+  requestClientOperationId?: string | null;
 };
 
 export type JsonPrimitive = string | number | boolean | null;

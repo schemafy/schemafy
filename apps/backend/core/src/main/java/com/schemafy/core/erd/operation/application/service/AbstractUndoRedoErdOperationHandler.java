@@ -87,8 +87,8 @@ abstract class AbstractUndoRedoErdOperationHandler<T extends InversePayload>
           "Inverse payload is missing for operation: " + executionBase.opId());
     }
 
-    InversePayload payload = jsonCodec.parse(
-        jsonCodec.normalizePersistedJson(inversePayloadJson), InversePayload.class);
+    InversePayload payload = jsonCodec.fromPersistedJson(inversePayloadJson,
+        InversePayload.class);
     if (!inverseType.isInstance(payload)) {
       throw new IllegalStateException(
           "Unexpected inverse payload type for %s: %s".formatted(operationType, payload.getClass().getName()));

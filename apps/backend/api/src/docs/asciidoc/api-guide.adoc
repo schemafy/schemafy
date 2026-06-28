@@ -4070,6 +4070,14 @@ WebSocket 연결이 완료된 직후 현재 클라이언트에게만 1회 전송
 {
   "type": "SESSION_READY",
   "sessionId": "session-uuid",
+  "participants": [
+    {
+      "sessionId": "session-uuid",
+      "userId": "01HNQD...",
+      "userName": "cjeongmin",
+      "profileImageUrl": null
+    }
+  ],
   "timestamp": 1703577600000
 }
 ----
@@ -4087,6 +4095,26 @@ WebSocket 연결이 완료된 직후 현재 클라이언트에게만 1회 전송
 |`sessionId`
 |현재 연결된 클라이언트의 WebSocket 세션 ID
 |String
+
+|`participants`
+|현재 프로젝트에 접속 중인 WebSocket 세션 단위 참가자 목록
+|Array
+
+|`participants[].sessionId`
+|접속 중인 WebSocket 세션 ID
+|String
+
+|`participants[].userId`
+|접속 중인 사용자 ID (ULID)
+|String
+
+|`participants[].userName`
+|접속 중인 사용자 이름
+|String
+
+|`participants[].profileImageUrl`
+|접속 중인 사용자의 프로필 이미지 URL. 현재는 `null`일 수 있으며, 프로필 이미지 연동 시 같은 필드를 사용합니다.
+|String 또는 Null
 
 |`timestamp`
 |이벤트 발생 시간 (Unix milliseconds)
@@ -4141,7 +4169,7 @@ WebSocket 연결이 완료된 직후 현재 클라이언트에게만 1회 전송
 
 ===== LEAVE
 
-사용자가 프로젝트에서 나갔을 때 브로드캐스트됩니다.
+사용자가 프로젝트에서 나가거나 protocol heartbeat TTL 만료로 비정상 종료 세션이 정리됐을 때 브로드캐스트됩니다.
 
 [source,json]
 ----

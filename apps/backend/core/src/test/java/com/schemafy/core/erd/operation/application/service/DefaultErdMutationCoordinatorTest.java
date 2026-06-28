@@ -25,8 +25,6 @@ import com.schemafy.core.erd.operation.domain.ErdOperationDerivationKind;
 import com.schemafy.core.erd.operation.domain.ErdOperationLifecycleState;
 import com.schemafy.core.erd.operation.domain.ErdOperationLog;
 import com.schemafy.core.erd.operation.domain.ErdOperationType;
-import com.schemafy.core.erd.operation.domain.ErdTouchedEntity;
-import com.schemafy.core.erd.operation.domain.ErdTouchedEntityType;
 import com.schemafy.core.erd.operation.domain.SchemaCollaborationState;
 import com.schemafy.core.ulid.application.port.out.UlidGeneratorPort;
 
@@ -36,7 +34,6 @@ import reactor.test.StepVerifier;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
-import static org.mockito.ArgumentMatchers.same;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.then;
 import static org.mockito.Mockito.lenient;
@@ -90,7 +87,7 @@ class DefaultErdMutationCoordinatorTest {
 
     lenient().when(transactionalOperator.transactional(any(Mono.class)))
         .thenAnswer(invocation -> invocation.getArgument(0));
-    lenient().when(jsonCodec.serialize(any())).thenReturn("{}");
+    lenient().when(jsonCodec.toJson(any())).thenReturn("{}");
     lenient().when(ulidGeneratorPort.generate()).thenReturn("operation1");
   }
 
@@ -116,8 +113,7 @@ class DefaultErdMutationCoordinatorTest {
         null);
     FinalizedErdMutationTarget finalizedTarget = new FinalizedErdMutationTarget(
         "project1",
-        "schema1",
-        new ErdTouchedEntity(ErdTouchedEntityType.TABLE, "table1"));
+        "schema1");
     List<String> events = new ArrayList<>();
 
     given(erdMutationTargetResolver.resolveBefore(ErdOperationType.CREATE_TABLE, payload))
@@ -128,7 +124,7 @@ class DefaultErdMutationCoordinatorTest {
           return Mono.just(lockedState);
         });
     given(erdMutationTargetFinalizer.finalizeTarget(eq(ErdOperationType.CREATE_TABLE),
-        same(payload), eq(resolvedTarget), any()))
+        eq(resolvedTarget), any()))
         .willReturn(finalizedTarget);
     given(incrementSchemaCollaborationRevisionPort.increment("schema1"))
         .willReturn(Mono.just(updatedState));
@@ -172,8 +168,51 @@ class DefaultErdMutationCoordinatorTest {
         ErdOperationLifecycleState.COMMITTED,
         "{}",
         null,
-        "{}",
         "{}"));
+  }
+
+  @Test
+  @DisplayName("mutation supplier가 no-op을 반환하면 revision과 operation log를 남기지 않는다")
+  void skipsCommitWhenMutationReturnsNoOp() {
+    Object payload = new Object();
+    ResolvedErdMutationTarget resolvedTarget = new ResolvedErdMutationTarget(
+        "project1",
+        "schema1",
+        "table1");
+    SchemaCollaborationState lockedState = new SchemaCollaborationState(
+        "schema1",
+        "project1",
+        3L,
+        null,
+        null);
+    List<String> events = new ArrayList<>();
+
+    given(erdMutationTargetResolver.resolveBefore(ErdOperationType.CHANGE_COLUMN_POSITION, payload))
+        .willReturn(Mono.just(resolvedTarget));
+    given(findSchemaCollaborationStatePort.findBySchemaIdForUpdate("schema1"))
+        .willAnswer(invocation -> {
+          events.add("lock");
+          return Mono.just(lockedState);
+        });
+
+    Supplier<Mono<MutationResult<String>>> mutationSupplier = () -> {
+      events.add("mutate");
+      return Mono.just(MutationResult.noop("ok", Set.of("table1")));
+    };
+
+    StepVerifier.create(sut.coordinate(ErdOperationType.CHANGE_COLUMN_POSITION, payload,
+        mutationSupplier))
+        .assertNext(result -> {
+          assertThat(result.result()).isEqualTo("ok");
+          assertThat(result.operation()).isNull();
+          assertThat(result.noOp()).isTrue();
+        })
+        .verifyComplete();
+
+    assertThat(events).containsExactly("lock", "mutate");
+    then(erdMutationTargetFinalizer).shouldHaveNoInteractions();
+    then(incrementSchemaCollaborationRevisionPort).shouldHaveNoInteractions();
+    then(appendErdOperationLogPort).shouldHaveNoInteractions();
   }
 
 }

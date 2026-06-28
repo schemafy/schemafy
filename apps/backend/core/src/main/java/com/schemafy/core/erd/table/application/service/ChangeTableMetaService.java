@@ -6,11 +6,15 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import com.schemafy.core.common.MutationResult;
+import com.schemafy.core.common.exception.DomainException;
 import com.schemafy.core.erd.operation.application.service.ErdMutationCoordinator;
 import com.schemafy.core.erd.operation.domain.ErdOperationType;
 import com.schemafy.core.erd.table.application.port.in.ChangeTableMetaCommand;
 import com.schemafy.core.erd.table.application.port.in.ChangeTableMetaUseCase;
 import com.schemafy.core.erd.table.application.port.out.ChangeTableMetaPort;
+import com.schemafy.core.erd.table.application.port.out.GetTableByIdPort;
+import com.schemafy.core.erd.table.domain.Table;
+import com.schemafy.core.erd.table.domain.exception.TableErrorCode;
 import com.schemafy.core.project.application.access.AccessTarget;
 import com.schemafy.core.project.application.access.RequireProjectAccess;
 import com.schemafy.core.project.domain.ProjectRole;
@@ -26,6 +30,7 @@ import static com.schemafy.core.project.application.access.ProjectAccessResource
 public class ChangeTableMetaService implements ChangeTableMetaUseCase {
 
   private final ChangeTableMetaPort changeTableMetaPort;
+  private final GetTableByIdPort getTableByIdPort;
   private ErdMutationCoordinator erdMutationCoordinator = ErdMutationCoordinator.noop();
 
   @Autowired
@@ -42,12 +47,37 @@ public class ChangeTableMetaService implements ChangeTableMetaUseCase {
         ? normalizeForPort(command.collation().get())
         : null;
 
-    return erdMutationCoordinator.coordinate(ErdOperationType.CHANGE_TABLE_META, command,
-        () -> changeTableMetaPort.changeTableMeta(
-            command.tableId(),
-            portCharset,
-            portCollation)
-            .thenReturn(MutationResult.<Void>of(null, command.tableId())));
+    return getTableByIdPort.findTableById(command.tableId())
+        .switchIfEmpty(Mono.error(new DomainException(TableErrorCode.NOT_FOUND, "Table not found")))
+        .flatMap(table -> {
+          if (isNoOp(command, table)) {
+            return Mono.just(MutationResult.<Void>noop(null, table.id()));
+          }
+          return erdMutationCoordinator.coordinate(ErdOperationType.CHANGE_TABLE_META, command,
+              () -> getTableByIdPort.findTableById(command.tableId())
+                  .switchIfEmpty(Mono.error(new DomainException(TableErrorCode.NOT_FOUND, "Table not found")))
+                  .flatMap(lockedTable -> {
+                    if (isNoOp(command, lockedTable)) {
+                      return Mono.just(MutationResult.<Void>noop(null, lockedTable.id()));
+                    }
+                    return changeTableMetaPort.changeTableMeta(
+                        command.tableId(),
+                        portCharset,
+                        portCollation)
+                        .thenReturn(MutationResult.<Void>of(null, lockedTable.id()));
+                  }));
+        });
+  }
+
+  private static boolean isNoOp(ChangeTableMetaCommand command, Table table) {
+    String effectiveCharset = command.charset().isPresent()
+        ? normalizeOptional(command.charset().get())
+        : table.charset();
+    String effectiveCollation = command.collation().isPresent()
+        ? normalizeOptional(command.collation().get())
+        : table.collation();
+    return Objects.equals(table.charset(), effectiveCharset)
+        && Objects.equals(table.collation(), effectiveCollation);
   }
 
   private static String normalizeForPort(String value) {

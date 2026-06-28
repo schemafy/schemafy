@@ -38,7 +38,7 @@ class WebExchangeErrorWriterTest {
 
     when(problemDetailFactory.create(any(), any(DomainErrorCode.class),
         anyString())).thenReturn(ProblemDetail.forStatus(500));
-    when(jsonCodec.serializeBytes(any()))
+    when(jsonCodec.toJsonBytes(any()))
         .thenThrow(new IllegalArgumentException("boom"));
 
     StepVerifier.create(writer.writeErrorResponse(exchange,

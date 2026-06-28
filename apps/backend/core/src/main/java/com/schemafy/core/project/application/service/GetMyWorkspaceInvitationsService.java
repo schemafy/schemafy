@@ -6,8 +6,8 @@ import com.schemafy.core.common.PageResult;
 import com.schemafy.core.common.exception.DomainException;
 import com.schemafy.core.project.application.port.in.GetMyWorkspaceInvitationsQuery;
 import com.schemafy.core.project.application.port.in.GetMyWorkspaceInvitationsUseCase;
+import com.schemafy.core.project.application.port.in.InvitationSummary;
 import com.schemafy.core.project.application.port.out.InvitationPort;
-import com.schemafy.core.project.domain.Invitation;
 import com.schemafy.core.project.domain.InvitationStatus;
 import com.schemafy.core.project.domain.InvitationType;
 import com.schemafy.core.user.application.port.out.FindUserByIdPort;
@@ -25,7 +25,7 @@ class GetMyWorkspaceInvitationsService
   private final FindUserByIdPort findUserByIdPort;
 
   @Override
-  public Mono<PageResult<Invitation>> getMyWorkspaceInvitations(
+  public Mono<PageResult<InvitationSummary>> getMyWorkspaceInvitations(
       GetMyWorkspaceInvitationsQuery query) {
     return findUserByIdPort.findUserById(query.requesterId())
         .switchIfEmpty(Mono.error(
@@ -35,7 +35,7 @@ class GetMyWorkspaceInvitationsService
             InvitationType.WORKSPACE.name(),
             InvitationStatus.PENDING.name())
             .flatMap(totalElements -> invitationPort
-                .findByEmailAndTypeAndStatus(
+                .findInvitationSummariesByEmailAndTypeAndStatus(
                     user.email(),
                     InvitationType.WORKSPACE.name(),
                     InvitationStatus.PENDING.name(),

@@ -75,6 +75,24 @@ class ChangeConstraintNameServiceTest {
     }
 
     @Test
+    @DisplayName("현재 이름과 같으면 table과 중복 조회 없이 변경 없이 성공한다")
+    void succeedsWithoutContextLookupWhenNameIsSame() {
+      var command = ConstraintFixture.changeNameCommand(ConstraintFixture.DEFAULT_NAME);
+      var constraint = ConstraintFixture.defaultConstraint();
+
+      given(getConstraintByIdPort.findConstraintById(command.constraintId()))
+          .willReturn(Mono.just(constraint));
+
+      StepVerifier.create(sut.changeConstraintName(command))
+          .expectNextMatches(result -> result.operation() == null)
+          .verifyComplete();
+
+      then(getTableByIdPort).shouldHaveNoInteractions();
+      then(constraintExistsPort).shouldHaveNoInteractions();
+      then(changeConstraintNamePort).shouldHaveNoInteractions();
+    }
+
+    @Test
     @DisplayName("빈 이름이면 예외가 발생한다")
     void throwsWhenEmptyName() {
       var command = ConstraintFixture.changeNameCommand("");

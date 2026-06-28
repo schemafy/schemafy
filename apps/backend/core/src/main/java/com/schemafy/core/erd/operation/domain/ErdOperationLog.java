@@ -15,6 +15,5 @@ public record ErdOperationLog(
     ErdOperationLifecycleState lifecycleState,
     String payloadJson,
     String inversePayloadJson,
-    String touchedEntitiesJson,
     String affectedTableIdsJson) {
 }

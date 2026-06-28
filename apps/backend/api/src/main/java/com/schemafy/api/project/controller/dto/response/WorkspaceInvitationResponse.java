@@ -2,11 +2,14 @@ package com.schemafy.api.project.controller.dto.response;
 
 import java.time.Instant;
 
-import com.schemafy.core.project.domain.Invitation;
+import com.schemafy.core.project.application.port.in.InvitationSummary;
 
 public record WorkspaceInvitationResponse(
     String id,
-    String workspaceId,
+    String type,
+    String targetId,
+    String targetName,
+    String targetDescription,
     String invitedEmail,
     String invitedRole,
     String invitedBy,
@@ -15,17 +18,24 @@ public record WorkspaceInvitationResponse(
     Instant resolvedAt,
     Instant createdAt) {
 
-  public static WorkspaceInvitationResponse of(Invitation invitation) {
+  public static WorkspaceInvitationResponse of(InvitationSummary invitation) {
     return new WorkspaceInvitationResponse(
-        invitation.getId(),
-        invitation.getWorkspaceId(),
-        invitation.getInvitedEmail(),
-        invitation.getInvitedRole(),
-        invitation.getInvitedBy(),
-        invitation.getStatus(),
-        invitation.getExpiresAt(),
-        invitation.getResolvedAt(),
-        invitation.getCreatedAt());
+        invitation.id(),
+        invitation.targetType(),
+        invitation.targetId(),
+        invitation.targetName(),
+        invitation.targetDescription(),
+        invitation.invitedEmail(),
+        invitation.invitedRole(),
+        displayInvitedBy(invitation.invitedBy()),
+        invitation.status(),
+        invitation.expiresAt(),
+        invitation.resolvedAt(),
+        invitation.createdAt());
+  }
+
+  private static String displayInvitedBy(String invitedBy) {
+    return invitedBy == null ? "Unknown" : invitedBy;
   }
 
 }

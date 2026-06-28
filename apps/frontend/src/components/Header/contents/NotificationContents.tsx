@@ -13,6 +13,7 @@ type UnifiedInvitation =
       type: 'workspace';
       id: string;
       invitedBy: string;
+      targetName: string;
       invitedRole: string;
       createdAt: string;
     }
@@ -20,6 +21,7 @@ type UnifiedInvitation =
       type: 'project';
       id: string;
       invitedBy: string;
+      targetName: string;
       invitedRole: string;
       createdAt: string;
     };
@@ -53,6 +55,7 @@ export const NotificationContents = () => {
         type: 'workspace' as const,
         id: inv.id,
         invitedBy: inv.invitedBy,
+        targetName: inv.targetName,
         invitedRole: inv.invitedRole,
         createdAt: inv.createdAt,
       })),
@@ -62,6 +65,7 @@ export const NotificationContents = () => {
         type: 'project' as const,
         id: inv.id,
         invitedBy: inv.invitedBy,
+        targetName: inv.targetName,
         invitedRole: inv.invitedRole,
         createdAt: inv.createdAt,
       })),
@@ -134,13 +138,21 @@ const NotificationItem = ({
   onAccept,
   onReject,
 }: NotificationItemProps) => {
+  const invitedBy = invitation.invitedBy || 'Unknown';
+  const targetTypeLabel =
+    invitation.type === 'workspace' ? 'Workspace' : 'Project';
+
   return (
     <div className="flex gap-2.5 items-center">
       <Avatar size={'dropdown'} src="https://picsum.photos/200/300?random=1" />
-      <div className="max-w-[10rem] font-body-xs text-schemafy-text">
-        {invitation.invitedBy} invited you to{' '}
-        <span className="font-semibold">{invitation.type}</span> as{' '}
-        <span className="font-semibold">{invitation.invitedRole}</span>
+      <div className="min-w-0 max-w-[11.5rem] font-body-xs text-schemafy-text">
+        <div className="break-words">
+          {invitedBy} invited you to {targetTypeLabel}{' '}
+          <span className="break-words font-semibold">
+            {invitation.targetName}
+          </span>{' '}
+          as <span className="font-semibold">{invitation.invitedRole}</span>
+        </div>
       </div>
       <Button
         size={'sm'}
