@@ -4,11 +4,13 @@
     335
   ],
   "apps/frontend/src/features/collaboration/components/ChatBubble.tsx": [
-    291
+    291,
+    443
   ],
   "apps/frontend/src/features/collaboration/components/ChatInput.tsx": [
     291,
-    400
+    400,
+    443
   ],
   "apps/frontend/src/features/collaboration/components/ChatOverlay.tsx": [
     291
@@ -28,7 +30,8 @@
     291
   ],
   "apps/frontend/src/features/drawing/components/FloatingButtons.tsx": [
-    291
+    291,
+    443
   ],
   "apps/frontend/src/features/drawing/components/ShortcutPanel.tsx": [
     291
@@ -394,15 +397,18 @@
   ],
   "apps/frontend/src/features/drawing/components/CustomSmoothStepEdge.tsx": [
     331,
-    393
+    393,
+    443
   ],
   "apps/frontend/src/features/drawing/components/ReactFlowCanvas.tsx": [
     331,
     397,
-    442
+    442,
+    443
   ],
   "apps/frontend/src/features/drawing/components/SchemaSelector.tsx": [
-    331
+    331,
+    443
   ],
   "apps/frontend/src/features/drawing/components/TableNode/index.tsx": [
     331,
@@ -472,26 +478,31 @@
     358
   ],
   "apps/frontend/src/components/Button.tsx": [
-    361
+    361,
+    443
   ],
   "apps/frontend/src/components/Header/DashboardHeader.tsx": [
     361,
     386,
     396,
-    418
+    418,
+    443
   ],
   "apps/frontend/src/components/Header/Header.tsx": [
     361,
     318,
-    409
+    409,
+    443
   ],
   "apps/frontend/src/components/Header/LandingHeader.tsx": [
-    361
+    361,
+    443
   ],
   "apps/frontend/src/components/Layout.tsx": [
     361,
     358,
-    318
+    318,
+    443
   ],
   "apps/frontend/src/components/Loading.tsx": [
     361
@@ -512,12 +523,14 @@
   ],
   "apps/frontend/src/features/auth/components/SignInForm.tsx": [
     361,
-    386
+    386,
+    443
   ],
   "apps/frontend/src/features/auth/components/SignUpForm.tsx": [
     361,
     386,
-    390
+    390,
+    443
   ],
   "apps/frontend/src/features/auth/hooks/useAuthBootstrap.ts": [
     361,
@@ -827,24 +840,28 @@
     407
   ],
   "apps/frontend/src/components/EntityFormDialog.tsx": [
-    358
+    358,
+    443
   ],
   "apps/frontend/src/components/Header/CanvasHeader.tsx": [
     358,
     361,
     318,
-    396
+    396,
+    443
   ],
   "apps/frontend/src/components/Header/contents/NotificationContents.tsx": [
     358,
     382,
-    407
+    407,
+    443
   ],
   "apps/frontend/src/components/Header/contents/ShareContents.tsx": [
     358,
     318,
     382,
-    405
+    405,
+    443
   ],
   "apps/frontend/src/features/project/api/api.ts": [
     358
@@ -1518,11 +1535,13 @@
   ],
   "apps/frontend/src/features/drawing/components/Column/EditModeColumn.tsx": [
     341,
-    386
+    386,
+    443
   ],
   "apps/frontend/src/features/drawing/components/Column/TypeSelector.tsx": [
     341,
-    386
+    386,
+    443
   ],
   "apps/frontend/src/features/drawing/types/column.ts": [
     341,
@@ -1570,10 +1589,12 @@
     387
   ],
   "apps/frontend/src/features/drawing/components/ConstraintSection.tsx": [
-    397
+    397,
+    443
   ],
   "apps/frontend/src/features/drawing/components/IndexSection.tsx": [
-    397
+    397,
+    443
   ],
   "apps/frontend/src/features/drawing/components/TableHeader.tsx": [
     397
@@ -1688,7 +1709,8 @@
   ],
   "apps/frontend/src/features/drawing/components/RelationshipSelector.tsx": [
     409,
-    413
+    413,
+    443
   ],
   "apps/backend/core/src/main/java/com/schemafy/core/erd/operation/adapter/out/persistence/ErdOperationLogEntity.java": [
     412,
@@ -1722,7 +1744,8 @@
     412
   ],
   "apps/frontend/src/components/InputField.tsx": [
-    418
+    418,
+    443
   ],
   "apps/frontend/src/pages/SettingsPage.tsx": [
     418
@@ -2290,5 +2313,86 @@
   ],
   "apps/backend/api/src/test/java/com/schemafy/api/user/controller/OAuthControllerTest.java": [
     441
+  ],
+  "apps/frontend/src/assets/index.ts": [
+    443
+  ],
+  "apps/frontend/src/components/Avatar.tsx": [
+    443
+  ],
+  "apps/frontend/src/components/Dialog.tsx": [
+    443
+  ],
+  "apps/frontend/src/components/DropDown.tsx": [
+    443
+  ],
+  "apps/frontend/src/components/Footer.tsx": [
+    443
+  ],
+  "apps/frontend/src/components/Header/contents/ExportContents.tsx": [
+    443
+  ],
+  "apps/frontend/src/components/Header/contents/ImportContents.tsx": [
+    443
+  ],
+  "apps/frontend/src/components/Header/contents/SettingsContents.tsx": [
+    443
+  ],
+  "apps/frontend/src/components/Header/contents/VersionContents.tsx": [
+    443
+  ],
+  "apps/frontend/src/components/Landing/Benefits.tsx": [
+    443
+  ],
+  "apps/frontend/src/components/Landing/Description.tsx": [
+    443
+  ],
+  "apps/frontend/src/components/Landing/Features.tsx": [
+    443
+  ],
+  "apps/frontend/src/components/Landing/ReadyToUse.tsx": [
+    443
+  ],
+  "apps/frontend/src/components/ListItem.tsx": [
+    443
+  ],
+  "apps/frontend/src/components/Pagination.tsx": [
+    443
+  ],
+  "apps/frontend/src/components/RadioGroup.tsx": [
+    443
+  ],
+  "apps/frontend/src/components/Select.tsx": [
+    443
+  ],
+  "apps/frontend/src/features/drawing/components/Column/ViewModeColumn.tsx": [
+    443
+  ],
+  "apps/frontend/src/features/drawing/components/Column/index.tsx": [
+    443
+  ],
+  "apps/frontend/src/features/drawing/components/ConstraintRow.tsx": [
+    443
+  ],
+  "apps/frontend/src/features/drawing/components/CustomConnectionLine.tsx": [
+    443
+  ],
+  "apps/frontend/src/features/drawing/components/CustomControls.tsx": [
+    443
+  ],
+  "apps/frontend/src/features/drawing/components/EditableRowBase.tsx": [
+    443
+  ],
+  "apps/frontend/src/features/drawing/components/IndexRow.tsx": [
+    443
+  ],
+  "apps/frontend/src/features/drawing/components/RelationshipEditor.tsx": [
+    443
+  ],
+  "apps/frontend/src/features/drawing/components/SchemaInput.tsx": [
+    443
+  ],
+  "apps/frontend/src/features/drawing/components/SchemaListItem.tsx": [
+    443
   ]
 }
