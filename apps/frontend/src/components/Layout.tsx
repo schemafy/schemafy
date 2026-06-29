@@ -11,12 +11,17 @@ export const Layout = () => {
   const isWorkspacePage = pathname.startsWith('/workspace');
 
   return (
-    <div className="layout flex flex-col min-h-screen bg-schemafy-bg w-full items-center">
+    <div
+      className={cn(
+        'layout flex min-h-screen w-full flex-col items-center bg-schemafy-bg',
+        !isCanvasPage && 'schemafy-page-gradient',
+      )}
+    >
       <Header isCanvasPage={isCanvasPage} />
       <main
         className={cn(
           'flex-grow w-full flex',
-          !isCanvasPage && !isWorkspacePage && 'max-w-[960px]',
+          !isCanvasPage && !isWorkspacePage && 'max-w-[1120px]',
         )}
       >
         <Outlet />

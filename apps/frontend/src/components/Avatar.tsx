@@ -49,7 +49,10 @@ const AvatarRoot = ({
   <AvatarPrimitive.Root
     data-slot="avatar"
     ref={ref}
-    className={cn('relative flex shrink-0 overflow-hidden', className)}
+    className={cn(
+      'relative flex shrink-0 overflow-hidden bg-schemafy-secondary ring-1 ring-schemafy-glass-border',
+      className,
+    )}
     {...props}
   />
 );

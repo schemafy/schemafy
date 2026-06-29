@@ -106,31 +106,26 @@ export const SchemaSelector = memo(() => {
   };
 
   return (
-    <div className="flex flex-col items-center bg-schemafy-bg rounded-[10px] shadow-lg p-4 transition-all duration-300 ease-in-out">
-      <div className="w-full flex justify-between">
-        <label className="text-sm font-heading-base text-schemafy-text">
+    <div className="schemafy-canvas-panel flex min-w-[14rem] flex-col rounded-2xl p-3 transition-all duration-300 ease-in-out">
+      <button
+        type="button"
+        className="schemafy-focus-ring flex h-10 w-full items-center justify-between gap-3 rounded-xl px-3 text-left transition-colors hover:bg-schemafy-secondary"
+        onClick={() => setIsExpanded((prev) => !prev)}
+        aria-label={isExpanded ? 'Collapse schemas' : 'Expand schemas'}
+      >
+        <span className="min-w-0 truncate text-sm font-heading-base text-schemafy-text">
           {isExpanded ? 'Schemas' : selectedSchemaName}
-        </label>
+        </span>
         {isExpanded ? (
-          <ChevronUp
-            size={16}
-            color="var(--color-schemafy-dark-gray)"
-            onClick={() => setIsExpanded(false)}
-            cursor="pointer"
-          />
+          <ChevronUp size={16} className="shrink-0 text-schemafy-dark-gray" />
         ) : (
-          <ChevronDown
-            size={16}
-            color="var(--color-schemafy-dark-gray)"
-            onClick={() => setIsExpanded(true)}
-            cursor="pointer"
-          />
+          <ChevronDown size={16} className="shrink-0 text-schemafy-dark-gray" />
         )}
-      </div>
+      </button>
       <div
-        className={`flex flex-col gap-2 transition-all duration-300 ${
+        className={`flex w-full flex-col gap-2.5 transition-all duration-300 ${
           isExpanded
-            ? 'mt-4 h-auto opacity-100'
+            ? 'mt-3 h-auto opacity-100'
             : 'h-0 opacity-0 overflow-hidden'
         }`}
       >
@@ -163,7 +158,12 @@ export const SchemaSelector = memo(() => {
             saveLabel="Add"
           />
         ) : (
-          <Button onClick={() => setIsAdding(true)} fullWidth size="dropdown">
+          <Button
+            onClick={() => setIsAdding(true)}
+            fullWidth
+            size="dropdown"
+            className="h-10"
+          >
             New Schema
           </Button>
         )}

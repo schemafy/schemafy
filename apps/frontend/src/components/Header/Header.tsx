@@ -22,24 +22,26 @@ export const Header = observer(
     }, [isCanvasPage, isAuthLoading, accessToken, user, isInitialized]);
 
     return (
-      <header className="w-full border-b border-schemafy-light-gray flex justify-center sticky">
+      <header className="sticky top-0 z-50 flex w-full justify-center border-b border-schemafy-glass-border bg-schemafy-panel/90 backdrop-blur-xl">
         <div
           className={cn(
             !isCanvasPage && 'max-w-[1280px]',
-            'w-full transition-all duration-200 z-50 flex items-center px-10 py-3 justify-between',
+            'z-50 flex w-full min-w-0 items-center justify-between gap-3 px-4 py-3 transition-all duration-200 sm:gap-4 sm:px-6 lg:px-10',
           )}
         >
-          <Link to="/">
-            <div className="flex items-center gap-4">
+          <Link to="/" className="shrink-0">
+            <div className="flex items-center gap-3">
               <img
                 src={logoImg}
                 alt="schemafy-logo"
-                className="w-4 h-4 dark:invert"
+                className="h-4 w-4 dark:invert"
               />
-              <h1 className="font-heading-md dark:invert">Schemafy</h1>
+              <h1 className="hidden font-heading-sm text-schemafy-text sm:block">
+                Schemafy
+              </h1>
             </div>
           </Link>
-          {contents}
+          <div className="flex min-w-0 flex-1 justify-end">{contents}</div>
         </div>
       </header>
     );

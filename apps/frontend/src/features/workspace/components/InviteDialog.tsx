@@ -70,7 +70,7 @@ export const InviteDialog = ({
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               placeholder="member@example.com"
-              className="w-full px-4 py-3 border border-schemafy-light-gray rounded-[12px] font-body-sm placeholder-schemafy-dark-gray bg-schemafy-bg focus:outline-none"
+              className="schemafy-input w-full px-4 py-3 font-body-sm"
             />
           </div>
           <div className="flex flex-col gap-1.5">
@@ -78,7 +78,7 @@ export const InviteDialog = ({
               Role
             </label>
             <Select value={role} onValueChange={setRole}>
-              <SelectTrigger className="px-4 py-3 rounded-[12px] font-body-sm">
+              <SelectTrigger className="px-4 py-3 font-body-sm">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
