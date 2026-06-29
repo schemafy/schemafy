@@ -65,6 +65,7 @@ interface ReactFlowCanvasProps {
   memos: Node<MemoData>[];
   relationships: Edge[];
   activeTool: string;
+  onTableDrag: (event: React.MouseEvent, node: Node<TableData>) => void;
   onTableDragStop: (event: React.MouseEvent, node: Node<TableData>) => void;
   onTablesDelete: (nodes: Node<TableData>[]) => void;
   onMemosChange: (changes: NodeChange[]) => void;
@@ -85,6 +86,7 @@ const ReactFlowCanvasComponent = ({
   memos,
   relationships,
   activeTool,
+  onTableDrag,
   onTableDragStop,
   onTablesDelete,
   onMemosChange,
@@ -155,6 +157,15 @@ const ReactFlowCanvasComponent = ({
     [tableIds, onTableDragStop],
   );
 
+  const handleNodeDrag = useCallback(
+    (event: React.MouseEvent, node: Node) => {
+      if (tableIds.has(node.id)) {
+        onTableDrag(event, node as Node<TableData>);
+      }
+    },
+    [onTableDrag, tableIds],
+  );
+
   const handleNodesDelete = useCallback(
     (deletedNodes: Node[]) => {
       const tableNodes: Node<TableData>[] = [];
@@ -180,6 +191,7 @@ const ReactFlowCanvasComponent = ({
         nodes={localNodes}
         edges={relationships}
         onNodesChange={handleNodesChange}
+        onNodeDrag={handleNodeDrag}
         onNodeDragStop={handleNodeDragStop}
         onNodesDelete={handleNodesDelete}
         onEdgesChange={onRelationshipsChange}

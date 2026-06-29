@@ -64,7 +64,8 @@ export const useCanvasController = () => {
 
   const schemaIds = useMemo(() => schemas?.map((s) => s.id) ?? [], [schemas]);
   const { handleMoveEnd } = useViewport(schemaIds);
-  const { tables, addTable, onNodeDragStop, onNodesDelete } = useTables();
+  const { tables, addTable, onNodeDrag, onNodeDragStop, onNodesDelete } =
+    useTables();
   const { memos, onMemosChange, createMemo } = useMemoContext();
 
   const {
@@ -173,6 +174,7 @@ export const useCanvasController = () => {
     },
     handlers: {
       onTableDragStop: onNodeDragStop,
+      onTableDrag: onNodeDrag,
       onTablesDelete: onNodesDelete,
       onMemosChange,
       onRelationshipsChange,
