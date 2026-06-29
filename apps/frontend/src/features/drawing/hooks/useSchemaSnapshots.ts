@@ -30,6 +30,20 @@ const applyPreviewOverlay = (
           relationships: [...fkSnapshot.relationships, entry.snapshot],
         };
       }
+    } else if (entry.kind === 'TABLE_POSITION') {
+      const snapshot = snapshots[entry.tableId];
+      if (snapshot) {
+        snapshots[entry.tableId] = {
+          ...snapshot,
+          table: {
+            ...snapshot.table,
+            extra: {
+              ...(snapshot.table.extra ?? {}),
+              position: entry.position,
+            },
+          },
+        };
+      }
     }
   }
 
