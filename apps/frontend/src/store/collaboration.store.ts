@@ -10,10 +10,12 @@ import type {
   CursorPosition,
   PostChat,
   PostCursor,
+  PostTablePositionPreview,
   ReceiveChat,
   ReceiveCursor,
   ReceiveErdMutated,
   ReceiveLeave,
+  ReceiveTablePositionPreview,
   WebSocketMessage,
 } from '@/features/collaboration/api';
 import { authStore } from './auth.store';
@@ -58,6 +60,7 @@ export class CollaborationStore {
       disconnect: action,
       sendMessage: action,
       sendCursor: action,
+      sendTablePositionPreview: action,
       setSchemaRevision: action,
       clearSchemaRevision: action,
       setActiveChatMessage: action,
@@ -311,8 +314,24 @@ export class CollaborationStore {
     this.send(message);
   }
 
+  sendTablePositionPreview(
+    schemaId: string,
+    tableId: string,
+    position: { x: number; y: number } | null,
+  ) {
+    const message: PostTablePositionPreview = {
+      type: 'TABLE_POSITION_PREVIEW',
+      action: position ? 'UPDATE' : 'CLEAR',
+      schemaId,
+      tableId,
+      ...(position ? { position } : {}),
+    };
+
+    this.send(message);
+  }
+
   private send(
-    message: PostChat | PostCursor,
+    message: PostChat | PostCursor | PostTablePositionPreview,
     onError?: (error: unknown) => void,
   ) {
     if (!this.ws || this.ws.readyState !== WebSocket.OPEN) {
@@ -342,6 +361,9 @@ export class CollaborationStore {
         break;
       case 'CURSOR':
         this.handleCursorMessage(message);
+        break;
+      case 'TABLE_POSITION_PREVIEW':
+        this.handleTablePositionPreviewMessage(message);
         break;
       case 'JOIN':
         break;
@@ -399,6 +421,30 @@ export class CollaborationStore {
 
     runInAction(() => {
       this.cursors.set(cursorPosition.sessionId, cursorPosition);
+    });
+  }
+
+  private handleTablePositionPreviewMessage(
+    message: ReceiveTablePositionPreview,
+  ) {
+    const previewId = `${message.sessionId}:table-position:${message.tableId}`;
+
+    if (message.action === 'CLEAR') {
+      previewStore.removePreview(previewId);
+      return;
+    }
+
+    if (!message.position) return;
+
+    previewStore.addPreview({
+      previewId,
+      kind: 'TABLE_POSITION',
+      schemaId: message.schemaId,
+      sessionId: message.sessionId,
+      tableId: message.tableId,
+      position: message.position,
+      createdAt: Date.now(),
+      ttlMs: 2_000,
     });
   }
 

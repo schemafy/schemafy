@@ -15,6 +15,11 @@ import {
 } from './useTableMutations';
 import type { TableSnapshotResponse } from '../api';
 import { useLatest } from './useLatest';
+import { collaborationStore } from '@/store/collaboration.store';
+import { useThrottledCallback } from '@/hooks/useThrottledCallback';
+
+const TABLE_POSITION_PREVIEW_THROTTLE_MS = 50;
+const TABLE_POSITION_PREVIEW_CLEAR_DELAY_MS = 500;
 
 const buildTableNodes = (
   snapshotsData: Record<string, TableSnapshotResponse>,
@@ -30,6 +35,7 @@ export const useTables = () => {
   const snapshotsData = schemaSnapshots.snapshots;
 
   const snapshotsRef = useLatest(snapshotsData);
+  const clearPreviewTimerRef = useRef<number | null>(null);
   const previousSnapshotsRef = useRef<Record<
     string,
     TableSnapshotResponse
@@ -43,6 +49,14 @@ export const useTables = () => {
   const [tables, setTables] = useState<Node<TableData>[]>(() =>
     buildTableNodes(snapshotsData, selectedSchemaId),
   );
+
+  useEffect(() => {
+    return () => {
+      if (clearPreviewTimerRef.current !== null) {
+        window.clearTimeout(clearPreviewTimerRef.current);
+      }
+    };
+  }, []);
 
   useEffect(() => {
     const previousSnapshots = previousSnapshotsRef.current;
@@ -98,10 +112,34 @@ export const useTables = () => {
     [createTableWithExtra, selectedSchemaId, snapshotsRef],
   );
 
+  const sendTablePositionPreview = useThrottledCallback(
+    (tableId: string, position: Point) => {
+      collaborationStore.sendTablePositionPreview(
+        selectedSchemaId,
+        tableId,
+        position,
+      );
+    },
+    TABLE_POSITION_PREVIEW_THROTTLE_MS,
+  );
+
+  const onNodeDrag = useCallback(
+    (_event: React.MouseEvent, node: Node<TableData>) => {
+      sendTablePositionPreview(node.id, node.position);
+    },
+    [sendTablePositionPreview],
+  );
+
   const onNodeDragStop = useCallback(
     (_event: React.MouseEvent, node: Node<TableData>) => {
       const snapshot = snapshotsRef.current[node.id];
       if (!snapshot) return;
+
+      collaborationStore.sendTablePositionPreview(
+        selectedSchemaId,
+        node.id,
+        node.position,
+      );
 
       const currentExtra = parseTableExtra(snapshot.table.extra);
 
@@ -114,8 +152,20 @@ export const useTables = () => {
           },
         },
       });
+
+      if (clearPreviewTimerRef.current !== null) {
+        window.clearTimeout(clearPreviewTimerRef.current);
+      }
+      clearPreviewTimerRef.current = window.setTimeout(() => {
+        collaborationStore.sendTablePositionPreview(
+          selectedSchemaId,
+          node.id,
+          null,
+        );
+        clearPreviewTimerRef.current = null;
+      }, TABLE_POSITION_PREVIEW_CLEAR_DELAY_MS);
     },
-    [changeTableExtra, snapshotsRef],
+    [changeTableExtra, selectedSchemaId, snapshotsRef],
   );
 
   const onNodesDelete = useCallback(
@@ -130,6 +180,7 @@ export const useTables = () => {
   return {
     tables,
     addTable,
+    onNodeDrag,
     onNodeDragStop,
     onNodesDelete,
   };

@@ -38,6 +38,7 @@ const CanvasContent = observer(() => {
     data: { tables, memos, relationships },
     handlers: {
       onTableDragStop,
+      onTableDrag,
       onTablesDelete,
       onMemosChange,
       onRelationshipsChange,
@@ -77,6 +78,7 @@ const CanvasContent = observer(() => {
             relationships={relationships}
             activeTool={activeTool}
             onTableDragStop={onTableDragStop}
+            onTableDrag={onTableDrag}
             onTablesDelete={onTablesDelete}
             onMemosChange={onMemosChange}
             onRelationshipsChange={onRelationshipsChange}

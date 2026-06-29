@@ -18,6 +18,16 @@ export type PostChat = {
   content: string;
 };
 
+export type PreviewAction = 'UPDATE' | 'CLEAR';
+
+export type PostTablePositionPreview = {
+  type: 'TABLE_POSITION_PREVIEW';
+  action: PreviewAction;
+  schemaId: string;
+  tableId: string;
+  position?: { x: number; y: number };
+};
+
 export type ReceiveJoin = {
   type: 'JOIN';
   userId: string;
@@ -77,6 +87,16 @@ export type ReceiveErdMutated = {
   timestamp: number;
 };
 
+export type ReceiveTablePositionPreview = {
+  type: 'TABLE_POSITION_PREVIEW';
+  sessionId: string;
+  action: PreviewAction;
+  schemaId: string;
+  tableId: string;
+  position?: { x: number; y: number };
+  timestamp: number;
+};
+
 export type ReceiveSessionReady = {
   type: 'SESSION_READY';
   sessionId: string;
@@ -90,6 +110,7 @@ export type WebSocketMessage =
   | ReceiveCursor
   | ReceiveSchemaFocus
   | ReceiveChat
+  | ReceiveTablePositionPreview
   | ReceiveErdMutated;
 
 export type ChatMessage = {
