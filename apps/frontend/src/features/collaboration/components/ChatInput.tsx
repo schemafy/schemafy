@@ -56,7 +56,7 @@ const ChatMessageItem = ({ message }: ChatMessageItemProps) => {
 
   return (
     <div
-      className="h-8 px-2.5 flex items-center font-body-sm text-white"
+      className="flex min-h-8 items-center rounded-xl px-3 py-1.5 font-body-sm text-schemafy-text"
       style={{
         animation: `chat-message-in ${ANIMATION_MS}ms ease forwards`,
         opacity: isFadingOut ? 0 : 1,
@@ -120,19 +120,17 @@ export const ChatInput = observer(
           }}
         >
           <div
-            className="relative rounded-lg shadow-lg min-w-[180px] max-w-xs"
+            className="schemafy-strong-panel relative min-w-[220px] max-w-sm rounded-2xl p-1.5"
             style={{
-              backgroundColor: color,
+              borderColor: 'hsl(var(--schemafy-glass-border))',
+              boxShadow: `0 0 0 1px ${color}22, var(--shadow-schemafy-float)`,
               animation: isExiting
                 ? `chat-container-out ${CONTAINER_ANIMATION_MS}ms ease forwards`
                 : `chat-container-in ${CONTAINER_ANIMATION_MS}ms ease forwards`,
             }}
           >
             {hasMessages && (
-              <div
-                className="absolute bottom-full left-0 right-0 mb-1 flex flex-col overflow-hidden rounded-lg shadow-lg"
-                style={{ backgroundColor: color, maxHeight: '6rem' }}
-              >
+              <div className="schemafy-strong-panel absolute bottom-full left-0 right-0 mb-2 flex max-h-24 flex-col overflow-hidden rounded-2xl p-1">
                 {activeMessages.map((activeMessage) => (
                   <ChatMessageItem
                     key={activeMessage.messageId}
@@ -148,7 +146,7 @@ export const ChatInput = observer(
               onChange={(e) => setMessage(e.target.value)}
               onKeyDown={handleKeyDown}
               placeholder="메시지 입력..."
-              className="w-full px-2.5 py-1.5 bg-transparent text-white placeholder:text-white/50 font-body-sm focus:outline-none rounded-lg"
+              className="schemafy-focus-ring w-full rounded-xl bg-schemafy-secondary/85 px-3 py-2 font-body-sm text-schemafy-text placeholder:text-schemafy-dark-gray"
               maxLength={500}
             />
           </div>

@@ -55,16 +55,18 @@ export const ViewModeConstraint = ({
   const kindLabel = constraint.kind === 'PRIMARY_KEY' ? 'PK' : 'UNIQUE';
 
   return (
-    <div className="p-2">
-      <div className="text-xs text-schemafy-dark-gray font-mono">
-        <span className="text-schemafy-text font-medium">
+    <div className="px-3 py-2.5">
+      <div className="font-mono text-xs text-schemafy-dark-gray">
+        <span className="font-medium text-schemafy-text">
           {constraint.name}
         </span>{' '}
-        <span className="text-schemafy-purple">{kindLabel}</span>
+        <span className="schemafy-badge px-1.5 py-0.5 text-[10px]">
+          {kindLabel}
+        </span>
         {columnsStr && (
           <>
             {' '}
-            (<span className="text-schemafy-blue">{columnsStr}</span>)
+            (<span className="text-schemafy-dark-gray">{columnsStr}</span>)
           </>
         )}
       </div>
@@ -87,7 +89,7 @@ export const EditModeConstraint = ({
   const kindLabel = constraint.kind === 'PRIMARY_KEY' ? 'PK' : 'UNIQUE';
 
   return (
-    <div className="p-2 space-y-2 bg-schemafy-bg text-schemafy-text">
+    <div className="space-y-2.5 bg-schemafy-bg px-3.5 py-3 text-schemafy-text">
       <div className="flex items-center gap-2">
         <EditableNameInput
           name={constraint.name}
@@ -96,7 +98,7 @@ export const EditModeConstraint = ({
             onUpdateConstraintName(constraint.id, newName)
           }
         />
-        <span className="text-xs font-mono text-schemafy-dark-gray">
+        <span className="schemafy-badge px-2 py-1 font-mono text-xs">
           {kindLabel}
         </span>
 
@@ -106,7 +108,7 @@ export const EditModeConstraint = ({
         />
       </div>
 
-      <div className="ml-4 space-y-1">
+      <div className="ml-4 space-y-2">
         {constraint.columns
           .sort((a, b) => a.seqNo - b.seqNo)
           .map((constraintColumn) => (

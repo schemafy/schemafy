@@ -4,17 +4,20 @@ import { Plus, Minus } from 'lucide-react';
 export const CustomControls = () => {
   const { zoomIn, zoomOut } = useReactFlow();
   return (
-    <div
-      style={{
-        boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)',
-      }}
-      className="z-10 bg-schemafy-bg text-schemafy-text px-5 py-3 gap-5 flex rounded-lg absolute bottom-45 right-4"
-    >
-      <button onClick={() => zoomIn()}>
-        <Plus size={16} color="var(--color-schemafy-dark-gray)" />
+    <div className="schemafy-canvas-controls schemafy-canvas-panel absolute right-6 bottom-45 z-10 flex h-12 items-center gap-1 rounded-2xl px-2 text-schemafy-text">
+      <button
+        onClick={() => zoomIn()}
+        className="schemafy-focus-ring flex h-9 w-9 items-center justify-center rounded-xl text-schemafy-dark-gray transition-all duration-200 hover:bg-schemafy-secondary hover:text-schemafy-text"
+        aria-label="Zoom in"
+      >
+        <Plus size={16} />
       </button>
-      <button onClick={() => zoomOut()}>
-        <Minus size={16} color="var(--color-schemafy-dark-gray)" />
+      <button
+        onClick={() => zoomOut()}
+        className="schemafy-focus-ring flex h-9 w-9 items-center justify-center rounded-xl text-schemafy-dark-gray transition-all duration-200 hover:bg-schemafy-secondary hover:text-schemafy-text"
+        aria-label="Zoom out"
+      >
+        <Minus size={16} />
       </button>
     </div>
   );

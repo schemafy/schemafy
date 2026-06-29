@@ -127,14 +127,14 @@ export const TypeSelector = ({
   };
 
   return (
-    <div className="flex items-center gap-0.5 text-xs font-mono">
+    <div className="flex items-center gap-1 text-xs font-mono">
       <Select
         onValueChange={handleTypeSelect}
         value={displayType}
         disabled={disabled}
       >
         <SelectTrigger
-          className="text-xs font-mono px-2 py-1 border border-schemafy-light-gray rounded focus:outline-none w-auto min-w-[5rem] [&>span]:line-clamp-none"
+          className="schemafy-focus-ring w-auto min-w-[5.5rem] rounded-lg border border-schemafy-glass-border bg-schemafy-secondary/60 px-2.5 py-1.5 font-mono text-xs [&>span]:line-clamp-none"
           title={
             disabled
               ? 'Cannot change the type of a foreign key column'
@@ -184,7 +184,7 @@ export const TypeSelector = ({
                               param.valueType,
                             )
                           }
-                          className={`${isStringArray ? 'w-28' : 'w-8'} text-center bg-transparent border-b border-schemafy-dark-gray focus:outline-none [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none`}
+                          className={`${isStringArray ? 'w-28' : 'w-8'} border-b border-schemafy-dark-gray bg-transparent text-center focus:border-schemafy-soft-blue focus:outline-none [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none`}
                         />
                       </Fragment>
                     );

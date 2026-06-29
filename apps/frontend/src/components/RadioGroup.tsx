@@ -62,7 +62,8 @@ export const RadioGroupItem = ({
   return (
     <div
       className={cn(
-        'flex items-center gap-2 rounded-sm py-1.5 pl-2 pr-2 text-schemafy-text font-body-xs cursor-pointer select-none outline-none transition-colors',
+        'schemafy-focus-ring flex cursor-pointer select-none items-center gap-2 rounded-xl py-2 pl-2.5 pr-3 font-body-xs text-schemafy-text outline-none transition-colors hover:bg-schemafy-secondary',
+        isChecked && 'bg-schemafy-secondary text-schemafy-text',
         disabled && 'opacity-50 pointer-events-none cursor-not-allowed',
         className,
       )}
@@ -79,7 +80,7 @@ export const RadioGroupItem = ({
         checked={isChecked}
         onChange={() => {}}
         disabled={disabled}
-        className="w-2.5 h-2.5 accent-schemafy-text cursor-pointer pointer-events-none"
+        className="h-2.5 w-2.5 cursor-pointer accent-schemafy-soft-blue pointer-events-none"
         tabIndex={-1}
       />
       {children}

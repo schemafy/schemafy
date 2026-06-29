@@ -48,9 +48,10 @@ export const CustomConnectionLine = ({
     <g>
       <path
         fill="none"
-        stroke="var(--color-schemafy-dark-gray)"
-        strokeWidth={2}
-        strokeOpacity={0.5}
+        stroke="var(--color-schemafy-soft-blue)"
+        strokeWidth={1.5}
+        strokeOpacity={0.68}
+        strokeLinecap="round"
         d={path}
       />
     </g>

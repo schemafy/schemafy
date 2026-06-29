@@ -35,63 +35,80 @@ export const ReplyItem = ({
   };
 
   return (
-    <li className="flex gap-2 text-schemafy-text group">
-      <Avatar size={'dropdown'} src="https://picsum.photos/200/300?random=1" />
-      <div className="flex-1">
-        <div className="flex items-center gap-2">
-          <span className="font-overline-sm">{comment.author.name}</span>
-          <span className="font-body-xs text-schemafy-dark-gray">
-            {formatDate(
-              new Date(comment.updatedAt ?? comment.createdAt ?? new Date()),
-            )}
-          </span>
+    <li className="group flex w-full items-start gap-3 rounded-xl border border-transparent px-3 py-2.5 text-schemafy-text transition-colors duration-200 hover:border-schemafy-glass-border hover:bg-schemafy-secondary/50">
+      <div className="shrink-0 pt-0.5">
+        <Avatar
+          size={'dropdown'}
+          src="https://picsum.photos/200/300?random=1"
+        />
+      </div>
+      <div className="min-w-0 flex-1">
+        <div className="flex min-h-7 items-start justify-between gap-3">
+          <div className="min-w-0 flex flex-wrap items-center gap-x-2 gap-y-1 pr-2">
+            <span className="truncate font-overline-sm">
+              {comment.author.name}
+            </span>
+            <span className="font-body-xs text-schemafy-dark-gray">
+              {formatDate(
+                new Date(comment.updatedAt ?? comment.createdAt ?? new Date()),
+              )}
+            </span>
+          </div>
           {!isEditing && (
-            <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-              <Pencil
-                size={14}
-                color="var(--color-schemafy-dark-gray)"
+            <div className="flex shrink-0 gap-1 opacity-0 transition-opacity group-focus-within:opacity-100 group-hover:opacity-100">
+              <button
+                type="button"
+                title="Edit Reply"
                 onClick={() => {
                   setIsEditing(true);
                   setEditInput(comment.body);
                 }}
-                className="cursor-pointer hover:text-schemafy-text"
-              />
-              <Trash
-                size={14}
-                color="var(--color-schemafy-dark-gray)"
+                className="schemafy-icon-button schemafy-focus-ring flex h-7 w-7 items-center justify-center"
+              >
+                <Pencil size={14} />
+              </button>
+              <button
+                type="button"
+                title="Delete Reply"
                 onClick={() => deleteComment(memoId, comment.id)}
-                className="cursor-pointer hover:text-red-500"
-              />
+                className="schemafy-icon-button schemafy-focus-ring flex h-7 w-7 items-center justify-center hover:text-schemafy-destructive"
+              >
+                <Trash size={14} />
+              </button>
             </div>
           )}
         </div>
 
         {isEditing ? (
-          <div className="mt-1 flex flex-col gap-2">
+          <div className="mt-2 flex flex-col gap-2.5">
             <input
               value={editInput}
               onChange={(e) => setEditInput(e.target.value)}
               onKeyDown={handleKeyDown}
-              className="w-full bg-schemafy-secondary px-2 py-1 text-schemafy-text font-body-sm rounded outline-none border border-schemafy-blue"
+              className="schemafy-input w-full px-3 py-2 font-body-sm"
               autoFocus
             />
-            <div className="flex gap-2 justify-end">
+            <div className="flex justify-end gap-2">
               <button
+                type="button"
                 onClick={() => setIsEditing(false)}
-                className="text-xs text-schemafy-dark-gray hover:text-schemafy-text"
+                className="schemafy-menu-button schemafy-focus-ring px-3 py-1.5 font-body-xs"
               >
                 Cancel
               </button>
               <button
+                type="button"
                 onClick={handleSave}
-                className="text-xs text-schemafy-blue hover:text-blue-400 font-medium"
+                className="schemafy-focus-ring rounded-full bg-schemafy-button-bg px-3 py-1.5 font-body-xs font-medium text-schemafy-button-text transition-colors duration-200"
               >
                 Save
               </button>
             </div>
           </div>
         ) : (
-          <p className="font-body-sm mt-1">{comment.body}</p>
+          <p className="mt-1 break-words font-body-sm leading-relaxed">
+            {comment.body}
+          </p>
         )}
       </div>
     </li>
