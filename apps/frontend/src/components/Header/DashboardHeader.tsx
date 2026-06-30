@@ -13,9 +13,9 @@ export const DashboardHeader = () => {
         <ButtonLink to="/workspace" variant={'none'} size={'none'}>
           Projects
         </ButtonLink>
-        <Button variant={'none'} size={'none'}>
+        <ButtonLink to="/settings" variant={'none'} size={'none'}>
           Settings
-        </Button>
+        </ButtonLink>
         <NotificationContents />
       </div>
       <div className="flex items-center gap-4">
