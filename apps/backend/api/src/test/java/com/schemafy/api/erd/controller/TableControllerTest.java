@@ -138,7 +138,7 @@ class TableControllerTest {
 
   @Test
   @DisplayName("테이블 생성 API는 extra 객체를 허용한다")
-  void createTableAcceptsObjectValue() {
+  void createTableAcceptsObjectValue() throws Exception {
     String schemaId = "06D6W1GAHD51T5NJPK29Q6BCR8";
     String tableId = "06D6W2BAHD51T5NJPK29Q6BCR9";
 
@@ -177,7 +177,8 @@ class TableControllerTest {
         "users",
         "utf8mb4",
         "utf8mb4_general_ci",
-        "{\"position\":{\"x\":12,\"y\":24},\"color\":\"#22c55e\"}"));
+        objectMapper.readTree(
+            "{\"position\":{\"x\":12,\"y\":24},\"color\":\"#22c55e\"}")));
   }
 
   @Test
@@ -584,7 +585,7 @@ class TableControllerTest {
 
   @Test
   @DisplayName("테이블 추가정보 변경 API는 extra 객체를 허용한다")
-  void changeTableExtraAcceptsObjectValue() {
+  void changeTableExtraAcceptsObjectValue() throws Exception {
     String tableId = "06D6W2BAHD51T5NJPK29Q6BCR9";
 
     given(changeTableExtraUseCase.changeTableExtra(any(ChangeTableExtraCommand.class)))
@@ -607,7 +608,8 @@ class TableControllerTest {
 
     then(changeTableExtraUseCase).should()
         .changeTableExtra(new ChangeTableExtraCommand(tableId,
-            "{\"position\":{\"x\":24,\"y\":48},\"color\":\"#22c55e\"}"));
+            objectMapper.readTree(
+                "{\"position\":{\"x\":24,\"y\":48},\"color\":\"#22c55e\"}")));
   }
 
   @Test

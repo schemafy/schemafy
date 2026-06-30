@@ -8,9 +8,15 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
+import org.mockito.Spy;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.schemafy.core.common.exception.DomainException;
+import com.schemafy.core.common.json.JsonCodec;
+import com.schemafy.core.common.json.JsonMetadataCanonicalizer;
 import com.schemafy.core.erd.memo.application.port.in.CreateMemoCommand;
 import com.schemafy.core.erd.memo.application.port.out.CreateMemoCommentPort;
 import com.schemafy.core.erd.memo.application.port.out.CreateMemoPort;
@@ -33,6 +39,9 @@ import static org.mockito.BDDMockito.then;
 @DisplayName("CreateMemoService")
 class CreateMemoServiceTest {
 
+  private static final ObjectMapper objectMapper = new ObjectMapper()
+      .findAndRegisterModules();
+
   @Mock
   GetSchemaByIdPort getSchemaByIdPort;
 
@@ -48,6 +57,10 @@ class CreateMemoServiceTest {
   @Mock
   TransactionalOperator transactionalOperator;
 
+  @Spy
+  JsonMetadataCanonicalizer jsonMetadataCanonicalizer = new JsonMetadataCanonicalizer(
+      new JsonCodec(objectMapper));
+
   @InjectMocks
   CreateMemoService sut;
 
@@ -62,7 +75,7 @@ class CreateMemoServiceTest {
   void createMemo_success() {
     CreateMemoCommand command = new CreateMemoCommand(
         "schema-1",
-        "{}",
+        jsonObject("{\"x\": 0, \"y\": 0}"),
         "body",
         "author-1");
 
@@ -88,6 +101,7 @@ class CreateMemoServiceTest {
           assertThat(result.memo().id()).isEqualTo("memo-1");
           assertThat(result.memo().schemaId()).isEqualTo("schema-1");
           assertThat(result.memo().authorId()).isEqualTo("author-1");
+          assertThat(result.memo().positions()).isEqualTo("{\"x\":0,\"y\":0}");
           assertThat(result.comments()).hasSize(1);
           assertThat(result.comments().get(0).id()).isEqualTo("comment-1");
           assertThat(result.comments().get(0).memoId()).isEqualTo("memo-1");
@@ -104,7 +118,7 @@ class CreateMemoServiceTest {
   void createMemo_schemaNotFound() {
     CreateMemoCommand command = new CreateMemoCommand(
         "schema-1",
-        "{}",
+        jsonObject("{}"),
         "body",
         "author-1");
 
@@ -118,6 +132,14 @@ class CreateMemoServiceTest {
 
     then(createMemoPort).shouldHaveNoInteractions();
     then(createMemoCommentPort).shouldHaveNoInteractions();
+  }
+
+  private static JsonNode jsonObject(String rawJson) {
+    try {
+      return objectMapper.readTree(rawJson);
+    } catch (JsonProcessingException e) {
+      throw new IllegalArgumentException("Invalid test JSON", e);
+    }
   }
 
 }

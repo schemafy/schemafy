@@ -1,5 +1,8 @@
 package com.schemafy.core.erd.table.fixture;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.schemafy.core.common.PatchField;
 import com.schemafy.core.erd.table.application.port.in.ChangeTableExtraCommand;
 import com.schemafy.core.erd.table.application.port.in.ChangeTableMetaCommand;
@@ -12,6 +15,9 @@ import com.schemafy.core.erd.table.application.port.in.GetTablesBySchemaIdQuery;
 import com.schemafy.core.erd.table.domain.Table;
 
 public class TableFixture {
+
+  private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper()
+      .findAndRegisterModules();
 
   public static final String DEFAULT_ID = "01ARZ3NDEKTSV4RRFFQ69G5TAB";
   public static final String DEFAULT_SCHEMA_ID = "01ARZ3NDEKTSV4RRFFQ69G5FAV";
@@ -91,6 +97,15 @@ public class TableFixture {
         null);
   }
 
+  public static CreateTableCommand createCommandWithExtra(JsonNode extra) {
+    return new CreateTableCommand(
+        DEFAULT_SCHEMA_ID,
+        DEFAULT_NAME,
+        DEFAULT_CHARSET,
+        DEFAULT_COLLATION,
+        extra);
+  }
+
   public static CreateTableCommand createCommandWithoutMeta() {
     return createCommandWithMeta(null, null);
   }
@@ -127,10 +142,18 @@ public class TableFixture {
         collation);
   }
 
-  public static ChangeTableExtraCommand changeExtraCommand(String extra) {
+  public static ChangeTableExtraCommand changeExtraCommand(JsonNode extra) {
     return new ChangeTableExtraCommand(
         DEFAULT_ID,
         extra);
+  }
+
+  public static JsonNode jsonObject(String rawJson) {
+    try {
+      return OBJECT_MAPPER.readTree(rawJson);
+    } catch (JsonProcessingException e) {
+      throw new IllegalArgumentException("Invalid test JSON", e);
+    }
   }
 
   public static DeleteTableCommand deleteCommand() {

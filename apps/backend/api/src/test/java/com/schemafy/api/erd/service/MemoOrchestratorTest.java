@@ -86,7 +86,7 @@ class MemoOrchestratorTest {
         getMemoCommentsUseCase,
         updateMemoCommentUseCase,
         getUsersByIdsUseCase,
-        new MemoApiCommandMapper(jsonCodec),
+        new MemoApiCommandMapper(),
         new MemoApiResponseMapper(jsonCodec),
         jsonCodec);
   }

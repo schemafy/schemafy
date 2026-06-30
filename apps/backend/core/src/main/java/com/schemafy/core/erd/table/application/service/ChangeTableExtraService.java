@@ -7,6 +7,7 @@ import org.springframework.stereotype.Service;
 
 import com.schemafy.core.common.MutationResult;
 import com.schemafy.core.common.exception.DomainException;
+import com.schemafy.core.common.json.JsonMetadataCanonicalizer;
 import com.schemafy.core.erd.operation.application.service.ErdMutationCoordinator;
 import com.schemafy.core.erd.operation.domain.ErdOperationType;
 import com.schemafy.core.erd.table.application.port.in.ChangeTableExtraCommand;
@@ -30,6 +31,7 @@ public class ChangeTableExtraService implements ChangeTableExtraUseCase {
 
   private final ChangeTableExtraPort changeTableExtraPort;
   private final GetTableByIdPort getTableByIdPort;
+  private final JsonMetadataCanonicalizer jsonMetadataCanonicalizer;
   private ErdMutationCoordinator erdMutationCoordinator = ErdMutationCoordinator.noop();
 
   @Autowired
@@ -39,32 +41,27 @@ public class ChangeTableExtraService implements ChangeTableExtraUseCase {
 
   @Override
   public Mono<MutationResult<Void>> changeTableExtra(ChangeTableExtraCommand command) {
-    String normalizedExtra = normalizeOptional(command.extra());
-    return getTableByIdPort.findTableById(command.tableId())
-        .switchIfEmpty(Mono.error(new DomainException(TableErrorCode.NOT_FOUND, "Table not found")))
-        .flatMap(table -> {
-          if (Objects.equals(table.extra(), normalizedExtra)) {
-            return Mono.just(MutationResult.<Void>noop(null, table.id()));
-          }
-          return erdMutationCoordinator.coordinate(ErdOperationType.CHANGE_TABLE_EXTRA, command,
-              () -> getTableByIdPort.findTableById(command.tableId())
-                  .switchIfEmpty(Mono.error(new DomainException(TableErrorCode.NOT_FOUND, "Table not found")))
-                  .flatMap(lockedTable -> {
-                    if (Objects.equals(lockedTable.extra(), normalizedExtra)) {
-                      return Mono.just(MutationResult.<Void>noop(null, lockedTable.id()));
-                    }
-                    return changeTableExtraPort
-                        .changeTableExtra(command.tableId(), normalizedExtra)
-                        .thenReturn(MutationResult.<Void>of(null, lockedTable.id()));
-                  }));
-        });
-  }
-
-  private static String normalizeOptional(String value) {
-    if (value == null || value.isBlank()) {
-      return null;
-    }
-    return value.trim();
+    return Mono.defer(() -> {
+      String canonicalExtra = jsonMetadataCanonicalizer.toOptionalJsonObject(command.extra());
+      return getTableByIdPort.findTableById(command.tableId())
+          .switchIfEmpty(Mono.error(new DomainException(TableErrorCode.NOT_FOUND, "Table not found")))
+          .flatMap(table -> {
+            if (Objects.equals(table.extra(), canonicalExtra)) {
+              return Mono.just(MutationResult.<Void>noop(null, table.id()));
+            }
+            return erdMutationCoordinator.coordinate(ErdOperationType.CHANGE_TABLE_EXTRA, command,
+                () -> getTableByIdPort.findTableById(command.tableId())
+                    .switchIfEmpty(Mono.error(new DomainException(TableErrorCode.NOT_FOUND, "Table not found")))
+                    .flatMap(lockedTable -> {
+                      if (Objects.equals(lockedTable.extra(), canonicalExtra)) {
+                        return Mono.just(MutationResult.<Void>noop(null, lockedTable.id()));
+                      }
+                      return changeTableExtraPort
+                          .changeTableExtra(command.tableId(), canonicalExtra)
+                          .thenReturn(MutationResult.<Void>of(null, lockedTable.id()));
+                    }));
+          });
+    });
   }
 
 }
