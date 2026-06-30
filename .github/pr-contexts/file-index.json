@@ -141,7 +141,8 @@
   "apps/backend/api/src/main/java/com/schemafy/api/erd/controller/RelationshipController.java": [
     337,
     383,
-    422
+    422,
+    444
   ],
   "apps/backend/api/src/main/java/com/schemafy/api/erd/controller/SchemaController.java": [
     337,
@@ -152,7 +153,8 @@
   "apps/backend/api/src/main/java/com/schemafy/api/erd/controller/TableController.java": [
     337,
     383,
-    422
+    422,
+    444
   ],
   "apps/backend/api/src/main/java/com/schemafy/api/erd/controller/dto/response/SchemaResponse.java": [
     337
@@ -205,7 +207,8 @@
   ],
   "apps/backend/api/src/test/java/com/schemafy/api/erd/controller/RelationshipControllerTest.java": [
     337,
-    441
+    441,
+    444
   ],
   "apps/backend/api/src/test/java/com/schemafy/api/erd/controller/SchemaControllerTest.java": [
     337,
@@ -215,7 +218,8 @@
   ],
   "apps/backend/api/src/test/java/com/schemafy/api/erd/controller/TableControllerTest.java": [
     337,
-    441
+    441,
+    444
   ],
   "apps/backend/api/src/test/java/com/schemafy/api/project/controller/ProjectControllerTest.java": [
     354,
@@ -708,7 +712,8 @@
     341,
     412,
     419,
-    422
+    422,
+    444
   ],
   "apps/backend/core/src/test/java/com/schemafy/core/erd/table/application/service/ChangeTableNameServiceTest.java": [
     372,
@@ -1340,7 +1345,8 @@
     419
   ],
   "apps/backend/core/src/main/java/com/schemafy/core/erd/relationship/application/service/CreateRelationshipService.java": [
-    376
+    376,
+    444
   ],
   "apps/backend/core/src/main/java/com/schemafy/core/erd/relationship/application/service/DeleteRelationshipService.java": [
     376,
@@ -1368,7 +1374,8 @@
   ],
   "apps/backend/api/src/main/java/com/schemafy/api/erd/service/memo/MemoApiCommandMapper.java": [
     383,
-    422
+    422,
+    444
   ],
   "apps/backend/api/src/main/java/com/schemafy/api/erd/service/memo/MemoDeletePermissionPolicy.java": [
     383
@@ -1383,10 +1390,12 @@
     441
   ],
   "apps/backend/api/src/test/java/com/schemafy/api/erd/service/MemoOrchestratorTest.java": [
-    383
+    383,
+    444
   ],
   "apps/backend/api/src/test/java/com/schemafy/api/erd/service/memo/MemoApiCommandMapperTest.java": [
-    383
+    383,
+    444
   ],
   "apps/backend/core/src/main/java/com/schemafy/core/erd/column/application/service/ChangeColumnMetaService.java": [
     383,
@@ -1564,7 +1573,8 @@
     342
   ],
   "apps/backend/api/src/test/java/com/schemafy/api/erd/service/TableSnapshotOrchestratorTest.java": [
-    342
+    342,
+    444
   ],
   "apps/frontend/src/features/drawing/utils/anchorGeometry.ts": [
     393
@@ -1754,13 +1764,15 @@
     419
   ],
   "apps/backend/core/src/main/java/com/schemafy/core/erd/relationship/application/service/ChangeRelationshipExtraService.java": [
-    419
+    419,
+    444
   ],
   "apps/backend/core/src/main/java/com/schemafy/core/erd/schema/application/service/ChangeSchemaNameService.java": [
     419
   ],
   "apps/backend/core/src/main/java/com/schemafy/core/erd/table/application/service/ChangeTableExtraService.java": [
-    419
+    419,
+    444
   ],
   "apps/backend/core/src/main/java/com/schemafy/core/erd/table/application/service/ChangeTableMetaService.java": [
     419
@@ -1802,7 +1814,8 @@
     419
   ],
   "apps/backend/core/src/test/java/com/schemafy/core/erd/relationship/application/service/ChangeRelationshipExtraServiceTest.java": [
-    419
+    419,
+    444
   ],
   "apps/backend/core/src/test/java/com/schemafy/core/erd/relationship/application/service/ChangeRelationshipKindServiceTest.java": [
     419
@@ -1814,7 +1827,8 @@
     419
   ],
   "apps/backend/core/src/test/java/com/schemafy/core/erd/table/application/service/ChangeTableExtraServiceTest.java": [
-    419
+    419,
+    444
   ],
   "apps/backend/core/src/test/java/com/schemafy/core/erd/table/application/service/ChangeTableMetaServiceTest.java": [
     419
@@ -1856,13 +1870,16 @@
     422
   ],
   "apps/backend/api/src/main/java/com/schemafy/api/erd/service/memo/MemoApiResponseMapper.java": [
-    422
+    422,
+    444
   ],
   "apps/backend/api/src/main/java/com/schemafy/api/erd/service/relationship/RelationshipApiResponseMapper.java": [
-    422
+    422,
+    444
   ],
   "apps/backend/api/src/main/java/com/schemafy/api/erd/service/table/TableApiResponseMapper.java": [
-    422
+    422,
+    444
   ],
   "apps/backend/api/src/main/java/com/schemafy/api/erd/service/vendor/DbVendorApiResponseMapper.java": [
     422
@@ -2394,5 +2411,68 @@
   ],
   "apps/frontend/src/features/drawing/components/SchemaListItem.tsx": [
     443
+  ],
+  ".gitignore": [
+    444
+  ],
+  "apps/backend/api/src/test/java/com/schemafy/api/erd/service/relationship/RelationshipApiResponseMapperTest.java": [
+    444
+  ],
+  "apps/backend/api/src/test/java/com/schemafy/api/erd/service/table/TableApiResponseMapperTest.java": [
+    444
+  ],
+  "apps/backend/core/src/main/java/com/schemafy/core/common/json/JsonObjectMetadataConverter.java": [
+    444
+  ],
+  "apps/backend/core/src/main/java/com/schemafy/core/erd/memo/application/port/in/CreateMemoCommand.java": [
+    444
+  ],
+  "apps/backend/core/src/main/java/com/schemafy/core/erd/memo/application/port/in/UpdateMemoPositionCommand.java": [
+    444
+  ],
+  "apps/backend/core/src/main/java/com/schemafy/core/erd/memo/application/service/CreateMemoService.java": [
+    444
+  ],
+  "apps/backend/core/src/main/java/com/schemafy/core/erd/memo/application/service/UpdateMemoPositionService.java": [
+    444
+  ],
+  "apps/backend/core/src/main/java/com/schemafy/core/erd/relationship/application/port/in/ChangeRelationshipExtraCommand.java": [
+    444
+  ],
+  "apps/backend/core/src/main/java/com/schemafy/core/erd/relationship/application/port/in/CreateRelationshipCommand.java": [
+    444
+  ],
+  "apps/backend/core/src/main/java/com/schemafy/core/erd/table/application/port/in/ChangeTableExtraCommand.java": [
+    444
+  ],
+  "apps/backend/core/src/main/java/com/schemafy/core/erd/table/application/port/in/CreateTableCommand.java": [
+    444
+  ],
+  "apps/backend/core/src/main/java/com/schemafy/core/erd/table/application/service/CreateTableService.java": [
+    444
+  ],
+  "apps/backend/core/src/test/java/com/schemafy/core/common/json/JsonObjectMetadataConverterTest.java": [
+    444
+  ],
+  "apps/backend/core/src/test/java/com/schemafy/core/erd/memo/application/service/CreateMemoServiceTest.java": [
+    444
+  ],
+  "apps/backend/core/src/test/java/com/schemafy/core/erd/memo/application/service/UpdateMemoPositionServiceTest.java": [
+    444
+  ],
+  "apps/backend/core/src/test/java/com/schemafy/core/erd/relationship/application/service/CreateRelationshipServiceTest.java": [
+    444
+  ],
+  "apps/backend/core/src/test/java/com/schemafy/core/erd/relationship/domain/RelationshipTest.java": [
+    444
+  ],
+  "apps/backend/core/src/test/java/com/schemafy/core/erd/relationship/fixture/RelationshipFixture.java": [
+    444
+  ],
+  "apps/backend/core/src/test/java/com/schemafy/core/erd/table/application/service/CreateTableServiceTest.java": [
+    444
+  ],
+  "apps/backend/core/src/test/java/com/schemafy/core/erd/table/fixture/TableFixture.java": [
+    444
   ]
 }
