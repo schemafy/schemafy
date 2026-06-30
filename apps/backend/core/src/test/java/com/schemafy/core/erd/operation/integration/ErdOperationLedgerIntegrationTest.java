@@ -171,14 +171,14 @@ class ErdOperationLedgerIntegrationTest extends ErdProjectIntegrationSupport {
         "ledger_table",
         "utf8mb4",
         "utf8mb4_general_ci",
-        "{\"comment\":\"initial\"}")).block().result();
+        jsonObject("{\"comment\":\"initial\"}"))).block().result();
 
     assertThat(currentRevision(schemaResult.id())).isEqualTo(2L);
     assertLastOperation(schemaResult.id(), "CREATE_TABLE", 2L, List.of(tableResult.tableId()));
 
     StepVerifier.create(changeTableExtraUseCase.changeTableExtra(new ChangeTableExtraCommand(
         tableResult.tableId(),
-        "{\"comment\":\"updated\"}")))
+        jsonObject("{\"comment\":\"updated\"}"))))
         .expectNextCount(1)
         .verifyComplete();
 
@@ -715,7 +715,7 @@ class ErdOperationLedgerIntegrationTest extends ErdProjectIntegrationSupport {
         "users",
         "utf8mb4",
         "utf8mb4_general_ci",
-        "{\"x\":100}")).block();
+        jsonObject("{\"x\":100}"))).block();
     String tableId = createResult.result().tableId();
     String createOpId = createResult.operation().opId();
 
@@ -1029,7 +1029,7 @@ class ErdOperationLedgerIntegrationTest extends ErdProjectIntegrationSupport {
         pkTableId,
         RelationshipKind.NON_IDENTIFYING,
         Cardinality.ONE_TO_MANY,
-        "{\"label\":\"target\"}")).block().result().relationshipId();
+        jsonObject("{\"label\":\"target\"}"))).block().result().relationshipId();
     String relationshipColumnId = firstRelationshipColumnId(relationshipId);
 
     StructuralSnapshot targetSnapshot = structuralSnapshotService.captureBySchemaId(schemaId).block();
@@ -1108,7 +1108,7 @@ class ErdOperationLedgerIntegrationTest extends ErdProjectIntegrationSupport {
         .subscribeOn(Schedulers.parallel());
 
     Mono<?> changeTableExtra = Mono.defer(() -> changeTableExtraUseCase.changeTableExtra(
-        new ChangeTableExtraCommand(tableId, "{\"comment\":\"parallel\"}")))
+        new ChangeTableExtraCommand(tableId, jsonObject("{\"comment\":\"parallel\"}"))))
         .subscribeOn(Schedulers.parallel());
 
     StepVerifier.create(Flux.merge(changeSchemaName, changeTableExtra).collectList())
@@ -1147,7 +1147,7 @@ class ErdOperationLedgerIntegrationTest extends ErdProjectIntegrationSupport {
 
     StepVerifier.create(changeTableExtraUseCase.changeTableExtra(new ChangeTableExtraCommand(
         tableId,
-        "{\"comment\":\"stale\"}"))
+        jsonObject("{\"comment\":\"stale\"}")))
         .contextWrite(ErdOperationContexts.withDerivation(ErdOperationDerivationKind.UNDO, "stale-parent")
             .andThen(ErdOperationContexts.withBaseSchemaRevision(currentRevision - 1))))
         .expectErrorMatches(DomainException.hasErrorCode(OperationErrorCode.SUPERSEDED))
@@ -1538,6 +1538,10 @@ class ErdOperationLedgerIntegrationTest extends ErdProjectIntegrationSupport {
 
     assertThat(columnMetaRow.charset()).isEqualTo(expectedCharset);
     assertThat(columnMetaRow.collation()).isEqualTo(expectedCollation);
+  }
+
+  private JsonNode jsonObject(String rawJson) {
+    return jsonCodec.fromJson(rawJson, JsonNode.class);
   }
 
   private List<String> parseStringArray(String rawJson) {

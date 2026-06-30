@@ -9,9 +9,13 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
+import org.mockito.Spy;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.schemafy.core.common.exception.DomainException;
+import com.schemafy.core.common.json.JsonCodec;
+import com.schemafy.core.common.json.JsonObjectMetadataConverter;
 import com.schemafy.core.erd.operation.application.service.StructuralSnapshotService;
 import com.schemafy.core.erd.schema.application.port.out.GetSchemaByIdPort;
 import com.schemafy.core.erd.schema.domain.exception.SchemaErrorCode;
@@ -53,6 +57,10 @@ class CreateTableServiceTest {
 
   @Mock
   StructuralSnapshotService structuralSnapshotService;
+
+  @Spy
+  JsonObjectMetadataConverter jsonObjectMetadataConverter = new JsonObjectMetadataConverter(
+      new JsonCodec(new ObjectMapper().findAndRegisterModules()));
 
   @InjectMocks
   CreateTableService sut;
@@ -102,6 +110,28 @@ class CreateTableServiceTest {
             .existsBySchemaIdAndName(command.schemaId(), command.name());
         then(getSchemaByIdPort).should().findSchemaById(command.schemaId());
         then(createTablePort).should().createTable(any(Table.class));
+      }
+
+      @Test
+      @DisplayName("extra JSON object를 core 경계에서 canonical 문자열로 저장한다")
+      void canonicalizesExtraBeforePersisting() {
+        var command = TableFixture.createCommandWithExtra(
+            TableFixture.jsonObject("{\"ui\": {\"x\": 100, \"y\": 200}}"));
+        var schema = SchemaFixture.defaultSchema();
+
+        given(tableExistsPort.existsBySchemaIdAndName(any(), any()))
+            .willReturn(Mono.just(false));
+        given(getSchemaByIdPort.findSchemaById(any()))
+            .willReturn(Mono.just(schema));
+        given(ulidGeneratorPort.generate())
+            .willReturn(TableFixture.DEFAULT_ID);
+        given(createTablePort.createTable(any(Table.class)))
+            .willAnswer(invocation -> Mono.just(invocation.getArgument(0)));
+
+        StepVerifier.create(sut.createTable(command))
+            .assertNext(result -> assertThat(result.result().extra())
+                .isEqualTo("{\"ui\":{\"x\":100,\"y\":200}}"))
+            .verifyComplete();
       }
 
     }

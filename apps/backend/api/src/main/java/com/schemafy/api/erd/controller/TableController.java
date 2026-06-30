@@ -17,7 +17,6 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
-import com.fasterxml.jackson.databind.JsonNode;
 import com.schemafy.api.common.constant.ApiPath;
 import com.schemafy.api.common.type.MutationResponse;
 import com.schemafy.api.erd.broadcast.ErdMutationBroadcaster;
@@ -29,7 +28,6 @@ import com.schemafy.api.erd.controller.dto.response.TableResponse;
 import com.schemafy.api.erd.controller.dto.response.TableSnapshotResponse;
 import com.schemafy.api.erd.service.TableSnapshotOrchestrator;
 import com.schemafy.api.erd.service.table.TableApiResponseMapper;
-import com.schemafy.core.common.json.JsonCodec;
 import com.schemafy.core.erd.operation.domain.CommittedErdOperation;
 import com.schemafy.core.erd.table.application.port.in.ChangeTableExtraCommand;
 import com.schemafy.core.erd.table.application.port.in.ChangeTableExtraUseCase;
@@ -64,7 +62,6 @@ public class TableController {
   private final ChangeTableMetaUseCase changeTableMetaUseCase;
   private final ChangeTableExtraUseCase changeTableExtraUseCase;
   private final DeleteTableUseCase deleteTableUseCase;
-  private final JsonCodec jsonCodec;
   private final TableApiResponseMapper tableResponseMapper;
 
   private final ObjectProvider<ErdMutationBroadcaster> broadcasterProvider;
@@ -77,7 +74,7 @@ public class TableController {
         request.name(),
         request.charset(),
         request.collation(),
-        toOptionalJson(request.extra()));
+        request.extra());
     return createTableUseCase.createTable(command)
         .flatMap(result -> broadcastMutation(result.affectedTableIds(),
             result.operation())
@@ -155,7 +152,7 @@ public class TableController {
       @Valid @RequestBody ChangeTableExtraRequest request) {
     ChangeTableExtraCommand command = new ChangeTableExtraCommand(
         tableId,
-        toOptionalJson(request.extra()));
+        request.extra());
     return changeTableExtraUseCase.changeTableExtra(command)
         .flatMap(result -> broadcastMutation(result.affectedTableIds(),
             result.operation())
@@ -191,13 +188,6 @@ public class TableController {
       return Mono.empty();
     }
     return broadcaster.broadcast(affectedTableIds, operation);
-  }
-
-  private String toOptionalJson(JsonNode node) {
-    if (node == null || node.isNull()) {
-      return null;
-    }
-    return jsonCodec.toJson(node);
   }
 
 }
