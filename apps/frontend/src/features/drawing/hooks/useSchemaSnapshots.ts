@@ -11,7 +11,9 @@ const applyPreviewOverlay = (
   base: SchemaSnapshotsResponse,
 ): SchemaSnapshotsResponse => {
   const entries = [...previewStore.previews.values()].filter(
-    (e) => e.schemaId === schemaId,
+    (e) =>
+      e.schemaId === schemaId &&
+      (e.kind === 'TABLE' || e.kind === 'RELATIONSHIP'),
   );
 
   if (entries.length === 0) return base;
@@ -28,20 +30,6 @@ const applyPreviewOverlay = (
         snapshots[entry.fkTableId] = {
           ...fkSnapshot,
           relationships: [...fkSnapshot.relationships, entry.snapshot],
-        };
-      }
-    } else if (entry.kind === 'TABLE_POSITION') {
-      const snapshot = snapshots[entry.tableId];
-      if (snapshot) {
-        snapshots[entry.tableId] = {
-          ...snapshot,
-          table: {
-            ...snapshot.table,
-            extra: {
-              ...(snapshot.table.extra ?? {}),
-              position: entry.position,
-            },
-          },
         };
       }
     }

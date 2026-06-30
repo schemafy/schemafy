@@ -16,6 +16,8 @@ import {
 import type { TableSnapshotResponse } from '../api';
 import { useLatest } from './useLatest';
 import { collaborationStore } from '@/store/collaboration.store';
+import { previewStore } from '@/store/preview.store';
+import type { PreviewEntry, TablePositionPreviewEntry } from '@/store';
 import { useThrottledCallback } from '@/hooks/useThrottledCallback';
 
 const TABLE_POSITION_PREVIEW_THROTTLE_MS = 50;
@@ -29,10 +31,57 @@ const buildTableNodes = (
     transformSnapshotToNode(snapshot, schemaId),
   );
 
-export const useTables = () => {
+const applyTablePositionPreviews = (
+  nodes: Node<TableData>[],
+  previewPositions: Map<string, Point>,
+) => {
+  if (previewPositions.size === 0) return nodes;
+
+  return nodes.map((node) => {
+    const position = previewPositions.get(node.id);
+    if (!position) return node;
+
+    if (node.position.x === position.x && node.position.y === position.y) {
+      return node;
+    }
+
+    return {
+      ...node,
+      position,
+    };
+  });
+};
+
+const isTablePositionPreview = (
+  entry: PreviewEntry,
+): entry is TablePositionPreviewEntry => entry.kind === 'TABLE_POSITION';
+
+const getTablePositionPreviewMap = (schemaId: string) => {
+  const previewPositions = new Map<string, Point>();
+
+  for (const entry of previewStore.previews.values()) {
+    if (isTablePositionPreview(entry) && entry.schemaId === schemaId) {
+      previewPositions.set(entry.tableId, entry.position);
+    }
+  }
+
+  return previewPositions;
+};
+
+export const useTables = (canEditProject: boolean) => {
   const { selectedSchemaId } = useSelectedSchema();
   const { data: schemaSnapshots } = useSchemaSnapshots(selectedSchemaId);
   const snapshotsData = schemaSnapshots.snapshots;
+  const tablePositionPreviewEntries = [
+    ...previewStore.previews.values(),
+  ].filter(
+    (entry): entry is TablePositionPreviewEntry =>
+      isTablePositionPreview(entry) && entry.schemaId === selectedSchemaId,
+  );
+  const tablePositionPreviewKey = tablePositionPreviewEntries
+    .map((entry) => `${entry.tableId}:${entry.position.x}:${entry.position.y}`)
+    .sort()
+    .join('|');
 
   const snapshotsRef = useLatest(snapshotsData);
   const clearPreviewTimerRef = useRef<number | null>(null);
@@ -47,7 +96,10 @@ export const useTables = () => {
   const { mutate: deleteTable } = useDeleteTable(selectedSchemaId);
 
   const [tables, setTables] = useState<Node<TableData>[]>(() =>
-    buildTableNodes(snapshotsData, selectedSchemaId),
+    applyTablePositionPreviews(
+      buildTableNodes(snapshotsData, selectedSchemaId),
+      getTablePositionPreviewMap(selectedSchemaId),
+    ),
   );
 
   useEffect(() => {
@@ -64,10 +116,15 @@ export const useTables = () => {
 
     previousSnapshotsRef.current = snapshotsData;
     previousSchemaIdRef.current = selectedSchemaId;
+    const tablePositionPreviewMap =
+      getTablePositionPreviewMap(selectedSchemaId);
 
     setTables((previousTables) => {
       if (!previousSnapshots || schemaChanged) {
-        return buildTableNodes(snapshotsData, selectedSchemaId);
+        return applyTablePositionPreviews(
+          buildTableNodes(snapshotsData, selectedSchemaId),
+          tablePositionPreviewMap,
+        );
       }
 
       const previousNodesById = new Map(
@@ -86,14 +143,23 @@ export const useTables = () => {
         }
       });
 
-      return Object.values(snapshotsData).map(
-        (snapshot) => previousNodesById.get(snapshot.table.id)!,
+      return applyTablePositionPreviews(
+        Object.values(snapshotsData).map(
+          (snapshot) => previousNodesById.get(snapshot.table.id)!,
+        ),
+        tablePositionPreviewMap,
       );
     });
-  }, [selectedSchemaId, snapshotsData]);
+  }, [
+    selectedSchemaId,
+    snapshotsData,
+    tablePositionPreviewKey,
+  ]);
 
   const addTable = useCallback(
     (position: Point) => {
+      if (!canEditProject) return;
+
       const existingTableNames = Object.values(snapshotsRef.current).map(
         (snapshot) => snapshot.table.name,
       );
@@ -109,11 +175,13 @@ export const useTables = () => {
         extra: { position },
       });
     },
-    [createTableWithExtra, selectedSchemaId, snapshotsRef],
+    [canEditProject, createTableWithExtra, selectedSchemaId, snapshotsRef],
   );
 
   const sendTablePositionPreview = useThrottledCallback(
     (tableId: string, position: Point) => {
+      if (!canEditProject) return;
+
       collaborationStore.sendTablePositionPreview(
         selectedSchemaId,
         tableId,
@@ -132,6 +200,8 @@ export const useTables = () => {
 
   const onNodeDragStop = useCallback(
     (_event: React.MouseEvent, node: Node<TableData>) => {
+      if (!canEditProject) return;
+
       const snapshot = snapshotsRef.current[node.id];
       if (!snapshot) return;
 
@@ -165,16 +235,18 @@ export const useTables = () => {
         clearPreviewTimerRef.current = null;
       }, TABLE_POSITION_PREVIEW_CLEAR_DELAY_MS);
     },
-    [changeTableExtra, selectedSchemaId, snapshotsRef],
+    [canEditProject, changeTableExtra, selectedSchemaId, snapshotsRef],
   );
 
   const onNodesDelete = useCallback(
     (deletedNodes: Node<TableData>[]) => {
+      if (!canEditProject) return;
+
       deletedNodes.forEach((node) => {
         deleteTable(node.id);
       });
     },
-    [deleteTable],
+    [canEditProject, deleteTable],
   );
 
   return {
