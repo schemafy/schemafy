@@ -15,7 +15,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.schemafy.core.common.exception.DomainException;
 import com.schemafy.core.common.json.JsonCodec;
-import com.schemafy.core.common.json.JsonMetadataCanonicalizer;
+import com.schemafy.core.common.json.JsonObjectMetadataConverter;
 import com.schemafy.core.erd.operation.application.service.StructuralSnapshotService;
 import com.schemafy.core.erd.schema.application.port.out.GetSchemaByIdPort;
 import com.schemafy.core.erd.schema.domain.exception.SchemaErrorCode;
@@ -59,7 +59,7 @@ class CreateTableServiceTest {
   StructuralSnapshotService structuralSnapshotService;
 
   @Spy
-  JsonMetadataCanonicalizer jsonMetadataCanonicalizer = new JsonMetadataCanonicalizer(
+  JsonObjectMetadataConverter jsonObjectMetadataConverter = new JsonObjectMetadataConverter(
       new JsonCodec(new ObjectMapper().findAndRegisterModules()));
 
   @InjectMocks

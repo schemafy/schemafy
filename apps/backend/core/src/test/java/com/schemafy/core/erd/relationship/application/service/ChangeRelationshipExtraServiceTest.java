@@ -14,7 +14,7 @@ import com.fasterxml.jackson.databind.node.NullNode;
 import com.fasterxml.jackson.databind.node.TextNode;
 import com.schemafy.core.common.exception.DomainException;
 import com.schemafy.core.common.json.JsonCodec;
-import com.schemafy.core.common.json.JsonMetadataCanonicalizer;
+import com.schemafy.core.common.json.JsonObjectMetadataConverter;
 import com.schemafy.core.erd.relationship.application.port.out.ChangeRelationshipExtraPort;
 import com.schemafy.core.erd.relationship.application.port.out.GetRelationshipByIdPort;
 import com.schemafy.core.erd.relationship.domain.exception.RelationshipErrorCode;
@@ -39,7 +39,7 @@ class ChangeRelationshipExtraServiceTest {
   GetRelationshipByIdPort getRelationshipByIdPort;
 
   @Spy
-  JsonMetadataCanonicalizer jsonMetadataCanonicalizer = new JsonMetadataCanonicalizer(
+  JsonObjectMetadataConverter jsonObjectMetadataConverter = new JsonObjectMetadataConverter(
       new JsonCodec(new ObjectMapper().findAndRegisterModules()));
 
   @InjectMocks

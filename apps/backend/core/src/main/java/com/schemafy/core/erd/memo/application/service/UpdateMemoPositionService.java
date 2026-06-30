@@ -3,7 +3,7 @@ package com.schemafy.core.erd.memo.application.service;
 import org.springframework.stereotype.Service;
 
 import com.schemafy.core.common.exception.DomainException;
-import com.schemafy.core.common.json.JsonMetadataCanonicalizer;
+import com.schemafy.core.common.json.JsonObjectMetadataConverter;
 import com.schemafy.core.erd.memo.application.port.in.UpdateMemoPositionCommand;
 import com.schemafy.core.erd.memo.application.port.in.UpdateMemoPositionUseCase;
 import com.schemafy.core.erd.memo.application.port.out.ChangeMemoPositionPort;
@@ -26,12 +26,12 @@ class UpdateMemoPositionService implements UpdateMemoPositionUseCase {
 
   private final GetMemoByIdPort getMemoByIdPort;
   private final ChangeMemoPositionPort changeMemoPositionPort;
-  private final JsonMetadataCanonicalizer jsonMetadataCanonicalizer;
+  private final JsonObjectMetadataConverter jsonObjectMetadataConverter;
 
   @Override
   public Mono<Memo> updateMemoPosition(UpdateMemoPositionCommand command) {
     return Mono.defer(() -> {
-      String canonicalPositions = jsonMetadataCanonicalizer.toOptionalJsonObject(command.positions());
+      String canonicalPositions = jsonObjectMetadataConverter.toStorageJson(command.positions());
       return getMemoByIdPort.findMemoById(command.memoId())
           .switchIfEmpty(Mono.error(new DomainException(MemoErrorCode.NOT_FOUND)))
           .flatMap(memo -> {

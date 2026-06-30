@@ -16,7 +16,7 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.schemafy.core.common.exception.DomainException;
 import com.schemafy.core.common.json.JsonCodec;
-import com.schemafy.core.common.json.JsonMetadataCanonicalizer;
+import com.schemafy.core.common.json.JsonObjectMetadataConverter;
 import com.schemafy.core.erd.memo.application.port.in.CreateMemoCommand;
 import com.schemafy.core.erd.memo.application.port.out.CreateMemoCommentPort;
 import com.schemafy.core.erd.memo.application.port.out.CreateMemoPort;
@@ -58,7 +58,7 @@ class CreateMemoServiceTest {
   TransactionalOperator transactionalOperator;
 
   @Spy
-  JsonMetadataCanonicalizer jsonMetadataCanonicalizer = new JsonMetadataCanonicalizer(
+  JsonObjectMetadataConverter jsonObjectMetadataConverter = new JsonObjectMetadataConverter(
       new JsonCodec(objectMapper));
 
   @InjectMocks

@@ -16,7 +16,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.TextNode;
 import com.schemafy.core.common.exception.DomainException;
 import com.schemafy.core.common.json.JsonCodec;
-import com.schemafy.core.common.json.JsonMetadataCanonicalizer;
+import com.schemafy.core.common.json.JsonObjectMetadataConverter;
 import com.schemafy.core.erd.memo.application.port.in.UpdateMemoPositionCommand;
 import com.schemafy.core.erd.memo.application.port.out.ChangeMemoPositionPort;
 import com.schemafy.core.erd.memo.application.port.out.GetMemoByIdPort;
@@ -44,7 +44,7 @@ class UpdateMemoPositionServiceTest {
   ChangeMemoPositionPort changeMemoPositionPort;
 
   @Spy
-  JsonMetadataCanonicalizer jsonMetadataCanonicalizer = new JsonMetadataCanonicalizer(
+  JsonObjectMetadataConverter jsonObjectMetadataConverter = new JsonObjectMetadataConverter(
       new JsonCodec(objectMapper));
 
   @InjectMocks

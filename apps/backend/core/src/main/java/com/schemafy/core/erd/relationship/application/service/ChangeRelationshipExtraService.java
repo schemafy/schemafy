@@ -9,7 +9,7 @@ import org.springframework.stereotype.Service;
 
 import com.schemafy.core.common.MutationResult;
 import com.schemafy.core.common.exception.DomainException;
-import com.schemafy.core.common.json.JsonMetadataCanonicalizer;
+import com.schemafy.core.common.json.JsonObjectMetadataConverter;
 import com.schemafy.core.erd.operation.application.service.ErdMutationCoordinator;
 import com.schemafy.core.erd.operation.domain.ErdOperationType;
 import com.schemafy.core.erd.relationship.application.port.in.ChangeRelationshipExtraCommand;
@@ -33,7 +33,7 @@ public class ChangeRelationshipExtraService implements ChangeRelationshipExtraUs
 
   private final ChangeRelationshipExtraPort changeRelationshipExtraPort;
   private final GetRelationshipByIdPort getRelationshipByIdPort;
-  private final JsonMetadataCanonicalizer jsonMetadataCanonicalizer;
+  private final JsonObjectMetadataConverter jsonObjectMetadataConverter;
   private ErdMutationCoordinator erdMutationCoordinator = ErdMutationCoordinator.noop();
 
   @Autowired
@@ -44,7 +44,7 @@ public class ChangeRelationshipExtraService implements ChangeRelationshipExtraUs
   @Override
   public Mono<MutationResult<Void>> changeRelationshipExtra(ChangeRelationshipExtraCommand command) {
     return Mono.defer(() -> {
-      String canonicalExtra = jsonMetadataCanonicalizer.toOptionalJsonObject(command.extra());
+      String canonicalExtra = jsonObjectMetadataConverter.toStorageJson(command.extra());
       return getRelationshipByIdPort.findRelationshipById(command.relationshipId())
           .switchIfEmpty(Mono.error(new DomainException(RelationshipErrorCode.NOT_FOUND, "Relationship not found")))
           .flatMap(relationship -> {

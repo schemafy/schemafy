@@ -6,7 +6,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.reactive.TransactionalOperator;
 
 import com.schemafy.core.common.exception.DomainException;
-import com.schemafy.core.common.json.JsonMetadataCanonicalizer;
+import com.schemafy.core.common.json.JsonObjectMetadataConverter;
 import com.schemafy.core.erd.memo.application.port.in.CreateMemoCommand;
 import com.schemafy.core.erd.memo.application.port.in.CreateMemoUseCase;
 import com.schemafy.core.erd.memo.application.port.out.CreateMemoCommentPort;
@@ -36,12 +36,12 @@ class CreateMemoService implements CreateMemoUseCase {
   private final CreateMemoPort createMemoPort;
   private final CreateMemoCommentPort createMemoCommentPort;
   private final TransactionalOperator transactionalOperator;
-  private final JsonMetadataCanonicalizer jsonMetadataCanonicalizer;
+  private final JsonObjectMetadataConverter jsonObjectMetadataConverter;
 
   @Override
   public Mono<MemoDetail> createMemo(CreateMemoCommand command) {
     return Mono.defer(() -> {
-      String canonicalPositions = jsonMetadataCanonicalizer.toOptionalJsonObject(command.positions());
+      String canonicalPositions = jsonObjectMetadataConverter.toStorageJson(command.positions());
       return getSchemaByIdPort.findSchemaById(command.schemaId())
           .switchIfEmpty(Mono.error(
               new DomainException(SchemaErrorCode.NOT_FOUND, "Schema not found: " + command.schemaId())))

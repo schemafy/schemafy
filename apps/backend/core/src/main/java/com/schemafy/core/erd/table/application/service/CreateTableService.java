@@ -6,7 +6,7 @@ import org.springframework.transaction.reactive.TransactionalOperator;
 
 import com.schemafy.core.common.MutationResult;
 import com.schemafy.core.common.exception.DomainException;
-import com.schemafy.core.common.json.JsonMetadataCanonicalizer;
+import com.schemafy.core.common.json.JsonObjectMetadataConverter;
 import com.schemafy.core.erd.operation.application.inverse.CreateTableInverse;
 import com.schemafy.core.erd.operation.application.service.ErdMutationCoordinator;
 import com.schemafy.core.erd.operation.application.service.StructuralSnapshotService;
@@ -41,7 +41,7 @@ public class CreateTableService implements CreateTableUseCase {
   private final GetSchemaByIdPort getSchemaByIdPort;
   private final TransactionalOperator transactionalOperator;
   private final StructuralSnapshotService structuralSnapshotService;
-  private final JsonMetadataCanonicalizer jsonMetadataCanonicalizer;
+  private final JsonObjectMetadataConverter jsonObjectMetadataConverter;
   private ErdMutationCoordinator erdMutationCoordinator = ErdMutationCoordinator.noop();
 
   @Autowired
@@ -52,7 +52,7 @@ public class CreateTableService implements CreateTableUseCase {
   @Override
   public Mono<MutationResult<CreateTableResult>> createTable(CreateTableCommand command) {
     return Mono.defer(() -> {
-      String canonicalExtra = jsonMetadataCanonicalizer.toOptionalJsonObject(command.extra());
+      String canonicalExtra = jsonObjectMetadataConverter.toStorageJson(command.extra());
       return erdMutationCoordinator.coordinate(ErdOperationType.CREATE_TABLE, command,
           () -> structuralSnapshotService.captureBySchemaId(command.schemaId())
               .flatMap(beforeSnapshot -> tableExistsPort.existsBySchemaIdAndName(command.schemaId(), command.name())

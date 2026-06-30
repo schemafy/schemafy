@@ -13,6 +13,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.schemafy.api.erd.service.relationship.RelationshipApiResponseMapper;
 import com.schemafy.api.erd.service.table.TableApiResponseMapper;
 import com.schemafy.core.common.json.JsonCodec;
+import com.schemafy.core.common.json.JsonObjectMetadataConverter;
 import com.schemafy.core.erd.column.application.port.in.GetColumnsByTableIdUseCase;
 import com.schemafy.core.erd.column.domain.Column;
 import com.schemafy.core.erd.column.domain.ColumnTypeArguments;
@@ -78,6 +79,7 @@ class TableSnapshotOrchestratorTest {
   void setUp() {
     JsonCodec jsonCodec = new JsonCodec(new ObjectMapper()
         .findAndRegisterModules());
+    JsonObjectMetadataConverter jsonObjectMetadataConverter = new JsonObjectMetadataConverter(jsonCodec);
     sut = new TableSnapshotOrchestrator(
         getTableUseCase,
         getColumnsByTableIdUseCase,
@@ -87,8 +89,8 @@ class TableSnapshotOrchestratorTest {
         getRelationshipColumnsByRelationshipIdUseCase,
         getIndexesByTableIdUseCase,
         getIndexColumnsByIndexIdUseCase,
-        new TableApiResponseMapper(jsonCodec),
-        new RelationshipApiResponseMapper(jsonCodec));
+        new TableApiResponseMapper(jsonObjectMetadataConverter),
+        new RelationshipApiResponseMapper(jsonObjectMetadataConverter));
   }
 
   @Test

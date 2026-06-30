@@ -7,7 +7,7 @@ import org.springframework.stereotype.Service;
 
 import com.schemafy.core.common.MutationResult;
 import com.schemafy.core.common.exception.DomainException;
-import com.schemafy.core.common.json.JsonMetadataCanonicalizer;
+import com.schemafy.core.common.json.JsonObjectMetadataConverter;
 import com.schemafy.core.erd.operation.application.service.ErdMutationCoordinator;
 import com.schemafy.core.erd.operation.domain.ErdOperationType;
 import com.schemafy.core.erd.table.application.port.in.ChangeTableExtraCommand;
@@ -31,7 +31,7 @@ public class ChangeTableExtraService implements ChangeTableExtraUseCase {
 
   private final ChangeTableExtraPort changeTableExtraPort;
   private final GetTableByIdPort getTableByIdPort;
-  private final JsonMetadataCanonicalizer jsonMetadataCanonicalizer;
+  private final JsonObjectMetadataConverter jsonObjectMetadataConverter;
   private ErdMutationCoordinator erdMutationCoordinator = ErdMutationCoordinator.noop();
 
   @Autowired
@@ -42,7 +42,7 @@ public class ChangeTableExtraService implements ChangeTableExtraUseCase {
   @Override
   public Mono<MutationResult<Void>> changeTableExtra(ChangeTableExtraCommand command) {
     return Mono.defer(() -> {
-      String canonicalExtra = jsonMetadataCanonicalizer.toOptionalJsonObject(command.extra());
+      String canonicalExtra = jsonObjectMetadataConverter.toStorageJson(command.extra());
       return getTableByIdPort.findTableById(command.tableId())
           .switchIfEmpty(Mono.error(new DomainException(TableErrorCode.NOT_FOUND, "Table not found")))
           .flatMap(table -> {

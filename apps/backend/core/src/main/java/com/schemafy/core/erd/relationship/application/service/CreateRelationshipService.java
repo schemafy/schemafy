@@ -14,7 +14,7 @@ import org.springframework.transaction.reactive.TransactionalOperator;
 
 import com.schemafy.core.common.MutationResult;
 import com.schemafy.core.common.exception.DomainException;
-import com.schemafy.core.common.json.JsonMetadataCanonicalizer;
+import com.schemafy.core.common.json.JsonObjectMetadataConverter;
 import com.schemafy.core.erd.column.application.port.out.CreateColumnPort;
 import com.schemafy.core.erd.column.application.port.out.GetColumnsByTableIdPort;
 import com.schemafy.core.erd.column.domain.Column;
@@ -74,7 +74,7 @@ public class CreateRelationshipService implements CreateRelationshipUseCase {
   private final GetConstraintColumnsByConstraintIdPort getConstraintColumnsByConstraintIdPort;
   private final PkCascadeHelper pkCascadeHelper;
   private final StructuralSnapshotService structuralSnapshotService;
-  private final JsonMetadataCanonicalizer jsonMetadataCanonicalizer;
+  private final JsonObjectMetadataConverter jsonObjectMetadataConverter;
   private ErdMutationCoordinator erdMutationCoordinator = ErdMutationCoordinator.noop();
 
   @Autowired
@@ -86,7 +86,7 @@ public class CreateRelationshipService implements CreateRelationshipUseCase {
   public Mono<MutationResult<CreateRelationshipResult>> createRelationship(
       CreateRelationshipCommand command) {
     return Mono.defer(() -> {
-      String canonicalExtra = jsonMetadataCanonicalizer.toOptionalJsonObject(command.extra());
+      String canonicalExtra = jsonObjectMetadataConverter.toStorageJson(command.extra());
       return erdMutationCoordinator.coordinate(ErdOperationType.CREATE_RELATIONSHIP, command,
           () -> loadTargetTables(command)
               .flatMap(tables -> validateCreateRelationship(command, tables)
