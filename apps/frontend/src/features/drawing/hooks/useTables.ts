@@ -150,11 +150,7 @@ export const useTables = (canEditProject: boolean) => {
         tablePositionPreviewMap,
       );
     });
-  }, [
-    selectedSchemaId,
-    snapshotsData,
-    tablePositionPreviewKey,
-  ]);
+  }, [selectedSchemaId, snapshotsData, tablePositionPreviewKey]);
 
   const addTable = useCallback(
     (position: Point) => {
