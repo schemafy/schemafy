@@ -17,8 +17,13 @@ import { useEffect } from 'react';
 import axios from 'axios';
 import { NotFoundPage } from './NotFoundPage';
 import { useProject } from '@/features/project/hooks/useProject';
+import { getRoleLevel } from '@/features/project/utils/role';
 
-const CanvasContent = observer(() => {
+interface CanvasContentProps {
+  canEditProject: boolean;
+}
+
+const CanvasContent = observer(({ canEditProject }: CanvasContentProps) => {
   const {
     state: {
       relationshipConfig,
@@ -55,7 +60,7 @@ const CanvasContent = observer(() => {
       handlePaneClick,
       handleMouseMove,
     },
-  } = useCanvasController();
+  } = useCanvasController(canEditProject);
 
   return (
     <>
@@ -87,6 +92,7 @@ const CanvasContent = observer(() => {
             handleMoveEnd={handleMoveEnd}
             handlePaneClick={handlePaneClick}
             handleMouseMove={handleMouseMove}
+            canEditProject={canEditProject}
           />
 
           {selectedRelationship && (
@@ -133,10 +139,13 @@ const CanvasContent = observer(() => {
 export const CanvasPage = () => {
   const { projectId } = useParams({ from: '/project/$projectId' });
   const navigate = useNavigate();
-  const { isProjectError, isLoadingProject, projectError } =
+  const { project, isProjectError, isLoadingProject, projectError } =
     useProject(projectId);
   const isForbidden =
     axios.isAxiosError(projectError) && projectError.response?.status === 403;
+  const canEditProject =
+    !!project &&
+    getRoleLevel(project.currentUserRole) <= getRoleLevel('EDITOR');
 
   useEffect(() => {
     if (!isProjectError || !isForbidden) return;
@@ -150,7 +159,7 @@ export const CanvasPage = () => {
   return (
     <SelectedSchemaProvider projectId={projectId}>
       <MemoProvider>
-        <CanvasContent />
+        <CanvasContent canEditProject={canEditProject} />
       </MemoProvider>
     </SelectedSchemaProvider>
   );

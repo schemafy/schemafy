@@ -15,7 +15,7 @@ import { useChatInputAnchor } from '@/features/collaboration/hooks/useChatInputA
 
 const CURSOR_THROTTLE_MS = 50;
 
-export const useCanvasController = () => {
+export const useCanvasController = (canEditProject: boolean) => {
   const { projectId, selectedSchemaId } = useSelectedSchema();
   const { data: schemas } = useSchemas(projectId);
   useErdMutationSync(selectedSchemaId, projectId);
@@ -65,7 +65,7 @@ export const useCanvasController = () => {
   const schemaIds = useMemo(() => schemas?.map((s) => s.id) ?? [], [schemas]);
   const { handleMoveEnd } = useViewport(schemaIds);
   const { tables, addTable, onNodeDrag, onNodeDragStop, onNodesDelete } =
-    useTables();
+    useTables(canEditProject);
   const { memos, onMemosChange, createMemo } = useMemoContext();
 
   const {
@@ -105,6 +105,7 @@ export const useCanvasController = () => {
         return;
       }
 
+      if (!canEditProject) return;
       if (activeTool !== 'table' && activeTool !== 'memo') return;
 
       const flowPosition = screenToFlowPosition({
@@ -128,7 +129,13 @@ export const useCanvasController = () => {
         setActiveTool('pointer');
       }
     },
-    [activeTool, addTable, handleMemoCancel, screenToFlowPosition],
+    [
+      activeTool,
+      addTable,
+      canEditProject,
+      handleMemoCancel,
+      screenToFlowPosition,
+    ],
   );
 
   const sendCursorThrottled = useThrottledCallback(
