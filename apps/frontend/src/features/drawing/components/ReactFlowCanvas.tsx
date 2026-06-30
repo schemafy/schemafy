@@ -79,6 +79,7 @@ interface ReactFlowCanvasProps {
   ) => void;
   handlePaneClick: (event: React.MouseEvent) => void;
   handleMouseMove: (event: React.MouseEvent) => void;
+  canEditProject: boolean;
 }
 
 const ReactFlowCanvasComponent = ({
@@ -96,6 +97,7 @@ const ReactFlowCanvasComponent = ({
   handleMoveEnd,
   handlePaneClick,
   handleMouseMove,
+  canEditProject,
 }: ReactFlowCanvasProps) => {
   const tableIds = useMemo(() => new Set(tables.map((t) => t.id)), [tables]);
   const memoIds = useMemo(() => new Set(memos.map((m) => m.id)), [memos]);
@@ -132,6 +134,8 @@ const ReactFlowCanvasComponent = ({
     (changes: NodeChange[]) => {
       setLocalNodes((nds) => applyNodeChanges(changes, nds));
 
+      if (!canEditProject) return;
+
       const memoChanges: NodeChange[] = [];
 
       changes.forEach((change) => {
@@ -145,7 +149,7 @@ const ReactFlowCanvasComponent = ({
 
       if (memoChanges.length > 0) onMemosChange(memoChanges);
     },
-    [memoIds, onMemosChange],
+    [canEditProject, memoIds, onMemosChange],
   );
 
   const handleNodeDragStop = useCallback(
@@ -168,6 +172,8 @@ const ReactFlowCanvasComponent = ({
 
   const handleNodesDelete = useCallback(
     (deletedNodes: Node[]) => {
+      if (!canEditProject) return;
+
       const tableNodes: Node<TableData>[] = [];
 
       deletedNodes.forEach((node) => {
@@ -178,7 +184,7 @@ const ReactFlowCanvasComponent = ({
 
       if (tableNodes.length > 0) onTablesDelete(tableNodes);
     },
-    [tableIds, onTablesDelete],
+    [canEditProject, tableIds, onTablesDelete],
   );
 
   return (
@@ -198,10 +204,11 @@ const ReactFlowCanvasComponent = ({
         onPaneClick={handlePaneClick}
         onPaneMouseMove={handleMouseMove}
         onMoveEnd={handleMoveEnd}
-        nodesDraggable={activeTool !== 'hand'}
-        elementsSelectable={activeTool !== 'hand'}
+        nodesDraggable={canEditProject && activeTool !== 'hand'}
+        nodesConnectable={canEditProject}
+        elementsSelectable={canEditProject && activeTool !== 'hand'}
         panOnDrag={activeTool === 'hand'}
-        onConnect={onConnect}
+        onConnect={canEditProject ? onConnect : undefined}
         onEdgeClick={onRelationshipClick}
         edgesReconnectable={false}
         nodeTypes={NODE_TYPES}
@@ -228,8 +235,8 @@ const ReactFlowCanvasComponent = ({
           gap={20}
           size={1}
         />
-        {activeTool === 'table' && <TablePreview />}
-        {activeTool === 'memo' && <MemoPreview />}
+        {canEditProject && activeTool === 'table' && <TablePreview />}
+        {canEditProject && activeTool === 'memo' && <MemoPreview />}
       </ReactFlow>
     </div>
   );
