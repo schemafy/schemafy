@@ -4,6 +4,7 @@ import type {
 } from '@/features/drawing/api';
 
 export type PreviewKind = 'TABLE' | 'RELATIONSHIP';
+export type PositionPreviewKind = 'TABLE_POSITION';
 
 export type PreviewEntryBase = {
   previewId: string;
@@ -25,4 +26,13 @@ export type RelationshipPreviewEntry = PreviewEntryBase & {
   pkTableId: string;
 };
 
-export type PreviewEntry = TablePreviewEntry | RelationshipPreviewEntry;
+export type TablePositionPreviewEntry = PreviewEntryBase & {
+  kind: 'TABLE_POSITION';
+  tableId: string;
+  position: { x: number; y: number };
+};
+
+export type PreviewEntry =
+  | TablePreviewEntry
+  | RelationshipPreviewEntry
+  | TablePositionPreviewEntry;

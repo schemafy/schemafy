@@ -57,6 +57,7 @@ interface ReactFlowCanvasProps {
   memos: Node<MemoData>[];
   relationships: Edge[];
   activeTool: string;
+  onTableDrag: (event: React.MouseEvent, node: Node<TableData>) => void;
   onTableDragStop: (event: React.MouseEvent, node: Node<TableData>) => void;
   onTablesDelete: (nodes: Node<TableData>[]) => void;
   onMemosChange: (changes: NodeChange[]) => void;
@@ -70,6 +71,7 @@ interface ReactFlowCanvasProps {
   ) => void;
   handlePaneClick: (event: React.MouseEvent) => void;
   handleMouseMove: (event: React.MouseEvent) => void;
+  canEditProject: boolean;
 }
 
 const ReactFlowCanvasComponent = ({
@@ -77,6 +79,7 @@ const ReactFlowCanvasComponent = ({
   memos,
   relationships,
   activeTool,
+  onTableDrag,
   onTableDragStop,
   onTablesDelete,
   onMemosChange,
@@ -86,6 +89,7 @@ const ReactFlowCanvasComponent = ({
   handleMoveEnd,
   handlePaneClick,
   handleMouseMove,
+  canEditProject,
 }: ReactFlowCanvasProps) => {
   const tableIds = useMemo(() => new Set(tables.map((t) => t.id)), [tables]);
   const memoIds = useMemo(() => new Set(memos.map((m) => m.id)), [memos]);
@@ -122,6 +126,8 @@ const ReactFlowCanvasComponent = ({
     (changes: NodeChange[]) => {
       setLocalNodes((nds) => applyNodeChanges(changes, nds));
 
+      if (!canEditProject) return;
+
       const memoChanges: NodeChange[] = [];
 
       changes.forEach((change) => {
@@ -135,7 +141,7 @@ const ReactFlowCanvasComponent = ({
 
       if (memoChanges.length > 0) onMemosChange(memoChanges);
     },
-    [memoIds, onMemosChange],
+    [canEditProject, memoIds, onMemosChange],
   );
 
   const handleNodeDragStop = useCallback(
@@ -147,8 +153,19 @@ const ReactFlowCanvasComponent = ({
     [tableIds, onTableDragStop],
   );
 
+  const handleNodeDrag = useCallback(
+    (event: React.MouseEvent, node: Node) => {
+      if (tableIds.has(node.id)) {
+        onTableDrag(event, node as Node<TableData>);
+      }
+    },
+    [onTableDrag, tableIds],
+  );
+
   const handleNodesDelete = useCallback(
     (deletedNodes: Node[]) => {
+      if (!canEditProject) return;
+
       const tableNodes: Node<TableData>[] = [];
 
       deletedNodes.forEach((node) => {
@@ -159,7 +176,7 @@ const ReactFlowCanvasComponent = ({
 
       if (tableNodes.length > 0) onTablesDelete(tableNodes);
     },
-    [tableIds, onTablesDelete],
+    [canEditProject, tableIds, onTablesDelete],
   );
 
   return (
@@ -172,16 +189,18 @@ const ReactFlowCanvasComponent = ({
         nodes={localNodes}
         edges={relationships}
         onNodesChange={handleNodesChange}
+        onNodeDrag={handleNodeDrag}
         onNodeDragStop={handleNodeDragStop}
         onNodesDelete={handleNodesDelete}
         onEdgesChange={onRelationshipsChange}
         onPaneClick={handlePaneClick}
         onPaneMouseMove={handleMouseMove}
         onMoveEnd={handleMoveEnd}
-        nodesDraggable={activeTool !== 'hand'}
-        elementsSelectable={activeTool !== 'hand'}
+        nodesDraggable={canEditProject && activeTool !== 'hand'}
+        nodesConnectable={canEditProject}
+        elementsSelectable={canEditProject && activeTool !== 'hand'}
         panOnDrag={activeTool === 'hand'}
-        onConnect={onConnect}
+        onConnect={canEditProject ? onConnect : undefined}
         onEdgeClick={onRelationshipClick}
         edgesReconnectable={false}
         nodeTypes={NODE_TYPES}
@@ -205,8 +224,8 @@ const ReactFlowCanvasComponent = ({
           variant={BackgroundVariant.Dots}
           color="var(--color-schemafy-canvas-dot)"
         />
-        {activeTool === 'table' && <TablePreview />}
-        {activeTool === 'memo' && <MemoPreview />}
+        {canEditProject && activeTool === 'table' && <TablePreview />}
+        {canEditProject && activeTool === 'memo' && <MemoPreview />}
       </ReactFlow>
     </div>
   );
