@@ -42,7 +42,7 @@ public class AuthTokenRedisAdapter implements AuthTokenPort {
   public Mono<Instant> findExpiresAt(AuthTokenType tokenType, String subject) {
     String key = key(tokenType, subject);
     return redisTemplate.opsForValue().get(key)
-        .flatMap(serialized -> Mono.fromCallable(() -> jsonCodec.parse(
+        .flatMap(serialized -> Mono.fromCallable(() -> jsonCodec.fromJson(
             serialized,
             AuthTokenPayload.class))
             .flatMap(payload -> redisTemplate.getExpire(key)
@@ -59,7 +59,7 @@ public class AuthTokenRedisAdapter implements AuthTokenPort {
       return Mono.empty();
     }
     AuthTokenPayload payload = payloadFrom(token);
-    return Mono.fromCallable(() -> jsonCodec.serialize(payload))
+    return Mono.fromCallable(() -> jsonCodec.toJson(payload))
         .flatMap(serialized -> redisTemplate.opsForValue()
             .set(key(token.tokenType(), token.subject()), serialized, ttl))
         .then();
@@ -72,7 +72,7 @@ public class AuthTokenRedisAdapter implements AuthTokenPort {
       return Mono.just(false);
     }
     AuthTokenPayload payload = payloadFrom(token);
-    return Mono.fromCallable(() -> jsonCodec.serialize(payload))
+    return Mono.fromCallable(() -> jsonCodec.toJson(payload))
         .flatMap(serialized -> redisTemplate.opsForValue()
             .setIfAbsent(key(token.tokenType(), token.subject()), serialized, ttl))
         .defaultIfEmpty(false);
