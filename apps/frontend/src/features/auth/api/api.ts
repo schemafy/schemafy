@@ -1,6 +1,10 @@
 import type { AxiosResponse } from 'axios';
-import { apiClient, publicClient } from '@/lib/api/client';
-import { handleApiError } from '@/lib/api/error-handler';
+import {
+  apiClient,
+  publicClient,
+  type ErrorPolicy,
+  type RequestConfigWithMeta,
+} from '@/lib/api/client';
 import type {
   AuthResponse,
   SendSignUpEmailCodeRequest,
@@ -30,68 +34,55 @@ const handleTokenResponse = (response: AxiosResponse): string => {
 export const sendSignUpEmailCode = async (
   data: SendSignUpEmailCodeRequest,
 ): Promise<SignUpChallengeResponse> => {
-  try {
-    const response = await publicClient.post<SignUpChallengeResponse>(
-      '/users/signup/email-code',
-      data,
-    );
+  const response = await publicClient.post<SignUpChallengeResponse>(
+    '/users/signup/email-code',
+    data,
+  );
 
-    return response.data;
-  } catch (error) {
-    return handleApiError(error);
-  }
+  return response.data;
 };
 
 export const verifySignUpEmail = async (
   data: VerifySignUpEmailRequest,
 ): Promise<VerifySignUpEmailResponse> => {
-  try {
-    const response = await publicClient.post<VerifySignUpEmailResponse>(
-      '/users/signup/email-code/verify',
-      data,
-    );
+  const response = await publicClient.post<VerifySignUpEmailResponse>(
+    '/users/signup/email-code/verify',
+    data,
+  );
 
-    return response.data;
-  } catch (error) {
-    return handleApiError(error);
-  }
+  return response.data;
 };
 
 export const signUp = async (data: SignUpRequest): Promise<AuthResponse> => {
-  try {
-    const response = await publicClient.post<AuthResponse>(
-      '/users/signup',
-      data,
-    );
+  const response = await publicClient.post<AuthResponse>('/users/signup', data);
 
-    handleTokenResponse(response);
+  handleTokenResponse(response);
 
-    return response.data;
-  } catch (error) {
-    return handleApiError(error);
-  }
+  return response.data;
 };
 
 export const signIn = async (data: SignInRequest): Promise<AuthResponse> => {
-  try {
-    const response = await publicClient.post<AuthResponse>(
-      '/users/login',
-      data,
-    );
+  const response = await publicClient.post<AuthResponse>('/users/login', data);
 
-    handleTokenResponse(response);
+  handleTokenResponse(response);
 
-    return response.data;
-  } catch (error) {
-    return handleApiError(error);
-  }
+  return response.data;
 };
 
-export const refreshToken = async (): Promise<string> => {
+export const refreshToken = async (
+  options: { errorPolicy?: ErrorPolicy } = {},
+): Promise<string> => {
   if (!refreshPromise) {
     refreshPromise = (async () => {
       try {
-        const response = await publicClient.post('/users/refresh');
+        const config: RequestConfigWithMeta | undefined = options.errorPolicy
+          ? { errorPolicy: options.errorPolicy }
+          : undefined;
+        const response = await publicClient.post(
+          '/users/refresh',
+          undefined,
+          config,
+        );
         return handleTokenResponse(response);
       } catch (error) {
         clearAuthSession();

@@ -10,6 +10,7 @@ import {
 import type { SignUpChallengeResponse } from '@/features/auth/api/types';
 import { authStore } from '@/store/auth.store';
 import { toast } from 'sonner';
+import { reportUnexpectedError } from '@/lib';
 import type {
   SignUpFormValues,
   SignUpVerificationFormValues,
@@ -174,7 +175,10 @@ export const SignUpForm = () => {
       } else {
         toast.success('Verification email sent. Please check your inbox.');
       }
-    } catch {
+    } catch (error) {
+      reportUnexpectedError(error, {
+        context: 'Unexpected sign-up email code send failure.',
+      });
     } finally {
       setIsSendingCode(false);
     }
@@ -199,7 +203,10 @@ export const SignUpForm = () => {
         code: verificationForm.code,
       });
       setSignupVerificationToken(result.signupVerificationToken);
-    } catch {
+    } catch (error) {
+      reportUnexpectedError(error, {
+        context: 'Unexpected sign-up email verification failure.',
+      });
     } finally {
       setIsVerifyingCode(false);
     }
@@ -241,7 +248,10 @@ export const SignUpForm = () => {
       setLastEmailChallenge(null);
       setSignupVerificationToken('');
       navigate({ to: '/' });
-    } catch {
+    } catch (error) {
+      reportUnexpectedError(error, {
+        context: 'Unexpected sign-up form failure.',
+      });
     } finally {
       setIsSubmitting(false);
     }
