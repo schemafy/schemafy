@@ -9,6 +9,8 @@ public record User(String id, String email, String name, String password, UserSt
     email = Email.from(email).address();
   }
 
+  public boolean isActive() { return status == UserStatus.ACTIVE && deletedAt == null; }
+
   public static User signUp(
       String id,
       String email,

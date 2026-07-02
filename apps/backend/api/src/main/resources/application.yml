@@ -15,6 +15,21 @@ spring:
       host: ${REDIS_HOST:localhost}
       port: ${REDIS_PORT:6379}
 
+  mail:
+    host: ${SMTP_HOST:localhost}
+    port: ${SMTP_PORT:25}
+    username: ${SMTP_USERNAME:}
+    password: ${SMTP_PASSWORD:}
+    properties:
+      mail:
+        smtp:
+          auth: ${SMTP_AUTH:true}
+          starttls:
+            enable: ${SMTP_STARTTLS:true}
+          connectiontimeout: ${SMTP_CONNECTION_TIMEOUT:5000}
+          timeout: ${SMTP_TIMEOUT:5000}
+          writetimeout: ${SMTP_WRITE_TIMEOUT:5000}
+
   r2dbc:
     url: r2dbc:mariadb://${DB_HOST:localhost}:${DB_PORT:3306}/${DB_NAME:schemafy}
     username: ${DB_USER:schemafy}
@@ -69,6 +84,12 @@ oauth:
 
 sharelink:
   pepper: ${SHARELINK_PEPPER:default-pepper}
+
+auth:
+  token:
+    secret: ${AUTH_TOKEN_SECRET:${HMAC_SECRET:default-hmac-secret-change-me-in-production}}
+  mail:
+    from: ${SMTP_FROM:${SMTP_USERNAME:no-reply@schemafy.com}}
 
 management:
   endpoints:

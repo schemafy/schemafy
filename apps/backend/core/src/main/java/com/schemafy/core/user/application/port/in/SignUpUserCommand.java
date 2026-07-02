@@ -5,7 +5,8 @@ import com.schemafy.core.user.domain.Email;
 import com.schemafy.core.user.domain.UserPolicy;
 import com.schemafy.core.user.domain.exception.UserErrorCode;
 
-public record SignUpUserCommand(String email, String name, String password) {
+public record SignUpUserCommand(String email, String name, String password,
+    String signupVerificationToken) {
 
   public SignUpUserCommand {
     email = Email.from(email).address();
@@ -14,6 +15,9 @@ public record SignUpUserCommand(String email, String name, String password) {
     if (password == null || password.isBlank()
         || password.length() < UserPolicy.MIN_SIGN_UP_PASSWORD_LENGTH) {
       throw new DomainException(UserErrorCode.INVALID_PARAMETER, "Invalid password");
+    }
+    if (signupVerificationToken == null || signupVerificationToken.isBlank()) {
+      throw new DomainException(UserErrorCode.EMAIL_NOT_VERIFIED);
     }
   }
 

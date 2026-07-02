@@ -39,15 +39,17 @@ class LoginOrSignUpOAuthService implements LoginOrSignUpOAuthUseCase {
     return findUserAuthProviderPort.findUserAuthProvider(
         command.provider(), command.providerUserId())
         .flatMap(authProvider -> findUserByIdPort.findUserById(authProvider.userId()))
+        .flatMap(this::requireActiveUser)
         .map(user -> new LoginOrSignUpOAuthResult(user, false))
-        .switchIfEmpty(linkOrCreateOAuthUser(command))
+        .switchIfEmpty(Mono.defer(() -> linkOrCreateOAuthUser(command)))
         .as(transactionalOperator::transactional);
   }
 
   private Mono<LoginOrSignUpOAuthResult> linkOrCreateOAuthUser(
       LoginOrSignUpOAuthCommand command) {
     return findUserByEmailPort.findUserByEmail(command.email())
-        .flatMap(existingUser -> linkExistingUserToOAuthIdempotent(existingUser, command)
+        .flatMap(existingUser -> requireActiveUser(existingUser)
+            .flatMap(activeUser -> linkExistingUserToOAuthIdempotent(activeUser, command))
             .map(linked -> new LoginOrSignUpOAuthResult(linked, false)))
         .switchIfEmpty(Mono.defer(() -> createOAuthUser(command)));
   }
@@ -69,8 +71,15 @@ class LoginOrSignUpOAuthService implements LoginOrSignUpOAuthUseCase {
         .switchIfEmpty(Mono.error(new DomainException(
             UserErrorCode.OAUTH_LINK_INCONSISTENT)))
         .flatMap(authProvider -> findUserByIdPort.findUserById(authProvider.userId()))
+        .flatMap(this::requireActiveUser)
         .switchIfEmpty(Mono.error(new DomainException(
             UserErrorCode.OAUTH_LINK_INCONSISTENT)));
+  }
+
+  private Mono<User> requireActiveUser(User user) {
+    return user.isActive()
+        ? Mono.just(user)
+        : Mono.error(new DomainException(UserErrorCode.ACCOUNT_NOT_ACTIVE));
   }
 
   private Mono<LoginOrSignUpOAuthResult> createOAuthUser(
