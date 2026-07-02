@@ -1586,7 +1586,8 @@
     387
   ],
   "apps/backend/core/src/main/java/com/schemafy/core/user/application/service/LoginOrSignUpOAuthService.java": [
-    387
+    387,
+    423
   ],
   "apps/backend/core/src/main/java/com/schemafy/core/user/application/service/SignUpUserService.java": [
     387,
