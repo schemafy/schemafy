@@ -10,6 +10,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 import com.schemafy.core.common.PatchField;
 import com.schemafy.core.erd.table.application.port.out.ChangeTableMetaPort;
+import com.schemafy.core.erd.table.application.port.out.GetTableByIdPort;
 import com.schemafy.core.erd.table.fixture.TableFixture;
 
 import reactor.core.publisher.Mono;
@@ -28,6 +29,9 @@ class ChangeTableMetaServiceTest {
   @Mock
   ChangeTableMetaPort changeTableMetaPort;
 
+  @Mock
+  GetTableByIdPort getTableByIdPort;
+
   @InjectMocks
   ChangeTableMetaService sut;
 
@@ -45,6 +49,8 @@ class ChangeTableMetaServiceTest {
         var command = TableFixture.changeMetaCommand(
             PatchField.of("utf8"), PatchField.of("utf8_general_ci"));
 
+        given(getTableByIdPort.findTableById(any()))
+            .willReturn(Mono.just(TableFixture.defaultTable()));
         given(changeTableMetaPort.changeTableMeta(any(), any(), any()))
             .willReturn(Mono.empty());
 
@@ -54,6 +60,23 @@ class ChangeTableMetaServiceTest {
 
         then(changeTableMetaPort).should()
             .changeTableMeta(eq(command.tableId()), eq("utf8"), eq("utf8_general_ci"));
+      }
+
+      @Test
+      @DisplayName("현재 meta와 같으면 변경 없이 성공한다")
+      void returnsSuccessWithoutMutationWhenMetaIsUnchanged() {
+        var command = TableFixture.changeMetaCommand(
+            PatchField.of(TableFixture.DEFAULT_CHARSET),
+            PatchField.of(TableFixture.DEFAULT_COLLATION));
+
+        given(getTableByIdPort.findTableById(any()))
+            .willReturn(Mono.just(TableFixture.defaultTable()));
+
+        StepVerifier.create(sut.changeTableMeta(command))
+            .expectNextMatches(result -> result.operation() == null)
+            .verifyComplete();
+
+        then(changeTableMetaPort).shouldHaveNoInteractions();
       }
 
     }
@@ -68,6 +91,8 @@ class ChangeTableMetaServiceTest {
         var command = TableFixture.changeMetaCommand(
             PatchField.of("utf8"), PatchField.absent());
 
+        given(getTableByIdPort.findTableById(any()))
+            .willReturn(Mono.just(TableFixture.defaultTable()));
         given(changeTableMetaPort.changeTableMeta(any(), any(), any()))
             .willReturn(Mono.empty());
 
@@ -77,6 +102,22 @@ class ChangeTableMetaServiceTest {
 
         then(changeTableMetaPort).should()
             .changeTableMeta(eq(command.tableId()), eq("utf8"), isNull());
+      }
+
+      @Test
+      @DisplayName("모든 필드가 생략되면 변경 없이 성공한다")
+      void returnsSuccessWithoutMutationWhenAllFieldsAreAbsent() {
+        var command = TableFixture.changeMetaCommand(
+            PatchField.absent(), PatchField.absent());
+
+        given(getTableByIdPort.findTableById(any()))
+            .willReturn(Mono.just(TableFixture.defaultTable()));
+
+        StepVerifier.create(sut.changeTableMeta(command))
+            .expectNextMatches(result -> result.operation() == null)
+            .verifyComplete();
+
+        then(changeTableMetaPort).shouldHaveNoInteractions();
       }
 
     }
@@ -91,6 +132,8 @@ class ChangeTableMetaServiceTest {
         var command = TableFixture.changeMetaCommand(
             PatchField.of(null), PatchField.absent());
 
+        given(getTableByIdPort.findTableById(any()))
+            .willReturn(Mono.just(TableFixture.defaultTable()));
         given(changeTableMetaPort.changeTableMeta(any(), any(), any()))
             .willReturn(Mono.empty());
 

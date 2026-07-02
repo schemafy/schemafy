@@ -121,6 +121,26 @@ class ChangeTableNameServiceTest {
       }
 
       @Test
+      @DisplayName("현재 이름과 같으면 변경 없이 성공한다")
+      void succeedsWithoutChangeWhenNameIsSame() {
+        var command = TableFixture.changeNameCommand(TableFixture.DEFAULT_NAME);
+
+        given(getTableByIdPort.findTableById(command.tableId()))
+            .willReturn(Mono.just(TableFixture.defaultTable()));
+
+        StepVerifier.create(sut.changeTableName(command))
+            .expectNextMatches(result -> result.operation() == null)
+            .verifyComplete();
+
+        then(tableExistsPort).shouldHaveNoInteractions();
+        then(changeTableNamePort).shouldHaveNoInteractions();
+        then(getConstraintsByTableIdPort).shouldHaveNoInteractions();
+        then(getRelationshipsByTableIdPort).shouldHaveNoInteractions();
+        then(changeConstraintNamePort).shouldHaveNoInteractions();
+        then(changeRelationshipNamePort).shouldHaveNoInteractions();
+      }
+
+      @Test
       @DisplayName("PK 쪽 테이블 rename으로 관계 이름이 바뀌면 FK 테이블도 affectedTableIds에 포함한다")
       void includesRelatedTableWhenPkSideRelationshipNameChanges() {
         var oldTable = new Table(

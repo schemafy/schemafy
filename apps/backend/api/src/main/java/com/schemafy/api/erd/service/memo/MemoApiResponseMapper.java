@@ -2,6 +2,7 @@ package com.schemafy.api.erd.service.memo;
 
 import org.springframework.stereotype.Component;
 
+import com.fasterxml.jackson.databind.JsonNode;
 import com.schemafy.api.erd.controller.dto.response.MemoCommentResponse;
 import com.schemafy.api.erd.controller.dto.response.MemoResponse;
 import com.schemafy.api.user.controller.dto.response.UserSummaryResponse;
@@ -22,7 +23,7 @@ public class MemoApiResponseMapper {
         memo.id(),
         memo.schemaId(),
         author,
-        jsonCodec.parseNode(memo.positions()),
+        jsonCodec.fromJson(memo.positions(), JsonNode.class),
         memo.createdAt(),
         memo.updatedAt());
   }

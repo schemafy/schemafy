@@ -17,6 +17,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
+import com.fasterxml.jackson.databind.JsonNode;
 import com.schemafy.api.common.constant.ApiPath;
 import com.schemafy.api.common.type.MutationResponse;
 import com.schemafy.api.erd.broadcast.ErdMutationBroadcaster;
@@ -76,7 +77,7 @@ public class TableController {
         request.name(),
         request.charset(),
         request.collation(),
-        jsonCodec.canonicalizeOptional(request.extra()));
+        toOptionalJson(request.extra()));
     return createTableUseCase.createTable(command)
         .flatMap(result -> broadcastMutation(result.affectedTableIds(),
             result.operation())
@@ -154,7 +155,7 @@ public class TableController {
       @Valid @RequestBody ChangeTableExtraRequest request) {
     ChangeTableExtraCommand command = new ChangeTableExtraCommand(
         tableId,
-        jsonCodec.canonicalizeOptional(request.extra()));
+        toOptionalJson(request.extra()));
     return changeTableExtraUseCase.changeTableExtra(command)
         .flatMap(result -> broadcastMutation(result.affectedTableIds(),
             result.operation())
@@ -190,6 +191,13 @@ public class TableController {
       return Mono.empty();
     }
     return broadcaster.broadcast(affectedTableIds, operation);
+  }
+
+  private String toOptionalJson(JsonNode node) {
+    if (node == null || node.isNull()) {
+      return null;
+    }
+    return jsonCodec.toJson(node);
   }
 
 }

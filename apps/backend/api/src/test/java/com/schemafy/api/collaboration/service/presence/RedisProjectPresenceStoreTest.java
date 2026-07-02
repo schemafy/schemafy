@@ -119,7 +119,7 @@ class RedisProjectPresenceStoreTest {
   void removeExpired_deletes_session_with_guarded_script() {
     ProjectPresenceSession expired = new ProjectPresenceSession(
         "session-1", "user-1", "tester", 1000L, 1000L);
-    String payload = jsonCodec.serialize(expired);
+    String payload = jsonCodec.toJson(expired);
 
     given(redisTemplate.opsForZSet()).willReturn(zSetOps);
     given(zSetOps.rangeByScore(eq(EXPIRES_KEY), any(Range.class)))
@@ -155,7 +155,7 @@ class RedisProjectPresenceStoreTest {
   void refresh_updates_presence_metadata_atomically() {
     ProjectPresenceSession refreshed = new ProjectPresenceSession(
         "session-1", "user-1", "tester", 1000L, 2000L);
-    String payload = jsonCodec.serialize(refreshed);
+    String payload = jsonCodec.toJson(refreshed);
 
     given(redisTemplate.execute(eq(ProjectPresenceRedisScripts.REFRESH_SESSION),
         anyList(), anyList()))

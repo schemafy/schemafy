@@ -20,6 +20,8 @@ import { authStore } from './auth.store';
 import { previewStore } from './preview.store';
 import { apiClient } from '@/lib/api/client';
 import { toast } from 'sonner';
+import { reportUnexpectedError } from '@/lib';
+import { operationHistoryStore } from './operation-history.store';
 
 const WEBSOCKET_URL =
   import.meta.env.VITE_WS_URL || 'ws://localhost:4000/ws/collaboration';
@@ -27,6 +29,8 @@ const WEBSOCKET_URL =
 const MAX_RECONNECT_ATTEMPTS = 10;
 const BASE_RECONNECT_DELAY_MS = 3000;
 const MAX_RECONNECT_DELAY_MS = 60000;
+
+export type RevisionSyncStatus = 'applied' | 'stale';
 
 export class CollaborationStore {
   cursors: Map<string, CursorPosition> = new Map();
@@ -38,8 +42,9 @@ export class CollaborationStore {
   private reconnectTimeoutId: number | null = null;
   private reconnectAttempts = 0;
   private chatMessageListeners: Set<(message: ChatMessage) => void> = new Set();
-  private erdMutatedListeners: Set<(message: ReceiveErdMutated) => void> =
-    new Set();
+  private erdMutatedListeners: Set<
+    (message: ReceiveErdMutated, syncStatus: RevisionSyncStatus) => void
+  > = new Set();
 
   constructor() {
     makeObservable(this, {
@@ -66,6 +71,18 @@ export class CollaborationStore {
 
   getSchemaRevision(schemaId: string): number | null {
     return this.schemaRevisions.get(schemaId) ?? null;
+  }
+
+  getRevisionSyncStatus(
+    schemaId: string,
+    committedRevision: number,
+  ): RevisionSyncStatus {
+    const currentRevision = this.getSchemaRevision(schemaId);
+
+    if (currentRevision === null) return 'applied';
+    if (committedRevision <= currentRevision) return 'stale';
+
+    return 'applied';
   }
 
   setSchemaRevision(schemaId: string, revision: number) {
@@ -127,7 +144,9 @@ export class CollaborationStore {
 
         this.handleMessage(payload);
       } catch (error) {
-        console.error('[WebSocket] Parse error', error);
+        reportUnexpectedError(error, {
+          context: '[WebSocket] Failed to parse an incoming message.',
+        });
       }
     };
 
@@ -154,7 +173,9 @@ export class CollaborationStore {
     };
 
     this.ws.onerror = (event) => {
-      console.error('[WebSocket] error:', event);
+      reportUnexpectedError(event, {
+        context: '[WebSocket] Connection error.',
+      });
     };
   }
 
@@ -182,6 +203,7 @@ export class CollaborationStore {
       this.schemaRevisions.clear();
       this.activeChatMessages.clear();
       this.sessionId = null;
+      operationHistoryStore.clearAll();
     });
   }
 
@@ -226,7 +248,12 @@ export class CollaborationStore {
     };
   }
 
-  onErdMutated(listener: (message: ReceiveErdMutated) => void) {
+  onErdMutated(
+    listener: (
+      message: ReceiveErdMutated,
+      syncStatus: RevisionSyncStatus,
+    ) => void,
+  ) {
     this.erdMutatedListeners.add(listener);
 
     return () => {
@@ -240,11 +267,12 @@ export class CollaborationStore {
       content,
     };
 
-    this.send(message, (error) => {
-      console.error('Failed to send chat message:', error);
+    this.send(message, () => {
       setTimeout(() => {
         this.send(message, (retryError) => {
-          console.error('Retry failed:', retryError);
+          reportUnexpectedError(retryError, {
+            userMessage: 'Failed to send the chat message. Please try again.',
+          });
         });
       }, 500);
     });
@@ -254,14 +282,12 @@ export class CollaborationStore {
     const user = this.currentUser;
 
     if (!user) {
-      console.error('User is not logged in');
       return;
     }
 
     const sessionId = this.sessionId;
 
     if (!sessionId) {
-      console.error('Session ID is not available');
       return;
     }
 
@@ -302,7 +328,9 @@ export class CollaborationStore {
       if (onError) {
         onError(error);
       } else {
-        console.error('Failed to send message:', error);
+        reportUnexpectedError(error, {
+          context: 'Failed to send a collaboration message.',
+        });
       }
     }
   }
@@ -329,11 +357,21 @@ export class CollaborationStore {
   }
 
   private handleErdMutatedMessage(message: ReceiveErdMutated) {
+    const syncStatus = this.getRevisionSyncStatus(
+      message.schemaId,
+      message.operation.committedRevision,
+    );
+
+    if (syncStatus === 'stale') return;
+
     this.setSchemaRevision(
       message.schemaId,
       message.operation.committedRevision,
     );
-    this.erdMutatedListeners.forEach((listener) => listener(message));
+    operationHistoryStore.handleErdMutated(message);
+    this.erdMutatedListeners.forEach((listener) =>
+      listener(message, syncStatus),
+    );
   }
 
   private handleChatMessage(message: ReceiveChat) {

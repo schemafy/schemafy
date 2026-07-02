@@ -104,15 +104,37 @@ class InvitationControllerTest extends ProjectHttpTestSupport {
           .jsonPath("$.content[0].targetName").isEqualTo(testProject.getName())
           .jsonPath("$.content[0].targetDescription")
           .isEqualTo(testProject.getDescription())
+          .jsonPath("$.content[0].invitedBy").isEqualTo("Admin")
           .jsonPath("$.content[1].id").isEqualTo(workspaceInvitation.getId())
           .jsonPath("$.content[1].type").isEqualTo("WORKSPACE")
           .jsonPath("$.content[1].targetId").isEqualTo(testWorkspace.getId())
           .jsonPath("$.content[1].targetName").isEqualTo(testWorkspace.getName())
           .jsonPath("$.content[1].targetDescription")
           .isEqualTo(testWorkspace.getDescription())
+          .jsonPath("$.content[1].invitedBy").isEqualTo("Admin")
           .jsonPath("$.size").isEqualTo(10)
           .jsonPath("$.hasNext").isEqualTo(false)
           .jsonPath("$.nextCursorId").value(value -> assertThat(value).isNull());
+    }
+
+    @Test
+    @DisplayName("초대한 사용자가 삭제됐으면 invitedBy를 Unknown으로 반환한다")
+    void getMyInvitations_DeletedInviter_ReturnsUnknownInvitedBy() {
+      User invitee = getUser(inviteeUserId);
+      Invitation invitation = saveWorkspaceInvitation(
+          testWorkspace.getId(), invitee.email(), WorkspaceRole.MEMBER,
+          adminUserId);
+      softDeleteUser(adminUserId);
+
+      webTestClient.get()
+          .uri(API_BASE + "/users/me/invitations?size=10")
+          .header("Authorization", "Bearer " + inviteeToken)
+          .exchange()
+          .expectStatus().isOk()
+          .expectBody()
+          .jsonPath("$.content.length()").isEqualTo(1)
+          .jsonPath("$.content[0].id").isEqualTo(invitation.getId())
+          .jsonPath("$.content[0].invitedBy").isEqualTo("Unknown");
     }
 
     @Test

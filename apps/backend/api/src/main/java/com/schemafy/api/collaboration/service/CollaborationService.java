@@ -258,7 +258,7 @@ public class CollaborationService {
   }
 
   private <T> Mono<T> deserializeFromJson(String json, Class<T> clazz) {
-    return Mono.fromCallable(() -> jsonCodec.parse(json, clazz))
+    return Mono.fromCallable(() -> jsonCodec.fromJson(json, clazz))
         .onErrorMap(IllegalArgumentException.class,
             e -> new RuntimeException("[CollaborationService] failed to deserialize JSON",
                 e));

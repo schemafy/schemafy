@@ -2,6 +2,7 @@ package com.schemafy.api.erd.service.relationship;
 
 import org.springframework.stereotype.Component;
 
+import com.fasterxml.jackson.databind.JsonNode;
 import com.schemafy.api.erd.controller.dto.response.RelationshipResponse;
 import com.schemafy.core.common.json.JsonCodec;
 import com.schemafy.core.erd.relationship.application.port.in.CreateRelationshipResult;
@@ -24,7 +25,7 @@ public class RelationshipApiResponseMapper {
         result.name(),
         result.kind(),
         result.cardinality(),
-        jsonCodec.parseOptionalNode(result.extra()));
+        toOptionalJsonNode(result.extra()));
   }
 
   public RelationshipResponse toRelationshipResponse(
@@ -36,7 +37,14 @@ public class RelationshipApiResponseMapper {
         relationship.name(),
         relationship.kind(),
         relationship.cardinality(),
-        jsonCodec.parseOptionalNode(relationship.extra()));
+        toOptionalJsonNode(relationship.extra()));
+  }
+
+  private JsonNode toOptionalJsonNode(String rawJson) {
+    if (rawJson == null || rawJson.isBlank()) {
+      return null;
+    }
+    return jsonCodec.fromJson(rawJson, JsonNode.class);
   }
 
 }

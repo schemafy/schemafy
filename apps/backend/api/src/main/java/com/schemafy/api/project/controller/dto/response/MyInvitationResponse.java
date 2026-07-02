@@ -26,10 +26,14 @@ public record MyInvitationResponse(
         invitation.targetDescription(),
         invitation.invitedEmail(),
         invitation.invitedRole(),
-        invitation.invitedBy(),
+        displayInvitedBy(invitation.invitedBy()),
         invitation.status(),
         invitation.expiresAt(),
         invitation.createdAt());
+  }
+
+  private static String displayInvitedBy(String invitedBy) {
+    return invitedBy == null ? "Unknown" : invitedBy;
   }
 
 }

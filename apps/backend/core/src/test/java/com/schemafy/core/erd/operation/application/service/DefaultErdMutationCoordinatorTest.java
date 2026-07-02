@@ -87,7 +87,7 @@ class DefaultErdMutationCoordinatorTest {
 
     lenient().when(transactionalOperator.transactional(any(Mono.class)))
         .thenAnswer(invocation -> invocation.getArgument(0));
-    lenient().when(jsonCodec.serialize(any())).thenReturn("{}");
+    lenient().when(jsonCodec.toJson(any())).thenReturn("{}");
     lenient().when(ulidGeneratorPort.generate()).thenReturn("operation1");
   }
 
@@ -169,6 +169,50 @@ class DefaultErdMutationCoordinatorTest {
         "{}",
         null,
         "{}"));
+  }
+
+  @Test
+  @DisplayName("mutation supplier가 no-op을 반환하면 revision과 operation log를 남기지 않는다")
+  void skipsCommitWhenMutationReturnsNoOp() {
+    Object payload = new Object();
+    ResolvedErdMutationTarget resolvedTarget = new ResolvedErdMutationTarget(
+        "project1",
+        "schema1",
+        "table1");
+    SchemaCollaborationState lockedState = new SchemaCollaborationState(
+        "schema1",
+        "project1",
+        3L,
+        null,
+        null);
+    List<String> events = new ArrayList<>();
+
+    given(erdMutationTargetResolver.resolveBefore(ErdOperationType.CHANGE_COLUMN_POSITION, payload))
+        .willReturn(Mono.just(resolvedTarget));
+    given(findSchemaCollaborationStatePort.findBySchemaIdForUpdate("schema1"))
+        .willAnswer(invocation -> {
+          events.add("lock");
+          return Mono.just(lockedState);
+        });
+
+    Supplier<Mono<MutationResult<String>>> mutationSupplier = () -> {
+      events.add("mutate");
+      return Mono.just(MutationResult.noop("ok", Set.of("table1")));
+    };
+
+    StepVerifier.create(sut.coordinate(ErdOperationType.CHANGE_COLUMN_POSITION, payload,
+        mutationSupplier))
+        .assertNext(result -> {
+          assertThat(result.result()).isEqualTo("ok");
+          assertThat(result.operation()).isNull();
+          assertThat(result.noOp()).isTrue();
+        })
+        .verifyComplete();
+
+    assertThat(events).containsExactly("lock", "mutate");
+    then(erdMutationTargetFinalizer).shouldHaveNoInteractions();
+    then(incrementSchemaCollaborationRevisionPort).shouldHaveNoInteractions();
+    then(appendErdOperationLogPort).shouldHaveNoInteractions();
   }
 
 }
