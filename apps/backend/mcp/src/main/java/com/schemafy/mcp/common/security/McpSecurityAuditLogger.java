@@ -12,8 +12,8 @@ public class McpSecurityAuditLogger {
   private static final Logger log = LoggerFactory.getLogger(McpSecurityAuditLogger.class);
 
   public void authenticationSucceeded(ServerWebExchange exchange, McpTokenClaims claims) {
-    log.info("mcp_auth_success path={} userId={} tokenId={} scopes={}",
-        path(exchange), claims.userId(), claims.tokenId(), claims.scopes());
+    log.debug("mcp_auth_success path={} userId={} scopes={}",
+        path(exchange), claims.userId(), claims.scopes());
   }
 
   public void authenticationFailed(ServerWebExchange exchange, McpSecurityError error) {
@@ -22,8 +22,8 @@ public class McpSecurityAuditLogger {
   }
 
   public void rateLimited(ServerWebExchange exchange, McpTokenClaims claims) {
-    log.warn("mcp_rate_limited path={} userId={} tokenId={}",
-        path(exchange), claims.userId(), claims.tokenId());
+    log.warn("mcp_rate_limited path={} userId={}",
+        path(exchange), claims.userId());
   }
 
   private String path(ServerWebExchange exchange) {
