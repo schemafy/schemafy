@@ -12,6 +12,7 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.schemafy.api.common.constant.ApiPath;
@@ -19,8 +20,10 @@ import com.schemafy.api.common.type.MutationResponse;
 import com.schemafy.api.erd.broadcast.ErdMutationBroadcaster;
 import com.schemafy.api.erd.controller.dto.request.ChangeSchemaNameRequest;
 import com.schemafy.api.erd.controller.dto.request.CreateSchemaRequest;
+import com.schemafy.api.erd.controller.dto.response.SchemaDdlExportResponse;
 import com.schemafy.api.erd.controller.dto.response.SchemaResponse;
 import com.schemafy.api.erd.controller.dto.response.SchemaSnapshotsResponse;
+import com.schemafy.api.erd.service.SchemaDdlExportOrchestrator;
 import com.schemafy.api.erd.service.SchemaSnapshotOrchestrator;
 import com.schemafy.core.erd.operation.domain.CommittedErdOperation;
 import com.schemafy.core.erd.schema.application.port.in.ChangeSchemaNameCommand;
@@ -48,6 +51,7 @@ public class SchemaController {
   private final ChangeSchemaNameUseCase changeSchemaNameUseCase;
   private final DeleteSchemaUseCase deleteSchemaUseCase;
   private final SchemaSnapshotOrchestrator schemaSnapshotOrchestrator;
+  private final SchemaDdlExportOrchestrator schemaDdlExportOrchestrator;
 
   private final ObjectProvider<ErdMutationBroadcaster> broadcasterProvider;
 
@@ -83,6 +87,14 @@ public class SchemaController {
   public Mono<SchemaSnapshotsResponse> getSchemaSnapshots(
       @PathVariable String schemaId) {
     return schemaSnapshotOrchestrator.getSchemaSnapshots(schemaId);
+  }
+
+  @GetMapping("/schemas/{schemaId}/exports/ddl")
+  public Mono<SchemaDdlExportResponse> exportSchemaDdl(
+      @PathVariable String schemaId,
+      @RequestParam String targetDbVendor) {
+    return schemaDdlExportOrchestrator.exportSchemaDdl(schemaId,
+        targetDbVendor);
   }
 
   @GetMapping("/projects/{projectId}/schemas")
