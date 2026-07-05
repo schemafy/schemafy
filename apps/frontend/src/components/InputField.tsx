@@ -31,7 +31,10 @@ export const InputField = memo(
 
     return (
       <div className="flex flex-col flex-grow gap-1 py-3 px-4">
-        <label htmlFor={inputId} className="mb-1 font-overline-md">
+        <label
+          htmlFor={inputId}
+          className="mb-1 font-overline-md text-schemafy-text"
+        >
           {label} {required && '*'}
         </label>
         <input
@@ -46,7 +49,9 @@ export const InputField = memo(
           onBlur={onBlur}
           className={cn(
             'border border-schemafy-light-gray placeholder-schemafy-dark-gray font-body-md rounded-[12px] p-4',
-            disabled && 'text-schemafy-dark-gray bg-schemafy-secondary',
+            disabled
+              ? 'text-schemafy-dark-gray bg-schemafy-secondary'
+              : 'text-schemafy-text bg-transparent',
           )}
         />
         {error && (
