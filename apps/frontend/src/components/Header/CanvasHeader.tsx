@@ -1,23 +1,21 @@
 import { Button } from '../Button';
 import { Avatar } from '../Avatar';
-import { ImportContents } from './contents/ImportContents';
 import { ExportContents } from './contents/ExportContents';
 import { ShareContents } from './contents/ShareContents';
-import { VersionsContents } from './contents/VersionContents';
 import { SettingsContents } from './contents/SettingsContents';
+import { useLogout } from '@/features/auth';
 import { useParams } from '@tanstack/react-router';
 
 export const CanvasHeader = () => {
   const { projectId } = useParams({ from: '/project/$projectId' });
+  const handleLogout = useLogout();
 
   return (
     <div className="flex items-center gap-9">
-      <ImportContents />
       <ExportContents />
       <ShareContents projectId={projectId} />
-      <VersionsContents />
       <SettingsContents />
-      <Button variant={'secondary'} round>
+      <Button variant={'secondary'} round onClick={handleLogout}>
         Sign Out
       </Button>
       <div className="flex items-center gap-2">

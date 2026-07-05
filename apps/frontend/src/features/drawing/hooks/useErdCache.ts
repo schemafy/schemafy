@@ -6,6 +6,7 @@ import type { CommittedMutationResult } from '../api/mutation-request';
 import { syncCommittedRevision } from '../api/mutation-request';
 import { erdKeys } from './query-keys';
 import { collaborationStore } from '@/store/collaboration.store';
+import { reportUnexpectedError } from '@/lib';
 
 export const useErdCache = (schemaId: string) => {
   const queryClient = useQueryClient();
@@ -45,7 +46,10 @@ export const useErdCache = (schemaId: string) => {
             };
           },
         );
-      } catch {
+      } catch (error) {
+        reportUnexpectedError(error, {
+          context: 'Unexpected diagram cache refresh failure.',
+        });
         queryClient.invalidateQueries({
           queryKey: erdKeys.schemaSnapshots(schemaId),
         });
