@@ -14,9 +14,12 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
 @ActiveProfiles({ "test", "server" })
-@SpringBootTest
+@SpringBootTest(properties = "schemafy.openapi.resource-locations=file:build/test-openapi-spec/server/")
 @AutoConfigureWebTestClient
 class OpenApiServerProfileTest {
+
+  private static final Path TEST_SPEC_PATH = Path.of(
+      "build/test-openapi-spec/server/openapi3.json");
 
   @Autowired
   WebTestClient webTestClient;
@@ -24,9 +27,8 @@ class OpenApiServerProfileTest {
   @Test
   @DisplayName("server 프로파일에서 OpenAPI 문서와 Swagger UI는 비활성화된다")
   void openApiDocsDisabledInServerProfile() throws IOException {
-    Path specPath = Path.of("build/api-spec/openapi3.json");
-    Files.createDirectories(specPath.getParent());
-    Files.writeString(specPath, """
+    Files.createDirectories(TEST_SPEC_PATH.getParent());
+    Files.writeString(TEST_SPEC_PATH, """
         {
           "openapi": "3.0.1",
           "info": {

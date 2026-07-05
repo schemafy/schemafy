@@ -18,9 +18,12 @@ import org.junit.jupiter.api.Test;
 import static org.assertj.core.api.Assertions.assertThat;
 
 @ActiveProfiles("dev")
-@SpringBootTest
+@SpringBootTest(properties = "schemafy.openapi.resource-locations=file:build/test-openapi-spec/security/")
 @AutoConfigureWebTestClient
 class SecurityConfigTest {
+
+  private static final Path TEST_SPEC_PATH = Path.of(
+      "build/test-openapi-spec/security/openapi3.json");
 
   @Autowired
   WebTestClient webTestClient;
@@ -75,9 +78,7 @@ class SecurityConfigTest {
   @Test
   @DisplayName("dev 프로파일에서 REST Docs 기반 OpenAPI 정적 문서는 인증 없이 조회할 수 있다")
   void generatedOpenApiDocsEndpointAllowedInDev() throws IOException {
-    Path specPath = Path.of("build/api-spec/openapi3.json");
-    Files.createDirectories(specPath.getParent());
-    Files.writeString(specPath, """
+    writeTestOpenApiSpec("""
         {
           "openapi": "3.0.1",
           "info": {
@@ -117,9 +118,7 @@ class SecurityConfigTest {
   @DisplayName("OpenAPI 정적 문서는 낡은 Bearer 토큰이 있어도 조회할 수 있다")
   void generatedOpenApiDocsEndpointAllowedWithStaleBearerToken()
       throws IOException {
-    Path specPath = Path.of("build/api-spec/openapi3.json");
-    Files.createDirectories(specPath.getParent());
-    Files.writeString(specPath, """
+    writeTestOpenApiSpec("""
         {
           "openapi": "3.0.1",
           "info": {
@@ -139,6 +138,11 @@ class SecurityConfigTest {
         .expectHeader().contentTypeCompatibleWith(MediaType.APPLICATION_JSON)
         .expectBody()
         .jsonPath("$.info.title").isEqualTo("Schemafy API");
+  }
+
+  private static void writeTestOpenApiSpec(String spec) throws IOException {
+    Files.createDirectories(TEST_SPEC_PATH.getParent());
+    Files.writeString(TEST_SPEC_PATH, spec);
   }
 
   @Test
