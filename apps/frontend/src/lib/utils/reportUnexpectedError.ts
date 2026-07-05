@@ -39,6 +39,7 @@ const emitError = (error: unknown, options: ReportErrorOptions = {}) => {
   }
 
   if (import.meta.env.DEV) {
+    // eslint-disable-next-line no-console -- Development-only fallback for local error visibility.
     console.error(errorToReport);
   }
 
