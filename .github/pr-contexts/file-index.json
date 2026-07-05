@@ -2246,7 +2246,8 @@
     436
   ],
   "apps/backend/core/src/main/java/com/schemafy/core/erd/ddl/domain/mysql/MySqlDdlGenerator.java": [
-    436
+    436,
+    445
   ],
   "apps/backend/core/src/test/java/com/schemafy/core/erd/ddl/application/service/GenerateSchemaDdlServiceTest.java": [
     436
