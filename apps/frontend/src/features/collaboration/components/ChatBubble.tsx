@@ -19,19 +19,21 @@ export const ChatBubble = ({ message, color }: ChatBubbleProps) => {
 
   return (
     <div
-      className="mt-0.5 overflow-hidden rounded-lg shadow-lg max-w-xs"
-      style={{ opacity, transition: 'opacity 500ms' }}
+      className="schemafy-strong-panel mt-1 max-w-xs overflow-hidden rounded-2xl"
+      style={{
+        opacity,
+        transition: 'opacity 500ms',
+        borderColor: 'hsl(var(--schemafy-glass-border))',
+        boxShadow: `0 0 0 1px ${color}22, var(--shadow-schemafy-float)`,
+      }}
     >
       <div
-        className="px-1.5 py-0.5 font-overline-xs text-white whitespace-nowrap"
+        className="whitespace-nowrap px-2.5 py-1 font-overline-xs text-white"
         style={{ backgroundColor: color }}
       >
         {message.userName}
       </div>
-      <div
-        className="px-1.5 py-0.5 font-body-sm text-white break-words"
-        style={{ backgroundColor: color }}
-      >
+      <div className="break-words px-2.5 py-1.5 font-body-sm text-schemafy-text">
         {message.content}
       </div>
     </div>

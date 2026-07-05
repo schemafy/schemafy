@@ -107,7 +107,7 @@ export const SignUpForm = () => {
   return (
     <form
       noValidate
-      className="flex flex-col w-full max-w-[480px]"
+      className="flex w-full max-w-[480px] flex-col gap-2"
       onSubmit={handleSubmit}
     >
       {formFields.map((field) => (
@@ -124,9 +124,11 @@ export const SignUpForm = () => {
           onBlur={handleBlur}
         />
       ))}
-      <Button type="submit" disabled={isSubmitting} className="my-4" round>
-        {isSubmitting ? 'Creating...' : 'Create Account'}
-      </Button>
+      <div className="pt-3">
+        <Button type="submit" disabled={isSubmitting} round fullWidth>
+          {isSubmitting ? 'Creating...' : 'Create Account'}
+        </Button>
+      </div>
     </form>
   );
 };

@@ -62,12 +62,7 @@ export const Toolbar = memo(
 
     return (
       <>
-        <div
-          className="flex items-center gap-3 py-2 px-6 absolute bottom-4 left-1/2 -translate-x-1/2 z-20 bg-schemafy-bg rounded-lg"
-          style={{
-            boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)',
-          }}
-        >
+        <div className="schemafy-canvas-panel absolute bottom-4 left-1/2 z-20 flex h-12 -translate-x-1/2 items-center gap-1 rounded-2xl px-2 sm:bottom-6 sm:gap-1">
           {TOOLS.map((tool) => (
             <Tool
               key={tool.id}
@@ -116,7 +111,7 @@ const Tool = ({
   isActive: boolean;
 }) => {
   const color = isActive
-    ? 'var(--color-schemafy-text)'
+    ? 'var(--color-schemafy-soft-blue)'
     : 'var(--color-schemafy-tools)';
 
   return (
@@ -128,8 +123,9 @@ const Tool = ({
           size={'none'}
           data-testid={`toolbar-${id}`}
           className={`
-        p-2 rounded-md transition-colors duration-200
+        h-9 w-9 rounded-xl transition-all duration-200
         hover:bg-schemafy-secondary
+        ${isActive ? 'bg-schemafy-soft-blue/10 ring-1 ring-schemafy-soft-blue/30' : ''}
       `}
         >
           <Icon size={16} color={color} />
