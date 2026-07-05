@@ -15,6 +15,9 @@ interface WorkspaceSidebarProps {
   onAdd?: () => void;
   isOpen: boolean;
   onToggle: () => void;
+  hasNextPage?: boolean;
+  isFetchingNextPage?: boolean;
+  onLoadMore?: () => void;
 }
 
 export const WorkspaceSidebar = ({
@@ -25,17 +28,20 @@ export const WorkspaceSidebar = ({
   onAdd,
   isOpen,
   onToggle,
+  hasNextPage = false,
+  isFetchingNextPage = false,
+  onLoadMore,
 }: WorkspaceSidebarProps) => {
   return (
     <aside
       className={cn(
-        'min-h-full border-r border-schemafy-light-gray flex flex-col shrink-0 relative z-10 bg-schemafy-bg overflow-hidden transition-[width] duration-300',
+        'h-full border-r border-schemafy-light-gray flex flex-col shrink-0 relative z-10 bg-schemafy-bg overflow-hidden transition-[width] duration-300',
         isOpen ? 'w-64' : 'w-12',
       )}
     >
       <div
         className={cn(
-          'flex items-center py-5 px-3 transition-all duration-300',
+          'flex items-center py-5 px-3 transition-all duration-300 shrink-0',
           isOpen ? 'justify-between' : 'justify-center',
         )}
       >
@@ -64,7 +70,7 @@ export const WorkspaceSidebar = ({
 
       <ul
         className={cn(
-          'flex flex-col gap-0.5 px-3 transition-opacity duration-200',
+          'flex flex-col gap-0.5 px-3 transition-opacity duration-200 overflow-y-auto min-h-0 flex-1',
           isOpen ? 'opacity-100' : 'opacity-0 pointer-events-none',
         )}
       >
@@ -113,6 +119,25 @@ export const WorkspaceSidebar = ({
           </li>
         ))}
       </ul>
+
+      {hasNextPage && onLoadMore && (
+        <div
+          className={cn(
+            'shrink-0 px-3 py-2 transition-opacity duration-200',
+            isOpen ? 'opacity-100' : 'opacity-0 pointer-events-none',
+          )}
+        >
+          <button
+            onClick={() => onLoadMore()}
+            disabled={isFetchingNextPage}
+            className="w-full text-left px-3 py-2 rounded-[10px] transition-colors hover:bg-schemafy-secondary disabled:opacity-50 disabled:pointer-events-none"
+          >
+            <span className="font-overline-xs text-schemafy-dark-gray">
+              {isFetchingNextPage ? 'Loading...' : 'Show More'}
+            </span>
+          </button>
+        </div>
+      )}
     </aside>
   );
 };

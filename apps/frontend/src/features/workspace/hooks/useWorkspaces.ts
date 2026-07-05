@@ -1,4 +1,4 @@
-import { useQuery } from '@tanstack/react-query';
+import { useInfiniteQuery } from '@tanstack/react-query';
 import type { CreateWorkspaceRequest, UpdateWorkspaceRequest } from '../api';
 import { getWorkspaces } from '../api';
 import { workspaceKeys } from './query-keys';
@@ -9,10 +9,15 @@ import {
   useUpdateWorkspaceMutation,
 } from './useWorkspaceMutations';
 
-export const useWorkspaces = (page = 0, size = 5) => {
-  const workspacesQuery = useQuery({
-    queryKey: workspaceKeys.list(page, size),
-    queryFn: () => getWorkspaces(page, size),
+export const useWorkspaces = (size = 10) => {
+  const workspacesQuery = useInfiniteQuery({
+    queryKey: workspaceKeys.infiniteList(size),
+    queryFn: ({ pageParam }) => getWorkspaces(pageParam, size),
+    initialPageParam: 0,
+    getNextPageParam: (lastPage) =>
+      lastPage.page + 1 < lastPage.totalPages
+        ? lastPage.page + 1
+        : undefined,
   });
   const createWorkspaceMutation = useCreateWorkspaceMutation();
   const updateWorkspaceMutation = useUpdateWorkspaceMutation();
@@ -49,13 +54,16 @@ export const useWorkspaces = (page = 0, size = 5) => {
   };
 
   return {
-    workspaces: workspacesQuery.data?.content ?? [],
-    workspacesData: workspacesQuery.data,
+    workspaces: workspacesQuery.data?.pages.flatMap((page) => page.content) ?? [],
+    workspacesData: workspacesQuery.data?.pages[0],
     isPendingWorkspaces: workspacesQuery.isPending,
     isLoadingWorkspaces: workspacesQuery.isLoading,
     isWorkspacesError: workspacesQuery.isError,
     workspacesError: workspacesQuery.error,
     refetchWorkspaces: workspacesQuery.refetch,
+    hasNextPage: workspacesQuery.hasNextPage,
+    isFetchingNextPage: workspacesQuery.isFetchingNextPage,
+    fetchNextPage: workspacesQuery.fetchNextPage,
     createWorkspace,
     updateWorkspace,
     deleteWorkspace,

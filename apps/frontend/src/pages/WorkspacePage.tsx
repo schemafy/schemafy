@@ -32,6 +32,9 @@ export const WorkspacePage = () => {
     isPendingWorkspaces,
     isWorkspacesError,
     refetchWorkspaces,
+    hasNextPage,
+    isFetchingNextPage,
+    fetchNextPage,
     leaveWorkspace,
   } = useWorkspaces();
   const isMyProjectsSelected = selectedWorkspaceId === MY_PROJECTS_ID;
@@ -74,7 +77,7 @@ export const WorkspacePage = () => {
       onRetry={() => void refetchWorkspaces()}
     >
       {(loadedWorkspacesData) => (
-        <div className="flex w-full min-h-full">
+        <div className="flex w-full h-full overflow-hidden">
           <WorkspaceSidebar
             pinnedItem={{
               id: MY_PROJECTS_ID,
@@ -90,6 +93,9 @@ export const WorkspacePage = () => {
             onAdd={() => setIsCreateDialogOpen(true)}
             isOpen={isSidebarOpen}
             onToggle={() => setIsSidebarOpen((prev) => !prev)}
+            hasNextPage={hasNextPage}
+            isFetchingNextPage={isFetchingNextPage}
+            onLoadMore={() => void fetchNextPage()}
           />
 
           {isMyProjectsSelected || loadedWorkspacesData.totalElements === 0 ? (
