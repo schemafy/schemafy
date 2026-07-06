@@ -99,18 +99,15 @@ export const WorkspacePage = () => {
           />
 
           {isMyProjectsSelected || loadedWorkspacesData.totalElements === 0 ? (
-            <div className="flex-1 flex justify-center py-6 px-8 overflow-hidden">
-              <div
-                className={cn(
-                  'w-full max-w-2xl flex flex-col gap-6 transition-transform duration-300',
-                  isSidebarOpen ? '-translate-x-32' : '-translate-x-6',
-                )}
-              >
-                <div className="flex items-center justify-between">
-                  <h1 className="font-heading-xl text-schemafy-text">
-                    Invited Projects
-                  </h1>
-                </div>
+            <div className="flex min-w-0 flex-1 justify-center overflow-x-hidden px-4 py-6 sm:px-6 lg:px-10">
+              <div className="flex w-full max-w-6xl flex-col gap-5 transition-transform duration-300">
+                <section className="border-b border-schemafy-glass-border/70 pb-5">
+                  <div className="flex flex-col gap-4">
+                    <h1 className="font-heading-xl text-schemafy-text">
+                      Invited Projects
+                    </h1>
+                  </div>
+                </section>
 
                 <SharedProjectsTab />
               </div>

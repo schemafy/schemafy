@@ -20,9 +20,6 @@ export const useMySharedProjects = (page = 0, size = 5) => {
   return {
     projects: projectsQuery.data?.content ?? [],
     projectsData: projectsQuery.data,
-    isPendingProjects: projectsQuery.isPending,
-    isProjectsError: projectsQuery.isError,
-    refetchProjects: projectsQuery.refetch,
     leaveProject,
   };
 };
