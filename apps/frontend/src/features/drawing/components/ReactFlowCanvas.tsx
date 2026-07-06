@@ -33,17 +33,25 @@ const EDGE_TYPES = {
   customSmoothStep: CustomSmoothStepEdge,
 };
 
-const MINIMAP_NODE_COLOR = () => 'var(--color-schemafy-text)';
+const MINIMAP_NODE_COLOR = () => 'var(--color-schemafy-soft-blue)';
+
+// React Flow uses style width/height for SVG viewBox math, so these must be numeric CSS pixels.
+const MINIMAP_WIDTH = 176;
+const MINIMAP_HEIGHT = 112;
 
 const MINIMAP_STYLE = {
-  backgroundColor: 'var(--color-schemafy-bg-80)',
-  boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)',
-  borderRadius: '10px',
+  backgroundColor: 'hsl(var(--schemafy-panel))',
+  border: '1px solid hsl(var(--schemafy-glass-border))',
+  boxShadow: 'none',
+  borderRadius: '14px',
   overflow: 'hidden' as const,
   position: 'absolute' as const,
-  bottom: '1rem',
-  right: '1rem',
+  bottom: '1.5rem',
+  right: '1.5rem',
   margin: '0',
+  backdropFilter: 'none',
+  width: MINIMAP_WIDTH,
+  height: MINIMAP_HEIGHT,
 };
 
 const PRO_OPTIONS = { hideAttribution: true };
@@ -165,7 +173,7 @@ const ReactFlowCanvasComponent = ({
   return (
     <div
       style={{ cursor: activeTool === 'hand' ? 'grab' : 'default' }}
-      className="w-full h-full"
+      className="h-full w-full bg-schemafy-canvas"
     >
       <RelationshipMarker />
       <ReactFlow
@@ -192,10 +200,11 @@ const ReactFlowCanvasComponent = ({
         fitView={false}
         minZoom={0.1}
         maxZoom={4}
+        className="schemafy-scrollbar"
       >
         <MiniMap
           nodeColor={MINIMAP_NODE_COLOR}
-          maskColor="var(--color-schemafy-bg-80)"
+          maskColor="hsl(var(--schemafy-bg) / 0.16)"
           style={MINIMAP_STYLE}
           zoomable
           pannable
@@ -204,6 +213,8 @@ const ReactFlowCanvasComponent = ({
         <Background
           variant={BackgroundVariant.Dots}
           color="var(--color-schemafy-canvas-dot)"
+          gap={20}
+          size={1}
         />
         {activeTool === 'table' && <TablePreview />}
         {activeTool === 'memo' && <MemoPreview />}

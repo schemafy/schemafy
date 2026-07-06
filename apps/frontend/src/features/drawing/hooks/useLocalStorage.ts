@@ -1,4 +1,5 @@
 import { useState, useCallback } from 'react';
+import { reportUnexpectedError } from '@/lib';
 
 export const useLocalStorage = <T>(
   key: string,
@@ -9,7 +10,9 @@ export const useLocalStorage = <T>(
       const item = localStorage.getItem(key);
       return item ? (JSON.parse(item) as T) : initialValue;
     } catch (error) {
-      console.error(`Error reading localStorage key "${key}":`, error);
+      reportUnexpectedError(error, {
+        context: `Failed to read localStorage key "${key}".`,
+      });
       return initialValue;
     }
   });
@@ -22,7 +25,9 @@ export const useLocalStorage = <T>(
           localStorage.setItem(key, JSON.stringify(valueToStore));
           return valueToStore;
         } catch (error) {
-          console.error(`Error setting localStorage key "${key}":`, error);
+          reportUnexpectedError(error, {
+            context: `Failed to write localStorage key "${key}".`,
+          });
           return prev;
         }
       });

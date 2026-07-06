@@ -13,15 +13,15 @@ export const Layout = () => {
   return (
     <div
       className={cn(
-        'layout flex flex-col bg-schemafy-bg w-full items-center',
-        isCanvasPage || isWorkspacePage ? 'h-screen overflow-hidden' : 'min-h-screen',
+        'layout flex min-h-screen w-full flex-col items-center bg-schemafy-bg',
+        !isCanvasPage && 'schemafy-page-gradient',
       )}
     >
       <Header isCanvasPage={isCanvasPage} />
       <main
         className={cn(
           'flex-grow min-h-0 w-full flex',
-          !isCanvasPage && !isWorkspacePage && 'max-w-[960px]',
+          !isCanvasPage && !isWorkspacePage && 'max-w-[1120px]',
         )}
       >
         <Outlet />

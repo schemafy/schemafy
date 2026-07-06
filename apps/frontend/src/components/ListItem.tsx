@@ -27,23 +27,34 @@ export const ListItem = ({
   };
 
   return (
-    <li className="flex flex-col gap-1 items-center px-3 py-2 w-full rounded-[10px] border border-schemafy-light-gray">
-      <div className="flex w-full justify-between items-center gap-4">
-        <p className="font-overline-sm text-schemafy-text flex gap-1 items-center">
-          {name}
-          <Edit size={12} onClick={handleEditClick} cursor="pointer" />
-          <Trash
-            size={12}
-            color="var(--color-schemafy-destructive)"
-            onClick={handleDeleteClick}
-            cursor="pointer"
-          />
-        </p>
+    <li className="schemafy-subtle-card flex w-full flex-col items-center gap-2 px-4 py-3">
+      <div className="flex w-full items-start justify-between gap-4">
+        <div className="flex min-w-0 items-center gap-2">
+          <p className="truncate font-overline-sm text-schemafy-text">{name}</p>
+          <div className="flex shrink-0 gap-1">
+            <button
+              type="button"
+              title="Edit"
+              onClick={handleEditClick}
+              className="schemafy-icon-button schemafy-focus-ring flex h-7 w-7 items-center justify-center"
+            >
+              <Edit size={12} />
+            </button>
+            <button
+              type="button"
+              title="Delete"
+              onClick={handleDeleteClick}
+              className="schemafy-icon-button schemafy-focus-ring flex h-7 w-7 items-center justify-center hover:text-schemafy-destructive"
+            >
+              <Trash size={12} />
+            </button>
+          </div>
+        </div>
         <Tag count={count} isEntity={!!description} />
       </div>
-      <div className="flex w-full justify-between items-center font-body-xs text-schemafy-dark-gray">
-        <p>{description}</p>
-        {date && <p>Last Updated: {formatDate(date)}</p>}
+      <div className="flex w-full flex-wrap items-center justify-between gap-x-4 gap-y-1 font-body-xs text-schemafy-dark-gray">
+        <p className="min-w-0 break-words">{description}</p>
+        {date && <p className="shrink-0">Last Updated: {formatDate(date)}</p>}
       </div>
     </li>
   );
@@ -51,7 +62,7 @@ export const ListItem = ({
 
 const Tag = ({ count, isEntity }: { count: number; isEntity: boolean }) => {
   return (
-    <div className="px-2 py-0.5 flex bg-schemafy-light-gray font-body-xs text-schemafy-dark-gray rounded-full">
+    <div className="schemafy-badge flex px-2 py-0.5 font-body-xs">
       {count} {isEntity ? 'fields' : 'entities'}
     </div>
   );

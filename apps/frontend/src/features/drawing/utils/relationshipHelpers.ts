@@ -45,9 +45,9 @@ const convertRelationshipSnapshotToEdge = (
     markerEnd: baseConfig.markerEnd,
     label: relationship.name,
     labelStyle: {
-      fontSize: 12,
-      fontWeight: 'bold',
-      color: style.stroke,
+      fontSize: 11,
+      fontWeight: 600,
+      color: 'var(--color-schemafy-dark-gray)',
     },
     data: {
       relationshipType,

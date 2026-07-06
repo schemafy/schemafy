@@ -1,6 +1,7 @@
 package com.schemafy.core.erd.relationship.application.service;
 
 import java.util.HashSet;
+import java.util.Objects;
 import java.util.Set;
 
 import org.springframework.beans.factory.annotation.Autowired;
@@ -40,17 +41,39 @@ public class ChangeRelationshipExtraService implements ChangeRelationshipExtraUs
 
   @Override
   public Mono<MutationResult<Void>> changeRelationshipExtra(ChangeRelationshipExtraCommand command) {
-    return erdMutationCoordinator.coordinate(ErdOperationType.CHANGE_RELATIONSHIP_EXTRA, command,
-        () -> getRelationshipByIdPort.findRelationshipById(command.relationshipId())
-            .switchIfEmpty(Mono.error(new DomainException(RelationshipErrorCode.NOT_FOUND, "Relationship not found")))
-            .flatMap(relationship -> {
-              Set<String> affectedTableIds = new HashSet<>();
-              affectedTableIds.add(relationship.fkTableId());
-              affectedTableIds.add(relationship.pkTableId());
-              return changeRelationshipExtraPort
-                  .changeRelationshipExtra(relationship.id(), normalizeOptional(command.extra()))
-                  .thenReturn(MutationResult.<Void>of(null, affectedTableIds));
-            }));
+    String normalizedExtra = normalizeOptional(command.extra());
+    return getRelationshipByIdPort.findRelationshipById(command.relationshipId())
+        .switchIfEmpty(Mono.error(new DomainException(RelationshipErrorCode.NOT_FOUND, "Relationship not found")))
+        .flatMap(relationship -> {
+          Set<String> affectedTableIds = new HashSet<>();
+          affectedTableIds.add(relationship.fkTableId());
+          affectedTableIds.add(relationship.pkTableId());
+          if (Objects.equals(relationship.extra(), normalizedExtra)) {
+            return Mono.just(MutationResult.<Void>noop(null, affectedTableIds));
+          }
+          return erdMutationCoordinator.coordinate(ErdOperationType.CHANGE_RELATIONSHIP_EXTRA, command,
+              () -> getRelationshipByIdPort.findRelationshipById(command.relationshipId())
+                  .switchIfEmpty(Mono.error(new DomainException(
+                      RelationshipErrorCode.NOT_FOUND,
+                      "Relationship not found")))
+                  .flatMap(lockedRelationship -> {
+                    Set<String> lockedAffectedTableIds = affectedTableIds(lockedRelationship.fkTableId(),
+                        lockedRelationship.pkTableId());
+                    if (Objects.equals(lockedRelationship.extra(), normalizedExtra)) {
+                      return Mono.just(MutationResult.<Void>noop(null, lockedAffectedTableIds));
+                    }
+                    return changeRelationshipExtraPort
+                        .changeRelationshipExtra(lockedRelationship.id(), normalizedExtra)
+                        .thenReturn(MutationResult.<Void>of(null, lockedAffectedTableIds));
+                  }));
+        });
+  }
+
+  private static Set<String> affectedTableIds(String fkTableId, String pkTableId) {
+    Set<String> affectedTableIds = new HashSet<>();
+    affectedTableIds.add(fkTableId);
+    affectedTableIds.add(pkTableId);
+    return affectedTableIds;
   }
 
   private static String normalizeOptional(String value) {

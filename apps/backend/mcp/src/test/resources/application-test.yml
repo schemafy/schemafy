@@ -1,0 +1,64 @@
+spring:
+  application:
+    name: schemafy-mcp-test
+
+  autoconfigure:
+    exclude:
+      - org.springframework.boot.autoconfigure.data.redis.RedisAutoConfiguration
+      - org.springframework.boot.autoconfigure.data.redis.RedisReactiveAutoConfiguration
+
+  data:
+    redis:
+      enabled: false
+
+  ai:
+    mcp:
+      server:
+        name: schemafy-mcp-test
+        version: 0.0.1
+        protocol: STREAMABLE
+        type: ASYNC
+        annotation-scanner:
+          enabled: true
+
+  r2dbc:
+    url: r2dbc:h2:mem:///schemafy-mcp;MODE=MySQL;DB_CLOSE_DELAY=-1;DB_CLOSE_ON_EXIT=FALSE
+    username: sa
+    password:
+    pool:
+      enabled: true
+      initial-size: 1
+      max-size: 5
+
+  sql:
+    init:
+      schema-locations: classpath:ddl/h2/**/*.sql
+      mode: always
+
+server:
+  port: 0
+
+mcp:
+  security:
+    token:
+      secret: test-schemafy-mcp-secret-minimum-256-bit-key-value
+      issuer: schemafy-mcp-test
+      audience: schemafy-mcp-test
+      token-type: MCP
+      required-scope: mcp
+    rate-limit:
+      enabled: false
+      requests: 100
+      window: 1m
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include:
+          - health
+          - info
+  endpoint:
+    health:
+      probes:
+        enabled: true

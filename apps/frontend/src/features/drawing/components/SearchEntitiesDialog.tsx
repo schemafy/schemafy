@@ -57,17 +57,17 @@ export const SearchEntitiesDialog = ({
             <DialogTitle>Entities</DialogTitle>
           </div>
         </DialogHeader>
-        <div className="py-2 px-3 flex justify-between items-center bg-schemafy-secondary rounded-[10px]">
+        <div className="schemafy-input flex items-center justify-between px-3 py-2">
           <input
             type="text"
             placeholder="Search for entities..."
-            className="w-full focus:border-none outline-none focus:outline-none placeholder:text-schemafy-dark-gray border-none text-schemafy-text font-body-xs"
+            className="w-full border-none bg-transparent font-body-xs text-schemafy-text outline-none placeholder:text-schemafy-dark-gray focus:border-none focus:outline-none"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
           />
           <Search size={16} color="var(--color-schemafy-dark-gray)" />
         </div>
-        <ul className="flex flex-col w-full max-h-[12.5rem] gap-2.5 overflow-y-scroll overflow-x-hidden pr-2 [&::-webkit-scrollbar]:w-1.5 [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:bg-schemafy-light-gray [&::-webkit-scrollbar-track]:bg-transparent">
+        <ul className="schemafy-scrollbar flex max-h-[12.5rem] w-full flex-col gap-2.5 overflow-y-auto overflow-x-hidden pr-2">
           {filteredTables.map((table) => (
             <div
               key={table.id}

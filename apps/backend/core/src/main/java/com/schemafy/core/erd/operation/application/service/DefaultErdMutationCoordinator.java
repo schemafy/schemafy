@@ -125,6 +125,10 @@ class DefaultErdMutationCoordinator implements ErdMutationCoordinator {
       ResolvedErdMutationTarget resolvedTarget,
       SchemaCollaborationState preloadedState,
       ErdOperationMetadata metadata) {
+    if (mutationResult.noOp()) {
+      return Mono.just(mutationResult);
+    }
+
     FinalizedErdMutationTarget finalizedTarget = erdMutationTargetFinalizer.finalizeTarget(
         operationType,
         resolvedTarget,
