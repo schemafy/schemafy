@@ -506,7 +506,8 @@
     361,
     358,
     318,
-    443
+    443,
+    446
   ],
   "apps/frontend/src/components/Loading.tsx": [
     361
@@ -574,7 +575,8 @@
     361,
     358,
     382,
-    405
+    405,
+    446
   ],
   "apps/frontend/src/pages/index.ts": [
     361,
@@ -825,17 +827,20 @@
     358
   ],
   "apps/bff/src/project/project.controller.ts": [
-    358
+    358,
+    446
   ],
   "apps/bff/src/project/project.module.ts": [
     358
   ],
   "apps/bff/src/project/project.service.ts": [
-    358
+    358,
+    446
   ],
   "apps/bff/src/project/project.types.ts": [
     358,
-    407
+    407,
+    446
   ],
   "apps/bff/src/workspace/workspace.service.ts": [
     358
@@ -866,24 +871,28 @@
     318,
     382,
     405,
-    443
+    443,
+    446
   ],
   "apps/frontend/src/features/project/api/api.ts": [
-    358
+    358,
+    446
   ],
   "apps/frontend/src/features/project/api/index.ts": [
     358
   ],
   "apps/frontend/src/features/project/api/types.ts": [
     358,
-    407
+    407,
+    446
   ],
   "apps/frontend/src/features/project/components/ProjectFormDialog.tsx": [
     358,
     382
   ],
   "apps/frontend/src/features/project/hooks/query-keys.ts": [
-    358
+    358,
+    446
   ],
   "apps/frontend/src/features/project/hooks/useProjects.ts": [
     358,
@@ -893,7 +902,8 @@
     358
   ],
   "apps/frontend/src/features/workspace/api/api.ts": [
-    358
+    358,
+    446
   ],
   "apps/frontend/src/features/workspace/api/types.ts": [
     358,
@@ -918,7 +928,8 @@
   ],
   "apps/frontend/src/features/workspace/hooks/useWorkspaces.ts": [
     358,
-    382
+    382,
+    446
   ],
   "apps/frontend/src/lib/api/types.ts": [
     358
@@ -2476,5 +2487,32 @@
   ],
   "apps/backend/core/src/test/java/com/schemafy/core/erd/table/fixture/TableFixture.java": [
     444
+  ],
+  "apps/frontend/src/features/project/components/ConfirmMemberRemoveDialog.tsx": [
+    446
+  ],
+  "apps/frontend/src/features/project/components/MemberRemoveButton.tsx": [
+    446
+  ],
+  "apps/frontend/src/features/project/components/ProjectMembersDialog.tsx": [
+    446
+  ],
+  "apps/frontend/src/features/project/hooks/useMySharedProjectMutations.ts": [
+    446
+  ],
+  "apps/frontend/src/features/project/hooks/useMySharedProjects.ts": [
+    446
+  ],
+  "apps/frontend/src/features/workspace/components/SharedProjectsTab.tsx": [
+    446
+  ],
+  "apps/frontend/src/features/workspace/components/WorkspaceSidebar.tsx": [
+    446
+  ],
+  "apps/frontend/src/features/workspace/components/index.ts": [
+    446
+  ],
+  "apps/frontend/src/features/workspace/hooks/query-keys.ts": [
+    446
   ]
 }
