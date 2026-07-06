@@ -21,8 +21,9 @@ export const SharedProjectsTab = () => {
     null,
   );
 
-  const { projects, projectsData, leaveProject } =
-    useMySharedProjects(currentPage - 1);
+  const { projects, projectsData, leaveProject } = useMySharedProjects(
+    currentPage - 1,
+  );
 
   const filtered = projects.filter((project) =>
     project.name.toLowerCase().includes(searchQuery.toLowerCase()),
@@ -164,7 +165,10 @@ export const SharedProjectsTab = () => {
                       {toCapitalized(project.myRole)}
                     </span>
                   </td>
-                  <td className="px-5 py-4" onClick={(e) => e.stopPropagation()}>
+                  <td
+                    className="px-5 py-4"
+                    onClick={(e) => e.stopPropagation()}
+                  >
                     <SharedProjectActions
                       project={project}
                       onLeaveClick={setLeaveTarget}

@@ -42,8 +42,12 @@ export const ProjectMembersDialog = ({
   const roles = availableRoles(currentUserRole);
   const { user } = authStore;
 
-  const { members: allMembers, membersData, removeMember, updateMemberRole } =
-    useProjectMembers(projectId, currentPage - 1);
+  const {
+    members: allMembers,
+    membersData,
+    removeMember,
+    updateMemberRole,
+  } = useProjectMembers(projectId, currentPage - 1);
 
   const members = allMembers.filter(
     (m) =>
@@ -198,5 +202,3 @@ export const ProjectMembersDialog = ({
     </>
   );
 };
-
-
