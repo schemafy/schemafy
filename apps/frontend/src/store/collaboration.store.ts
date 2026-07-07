@@ -8,11 +8,13 @@ import {
 import type {
   ChatMessage,
   CursorPosition,
+  Participant,
   PostChat,
   PostCursor,
   ReceiveChat,
   ReceiveCursor,
   ReceiveErdMutated,
+  ReceiveJoin,
   ReceiveLeave,
   WebSocketMessage,
 } from '@/features/collaboration/api';
@@ -36,6 +38,7 @@ export class CollaborationStore {
   cursors: Map<string, CursorPosition> = new Map();
   schemaRevisions: Map<string, number> = new Map();
   activeChatMessages: Map<string, ChatMessage[]> = new Map();
+  participants: Map<string, Participant> = new Map();
   projectId: string | null = null;
   sessionId: string | null = null;
   private ws: WebSocket | null = null;
@@ -51,9 +54,11 @@ export class CollaborationStore {
       cursors: observable,
       schemaRevisions: observable.shallow,
       activeChatMessages: observable,
+      participants: observable,
       projectId: observable,
       sessionId: observable,
       currentUser: computed,
+      activeParticipants: computed,
       connect: action,
       disconnect: action,
       sendMessage: action,
@@ -67,6 +72,21 @@ export class CollaborationStore {
 
   get currentUser() {
     return authStore.user;
+  }
+
+  get activeParticipants(): Participant[] {
+    const sessionId = this.sessionId;
+    const currentUserId = this.currentUser?.id;
+    const seenUserIds = new Set<string>();
+
+    if (currentUserId) seenUserIds.add(currentUserId);
+
+    return Array.from(this.participants.values()).filter((p) => {
+      if (p.sessionId === sessionId) return false;
+      if (seenUserIds.has(p.userId)) return false;
+      seenUserIds.add(p.userId);
+      return true;
+    });
   }
 
   getSchemaRevision(schemaId: string): number | null {
@@ -136,6 +156,10 @@ export class CollaborationStore {
         if (payload.type === 'SESSION_READY') {
           runInAction(() => {
             this.sessionId = payload.sessionId;
+            this.participants.clear();
+            for (const p of payload.participants) {
+              this.participants.set(p.sessionId, p);
+            }
           });
           apiClient.defaults.headers.common['X-Session-Id'] = payload.sessionId;
           return;
@@ -201,6 +225,7 @@ export class CollaborationStore {
       this.cursors.clear();
       this.schemaRevisions.clear();
       this.activeChatMessages.clear();
+      this.participants.clear();
       this.sessionId = null;
       operationHistoryStore.clearAll();
     });
@@ -343,6 +368,7 @@ export class CollaborationStore {
         this.handleCursorMessage(message);
         break;
       case 'JOIN':
+        this.handleJoinMessage(message);
         break;
       case 'LEAVE':
         this.handleLeaveMessage(message);
@@ -401,9 +427,22 @@ export class CollaborationStore {
     });
   }
 
+  private handleJoinMessage(message: ReceiveJoin) {
+    const participant: Participant = {
+      sessionId: message.sessionId,
+      userId: message.userId,
+      userName: message.userName,
+    };
+
+    runInAction(() => {
+      this.participants.set(message.sessionId, participant);
+    });
+  }
+
   private handleLeaveMessage(message: ReceiveLeave) {
     previewStore.clearBySession(message.sessionId);
     runInAction(() => {
+      this.participants.delete(message.sessionId);
       this.cursors.delete(message.sessionId);
       this.activeChatMessages.delete(message.sessionId);
     });

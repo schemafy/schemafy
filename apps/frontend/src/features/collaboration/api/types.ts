@@ -77,9 +77,17 @@ export type ReceiveErdMutated = {
   timestamp: number;
 };
 
+export type Participant = {
+  sessionId: string;
+  userId: string;
+  userName: string;
+  profileImageUrl?: string | null;
+};
+
 export type ReceiveSessionReady = {
   type: 'SESSION_READY';
   sessionId: string;
+  participants: Participant[];
   timestamp: number;
 };
 

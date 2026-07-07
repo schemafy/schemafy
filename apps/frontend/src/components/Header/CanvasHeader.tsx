@@ -1,19 +1,28 @@
 import { Button } from '../Button';
 import { Avatar } from '../Avatar';
+import { getRandomColor } from '@/features/collaboration/utils';
 import { ExportContents } from './contents/ExportContents';
 import { ShareContents } from './contents/ShareContents';
 import { SettingsContents } from './contents/SettingsContents';
 import { useLogout } from '@/features/auth';
 import { useParams } from '@tanstack/react-router';
 import { LogOut } from 'lucide-react';
+import { observer } from 'mobx-react-lite';
+import { collaborationStore } from '@/store/collaboration.store';
 
-export const CanvasHeader = () => {
+const MAX_VISIBLE_AVATARS = 4;
+
+export const CanvasHeader = observer(() => {
   const params = useParams({
     strict: false,
     shouldThrow: false,
   });
   const projectId = params?.projectId ?? '';
   const handleLogout = useLogout();
+
+  const participants = collaborationStore.activeParticipants;
+  const visibleParticipants = participants.slice(0, MAX_VISIBLE_AVATARS);
+  const overflowCount = participants.length - MAX_VISIBLE_AVATARS;
 
   return (
     <div className="flex min-w-0 items-center gap-1 sm:gap-4">
@@ -30,14 +39,25 @@ export const CanvasHeader = () => {
         <LogOut className="h-4 w-4 sm:hidden" />
         <span className="hidden sm:inline">Sign Out</span>
       </Button>
-      <div className="hidden items-center gap-2 sm:flex">
-        <div className="flex items-center -space-x-3 *:data-[slot=avatar]:ring-2 *:data-[slot=avatar]:ring-schemafy-bg [&>*:nth-child(1)]:z-30 [&>*:nth-child(2)]:z-20 [&>*:nth-child(3)]:z-10">
-          <Avatar src="https://picsum.photos/200/300?random=1" />
-          <Avatar src="https://picsum.photos/100/300?random=1" deactivate />
-          <Avatar src="https://picsum.photos/200/100?random=1" deactivate />
+      {participants.length > 0 && (
+        <div className="hidden items-center gap-2 sm:flex">
+          <div className="flex items-center -space-x-3 *:data-[slot=avatar]:ring-2 *:data-[slot=avatar]:ring-schemafy-bg [&>*:nth-child(1)]:z-30 [&>*:nth-child(2)]:z-20 [&>*:nth-child(3)]:z-10 [&>*:nth-child(4)]:z-0">
+            {visibleParticipants.map((p) => (
+              <Avatar
+                key={p.sessionId}
+                src={p.profileImageUrl ?? undefined}
+                name={p.userName}
+                color={getRandomColor(p.userId)}
+              />
+            ))}
+          </div>
+          {overflowCount > 0 && (
+            <span className="font-overline-xs text-schemafy-dark-gray">
+              +{overflowCount}
+            </span>
+          )}
         </div>
-        <span className="font-overline-xs text-schemafy-dark-gray">+ 3</span>
-      </div>
+      )}
     </div>
   );
-};
+});
