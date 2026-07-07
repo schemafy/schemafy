@@ -1,4 +1,4 @@
-import {COLORS} from "@/features/collaboration/utils/constants.ts";
+import { COLORS } from '@/features/collaboration/utils/constants.ts';
 
 export const hashId = (id: string): number => {
   let hash = 0;

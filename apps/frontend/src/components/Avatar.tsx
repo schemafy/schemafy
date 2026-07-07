@@ -30,7 +30,16 @@ interface CustomAvatarProps
 }
 
 export const Avatar = ((
-  { className, size, deactivate, src, name, alt, color, ...props }: CustomAvatarProps,
+  {
+    className,
+    size,
+    deactivate,
+    src,
+    name,
+    alt,
+    color,
+    ...props
+  }: CustomAvatarProps,
   ref: React.Ref<HTMLDivElement>,
 ) => {
   return (
