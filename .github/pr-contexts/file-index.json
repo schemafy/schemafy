@@ -10,7 +10,8 @@
   "apps/frontend/src/features/collaboration/components/ChatInput.tsx": [
     291,
     400,
-    443
+    443,
+    449
   ],
   "apps/frontend/src/features/collaboration/components/ChatOverlay.tsx": [
     291
@@ -18,7 +19,8 @@
   "apps/frontend/src/features/collaboration/components/RemoteCursors.tsx": [
     291,
     400,
-    403
+    403,
+    449
   ],
   "apps/frontend/src/features/collaboration/components/index.ts": [
     291
@@ -92,7 +94,8 @@
     386,
     400,
     439,
-    442
+    442,
+    449
   ],
   ".github/workflows/test.yml": [
     346
@@ -391,7 +394,8 @@
   ],
   "apps/frontend/src/features/collaboration/api/types.ts": [
     337,
-    442
+    442,
+    449
   ],
   "apps/frontend/src/features/drawing/api/column.api.ts": [
     337
@@ -858,7 +862,8 @@
     361,
     318,
     396,
-    443
+    443,
+    449
   ],
   "apps/frontend/src/components/Header/contents/NotificationContents.tsx": [
     358,
@@ -2348,7 +2353,8 @@
     443
   ],
   "apps/frontend/src/components/Avatar.tsx": [
-    443
+    443,
+    449
   ],
   "apps/frontend/src/components/Dialog.tsx": [
     443
@@ -2514,5 +2520,17 @@
   ],
   "apps/frontend/src/features/workspace/hooks/query-keys.ts": [
     446
+  ],
+  "apps/frontend/src/features/collaboration/utils/constants.ts": [
+    449
+  ],
+  "apps/frontend/src/features/collaboration/utils/getCursorColor.ts": [
+    449
+  ],
+  "apps/frontend/src/features/collaboration/utils/getRandomColor.ts": [
+    449
+  ],
+  "apps/frontend/src/features/collaboration/utils/index.ts": [
+    449
   ]
 }
