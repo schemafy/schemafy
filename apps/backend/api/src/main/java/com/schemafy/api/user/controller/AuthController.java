@@ -14,7 +14,7 @@ import com.schemafy.api.user.controller.dto.request.LoginRequest;
 import com.schemafy.api.user.controller.dto.request.SendSignUpEmailCodeRequest;
 import com.schemafy.api.user.controller.dto.request.SignUpRequest;
 import com.schemafy.api.user.controller.dto.request.VerifySignUpEmailRequest;
-import com.schemafy.api.user.controller.dto.response.SignUpChallengeResponse;
+import com.schemafy.api.user.controller.dto.response.SignUpEmailVerificationResponse;
 import com.schemafy.api.user.controller.dto.response.UserInfoResponse;
 import com.schemafy.api.user.controller.dto.response.VerifySignUpEmailResponse;
 import com.schemafy.core.common.exception.DomainException;
@@ -46,11 +46,11 @@ public class AuthController {
 
   /** 회원가입 이메일 인증 코드를 발송합니다. */
   @PostMapping("/users/signup/email-code")
-  public Mono<ResponseEntity<SignUpChallengeResponse>> sendSignUpEmailCode(
+  public Mono<ResponseEntity<SignUpEmailVerificationResponse>> sendSignUpEmailCode(
       @Valid @RequestBody SendSignUpEmailCodeRequest request) {
     return sendSignUpEmailCodeUseCase.sendSignUpEmailCode(request.toCommand())
         .map(result -> ResponseEntity.accepted()
-            .body(SignUpChallengeResponse.from(result)));
+            .body(SignUpEmailVerificationResponse.from(result)));
   }
 
   /** 회원가입 이메일 인증 코드를 검증합니다. */

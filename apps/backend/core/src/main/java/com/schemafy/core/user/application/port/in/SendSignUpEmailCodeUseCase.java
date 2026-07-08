@@ -4,6 +4,6 @@ import reactor.core.publisher.Mono;
 
 public interface SendSignUpEmailCodeUseCase {
 
-  Mono<SignUpUserResult> sendSignUpEmailCode(SendSignUpEmailCodeCommand command);
+  Mono<SignUpEmailVerificationResult> sendSignUpEmailCode(SendSignUpEmailCodeCommand command);
 
 }

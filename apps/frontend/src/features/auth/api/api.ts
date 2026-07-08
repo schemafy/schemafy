@@ -9,7 +9,7 @@ import type {
   AuthResponse,
   SendSignUpEmailCodeRequest,
   SignInRequest,
-  SignUpChallengeResponse,
+  SignUpEmailVerificationResponse,
   SignUpRequest,
   VerifySignUpEmailRequest,
   VerifySignUpEmailResponse,
@@ -33,8 +33,8 @@ const handleTokenResponse = (response: AxiosResponse): string => {
 
 export const sendSignUpEmailCode = async (
   data: SendSignUpEmailCodeRequest,
-): Promise<SignUpChallengeResponse> => {
-  const response = await publicClient.post<SignUpChallengeResponse>(
+): Promise<SignUpEmailVerificationResponse> => {
+  const response = await publicClient.post<SignUpEmailVerificationResponse>(
     '/users/signup/email-code',
     data,
   );

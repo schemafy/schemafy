@@ -7,7 +7,7 @@ import org.springframework.stereotype.Service;
 import com.schemafy.core.common.exception.DomainException;
 import com.schemafy.core.user.application.port.in.SendSignUpEmailCodeCommand;
 import com.schemafy.core.user.application.port.in.SendSignUpEmailCodeUseCase;
-import com.schemafy.core.user.application.port.in.SignUpUserResult;
+import com.schemafy.core.user.application.port.in.SignUpEmailVerificationResult;
 import com.schemafy.core.user.application.port.out.AuthTokenPort;
 import com.schemafy.core.user.application.port.out.ExistsUserByEmailPort;
 import com.schemafy.core.user.application.port.out.SendEmailVerificationPort;
@@ -30,7 +30,7 @@ class SendSignUpEmailCodeService implements SendSignUpEmailCodeUseCase {
   private final SendEmailVerificationPort sendEmailVerificationPort;
 
   @Override
-  public Mono<SignUpUserResult> sendSignUpEmailCode(
+  public Mono<SignUpEmailVerificationResult> sendSignUpEmailCode(
       SendSignUpEmailCodeCommand command) {
     return existsUserByEmailPort.existsUserByEmail(command.email())
         .flatMap(exists -> exists
@@ -38,11 +38,11 @@ class SendSignUpEmailCodeService implements SendSignUpEmailCodeUseCase {
             : authTokenPort.findExpiresAt(
                 AuthTokenType.EMAIL_VERIFICATION,
                 command.email())
-                .map(expiresAt -> new SignUpUserResult(command.email(), expiresAt))
+                .map(expiresAt -> new SignUpEmailVerificationResult(command.email(), expiresAt))
                 .switchIfEmpty(Mono.defer(() -> issueVerificationCode(command.email()))));
   }
 
-  private Mono<SignUpUserResult> issueVerificationCode(String email) {
+  private Mono<SignUpEmailVerificationResult> issueVerificationCode(String email) {
     String code = verificationCodeGenerator.generate();
     Instant expiresAt = Instant.now().plus(AuthPolicy.EMAIL_VERIFICATION_TTL);
     AuthToken token = new AuthToken(
@@ -60,10 +60,10 @@ class SendSignUpEmailCodeService implements SendSignUpEmailCodeUseCase {
                 .onErrorResume(error -> authTokenPort.delete(AuthTokenType.EMAIL_VERIFICATION, email)
                     .onErrorResume(deleteError -> Mono.empty())
                     .then(Mono.error(error)))
-                .thenReturn(new SignUpUserResult(email, expiresAt));
+                .thenReturn(new SignUpEmailVerificationResult(email, expiresAt));
           }
           return authTokenPort.findExpiresAt(AuthTokenType.EMAIL_VERIFICATION, email)
-              .map(existingExpiresAt -> new SignUpUserResult(email, existingExpiresAt))
+              .map(existingExpiresAt -> new SignUpEmailVerificationResult(email, existingExpiresAt))
               .switchIfEmpty(Mono.defer(() -> issueVerificationCode(email)));
         });
   }

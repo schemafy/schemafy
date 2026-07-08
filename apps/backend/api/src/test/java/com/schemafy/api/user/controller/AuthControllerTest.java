@@ -79,7 +79,7 @@ class AuthControllerTest extends UserHttpTestSupport {
         .expectBody()
         .consumeWith(document("user-signup-email-code",
             sendSignUpEmailCodeRequest(),
-            signUpResponse()))
+            signUpEmailVerificationResponse()))
         .jsonPath("$.email").isEqualTo("test@example.com")
         .jsonPath("$.expiresAt").isNotEmpty();
 

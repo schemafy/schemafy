@@ -14,7 +14,7 @@ export type SendSignUpEmailCodeRequest = {
   email: string;
 };
 
-export type SignUpChallengeResponse = {
+export type SignUpEmailVerificationResponse = {
   email: string;
   expiresAt: string;
 };

@@ -55,7 +55,7 @@ public class UserApiSnippets extends RestDocsSnippets {
     return createResponseHeadersSnippet(authResponseHeaders());
   }
 
-  public static Snippet signUpResponse() {
+  public static Snippet signUpEmailVerificationResponse() {
     return createResponseFieldsSnippet(
         successResponseFields(
             fieldWithPath("email").type(JsonFieldType.STRING)

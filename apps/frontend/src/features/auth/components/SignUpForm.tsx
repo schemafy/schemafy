@@ -7,7 +7,7 @@ import {
   signUp,
   verifySignUpEmail,
 } from '@/features/auth/api';
-import type { SignUpChallengeResponse } from '@/features/auth/api/types';
+import type { SignUpEmailVerificationResponse } from '@/features/auth/api/types';
 import { authStore } from '@/store/auth.store';
 import { toast } from 'sonner';
 import { reportUnexpectedError } from '@/lib';
@@ -101,7 +101,7 @@ export const SignUpForm = () => {
   const [isVerifyingCode, setIsVerifyingCode] = useState(false);
   const [sentEmail, setSentEmail] = useState<string | null>(null);
   const [lastEmailChallenge, setLastEmailChallenge] =
-    useState<SignUpChallengeResponse | null>(null);
+    useState<SignUpEmailVerificationResponse | null>(null);
   const [signupVerificationToken, setSignupVerificationToken] = useState('');
   const [formError, setFormError] = useState('');
   const navigate = useNavigate();
@@ -132,8 +132,8 @@ export const SignUpForm = () => {
   };
 
   const hasActiveEmailChallenge = (
-    previous: SignUpChallengeResponse | null,
-    current: SignUpChallengeResponse,
+    previous: SignUpEmailVerificationResponse | null,
+    current: SignUpEmailVerificationResponse,
   ) => {
     if (!previous || previous.email !== current.email) {
       return false;
