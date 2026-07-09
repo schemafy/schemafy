@@ -348,9 +348,9 @@ export const SignUpForm = () => {
           {formError}
         </p>
       )}
-        <Button type="submit" disabled={isSubmitting} className="my-4" round>
-          {isSubmitting ? 'Creating...' : 'Create Account'}
-        </Button>
+      <Button type="submit" disabled={isSubmitting} className="my-4" round>
+        {isSubmitting ? 'Creating...' : 'Create Account'}
+      </Button>
     </form>
   );
 };
