@@ -11,7 +11,7 @@ spring:
 
   data:
     redis:
-      enabled: ${REDIS_ENABLED:true}
+      enabled: ${REDIS_ENABLED:false}
       host: ${REDIS_HOST:localhost}
       port: ${REDIS_PORT:6379}
 
@@ -55,7 +55,7 @@ cache:
     expire-after-write-minutes: 30
     expire-after-access-minutes: 10
   redis:
-    enabled: true
+    enabled: false
     default-ttl-minutes: 30
     key-prefix: 'cache::'
 

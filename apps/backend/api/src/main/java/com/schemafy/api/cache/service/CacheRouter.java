@@ -1,6 +1,8 @@
 package com.schemafy.api.cache.service;
 
+import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.lang.Nullable;
 import org.springframework.stereotype.Service;
 
 import com.schemafy.api.cache.config.CacheType;
@@ -14,14 +16,19 @@ import reactor.core.publisher.Mono;
 public class CacheRouter {
 
   private final CacheService caffeineCacheService;
+  @Nullable
   private final CacheService redisCacheService;
 
   public CacheRouter(
-      CacheService caffeineCacheService,
-      @Qualifier("redisCacheService") CacheService redisCacheService) {
+      @Qualifier("caffeineCacheService") CacheService caffeineCacheService,
+      @Qualifier("redisCacheService") ObjectProvider<CacheService> redisCacheServiceProvider) {
     this.caffeineCacheService = caffeineCacheService;
-    this.redisCacheService = redisCacheService;
-    log.info("CacheRouter initialized with Caffeine and Redis caches");
+    this.redisCacheService = redisCacheServiceProvider.getIfAvailable();
+    if (redisCacheService != null) {
+      log.info("CacheRouter initialized with Caffeine and Redis caches");
+    } else {
+      log.info("CacheRouter initialized with Caffeine cache only");
+    }
   }
 
   public Mono<String> get(String key, CacheType cacheType) {
@@ -47,7 +54,12 @@ public class CacheRouter {
   private CacheService selectCache(CacheType cacheType) {
     return switch (cacheType) {
     case CAFFEINE -> caffeineCacheService;
-    case REDIS -> redisCacheService;
+    case REDIS -> {
+      if (redisCacheService == null) {
+        throw new IllegalStateException("Redis cache is disabled");
+      }
+      yield redisCacheService;
+    }
     };
   }
 
