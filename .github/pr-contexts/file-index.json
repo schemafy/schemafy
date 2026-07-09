@@ -2532,5 +2532,35 @@
   ],
   "apps/frontend/src/features/collaboration/utils/index.ts": [
     449
+  ],
+  ".env.example": [
+    423
+  ],
+  "agents-logs/20260709-deploy-readiness-check.md": [
+    423
+  ],
+  "agents-logs/20260709-env-example-personal-smtp.md": [
+    423
+  ],
+  "agents-logs/20260709-final-review-issue415-redis-disabled.md": [
+    423
+  ],
+  "apps/backend/api/src/main/java/com/schemafy/api/cache/service/CacheRouter.java": [
+    423
+  ],
+  "apps/backend/api/src/main/java/com/schemafy/api/user/adapter/out/AuthTokenLocalAdapter.java": [
+    423
+  ],
+  "apps/backend/api/src/main/java/com/schemafy/api/user/controller/dto/response/SignUpEmailVerificationResponse.java": [
+    423
+  ],
+  "apps/backend/api/src/test/java/com/schemafy/api/cache/service/CacheRouterTest.java": [
+    423
+  ],
+  "apps/backend/api/src/test/java/com/schemafy/api/user/adapter/out/AuthTokenLocalAdapterTest.java": [
+    423
+  ],
+  "apps/backend/core/src/main/java/com/schemafy/core/user/application/port/in/SignUpEmailVerificationResult.java": [
+    423
   ]
 }
