@@ -100,7 +100,7 @@ export const SignUpForm = () => {
   const [isSendingCode, setIsSendingCode] = useState(false);
   const [isVerifyingCode, setIsVerifyingCode] = useState(false);
   const [sentEmail, setSentEmail] = useState<string | null>(null);
-  const [lastEmailChallenge, setLastEmailChallenge] =
+  const [lastEmailVerification, setLastEmailVerification] =
     useState<SignUpEmailVerificationResponse | null>(null);
   const [signupVerificationToken, setSignupVerificationToken] = useState('');
   const [formError, setFormError] = useState('');
@@ -131,7 +131,7 @@ export const SignUpForm = () => {
     handleVerificationChange(e);
   };
 
-  const hasActiveEmailChallenge = (
+  const hasActiveEmailVerification = (
     previous: SignUpEmailVerificationResponse | null,
     current: SignUpEmailVerificationResponse,
   ) => {
@@ -153,14 +153,14 @@ export const SignUpForm = () => {
     setFormError('');
 
     try {
-      const challenge = await sendSignUpEmailCode({ email: form.email });
-      const alreadySent = hasActiveEmailChallenge(
-        lastEmailChallenge,
-        challenge,
+      const verification = await sendSignUpEmailCode({ email: form.email });
+      const alreadySent = hasActiveEmailVerification(
+        lastEmailVerification,
+        verification,
       );
 
-      setSentEmail(challenge.email);
-      setLastEmailChallenge(challenge);
+      setSentEmail(verification.email);
+      setLastEmailVerification(verification);
       setSignupVerificationToken('');
       resetVerificationForm();
 
@@ -245,7 +245,7 @@ export const SignUpForm = () => {
       resetForm();
       resetVerificationForm();
       setSentEmail(null);
-      setLastEmailChallenge(null);
+      setLastEmailVerification(null);
       setSignupVerificationToken('');
       navigate({ to: '/' });
     } catch (error) {
@@ -276,14 +276,19 @@ export const SignUpForm = () => {
           onChange={handleFormChange}
           onBlur={handleBlur}
         />
-        <Button
-          type="button"
-          disabled={isSubmitting || isSendingCode || isVerifyingCode}
-          className="mt-[52px] min-w-[88px]"
-          onClick={handleSendCode}
-        >
-          {isSendingCode ? 'Sending...' : 'Send'}
-        </Button>
+        <div className="flex shrink-0 flex-col gap-1 py-3 pr-4">
+          <span aria-hidden="true" className="invisible mb-1 font-overline-md">
+            Action
+          </span>
+          <Button
+            type="button"
+            disabled={isSubmitting || isSendingCode || isVerifyingCode}
+            className="h-[58px] min-w-[88px]"
+            onClick={handleSendCode}
+          >
+            {isSendingCode ? 'Sending...' : 'Send'}
+          </Button>
+        </div>
       </div>
       <div className="flex items-start gap-2">
         <InputField
@@ -300,16 +305,21 @@ export const SignUpForm = () => {
           onChange={handleVerificationCodeChange}
           onBlur={handleVerificationBlur}
         />
-        <Button
-          type="button"
-          disabled={
-            !sentEmail || isSubmitting || isSendingCode || isVerifyingCode
-          }
-          className="mt-[52px] min-w-[88px]"
-          onClick={handleVerifyCode}
-        >
-          {isVerifyingCode ? 'Verifying...' : 'Verify'}
-        </Button>
+        <div className="flex shrink-0 flex-col gap-1 py-3 pr-4">
+          <span aria-hidden="true" className="invisible mb-1 font-overline-md">
+            Action
+          </span>
+          <Button
+            type="button"
+            disabled={
+              !sentEmail || isSubmitting || isSendingCode || isVerifyingCode
+            }
+            className="h-[58px] min-w-[88px]"
+            onClick={handleVerifyCode}
+          >
+            {isVerifyingCode ? 'Verifying...' : 'Verify'}
+          </Button>
+        </div>
       </div>
       {formFields.map((field) => (
         <InputField
