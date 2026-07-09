@@ -260,7 +260,7 @@ export const SignUpForm = () => {
   return (
     <form
       noValidate
-      className="flex flex-col w-full max-w-[480px]"
+      className="flex w-full max-w-[480px] flex-col gap-2"
       onSubmit={handleSubmit}
     >
       <div className="flex items-start gap-2">
@@ -348,9 +348,9 @@ export const SignUpForm = () => {
           {formError}
         </p>
       )}
-      <Button type="submit" disabled={isSubmitting} className="my-4" round>
-        {isSubmitting ? 'Creating...' : 'Create Account'}
-      </Button>
+        <Button type="submit" disabled={isSubmitting} className="my-4" round>
+          {isSubmitting ? 'Creating...' : 'Create Account'}
+        </Button>
     </form>
   );
 };

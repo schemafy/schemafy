@@ -89,7 +89,7 @@ export const SignInForm = ({ oauthError }: SignInFormProps) => {
   return (
     <form
       noValidate
-      className="flex flex-col w-full max-w-[480px]"
+      className="flex w-full max-w-[480px] flex-col gap-2"
       onSubmit={handleSubmit}
     >
       {formFields.map((field) => (
@@ -109,18 +109,20 @@ export const SignInForm = ({ oauthError }: SignInFormProps) => {
       <Button
         variant={'none'}
         size={'none'}
-        className="text-schemafy-dark-gray pt-1 pb-3"
+        className="schemafy-menu-button ml-auto px-3 py-1.5 text-schemafy-dark-gray"
       >
         Forgot Password?
       </Button>
-      <div className="flex flex-col w-full gap-6 py-3">
+      <div className="flex w-full flex-col gap-3 pt-3">
         <Button type="submit" disabled={isSubmitting} round fullWidth>
           {isSubmitting ? 'Sign In...' : 'Sign In'}
         </Button>
         {oauthError && (
-          <p className="text-red-600 text-sm mt-2 mb-2">{oauthError}</p>
+          <p className="rounded-xl border border-schemafy-destructive/30 bg-schemafy-destructive/10 px-3 py-2 font-body-sm text-schemafy-destructive">
+            {oauthError}
+          </p>
         )}
-        <div className="flex flex-col w-full gap-2">
+        <div className="flex w-full flex-col gap-2">
           <Button
             type="button"
             variant={'secondary'}

@@ -83,6 +83,17 @@ cache:
 sharelink:
   pepper: test-pepper-value
 
+mcp:
+  security:
+    token:
+      secret: test-schemafy-mcp-secret-minimum-256-bit-key-value
+      issuer: schemafy-mcp-test
+      audience: schemafy-mcp-test
+      token-type: MCP
+      required-scope: mcp
+      revocation-key-prefix: "mcp:token:revoked:"
+      expires-in: 7d
+
 logging:
   level:
     com:

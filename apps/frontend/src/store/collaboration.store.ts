@@ -126,7 +126,6 @@ export class CollaborationStore {
     this.ws = new WebSocket(wsUrl);
 
     this.ws.onopen = () => {
-      console.log('WebSocket connected');
       this.reconnectAttempts = 0;
     };
 

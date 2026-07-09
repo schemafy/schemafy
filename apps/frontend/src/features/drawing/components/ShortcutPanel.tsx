@@ -27,17 +27,14 @@ export const ShortcutPanel = ({ onClose }: ShortcutPanelProps) => {
         if (e.target === e.currentTarget) onClose();
       }}
     >
-      <div
-        className="absolute bottom-4 left-24 bg-schemafy-bg rounded-xl shadow-xl border border-schemafy-light-gray px-6 py-4 min-w-[320px]"
-        style={{ boxShadow: '0 8px 32px rgba(0,0,0,0.18)' }}
-      >
+      <div className="schemafy-canvas-panel absolute bottom-6 left-28 min-w-[320px] rounded-2xl px-6 py-4">
         <div className="flex items-center justify-between mb-3">
           <span className="font-body-sm font-semibold text-schemafy-text">
             Keyboard Shortcuts
           </span>
           <button
             onClick={onClose}
-            className="p-1 rounded hover:bg-schemafy-secondary transition-colors"
+            className="schemafy-focus-ring rounded-lg p-1 transition-colors hover:bg-schemafy-secondary"
           >
             <X size={14} color="var(--color-schemafy-dark-gray)" />
           </button>
@@ -50,7 +47,7 @@ export const ShortcutPanel = ({ onClose }: ShortcutPanelProps) => {
                 <Icon size={14} color="var(--color-schemafy-dark-gray)" />
                 <span className="font-body-sm text-schemafy-text">{name}</span>
               </div>
-              <kbd className="px-2 py-0.5 rounded bg-schemafy-secondary border border-schemafy-light-gray font-mono text-xs text-schemafy-dark-gray">
+              <kbd className="rounded-md border border-schemafy-glass-border bg-schemafy-secondary/80 px-2 py-0.5 font-mono text-xs text-schemafy-dark-gray">
                 {key}
               </kbd>
             </div>

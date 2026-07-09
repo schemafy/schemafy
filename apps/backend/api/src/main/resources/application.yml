@@ -91,6 +91,17 @@ auth:
   mail:
     from: ${SMTP_FROM:${SMTP_USERNAME:no-reply@schemafy.com}}
 
+mcp:
+  security:
+    token:
+      secret: ${MCP_TOKEN_SECRET:schemafy-mcp-local-secret-minimum-256-bit-key-value}
+      issuer: ${MCP_TOKEN_ISSUER:schemafy-mcp}
+      audience: ${MCP_TOKEN_AUDIENCE:schemafy-mcp}
+      token-type: ${MCP_TOKEN_TYPE:MCP}
+      required-scope: ${MCP_TOKEN_REQUIRED_SCOPE:mcp}
+      revocation-key-prefix: "${MCP_TOKEN_REVOCATION_KEY_PREFIX:mcp:token:revoked:}"
+      expires-in: ${MCP_TOKEN_EXPIRES_IN:7d}
+
 management:
   endpoints:
     web:

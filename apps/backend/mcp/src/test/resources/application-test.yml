@@ -2,6 +2,15 @@ spring:
   application:
     name: schemafy-mcp-test
 
+  autoconfigure:
+    exclude:
+      - org.springframework.boot.autoconfigure.data.redis.RedisAutoConfiguration
+      - org.springframework.boot.autoconfigure.data.redis.RedisReactiveAutoConfiguration
+
+  data:
+    redis:
+      enabled: false
+
   ai:
     mcp:
       server:
@@ -28,6 +37,19 @@ spring:
 
 server:
   port: 0
+
+mcp:
+  security:
+    token:
+      secret: test-schemafy-mcp-secret-minimum-256-bit-key-value
+      issuer: schemafy-mcp-test
+      audience: schemafy-mcp-test
+      token-type: MCP
+      required-scope: mcp
+    rate-limit:
+      enabled: false
+      requests: 100
+      window: 1m
 
 management:
   endpoints:

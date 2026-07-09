@@ -10,11 +10,21 @@ export const ImportContents = () => {
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
-        <Button variant={'none'} size={'none'}>
+        <Button
+          variant={'none'}
+          size={'none'}
+          className="schemafy-menu-button px-3 py-2"
+        >
           Import
         </Button>
       </DropdownMenuTrigger>
-      <DropdownMenuContent align="end" className="flex flex-col gap-2.5">
+      <DropdownMenuContent align="end" className="flex flex-col gap-3">
+        <div className="flex flex-col gap-0.5">
+          <span className="font-overline-xs text-schemafy-text">Import</span>
+          <span className="font-caption-sm text-schemafy-dark-gray">
+            Upload schema resources.
+          </span>
+        </div>
         <div>
           <input
             type="file"
@@ -24,7 +34,7 @@ export const ImportContents = () => {
           />
           <label
             htmlFor="file-upload"
-            className="flex flex-col gap-2 px-2.5 py-4 items-center justify-center w-full border border-dashed border-schemafy-dark-gray font-caption-sm text-schemafy-dark-gray rounded-lg cursor-pointer hover:bg-schemafy-secondary transition-opacity"
+            className="flex w-full cursor-pointer flex-col items-center justify-center gap-2 rounded-xl border border-dashed border-schemafy-glass-border px-2.5 py-5 font-caption-sm text-schemafy-dark-gray transition-colors hover:bg-schemafy-secondary"
           >
             <FilePlus size={16} />
             File Upload

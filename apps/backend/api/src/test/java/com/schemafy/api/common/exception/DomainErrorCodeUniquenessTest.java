@@ -6,9 +6,11 @@ import java.util.Map;
 
 import org.junit.jupiter.api.Test;
 
+import com.schemafy.api.mcp.exception.McpTokenErrorCode;
 import com.schemafy.core.common.exception.DomainErrorCode;
 import com.schemafy.core.erd.column.domain.exception.ColumnErrorCode;
 import com.schemafy.core.erd.constraint.domain.exception.ConstraintErrorCode;
+import com.schemafy.core.erd.ddl.domain.exception.DdlErrorCode;
 import com.schemafy.core.erd.index.domain.exception.IndexErrorCode;
 import com.schemafy.core.erd.memo.domain.exception.MemoErrorCode;
 import com.schemafy.core.erd.operation.domain.exception.OperationErrorCode;
@@ -32,6 +34,7 @@ class DomainErrorCodeUniquenessTest {
       OAuthErrorCode.class,
       ValidationErrorCode.class,
       HmacErrorCode.class,
+      McpTokenErrorCode.class,
       UserErrorCode.class,
       WorkspaceErrorCode.class,
       ProjectErrorCode.class,
@@ -41,6 +44,7 @@ class DomainErrorCodeUniquenessTest {
       TableErrorCode.class,
       ColumnErrorCode.class,
       ConstraintErrorCode.class,
+      DdlErrorCode.class,
       IndexErrorCode.class,
       RelationshipErrorCode.class,
       VendorErrorCode.class,
