@@ -41,7 +41,7 @@ class EmailVerificationMailAdapterTest {
     StepVerifier.create(sut.sendVerificationCode(
         "user@example.com",
         "123456",
-        Instant.now().plusSeconds(300)))
+        Instant.now().plusSeconds(60)))
         .verifyComplete();
 
     ArgumentCaptor<MimeMessage> messageCaptor = ArgumentCaptor.forClass(

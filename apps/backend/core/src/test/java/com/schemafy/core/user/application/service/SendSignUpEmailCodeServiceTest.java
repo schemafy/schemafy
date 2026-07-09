@@ -1,6 +1,7 @@
 package com.schemafy.core.user.application.service;
 
 import java.time.Instant;
+import java.time.temporal.ChronoUnit;
 
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -78,6 +79,10 @@ class SendSignUpEmailCodeServiceTest {
     assertThat(token.tokenType()).isEqualTo(AuthTokenType.EMAIL_VERIFICATION);
     assertThat(token.subject()).isEqualTo("test@example.com");
     assertThat(token.token()).isEqualTo("123456");
+    assertThat(token.expiresAt())
+        .isBetween(
+            Instant.now().plus(AuthPolicy.EMAIL_VERIFICATION_TTL).minus(1, ChronoUnit.SECONDS),
+            Instant.now().plus(AuthPolicy.EMAIL_VERIFICATION_TTL).plus(1, ChronoUnit.SECONDS));
     assertThat(token.maxAttemptCount())
         .isEqualTo(AuthPolicy.EMAIL_VERIFICATION_MAX_ATTEMPTS);
     verify(sendEmailVerificationPort).sendVerificationCode(
@@ -85,20 +90,20 @@ class SendSignUpEmailCodeServiceTest {
   }
 
   @Test
-  @DisplayName("기존 인증 코드가 유효하면 같은 challenge를 반환하고 메일을 재발송하지 않는다")
-  void sendSignUpEmailCode_existingTokenSkipsResend() {
+  @DisplayName("기존 인증 코드가 유효하면 같은 인증 만료 시각을 반환하고 인증 메일을 추가 발송하지 않는다")
+  void sendSignUpEmailCode_existingTokenReturnsVerificationExpiresAtWithoutSendingMail() {
     SendSignUpEmailCodeCommand command = new SendSignUpEmailCodeCommand(
         "test@example.com");
-    Instant expiresAt = Instant.now().plusSeconds(120);
+    Instant existingExpiresAt = Instant.now().plus(AuthPolicy.EMAIL_VERIFICATION_TTL);
     given(existsUserByEmailPort.existsUserByEmail("test@example.com"))
         .willReturn(Mono.just(false));
     given(authTokenPort.findExpiresAt(AuthTokenType.EMAIL_VERIFICATION, "test@example.com"))
-        .willReturn(Mono.just(expiresAt));
+        .willReturn(Mono.just(existingExpiresAt));
 
     StepVerifier.create(sut.sendSignUpEmailCode(command))
         .assertNext(result -> {
           assertThat(result.email()).isEqualTo("test@example.com");
-          assertThat(result.expiresAt()).isEqualTo(expiresAt);
+          assertThat(result.expiresAt()).isEqualTo(existingExpiresAt);
         })
         .verifyComplete();
 
@@ -109,22 +114,22 @@ class SendSignUpEmailCodeServiceTest {
   }
 
   @Test
-  @DisplayName("동시 요청으로 토큰 선점에 실패하면 기존 challenge를 반환하고 메일을 발송하지 않는다")
-  void sendSignUpEmailCode_saveIfAbsentLostSkipsResend() {
+  @DisplayName("동시 요청으로 토큰 선점에 실패하면 기존 인증 만료 시각을 반환하고 인증 메일을 추가 발송하지 않는다")
+  void sendSignUpEmailCode_saveIfAbsentLostReturnsVerificationExpiresAtWithoutSendingMail() {
     SendSignUpEmailCodeCommand command = new SendSignUpEmailCodeCommand(
         "test@example.com");
-    Instant expiresAt = Instant.now().plusSeconds(120);
+    Instant existingExpiresAt = Instant.now().plus(AuthPolicy.EMAIL_VERIFICATION_TTL);
     given(existsUserByEmailPort.existsUserByEmail("test@example.com"))
         .willReturn(Mono.just(false));
     given(authTokenPort.findExpiresAt(AuthTokenType.EMAIL_VERIFICATION, "test@example.com"))
-        .willReturn(Mono.empty(), Mono.just(expiresAt));
+        .willReturn(Mono.empty(), Mono.just(existingExpiresAt));
     given(verificationCodeGenerator.generate()).willReturn("123456");
     given(authTokenPort.saveIfAbsent(any(AuthToken.class))).willReturn(Mono.just(false));
 
     StepVerifier.create(sut.sendSignUpEmailCode(command))
         .assertNext(result -> {
           assertThat(result.email()).isEqualTo("test@example.com");
-          assertThat(result.expiresAt()).isEqualTo(expiresAt);
+          assertThat(result.expiresAt()).isEqualTo(existingExpiresAt);
         })
         .verifyComplete();
 

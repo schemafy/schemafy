@@ -17,7 +17,7 @@ class EmailVerificationMailTemplateTest {
         .contains("Schemafy")
         .contains("Verify your email")
         .contains("123456")
-        .contains("This code expires in <strong>5 minutes</strong>")
+        .contains("This code expires in <strong>1 minute</strong>")
         .contains("background:#ffffff")
         .contains("color:#141414")
         .doesNotContain("%s");
@@ -31,7 +31,7 @@ class EmailVerificationMailTemplateTest {
     assertThat(text)
         .contains("Schemafy email verification")
         .contains("123456")
-        .contains("This code expires in 5 minutes");
+        .contains("This code expires in 1 minute");
   }
 
 }

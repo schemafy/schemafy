@@ -16,7 +16,7 @@ final class EmailVerificationMailTemplate {
 
         {{CODE}}
 
-        This code expires in 5 minutes. If you did not request this, you can ignore this email.
+        This code expires in 1 minute. If you did not request this, you can ignore this email.
         """.replace(CODE_PLACEHOLDER, code);
   }
 
@@ -67,7 +67,7 @@ final class EmailVerificationMailTemplate {
                         <tr>
                           <td style="border-left:3px solid #1fa67a;background:#f7fbf9;padding:14px 16px;border-radius:6px;">
                             <p style="margin:0;font-size:14px;line-height:21px;color:#141414;">
-                              This code expires in <strong>5 minutes</strong>. For your security, do not share it with anyone.
+                              This code expires in <strong>1 minute</strong>. For your security, do not share it with anyone.
                             </p>
                           </td>
                         </tr>

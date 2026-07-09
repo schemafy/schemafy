@@ -88,8 +88,8 @@ class AuthControllerTest extends UserHttpTestSupport {
   }
 
   @Test
-  @DisplayName("기존 회원가입 이메일 인증 코드가 유효하면 메일을 재발송하지 않는다")
-  void sendSignUpEmailCodeSkipResendWhenCodeIsStillValid() {
+  @DisplayName("기존 회원가입 이메일 인증 코드가 유효하면 같은 인증 만료 시각을 반환하고 인증 메일을 추가 발송하지 않는다")
+  void sendSignUpEmailCodeReturnsVerificationExpiresAtWithoutSendingMailWhenCodeIsStillValid() {
     SendSignUpEmailCodeRequest request = new SendSignUpEmailCodeRequest(
         "test@example.com");
 
