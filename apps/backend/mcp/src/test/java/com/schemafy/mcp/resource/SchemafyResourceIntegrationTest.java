@@ -237,6 +237,26 @@ class SchemafyResourceIntegrationTest {
   }
 
   @Test
+  @DisplayName("예상하지 못한 조회 오류는 내부 메시지를 노출하지 않는다")
+  void sanitizesUnexpectedReadFailures() {
+    String token = tokenFactory.validToken();
+    String sessionId = initialize(token);
+
+    String toolResponse = callTool(sessionId, token, "schemafy_get_project",
+        Map.of("projectId", "project-failure"));
+    assertThat(toolResponse)
+        .contains("Schemafy MCP tool call failed")
+        .contains("\"isError\":true")
+        .doesNotContain("internal database host");
+
+    String resourceResponse = readResource(sessionId, token,
+        "schemafy://projects/project-failure");
+    assertThat(resourceResponse)
+        .contains("Schemafy MCP resource read failed")
+        .doesNotContain("internal database host");
+  }
+
+  @Test
   @DisplayName("MCP scope가 부족한 토큰은 resources/read 요청도 거부된다")
   void rejectsResourceReadWithoutRequiredScope() {
     String sessionId = initialize(tokenFactory.validToken());
@@ -427,6 +447,9 @@ class SchemafyResourceIntegrationTest {
       lastProjectQuery.set(query);
       if ("project-denied".equals(query.projectId())) {
         return Mono.error(new DomainException(ProjectErrorCode.ACCESS_DENIED));
+      }
+      if ("project-failure".equals(query.projectId())) {
+        return Mono.error(new IllegalStateException("internal database host unavailable"));
       }
       return Mono.just(new ProjectDetail(project("workspace-1"), ProjectRole.VIEWER.name()));
     }

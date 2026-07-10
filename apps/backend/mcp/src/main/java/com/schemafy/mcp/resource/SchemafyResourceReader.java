@@ -83,169 +83,152 @@ final class SchemafyResourceReader {
   private final GetMemoCommentsUseCase getMemoCommentsUseCase;
 
   Mono<McpSchema.ReadResourceResult> me(McpSchema.ReadResourceRequest request) {
-    return currentPrincipal()
+    return responseWriter.resourcePayload(request.uri(), currentPrincipal()
         .map(principal -> Map.of(
             "userId", principal.userId(),
             "scopes", principal.scopes(),
-            "tokenId", principal.tokenId()))
-        .flatMap(payload -> responseWriter.resourceJson(request.uri(), payload));
+            "tokenId", principal.tokenId())));
   }
 
   Mono<McpSchema.ReadResourceResult> vendors(McpSchema.ReadResourceRequest request) {
-    return listDbVendorsUseCase.listDbVendors()
-        .collectList()
-        .flatMap(payload -> responseWriter.resourceJson(request.uri(), payload));
+    return responseWriter.resourcePayload(request.uri(), listDbVendorsUseCase.listDbVendors()
+        .collectList());
   }
 
   Mono<McpSchema.ReadResourceResult> workspaces(McpSchema.ReadResourceRequest request) {
-    return currentPrincipal()
+    return responseWriter.resourcePayload(request.uri(), currentPrincipal()
         .flatMap(principal -> getWorkspacesUseCase.getWorkspaces(
-            new GetWorkspacesQuery(principal.userId(), DEFAULT_PAGE, DEFAULT_PAGE_SIZE)))
-        .flatMap(payload -> responseWriter.resourceJson(request.uri(), payload));
+            new GetWorkspacesQuery(principal.userId(), DEFAULT_PAGE, DEFAULT_PAGE_SIZE))));
   }
 
   Mono<McpSchema.ReadResourceResult> sharedProjects(McpSchema.ReadResourceRequest request) {
-    return currentPrincipal()
+    return responseWriter.resourcePayload(request.uri(), currentPrincipal()
         .flatMap(principal -> getMySharedProjectsUseCase.getMySharedProjects(
-            new GetMySharedProjectsQuery(principal.userId(), DEFAULT_PAGE, DEFAULT_PAGE_SIZE)))
-        .flatMap(payload -> responseWriter.resourceJson(request.uri(), payload));
+            new GetMySharedProjectsQuery(principal.userId(), DEFAULT_PAGE, DEFAULT_PAGE_SIZE))));
   }
 
   Mono<McpSchema.ReadResourceResult> workspace(
       McpSchema.ReadResourceRequest request,
       String template) {
-    return currentPrincipal()
+    return responseWriter.resourcePayload(request.uri(), currentPrincipal()
         .flatMap(principal -> getWorkspaceUseCase.getWorkspace(
-            new GetWorkspaceQuery(variable(request, template, "workspaceId"), principal.userId())))
-        .flatMap(payload -> responseWriter.resourceJson(request.uri(), payload));
+            new GetWorkspaceQuery(variable(request, template, "workspaceId"), principal.userId()))));
   }
 
   Mono<McpSchema.ReadResourceResult> workspaceMembers(
       McpSchema.ReadResourceRequest request,
       String template) {
-    return currentPrincipal()
+    return responseWriter.resourcePayload(request.uri(), currentPrincipal()
         .flatMap(principal -> getWorkspaceMembersUseCase.getWorkspaceMembers(
             new GetWorkspaceMembersQuery(variable(request, template, "workspaceId"), principal.userId(),
-                DEFAULT_PAGE, DEFAULT_PAGE_SIZE)))
-        .flatMap(payload -> responseWriter.resourceJson(request.uri(), payload));
+                DEFAULT_PAGE, DEFAULT_PAGE_SIZE))));
   }
 
   Mono<McpSchema.ReadResourceResult> workspaceProjects(
       McpSchema.ReadResourceRequest request,
       String template) {
-    return currentPrincipal()
+    return responseWriter.resourcePayload(request.uri(), currentPrincipal()
         .flatMap(principal -> getProjectsUseCase.getProjects(
             new GetProjectsQuery(variable(request, template, "workspaceId"), principal.userId(),
-                DEFAULT_PAGE, DEFAULT_PAGE_SIZE)))
-        .flatMap(payload -> responseWriter.resourceJson(request.uri(), payload));
+                DEFAULT_PAGE, DEFAULT_PAGE_SIZE))));
   }
 
   Mono<McpSchema.ReadResourceResult> project(
       McpSchema.ReadResourceRequest request,
       String template) {
-    return currentPrincipal()
+    return responseWriter.resourcePayload(request.uri(), currentPrincipal()
         .flatMap(principal -> getProjectUseCase.getProject(
-            new GetProjectQuery(variable(request, template, "projectId"), principal.userId())))
-        .flatMap(payload -> responseWriter.resourceJson(request.uri(), payload));
+            new GetProjectQuery(variable(request, template, "projectId"), principal.userId()))));
   }
 
   Mono<McpSchema.ReadResourceResult> projectMembers(
       McpSchema.ReadResourceRequest request,
       String template) {
-    return currentPrincipal()
+    return responseWriter.resourcePayload(request.uri(), currentPrincipal()
         .flatMap(principal -> getProjectMembersUseCase.getProjectMembers(
             new GetProjectMembersQuery(variable(request, template, "projectId"), principal.userId(),
-                DEFAULT_PAGE, DEFAULT_PAGE_SIZE)))
-        .flatMap(payload -> responseWriter.resourceJson(request.uri(), payload));
+                DEFAULT_PAGE, DEFAULT_PAGE_SIZE))));
   }
 
   Mono<McpSchema.ReadResourceResult> projectSchemas(
       McpSchema.ReadResourceRequest request,
       String template) {
-    return getSchemasByProjectIdUseCase
+    return responseWriter.resourcePayload(request.uri(), getSchemasByProjectIdUseCase
         .getSchemasByProjectId(new GetSchemasByProjectIdQuery(variable(request, template, "projectId")))
-        .collectList()
-        .flatMap(payload -> responseWriter.resourceJson(request.uri(), payload));
+        .collectList());
   }
 
   Mono<McpSchema.ReadResourceResult> schema(
       McpSchema.ReadResourceRequest request,
       String template) {
-    return getSchemaUseCase.getSchema(new GetSchemaQuery(variable(request, template, "schemaId")))
-        .flatMap(payload -> responseWriter.resourceJson(request.uri(), payload));
+    return responseWriter.resourcePayload(request.uri(),
+        getSchemaUseCase.getSchema(new GetSchemaQuery(variable(request, template, "schemaId"))));
   }
 
   Mono<McpSchema.ReadResourceResult> schemaTables(
       McpSchema.ReadResourceRequest request,
       String template) {
-    return getTablesBySchemaIdUseCase
+    return responseWriter.resourcePayload(request.uri(), getTablesBySchemaIdUseCase
         .getTablesBySchemaId(new GetTablesBySchemaIdQuery(variable(request, template, "schemaId")))
-        .collectList()
-        .flatMap(payload -> responseWriter.resourceJson(request.uri(), payload));
+        .collectList());
   }
 
   Mono<McpSchema.ReadResourceResult> schemaMemos(
       McpSchema.ReadResourceRequest request,
       String template) {
-    return getMemosBySchemaIdUseCase
+    return responseWriter.resourcePayload(request.uri(), getMemosBySchemaIdUseCase
         .getMemosBySchemaId(new GetMemosBySchemaIdQuery(variable(request, template, "schemaId")))
-        .collectList()
-        .flatMap(payload -> responseWriter.resourceJson(request.uri(), payload));
+        .collectList());
   }
 
   Mono<McpSchema.ReadResourceResult> table(
       McpSchema.ReadResourceRequest request,
       String template) {
-    return getTableUseCase.getTable(new GetTableQuery(variable(request, template, "tableId")))
-        .flatMap(payload -> responseWriter.resourceJson(request.uri(), payload));
+    return responseWriter.resourcePayload(request.uri(),
+        getTableUseCase.getTable(new GetTableQuery(variable(request, template, "tableId"))));
   }
 
   Mono<McpSchema.ReadResourceResult> tableColumns(
       McpSchema.ReadResourceRequest request,
       String template) {
-    return getColumnsByTableIdUseCase
-        .getColumnsByTableId(new GetColumnsByTableIdQuery(variable(request, template, "tableId")))
-        .flatMap(payload -> responseWriter.resourceJson(request.uri(), payload));
+    return responseWriter.resourcePayload(request.uri(), getColumnsByTableIdUseCase
+        .getColumnsByTableId(new GetColumnsByTableIdQuery(variable(request, template, "tableId"))));
   }
 
   Mono<McpSchema.ReadResourceResult> tableIndexes(
       McpSchema.ReadResourceRequest request,
       String template) {
-    return getIndexesByTableIdUseCase
-        .getIndexesByTableId(new GetIndexesByTableIdQuery(variable(request, template, "tableId")))
-        .flatMap(payload -> responseWriter.resourceJson(request.uri(), payload));
+    return responseWriter.resourcePayload(request.uri(), getIndexesByTableIdUseCase
+        .getIndexesByTableId(new GetIndexesByTableIdQuery(variable(request, template, "tableId"))));
   }
 
   Mono<McpSchema.ReadResourceResult> tableConstraints(
       McpSchema.ReadResourceRequest request,
       String template) {
-    return getConstraintsByTableIdUseCase
-        .getConstraintsByTableId(new GetConstraintsByTableIdQuery(variable(request, template, "tableId")))
-        .flatMap(payload -> responseWriter.resourceJson(request.uri(), payload));
+    return responseWriter.resourcePayload(request.uri(), getConstraintsByTableIdUseCase
+        .getConstraintsByTableId(new GetConstraintsByTableIdQuery(variable(request, template, "tableId"))));
   }
 
   Mono<McpSchema.ReadResourceResult> tableRelationships(
       McpSchema.ReadResourceRequest request,
       String template) {
-    return getRelationshipsByTableIdUseCase
-        .getRelationshipsByTableId(new GetRelationshipsByTableIdQuery(variable(request, template, "tableId")))
-        .flatMap(payload -> responseWriter.resourceJson(request.uri(), payload));
+    return responseWriter.resourcePayload(request.uri(), getRelationshipsByTableIdUseCase
+        .getRelationshipsByTableId(new GetRelationshipsByTableIdQuery(variable(request, template, "tableId"))));
   }
 
   Mono<McpSchema.ReadResourceResult> memo(
       McpSchema.ReadResourceRequest request,
       String template) {
-    return getMemoUseCase.getMemo(new GetMemoQuery(variable(request, template, "memoId")))
-        .flatMap(payload -> responseWriter.resourceJson(request.uri(), payload));
+    return responseWriter.resourcePayload(request.uri(),
+        getMemoUseCase.getMemo(new GetMemoQuery(variable(request, template, "memoId"))));
   }
 
   Mono<McpSchema.ReadResourceResult> memoComments(
       McpSchema.ReadResourceRequest request,
       String template) {
-    return getMemoCommentsUseCase
+    return responseWriter.resourcePayload(request.uri(), getMemoCommentsUseCase
         .getMemoComments(new GetMemoCommentsQuery(variable(request, template, "memoId")))
-        .collectList()
-        .flatMap(payload -> responseWriter.resourceJson(request.uri(), payload));
+        .collectList());
   }
 
   Mono<McpSchema.CallToolResult> databaseVendorsTool() {
