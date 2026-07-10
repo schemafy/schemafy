@@ -344,7 +344,6 @@ public class MySqlDdlGenerator implements DdlGenerator {
 
   private List<String> uniqueKeyStatements(TableSnapshot snapshot,
       DdlContext context) {
-    Table table = requireTable(snapshot);
     return constraintsOf(snapshot, ConstraintKind.UNIQUE).stream()
         .sorted(comparingNullableStrings(
             constraint -> constraint.constraint().name(),
@@ -384,7 +383,6 @@ public class MySqlDdlGenerator implements DdlGenerator {
 
   private List<String> indexStatements(TableSnapshot snapshot,
       DdlContext context) {
-    Table table = requireTable(snapshot);
     return snapshot.indexes().stream()
         .map(MySqlDdlGenerator::requireIndex)
         .sorted(comparingNullableStrings(

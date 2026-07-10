@@ -1,5 +1,7 @@
 package com.schemafy.api.cache.service;
 
+import jakarta.annotation.PostConstruct;
+
 import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.lang.Nullable;
@@ -16,13 +18,19 @@ import reactor.core.publisher.Mono;
 public class CacheRouter {
 
   private final CacheService caffeineCacheService;
+  private final ObjectProvider<CacheService> redisCacheServiceProvider;
   @Nullable
-  private final CacheService redisCacheService;
+  private CacheService redisCacheService;
 
   public CacheRouter(
       @Qualifier("caffeineCacheService") CacheService caffeineCacheService,
       @Qualifier("redisCacheService") ObjectProvider<CacheService> redisCacheServiceProvider) {
     this.caffeineCacheService = caffeineCacheService;
+    this.redisCacheServiceProvider = redisCacheServiceProvider;
+  }
+
+  @PostConstruct
+  void initialize() {
     this.redisCacheService = redisCacheServiceProvider.getIfAvailable();
     if (redisCacheService != null) {
       log.info("CacheRouter initialized with Caffeine and Redis caches");

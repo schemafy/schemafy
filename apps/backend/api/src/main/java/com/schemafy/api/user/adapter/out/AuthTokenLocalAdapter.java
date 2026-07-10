@@ -1,8 +1,8 @@
 package com.schemafy.api.user.adapter.out;
 
 import java.time.Instant;
+import java.util.HashMap;
 import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
 import javax.crypto.SecretKey;
 
 import org.springframework.beans.factory.annotation.Value;
@@ -23,7 +23,8 @@ import reactor.core.publisher.Mono;
 @ConditionalOnProperty(name = "spring.data.redis.enabled", havingValue = "false")
 public class AuthTokenLocalAdapter implements AuthTokenPort {
 
-  private final Map<String, StoredToken> tokens = new ConcurrentHashMap<>();
+  private final Object tokensLock = new Object();
+  private final Map<String, StoredToken> tokens = new HashMap<>();
   private final SecretKey secretKey;
 
   public AuthTokenLocalAdapter(@Value("${auth.token.secret}") String secret) {
@@ -34,12 +35,14 @@ public class AuthTokenLocalAdapter implements AuthTokenPort {
   public Mono<Instant> findExpiresAt(AuthTokenType tokenType, String subject) {
     return Mono.fromCallable(() -> {
       String key = key(tokenType, subject);
-      StoredToken token = tokens.get(key);
-      if (token == null || token.isExpired()) {
-        tokens.remove(key);
-        return null;
+      synchronized (tokensLock) {
+        StoredToken token = tokens.get(key);
+        if (token == null || token.isExpired()) {
+          tokens.remove(key);
+          return null;
+        }
+        return token.expiresAt();
       }
-      return token.expiresAt();
     });
   }
 
@@ -49,7 +52,9 @@ public class AuthTokenLocalAdapter implements AuthTokenPort {
       if (!isValidTtl(token)) {
         return;
       }
-      tokens.put(key(token.tokenType(), token.subject()), storedFrom(token));
+      synchronized (tokensLock) {
+        tokens.put(key(token.tokenType(), token.subject()), storedFrom(token));
+      }
     });
   }
 
@@ -60,7 +65,7 @@ public class AuthTokenLocalAdapter implements AuthTokenPort {
         return false;
       }
       String key = key(token.tokenType(), token.subject());
-      synchronized (tokens) {
+      synchronized (tokensLock) {
         StoredToken existingToken = tokens.get(key);
         if (existingToken != null && !existingToken.isExpired()) {
           return false;
@@ -73,7 +78,11 @@ public class AuthTokenLocalAdapter implements AuthTokenPort {
 
   @Override
   public Mono<Void> delete(AuthTokenType tokenType, String subject) {
-    return Mono.fromRunnable(() -> tokens.remove(key(tokenType, subject)));
+    return Mono.fromRunnable(() -> {
+      synchronized (tokensLock) {
+        tokens.remove(key(tokenType, subject));
+      }
+    });
   }
 
   @Override
@@ -81,7 +90,7 @@ public class AuthTokenLocalAdapter implements AuthTokenPort {
       String subject, String rawToken) {
     return Mono.fromCallable(() -> {
       String key = key(tokenType, subject);
-      synchronized (tokens) {
+      synchronized (tokensLock) {
         StoredToken token = tokens.get(key);
         if (token == null || token.isExpired()) {
           tokens.remove(key);
