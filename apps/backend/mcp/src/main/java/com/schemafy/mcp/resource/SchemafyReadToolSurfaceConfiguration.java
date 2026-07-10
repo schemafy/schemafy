@@ -9,6 +9,8 @@ import org.springframework.context.annotation.Configuration;
 import io.modelcontextprotocol.server.McpServerFeatures;
 
 import static com.schemafy.mcp.resource.SchemafyMcpFeatureFactory.idArgument;
+import static com.schemafy.mcp.resource.SchemafyMcpFeatureFactory.pagedIdArgument;
+import static com.schemafy.mcp.resource.SchemafyMcpFeatureFactory.paginationArguments;
 import static com.schemafy.mcp.resource.SchemafyMcpFeatureFactory.tool;
 
 @Configuration(proxyBeanMethods = false)
@@ -23,10 +25,10 @@ public class SchemafyReadToolSurfaceConfiguration {
             Map.of(), List.of(), request -> reader.databaseVendorsTool()),
         tool("schemafy_list_workspaces", "List workspaces",
             "Use first when the user asks about their Schemafy workspaces, projects, schemas, ERDs, or permissions and no workspaceId is known.",
-            Map.of(), List.of(), request -> reader.workspacesTool()),
+            paginationArguments(), List.of(), reader::workspacesTool),
         tool("schemafy_list_shared_projects", "List shared projects",
             "Use when the user asks about Schemafy projects shared with them outside their own workspace project lists.",
-            Map.of(), List.of(), request -> reader.sharedProjectsTool()),
+            paginationArguments(), List.of(), reader::sharedProjectsTool),
         tool("schemafy_get_workspace", "Get workspace",
             "Use after a workspaceId is known to inspect one Schemafy workspace, including its description, project count, and current user role.",
             idArgument("workspaceId", "Schemafy workspace ID."),
@@ -34,12 +36,12 @@ public class SchemafyReadToolSurfaceConfiguration {
             reader::workspaceTool),
         tool("schemafy_list_workspace_members", "List workspace members",
             "Use when the user asks who can access a Schemafy workspace or what workspace roles members have.",
-            idArgument("workspaceId", "Schemafy workspace ID."),
+            pagedIdArgument("workspaceId", "Schemafy workspace ID."),
             List.of("workspaceId"),
             reader::workspaceMembersTool),
         tool("schemafy_list_projects", "List projects",
             "Use after schemafy_list_workspaces when a workspaceId is known and the user asks for projects or needs the next step toward schemas and ERDs.",
-            idArgument("workspaceId", "Schemafy workspace ID."),
+            pagedIdArgument("workspaceId", "Schemafy workspace ID."),
             List.of("workspaceId"),
             reader::projectsTool),
         tool("schemafy_get_project", "Get project",
@@ -49,7 +51,7 @@ public class SchemafyReadToolSurfaceConfiguration {
             reader::projectTool),
         tool("schemafy_list_project_members", "List project members",
             "Use when the user asks who can access a Schemafy project or what project roles members have.",
-            idArgument("projectId", "Schemafy project ID."),
+            pagedIdArgument("projectId", "Schemafy project ID."),
             List.of("projectId"),
             reader::projectMembersTool),
         tool("schemafy_list_schemas", "List schemas",

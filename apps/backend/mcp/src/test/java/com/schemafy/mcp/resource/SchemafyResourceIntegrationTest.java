@@ -141,6 +141,8 @@ class SchemafyResourceIntegrationTest {
         .contains("schemafy_list_schemas")
         .contains("Use after schemafy_list_schemas when a schemaId is known to enumerate ERD tables")
         .contains("schemafy_get_schema")
+        .contains("Zero-based page number. Defaults to 0.")
+        .contains("Page size from 1 to 100. Defaults to 100.")
         .contains("readOnlyHint")
         .doesNotContain("schemafy_read_resource");
 
@@ -155,7 +157,9 @@ class SchemafyResourceIntegrationTest {
     String templates = mcp(sessionId, tokenFactory.validToken(), "templates-1",
         "resources/templates/list", Map.of());
     assertThat(templates)
+        .contains("schemafy://workspaces?page={page}&size={size}")
         .contains("schemafy://workspaces/{workspaceId}/projects")
+        .contains("schemafy://workspaces/{workspaceId}/projects?page={page}&size={size}")
         .contains("schemafy://projects/{projectId}/schemas")
         .contains("schemafy://tables/{tableId}/columns")
         .contains("schemafy://memos/{memoId}/comments")
@@ -175,14 +179,20 @@ class SchemafyResourceIntegrationTest {
         .contains("\\\"userId\\\":\\\"user-1\\\"")
         .contains("\\\"mcp\\\"");
 
+    readResource(sessionId, token, "schemafy://workspaces?page=2&size=25");
+    assertThat(readUseCases.lastWorkspacesQuery.get().page()).isEqualTo(2);
+    assertThat(readUseCases.lastWorkspacesQuery.get().size()).isEqualTo(25);
+
     String projects = readResource(sessionId, token,
-        "schemafy://workspaces/workspace-1/projects");
+        "schemafy://workspaces/workspace-1/projects?page=3&size=20");
     assertThat(projects)
-        .contains("schemafy://workspaces/workspace-1/projects")
+        .contains("schemafy://workspaces/workspace-1/projects?page=3&size=20")
         .contains("project-1")
         .contains("Orders");
     assertThat(readUseCases.lastWorkspaceProjectsQuery.get().requesterId())
         .isEqualTo("user-1");
+    assertThat(readUseCases.lastWorkspaceProjectsQuery.get().page()).isEqualTo(3);
+    assertThat(readUseCases.lastWorkspaceProjectsQuery.get().size()).isEqualTo(20);
   }
 
   @Test
@@ -191,20 +201,25 @@ class SchemafyResourceIntegrationTest {
     String token = tokenFactory.validToken();
     String sessionId = initialize(token);
 
-    String workspaces = callTool(sessionId, token, "schemafy_list_workspaces", Map.of());
+    String workspaces = callTool(sessionId, token, "schemafy_list_workspaces",
+        Map.of("page", 1, "size", 30));
     assertThat(workspaces)
         .contains("workspace-1")
         .contains("Main Workspace")
         .doesNotContain("\"isError\":true");
+    assertThat(readUseCases.lastWorkspacesQuery.get().page()).isEqualTo(1);
+    assertThat(readUseCases.lastWorkspacesQuery.get().size()).isEqualTo(30);
 
     String projects = callTool(sessionId, token, "schemafy_list_projects",
-        Map.of("workspaceId", "workspace-1"));
+        Map.of("workspaceId", "workspace-1", "page", 4, "size", 15));
     assertThat(projects)
         .contains("project-1")
         .contains("Orders")
         .doesNotContain("\"isError\":true");
     assertThat(readUseCases.lastWorkspaceProjectsQuery.get().requesterId())
         .isEqualTo("user-1");
+    assertThat(readUseCases.lastWorkspaceProjectsQuery.get().page()).isEqualTo(4);
+    assertThat(readUseCases.lastWorkspaceProjectsQuery.get().size()).isEqualTo(15);
 
     String schemas = callTool(sessionId, token, "schemafy_list_schemas",
         Map.of("projectId", "project-1"));
@@ -409,16 +424,19 @@ class SchemafyResourceIntegrationTest {
       GetMemoUseCase,
       GetMemoCommentsUseCase {
 
+    private final AtomicReference<GetWorkspacesQuery> lastWorkspacesQuery = new AtomicReference<>();
     private final AtomicReference<GetProjectsQuery> lastWorkspaceProjectsQuery = new AtomicReference<>();
     private final AtomicReference<GetProjectQuery> lastProjectQuery = new AtomicReference<>();
 
     void reset() {
+      lastWorkspacesQuery.set(null);
       lastWorkspaceProjectsQuery.set(null);
       lastProjectQuery.set(null);
     }
 
     @Override
     public Mono<PageResult<Workspace>> getWorkspaces(GetWorkspacesQuery query) {
+      lastWorkspacesQuery.set(query);
       return Mono.just(PageResult.of(List.of(workspace()), query.page(), query.size(), 1));
     }
 

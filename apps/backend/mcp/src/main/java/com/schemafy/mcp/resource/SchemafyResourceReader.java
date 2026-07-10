@@ -59,6 +59,7 @@ final class SchemafyResourceReader {
 
   private static final int DEFAULT_PAGE = 0;
   private static final int DEFAULT_PAGE_SIZE = 100;
+  private static final int MAX_PAGE_SIZE = 100;
 
   private final McpResponseWriter responseWriter;
   private final McpUriTemplateManagerFactory uriTemplateManagerFactory = new DefaultMcpUriTemplateManagerFactory();
@@ -96,15 +97,39 @@ final class SchemafyResourceReader {
   }
 
   Mono<McpSchema.ReadResourceResult> workspaces(McpSchema.ReadResourceRequest request) {
+    return workspaces(request, new Pagination(DEFAULT_PAGE, DEFAULT_PAGE_SIZE));
+  }
+
+  Mono<McpSchema.ReadResourceResult> workspaces(
+      McpSchema.ReadResourceRequest request,
+      String template) {
+    return workspaces(request, pagination(request, template));
+  }
+
+  private Mono<McpSchema.ReadResourceResult> workspaces(
+      McpSchema.ReadResourceRequest request,
+      Pagination pagination) {
     return responseWriter.resourcePayload(request.uri(), currentPrincipal()
         .flatMap(principal -> getWorkspacesUseCase.getWorkspaces(
-            new GetWorkspacesQuery(principal.userId(), DEFAULT_PAGE, DEFAULT_PAGE_SIZE))));
+            new GetWorkspacesQuery(principal.userId(), pagination.page(), pagination.size()))));
   }
 
   Mono<McpSchema.ReadResourceResult> sharedProjects(McpSchema.ReadResourceRequest request) {
+    return sharedProjects(request, new Pagination(DEFAULT_PAGE, DEFAULT_PAGE_SIZE));
+  }
+
+  Mono<McpSchema.ReadResourceResult> sharedProjects(
+      McpSchema.ReadResourceRequest request,
+      String template) {
+    return sharedProjects(request, pagination(request, template));
+  }
+
+  private Mono<McpSchema.ReadResourceResult> sharedProjects(
+      McpSchema.ReadResourceRequest request,
+      Pagination pagination) {
     return responseWriter.resourcePayload(request.uri(), currentPrincipal()
         .flatMap(principal -> getMySharedProjectsUseCase.getMySharedProjects(
-            new GetMySharedProjectsQuery(principal.userId(), DEFAULT_PAGE, DEFAULT_PAGE_SIZE))));
+            new GetMySharedProjectsQuery(principal.userId(), pagination.page(), pagination.size()))));
   }
 
   Mono<McpSchema.ReadResourceResult> workspace(
@@ -118,19 +143,21 @@ final class SchemafyResourceReader {
   Mono<McpSchema.ReadResourceResult> workspaceMembers(
       McpSchema.ReadResourceRequest request,
       String template) {
+    Pagination pagination = pagination(request, template);
     return responseWriter.resourcePayload(request.uri(), currentPrincipal()
         .flatMap(principal -> getWorkspaceMembersUseCase.getWorkspaceMembers(
             new GetWorkspaceMembersQuery(variable(request, template, "workspaceId"), principal.userId(),
-                DEFAULT_PAGE, DEFAULT_PAGE_SIZE))));
+                pagination.page(), pagination.size()))));
   }
 
   Mono<McpSchema.ReadResourceResult> workspaceProjects(
       McpSchema.ReadResourceRequest request,
       String template) {
+    Pagination pagination = pagination(request, template);
     return responseWriter.resourcePayload(request.uri(), currentPrincipal()
         .flatMap(principal -> getProjectsUseCase.getProjects(
             new GetProjectsQuery(variable(request, template, "workspaceId"), principal.userId(),
-                DEFAULT_PAGE, DEFAULT_PAGE_SIZE))));
+                pagination.page(), pagination.size()))));
   }
 
   Mono<McpSchema.ReadResourceResult> project(
@@ -144,10 +171,11 @@ final class SchemafyResourceReader {
   Mono<McpSchema.ReadResourceResult> projectMembers(
       McpSchema.ReadResourceRequest request,
       String template) {
+    Pagination pagination = pagination(request, template);
     return responseWriter.resourcePayload(request.uri(), currentPrincipal()
         .flatMap(principal -> getProjectMembersUseCase.getProjectMembers(
             new GetProjectMembersQuery(variable(request, template, "projectId"), principal.userId(),
-                DEFAULT_PAGE, DEFAULT_PAGE_SIZE))));
+                pagination.page(), pagination.size()))));
   }
 
   Mono<McpSchema.ReadResourceResult> projectSchemas(
@@ -236,16 +264,16 @@ final class SchemafyResourceReader {
         .collectList());
   }
 
-  Mono<McpSchema.CallToolResult> workspacesTool() {
-    return responseWriter.toolPayload(currentPrincipal()
+  Mono<McpSchema.CallToolResult> workspacesTool(McpSchema.CallToolRequest request) {
+    return withPagination(request, pagination -> responseWriter.toolPayload(currentPrincipal()
         .flatMap(principal -> getWorkspacesUseCase.getWorkspaces(
-            new GetWorkspacesQuery(principal.userId(), DEFAULT_PAGE, DEFAULT_PAGE_SIZE))));
+            new GetWorkspacesQuery(principal.userId(), pagination.page(), pagination.size())))));
   }
 
-  Mono<McpSchema.CallToolResult> sharedProjectsTool() {
-    return responseWriter.toolPayload(currentPrincipal()
+  Mono<McpSchema.CallToolResult> sharedProjectsTool(McpSchema.CallToolRequest request) {
+    return withPagination(request, pagination -> responseWriter.toolPayload(currentPrincipal()
         .flatMap(principal -> getMySharedProjectsUseCase.getMySharedProjects(
-            new GetMySharedProjectsQuery(principal.userId(), DEFAULT_PAGE, DEFAULT_PAGE_SIZE))));
+            new GetMySharedProjectsQuery(principal.userId(), pagination.page(), pagination.size())))));
   }
 
   Mono<McpSchema.CallToolResult> workspaceTool(
@@ -259,19 +287,21 @@ final class SchemafyResourceReader {
   Mono<McpSchema.CallToolResult> workspaceMembersTool(
       McpSchema.CallToolRequest request) {
     return withRequiredArgument(request, "workspaceId",
-        workspaceId -> responseWriter.toolPayload(currentPrincipal()
-            .flatMap(principal -> getWorkspaceMembersUseCase.getWorkspaceMembers(
-                new GetWorkspaceMembersQuery(workspaceId, principal.userId(),
-                    DEFAULT_PAGE, DEFAULT_PAGE_SIZE)))));
+        workspaceId -> withPagination(request,
+            pagination -> responseWriter.toolPayload(currentPrincipal()
+                .flatMap(principal -> getWorkspaceMembersUseCase.getWorkspaceMembers(
+                    new GetWorkspaceMembersQuery(workspaceId, principal.userId(),
+                        pagination.page(), pagination.size()))))));
   }
 
   Mono<McpSchema.CallToolResult> projectsTool(
       McpSchema.CallToolRequest request) {
     return withRequiredArgument(request, "workspaceId",
-        workspaceId -> responseWriter.toolPayload(currentPrincipal()
-            .flatMap(principal -> getProjectsUseCase.getProjects(
-                new GetProjectsQuery(workspaceId, principal.userId(),
-                    DEFAULT_PAGE, DEFAULT_PAGE_SIZE)))));
+        workspaceId -> withPagination(request,
+            pagination -> responseWriter.toolPayload(currentPrincipal()
+                .flatMap(principal -> getProjectsUseCase.getProjects(
+                    new GetProjectsQuery(workspaceId, principal.userId(),
+                        pagination.page(), pagination.size()))))));
   }
 
   Mono<McpSchema.CallToolResult> projectTool(
@@ -285,10 +315,11 @@ final class SchemafyResourceReader {
   Mono<McpSchema.CallToolResult> projectMembersTool(
       McpSchema.CallToolRequest request) {
     return withRequiredArgument(request, "projectId",
-        projectId -> responseWriter.toolPayload(currentPrincipal()
-            .flatMap(principal -> getProjectMembersUseCase.getProjectMembers(
-                new GetProjectMembersQuery(projectId, principal.userId(),
-                    DEFAULT_PAGE, DEFAULT_PAGE_SIZE)))));
+        projectId -> withPagination(request,
+            pagination -> responseWriter.toolPayload(currentPrincipal()
+                .flatMap(principal -> getProjectMembersUseCase.getProjectMembers(
+                    new GetProjectMembersQuery(projectId, principal.userId(),
+                        pagination.page(), pagination.size()))))));
   }
 
   Mono<McpSchema.CallToolResult> schemasTool(
@@ -383,9 +414,71 @@ final class SchemafyResourceReader {
       McpSchema.ReadResourceRequest request,
       String template,
       String name) {
+    return variables(request, template).get(name);
+  }
+
+  private Map<String, String> variables(
+      McpSchema.ReadResourceRequest request,
+      String template) {
     return uriTemplateManagerFactory.create(template)
-        .extractVariableValues(request.uri())
-        .get(name);
+        .extractVariableValues(request.uri());
+  }
+
+  private Pagination pagination(
+      McpSchema.ReadResourceRequest request,
+      String template) {
+    Map<String, String> variables = variables(request, template);
+    return pagination(
+        integerValue(variables.get("page"), "page", DEFAULT_PAGE),
+        integerValue(variables.get("size"), "size", DEFAULT_PAGE_SIZE));
+  }
+
+  private Pagination pagination(McpSchema.CallToolRequest request) {
+    Map<String, Object> arguments = request.arguments() == null ? Map.of() : request.arguments();
+    return pagination(
+        integerValue(arguments.get("page"), "page", DEFAULT_PAGE),
+        integerValue(arguments.get("size"), "size", DEFAULT_PAGE_SIZE));
+  }
+
+  private Pagination pagination(int page, int size) {
+    if (page < 0) {
+      throw new IllegalArgumentException("page must be a non-negative integer");
+    }
+    if (size < 1 || size > MAX_PAGE_SIZE) {
+      throw new IllegalArgumentException("size must be an integer between 1 and " + MAX_PAGE_SIZE);
+    }
+    return new Pagination(page, size);
+  }
+
+  private int integerValue(Object value, String name, int defaultValue) {
+    if (value == null) {
+      return defaultValue;
+    }
+    if (value instanceof Number number) {
+      double decimalValue = number.doubleValue();
+      int integerValue = number.intValue();
+      if (Double.isFinite(decimalValue) && decimalValue == integerValue) {
+        return integerValue;
+      }
+    }
+    if (value instanceof String text) {
+      try {
+        return Integer.parseInt(text);
+      } catch (NumberFormatException ignored) {
+        // Fall through to the consistent validation message.
+      }
+    }
+    throw new IllegalArgumentException(name + " must be an integer");
+  }
+
+  private Mono<McpSchema.CallToolResult> withPagination(
+      McpSchema.CallToolRequest request,
+      Function<Pagination, Mono<McpSchema.CallToolResult>> handler) {
+    try {
+      return handler.apply(pagination(request));
+    } catch (IllegalArgumentException e) {
+      return Mono.just(responseWriter.toolError(e.getMessage()));
+    }
   }
 
   private Mono<McpSchema.CallToolResult> withRequiredArgument(
@@ -407,6 +500,9 @@ final class SchemafyResourceReader {
       return text;
     }
     throw new IllegalArgumentException(name + " is required");
+  }
+
+  private record Pagination(int page, int size) {
   }
 
 }

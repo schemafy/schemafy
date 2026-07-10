@@ -1,5 +1,6 @@
 package com.schemafy.mcp.resource;
 
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Function;
@@ -73,6 +74,29 @@ final class SchemafyMcpFeatureFactory {
     return Map.of(name, Map.of(
         "type", "string",
         "description", description));
+  }
+
+  static Map<String, Object> paginationArguments() {
+    return Map.of(
+        "page", Map.of(
+            "type", "integer",
+            "description", "Zero-based page number. Defaults to 0.",
+            "minimum", 0,
+            "default", 0),
+        "size", Map.of(
+            "type", "integer",
+            "description", "Page size from 1 to 100. Defaults to 100.",
+            "minimum", 1,
+            "maximum", 100,
+            "default", 100));
+  }
+
+  static Map<String, Object> pagedIdArgument(
+      String name,
+      String description) {
+    Map<String, Object> arguments = new LinkedHashMap<>(idArgument(name, description));
+    arguments.putAll(paginationArguments());
+    return arguments;
   }
 
   private static McpSchema.JsonSchema objectSchema(
