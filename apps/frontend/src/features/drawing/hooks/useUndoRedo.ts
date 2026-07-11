@@ -2,6 +2,7 @@ import { useCallback, useRef } from 'react';
 import { useSelectedSchema } from '../contexts';
 import { useUndo, useRedo } from './useOperationMutations';
 import { operationHistoryStore } from '@/store/operation-history.store';
+import { isKnownUndoRedoError } from '../constants/operationError.ts';
 
 export const useUndoRedo = () => {
   const { selectedSchemaId } = useSelectedSchema();
@@ -31,8 +32,10 @@ export const useUndoRedo = () => {
         operationHistoryStore.pushRedoOpId(selectedSchemaId, opId);
         isPendingRef.current = false;
       },
-      onError: () => {
-        operationHistoryStore.clearSchemaHistory(selectedSchemaId);
+      onError: (error) => {
+        if (isKnownUndoRedoError(error)) {
+          operationHistoryStore.clearSchemaHistory(selectedSchemaId);
+        }
         isPendingRef.current = false;
       },
     });
@@ -51,8 +54,10 @@ export const useUndoRedo = () => {
         operationHistoryStore.addUndoableOpId(selectedSchemaId, opId);
         isPendingRef.current = false;
       },
-      onError: () => {
-        operationHistoryStore.clearSchemaHistory(selectedSchemaId);
+      onError: (error) => {
+        if (isKnownUndoRedoError(error)) {
+          operationHistoryStore.clearSchemaHistory(selectedSchemaId);
+        }
         isPendingRef.current = false;
       },
     });
