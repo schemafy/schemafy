@@ -63,7 +63,7 @@ export const ShortcutPanel = ({ onClose }: ShortcutPanelProps) => {
                 <Icon size={14} color="var(--color-schemafy-dark-gray)" />
                 <span className="font-body-sm text-schemafy-text">{name}</span>
               </div>
-              <kbd className="rounded-md border border-schemafy-glass-border bg-schemafy-secondary/80 px-2.5 py-0.5 font-mono text-base text-schemafy-dark-gray leading-none">
+              <kbd className="rounded-md border border-schemafy-glass-border bg-schemafy-secondary/80 px-2.5 py-0.5 font-sans text-sm text-schemafy-dark-gray leading-none">
                 {key}
               </kbd>
             </div>
