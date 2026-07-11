@@ -3,9 +3,15 @@ import {
   MessageCircle,
   MessageCircleMore,
   MousePointer2,
+  Redo2,
   Table,
+  Undo2,
   X,
 } from 'lucide-react';
+
+const isMacOS =
+  typeof navigator !== 'undefined' &&
+  /Mac|iPhone|iPod|iPad/i.test(navigator.userAgent);
 
 const SHORTCUTS = [
   { icon: MousePointer2, name: 'Pointer', key: 'p' },
@@ -13,6 +19,16 @@ const SHORTCUTS = [
   { icon: Table, name: 'Add Entity', key: 'e' },
   { icon: MessageCircleMore, name: 'Add Memo', key: 'm' },
   { icon: MessageCircle, name: 'Chat message', key: '/' },
+  {
+    icon: Undo2,
+    name: 'Undo',
+    key: isMacOS ? '⌘Z' : 'Ctrl+Z',
+  },
+  {
+    icon: Redo2,
+    name: 'Redo',
+    key: isMacOS ? '⇧⌘Z / ⌘Y' : 'Ctrl+Shift+Z / Ctrl+Y',
+  },
 ];
 
 interface ShortcutPanelProps {
