@@ -24,6 +24,8 @@ export class OperationHistoryStore {
       markNoOp: action,
       markFailed: action,
       handleErdMutated: action,
+      removeUndoableOpId: action,
+      addUndoableOpId: action,
       clearSchemaHistory: action,
       clearAll: action,
     });
@@ -154,6 +156,22 @@ export class OperationHistoryStore {
     if (!clientOperationId) return null;
 
     return this.operationsByClientId.get(clientOperationId) ?? null;
+  }
+
+  removeUndoableOpId(schemaId: string, opId: string) {
+    const opIds = this.undoableOpIdsBySchemaId.get(schemaId);
+    if (!opIds) return;
+    this.undoableOpIdsBySchemaId.set(
+      schemaId,
+      opIds.filter((id) => id !== opId),
+    );
+  }
+
+  addUndoableOpId(schemaId: string, opId: string) {
+    const opIds = this.undoableOpIdsBySchemaId.get(schemaId) ?? [];
+    if (!opIds.includes(opId)) {
+      this.undoableOpIdsBySchemaId.set(schemaId, [...opIds, opId]);
+    }
   }
 
   clearSchemaHistory(schemaId: string) {
