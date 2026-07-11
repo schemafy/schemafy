@@ -916,7 +916,8 @@
   ],
   "apps/frontend/src/features/workspace/components/WorkspaceFormDialog.tsx": [
     358,
-    382
+    382,
+    446
   ],
   "apps/frontend/src/features/workspace/components/WorkspaceMembersTab.tsx": [
     358,
