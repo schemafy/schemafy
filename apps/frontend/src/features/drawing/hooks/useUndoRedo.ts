@@ -18,9 +18,8 @@ export const useUndoRedo = () => {
   const handleUndo = useCallback(() => {
     if (isPendingRef.current) return;
 
-    const latest = operationHistoryStore.getLatestUndoableOperation(
-      selectedSchemaId,
-    );
+    const latest =
+      operationHistoryStore.getLatestUndoableOperation(selectedSchemaId);
     if (!latest?.opId) return;
 
     const opId = latest.opId;

@@ -14,12 +14,11 @@ export class OperationService {
     authHeader: string,
     collaborationHeaders?: CollaborationRequestHeaders,
   ): Promise<MutationResponse> {
-    const { data } =
-      await this.backendClient.client.post<MutationResponse>(
-        `/api/v1.0/operations/${opId}/undo`,
-        {},
-        this.backendClient.getAuthConfig(authHeader, collaborationHeaders),
-      );
+    const { data } = await this.backendClient.client.post<MutationResponse>(
+      `/api/v1.0/operations/${opId}/undo`,
+      {},
+      this.backendClient.getAuthConfig(authHeader, collaborationHeaders),
+    );
     return data;
   }
 
@@ -28,12 +27,11 @@ export class OperationService {
     authHeader: string,
     collaborationHeaders?: CollaborationRequestHeaders,
   ): Promise<MutationResponse> {
-    const { data } =
-      await this.backendClient.client.post<MutationResponse>(
-        `/api/v1.0/operations/${opId}/redo`,
-        {},
-        this.backendClient.getAuthConfig(authHeader, collaborationHeaders),
-      );
+    const { data } = await this.backendClient.client.post<MutationResponse>(
+      `/api/v1.0/operations/${opId}/redo`,
+      {},
+      this.backendClient.getAuthConfig(authHeader, collaborationHeaders),
+    );
     return data;
   }
 }
