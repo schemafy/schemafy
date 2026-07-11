@@ -36,11 +36,13 @@
     443
   ],
   "apps/frontend/src/features/drawing/components/ShortcutPanel.tsx": [
-    291
+    291,
+    452
   ],
   "apps/frontend/src/features/drawing/components/Toolbar.tsx": [
     331,
-    291
+    291,
+    452
   ],
   "apps/frontend/src/features/drawing/components/index.ts": [
     331,
@@ -69,11 +71,13 @@
     291,
     380,
     403,
-    442
+    442,
+    452
   ],
   "apps/frontend/src/features/drawing/hooks/useCanvasKeyboard.ts": [
     331,
-    291
+    291,
+    452
   ],
   "apps/frontend/src/hooks/useChatMessages.ts": [
     291,
@@ -761,7 +765,8 @@
   ],
   "apps/frontend/src/store/operation-history.store.ts": [
     374,
-    419
+    419,
+    452
   ],
   "apps/frontend/src/types/operation.types.ts": [
     374
@@ -2570,5 +2575,29 @@
   ],
   "agents-logs/20260710-cache-router-lazy-redis-resolution.md": [
     423
+  ],
+  "apps/bff/src/erd/erd.module.ts": [
+    452
+  ],
+  "apps/bff/src/erd/operation.controller.ts": [
+    452
+  ],
+  "apps/bff/src/erd/operation.service.ts": [
+    452
+  ],
+  "apps/frontend/src/features/drawing/api/index.ts": [
+    452
+  ],
+  "apps/frontend/src/features/drawing/api/operation.api.ts": [
+    452
+  ],
+  "apps/frontend/src/features/drawing/constants/operationError.ts": [
+    452
+  ],
+  "apps/frontend/src/features/drawing/hooks/useOperationMutations.ts": [
+    452
+  ],
+  "apps/frontend/src/features/drawing/hooks/useUndoRedo.ts": [
+    452
   ]
 }
