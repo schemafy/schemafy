@@ -46,18 +46,17 @@ export const WorkspacePage = () => {
     selectedWorkspace?.currentUserRole.toUpperCase() ?? '';
 
   useEffect(() => {
-    if (!workspacesData || isMyProjectsSelected) return;
+    if (!workspacesData || selectedWorkspaceId) return;
 
-    if (workspaces.length > 0) {
-      const isInList = workspaces.some((w) => w.id === selectedWorkspaceId);
-      if (!selectedWorkspaceId || !isInList) {
-        setSelectedWorkspaceId(workspaces[0].id);
-      }
+    if (workspacesData.totalElements === 0) {
+      setSelectedWorkspaceId(MY_PROJECTS_ID);
       return;
     }
 
-    setSelectedWorkspaceId(MY_PROJECTS_ID);
-  }, [isMyProjectsSelected, selectedWorkspaceId, workspaces, workspacesData]);
+    if (workspaces[0]) {
+      setSelectedWorkspaceId(workspaces[0].id);
+    }
+  }, [selectedWorkspaceId, workspaces, workspacesData]);
 
   const handleWorkspaceSelect = (id: string) => {
     setSelectedWorkspaceId(id);
@@ -199,6 +198,7 @@ export const WorkspacePage = () => {
             open={isCreateDialogOpen}
             onOpenChange={setIsCreateDialogOpen}
             mode="create"
+            onCreated={(id) => setSelectedWorkspaceId(id)}
           />
 
           {!isMyProjectsSelected && loadedWorkspacesData.totalElements > 0 && (
