@@ -12,6 +12,7 @@ import org.springframework.web.server.ServerWebExchange;
 import org.springframework.web.server.WebFilter;
 import org.springframework.web.server.WebFilterChain;
 
+import com.schemafy.api.common.constant.ApiPath;
 import com.schemafy.api.common.exception.HmacErrorCode;
 import com.schemafy.api.common.security.hmac.HmacProperties.EnforcementMode;
 import com.schemafy.api.common.security.jwt.WebExchangeErrorWriter;
@@ -62,7 +63,8 @@ public class HmacVerificationFilter implements WebFilter {
     }
 
     String path = request.getPath().pathWithinApplication().value();
-    if (path.startsWith("/public/api/") || path.startsWith("/ws/")) {
+    if (path.startsWith("/public/api/") || path.startsWith("/ws/")
+        || ApiPath.isOpenApiDocsPath(path)) {
       return chain.filter(exchange);
     }
 

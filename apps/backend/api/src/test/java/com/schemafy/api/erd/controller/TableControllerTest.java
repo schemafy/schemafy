@@ -44,13 +44,13 @@ import com.schemafy.core.erd.table.domain.Table;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
+import static com.epages.restdocs.apispec.WebTestClientRestDocumentationWrapper.document;
 import static com.schemafy.api.erd.controller.ErdOperationFixtures.OP_ID;
 import static com.schemafy.api.erd.controller.ErdOperationFixtures.committedOperation;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyList;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.then;
-import static org.springframework.restdocs.webtestclient.WebTestClientRestDocumentation.document;
 
 @ActiveProfiles("test")
 @SpringBootTest
@@ -403,10 +403,9 @@ class TableControllerTest {
         .willReturn(Mono.just(Map.of(tableId1, snapshot1, tableId2, snapshot2)));
 
     webTestClient.get()
-        .uri(uriBuilder -> uriBuilder
-            .path(API_BASE_PATH + "/tables/snapshots")
-            .queryParam("tableIds", tableId1, tableId2)
-            .build())
+        .uri(API_BASE_PATH
+            + "/tables/snapshots?tableIds={tableId1}&tableIds={tableId2}",
+            tableId1, tableId2)
         .header("Accept", "application/json")
         .exchange()
         .expectStatus().isOk()

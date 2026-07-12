@@ -8,14 +8,13 @@ import com.schemafy.core.erd.schema.domain.Schema;
 class SchemaMapper {
 
   SchemaEntity toEntity(Schema schema) {
-    return SchemaEntity.builder()
-        .id(schema.id())
-        .projectId(schema.projectId())
-        .dbVendorName(schema.dbVendorName())
-        .name(schema.name())
-        .charset(schema.charset())
-        .collation(schema.collation())
-        .build();
+    return new SchemaEntity(
+        schema.id(),
+        schema.projectId(),
+        schema.dbVendorName(),
+        schema.name(),
+        schema.charset(),
+        schema.collation());
   }
 
   Schema toDomain(SchemaEntity entity) {

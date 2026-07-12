@@ -1,0 +1,78 @@
+package com.schemafy.core.erd.ddl.application.service;
+
+import java.util.List;
+
+import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Test;
+
+import com.schemafy.core.common.exception.DomainException;
+import com.schemafy.core.erd.ddl.application.port.in.GenerateSchemaDdlCommand;
+import com.schemafy.core.erd.ddl.domain.DdlExportVendor;
+import com.schemafy.core.erd.ddl.domain.DdlGenerator;
+import com.schemafy.core.erd.ddl.domain.DdlSchemaSnapshot;
+import com.schemafy.core.erd.ddl.domain.DdlSchemaSnapshot.SchemaSnapshot;
+import com.schemafy.core.erd.ddl.domain.exception.DdlErrorCode;
+
+import reactor.core.publisher.Mono;
+import reactor.test.StepVerifier;
+
+@DisplayName("GenerateSchemaDdlService")
+class GenerateSchemaDdlServiceTest {
+
+  @Test
+  @DisplayName("targetDbVendor에 맞는 core DDL generator로 라우팅한다")
+  void routesToDdlGeneratorByTargetDbVendor() {
+    DdlSchemaSnapshot snapshot = new DdlSchemaSnapshot(
+        new SchemaSnapshot("schema-1", "mysql", "app", null, null),
+        java.util.List.of());
+    DdlGenerator mysqlGenerator = new StubDdlGenerator(
+        DdlExportVendor.MYSQL, snapshot, "MYSQL DDL");
+    DdlGenerator postgresGenerator = new StubDdlGenerator(
+        DdlExportVendor.of("postgresql"), snapshot, "POSTGRESQL DDL");
+    GenerateSchemaDdlService sut = new GenerateSchemaDdlService(
+        List.of(mysqlGenerator, postgresGenerator));
+
+    Mono<String> result = sut.generateSchemaDdl(
+        new GenerateSchemaDdlCommand(snapshot, DdlExportVendor.MYSQL));
+
+    StepVerifier.create(result)
+        .expectNext("MYSQL DDL")
+        .verifyComplete();
+  }
+
+  @Test
+  @DisplayName("지원하지 않는 targetDbVendor이면 예외가 발생한다")
+  void throwsWhenTargetDbVendorIsUnsupported() {
+    DdlSchemaSnapshot snapshot = new DdlSchemaSnapshot(
+        new SchemaSnapshot("schema-1", "mysql", "app", null, null),
+        java.util.List.of());
+    GenerateSchemaDdlService sut = new GenerateSchemaDdlService(
+        List.of(new StubDdlGenerator(DdlExportVendor.MYSQL, snapshot,
+            "MYSQL DDL")));
+
+    Mono<String> result = sut.generateSchemaDdl(
+        new GenerateSchemaDdlCommand(snapshot,
+            DdlExportVendor.of("postgresql")));
+
+    StepVerifier.create(result)
+        .expectErrorMatches(DomainException.hasErrorCode(
+            DdlErrorCode.UNSUPPORTED_VENDOR))
+        .verify();
+  }
+
+  private record StubDdlGenerator(
+      DdlExportVendor exportVendor,
+      DdlSchemaSnapshot expectedSnapshot,
+      String ddl) implements DdlGenerator {
+
+    @Override
+    public String generate(DdlSchemaSnapshot snapshot) {
+      if (snapshot != expectedSnapshot) {
+        return "wrong";
+      }
+      return ddl;
+    }
+
+  }
+
+}

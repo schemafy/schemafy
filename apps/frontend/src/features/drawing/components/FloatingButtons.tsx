@@ -13,9 +13,9 @@ export const FloatingButtons = ({
   const [isExpanded, setIsExpanded] = useState(false);
 
   return (
-    <div className="fixed bottom-4 left-4 z-50">
+    <div className="fixed bottom-4 left-4 z-50 sm:bottom-6 sm:left-6">
       <div
-        className="flex flex-col items-center bg-schemafy-bg rounded-full shadow-lg p-2 transition-all duration-300 ease-in-out"
+        className="schemafy-canvas-panel flex min-h-12 min-w-12 flex-col items-center rounded-full p-1.5 transition-all duration-300 ease-in-out"
         onMouseEnter={() => setIsExpanded(true)}
         onMouseLeave={() => setIsExpanded(false)}
       >
@@ -28,10 +28,10 @@ export const FloatingButtons = ({
         >
           <button
             onClick={onHelpClick}
-            className="flex items-center justify-center p-4 rounded-full hover:bg-schemafy-secondary transition-colors"
+            className="schemafy-focus-ring flex h-9 w-9 items-center justify-center rounded-full transition-colors hover:bg-schemafy-secondary"
           >
             <HelpCircle
-              size={24}
+              size={18}
               color={
                 isShortcutPanelOpen
                   ? 'var(--color-schemafy-text)'
@@ -40,13 +40,13 @@ export const FloatingButtons = ({
             />
           </button>
 
-          <button className="flex items-center justify-center p-4 rounded-full hover:bg-schemafy-secondary transition-colors">
-            <Bot size={24} color="var(--color-schemafy-dark-gray)" />
+          <button className="schemafy-focus-ring flex h-9 w-9 items-center justify-center rounded-full transition-colors hover:bg-schemafy-secondary">
+            <Bot size={18} color="var(--color-schemafy-dark-gray)" />
           </button>
         </div>
 
-        <button className="flex items-center p-4 rounded-full justify-center">
-          <Ellipsis size={24} color="var(--color-schemafy-dark-gray)" />
+        <button className="schemafy-focus-ring flex h-9 w-9 items-center justify-center rounded-full">
+          <Ellipsis size={18} color="var(--color-schemafy-dark-gray)" />
         </button>
       </div>
     </div>

@@ -11,6 +11,7 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.server.SecurityWebFilterChain;
 import org.springframework.security.web.server.context.NoOpServerSecurityContextRepository;
 
+import com.schemafy.api.common.constant.ApiPath;
 import com.schemafy.api.common.security.jwt.JwtAccessDeniedHandler;
 import com.schemafy.api.common.security.jwt.JwtAuthenticationEntryPoint;
 import com.schemafy.api.common.security.jwt.JwtAuthenticationFilter;
@@ -58,6 +59,7 @@ public class TestSecurityConfig {
         .addFilterAt(jwtAuthenticationFilter,
             SecurityWebFiltersOrder.AUTHENTICATION)
         .authorizeExchange(exchanges -> exchanges
+            .pathMatchers(ApiPath.openApiDocsPathPatterns()).permitAll()
             .pathMatchers("/public/api/**").permitAll()
             .pathMatchers(HttpMethod.OPTIONS, "/**").permitAll()
             .anyExchange().authenticated())

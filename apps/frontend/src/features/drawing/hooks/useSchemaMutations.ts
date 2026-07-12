@@ -1,6 +1,10 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { createSchema, changeSchemaName, deleteSchema } from '../api';
-import type { CreateSchemaRequest, ChangeSchemaNameRequest } from '../api';
+import type {
+  CreateSchemaRequest,
+  ChangeSchemaNameRequest,
+  SchemaResponse,
+} from '../api';
 import { collaborationStore } from '@/store/collaboration.store';
 import { operationHistoryStore } from '@/store/operation-history.store';
 import { erdKeys } from './query-keys';
@@ -15,6 +19,17 @@ export const useCreateSchema = (projectId: string) => {
       const syncStatus = syncCommittedRevision(result.data.id, result);
 
       if (syncStatus === 'stale') return;
+
+      queryClient.setQueryData<SchemaResponse[]>(
+        erdKeys.schemas(projectId),
+        (schemas) => {
+          if (!schemas) return [result.data];
+          if (schemas.some((schema) => schema.id === result.data.id)) {
+            return schemas;
+          }
+          return [...schemas, result.data];
+        },
+      );
 
       queryClient.invalidateQueries({
         queryKey: erdKeys.schemas(projectId),

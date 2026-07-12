@@ -1730,6 +1730,38 @@ include::{snippets}/schema-get/response-fields.adoc[]
 
 ---
 
+==== Schema DDL Export
+
+스키마를 지정한 DB vendor용 DDL로 export합니다.
+
+[source]
+----
+GET /api/v1.0/schemas/{schemaId}/exports/ddl?targetDbVendor=mysql
+----
+
+[discrete]
+==== 요청
+
+include::{snippets}/schema-ddl-export/http-request.adoc[]
+include::{snippets}/schema-ddl-export/request-headers.adoc[]
+include::{snippets}/schema-ddl-export/path-parameters.adoc[]
+include::{snippets}/schema-ddl-export/query-parameters.adoc[]
+include::{snippets}/schema-ddl-export/curl-request.adoc[]
+
+[discrete]
+==== 응답
+
+include::{snippets}/schema-ddl-export/response-headers.adoc[]
+include::{snippets}/schema-ddl-export/response-body.adoc[]
+include::{snippets}/schema-ddl-export/http-response.adoc[]
+
+[discrete]
+==== 응답 필드
+
+include::{snippets}/schema-ddl-export/response-fields.adoc[]
+
+---
+
 ==== Schema 이름 변경
 
 스키마 이름을 변경합니다.
@@ -3799,6 +3831,64 @@ include::{snippets}/oauth-github-authorize/curl-request.adoc[]
 
 include::{snippets}/oauth-github-authorize/response-headers.adoc[]
 include::{snippets}/oauth-github-authorize/http-response.adoc[]
+
+---
+
+== MCP Token API
+
+MCP 서버에 연결할 때 사용할 MCP 전용 Bearer 토큰을 발급하고 폐기합니다. 이 토큰은 Schemafy API용 JWT와 별도로 사용되며, MCP 클라이언트는 `/mcp` 요청마다 `Authorization: Bearer {mcpToken}` 헤더로 전달해야 합니다.
+
+=== MCP 토큰 발급
+
+로그인된 사용자에게 MCP 서버 접근용 Bearer 토큰을 발급합니다. 응답으로 받은 토큰 값은 MCP 요청의 `Authorization` 헤더에 사용합니다.
+
+[source]
+----
+POST /api/v1.0/mcp/tokens
+----
+
+[discrete]
+==== 요청
+
+include::{snippets}/mcp-token-issue/http-request.adoc[]
+include::{snippets}/mcp-token-issue/request-headers.adoc[]
+include::{snippets}/mcp-token-issue/curl-request.adoc[]
+
+[discrete]
+==== 응답
+
+include::{snippets}/mcp-token-issue/response-headers.adoc[]
+include::{snippets}/mcp-token-issue/response-body.adoc[]
+include::{snippets}/mcp-token-issue/http-response.adoc[]
+
+[discrete]
+==== 응답 필드
+
+include::{snippets}/mcp-token-issue/response-fields.adoc[]
+
+---
+
+=== MCP 토큰 폐기
+
+사용자 자신의 MCP 토큰을 폐기합니다. 폐기된 토큰은 이후 MCP 요청 인증에 사용할 수 없습니다.
+
+[source]
+----
+POST /api/v1.0/mcp/tokens/revoke
+----
+
+[discrete]
+==== 요청
+
+include::{snippets}/mcp-token-revoke/http-request.adoc[]
+include::{snippets}/mcp-token-revoke/request-headers.adoc[]
+include::{snippets}/mcp-token-revoke/request-fields.adoc[]
+include::{snippets}/mcp-token-revoke/curl-request.adoc[]
+
+[discrete]
+==== 응답
+
+include::{snippets}/mcp-token-revoke/http-response.adoc[]
 
 ---
 

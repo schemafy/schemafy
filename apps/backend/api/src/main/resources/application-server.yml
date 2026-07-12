@@ -12,8 +12,19 @@ jwt:
   cookie:
     secure: true
 
+mcp:
+  security:
+    token:
+      secret: ${MCP_TOKEN_SECRET}
+
 cors:
   allowed-origins: ${JWT_ALLOWED_ORIGINS:http://localhost:3000}
+
+springdoc:
+  api-docs:
+    enabled: false
+  swagger-ui:
+    enabled: false
 
 management:
   endpoints:

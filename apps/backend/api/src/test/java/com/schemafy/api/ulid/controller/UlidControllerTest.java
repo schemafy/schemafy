@@ -18,9 +18,9 @@ import com.schemafy.core.ulid.application.port.in.GenerateUlidUseCase;
 
 import reactor.core.publisher.Mono;
 
+import static com.epages.restdocs.apispec.WebTestClientRestDocumentationWrapper.document;
 import static com.schemafy.api.ulid.docs.UlidApiSnippets.*;
 import static org.mockito.Mockito.when;
-import static org.springframework.restdocs.webtestclient.WebTestClientRestDocumentation.document;
 
 @ActiveProfiles("test")
 @WebFluxTest(controllers = UlidController.class)
