@@ -12,6 +12,8 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
@@ -31,6 +33,7 @@ import reactor.test.StepVerifier;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
@@ -228,6 +231,36 @@ class JwtAuthenticationFilterTest {
     StepVerifier
         .create(jwtAuthenticationFilter.filter(exchange, filterChain))
         .verifyComplete();
+  }
+
+  @ParameterizedTest
+  @ValueSource(strings = {
+    "/v3/api-docs",
+    "/openapi/openapi3.json",
+    "/swagger-ui.html",
+    "/swagger-ui-hmac.html",
+    "/swagger-ui-hmac/swagger-ui-hmac.js",
+    "/swagger-ui/swagger-ui-bundle.js",
+    "/webjars/swagger-ui/swagger-ui-bundle.js" })
+  @DisplayName("문서 공개 경로는 낡은 Bearer 토큰이 있어도 통과한다")
+  void openApiDocsPathPassesWithInvalidBearerToken(String path) {
+    String token = "stale-token";
+    MockServerHttpRequest request = MockServerHttpRequest
+        .get(path)
+        .header(HttpHeaders.AUTHORIZATION, "Bearer " + token)
+        .build();
+    MockServerWebExchange exchange = MockServerWebExchange.from(request);
+
+    when(jwtProvider.extractUserId(token))
+        .thenThrow(new RuntimeException("Invalid token"));
+    when(filterChain.filter(any())).thenReturn(Mono.empty());
+
+    StepVerifier
+        .create(jwtAuthenticationFilter.filter(exchange, filterChain))
+        .verifyComplete();
+
+    verify(filterChain).filter(any());
+    assertThat(exchange.getResponse().getStatusCode()).isNull();
   }
 
   @Test
