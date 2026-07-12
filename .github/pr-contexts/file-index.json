@@ -2057,13 +2057,15 @@
     431
   ],
   "apps/backend/mcp/src/main/resources/application.yml": [
-    431
+    431,
+    455
   ],
   "apps/backend/mcp/src/test/java/com/schemafy/mcp/McpApplicationTests.java": [
     431
   ],
   "apps/backend/mcp/src/test/resources/application-test.yml": [
-    431
+    431,
+    455
   ],
   "apps/backend/package.json": [
     431
@@ -2609,5 +2611,26 @@
   ],
   "apps/frontend/src/lib/api/error-messages.ts": [
     446
+  ],
+  "apps/backend/mcp/src/main/java/com/schemafy/mcp/common/McpResponseWriter.java": [
+    455
+  ],
+  "apps/backend/mcp/src/main/java/com/schemafy/mcp/resource/SchemafyMcpFeatureFactory.java": [
+    455
+  ],
+  "apps/backend/mcp/src/main/java/com/schemafy/mcp/resource/SchemafyReadResourceSurfaceConfiguration.java": [
+    455
+  ],
+  "apps/backend/mcp/src/main/java/com/schemafy/mcp/resource/SchemafyReadToolSurfaceConfiguration.java": [
+    455
+  ],
+  "apps/backend/mcp/src/main/java/com/schemafy/mcp/resource/SchemafyResourceReader.java": [
+    455
+  ],
+  "apps/backend/mcp/src/test/java/com/schemafy/mcp/common/security/McpSecurityIntegrationTest.java": [
+    455
+  ],
+  "apps/backend/mcp/src/test/java/com/schemafy/mcp/resource/SchemafyResourceIntegrationTest.java": [
+    455
   ]
 }
