@@ -225,7 +225,10 @@ export const WorkspacePage = () => {
                 title="Leave Workspace"
                 description="If you leave the workspace, you will lose access to all projects and resources. Are you sure you want to leave?"
                 confirmLabel="Leave"
-                onConfirm={() => leaveWorkspace(selectedWorkspaceId)}
+                onConfirm={async () => {
+                  const nextId = await leaveWorkspace(selectedWorkspaceId);
+                  setSelectedWorkspaceId(nextId ?? MY_PROJECTS_ID);
+                }}
               />
             </>
           )}

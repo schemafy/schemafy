@@ -44,11 +44,12 @@ export const useWorkspaces = (size = 10) => {
     deleteWorkspaceMutation.mutate(id, options);
   };
 
-  const leaveWorkspace = (
+  const leaveWorkspace = async (
     workspaceId: string,
-    options?: Parameters<typeof leaveWorkspaceMutation.mutate>[1],
-  ) => {
-    leaveWorkspaceMutation.mutate(workspaceId, options);
+  ): Promise<string | null> => {
+    await leaveWorkspaceMutation.mutateAsync(workspaceId);
+    const { data } = await workspacesQuery.refetch();
+    return data?.pages[0]?.content[0]?.id ?? null;
   };
 
   return {
