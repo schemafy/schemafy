@@ -14,7 +14,10 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
 @ActiveProfiles({ "test", "server" })
-@SpringBootTest(properties = "schemafy.openapi.resource-locations=file:build/test-openapi-spec/server/")
+@SpringBootTest(properties = {
+  "schemafy.openapi.resource-locations=file:build/test-openapi-spec/server/",
+  "mcp.security.token.secret=test-schemafy-mcp-secret-minimum-256-bit-key-value"
+})
 @AutoConfigureWebTestClient
 class OpenApiServerProfileTest {
 

@@ -2,11 +2,10 @@ package com.schemafy.api.erd.service.memo;
 
 import org.springframework.stereotype.Component;
 
-import com.fasterxml.jackson.databind.JsonNode;
 import com.schemafy.api.erd.controller.dto.response.MemoCommentResponse;
 import com.schemafy.api.erd.controller.dto.response.MemoResponse;
 import com.schemafy.api.user.controller.dto.response.UserSummaryResponse;
-import com.schemafy.core.common.json.JsonCodec;
+import com.schemafy.core.common.json.JsonObjectMetadataConverter;
 import com.schemafy.core.erd.memo.domain.Memo;
 import com.schemafy.core.erd.memo.domain.MemoComment;
 
@@ -16,14 +15,14 @@ import lombok.RequiredArgsConstructor;
 @RequiredArgsConstructor
 public class MemoApiResponseMapper {
 
-  private final JsonCodec jsonCodec;
+  private final JsonObjectMetadataConverter jsonObjectMetadataConverter;
 
   public MemoResponse toMemoResponse(Memo memo, UserSummaryResponse author) {
     return new MemoResponse(
         memo.id(),
         memo.schemaId(),
         author,
-        jsonCodec.fromJson(memo.positions(), JsonNode.class),
+        jsonObjectMetadataConverter.toJsonNode(memo.positions()),
         memo.createdAt(),
         memo.updatedAt());
   }

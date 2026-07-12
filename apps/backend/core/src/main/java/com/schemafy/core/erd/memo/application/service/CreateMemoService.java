@@ -6,6 +6,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.reactive.TransactionalOperator;
 
 import com.schemafy.core.common.exception.DomainException;
+import com.schemafy.core.common.json.JsonObjectMetadataConverter;
 import com.schemafy.core.erd.memo.application.port.in.CreateMemoCommand;
 import com.schemafy.core.erd.memo.application.port.in.CreateMemoUseCase;
 import com.schemafy.core.erd.memo.application.port.out.CreateMemoCommentPort;
@@ -35,38 +36,42 @@ class CreateMemoService implements CreateMemoUseCase {
   private final CreateMemoPort createMemoPort;
   private final CreateMemoCommentPort createMemoCommentPort;
   private final TransactionalOperator transactionalOperator;
+  private final JsonObjectMetadataConverter jsonObjectMetadataConverter;
 
   @Override
   public Mono<MemoDetail> createMemo(CreateMemoCommand command) {
-    return getSchemaByIdPort.findSchemaById(command.schemaId())
-        .switchIfEmpty(Mono.error(
-            new DomainException(SchemaErrorCode.NOT_FOUND, "Schema not found: " + command.schemaId())))
-        .then(Mono.zip(
-            Mono.fromCallable(ulidGeneratorPort::generate),
-            Mono.fromCallable(ulidGeneratorPort::generate)))
-        .flatMap(tuple -> {
-          Memo memo = new Memo(
-              tuple.getT1(),
-              command.schemaId(),
-              command.authorId(),
-              command.positions(),
-              null,
-              null,
-              null);
-          MemoComment comment = new MemoComment(
-              tuple.getT2(),
-              tuple.getT1(),
-              command.authorId(),
-              command.body(),
-              null,
-              null,
-              null);
+    return Mono.defer(() -> {
+      String canonicalPositions = jsonObjectMetadataConverter.toStorageJson(command.positions());
+      return getSchemaByIdPort.findSchemaById(command.schemaId())
+          .switchIfEmpty(Mono.error(
+              new DomainException(SchemaErrorCode.NOT_FOUND, "Schema not found: " + command.schemaId())))
+          .then(Mono.zip(
+              Mono.fromCallable(ulidGeneratorPort::generate),
+              Mono.fromCallable(ulidGeneratorPort::generate)))
+          .flatMap(tuple -> {
+            Memo memo = new Memo(
+                tuple.getT1(),
+                command.schemaId(),
+                command.authorId(),
+                canonicalPositions,
+                null,
+                null,
+                null);
+            MemoComment comment = new MemoComment(
+                tuple.getT2(),
+                tuple.getT1(),
+                command.authorId(),
+                command.body(),
+                null,
+                null,
+                null);
 
-          return createMemoPort.createMemo(memo)
-              .flatMap(savedMemo -> createMemoCommentPort.createMemoComment(comment)
-                  .map(savedComment -> new MemoDetail(savedMemo,
-                      List.of(savedComment))));
-        })
+            return createMemoPort.createMemo(memo)
+                .flatMap(savedMemo -> createMemoCommentPort.createMemoComment(comment)
+                    .map(savedComment -> new MemoDetail(savedMemo,
+                        List.of(savedComment))));
+          });
+    })
         .as(transactionalOperator::transactional);
   }
 
