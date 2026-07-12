@@ -906,7 +906,8 @@
   ],
   "apps/frontend/src/features/project/hooks/useProjects.ts": [
     358,
-    382
+    382,
+    446
   ],
   "apps/frontend/src/features/project/utils/role.ts": [
     358
@@ -935,7 +936,8 @@
     361,
     382,
     392,
-    405
+    405,
+    446
   ],
   "apps/frontend/src/features/workspace/hooks/useWorkspaces.ts": [
     358,
@@ -2600,5 +2602,11 @@
   ],
   "apps/frontend/src/features/drawing/hooks/useUndoRedo.ts": [
     452
+  ],
+  "apps/bff/src/common/constants/error-messages.ts": [
+    446
+  ],
+  "apps/frontend/src/lib/api/error-messages.ts": [
+    446
   ]
 }
