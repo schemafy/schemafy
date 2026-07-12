@@ -195,7 +195,16 @@ export const SharedProjectsTab = () => {
         title="Leave Project"
         description={`Would you like to leave ${leaveTarget?.name}?`}
         confirmLabel="Leave"
-        onConfirm={() => leaveTarget && leaveProject(leaveTarget.id)}
+        onConfirm={async () => {
+          if (!leaveTarget) return;
+          const targetId = leaveTarget.id;
+          setLeaveTarget(null);
+          const result = await leaveProject(targetId);
+          const totalPages = result.data?.totalPages ?? 0;
+          if (currentPage > totalPages && totalPages > 0) {
+            setCurrentPage(totalPages);
+          }
+        }}
       />
     </div>
   );

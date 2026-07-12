@@ -10,11 +10,9 @@ export const useMySharedProjects = (page = 0, size = 5) => {
   });
   const leaveProjectMutation = useLeaveMySharedProjectMutation();
 
-  const leaveProject = (
-    projectId: string,
-    options?: Parameters<typeof leaveProjectMutation.mutate>[1],
-  ) => {
-    leaveProjectMutation.mutate(projectId, options);
+  const leaveProject = async (projectId: string) => {
+    await leaveProjectMutation.mutateAsync(projectId);
+    return projectsQuery.refetch();
   };
 
   return {
