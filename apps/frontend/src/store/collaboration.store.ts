@@ -156,9 +156,23 @@ export class CollaborationStore {
         if (payload.type === 'SESSION_READY') {
           runInAction(() => {
             this.sessionId = payload.sessionId;
+
+            const snapshotIds = new Set(
+              payload.participants.map((p) => p.sessionId),
+            );
+
+            const extras: Array<[string, Participant]> = [];
+            this.participants.forEach((p, sid) => {
+              if (!snapshotIds.has(sid)) extras.push([sid, p]);
+            });
+
             this.participants.clear();
             for (const p of payload.participants) {
               this.participants.set(p.sessionId, p);
+            }
+
+            for (const [sid, p] of extras) {
+              this.participants.set(sid, p);
             }
           });
           apiClient.defaults.headers.common['X-Session-Id'] = payload.sessionId;
