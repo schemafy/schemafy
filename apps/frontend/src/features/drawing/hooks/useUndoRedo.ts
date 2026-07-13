@@ -1,14 +1,15 @@
-import { useCallback, useRef } from 'react';
+import { useCallback } from 'react';
 import { useSelectedSchema } from '../contexts';
 import { useUndo, useRedo } from './useOperationMutations';
+import { useErdCache } from './useErdCache';
 import { operationHistoryStore } from '@/store/operation-history.store';
-import { isKnownUndoRedoError } from '../constants/operationError.ts';
+import { isKnownUndoRedoError } from '../constants/operationError';
 
 export const useUndoRedo = () => {
   const { selectedSchemaId } = useSelectedSchema();
-  const { mutate: undo } = useUndo(selectedSchemaId);
-  const { mutate: redo } = useRedo(selectedSchemaId);
-  const isPendingRef = useRef(false);
+  const { mutate: undo } = useUndo();
+  const { mutate: redo } = useRedo();
+  const { syncAffectedTables } = useErdCache(selectedSchemaId);
 
   const canUndo =
     operationHistoryStore.getUndoableOpIds(selectedSchemaId).length > 0;
@@ -16,51 +17,61 @@ export const useUndoRedo = () => {
     operationHistoryStore.getRedoOpIds(selectedSchemaId).length > 0;
 
   const handleUndo = useCallback(() => {
-    if (isPendingRef.current) return;
+    if (operationHistoryStore.isPending(selectedSchemaId)) return;
 
     const latest =
       operationHistoryStore.getLatestUndoableOperation(selectedSchemaId);
     if (!latest?.opId) return;
 
     const opId = latest.opId;
-    isPendingRef.current = true;
+    operationHistoryStore.setPending(selectedSchemaId);
 
     undo(opId, {
-      onSuccess: () => {
+      onSuccess: async (result) => {
         operationHistoryStore.removeUndoableOpId(selectedSchemaId, opId);
         operationHistoryStore.pushRedoOpId(selectedSchemaId, opId);
-        isPendingRef.current = false;
+        try {
+          await syncAffectedTables(result);
+        } finally {
+          operationHistoryStore.clearPending(selectedSchemaId);
+        }
       },
       onError: (error) => {
         if (isKnownUndoRedoError(error)) {
           operationHistoryStore.clearSchemaHistory(selectedSchemaId);
         }
-        isPendingRef.current = false;
+        operationHistoryStore.clearPending(selectedSchemaId);
       },
     });
-  }, [selectedSchemaId, undo]);
+  }, [selectedSchemaId, undo, syncAffectedTables]);
 
   const handleRedo = useCallback(() => {
-    if (isPendingRef.current) return;
+    if (operationHistoryStore.isPending(selectedSchemaId)) return;
 
     const opId = operationHistoryStore.popRedoOpId(selectedSchemaId);
     if (!opId) return;
 
-    isPendingRef.current = true;
+    operationHistoryStore.setPending(selectedSchemaId);
 
     redo(opId, {
-      onSuccess: () => {
+      onSuccess: async (result) => {
         operationHistoryStore.addUndoableOpId(selectedSchemaId, opId);
-        isPendingRef.current = false;
+        try {
+          await syncAffectedTables(result);
+        } finally {
+          operationHistoryStore.clearPending(selectedSchemaId);
+        }
       },
       onError: (error) => {
         if (isKnownUndoRedoError(error)) {
           operationHistoryStore.clearSchemaHistory(selectedSchemaId);
+        } else {
+          operationHistoryStore.pushRedoOpId(selectedSchemaId, opId);
         }
-        isPendingRef.current = false;
+        operationHistoryStore.clearPending(selectedSchemaId);
       },
     });
-  }, [selectedSchemaId, redo]);
+  }, [selectedSchemaId, redo, syncAffectedTables]);
 
   return { handleUndo, handleRedo, canUndo, canRedo };
 };
