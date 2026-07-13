@@ -48,7 +48,7 @@ export const useCanvasKeyboard = ({
 
       if (
         (e.ctrlKey || e.metaKey) &&
-        ((e.key === 'z' && e.shiftKey) || e.key === 'y') &&
+        ((e.code === 'KeyZ' && e.shiftKey) || e.key === 'y') &&
         onRedo
       ) {
         e.preventDefault();
