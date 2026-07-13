@@ -196,6 +196,20 @@ class SchemafyResourceIntegrationTest {
   }
 
   @Test
+  @DisplayName("resource URI template의 필수 ID가 blank면 UseCase 호출 전에 거부한다")
+  void rejectsBlankResourceTemplateVariable() {
+    String token = tokenFactory.validToken();
+    String sessionId = initialize(token);
+
+    String response = readResource(sessionId, token, "schemafy://schemas/   ");
+
+    assertThat(response)
+        .contains("\"error\"")
+        .contains("schemaId is required")
+        .doesNotContain("schema-1");
+  }
+
+  @Test
   @DisplayName("에이전트가 MCP tool로 각 조회 UseCase를 호출할 수 있다")
   void callsReadOnlyResourceTools() {
     String token = tokenFactory.validToken();

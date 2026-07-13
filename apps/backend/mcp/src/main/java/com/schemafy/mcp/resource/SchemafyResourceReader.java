@@ -414,7 +414,7 @@ final class SchemafyResourceReader {
       McpSchema.ReadResourceRequest request,
       String template,
       String name) {
-    return variables(request, template).get(name);
+    return requiredString(variables(request, template).get(name), name);
   }
 
   private Map<String, String> variables(
@@ -496,6 +496,10 @@ final class SchemafyResourceReader {
       McpSchema.CallToolRequest request,
       String name) {
     Object value = request.arguments() == null ? null : request.arguments().get(name);
+    return requiredString(value, name);
+  }
+
+  private String requiredString(Object value, String name) {
     if (value instanceof String text && !text.isBlank()) {
       return text;
     }

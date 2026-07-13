@@ -45,7 +45,8 @@ final class SchemafyMcpFeatureFactory {
         .mimeType(JSON_MIME_TYPE)
         .build();
     return new McpServerFeatures.AsyncResourceTemplateSpecification(resourceTemplate,
-        (McpAsyncServerExchange exchange, McpSchema.ReadResourceRequest request) -> readHandler.apply(request));
+        (McpAsyncServerExchange exchange, McpSchema.ReadResourceRequest request) -> Mono.defer(
+            () -> readHandler.apply(request)));
   }
 
   static McpServerFeatures.AsyncToolSpecification tool(
