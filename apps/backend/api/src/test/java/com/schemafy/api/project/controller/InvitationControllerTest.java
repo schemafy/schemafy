@@ -31,8 +31,8 @@ import com.schemafy.core.ulid.application.service.UlidGenerator;
 import com.schemafy.core.ulid.exception.UlidErrorCode;
 import com.schemafy.core.user.domain.User;
 
+import static com.epages.restdocs.apispec.WebTestClientRestDocumentationWrapper.document;
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.springframework.restdocs.webtestclient.WebTestClientRestDocumentation.document;
 
 @ActiveProfiles("test")
 @SpringBootTest

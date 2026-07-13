@@ -6,8 +6,14 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
+import org.mockito.Spy;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.node.NullNode;
+import com.fasterxml.jackson.databind.node.TextNode;
+import com.schemafy.core.common.json.JsonCodec;
+import com.schemafy.core.common.json.JsonObjectMetadataConverter;
 import com.schemafy.core.erd.table.application.port.out.ChangeTableExtraPort;
 import com.schemafy.core.erd.table.application.port.out.GetTableByIdPort;
 import com.schemafy.core.erd.table.fixture.TableFixture;
@@ -29,6 +35,10 @@ class ChangeTableExtraServiceTest {
   @Mock
   GetTableByIdPort getTableByIdPort;
 
+  @Spy
+  JsonObjectMetadataConverter jsonObjectMetadataConverter = new JsonObjectMetadataConverter(
+      new JsonCodec(new ObjectMapper().findAndRegisterModules()));
+
   @InjectMocks
   ChangeTableExtraService sut;
 
@@ -43,7 +53,8 @@ class ChangeTableExtraServiceTest {
       @Test
       @DisplayName("extra 필드를 변경한다")
       void changesExtra() {
-        var command = TableFixture.changeExtraCommand("{\"ui\": {\"x\": 100, \"y\": 200}}");
+        var command = TableFixture.changeExtraCommand(
+            TableFixture.jsonObject("{\"ui\": {\"x\": 100, \"y\": 200}}"));
 
         given(getTableByIdPort.findTableById(any()))
             .willReturn(Mono.just(TableFixture.defaultTable()));
@@ -55,7 +66,7 @@ class ChangeTableExtraServiceTest {
             .verifyComplete();
 
         then(changeTableExtraPort).should()
-            .changeTableExtra(command.tableId(), command.extra());
+            .changeTableExtra(command.tableId(), "{\"ui\":{\"x\":100,\"y\":200}}");
       }
 
       @Test
@@ -74,9 +85,9 @@ class ChangeTableExtraServiceTest {
       }
 
       @Test
-      @DisplayName("빈 문자열이 현재 null로 정규화되면 변경 없이 성공한다")
-      void returnsSuccessWithoutMutationWhenBlankExtraNormalizesToCurrentNull() {
-        var command = TableFixture.changeExtraCommand("   ");
+      @DisplayName("JSON null이 현재 null로 정규화되면 변경 없이 성공한다")
+      void returnsSuccessWithoutMutationWhenJsonNullExtraNormalizesToCurrentNull() {
+        var command = TableFixture.changeExtraCommand(NullNode.getInstance());
 
         given(getTableByIdPort.findTableById(any()))
             .willReturn(Mono.just(TableFixture.defaultTable()));
@@ -85,6 +96,19 @@ class ChangeTableExtraServiceTest {
             .expectNextMatches(result -> result.operation() == null)
             .verifyComplete();
 
+        then(changeTableExtraPort).shouldHaveNoInteractions();
+      }
+
+      @Test
+      @DisplayName("JSON object가 아니면 error signal로 반환한다")
+      void returnsErrorSignalWhenExtraIsNotObject() {
+        var command = TableFixture.changeExtraCommand(TextNode.valueOf("invalid"));
+
+        StepVerifier.create(sut.changeTableExtra(command))
+            .expectError(IllegalArgumentException.class)
+            .verify();
+
+        then(getTableByIdPort).shouldHaveNoInteractions();
         then(changeTableExtraPort).shouldHaveNoInteractions();
       }
 

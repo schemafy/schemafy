@@ -12,6 +12,7 @@ import org.springframework.web.server.ServerWebExchange;
 import org.springframework.web.server.WebFilter;
 import org.springframework.web.server.WebFilterChain;
 
+import com.schemafy.api.common.constant.ApiPath;
 import com.schemafy.api.common.exception.AuthErrorCode;
 import com.schemafy.api.common.security.principal.AuthenticatedUser;
 import com.schemafy.core.common.exception.DomainErrorCode;
@@ -120,7 +121,7 @@ public class JwtAuthenticationFilter implements WebFilter {
 
   private boolean isPublicPath(ServerHttpRequest request) {
     String path = request.getPath().pathWithinApplication().value();
-    return path.startsWith("/public/api/");
+    return path.startsWith("/public/api/") || ApiPath.isOpenApiDocsPath(path);
   }
 
   private String extractToken(ServerHttpRequest request) {

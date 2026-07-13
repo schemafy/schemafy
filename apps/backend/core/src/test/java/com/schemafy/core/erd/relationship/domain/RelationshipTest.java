@@ -40,9 +40,9 @@ class RelationshipTest {
     }
 
     @Test
-    @DisplayName("extra 필드에 값을 설정할 수 있다")
+    @DisplayName("extra 필드에 JSON object 저장 문자열을 설정할 수 있다")
     void allowsExtraValue() {
-      var extra = "Some extra information";
+      var extra = "{\"description\":\"Some extra information\"}";
       var relationship = RelationshipFixture.relationshipWithExtra(extra);
 
       assertThat(relationship.extra()).isEqualTo(extra);

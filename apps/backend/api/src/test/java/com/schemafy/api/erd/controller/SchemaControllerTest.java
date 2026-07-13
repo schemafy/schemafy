@@ -44,6 +44,7 @@ import com.schemafy.core.project.domain.exception.ProjectErrorCode;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
+import static com.epages.restdocs.apispec.WebTestClientRestDocumentationWrapper.document;
 import static com.schemafy.api.erd.controller.ErdOperationFixtures.CLIENT_OPERATION_ID;
 import static com.schemafy.api.erd.controller.ErdOperationFixtures.COMMITTED_REVISION;
 import static com.schemafy.api.erd.controller.ErdOperationFixtures.OP_ID;
@@ -61,7 +62,6 @@ import static org.springframework.restdocs.payload.PayloadDocumentation.subsecti
 import static org.springframework.restdocs.request.RequestDocumentation.parameterWithName;
 import static org.springframework.restdocs.request.RequestDocumentation.pathParameters;
 import static org.springframework.restdocs.request.RequestDocumentation.queryParameters;
-import static org.springframework.restdocs.webtestclient.WebTestClientRestDocumentation.document;
 
 @ActiveProfiles("test")
 @SpringBootTest

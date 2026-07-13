@@ -14,6 +14,7 @@ import org.springframework.transaction.reactive.TransactionalOperator;
 
 import com.schemafy.core.common.MutationResult;
 import com.schemafy.core.common.exception.DomainException;
+import com.schemafy.core.common.json.JsonObjectMetadataConverter;
 import com.schemafy.core.erd.column.application.port.out.CreateColumnPort;
 import com.schemafy.core.erd.column.application.port.out.GetColumnsByTableIdPort;
 import com.schemafy.core.erd.column.domain.Column;
@@ -73,6 +74,7 @@ public class CreateRelationshipService implements CreateRelationshipUseCase {
   private final GetConstraintColumnsByConstraintIdPort getConstraintColumnsByConstraintIdPort;
   private final PkCascadeHelper pkCascadeHelper;
   private final StructuralSnapshotService structuralSnapshotService;
+  private final JsonObjectMetadataConverter jsonObjectMetadataConverter;
   private ErdMutationCoordinator erdMutationCoordinator = ErdMutationCoordinator.noop();
 
   @Autowired
@@ -83,27 +85,31 @@ public class CreateRelationshipService implements CreateRelationshipUseCase {
   @Override
   public Mono<MutationResult<CreateRelationshipResult>> createRelationship(
       CreateRelationshipCommand command) {
-    return erdMutationCoordinator.coordinate(ErdOperationType.CREATE_RELATIONSHIP, command,
-        () -> loadTargetTables(command)
-            .flatMap(tables -> validateCreateRelationship(command, tables)
-                .then(structuralSnapshotService.captureBySchemaId(tables.fkTable().schemaId()))
-                .flatMap(beforeSnapshot -> {
-                  Set<String> affectedTableIds = new HashSet<>();
-                  affectedTableIds.add(tables.fkTable().id());
-                  affectedTableIds.add(tables.pkTable().id());
-                  return createRelationshipAuto(
-                      tables.fkTable(),
-                      tables.pkTable(),
-                      command,
-                      affectedTableIds)
-                      .flatMap(result -> structuralSnapshotService.captureBySchemaId(beforeSnapshot.schemaId())
-                          .map(afterSnapshot -> result.withInverse(new CreateRelationshipInverse(
-                              beforeSnapshot.schemaId(),
-                              result.result().relationshipId(),
-                              beforeSnapshot,
-                              afterSnapshot,
-                              result.sortedAffectedTableIds()))));
-                })))
+    return Mono.defer(() -> {
+      String canonicalExtra = jsonObjectMetadataConverter.toStorageJson(command.extra());
+      return erdMutationCoordinator.coordinate(ErdOperationType.CREATE_RELATIONSHIP, command,
+          () -> loadTargetTables(command)
+              .flatMap(tables -> validateCreateRelationship(command, tables)
+                  .then(structuralSnapshotService.captureBySchemaId(tables.fkTable().schemaId()))
+                  .flatMap(beforeSnapshot -> {
+                    Set<String> affectedTableIds = new HashSet<>();
+                    affectedTableIds.add(tables.fkTable().id());
+                    affectedTableIds.add(tables.pkTable().id());
+                    return createRelationshipAuto(
+                        tables.fkTable(),
+                        tables.pkTable(),
+                        command,
+                        canonicalExtra,
+                        affectedTableIds)
+                        .flatMap(result -> structuralSnapshotService.captureBySchemaId(beforeSnapshot.schemaId())
+                            .map(afterSnapshot -> result.withInverse(new CreateRelationshipInverse(
+                                beforeSnapshot.schemaId(),
+                                result.result().relationshipId(),
+                                beforeSnapshot,
+                                afterSnapshot,
+                                result.sortedAffectedTableIds()))));
+                  })));
+    })
         .as(transactionalOperator::transactional);
   }
 
@@ -135,6 +141,7 @@ public class CreateRelationshipService implements CreateRelationshipUseCase {
       Table fkTable,
       Table pkTable,
       CreateRelationshipCommand command,
+      String canonicalExtra,
       Set<String> affectedTableIds) {
     return resolveAutoRelationshipName(fkTable, pkTable)
         .flatMap(normalizedName -> Mono.zip(
@@ -158,13 +165,14 @@ public class CreateRelationshipService implements CreateRelationshipUseCase {
                         normalizedName,
                         command.kind(),
                         command.cardinality(),
-                        command.extra()));
+                        canonicalExtra));
               }
 
               return persistAutoRelationship(
                   fkTable,
                   pkTable,
                   command,
+                  canonicalExtra,
                   normalizedName,
                   pkColumns,
                   fkColumns,
@@ -176,6 +184,7 @@ public class CreateRelationshipService implements CreateRelationshipUseCase {
       Table fkTable,
       Table pkTable,
       CreateRelationshipCommand command,
+      String canonicalExtra,
       String normalizedName,
       List<Column> pkColumns,
       List<Column> fkColumns,
@@ -189,7 +198,7 @@ public class CreateRelationshipService implements CreateRelationshipUseCase {
               normalizedName,
               command.kind(),
               command.cardinality(),
-              command.extra());
+              canonicalExtra);
 
           return createRelationshipPort.createRelationship(relationship)
               .flatMap(savedRelationship -> createAutoRelationshipColumns(

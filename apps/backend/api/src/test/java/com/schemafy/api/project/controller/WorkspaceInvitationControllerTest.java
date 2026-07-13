@@ -25,8 +25,8 @@ import com.schemafy.core.project.domain.Workspace;
 import com.schemafy.core.project.domain.WorkspaceRole;
 import com.schemafy.core.user.domain.User;
 
+import static com.epages.restdocs.apispec.WebTestClientRestDocumentationWrapper.document;
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.springframework.restdocs.webtestclient.WebTestClientRestDocumentation.document;
 
 @ActiveProfiles("test")
 @SpringBootTest
@@ -293,11 +293,9 @@ class WorkspaceInvitationControllerTest extends ProjectHttpTestSupport {
           WorkspaceRole.ADMIN, adminUserId);
 
       webTestClient.get()
-          .uri(uriBuilder -> uriBuilder
-              .path(API_BASE + "/users/me/invitations/workspaces")
-              .queryParam("page", 0)
-              .queryParam("size", 10)
-              .build())
+          .uri(API_BASE
+              + "/users/me/invitations/workspaces?page={page}&size={size}",
+              0, 10)
           .header("Authorization", "Bearer " + invitedToken)
           .exchange()
           .expectStatus().isOk()

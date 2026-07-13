@@ -11,9 +11,13 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
+import org.mockito.Spy;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.schemafy.core.common.exception.DomainException;
+import com.schemafy.core.common.json.JsonCodec;
+import com.schemafy.core.common.json.JsonObjectMetadataConverter;
 import com.schemafy.core.erd.column.application.port.out.CreateColumnPort;
 import com.schemafy.core.erd.column.application.port.out.GetColumnsByTableIdPort;
 import com.schemafy.core.erd.column.domain.Column;
@@ -35,6 +39,7 @@ import com.schemafy.core.erd.relationship.domain.RelationshipColumn;
 import com.schemafy.core.erd.relationship.domain.exception.RelationshipErrorCode;
 import com.schemafy.core.erd.relationship.domain.type.Cardinality;
 import com.schemafy.core.erd.relationship.domain.type.RelationshipKind;
+import com.schemafy.core.erd.relationship.fixture.RelationshipFixture;
 import com.schemafy.core.erd.table.application.port.out.GetTableByIdPort;
 import com.schemafy.core.erd.table.domain.Table;
 import com.schemafy.core.ulid.application.port.out.UlidGeneratorPort;
@@ -101,6 +106,10 @@ class CreateRelationshipServiceTest {
   @Mock
   StructuralSnapshotService structuralSnapshotService;
 
+  @Spy
+  JsonObjectMetadataConverter jsonObjectMetadataConverter = new JsonObjectMetadataConverter(
+      new JsonCodec(new ObjectMapper().findAndRegisterModules()));
+
   @InjectMocks
   CreateRelationshipService sut;
 
@@ -121,7 +130,8 @@ class CreateRelationshipServiceTest {
       var command = new CreateRelationshipCommand(FK_TABLE_ID,
           PK_TABLE_ID,
           RelationshipKind.NON_IDENTIFYING,
-          Cardinality.ONE_TO_MANY, null);
+          Cardinality.ONE_TO_MANY,
+          RelationshipFixture.jsonObject("{\"line\": {\"style\": \"solid\"}}"));
       var fkTable = createTable(FK_TABLE_ID, SCHEMA_ID, "fk_table");
       var pkTable = createTable(PK_TABLE_ID, SCHEMA_ID, "pk_table");
       var pkColumn = ColumnFixture.columnWithId(PK_COLUMN_ID);
@@ -170,6 +180,7 @@ class CreateRelationshipServiceTest {
             assertThat(payload.name()).isEqualTo("rel_fk_table_to_pk_table");
             assertThat(payload.kind()).isEqualTo(RelationshipKind.NON_IDENTIFYING);
             assertThat(payload.cardinality()).isEqualTo(Cardinality.ONE_TO_MANY);
+            assertThat(payload.extra()).isEqualTo("{\"line\":{\"style\":\"solid\"}}");
           })
           .verifyComplete();
 

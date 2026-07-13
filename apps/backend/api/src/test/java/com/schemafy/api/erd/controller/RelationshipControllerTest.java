@@ -62,12 +62,12 @@ import com.schemafy.core.erd.relationship.domain.type.RelationshipKind;
 
 import reactor.core.publisher.Mono;
 
+import static com.epages.restdocs.apispec.WebTestClientRestDocumentationWrapper.document;
 import static com.schemafy.api.erd.controller.ErdOperationFixtures.OP_ID;
 import static com.schemafy.api.erd.controller.ErdOperationFixtures.committedOperation;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.then;
-import static org.springframework.restdocs.webtestclient.WebTestClientRestDocumentation.document;
 
 @ActiveProfiles("test")
 @SpringBootTest
@@ -172,7 +172,7 @@ class RelationshipControllerTest {
 
   @Test
   @DisplayName("관계 생성 API는 extra 객체를 허용한다")
-  void createRelationshipAcceptsObjectValue() {
+  void createRelationshipAcceptsObjectValue() throws Exception {
     String fkTableId = "06D6W2BAHD51T5NJPK29Q6BCR9";
     String pkTableId = "06D6W2CAHD51T5NJPK29Q6BCRA";
     String relationshipId = "06D6W8CAHD51T5NJPK29Q6BCRK";
@@ -215,7 +215,7 @@ class RelationshipControllerTest {
             pkTableId,
             RelationshipKind.NON_IDENTIFYING,
             Cardinality.ONE_TO_MANY,
-            "{\"fkHandle\":\"left\",\"pkHandle\":\"right\"}"));
+            objectMapper.readTree("{\"fkHandle\":\"left\",\"pkHandle\":\"right\"}")));
   }
 
   @Test
@@ -519,7 +519,7 @@ class RelationshipControllerTest {
 
   @Test
   @DisplayName("관계 추가정보 변경 API는 extra 객체를 허용한다")
-  void changeRelationshipExtraAcceptsObjectValue() {
+  void changeRelationshipExtraAcceptsObjectValue() throws Exception {
     String relationshipId = "06D6W8CAHD51T5NJPK29Q6BCRK";
     String fkTableId = "06D6W2BAHD51T5NJPK29Q6BCR9";
     String pkTableId = "06D6W2CAHD51T5NJPK29Q6BCRA";
@@ -543,7 +543,9 @@ class RelationshipControllerTest {
         .jsonPath("$.operation.opId").isEqualTo(OP_ID);
 
     then(changeRelationshipExtraUseCase).should().changeRelationshipExtra(
-        new ChangeRelationshipExtraCommand(relationshipId, "{\"position\":{\"x\":60,\"y\":90},\"color\":\"#6366f1\"}"));
+        new ChangeRelationshipExtraCommand(relationshipId,
+            objectMapper.readTree(
+                "{\"position\":{\"x\":60,\"y\":90},\"color\":\"#6366f1\"}")));
   }
 
   @Test

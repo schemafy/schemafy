@@ -5,6 +5,7 @@ import org.junit.jupiter.api.Test;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.schemafy.core.common.json.JsonCodec;
+import com.schemafy.core.common.json.JsonObjectMetadataConverter;
 import com.schemafy.core.erd.table.domain.Table;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -13,7 +14,8 @@ import static org.assertj.core.api.Assertions.assertThat;
 class TableApiResponseMapperTest {
 
   private final TableApiResponseMapper sut = new TableApiResponseMapper(
-      new JsonCodec(new ObjectMapper().findAndRegisterModules()));
+      new JsonObjectMetadataConverter(
+          new JsonCodec(new ObjectMapper().findAndRegisterModules())));
 
   @Test
   @DisplayName("table extra 문자열을 JSON 객체로 변환한다")

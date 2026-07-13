@@ -72,6 +72,14 @@ hmac:
   enabled: true
   enforcement-mode: ENFORCE
 
+springdoc:
+  api-docs:
+    enabled: false
+  swagger-ui:
+    enabled: true
+    path: /swagger-ui.html
+    url: /openapi/openapi3.json
+
 problem:
   type-base-uri: about:blank
 

@@ -7,7 +7,6 @@ import com.schemafy.api.erd.controller.dto.request.CreateMemoCommentRequest;
 import com.schemafy.api.erd.controller.dto.request.CreateMemoRequest;
 import com.schemafy.api.erd.controller.dto.request.UpdateMemoCommentRequest;
 import com.schemafy.api.erd.controller.dto.request.UpdateMemoRequest;
-import com.schemafy.core.common.json.JsonCodec;
 import com.schemafy.core.erd.memo.application.port.in.CreateMemoCommand;
 import com.schemafy.core.erd.memo.application.port.in.CreateMemoCommentCommand;
 import com.schemafy.core.erd.memo.application.port.in.DeleteMemoCommand;
@@ -18,20 +17,15 @@ import com.schemafy.core.erd.memo.application.port.in.GetMemosBySchemaIdQuery;
 import com.schemafy.core.erd.memo.application.port.in.UpdateMemoCommentCommand;
 import com.schemafy.core.erd.memo.application.port.in.UpdateMemoPositionCommand;
 
-import lombok.RequiredArgsConstructor;
-
 @Component
-@RequiredArgsConstructor
 public class MemoApiCommandMapper {
-
-  private final JsonCodec jsonCodec;
 
   public CreateMemoCommand toCreateMemoCommand(
       CreateMemoRequest request,
       AuthenticatedUser user) {
     return new CreateMemoCommand(
         request.schemaId(),
-        jsonCodec.toJson(request.positions()),
+        request.positions(),
         request.body(),
         user.userId());
   }
@@ -50,7 +44,7 @@ public class MemoApiCommandMapper {
       AuthenticatedUser user) {
     return new UpdateMemoPositionCommand(
         memoId,
-        jsonCodec.toJson(request.positions()),
+        request.positions(),
         user.userId());
   }
 
