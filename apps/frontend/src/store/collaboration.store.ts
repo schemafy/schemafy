@@ -192,6 +192,7 @@ export class CollaborationStore {
 
       if (this.reconnectAttempts >= MAX_RECONNECT_ATTEMPTS) {
         toast.error('Network Error, please try again later.');
+        this.disconnect();
         return;
       }
 
