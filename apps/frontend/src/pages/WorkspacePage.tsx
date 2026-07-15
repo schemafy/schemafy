@@ -4,6 +4,7 @@ import { Button, QueryStateBoundary } from '@/components';
 import {
   ConfirmDialog,
   InviteDialog,
+  SharedProjectsTab,
   WorkspaceFormDialog,
   WorkspaceMembersTab,
   WorkspaceProjectsTab,
@@ -13,6 +14,8 @@ import { useWorkspace } from '@/features/workspace/hooks/useWorkspace';
 import { useWorkspaces } from '@/features/workspace/hooks/useWorkspaces';
 
 type TabType = 'projects' | 'members';
+
+const MY_PROJECTS_ID = '__my_projects__';
 
 export const WorkspacePage = () => {
   const [selectedWorkspaceId, setSelectedWorkspaceId] = useState('');
@@ -29,21 +32,31 @@ export const WorkspacePage = () => {
     isPendingWorkspaces,
     isWorkspacesError,
     refetchWorkspaces,
+    hasNextPage,
+    isFetchingNextPage,
+    fetchNextPage,
     leaveWorkspace,
   } = useWorkspaces();
-  const { workspace: selectedWorkspace } = useWorkspace(selectedWorkspaceId);
+  const isMyProjectsSelected = selectedWorkspaceId === MY_PROJECTS_ID;
+  const { workspace: selectedWorkspace } = useWorkspace(
+    isMyProjectsSelected ? '' : selectedWorkspaceId,
+  );
 
   const currentUserRole =
     selectedWorkspace?.currentUserRole.toUpperCase() ?? '';
 
   useEffect(() => {
-    if (workspaces.length > 0) {
-      const isInList = workspaces.some((w) => w.id === selectedWorkspaceId);
-      if (!selectedWorkspaceId || !isInList) {
-        setSelectedWorkspaceId(workspaces[0].id);
-      }
+    if (!workspacesData || selectedWorkspaceId) return;
+
+    if (workspacesData.totalElements === 0) {
+      setSelectedWorkspaceId(MY_PROJECTS_ID);
+      return;
     }
-  }, [workspaces, selectedWorkspaceId]);
+
+    if (workspaces[0]) {
+      setSelectedWorkspaceId(workspaces[0].id);
+    }
+  }, [selectedWorkspaceId, workspaces, workspacesData]);
 
   const handleWorkspaceSelect = (id: string) => {
     setSelectedWorkspaceId(id);
@@ -65,24 +78,37 @@ export const WorkspacePage = () => {
       {(loadedWorkspacesData) => (
         <div className="flex min-h-full w-full flex-col overflow-x-hidden md:flex-row md:overflow-hidden">
           <WorkspaceSidebar
+            pinnedItem={{
+              id: MY_PROJECTS_ID,
+              name: 'Invited Projects',
+              description: 'Invited Projects',
+            }}
             workspaces={workspaces}
-            selectedId={selectedWorkspaceId}
+            selectedId={
+              selectedWorkspaceId ||
+              (loadedWorkspacesData.totalElements === 0 ? MY_PROJECTS_ID : '')
+            }
             onSelect={handleWorkspaceSelect}
             onAdd={() => setIsCreateDialogOpen(true)}
             isOpen={isSidebarOpen}
             onToggle={() => setIsSidebarOpen((prev) => !prev)}
+            hasNextPage={hasNextPage}
+            isFetchingNextPage={isFetchingNextPage}
+            onLoadMore={() => void fetchNextPage()}
           />
 
-          {loadedWorkspacesData.totalElements === 0 ? (
-            <div className="flex min-h-full w-full items-center justify-center px-6">
-              <div className="flex max-w-md flex-col items-center gap-3 border-t border-schemafy-glass-border/70 px-2 py-6 text-center">
-                <h1 className="font-heading-lg text-schemafy-text">
-                  Add your first workspace
-                </h1>
-                <p className="font-body-sm text-schemafy-dark-gray">
-                  Use the workspace action in the sidebar to organize projects,
-                  members, and ERD collaboration.
-                </p>
+          {isMyProjectsSelected || loadedWorkspacesData.totalElements === 0 ? (
+            <div className="flex min-w-0 flex-1 justify-center overflow-x-hidden px-4 py-6 sm:px-6 lg:px-10">
+              <div className="flex w-full max-w-6xl flex-col gap-5 transition-transform duration-300">
+                <section className="border-b border-schemafy-glass-border/70 pb-5">
+                  <div className="flex flex-col gap-4">
+                    <h1 className="font-heading-xl text-schemafy-text">
+                      Invited Projects
+                    </h1>
+                  </div>
+                </section>
+
+                <SharedProjectsTab />
               </div>
             </div>
           ) : (
@@ -172,32 +198,40 @@ export const WorkspacePage = () => {
             open={isCreateDialogOpen}
             onOpenChange={setIsCreateDialogOpen}
             mode="create"
+            onCreated={(id) => setSelectedWorkspaceId(id)}
           />
 
-          <WorkspaceFormDialog
-            open={isEditDialogOpen}
-            onOpenChange={setIsEditDialogOpen}
-            mode="edit"
-            workspaceId={selectedWorkspaceId}
-            initialName={selectedWorkspace?.name ?? ''}
-            initialDescription={selectedWorkspace?.description ?? ''}
-          />
+          {!isMyProjectsSelected && loadedWorkspacesData.totalElements > 0 && (
+            <>
+              <WorkspaceFormDialog
+                open={isEditDialogOpen}
+                onOpenChange={setIsEditDialogOpen}
+                mode="edit"
+                workspaceId={selectedWorkspaceId}
+                initialName={selectedWorkspace?.name ?? ''}
+                initialDescription={selectedWorkspace?.description ?? ''}
+              />
 
-          <InviteDialog
-            open={isInviteDialogOpen}
-            onOpenChange={setIsInviteDialogOpen}
-            workspaceId={selectedWorkspaceId}
-            currentUserRole={currentUserRole}
-          />
+              <InviteDialog
+                open={isInviteDialogOpen}
+                onOpenChange={setIsInviteDialogOpen}
+                workspaceId={selectedWorkspaceId}
+                currentUserRole={currentUserRole}
+              />
 
-          <ConfirmDialog
-            open={isLeaveConfirmOpen}
-            onOpenChange={setIsLeaveConfirmOpen}
-            title="Leave Workspace"
-            description="If you leave the workspace, you will lose access to all projects and resources. Are you sure you want to leave?"
-            confirmLabel="Leave"
-            onConfirm={() => leaveWorkspace(selectedWorkspaceId)}
-          />
+              <ConfirmDialog
+                open={isLeaveConfirmOpen}
+                onOpenChange={setIsLeaveConfirmOpen}
+                title="Leave Workspace"
+                description="If you leave the workspace, you will lose access to all projects and resources. Are you sure you want to leave?"
+                confirmLabel="Leave"
+                onConfirm={async () => {
+                  const nextId = await leaveWorkspace(selectedWorkspaceId);
+                  setSelectedWorkspaceId(nextId ?? MY_PROJECTS_ID);
+                }}
+              />
+            </>
+          )}
         </div>
       )}
     </QueryStateBoundary>

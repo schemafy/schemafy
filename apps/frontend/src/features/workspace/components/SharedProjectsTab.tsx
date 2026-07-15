@@ -1,4 +1,4 @@
-import { FolderKanban, MoreHorizontal, Plus, Search } from 'lucide-react';
+import { FolderKanban, MoreHorizontal, Search } from 'lucide-react';
 import { useState } from 'react';
 import { useNavigate } from '@tanstack/react-router';
 import {
@@ -8,40 +8,25 @@ import {
   DropdownMenuTrigger,
   Pagination,
 } from '@/components';
-import { useProjects } from '@/features/project/hooks/useProjects';
-import { ProjectFormDialog } from '@/features/project/components/ProjectFormDialog';
-import { ConfirmDialog } from './ConfirmDialog';
-import { formatDate, toCapitalized } from '@/lib';
 import type { ProjectSummaryResponse } from '@/features/project/api';
+import { useMySharedProjects } from '@/features/project/hooks/useMySharedProjects';
+import { formatDate, toCapitalized } from '@/lib';
+import { ConfirmDialog } from './ConfirmDialog';
 
-interface WorkspaceProjectsTabProps {
-  workspaceId: string;
-  currentUserRole: string;
-}
-
-export const WorkspaceProjectsTab = ({
-  workspaceId,
-  currentUserRole,
-}: WorkspaceProjectsTabProps) => {
+export const SharedProjectsTab = () => {
   const navigate = useNavigate();
   const [searchQuery, setSearchQuery] = useState('');
   const [currentPage, setCurrentPage] = useState(1);
-
-  const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
-  const [editTarget, setEditTarget] = useState<ProjectSummaryResponse | null>(
-    null,
-  );
   const [leaveTarget, setLeaveTarget] = useState<ProjectSummaryResponse | null>(
     null,
   );
 
-  const { projects, projectsData, leaveProject } = useProjects(
-    workspaceId,
+  const { projects, projectsData, leaveProject } = useMySharedProjects(
     currentPage - 1,
   );
 
-  const filtered = projects.filter((p) =>
-    p.name.toLowerCase().includes(searchQuery.toLowerCase()),
+  const filtered = projects.filter((project) =>
+    project.name.toLowerCase().includes(searchQuery.toLowerCase()),
   );
 
   return (
@@ -60,20 +45,13 @@ export const WorkspaceProjectsTab = ({
             className="schemafy-input h-11 w-full pl-10 pr-4 font-body-sm"
           />
         </div>
-        {currentUserRole === 'ADMIN' && (
-          <Button
-            className="h-11 w-full px-4 sm:w-auto"
-            onClick={() => setIsCreateDialogOpen(true)}
-          >
-            <Plus className="h-4 w-4" />
-            Create Project
-          </Button>
-        )}
       </div>
 
       <div className="grid gap-3 md:hidden">
         {filtered.length === 0 ? (
-          <EmptyProjectsState />
+          <div className="schemafy-subtle-card px-4 py-8 text-center font-body-sm text-schemafy-dark-gray">
+            No projects match your search.
+          </div>
         ) : (
           filtered.map((project) => (
             <article
@@ -99,9 +77,8 @@ export const WorkspaceProjectsTab = ({
                     </p>
                   </div>
                 </div>
-                <ProjectActions
+                <SharedProjectActions
                   project={project}
-                  onEditClick={setEditTarget}
                   onLeaveClick={setLeaveTarget}
                 />
               </div>
@@ -188,11 +165,15 @@ export const WorkspaceProjectsTab = ({
                       {toCapitalized(project.myRole)}
                     </span>
                   </td>
-                  <ProjectOption
-                    project={project}
-                    onEditClick={setEditTarget}
-                    onLeaveClick={setLeaveTarget}
-                  />
+                  <td
+                    className="px-5 py-4"
+                    onClick={(e) => e.stopPropagation()}
+                  >
+                    <SharedProjectActions
+                      project={project}
+                      onLeaveClick={setLeaveTarget}
+                    />
+                  </td>
                 </tr>
               ))
             )}
@@ -207,23 +188,6 @@ export const WorkspaceProjectsTab = ({
           onPageChange={setCurrentPage}
         />
       </div>
-
-      <ProjectFormDialog
-        open={isCreateDialogOpen}
-        onOpenChange={setIsCreateDialogOpen}
-        mode="create"
-        workspaceId={workspaceId}
-      />
-
-      <ProjectFormDialog
-        open={!!editTarget}
-        onOpenChange={(open) => !open && setEditTarget(null)}
-        mode="edit"
-        workspaceId={workspaceId}
-        projectId={editTarget?.id}
-        initialName={editTarget?.name}
-        initialDescription={editTarget?.description}
-      />
 
       <ConfirmDialog
         open={!!leaveTarget}
@@ -246,39 +210,11 @@ export const WorkspaceProjectsTab = ({
   );
 };
 
-const EmptyProjectsState = () => (
-  <div className="schemafy-subtle-card px-4 py-8 text-center font-body-sm text-schemafy-dark-gray">
-    No projects match your search.
-  </div>
-);
-
-const ProjectOption = ({
+const SharedProjectActions = ({
   project,
-  onEditClick,
   onLeaveClick,
 }: {
   project: ProjectSummaryResponse;
-  onEditClick: (project: ProjectSummaryResponse) => void;
-  onLeaveClick: (project: ProjectSummaryResponse) => void;
-}) => {
-  return (
-    <td className="px-5 py-4" onClick={(e) => e.stopPropagation()}>
-      <ProjectActions
-        project={project}
-        onEditClick={onEditClick}
-        onLeaveClick={onLeaveClick}
-      />
-    </td>
-  );
-};
-
-const ProjectActions = ({
-  project,
-  onEditClick,
-  onLeaveClick,
-}: {
-  project: ProjectSummaryResponse;
-  onEditClick: (project: ProjectSummaryResponse) => void;
   onLeaveClick: (project: ProjectSummaryResponse) => void;
 }) => {
   return (
@@ -296,16 +232,6 @@ const ProjectActions = ({
         align="end"
         className="!min-w-0 flex flex-col gap-0.5 !p-1.5"
       >
-        {project.myRole === 'ADMIN' && (
-          <Button
-            variant="none"
-            size="none"
-            className="schemafy-menu-button whitespace-nowrap px-3 py-2 font-caption-md"
-            onClick={() => onEditClick(project)}
-          >
-            Edit
-          </Button>
-        )}
         <Button
           variant="none"
           size="none"

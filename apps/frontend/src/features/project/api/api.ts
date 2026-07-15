@@ -34,6 +34,17 @@ export const getProjects = async (
   return response.data;
 };
 
+export const getMySharedProjects = async (
+  page = 0,
+  size = 5,
+): Promise<PageResponse<ProjectSummaryResponse>> => {
+  const response = await apiClient.get<PageResponse<ProjectSummaryResponse>>(
+    '/projects/shared/me',
+    { params: { page, size } },
+  );
+  return response.data;
+};
+
 export const getProject = async (
   projectId: string,
 ): Promise<ProjectResponse> => {
