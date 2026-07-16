@@ -23,6 +23,9 @@ import com.schemafy.core.erd.schema.application.port.out.GetSchemaByIdPort;
 import com.schemafy.core.erd.schema.fixture.SchemaFixture;
 import com.schemafy.core.erd.table.application.port.out.GetTableByIdPort;
 import com.schemafy.core.erd.table.fixture.TableFixture;
+import com.schemafy.core.erd.vendor.application.port.in.GetProjectDbVendorQuery;
+import com.schemafy.core.erd.vendor.application.port.in.GetProjectDbVendorUseCase;
+import com.schemafy.core.erd.vendor.fixture.DbVendorFixture;
 
 import reactor.core.publisher.Mono;
 import reactor.test.StepVerifier;
@@ -30,6 +33,7 @@ import reactor.test.StepVerifier;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.then;
+import static org.mockito.Mockito.lenient;
 
 @ExtendWith(MockitoExtension.class)
 @DisplayName("ChangeColumnNameService")
@@ -51,6 +55,9 @@ class ChangeColumnNameServiceTest {
   GetSchemaByIdPort getSchemaByIdPort;
 
   @Mock
+  GetProjectDbVendorUseCase getProjectDbVendorUseCase;
+
+  @Mock
   TransactionalOperator transactionalOperator;
 
   @InjectMocks
@@ -60,6 +67,8 @@ class ChangeColumnNameServiceTest {
   void setUpTransaction() {
     given(transactionalOperator.transactional(any(Mono.class)))
         .willAnswer(invocation -> invocation.getArgument(0));
+    lenient().when(getProjectDbVendorUseCase.getProjectDbVendor(any()))
+        .thenReturn(Mono.just(DbVendorFixture.defaultDbVendor()));
   }
 
   @Nested
@@ -96,6 +105,8 @@ class ChangeColumnNameServiceTest {
 
         then(changeColumnNamePort).should()
             .changeColumnName(command.columnId(), newName);
+        then(getProjectDbVendorUseCase).should()
+            .getProjectDbVendor(new GetProjectDbVendorQuery(SchemaFixture.DEFAULT_PROJECT_ID));
       }
 
       @Test
@@ -114,6 +125,7 @@ class ChangeColumnNameServiceTest {
         then(getTableByIdPort).shouldHaveNoInteractions();
         then(getSchemaByIdPort).shouldHaveNoInteractions();
         then(getColumnsByTableIdPort).shouldHaveNoInteractions();
+        then(getProjectDbVendorUseCase).shouldHaveNoInteractions();
         then(changeColumnNamePort).shouldHaveNoInteractions();
       }
 

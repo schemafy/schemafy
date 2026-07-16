@@ -227,7 +227,6 @@ abstract class ProjectDomainIntegrationSupport {
         .block();
     return createSchemaUseCase.createSchema(new CreateSchemaCommand(
         project.getId(),
-        "MySQL",
         name,
         "utf8mb4",
         "utf8mb4_general_ci"))

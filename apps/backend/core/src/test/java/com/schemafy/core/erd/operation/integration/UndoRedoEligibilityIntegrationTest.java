@@ -47,7 +47,6 @@ class UndoRedoEligibilityIntegrationTest extends ErdProjectIntegrationSupport {
 
     var schemaMutation = createSchemaUseCase.createSchema(new CreateSchemaCommand(
         projectId,
-        "MySQL",
         "undo_redo_schema",
         "utf8mb4",
         "utf8mb4_general_ci")).block();
@@ -88,7 +87,6 @@ class UndoRedoEligibilityIntegrationTest extends ErdProjectIntegrationSupport {
 
     var schemaMutation = createSchemaUseCase.createSchema(new CreateSchemaCommand(
         projectId,
-        "MySQL",
         "undo_redo_frontier_schema",
         "utf8mb4",
         "utf8mb4_general_ci")).block();
@@ -123,7 +121,6 @@ class UndoRedoEligibilityIntegrationTest extends ErdProjectIntegrationSupport {
 
     var schemaMutation = createSchemaUseCase.createSchema(new CreateSchemaCommand(
         projectId,
-        "MySQL",
         "undo_redo_redo_stack_schema",
         "utf8mb4",
         "utf8mb4_general_ci")).block();

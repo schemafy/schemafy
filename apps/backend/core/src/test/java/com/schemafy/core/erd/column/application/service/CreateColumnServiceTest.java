@@ -27,6 +27,9 @@ import com.schemafy.core.erd.schema.domain.exception.SchemaErrorCode;
 import com.schemafy.core.erd.table.application.port.out.GetTableByIdPort;
 import com.schemafy.core.erd.table.domain.Table;
 import com.schemafy.core.erd.table.domain.exception.TableErrorCode;
+import com.schemafy.core.erd.vendor.application.port.in.GetProjectDbVendorQuery;
+import com.schemafy.core.erd.vendor.application.port.in.GetProjectDbVendorUseCase;
+import com.schemafy.core.erd.vendor.fixture.DbVendorFixture;
 import com.schemafy.core.ulid.application.port.out.UlidGeneratorPort;
 
 import reactor.core.publisher.Mono;
@@ -37,6 +40,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.then;
+import static org.mockito.Mockito.lenient;
 
 @ExtendWith(MockitoExtension.class)
 @DisplayName("CreateColumnService")
@@ -61,6 +65,9 @@ class CreateColumnServiceTest {
   GetColumnsByTableIdPort getColumnsByTableIdPort;
 
   @Mock
+  GetProjectDbVendorUseCase getProjectDbVendorUseCase;
+
+  @Mock
   StructuralSnapshotService structuralSnapshotService;
 
   @Mock
@@ -74,6 +81,8 @@ class CreateColumnServiceTest {
     given(transactionalOperator.transactional(any(Mono.class)))
         .willAnswer(invocation -> invocation.getArgument(0));
     stubEmptySnapshots(structuralSnapshotService);
+    lenient().when(getProjectDbVendorUseCase.getProjectDbVendor(any()))
+        .thenReturn(Mono.just(DbVendorFixture.defaultDbVendor()));
   }
 
   @Nested
@@ -113,6 +122,8 @@ class CreateColumnServiceTest {
             .verifyComplete();
 
         then(createColumnPort).should().createColumn(any(Column.class));
+        then(getProjectDbVendorUseCase).should()
+            .getProjectDbVendor(new GetProjectDbVendorQuery(PROJECT_ID));
       }
 
       @Test
@@ -559,7 +570,6 @@ class CreateColumnServiceTest {
     return new Schema(
         SCHEMA_ID,
         PROJECT_ID,
-        "MySQL",
         "test_schema",
         "utf8mb4",
         "utf8mb4_general_ci");

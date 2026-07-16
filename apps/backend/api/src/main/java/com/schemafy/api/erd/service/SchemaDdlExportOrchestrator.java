@@ -20,6 +20,8 @@ import com.schemafy.core.erd.schema.application.port.in.GetSchemaWithRevisionUse
 import com.schemafy.core.erd.table.application.port.in.GetTablesBySchemaIdQuery;
 import com.schemafy.core.erd.table.application.port.in.GetTablesBySchemaIdUseCase;
 import com.schemafy.core.erd.table.domain.Table;
+import com.schemafy.core.erd.vendor.application.port.in.GetProjectDbVendorQuery;
+import com.schemafy.core.erd.vendor.application.port.in.GetProjectDbVendorUseCase;
 
 import reactor.core.publisher.Mono;
 
@@ -27,6 +29,7 @@ import reactor.core.publisher.Mono;
 public class SchemaDdlExportOrchestrator {
 
   private final GetSchemaWithRevisionUseCase getSchemaWithRevisionUseCase;
+  private final GetProjectDbVendorUseCase getProjectDbVendorUseCase;
   private final GetTablesBySchemaIdUseCase getTablesBySchemaIdUseCase;
   private final TableSnapshotOrchestrator tableSnapshotOrchestrator;
   private final GenerateSchemaDdlUseCase generateSchemaDdlUseCase;
@@ -35,12 +38,14 @@ public class SchemaDdlExportOrchestrator {
 
   public SchemaDdlExportOrchestrator(
       GetSchemaWithRevisionUseCase getSchemaWithRevisionUseCase,
+      GetProjectDbVendorUseCase getProjectDbVendorUseCase,
       GetTablesBySchemaIdUseCase getTablesBySchemaIdUseCase,
       TableSnapshotOrchestrator tableSnapshotOrchestrator,
       GenerateSchemaDdlUseCase generateSchemaDdlUseCase,
       DdlExportSnapshotMapper ddlExportSnapshotMapper,
       ReactiveTransactionManager transactionManager) {
     this.getSchemaWithRevisionUseCase = getSchemaWithRevisionUseCase;
+    this.getProjectDbVendorUseCase = getProjectDbVendorUseCase;
     this.getTablesBySchemaIdUseCase = getTablesBySchemaIdUseCase;
     this.tableSnapshotOrchestrator = tableSnapshotOrchestrator;
     this.generateSchemaDdlUseCase = generateSchemaDdlUseCase;
@@ -58,6 +63,8 @@ public class SchemaDdlExportOrchestrator {
           .flatMap(result -> {
             SchemaResponse schema = SchemaResponse.from(
                 result.schema(), result.currentRevision());
+            var dbVendorMono = getProjectDbVendorUseCase.getProjectDbVendor(
+                new GetProjectDbVendorQuery(result.schema().projectId()));
             Mono<Map<String, TableSnapshotResponse>> snapshotsMono = getTablesBySchemaIdUseCase
                 .getTablesBySchemaId(new GetTablesBySchemaIdQuery(schemaId))
                 .map(Table::id)
@@ -67,16 +74,17 @@ public class SchemaDdlExportOrchestrator {
                     : tableSnapshotOrchestrator
                         .getTableSnapshotsStrict(tableIds));
 
-            return snapshotsMono.flatMap(snapshots -> generateSchemaDdlUseCase
-                .generateSchemaDdl(new GenerateSchemaDdlCommand(
-                    ddlExportSnapshotMapper.toSnapshot(
-                        schema, snapshots.values()),
-                    exportVendor))
-                .map(ddl -> new SchemaDdlExportResponse(
-                    schema.id(),
-                    result.currentRevision(),
-                    exportVendor.value(),
-                    ddl)));
+            return Mono.zip(dbVendorMono, snapshotsMono)
+                .flatMap(tuple -> generateSchemaDdlUseCase
+                    .generateSchemaDdl(new GenerateSchemaDdlCommand(
+                        ddlExportSnapshotMapper.toSnapshot(
+                            schema, tuple.getT2().values(), tuple.getT1().name()),
+                        exportVendor))
+                    .map(ddl -> new SchemaDdlExportResponse(
+                        schema.id(),
+                        result.currentRevision(),
+                        exportVendor.value(),
+                        ddl)));
           });
     })
         .as(transactionalOperator::transactional);

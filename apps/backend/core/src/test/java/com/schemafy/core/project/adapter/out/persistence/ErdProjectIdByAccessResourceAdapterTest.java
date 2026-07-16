@@ -139,8 +139,8 @@ class ErdProjectIdByAccessResourceAdapterTest {
 
   private void insertErdResources() {
     databaseClient.sql("""
-        INSERT INTO db_schemas (id, project_id, db_vendor_name, name, charset, collation)
-        VALUES (:id, :projectId, 'MySQL', 'schema', 'utf8mb4', 'utf8mb4_general_ci')
+        INSERT INTO db_schemas (id, project_id, name, charset, collation)
+        VALUES (:id, :projectId, 'schema', 'utf8mb4', 'utf8mb4_general_ci')
         """)
         .bind("id", SCHEMA_ID)
         .bind("projectId", PROJECT_ID)

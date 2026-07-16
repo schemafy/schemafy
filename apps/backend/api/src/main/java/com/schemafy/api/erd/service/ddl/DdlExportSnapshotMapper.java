@@ -41,16 +41,18 @@ public class DdlExportSnapshotMapper {
 
   public DdlSchemaSnapshot toSnapshot(
       SchemaResponse schema,
-      Iterable<TableSnapshotResponse> tables) {
+      Iterable<TableSnapshotResponse> tables,
+      String dbVendorName) {
     return new DdlSchemaSnapshot(
-        toSchemaSnapshot(schema),
+        toSchemaSnapshot(schema, dbVendorName),
         toTableSnapshots(tables));
   }
 
-  private SchemaSnapshot toSchemaSnapshot(SchemaResponse schema) {
+  private SchemaSnapshot toSchemaSnapshot(SchemaResponse schema,
+      String dbVendorName) {
     return new SchemaSnapshot(
         schema.id(),
-        schema.dbVendorName(),
+        dbVendorName,
         schema.name(),
         schema.charset(),
         schema.collation());

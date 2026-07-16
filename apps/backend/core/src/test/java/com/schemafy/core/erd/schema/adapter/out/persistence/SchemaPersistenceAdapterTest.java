@@ -47,7 +47,6 @@ class SchemaPersistenceAdapterTest {
           .assertNext(saved -> {
             assertThat(saved.id()).isEqualTo(schema.id());
             assertThat(saved.projectId()).isEqualTo(schema.projectId());
-            assertThat(saved.dbVendorName()).isEqualTo(schema.dbVendorName());
             assertThat(saved.name()).isEqualTo(schema.name());
             assertThat(saved.charset()).isEqualTo(schema.charset());
             assertThat(saved.collation()).isEqualTo(schema.collation());
