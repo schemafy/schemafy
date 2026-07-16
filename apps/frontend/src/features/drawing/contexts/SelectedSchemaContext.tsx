@@ -42,7 +42,7 @@ const SchemaError = ({ onRetry }: { onRetry: () => void }) => (
 interface SelectedSchemaProviderProps {
   children: ReactNode;
   projectId: string;
-  dbVendorId: string;
+  dbVendorId: number;
 }
 
 export const SelectedSchemaProvider = ({

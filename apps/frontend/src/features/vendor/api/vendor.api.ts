@@ -6,9 +6,7 @@ export const listVendors = async (): Promise<DbVendorSummary[]> => {
   return response.data;
 };
 
-export const getVendor = async (id: string): Promise<DbVendorDetail> => {
-  const response = await apiClient.get<DbVendorDetail>(
-    `/vendors/${encodeURIComponent(id)}`,
-  );
+export const getVendor = async (id: number): Promise<DbVendorDetail> => {
+  const response = await apiClient.get<DbVendorDetail>(`/vendors/${id}`);
   return response.data;
 };

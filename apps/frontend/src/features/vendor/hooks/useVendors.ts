@@ -9,11 +9,11 @@ export const useVendors = () => {
   });
 };
 
-export const useVendor = (id: string) => {
+export const useVendor = (id: number) => {
   return useQuery({
     queryKey: ['vendors', id],
     queryFn: () => getVendor(id),
-    enabled: !!id,
+    enabled: id > 0,
     staleTime: Infinity,
   });
 };

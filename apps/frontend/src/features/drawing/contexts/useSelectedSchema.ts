@@ -2,7 +2,7 @@ import { createContext, useContext } from 'react';
 
 interface SelectedSchemaContextType {
   projectId: string;
-  dbVendorId: string;
+  dbVendorId: number;
   selectedSchemaId: string;
   setSelectedSchemaId: (schemaId: string | null) => void;
 }

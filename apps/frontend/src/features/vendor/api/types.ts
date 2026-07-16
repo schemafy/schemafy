@@ -1,5 +1,5 @@
 export type DbVendorSummary = {
-  id: string;
+  id: number;
   displayName: string;
   name: string;
   version: string;
@@ -29,7 +29,7 @@ export type DatatypeMappings = {
 };
 
 export type DbVendorDetail = {
-  id: string;
+  id: number;
   displayName: string;
   name: string;
   version: string;

@@ -75,7 +75,7 @@ interface CreateProjectDialogProps {
   onOpenChange: (open: boolean) => void;
   isPending: boolean;
   onSubmit: (data: {
-    dbVendorId: string;
+    dbVendorId: number;
     name: string;
     description: string;
   }) => void;
@@ -89,7 +89,7 @@ const CreateProjectDialog = ({
 }: CreateProjectDialogProps) => {
   const [name, setName] = useState('');
   const [description, setDescription] = useState('');
-  const [dbVendorId, setDbVendorId] = useState('');
+  const [dbVendorId, setDbVendorId] = useState<number | null>(null);
   const {
     data: vendors,
     isLoading: isVendorsLoading,
@@ -100,11 +100,11 @@ const CreateProjectDialog = ({
     if (!open) return;
     setName('');
     setDescription('');
-    setDbVendorId('');
+    setDbVendorId(null);
   }, [open]);
 
   const handleSubmit = () => {
-    if (!name.trim() || !dbVendorId) return;
+    if (!name.trim() || dbVendorId === null) return;
     onSubmit({ dbVendorId, name, description: description || '' });
   };
 
@@ -144,8 +144,8 @@ const CreateProjectDialog = ({
               Database Profile
             </label>
             <Select
-              value={dbVendorId}
-              onValueChange={setDbVendorId}
+              value={dbVendorId?.toString() ?? ''}
+              onValueChange={(value) => setDbVendorId(Number(value))}
               disabled={isVendorsLoading || isVendorsError}
             >
               <SelectTrigger className="px-4 py-3 font-body-sm">
@@ -159,7 +159,7 @@ const CreateProjectDialog = ({
               </SelectTrigger>
               <SelectContent>
                 {vendors?.map((vendor) => (
-                  <SelectItem key={vendor.id} value={vendor.id}>
+                  <SelectItem key={vendor.id} value={vendor.id.toString()}>
                     {vendor.displayName} ({vendor.name} {vendor.version})
                   </SelectItem>
                 ))}
@@ -183,7 +183,7 @@ const CreateProjectDialog = ({
           <Button
             size="sm"
             onClick={handleSubmit}
-            disabled={!name.trim() || !dbVendorId || isPending}
+            disabled={!name.trim() || dbVendorId === null || isPending}
           >
             Create
           </Button>
