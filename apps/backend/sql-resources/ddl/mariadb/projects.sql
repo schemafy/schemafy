@@ -24,7 +24,7 @@ CREATE TABLE IF NOT EXISTS workspace_members (
 CREATE TABLE IF NOT EXISTS projects (
     id           CHAR(26)     NOT NULL,
     workspace_id CHAR(26)     NOT NULL,
-    db_vendor_id CHAR(26)     NOT NULL,
+    db_vendor_id BIGINT       NOT NULL,
     name         VARCHAR(255) NOT NULL,
     description  TEXT         NULL,
     created_at   TIMESTAMP    NOT NULL DEFAULT CURRENT_TIMESTAMP,

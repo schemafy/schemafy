@@ -35,7 +35,7 @@ import static org.mockito.BDDMockito.then;
 @DisplayName("CreateProjectService")
 class CreateProjectServiceTest {
 
-  private static final String REQUESTED_DB_VENDOR_ID = "requested-db-vendor-id";
+  private static final Long REQUESTED_DB_VENDOR_ID = 999L;
   private static final String WORKSPACE_ID = "workspace-id";
   private static final String REQUESTER_ID = "requester-id";
 

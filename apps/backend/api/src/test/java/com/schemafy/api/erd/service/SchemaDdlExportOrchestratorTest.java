@@ -175,7 +175,7 @@ class SchemaDdlExportOrchestratorTest {
 
   private static DbVendor sourceDbVendor() {
     return new DbVendor(
-        "vendor-1",
+        1L,
         "MariaDB 11",
         "mariadb",
         "11",

@@ -6,7 +6,7 @@ import com.schemafy.core.project.application.port.in.ProjectSummary;
 import com.schemafy.core.project.domain.Project;
 import com.schemafy.core.project.domain.ProjectRole;
 
-public record ProjectSummaryResponse(String id, String workspaceId, String dbVendorId, String name,
+public record ProjectSummaryResponse(String id, String workspaceId, Long dbVendorId, String name,
     String description, String myRole,
     Instant createdAt, Instant updatedAt) {
 

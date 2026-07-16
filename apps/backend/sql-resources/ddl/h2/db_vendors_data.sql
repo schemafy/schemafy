@@ -1,7 +1,7 @@
 MERGE INTO db_vendors (id, display_name, name, version, datatype_mappings, created_at, updated_at)
 KEY (id)
 VALUES (
-    '01JQ7Z5V6Y8X9W0T1S2R3Q4P5N',
+    1,
     'MySQL 8.0',
     'mysql',
     '8.0',

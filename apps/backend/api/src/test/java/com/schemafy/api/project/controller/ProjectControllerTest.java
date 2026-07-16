@@ -133,6 +133,17 @@ class ProjectControllerTest extends ProjectHttpTestSupport {
   }
 
   @Test
+  @DisplayName("프로젝트 생성 시 DB 벤더 프로필 ID가 양수가 아니면 실패한다")
+  void createProjectFailWithNonPositiveDbVendorId() {
+    CreateProjectRequest request = new CreateProjectRequest("Project", null, 0L);
+
+    webTestClient.post().uri(workspaceProjectBasePath)
+        .header("Authorization", "Bearer " + accessToken)
+        .contentType(MediaType.APPLICATION_JSON).bodyValue(request)
+        .exchange().expectStatus().isBadRequest();
+  }
+
+  @Test
   @DisplayName("워크스페이스 멤버가 아닌 사용자는 프로젝트를 생성할 수 없다")
   void createProjectFailWhenNotWorkspaceMember() {
     // Remove user2 from workspace

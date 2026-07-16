@@ -6,7 +6,7 @@ import org.springframework.data.repository.reactive.ReactiveCrudRepository;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
-interface DbVendorRepository extends ReactiveCrudRepository<DbVendorEntity, String> {
+interface DbVendorRepository extends ReactiveCrudRepository<DbVendorEntity, Long> {
 
   @Query("""
       SELECT *
@@ -17,7 +17,7 @@ interface DbVendorRepository extends ReactiveCrudRepository<DbVendorEntity, Stri
   Flux<DbVendorEntity> findAllActive();
 
   @Query("SELECT * FROM db_vendors WHERE id = :id AND deleted_at IS NULL")
-  Mono<DbVendorEntity> findActiveById(String id);
+  Mono<DbVendorEntity> findActiveById(Long id);
 
   @Query("""
       SELECT v.*

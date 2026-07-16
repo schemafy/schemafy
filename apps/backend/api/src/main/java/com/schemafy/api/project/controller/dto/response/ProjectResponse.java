@@ -6,7 +6,7 @@ import com.schemafy.core.project.application.port.in.ProjectDetail;
 import com.schemafy.core.project.domain.Project;
 
 public record ProjectResponse(String id, String workspaceId,
-    String dbVendorId, String name, String description,
+    Long dbVendorId, String name, String description,
     Instant createdAt, Instant updatedAt,
     String currentUserRole) {
 

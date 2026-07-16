@@ -36,7 +36,7 @@ public class DbVendorController {
 
   @GetMapping("/vendors/{id}")
   public Mono<DbVendorDetailResponse> getVendor(
-      @PathVariable String id) {
+      @PathVariable Long id) {
     GetDbVendorQuery query = new GetDbVendorQuery(id);
     return getDbVendorUseCase.getDbVendor(query)
         .map(vendorResponseMapper::toDbVendorDetailResponse);

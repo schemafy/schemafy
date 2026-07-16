@@ -32,7 +32,7 @@ import static org.mockito.Mockito.times;
 class ProjectMembershipPropagationHelperTest {
 
   private static final String WORKSPACE_ID = "workspace-id";
-  private static final String DB_VENDOR_ID = "db-vendor-id";
+  private static final Long DB_VENDOR_ID = 1L;
   private static final String USER_ID = "user-id";
 
   @Mock

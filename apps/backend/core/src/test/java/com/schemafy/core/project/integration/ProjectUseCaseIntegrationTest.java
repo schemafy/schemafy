@@ -41,7 +41,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 @DisplayName("프로젝트 유스케이스 통합 테스트")
 class ProjectUseCaseIntegrationTest extends ProjectDomainIntegrationSupport {
 
-  private static final String DELETED_DB_VENDOR_ID = "01JQ7Z5V6Y8X9W0T1S2R3Q4P5R";
+  private static final Long DELETED_DB_VENDOR_ID = 2L;
 
   @Autowired
   private CreateProjectUseCase createProjectUseCase;
@@ -149,7 +149,7 @@ class ProjectUseCaseIntegrationTest extends ProjectDomainIntegrationSupport {
 
     StepVerifier.create(createProjectUseCase.createProject(new CreateProjectCommand(
         workspace.getId(),
-        "unknown-db-vendor-id",
+        999L,
         "Project",
         "Description",
         creator.id())))
@@ -825,7 +825,7 @@ class ProjectUseCaseIntegrationTest extends ProjectDomainIntegrationSupport {
         .block();
   }
 
-  private void deleteDbVendor(String id) {
+  private void deleteDbVendor(Long id) {
     databaseClient.sql("DELETE FROM db_vendors WHERE id = :id")
         .bind("id", id)
         .fetch()
