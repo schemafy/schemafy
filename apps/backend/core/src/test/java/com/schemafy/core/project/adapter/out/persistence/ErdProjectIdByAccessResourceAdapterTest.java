@@ -25,6 +25,7 @@ class ErdProjectIdByAccessResourceAdapterTest {
 
   private static final String WORKSPACE_ID = "01ARZ3NDEKTSV4RRFFQ69G5WSP";
   private static final String PROJECT_ID = "01ARZ3NDEKTSV4RRFFQ69G5PRJ";
+  private static final String DB_VENDOR_ID = "01JQ7Z5V6Y8X9W0T1S2R3Q4P5N";
   private static final String SCHEMA_ID = "01ARZ3NDEKTSV4RRFFQ69G5SCH";
   private static final String PK_TABLE_ID = "01ARZ3NDEKTSV4RRFFQ69G5TPK";
   private static final String FK_TABLE_ID = "01ARZ3NDEKTSV4RRFFQ69G5TFK";
@@ -126,11 +127,12 @@ class ErdProjectIdByAccessResourceAdapterTest {
         .then()
         .block();
     databaseClient.sql("""
-        INSERT INTO projects (id, workspace_id, name, description)
-        VALUES (:id, :workspaceId, 'project', 'description')
+        INSERT INTO projects (id, workspace_id, db_vendor_id, name, description)
+        VALUES (:id, :workspaceId, :dbVendorId, 'project', 'description')
         """)
         .bind("id", PROJECT_ID)
         .bind("workspaceId", WORKSPACE_ID)
+        .bind("dbVendorId", DB_VENDOR_ID)
         .then()
         .block();
   }

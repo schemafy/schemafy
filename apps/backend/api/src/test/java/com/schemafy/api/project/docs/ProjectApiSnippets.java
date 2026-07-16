@@ -25,6 +25,9 @@ public class ProjectApiSnippets extends RestDocsSnippets {
       fieldWithPath("workspaceId")
           .type(JsonFieldType.STRING)
           .description("소속 워크스페이스 ID"),
+      fieldWithPath("dbVendorId")
+          .type(JsonFieldType.STRING)
+          .description("DB 벤더 프로필 ID"),
       fieldWithPath("name").type(JsonFieldType.STRING)
           .description("프로젝트 이름"),
       fieldWithPath("description")
@@ -46,6 +49,8 @@ public class ProjectApiSnippets extends RestDocsSnippets {
           .description("프로젝트 고유 ID"),
       fieldWithPath(prefix + "workspaceId").type(JsonFieldType.STRING)
           .description("소속 워크스페이스 ID"),
+      fieldWithPath(prefix + "dbVendorId").type(JsonFieldType.STRING)
+          .description("DB 벤더 프로필 ID"),
       fieldWithPath(prefix + "name").type(JsonFieldType.STRING)
           .description("프로젝트 이름"),
       fieldWithPath(prefix + "description").type(JsonFieldType.STRING)
@@ -80,7 +85,9 @@ public class ProjectApiSnippets extends RestDocsSnippets {
         fieldWithPath("name").type(JsonFieldType.STRING)
             .description("프로젝트 이름 (필수)"),
         fieldWithPath("description").type(JsonFieldType.STRING)
-            .description("프로젝트 설명").optional());
+            .description("프로젝트 설명").optional(),
+        fieldWithPath("dbVendorId").type(JsonFieldType.STRING)
+            .description("DB 벤더 프로필 ID (필수)"));
   }
 
   /** 프로젝트 생성 응답 헤더 */

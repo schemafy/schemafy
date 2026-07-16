@@ -22,6 +22,8 @@ import static org.assertj.core.api.Assertions.assertThat;
 @DisplayName("ProjectPersistenceAdapter")
 class ProjectPersistenceAdapterTest {
 
+  private static final String DB_VENDOR_ID = "01JQ7Z5V6Y8X9W0T1S2R3Q4P5N";
+
   @Autowired
   private ProjectPersistenceAdapter sut;
 
@@ -46,12 +48,13 @@ class ProjectPersistenceAdapterTest {
   void saveAndFindProject() {
     Workspace workspace = saveWorkspace("Project Workspace");
     Project project = Project.create(UlidGenerator.generate(), workspace.getId(),
-        "Project", "Description");
+        DB_VENDOR_ID, "Project", "Description");
 
     StepVerifier.create(sut.save(project))
         .assertNext(saved -> {
           assertThat(saved.getId()).isEqualTo(project.getId());
           assertThat(saved.getWorkspaceId()).isEqualTo(workspace.getId());
+          assertThat(saved.getDbVendorId()).isEqualTo(DB_VENDOR_ID);
           assertThat(saved.getName()).isEqualTo("Project");
           assertThat(saved.getCreatedAt()).isNotNull();
         })
@@ -70,9 +73,9 @@ class ProjectPersistenceAdapterTest {
   void countByWorkspaceId_countsOnlyActiveProjects() {
     Workspace workspace = saveWorkspace("Count Workspace");
     Project active = sut.save(Project.create(UlidGenerator.generate(), workspace.getId(),
-        "Active", "Description")).block();
+        DB_VENDOR_ID, "Active", "Description")).block();
     Project deleted = sut.save(Project.create(UlidGenerator.generate(), workspace.getId(),
-        "Deleted", "Description")).block();
+        DB_VENDOR_ID, "Deleted", "Description")).block();
     Project loadedDeleted = projectRepository.findById(deleted.getId()).block();
     loadedDeleted.delete();
     sut.save(loadedDeleted).block();
@@ -93,7 +96,7 @@ class ProjectPersistenceAdapterTest {
   void save_updatesLoadedProject() {
     Workspace workspace = saveWorkspace("Update Workspace");
     Project project = sut.save(Project.create(UlidGenerator.generate(),
-        workspace.getId(), "Before", "Description")).block();
+        workspace.getId(), DB_VENDOR_ID, "Before", "Description")).block();
     Project loaded = projectRepository.findById(project.getId()).block();
     loaded.update("After", "Updated");
 
@@ -102,6 +105,7 @@ class ProjectPersistenceAdapterTest {
           assertThat(updated.getId()).isEqualTo(project.getId());
           assertThat(updated.getName()).isEqualTo("After");
           assertThat(updated.getDescription()).isEqualTo("Updated");
+          assertThat(updated.getDbVendorId()).isEqualTo(DB_VENDOR_ID);
         })
         .verifyComplete();
   }

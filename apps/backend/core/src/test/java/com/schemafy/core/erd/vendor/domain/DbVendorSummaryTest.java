@@ -22,29 +22,37 @@ class DbVendorSummaryTest {
     void createsWithValidArgs() {
       var summary = DbVendorFixture.defaultDbVendorSummary();
 
+      assertThat(summary.id()).isEqualTo(DbVendorFixture.DEFAULT_ID);
       assertThat(summary.displayName()).isEqualTo(DbVendorFixture.DEFAULT_DISPLAY_NAME);
       assertThat(summary.name()).isEqualTo(DbVendorFixture.DEFAULT_NAME);
       assertThat(summary.version()).isEqualTo(DbVendorFixture.DEFAULT_VERSION);
     }
 
     @Test
+    @DisplayName("id가 null이면 예외를 발생시킨다")
+    void throwsWhenIdIsNull() {
+      assertThatThrownBy(() -> new DbVendorSummary(null, "MySQL 8.0", "mysql", "8.0"))
+          .isInstanceOf(DomainException.class);
+    }
+
+    @Test
     @DisplayName("displayName이 null이면 예외를 발생시킨다")
     void throwsWhenDisplayNameIsNull() {
-      assertThatThrownBy(() -> new DbVendorSummary(null, "mysql", "8.0"))
+      assertThatThrownBy(() -> new DbVendorSummary(DbVendorFixture.DEFAULT_ID, null, "mysql", "8.0"))
           .isInstanceOf(DomainException.class);
     }
 
     @Test
     @DisplayName("name이 null이면 예외를 발생시킨다")
     void throwsWhenNameIsNull() {
-      assertThatThrownBy(() -> new DbVendorSummary("MySQL 8.0", null, "8.0"))
+      assertThatThrownBy(() -> new DbVendorSummary(DbVendorFixture.DEFAULT_ID, "MySQL 8.0", null, "8.0"))
           .isInstanceOf(DomainException.class);
     }
 
     @Test
     @DisplayName("version이 null이면 예외를 발생시킨다")
     void throwsWhenVersionIsNull() {
-      assertThatThrownBy(() -> new DbVendorSummary("MySQL 8.0", "mysql", null))
+      assertThatThrownBy(() -> new DbVendorSummary(DbVendorFixture.DEFAULT_ID, "MySQL 8.0", "mysql", null))
           .isInstanceOf(DomainException.class);
     }
 

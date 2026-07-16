@@ -41,6 +41,7 @@ import static org.springframework.restdocs.request.RequestDocumentation.pathPara
 @WithMockCustomUser(roles = "VIEWER")
 class DbVendorControllerTest {
 
+  private static final String DB_VENDOR_ID = "01JQ7Z5V6Y8X9W0T1S2R3Q4P5N";
   private static final String API_BASE_PATH = ApiPath.API
       .replace("{version}", "v1.0");
 
@@ -56,7 +57,7 @@ class DbVendorControllerTest {
   @Test
   @DisplayName("벤더 목록 조회 API 문서화")
   void listVendors() {
-    var summary = new DbVendorSummary("MySQL 8.0", "mysql", "8.0");
+    var summary = new DbVendorSummary(DB_VENDOR_ID, "MySQL 8.0", "mysql", "8.0");
 
     given(listDbVendorsUseCase.listDbVendors())
         .willReturn(Flux.just(summary));
@@ -67,6 +68,7 @@ class DbVendorControllerTest {
         .exchange()
         .expectStatus().isOk()
         .expectBody()
+        .jsonPath("$[0].id").isEqualTo(DB_VENDOR_ID)
         .jsonPath("$[0].displayName").isEqualTo("MySQL 8.0")
         .jsonPath("$[0].name").isEqualTo("mysql")
         .jsonPath("$[0].version").isEqualTo("8.0")
@@ -78,6 +80,7 @@ class DbVendorControllerTest {
                 headerWithName("Content-Type")
                     .description("응답 컨텐츠 타입")),
             responseFields(
+                fieldWithPath("[].id").description("벤더 프로필 ID"),
                 fieldWithPath("[].displayName").description("벤더 표시 이름"),
                 fieldWithPath("[].name").description("벤더 이름"),
                 fieldWithPath("[].version").description("벤더 버전"))));
@@ -87,6 +90,7 @@ class DbVendorControllerTest {
   @DisplayName("벤더 상세 조회 API 문서화")
   void getVendor() {
     var vendor = new DbVendor(
+        DB_VENDOR_ID,
         "MySQL 8.0", "mysql", "8.0",
         "{\"schemaVersion\":1,\"vendor\":\"mysql\",\"types\":[]}");
 
@@ -94,19 +98,20 @@ class DbVendorControllerTest {
         .willReturn(Mono.just(vendor));
 
     webTestClient.get()
-        .uri(API_BASE_PATH + "/vendors/{displayName}", "MySQL 8.0")
+        .uri(API_BASE_PATH + "/vendors/{id}", DB_VENDOR_ID)
         .header("Accept", "application/json")
         .exchange()
         .expectStatus().isOk()
         .expectBody()
+        .jsonPath("$.id").isEqualTo(DB_VENDOR_ID)
         .jsonPath("$.displayName").isEqualTo("MySQL 8.0")
         .jsonPath("$.name").isEqualTo("mysql")
         .jsonPath("$.version").isEqualTo("8.0")
         .jsonPath("$.datatypeMappings.schemaVersion").isEqualTo(1)
         .consumeWith(document("vendor-get",
             pathParameters(
-                parameterWithName("displayName")
-                    .description("벤더 표시 이름")),
+                parameterWithName("id")
+                    .description("벤더 프로필 ID")),
             requestHeaders(
                 headerWithName("Accept")
                     .description("응답 포맷 (application/json)")),
@@ -114,6 +119,7 @@ class DbVendorControllerTest {
                 headerWithName("Content-Type")
                     .description("응답 컨텐츠 타입")),
             responseFields(
+                fieldWithPath("id").description("벤더 프로필 ID"),
                 fieldWithPath("displayName").description("벤더 표시 이름"),
                 fieldWithPath("name").description("벤더 이름"),
                 fieldWithPath("version").description("벤더 버전"),

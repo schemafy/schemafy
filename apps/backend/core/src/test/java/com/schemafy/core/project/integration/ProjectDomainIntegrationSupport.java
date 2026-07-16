@@ -43,6 +43,8 @@ import reactor.core.publisher.Mono;
 @ActiveProfiles("test")
 abstract class ProjectDomainIntegrationSupport {
 
+  protected static final String DB_VENDOR_ID = "01JQ7Z5V6Y8X9W0T1S2R3Q4P5N";
+
   @Autowired
   protected DatabaseClient databaseClient;
 
@@ -125,6 +127,7 @@ abstract class ProjectDomainIntegrationSupport {
     return projectRepository.save(Project.create(
         UlidGenerator.generate(),
         workspace.getId(),
+        DB_VENDOR_ID,
         name,
         description)).block();
   }

@@ -34,10 +34,10 @@ public class DbVendorController {
         .collectList();
   }
 
-  @GetMapping("/vendors/{displayName}")
+  @GetMapping("/vendors/{id}")
   public Mono<DbVendorDetailResponse> getVendor(
-      @PathVariable String displayName) {
-    GetDbVendorQuery query = new GetDbVendorQuery(displayName);
+      @PathVariable String id) {
+    GetDbVendorQuery query = new GetDbVendorQuery(id);
     return getDbVendorUseCase.getDbVendor(query)
         .map(vendorResponseMapper::toDbVendorDetailResponse);
   }

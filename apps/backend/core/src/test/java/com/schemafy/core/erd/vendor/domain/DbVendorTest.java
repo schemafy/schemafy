@@ -22,6 +22,7 @@ class DbVendorTest {
     void createsWithValidArgs() {
       var vendor = DbVendorFixture.defaultDbVendor();
 
+      assertThat(vendor.id()).isEqualTo(DbVendorFixture.DEFAULT_ID);
       assertThat(vendor.displayName()).isEqualTo(DbVendorFixture.DEFAULT_DISPLAY_NAME);
       assertThat(vendor.name()).isEqualTo(DbVendorFixture.DEFAULT_NAME);
       assertThat(vendor.version()).isEqualTo(DbVendorFixture.DEFAULT_VERSION);
@@ -29,37 +30,44 @@ class DbVendorTest {
     }
 
     @Test
+    @DisplayName("id가 null이면 예외를 발생시킨다")
+    void throwsWhenIdIsNull() {
+      assertThatThrownBy(() -> new DbVendor(null, "MySQL 8.0", "mysql", "8.0", "{}"))
+          .isInstanceOf(DomainException.class);
+    }
+
+    @Test
     @DisplayName("displayName이 null이면 예외를 발생시킨다")
     void throwsWhenDisplayNameIsNull() {
-      assertThatThrownBy(() -> new DbVendor(null, "mysql", "8.0", "{}"))
+      assertThatThrownBy(() -> new DbVendor(DbVendorFixture.DEFAULT_ID, null, "mysql", "8.0", "{}"))
           .isInstanceOf(DomainException.class);
     }
 
     @Test
     @DisplayName("displayName이 공백이면 예외를 발생시킨다")
     void throwsWhenDisplayNameIsBlank() {
-      assertThatThrownBy(() -> new DbVendor("  ", "mysql", "8.0", "{}"))
+      assertThatThrownBy(() -> new DbVendor(DbVendorFixture.DEFAULT_ID, "  ", "mysql", "8.0", "{}"))
           .isInstanceOf(DomainException.class);
     }
 
     @Test
     @DisplayName("name이 null이면 예외를 발생시킨다")
     void throwsWhenNameIsNull() {
-      assertThatThrownBy(() -> new DbVendor("MySQL 8.0", null, "8.0", "{}"))
+      assertThatThrownBy(() -> new DbVendor(DbVendorFixture.DEFAULT_ID, "MySQL 8.0", null, "8.0", "{}"))
           .isInstanceOf(DomainException.class);
     }
 
     @Test
     @DisplayName("version이 null이면 예외를 발생시킨다")
     void throwsWhenVersionIsNull() {
-      assertThatThrownBy(() -> new DbVendor("MySQL 8.0", "mysql", null, "{}"))
+      assertThatThrownBy(() -> new DbVendor(DbVendorFixture.DEFAULT_ID, "MySQL 8.0", "mysql", null, "{}"))
           .isInstanceOf(DomainException.class);
     }
 
     @Test
     @DisplayName("datatypeMappings가 null이면 예외를 발생시킨다")
     void throwsWhenDatatypeMappingsIsNull() {
-      assertThatThrownBy(() -> new DbVendor("MySQL 8.0", "mysql", "8.0", null))
+      assertThatThrownBy(() -> new DbVendor(DbVendorFixture.DEFAULT_ID, "MySQL 8.0", "mysql", "8.0", null))
           .isInstanceOf(DomainException.class);
     }
 

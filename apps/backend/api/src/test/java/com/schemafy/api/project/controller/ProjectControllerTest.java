@@ -88,7 +88,7 @@ class ProjectControllerTest extends ProjectHttpTestSupport {
   @DisplayName("프로젝트 생성에 성공한다")
   void createProjectSuccess() {
     CreateProjectRequest request = new CreateProjectRequest("My Project",
-        "Test Description");
+        "Test Description", DB_VENDOR_ID);
 
     webTestClient.post()
         .uri(ApiPath.API.replace("{version}", "v1.0")
@@ -103,6 +103,7 @@ class ProjectControllerTest extends ProjectHttpTestSupport {
             ProjectApiSnippets.createProjectResponseHeaders(),
             ProjectApiSnippets.createProjectResponse()))
         .jsonPath("$.name").isEqualTo("My Project")
+        .jsonPath("$.dbVendorId").isEqualTo(DB_VENDOR_ID)
         .jsonPath("$.workspaceId").isEqualTo(testWorkspaceId);
 
     projectMemberRepository.findRolesByWorkspaceIdAndUserIdWithPaging(testWorkspaceId, testUserId, 100, 0)
@@ -112,7 +113,18 @@ class ProjectControllerTest extends ProjectHttpTestSupport {
   @Test
   @DisplayName("프로젝트 생성 시 이름이 없으면 실패한다")
   void createProjectFailWithoutName() {
-    CreateProjectRequest request = new CreateProjectRequest("", null);
+    CreateProjectRequest request = new CreateProjectRequest("", null, DB_VENDOR_ID);
+
+    webTestClient.post().uri(workspaceProjectBasePath)
+        .header("Authorization", "Bearer " + accessToken)
+        .contentType(MediaType.APPLICATION_JSON).bodyValue(request)
+        .exchange().expectStatus().isBadRequest();
+  }
+
+  @Test
+  @DisplayName("프로젝트 생성 시 DB 벤더 프로필 ID가 없으면 실패한다")
+  void createProjectFailWithoutDbVendorId() {
+    CreateProjectRequest request = new CreateProjectRequest("Project", null, null);
 
     webTestClient.post().uri(workspaceProjectBasePath)
         .header("Authorization", "Bearer " + accessToken)
@@ -128,7 +140,7 @@ class ProjectControllerTest extends ProjectHttpTestSupport {
         .flatMap(workspaceMemberRepository::delete).block();
 
     CreateProjectRequest request = new CreateProjectRequest("My Project",
-        "Description");
+        "Description", DB_VENDOR_ID);
 
     webTestClient.post().uri(workspaceProjectBasePath)
         .header("Authorization", "Bearer " + accessToken2)
@@ -156,6 +168,7 @@ class ProjectControllerTest extends ProjectHttpTestSupport {
             ProjectApiSnippets.getProjectsResponseHeaders(),
             ProjectApiSnippets.getProjectsResponse()))
         .jsonPath("$.content[0].name").isEqualTo("Test Project")
+        .jsonPath("$.content[0].dbVendorId").isEqualTo(DB_VENDOR_ID)
         .jsonPath("$.totalElements").isEqualTo(1);
   }
 
@@ -301,7 +314,8 @@ class ProjectControllerTest extends ProjectHttpTestSupport {
             ProjectApiSnippets.getProjectResponse()))
         .jsonPath("$.id")
         .isEqualTo(project.getId()).jsonPath("$.name")
-        .isEqualTo("Test Project");
+        .isEqualTo("Test Project")
+        .jsonPath("$.dbVendorId").isEqualTo(DB_VENDOR_ID);
   }
 
   @Test
@@ -339,6 +353,9 @@ class ProjectControllerTest extends ProjectHttpTestSupport {
             ProjectApiSnippets.updateProjectResponseHeaders(),
             ProjectApiSnippets.updateProjectResponse()))
         .jsonPath("$.name").isEqualTo("Updated Project");
+
+    assertThat(projectRepository.findById(project.getId()).block().getDbVendorId())
+        .isEqualTo(DB_VENDOR_ID);
   }
 
   @Test

@@ -33,6 +33,7 @@ import reactor.util.context.Context;
 public abstract class ErdProjectIntegrationSupport {
 
   protected static final String TEST_REQUESTER_ID = "test-erd-requester";
+  private static final String DB_VENDOR_ID = "01JQ7Z5V6Y8X9W0T1S2R3Q4P5N";
   private static final String PROJECT_ACCESS_REQUESTER_HOOK = ErdProjectIntegrationSupport.class.getName();
 
   @Autowired
@@ -73,6 +74,7 @@ public abstract class ErdProjectIntegrationSupport {
     Project project = projectRepository.save(Project.create(
         UlidGenerator.generate(),
         workspace.getId(),
+        DB_VENDOR_ID,
         prefix + "_project_" + uniqueSuffix,
         "description")).block();
 

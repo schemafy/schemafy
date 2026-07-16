@@ -3,13 +3,17 @@ package com.schemafy.core.erd.vendor.adapter.out.persistence;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.data.r2dbc.DataR2dbcTest;
 import org.springframework.context.annotation.Import;
+import org.springframework.dao.DataIntegrityViolationException;
+import org.springframework.r2dbc.core.DatabaseClient;
 
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 
 import com.schemafy.core.config.R2dbcTestConfiguration;
 
+import reactor.core.publisher.Mono;
 import reactor.test.StepVerifier;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -19,8 +23,27 @@ import static org.assertj.core.api.Assertions.assertThat;
 @DisplayName("DbVendorPersistenceAdapter")
 class DbVendorPersistenceAdapterTest {
 
+  private static final String DB_VENDOR_ID = "01JQ7Z5V6Y8X9W0T1S2R3Q4P5N";
+  private static final String DB_VENDOR_84_ID = "01JQ7Z5V6Y8X9W0T1S2R3Q4P5P";
+  private static final String DELETED_DB_VENDOR_ID = "01JQ7Z5V6Y8X9W0T1S2R3Q4P5Q";
+
   @Autowired
   DbVendorPersistenceAdapter sut;
+
+  @Autowired
+  DatabaseClient databaseClient;
+
+  @BeforeEach
+  void setUp() {
+    databaseClient.sql("DELETE FROM projects")
+        .fetch()
+        .rowsUpdated()
+        .then(databaseClient.sql("DELETE FROM db_vendors WHERE id <> :id")
+            .bind("id", DB_VENDOR_ID)
+            .fetch()
+            .rowsUpdated())
+        .block();
+  }
 
   @Nested
   @DisplayName("findAllSummaries 메서드는")
@@ -31,6 +54,7 @@ class DbVendorPersistenceAdapterTest {
     void returnsSeedVendorSummaries() {
       StepVerifier.create(sut.findAllSummaries())
           .assertNext(summary -> {
+            assertThat(summary.id()).isEqualTo(DB_VENDOR_ID);
             assertThat(summary.displayName()).isEqualTo("MySQL 8.0");
             assertThat(summary.name()).isEqualTo("mysql");
             assertThat(summary.version()).isEqualTo("8.0");
@@ -38,17 +62,30 @@ class DbVendorPersistenceAdapterTest {
           .verifyComplete();
     }
 
+    @Test
+    @DisplayName("삭제된 벤더를 제외하고 안정된 순서로 반환한다")
+    void returnsActiveVendorsInStableOrder() {
+      insertVendor(DB_VENDOR_84_ID, "MySQL 8.4", "mysql", "8.4").block();
+      insertVendor(DELETED_DB_VENDOR_ID, "MySQL 5.7", "mysql", "5.7").block();
+      softDeleteVendor(DELETED_DB_VENDOR_ID).block();
+
+      StepVerifier.create(sut.findAllSummaries().map(summary -> summary.id()).collectList())
+          .assertNext(ids -> assertThat(ids).containsExactly(DB_VENDOR_ID, DB_VENDOR_84_ID))
+          .verifyComplete();
+    }
+
   }
 
   @Nested
-  @DisplayName("findByDisplayName 메서드는")
-  class FindByDisplayName {
+  @DisplayName("findById 메서드는")
+  class FindById {
 
     @Test
     @DisplayName("존재하는 벤더를 반환한다")
     void returnsExistingVendor() {
-      StepVerifier.create(sut.findByDisplayName("MySQL 8.0"))
+      StepVerifier.create(sut.findById(DB_VENDOR_ID))
           .assertNext(vendor -> {
+            assertThat(vendor.id()).isEqualTo(DB_VENDOR_ID);
             assertThat(vendor.displayName()).isEqualTo("MySQL 8.0");
             assertThat(vendor.name()).isEqualTo("mysql");
             assertThat(vendor.version()).isEqualTo("8.0");
@@ -61,10 +98,143 @@ class DbVendorPersistenceAdapterTest {
     @Test
     @DisplayName("존재하지 않으면 empty를 반환한다")
     void returnsEmptyWhenNotExists() {
-      StepVerifier.create(sut.findByDisplayName("NonExistent 1.0"))
+      StepVerifier.create(sut.findById("non-existent-id"))
           .verifyComplete();
     }
 
+    @Test
+    @DisplayName("삭제된 벤더이면 empty를 반환한다")
+    void returnsEmptyWhenDeleted() {
+      insertVendor(DELETED_DB_VENDOR_ID, "MySQL 5.7", "mysql", "5.7").block();
+      softDeleteVendor(DELETED_DB_VENDOR_ID).block();
+
+      StepVerifier.create(sut.findById(DELETED_DB_VENDOR_ID))
+          .verifyComplete();
+    }
+
+  }
+
+  @Nested
+  @DisplayName("findByProjectId 메서드는")
+  class FindByProjectId {
+
+    @Test
+    @DisplayName("활성 프로젝트가 선택한 정확한 벤더를 반환한다")
+    void returnsVendorSelectedByActiveProject() {
+      insertVendor(DB_VENDOR_84_ID, "MySQL 8.4", "mysql", "8.4").block();
+      databaseClient.sql("""
+          INSERT INTO projects (id, workspace_id, db_vendor_id, name)
+          VALUES ('project-id', 'workspace-id', :dbVendorId, 'Project')
+          """)
+          .bind("dbVendorId", DB_VENDOR_84_ID)
+          .fetch()
+          .rowsUpdated()
+          .block();
+
+      StepVerifier.create(sut.findByProjectId("project-id"))
+          .assertNext(vendor -> {
+            assertThat(vendor.id()).isEqualTo(DB_VENDOR_84_ID);
+            assertThat(vendor.version()).isEqualTo("8.4");
+          })
+          .verifyComplete();
+    }
+
+    @Test
+    @DisplayName("삭제된 프로젝트는 벤더를 반환하지 않는다")
+    void returnsEmptyForDeletedProject() {
+      databaseClient.sql("""
+          INSERT INTO projects (id, workspace_id, db_vendor_id, name, deleted_at)
+          VALUES ('deleted-project-id', 'workspace-id', :dbVendorId, 'Project', CURRENT_TIMESTAMP)
+          """)
+          .bind("dbVendorId", DB_VENDOR_ID)
+          .fetch()
+          .rowsUpdated()
+          .block();
+
+      StepVerifier.create(sut.findByProjectId("deleted-project-id"))
+          .verifyComplete();
+    }
+
+  }
+
+  @Nested
+  @DisplayName("벤더 식별 제약은")
+  class VendorIdentityConstraint {
+
+    @Test
+    @DisplayName("같은 name의 다른 version을 허용한다")
+    void allowsSameNameWithDifferentVersion() {
+      StepVerifier.create(insertVendor(
+          DB_VENDOR_84_ID, "MySQL 8.4", "mysql", "8.4"))
+          .expectNext(1L)
+          .verifyComplete();
+    }
+
+    @Test
+    @DisplayName("같은 name과 version 조합을 거부한다")
+    void rejectsDuplicateNameAndVersion() {
+      StepVerifier.create(insertVendor(
+          "01JQ7Z5V6Y8X9W0T1S2R3Q4P5Q", "Another Label", "mysql", "8.0"))
+          .expectError(DataIntegrityViolationException.class)
+          .verify();
+    }
+
+  }
+
+  @Nested
+  @DisplayName("프로젝트 벤더 제약은")
+  class ProjectVendorConstraint {
+
+    @Test
+    @DisplayName("db_vendor_id가 없는 프로젝트 저장을 거부한다")
+    void rejectsProjectWithoutDbVendorId() {
+      StepVerifier.create(databaseClient.sql("""
+          INSERT INTO projects (id, workspace_id, name)
+          VALUES ('project-without-vendor', 'workspace-id', 'Project')
+          """)
+          .fetch()
+          .rowsUpdated())
+          .expectError(DataIntegrityViolationException.class)
+          .verify();
+    }
+
+    @Test
+    @DisplayName("존재하지 않는 db_vendor_id의 프로젝트 저장을 거부한다")
+    void rejectsProjectWithMissingDbVendorId() {
+      StepVerifier.create(databaseClient.sql("""
+          INSERT INTO projects (id, workspace_id, db_vendor_id, name)
+          VALUES ('project-missing-vendor', 'workspace-id', 'missing-vendor-id', 'Project')
+          """)
+          .fetch()
+          .rowsUpdated())
+          .expectError(DataIntegrityViolationException.class)
+          .verify();
+    }
+
+  }
+
+  private Mono<Long> insertVendor(
+      String id,
+      String displayName,
+      String name,
+      String version) {
+    return databaseClient.sql("""
+        INSERT INTO db_vendors (id, display_name, name, version, datatype_mappings)
+        VALUES (:id, :displayName, :name, :version, '{}')
+        """)
+        .bind("id", id)
+        .bind("displayName", displayName)
+        .bind("name", name)
+        .bind("version", version)
+        .fetch()
+        .rowsUpdated();
+  }
+
+  private Mono<Long> softDeleteVendor(String id) {
+    return databaseClient.sql("UPDATE db_vendors SET deleted_at = CURRENT_TIMESTAMP WHERE id = :id")
+        .bind("id", id)
+        .fetch()
+        .rowsUpdated();
   }
 
 }
