@@ -20,7 +20,6 @@ export type JsonObject = {
 export type SchemaResponse = {
   id: string;
   projectId: string;
-  dbVendorName: string;
   name: string;
   charset: string;
   collation: string;
@@ -29,10 +28,9 @@ export type SchemaResponse = {
 
 export type CreateSchemaRequest = {
   projectId: string;
-  dbVendorName: string;
   name: string;
-  charset: string;
-  collation: string;
+  charset?: string;
+  collation?: string;
 };
 
 export type ChangeSchemaNameRequest = {
