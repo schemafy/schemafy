@@ -9,7 +9,9 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 import com.schemafy.core.common.exception.DomainException;
 import com.schemafy.core.erd.vendor.application.port.in.GetProjectDbVendorQuery;
-import com.schemafy.core.erd.vendor.application.port.out.GetDbVendorByProjectIdPort;
+import com.schemafy.core.erd.vendor.application.port.out.GetActiveProjectDbVendorIdPort;
+import com.schemafy.core.erd.vendor.application.port.out.GetDbVendorByIdPort;
+import com.schemafy.core.erd.vendor.domain.exception.VendorErrorCode;
 import com.schemafy.core.erd.vendor.fixture.DbVendorFixture;
 import com.schemafy.core.project.domain.exception.ProjectErrorCode;
 
@@ -24,7 +26,10 @@ import static org.mockito.BDDMockito.then;
 class GetProjectDbVendorServiceTest {
 
   @Mock
-  GetDbVendorByProjectIdPort getDbVendorByProjectIdPort;
+  GetActiveProjectDbVendorIdPort getActiveProjectDbVendorIdPort;
+
+  @Mock
+  GetDbVendorByIdPort getDbVendorByIdPort;
 
   @InjectMocks
   GetProjectDbVendorService sut;
@@ -34,26 +39,50 @@ class GetProjectDbVendorServiceTest {
   void returnsProjectVendor() {
     var query = new GetProjectDbVendorQuery("project-id");
     var vendor = DbVendorFixture.defaultDbVendor();
-    given(getDbVendorByProjectIdPort.findByProjectId(query.projectId()))
+    given(getActiveProjectDbVendorIdPort.findDbVendorIdByProjectId(query.projectId()))
+        .willReturn(Mono.just(DbVendorFixture.DEFAULT_ID));
+    given(getDbVendorByIdPort.findActiveById(DbVendorFixture.DEFAULT_ID))
         .willReturn(Mono.just(vendor));
 
     StepVerifier.create(sut.getProjectDbVendor(query))
         .expectNext(vendor)
         .verifyComplete();
 
-    then(getDbVendorByProjectIdPort).should().findByProjectId(query.projectId());
+    then(getActiveProjectDbVendorIdPort).should()
+        .findDbVendorIdByProjectId(query.projectId());
+    then(getDbVendorByIdPort).should()
+        .findActiveById(DbVendorFixture.DEFAULT_ID);
   }
 
   @Test
   @DisplayName("활성 프로젝트가 없으면 프로젝트 없음 오류를 반환한다")
   void failsWhenActiveProjectDoesNotExist() {
     var query = new GetProjectDbVendorQuery("missing-project-id");
-    given(getDbVendorByProjectIdPort.findByProjectId(query.projectId()))
+    given(getActiveProjectDbVendorIdPort.findDbVendorIdByProjectId(query.projectId()))
         .willReturn(Mono.empty());
 
     StepVerifier.create(sut.getProjectDbVendor(query))
         .expectErrorMatches(DomainException.hasErrorCode(ProjectErrorCode.NOT_FOUND))
         .verify();
+
+    then(getDbVendorByIdPort).shouldHaveNoInteractions();
+  }
+
+  @Test
+  @DisplayName("프로젝트가 선택한 활성 벤더가 없으면 벤더 없음 오류를 반환한다")
+  void failsWhenActiveVendorDoesNotExist() {
+    var query = new GetProjectDbVendorQuery("project-id");
+    given(getActiveProjectDbVendorIdPort.findDbVendorIdByProjectId(query.projectId()))
+        .willReturn(Mono.just(DbVendorFixture.DEFAULT_ID));
+    given(getDbVendorByIdPort.findActiveById(DbVendorFixture.DEFAULT_ID))
+        .willReturn(Mono.empty());
+
+    StepVerifier.create(sut.getProjectDbVendor(query))
+        .expectErrorMatches(DomainException.hasErrorCode(VendorErrorCode.NOT_FOUND))
+        .verify();
+
+    then(getDbVendorByIdPort).should()
+        .findActiveById(DbVendorFixture.DEFAULT_ID);
   }
 
 }

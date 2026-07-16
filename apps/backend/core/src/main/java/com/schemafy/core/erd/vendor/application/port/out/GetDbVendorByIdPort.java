@@ -6,6 +6,6 @@ import reactor.core.publisher.Mono;
 
 public interface GetDbVendorByIdPort {
 
-  Mono<DbVendor> findById(Integer id);
+  Mono<DbVendor> findActiveById(Integer id);
 
 }

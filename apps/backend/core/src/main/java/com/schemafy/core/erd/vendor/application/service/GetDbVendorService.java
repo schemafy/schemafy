@@ -20,7 +20,7 @@ class GetDbVendorService implements GetDbVendorUseCase {
 
   @Override
   public Mono<DbVendor> getDbVendor(GetDbVendorQuery query) {
-    return getDbVendorByIdPort.findById(query.id())
+    return getDbVendorByIdPort.findActiveById(query.id())
         .switchIfEmpty(Mono.error(
             new DomainException(VendorErrorCode.NOT_FOUND, "DB Vendor not found: " + query.id())));
   }

@@ -46,7 +46,7 @@ class GetDbVendorServiceTest {
         var query = DbVendorFixture.getQuery();
         var vendor = DbVendorFixture.defaultDbVendor();
 
-        given(getDbVendorByIdPort.findById(any()))
+        given(getDbVendorByIdPort.findActiveById(any()))
             .willReturn(Mono.just(vendor));
 
         StepVerifier.create(sut.getDbVendor(query))
@@ -56,7 +56,7 @@ class GetDbVendorServiceTest {
             })
             .verifyComplete();
 
-        then(getDbVendorByIdPort).should().findById(query.id());
+        then(getDbVendorByIdPort).should().findActiveById(query.id());
       }
 
     }
@@ -70,14 +70,14 @@ class GetDbVendorServiceTest {
       void throwsDbVendorNotExistException() {
         var query = new GetDbVendorQuery(999);
 
-        given(getDbVendorByIdPort.findById(any()))
+        given(getDbVendorByIdPort.findActiveById(any()))
             .willReturn(Mono.empty());
 
         StepVerifier.create(sut.getDbVendor(query))
             .expectErrorMatches(DomainException.hasErrorCode(VendorErrorCode.NOT_FOUND))
             .verify();
 
-        then(getDbVendorByIdPort).should().findById(query.id());
+        then(getDbVendorByIdPort).should().findActiveById(query.id());
       }
 
     }

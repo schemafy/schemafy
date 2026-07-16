@@ -2,7 +2,6 @@ package com.schemafy.core.erd.vendor.adapter.out.persistence;
 
 import com.schemafy.core.common.PersistenceAdapter;
 import com.schemafy.core.erd.vendor.application.port.out.GetDbVendorByIdPort;
-import com.schemafy.core.erd.vendor.application.port.out.GetDbVendorByProjectIdPort;
 import com.schemafy.core.erd.vendor.application.port.out.ListDbVendorSummariesPort;
 import com.schemafy.core.erd.vendor.domain.DbVendor;
 import com.schemafy.core.erd.vendor.domain.DbVendorSummary;
@@ -15,8 +14,7 @@ import reactor.core.publisher.Mono;
 @RequiredArgsConstructor
 class DbVendorPersistenceAdapter implements
     ListDbVendorSummariesPort,
-    GetDbVendorByIdPort,
-    GetDbVendorByProjectIdPort {
+    GetDbVendorByIdPort {
 
   private final DbVendorRepository dbVendorRepository;
   private final DbVendorMapper dbVendorMapper;
@@ -28,14 +26,8 @@ class DbVendorPersistenceAdapter implements
   }
 
   @Override
-  public Mono<DbVendor> findById(Integer id) {
+  public Mono<DbVendor> findActiveById(Integer id) {
     return dbVendorRepository.findActiveById(id)
-        .map(dbVendorMapper::toDomain);
-  }
-
-  @Override
-  public Mono<DbVendor> findByProjectId(String projectId) {
-    return dbVendorRepository.findByProjectId(projectId)
         .map(dbVendorMapper::toDomain);
   }
 

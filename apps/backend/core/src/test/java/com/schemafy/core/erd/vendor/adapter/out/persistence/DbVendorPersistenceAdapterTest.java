@@ -87,13 +87,13 @@ class DbVendorPersistenceAdapterTest {
   }
 
   @Nested
-  @DisplayName("findById 메서드는")
-  class FindById {
+  @DisplayName("findActiveById 메서드는")
+  class FindActiveById {
 
     @Test
     @DisplayName("존재하는 벤더를 반환한다")
     void returnsExistingVendor() {
-      StepVerifier.create(sut.findById(DB_VENDOR_ID))
+      StepVerifier.create(sut.findActiveById(DB_VENDOR_ID))
           .assertNext(vendor -> {
             assertThat(vendor.id()).isEqualTo(DB_VENDOR_ID);
             assertThat(vendor.displayName()).isEqualTo("MySQL 8.0");
@@ -108,7 +108,7 @@ class DbVendorPersistenceAdapterTest {
     @Test
     @DisplayName("존재하지 않으면 empty를 반환한다")
     void returnsEmptyWhenNotExists() {
-      StepVerifier.create(sut.findById(999))
+      StepVerifier.create(sut.findActiveById(999))
           .verifyComplete();
     }
 
@@ -118,50 +118,7 @@ class DbVendorPersistenceAdapterTest {
       insertVendor(DELETED_DB_VENDOR_ID, "MySQL 5.7", "mysql", "5.7").block();
       softDeleteVendor(DELETED_DB_VENDOR_ID).block();
 
-      StepVerifier.create(sut.findById(DELETED_DB_VENDOR_ID))
-          .verifyComplete();
-    }
-
-  }
-
-  @Nested
-  @DisplayName("findByProjectId 메서드는")
-  class FindByProjectId {
-
-    @Test
-    @DisplayName("활성 프로젝트가 선택한 정확한 벤더를 반환한다")
-    void returnsVendorSelectedByActiveProject() {
-      insertVendor(DB_VENDOR_84_ID, "MySQL 8.4", "mysql", "8.4").block();
-      databaseClient.sql("""
-          INSERT INTO projects (id, workspace_id, db_vendor_id, name)
-          VALUES ('project-id', 'workspace-id', :dbVendorId, 'Project')
-          """)
-          .bind("dbVendorId", DB_VENDOR_84_ID)
-          .fetch()
-          .rowsUpdated()
-          .block();
-
-      StepVerifier.create(sut.findByProjectId("project-id"))
-          .assertNext(vendor -> {
-            assertThat(vendor.id()).isEqualTo(DB_VENDOR_84_ID);
-            assertThat(vendor.version()).isEqualTo("8.4");
-          })
-          .verifyComplete();
-    }
-
-    @Test
-    @DisplayName("삭제된 프로젝트는 벤더를 반환하지 않는다")
-    void returnsEmptyForDeletedProject() {
-      databaseClient.sql("""
-          INSERT INTO projects (id, workspace_id, db_vendor_id, name, deleted_at)
-          VALUES ('deleted-project-id', 'workspace-id', :dbVendorId, 'Project', CURRENT_TIMESTAMP)
-          """)
-          .bind("dbVendorId", DB_VENDOR_ID)
-          .fetch()
-          .rowsUpdated()
-          .block();
-
-      StepVerifier.create(sut.findByProjectId("deleted-project-id"))
+      StepVerifier.create(sut.findActiveById(DELETED_DB_VENDOR_ID))
           .verifyComplete();
     }
 

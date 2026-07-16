@@ -10,8 +10,9 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
-import com.schemafy.core.erd.vendor.application.port.in.GetDbVendorQuery;
-import com.schemafy.core.erd.vendor.application.port.in.GetDbVendorUseCase;
+import com.schemafy.core.common.exception.DomainException;
+import com.schemafy.core.erd.vendor.application.port.out.GetDbVendorByIdPort;
+import com.schemafy.core.erd.vendor.domain.exception.VendorErrorCode;
 import com.schemafy.core.erd.vendor.fixture.DbVendorFixture;
 import com.schemafy.core.project.application.port.in.CreateProjectCommand;
 import com.schemafy.core.project.application.port.in.ProjectDetail;
@@ -46,7 +47,7 @@ class CreateProjectServiceTest {
   UlidGeneratorPort ulidGeneratorPort;
 
   @Mock
-  GetDbVendorUseCase getDbVendorUseCase;
+  GetDbVendorByIdPort getDbVendorByIdPort;
 
   @Mock
   ProjectPort projectPort;
@@ -74,7 +75,7 @@ class CreateProjectServiceTest {
         REQUESTER_ID);
     var dbVendor = DbVendorFixture.defaultDbVendor();
 
-    given(getDbVendorUseCase.getDbVendor(any(GetDbVendorQuery.class)))
+    given(getDbVendorByIdPort.findActiveById(REQUESTED_DB_VENDOR_ID))
         .willReturn(Mono.just(dbVendor));
     given(ulidGeneratorPort.generate())
         .willReturn("project-id", "member-id");
@@ -96,13 +97,35 @@ class CreateProjectServiceTest {
             .isEqualTo(DbVendorFixture.DEFAULT_ID))
         .verifyComplete();
 
-    ArgumentCaptor<GetDbVendorQuery> queryCaptor = ArgumentCaptor.forClass(GetDbVendorQuery.class);
-    then(getDbVendorUseCase).should().getDbVendor(queryCaptor.capture());
-    assertThat(queryCaptor.getValue().id()).isEqualTo(REQUESTED_DB_VENDOR_ID);
+    then(getDbVendorByIdPort).should().findActiveById(REQUESTED_DB_VENDOR_ID);
 
     ArgumentCaptor<Project> projectCaptor = ArgumentCaptor.forClass(Project.class);
     then(projectPort).should().save(projectCaptor.capture());
     assertThat(projectCaptor.getValue().getDbVendorId()).isEqualTo(DbVendorFixture.DEFAULT_ID);
+  }
+
+  @Test
+  @DisplayName("활성 벤더가 없으면 프로젝트를 저장하지 않는다")
+  void rejectsMissingActiveDbVendor() {
+    var command = new CreateProjectCommand(
+        WORKSPACE_ID,
+        REQUESTED_DB_VENDOR_ID,
+        "Project",
+        "Description",
+        REQUESTER_ID);
+
+    given(getDbVendorByIdPort.findActiveById(REQUESTED_DB_VENDOR_ID))
+        .willReturn(Mono.empty());
+    given(transactionalOperator.transactional(any(Mono.class)))
+        .willAnswer(invocation -> invocation.getArgument(0));
+
+    StepVerifier.create(sut.createProject(command))
+        .expectErrorMatches(DomainException.hasErrorCode(VendorErrorCode.NOT_FOUND))
+        .verify();
+
+    then(ulidGeneratorPort).shouldHaveNoInteractions();
+    then(projectPort).shouldHaveNoInteractions();
+    then(projectMemberPort).shouldHaveNoInteractions();
   }
 
 }

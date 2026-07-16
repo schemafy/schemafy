@@ -69,6 +69,31 @@ class ProjectPersistenceAdapterTest {
   }
 
   @Test
+  @DisplayName("findDbVendorIdByProjectId: 활성 프로젝트의 벤더 ID를 반환한다")
+  void findDbVendorId_returnsVendorIdForActiveProject() {
+    Workspace workspace = saveWorkspace("Vendor Workspace");
+    Project project = sut.save(Project.create(UlidGenerator.generate(), workspace.getId(),
+        DB_VENDOR_ID, "Project", "Description")).block();
+
+    StepVerifier.create(sut.findDbVendorIdByProjectId(project.getId()))
+        .expectNext(DB_VENDOR_ID)
+        .verifyComplete();
+  }
+
+  @Test
+  @DisplayName("findDbVendorIdByProjectId: 삭제된 프로젝트이면 empty를 반환한다")
+  void findDbVendorId_returnsEmptyForDeletedProject() {
+    Workspace workspace = saveWorkspace("Deleted Vendor Workspace");
+    Project project = sut.save(Project.create(UlidGenerator.generate(), workspace.getId(),
+        DB_VENDOR_ID, "Project", "Description")).block();
+    project.delete();
+    sut.save(project).block();
+
+    StepVerifier.create(sut.findDbVendorIdByProjectId(project.getId()))
+        .verifyComplete();
+  }
+
+  @Test
   @DisplayName("countByWorkspaceIdAndNotDeleted: 삭제되지 않은 프로젝트만 센다")
   void countByWorkspaceId_countsOnlyActiveProjects() {
     Workspace workspace = saveWorkspace("Count Workspace");
