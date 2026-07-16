@@ -1,12 +1,12 @@
 export type DbVendorSummaryResponse = {
-  id: string;
+  id: number;
   displayName: string;
   name: string;
   version: string;
 };
 
 export type DbVendorDetailResponse = {
-  id: string;
+  id: number;
   displayName: string;
   name: string;
   version: string;
