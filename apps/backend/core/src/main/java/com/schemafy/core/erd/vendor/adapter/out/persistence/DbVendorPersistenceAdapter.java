@@ -28,7 +28,7 @@ class DbVendorPersistenceAdapter implements
   }
 
   @Override
-  public Mono<DbVendor> findById(Long id) {
+  public Mono<DbVendor> findById(Integer id) {
     return dbVendorRepository.findActiveById(id)
         .map(dbVendorMapper::toDomain);
   }

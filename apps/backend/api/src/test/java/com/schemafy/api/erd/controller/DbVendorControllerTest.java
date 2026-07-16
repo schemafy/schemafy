@@ -41,7 +41,7 @@ import static org.springframework.restdocs.request.RequestDocumentation.pathPara
 @WithMockCustomUser(roles = "VIEWER")
 class DbVendorControllerTest {
 
-  private static final Long DB_VENDOR_ID = 1L;
+  private static final Integer DB_VENDOR_ID = 1;
   private static final String API_BASE_PATH = ApiPath.API
       .replace("{version}", "v1.0");
 

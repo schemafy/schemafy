@@ -12,7 +12,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 @DisplayName("DbVendorApiResponseMapper")
 class DbVendorApiResponseMapperTest {
 
-  private static final Long DB_VENDOR_ID = 1L;
+  private static final Integer DB_VENDOR_ID = 1;
 
   private final DbVendorApiResponseMapper sut = new DbVendorApiResponseMapper(
       new JsonCodec(new ObjectMapper().findAndRegisterModules()));

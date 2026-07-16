@@ -4,7 +4,7 @@ import com.schemafy.core.common.exception.DomainException;
 import com.schemafy.core.erd.vendor.domain.exception.VendorErrorCode;
 
 public record DbVendorSummary(
-    Long id,
+    Integer id,
     String displayName,
     String name,
     String version) {

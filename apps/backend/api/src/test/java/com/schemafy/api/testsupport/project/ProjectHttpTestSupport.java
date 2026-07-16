@@ -30,7 +30,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 public abstract class ProjectHttpTestSupport extends UserHttpTestSupport {
 
-  protected static final Long DB_VENDOR_ID = 1L;
+  protected static final Integer DB_VENDOR_ID = 1;
 
   @Autowired
   protected DatabaseClient databaseClient;

@@ -7,6 +7,6 @@ import jakarta.validation.constraints.Size;
 public record CreateProjectRequest(
     @Size(min = 1, max = 255, message = "Project name must be between 1 and 255 characters") String name,
     String description,
-    @NotNull(message = "DB Vendor ID is required") @Positive(message = "DB Vendor ID must be positive") Long dbVendorId) {
+    @NotNull(message = "DB Vendor ID is required") @Positive(message = "DB Vendor ID must be positive") Integer dbVendorId) {
 
 }

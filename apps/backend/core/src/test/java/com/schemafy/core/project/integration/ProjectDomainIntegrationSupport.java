@@ -43,7 +43,7 @@ import reactor.core.publisher.Mono;
 @ActiveProfiles("test")
 abstract class ProjectDomainIntegrationSupport {
 
-  protected static final Long DB_VENDOR_ID = 1L;
+  protected static final Integer DB_VENDOR_ID = 1;
 
   @Autowired
   protected DatabaseClient databaseClient;

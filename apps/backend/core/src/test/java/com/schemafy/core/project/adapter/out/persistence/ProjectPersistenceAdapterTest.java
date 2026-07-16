@@ -22,7 +22,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 @DisplayName("ProjectPersistenceAdapter")
 class ProjectPersistenceAdapterTest {
 
-  private static final Long DB_VENDOR_ID = 1L;
+  private static final Integer DB_VENDOR_ID = 1;
 
   @Autowired
   private ProjectPersistenceAdapter sut;

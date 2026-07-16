@@ -24,9 +24,9 @@ import static org.assertj.core.api.Assertions.assertThat;
 @DisplayName("DbVendorPersistenceAdapter")
 class DbVendorPersistenceAdapterTest {
 
-  private static final Long DB_VENDOR_ID = 1L;
-  private static final Long DB_VENDOR_84_ID = 2L;
-  private static final Long DELETED_DB_VENDOR_ID = 3L;
+  private static final Integer DB_VENDOR_ID = 1;
+  private static final Integer DB_VENDOR_84_ID = 2;
+  private static final Integer DELETED_DB_VENDOR_ID = 3;
 
   @Autowired
   DbVendorPersistenceAdapter sut;
@@ -108,7 +108,7 @@ class DbVendorPersistenceAdapterTest {
     @Test
     @DisplayName("존재하지 않으면 empty를 반환한다")
     void returnsEmptyWhenNotExists() {
-      StepVerifier.create(sut.findById(999L))
+      StepVerifier.create(sut.findById(999))
           .verifyComplete();
     }
 
@@ -194,7 +194,7 @@ class DbVendorPersistenceAdapterTest {
     @DisplayName("같은 name과 version 조합을 거부한다")
     void rejectsDuplicateNameAndVersion() {
       StepVerifier.create(insertVendor(
-          4L, "Another Label", "mysql", "8.0"))
+          4, "Another Label", "mysql", "8.0"))
           .expectError(DataIntegrityViolationException.class)
           .verify();
     }
@@ -234,7 +234,7 @@ class DbVendorPersistenceAdapterTest {
   }
 
   private Mono<Long> insertVendor(
-      Long id,
+      Integer id,
       String displayName,
       String name,
       String version) {
@@ -250,7 +250,7 @@ class DbVendorPersistenceAdapterTest {
         .rowsUpdated();
   }
 
-  private Mono<Long> insertVendorWithoutId(
+  private Mono<Integer> insertVendorWithoutId(
       String displayName,
       String name,
       String version) {
@@ -266,11 +266,11 @@ class DbVendorPersistenceAdapterTest {
         .then(databaseClient.sql("SELECT id FROM db_vendors WHERE name = :name AND version = :version")
             .bind("name", name)
             .bind("version", version)
-            .map((row, metadata) -> row.get("id", Long.class))
+            .map((row, metadata) -> row.get("id", Integer.class))
             .one());
   }
 
-  private Mono<Long> softDeleteVendor(Long id) {
+  private Mono<Long> softDeleteVendor(Integer id) {
     return databaseClient.sql("UPDATE db_vendors SET deleted_at = CURRENT_TIMESTAMP WHERE id = :id")
         .bind("id", id)
         .fetch()

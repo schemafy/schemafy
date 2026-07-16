@@ -38,7 +38,7 @@ class DbVendorSummaryTest {
     @Test
     @DisplayName("id가 양수가 아니면 예외를 발생시킨다")
     void throwsWhenIdIsNotPositive() {
-      assertThatThrownBy(() -> new DbVendorSummary(0L, "MySQL 8.0", "mysql", "8.0"))
+      assertThatThrownBy(() -> new DbVendorSummary(0, "MySQL 8.0", "mysql", "8.0"))
           .isInstanceOf(DomainException.class);
     }
 

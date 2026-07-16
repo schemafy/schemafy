@@ -135,7 +135,7 @@ class ProjectControllerTest extends ProjectHttpTestSupport {
   @Test
   @DisplayName("프로젝트 생성 시 DB 벤더 프로필 ID가 양수가 아니면 실패한다")
   void createProjectFailWithNonPositiveDbVendorId() {
-    CreateProjectRequest request = new CreateProjectRequest("Project", null, 0L);
+    CreateProjectRequest request = new CreateProjectRequest("Project", null, 0);
 
     webTestClient.post().uri(workspaceProjectBasePath)
         .header("Authorization", "Bearer " + accessToken)

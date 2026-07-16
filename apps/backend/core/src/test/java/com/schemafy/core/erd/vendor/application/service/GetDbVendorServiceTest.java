@@ -68,7 +68,7 @@ class GetDbVendorServiceTest {
       @Test
       @DisplayName("DbVendorNotExistException을 발생시킨다")
       void throwsDbVendorNotExistException() {
-        var query = new GetDbVendorQuery(999L);
+        var query = new GetDbVendorQuery(999);
 
         given(getDbVendorByIdPort.findById(any()))
             .willReturn(Mono.empty());

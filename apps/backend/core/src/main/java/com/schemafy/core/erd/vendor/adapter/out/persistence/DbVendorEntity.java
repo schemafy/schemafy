@@ -19,7 +19,7 @@ class DbVendorEntity {
 
   @Id
   @Column("id")
-  private Long id;
+  private Integer id;
 
   @Column("display_name")
   private String displayName;

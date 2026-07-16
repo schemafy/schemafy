@@ -25,7 +25,7 @@ CREATE INDEX IF NOT EXISTS idx_workspace_members_access ON workspace_members (wo
 CREATE TABLE IF NOT EXISTS projects (
     id           CHAR(26)     NOT NULL,
     workspace_id CHAR(26)     NOT NULL,
-    db_vendor_id BIGINT       NOT NULL,
+    db_vendor_id INTEGER      NOT NULL,
     name         VARCHAR(255) NOT NULL,
     description  TEXT         NULL,
     created_at   TIMESTAMP    NOT NULL DEFAULT CURRENT_TIMESTAMP,

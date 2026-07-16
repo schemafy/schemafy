@@ -6,7 +6,7 @@ import com.schemafy.core.erd.vendor.domain.DbVendorSummary;
 
 public class DbVendorFixture {
 
-  public static final Long DEFAULT_ID = 1L;
+  public static final Integer DEFAULT_ID = 1;
   public static final String DEFAULT_DISPLAY_NAME = "MySQL 8.0";
   public static final String DEFAULT_NAME = "mysql";
   public static final String DEFAULT_VERSION = "8.0";
@@ -32,7 +32,7 @@ public class DbVendorFixture {
 
   public static GetDbVendorQuery getQuery() { return new GetDbVendorQuery(DEFAULT_ID); }
 
-  public static GetDbVendorQuery getQuery(Long id) {
+  public static GetDbVendorQuery getQuery(Integer id) {
     return new GetDbVendorQuery(id);
   }
 

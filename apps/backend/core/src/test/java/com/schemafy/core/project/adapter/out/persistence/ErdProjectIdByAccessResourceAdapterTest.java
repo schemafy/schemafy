@@ -25,7 +25,7 @@ class ErdProjectIdByAccessResourceAdapterTest {
 
   private static final String WORKSPACE_ID = "01ARZ3NDEKTSV4RRFFQ69G5WSP";
   private static final String PROJECT_ID = "01ARZ3NDEKTSV4RRFFQ69G5PRJ";
-  private static final Long DB_VENDOR_ID = 1L;
+  private static final Integer DB_VENDOR_ID = 1;
   private static final String SCHEMA_ID = "01ARZ3NDEKTSV4RRFFQ69G5SCH";
   private static final String PK_TABLE_ID = "01ARZ3NDEKTSV4RRFFQ69G5TPK";
   private static final String FK_TABLE_ID = "01ARZ3NDEKTSV4RRFFQ69G5TFK";

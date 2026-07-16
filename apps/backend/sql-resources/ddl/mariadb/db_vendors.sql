@@ -1,5 +1,5 @@
 CREATE TABLE IF NOT EXISTS db_vendors (
-    id                BIGINT       NOT NULL AUTO_INCREMENT,
+    id                INT          NOT NULL AUTO_INCREMENT,
     display_name      VARCHAR(255) NOT NULL,
     name              VARCHAR(64)  NOT NULL,
     version           VARCHAR(64)  NOT NULL,
