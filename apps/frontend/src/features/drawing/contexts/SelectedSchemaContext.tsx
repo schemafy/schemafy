@@ -42,11 +42,13 @@ const SchemaError = ({ onRetry }: { onRetry: () => void }) => (
 interface SelectedSchemaProviderProps {
   children: ReactNode;
   projectId: string;
+  dbVendorId: string;
 }
 
 export const SelectedSchemaProvider = ({
   children,
   projectId,
+  dbVendorId,
 }: SelectedSchemaProviderProps) => {
   const storageKey = getStorageKey(projectId);
   const initializationAttempted = useRef(false);
@@ -96,10 +98,7 @@ export const SelectedSchemaProvider = ({
     createSchema(
       {
         projectId,
-        dbVendorName: 'mysql',
         name: 'schema1',
-        charset: 'utf8mb4',
-        collation: 'utf8mb4_general_ci',
       },
       {
         onSuccess: (response) => {
@@ -151,10 +150,11 @@ export const SelectedSchemaProvider = ({
   const contextValue = useMemo(
     () => ({
       projectId,
+      dbVendorId,
       selectedSchemaId: activeSchemaId as string,
       setSelectedSchemaId,
     }),
-    [projectId, activeSchemaId, setSelectedSchemaId],
+    [projectId, dbVendorId, activeSchemaId, setSelectedSchemaId],
   );
 
   if (!activeSchemaId && (isSchemasError || isCreateSchemaError)) {
