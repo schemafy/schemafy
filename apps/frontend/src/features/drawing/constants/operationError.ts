@@ -11,7 +11,9 @@ const KNOWN_UNDO_REDO_ERRORS = new Set([
 export const isKnownUndoRedoError = (error: unknown): boolean => {
   if (!isAxiosError(error)) return false;
 
-  const data = error.response?.data as Record<string, string | undefined> | undefined;
+  const data = error.response?.data as
+    | Record<string, string | undefined>
+    | undefined;
   if (!data) return false;
 
   const errorCode = data.code ?? data.reason;
