@@ -44,6 +44,8 @@ export class CollaborationStore {
   private ws: WebSocket | null = null;
   private reconnectTimeoutId: number | null = null;
   private reconnectAttempts = 0;
+  private pendingMessages: WebSocketMessage[] = [];
+  private _sessionReady = false;
   private chatMessageListeners: Set<(message: ChatMessage) => void> = new Set();
   private erdMutatedListeners: Set<
     (message: ReceiveErdMutated, syncStatus: RevisionSyncStatus) => void
@@ -142,6 +144,9 @@ export class CollaborationStore {
       this.ws = null;
     }
 
+    this._sessionReady = false;
+    this.pendingMessages = [];
+
     const wsUrl = `${WEBSOCKET_URL}?projectId=${projectId}`;
     this.ws = new WebSocket(wsUrl);
 
@@ -153,29 +158,30 @@ export class CollaborationStore {
       try {
         const payload: WebSocketMessage = JSON.parse(event.data);
 
+        if (!this._sessionReady) {
+          if (payload.type === 'JOIN' || payload.type === 'LEAVE') {
+            this.pendingMessages.push(payload);
+            return;
+          }
+        }
+
         if (payload.type === 'SESSION_READY') {
           runInAction(() => {
             this.sessionId = payload.sessionId;
-
-            const snapshotIds = new Set(
-              payload.participants.map((p) => p.sessionId),
-            );
-
-            const extras: Array<[string, Participant]> = [];
-            this.participants.forEach((p, sid) => {
-              if (!snapshotIds.has(sid)) extras.push([sid, p]);
-            });
-
             this.participants.clear();
             for (const p of payload.participants) {
               this.participants.set(p.sessionId, p);
             }
-
-            for (const [sid, p] of extras) {
-              this.participants.set(sid, p);
-            }
           });
           apiClient.defaults.headers.common['X-Session-Id'] = payload.sessionId;
+
+          const pending = this.pendingMessages;
+          this.pendingMessages = [];
+          for (const msg of pending) {
+            this.handleMessage(msg);
+          }
+
+          this._sessionReady = true;
           return;
         }
 
@@ -233,6 +239,8 @@ export class CollaborationStore {
     }
 
     this.reconnectAttempts = 0;
+    this._sessionReady = false;
+    this.pendingMessages = [];
     delete apiClient.defaults.headers.common['X-Session-Id'];
     previewStore.clearAll();
     runInAction(() => {
