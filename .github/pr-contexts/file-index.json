@@ -2607,10 +2607,12 @@
     452
   ],
   "apps/bff/src/common/constants/error-messages.ts": [
-    446
+    446,
+    452
   ],
   "apps/frontend/src/lib/api/error-messages.ts": [
-    446
+    446,
+    452
   ],
   "apps/backend/mcp/src/main/java/com/schemafy/mcp/common/McpResponseWriter.java": [
     455
