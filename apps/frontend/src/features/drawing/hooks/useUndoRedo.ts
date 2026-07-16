@@ -1,4 +1,5 @@
 import { useCallback } from 'react';
+import { toast } from 'sonner';
 import { useSelectedSchema } from '../contexts';
 import { useUndo, useRedo } from './useOperationMutations';
 import { useErdCache } from './useErdCache';
@@ -37,6 +38,7 @@ export const useUndoRedo = () => {
         }
       },
       onError: (error) => {
+        toast.error('Undo or redo failed. Please try again.');
         if (isKnownUndoRedoError(error)) {
           operationHistoryStore.clearSchemaHistory(selectedSchemaId);
         }
@@ -63,6 +65,7 @@ export const useUndoRedo = () => {
         }
       },
       onError: (error) => {
+        toast.error('Undo or redo failed. Please try again.');
         if (isKnownUndoRedoError(error)) {
           operationHistoryStore.clearSchemaHistory(selectedSchemaId);
         } else {

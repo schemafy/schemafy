@@ -209,6 +209,22 @@ const ErrorMessages: Record<string, ErrorInfo> = {
     category: ErrorCategory.USER_FEEDBACK,
   },
 
+  OPERATION_NOT_FOUND: {
+    category: ErrorCategory.SILENT,
+  },
+  OPERATION_SUPERSEDED: {
+    category: ErrorCategory.SILENT,
+  },
+  OPERATION_ALREADY_UNDONE: {
+    category: ErrorCategory.SILENT,
+  },
+  OPERATION_REDO_NOT_ELIGIBLE: {
+    category: ErrorCategory.SILENT,
+  },
+  OPERATION_UNSUPPORTED: {
+    category: ErrorCategory.SILENT,
+  },
+
   SHARE_LINK_NOT_FOUND: notFound(),
   SHARE_LINK_EXPIRED: {
     category: ErrorCategory.USER_FEEDBACK,
