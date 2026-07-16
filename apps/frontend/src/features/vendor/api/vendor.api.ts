@@ -1,0 +1,14 @@
+import { apiClient } from '@/lib/api';
+import type { DbVendorDetail, DbVendorSummary } from './types';
+
+export const listVendors = async (): Promise<DbVendorSummary[]> => {
+  const response = await apiClient.get<DbVendorSummary[]>('/vendors');
+  return response.data;
+};
+
+export const getVendor = async (id: string): Promise<DbVendorDetail> => {
+  const response = await apiClient.get<DbVendorDetail>(
+    `/vendors/${encodeURIComponent(id)}`,
+  );
+  return response.data;
+};
