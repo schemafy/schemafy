@@ -2,7 +2,6 @@ package com.schemafy.core.erd.operation.application.service;
 
 import java.util.HashSet;
 import java.util.List;
-import java.util.Map;
 import java.util.Set;
 
 import org.springframework.stereotype.Component;
@@ -11,7 +10,6 @@ import com.schemafy.core.common.MutationResult;
 import com.schemafy.core.common.exception.DomainException;
 import com.schemafy.core.common.json.JsonCodec;
 import com.schemafy.core.erd.operation.application.inverse.ChangeRelationshipColumnPositionInverse;
-import com.schemafy.core.erd.operation.application.inverse.ReorderPosition;
 import com.schemafy.core.erd.operation.application.inverse.ReorderPositions;
 import com.schemafy.core.erd.operation.domain.ErdOperationType;
 import com.schemafy.core.erd.relationship.application.port.out.ChangeRelationshipColumnPositionPort;
@@ -68,7 +66,12 @@ class ChangeRelationshipColumnPositionUndoRedoHandler
                     .defaultIfEmpty(List.of())
                     .flatMap(columns -> changeRelationshipColumnPositionPort
                         .changeRelationshipColumnPositions(
-                            relationship.id(), restorePositions(columns, inversePayload.positions()))
+                            relationship.id(),
+                            ReorderPositions.restore(
+                                columns,
+                                RelationshipColumn::id,
+                                inversePayload.positions(),
+                                ChangeRelationshipColumnPositionUndoRedoHandler::withSeqNo))
                         .thenReturn(MutationResult.<Void>of(null, affectedTableIds(relationship))
                             .withInverse(new ChangeRelationshipColumnPositionInverse(
                                 relationshipColumn.id(),
@@ -78,21 +81,15 @@ class ChangeRelationshipColumnPositionUndoRedoHandler
                                     RelationshipColumn::seqNo))))))));
   }
 
-  private static List<RelationshipColumn> restorePositions(
-      List<RelationshipColumn> columns,
-      List<ReorderPosition> positions) {
-    Map<String, Integer> positionsById = ReorderPositions.indexForRestore(
-        columns,
-        RelationshipColumn::id,
-        positions);
-    return columns.stream()
-        .map(column -> new RelationshipColumn(
-            column.id(),
-            column.relationshipId(),
-            column.pkColumnId(),
-            column.fkColumnId(),
-            positionsById.get(column.id())))
-        .toList();
+  private static RelationshipColumn withSeqNo(
+      RelationshipColumn column,
+      int seqNo) {
+    return new RelationshipColumn(
+        column.id(),
+        column.relationshipId(),
+        column.pkColumnId(),
+        column.fkColumnId(),
+        seqNo);
   }
 
   private static Set<String> affectedTableIds(Relationship relationship) {

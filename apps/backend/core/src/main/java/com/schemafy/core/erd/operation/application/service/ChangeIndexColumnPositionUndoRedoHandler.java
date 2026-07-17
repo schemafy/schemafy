@@ -1,7 +1,6 @@
 package com.schemafy.core.erd.operation.application.service;
 
 import java.util.List;
-import java.util.Map;
 
 import org.springframework.stereotype.Component;
 
@@ -15,7 +14,6 @@ import com.schemafy.core.erd.index.application.port.out.GetIndexColumnsByIndexId
 import com.schemafy.core.erd.index.domain.IndexColumn;
 import com.schemafy.core.erd.index.domain.exception.IndexErrorCode;
 import com.schemafy.core.erd.operation.application.inverse.ChangeIndexColumnPositionInverse;
-import com.schemafy.core.erd.operation.application.inverse.ReorderPosition;
 import com.schemafy.core.erd.operation.application.inverse.ReorderPositions;
 import com.schemafy.core.erd.operation.domain.ErdOperationType;
 
@@ -61,7 +59,13 @@ class ChangeIndexColumnPositionUndoRedoHandler
                 .flatMap(index -> getIndexColumnsByIndexIdPort.findIndexColumnsByIndexId(index.id())
                     .defaultIfEmpty(List.of())
                     .flatMap(columns -> changeIndexColumnPositionPort
-                        .changeIndexColumnPositions(index.id(), restorePositions(columns, inversePayload.positions()))
+                        .changeIndexColumnPositions(
+                            index.id(),
+                            ReorderPositions.restore(
+                                columns,
+                                IndexColumn::id,
+                                inversePayload.positions(),
+                                ChangeIndexColumnPositionUndoRedoHandler::withSeqNo))
                         .thenReturn(MutationResult.<Void>of(null, index.tableId())
                             .withInverse(new ChangeIndexColumnPositionInverse(
                                 indexColumn.id(),
@@ -71,21 +75,13 @@ class ChangeIndexColumnPositionUndoRedoHandler
                                     IndexColumn::seqNo))))))));
   }
 
-  private static List<IndexColumn> restorePositions(
-      List<IndexColumn> columns,
-      List<ReorderPosition> positions) {
-    Map<String, Integer> positionsById = ReorderPositions.indexForRestore(
-        columns,
-        IndexColumn::id,
-        positions);
-    return columns.stream()
-        .map(column -> new IndexColumn(
-            column.id(),
-            column.indexId(),
-            column.columnId(),
-            positionsById.get(column.id()),
-            column.sortDirection()))
-        .toList();
+  private static IndexColumn withSeqNo(IndexColumn column, int seqNo) {
+    return new IndexColumn(
+        column.id(),
+        column.indexId(),
+        column.columnId(),
+        seqNo,
+        column.sortDirection());
   }
 
 }

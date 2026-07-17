@@ -3,6 +3,7 @@ package com.schemafy.core.erd.operation.application.inverse;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.function.BiFunction;
 import java.util.function.Function;
 import java.util.function.ToIntFunction;
 
@@ -21,7 +22,23 @@ public final class ReorderPositions {
         .toList();
   }
 
-  public static <T> Map<String, Integer> indexForRestore(
+  public static <T> List<T> restore(
+      List<T> currentEntities,
+      Function<T, String> idExtractor,
+      List<ReorderPosition> snapshot,
+      BiFunction<T, Integer, T> withSeqNo) {
+    Map<String, Integer> positionsById = indexForRestore(
+        currentEntities,
+        idExtractor,
+        snapshot);
+    return currentEntities.stream()
+        .map(entity -> withSeqNo.apply(
+            entity,
+            positionsById.get(idExtractor.apply(entity))))
+        .toList();
+  }
+
+  private static <T> Map<String, Integer> indexForRestore(
       List<T> currentEntities,
       Function<T, String> idExtractor,
       List<ReorderPosition> snapshot) {

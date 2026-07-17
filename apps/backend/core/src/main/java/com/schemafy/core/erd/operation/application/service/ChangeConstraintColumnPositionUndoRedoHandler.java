@@ -1,7 +1,6 @@
 package com.schemafy.core.erd.operation.application.service;
 
 import java.util.List;
-import java.util.Map;
 
 import org.springframework.stereotype.Component;
 
@@ -15,7 +14,6 @@ import com.schemafy.core.erd.constraint.application.port.out.GetConstraintColumn
 import com.schemafy.core.erd.constraint.domain.ConstraintColumn;
 import com.schemafy.core.erd.constraint.domain.exception.ConstraintErrorCode;
 import com.schemafy.core.erd.operation.application.inverse.ChangeConstraintColumnPositionInverse;
-import com.schemafy.core.erd.operation.application.inverse.ReorderPosition;
 import com.schemafy.core.erd.operation.application.inverse.ReorderPositions;
 import com.schemafy.core.erd.operation.domain.ErdOperationType;
 
@@ -65,7 +63,12 @@ class ChangeConstraintColumnPositionUndoRedoHandler
                     .defaultIfEmpty(List.of())
                     .flatMap(columns -> changeConstraintColumnPositionPort
                         .changeConstraintColumnPositions(
-                            constraint.id(), restorePositions(columns, inversePayload.positions()))
+                            constraint.id(),
+                            ReorderPositions.restore(
+                                columns,
+                                ConstraintColumn::id,
+                                inversePayload.positions(),
+                                ChangeConstraintColumnPositionUndoRedoHandler::withSeqNo))
                         .thenReturn(MutationResult.<Void>of(null, constraint.tableId())
                             .withInverse(new ChangeConstraintColumnPositionInverse(
                                 constraintColumn.id(),
@@ -75,20 +78,14 @@ class ChangeConstraintColumnPositionUndoRedoHandler
                                     ConstraintColumn::seqNo))))))));
   }
 
-  private static List<ConstraintColumn> restorePositions(
-      List<ConstraintColumn> columns,
-      List<ReorderPosition> positions) {
-    Map<String, Integer> positionsById = ReorderPositions.indexForRestore(
-        columns,
-        ConstraintColumn::id,
-        positions);
-    return columns.stream()
-        .map(column -> new ConstraintColumn(
-            column.id(),
-            column.constraintId(),
-            column.columnId(),
-            positionsById.get(column.id())))
-        .toList();
+  private static ConstraintColumn withSeqNo(
+      ConstraintColumn column,
+      int seqNo) {
+    return new ConstraintColumn(
+        column.id(),
+        column.constraintId(),
+        column.columnId(),
+        seqNo);
   }
 
 }

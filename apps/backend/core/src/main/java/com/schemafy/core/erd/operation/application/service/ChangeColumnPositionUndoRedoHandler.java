@@ -1,7 +1,6 @@
 package com.schemafy.core.erd.operation.application.service;
 
 import java.util.List;
-import java.util.Map;
 
 import org.springframework.stereotype.Component;
 
@@ -14,7 +13,6 @@ import com.schemafy.core.erd.column.application.port.out.GetColumnsByTableIdPort
 import com.schemafy.core.erd.column.domain.Column;
 import com.schemafy.core.erd.column.domain.exception.ColumnErrorCode;
 import com.schemafy.core.erd.operation.application.inverse.ChangeColumnPositionInverse;
-import com.schemafy.core.erd.operation.application.inverse.ReorderPosition;
 import com.schemafy.core.erd.operation.application.inverse.ReorderPositions;
 import com.schemafy.core.erd.operation.domain.ErdOperationType;
 
@@ -53,7 +51,13 @@ class ChangeColumnPositionUndoRedoHandler
             .flatMap(column -> getColumnsByTableIdPort.findColumnsByTableId(column.tableId())
                 .defaultIfEmpty(List.of())
                 .flatMap(columns -> changeColumnPositionPort
-                    .changeColumnPositions(column.tableId(), restorePositions(columns, inversePayload.positions()))
+                    .changeColumnPositions(
+                        column.tableId(),
+                        ReorderPositions.restore(
+                            columns,
+                            Column::id,
+                            inversePayload.positions(),
+                            ChangeColumnPositionUndoRedoHandler::withSeqNo))
                     .thenReturn(MutationResult.<Void>of(null, column.tableId())
                         .withInverse(new ChangeColumnPositionInverse(
                             column.id(),
@@ -63,26 +67,18 @@ class ChangeColumnPositionUndoRedoHandler
                                 Column::seqNo)))))));
   }
 
-  private static List<Column> restorePositions(
-      List<Column> columns,
-      List<ReorderPosition> positions) {
-    Map<String, Integer> positionsById = ReorderPositions.indexForRestore(
-        columns,
-        Column::id,
-        positions);
-    return columns.stream()
-        .map(column -> new Column(
-            column.id(),
-            column.tableId(),
-            column.name(),
-            column.dataType(),
-            column.typeArguments(),
-            positionsById.get(column.id()),
-            column.autoIncrement(),
-            column.charset(),
-            column.collation(),
-            column.comment()))
-        .toList();
+  private static Column withSeqNo(Column column, int seqNo) {
+    return new Column(
+        column.id(),
+        column.tableId(),
+        column.name(),
+        column.dataType(),
+        column.typeArguments(),
+        seqNo,
+        column.autoIncrement(),
+        column.charset(),
+        column.collation(),
+        column.comment());
   }
 
 }

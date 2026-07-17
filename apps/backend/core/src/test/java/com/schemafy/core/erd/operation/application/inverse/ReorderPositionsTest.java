@@ -15,8 +15,8 @@ class ReorderPositionsTest {
   @DisplayName("현재 entity 순서를 position snapshot으로 캡처한다")
   void capture_mapsEntityIdsAndPositions() {
     List<PositionedEntity> entities = List.of(
-        new PositionedEntity("entity-1", 0),
-        new PositionedEntity("entity-2", 1));
+        new PositionedEntity("entity-1", 0, "first"),
+        new PositionedEntity("entity-2", 1, "second"));
 
     List<ReorderPosition> positions = ReorderPositions.capture(
         entities,
@@ -29,56 +29,66 @@ class ReorderPositionsTest {
   }
 
   @Test
-  @DisplayName("현재 entity와 일치하는 snapshot을 id별 position으로 변환한다")
-  void indexForRestore_returnsPositionsById() {
+  @DisplayName("현재 entity의 다른 값은 보존하고 snapshot position을 복원한다")
+  void restore_appliesSnapshotPositions() {
     List<PositionedEntity> currentEntities = List.of(
-        new PositionedEntity("entity-2", 0),
-        new PositionedEntity("entity-1", 1));
+        new PositionedEntity("entity-2", 0, "second"),
+        new PositionedEntity("entity-1", 1, "first"));
     List<ReorderPosition> snapshot = List.of(
         new ReorderPosition("entity-1", 0),
         new ReorderPosition("entity-2", 1));
 
-    var positionsById = ReorderPositions.indexForRestore(
+    List<PositionedEntity> restored = ReorderPositions.restore(
         currentEntities,
         PositionedEntity::id,
-        snapshot);
+        snapshot,
+        ReorderPositionsTest::withSeqNo);
 
-    assertThat(positionsById)
-        .containsEntry("entity-1", 0)
-        .containsEntry("entity-2", 1);
+    assertThat(restored).containsExactly(
+        new PositionedEntity("entity-2", 1, "second"),
+        new PositionedEntity("entity-1", 0, "first"));
   }
 
   @Test
   @DisplayName("snapshot 크기, 중복 id, 현재 entity id가 일치하지 않으면 거부한다")
-  void indexForRestore_rejectsSnapshotMismatch() {
+  void restore_rejectsSnapshotMismatch() {
     List<PositionedEntity> currentEntities = List.of(
-        new PositionedEntity("entity-1", 0),
-        new PositionedEntity("entity-2", 1));
+        new PositionedEntity("entity-1", 0, "first"),
+        new PositionedEntity("entity-2", 1, "second"));
 
-    assertThatThrownBy(() -> ReorderPositions.indexForRestore(
+    assertThatThrownBy(() -> ReorderPositions.restore(
         currentEntities,
         PositionedEntity::id,
-        List.of(new ReorderPosition("entity-1", 0))))
+        List.of(new ReorderPosition("entity-1", 0)),
+        ReorderPositionsTest::withSeqNo))
         .isInstanceOf(IllegalStateException.class);
 
-    assertThatThrownBy(() -> ReorderPositions.indexForRestore(
+    assertThatThrownBy(() -> ReorderPositions.restore(
         currentEntities,
         PositionedEntity::id,
         List.of(
             new ReorderPosition("entity-1", 0),
-            new ReorderPosition("entity-1", 1))))
+            new ReorderPosition("entity-1", 1)),
+        ReorderPositionsTest::withSeqNo))
         .isInstanceOf(IllegalStateException.class);
 
-    assertThatThrownBy(() -> ReorderPositions.indexForRestore(
+    assertThatThrownBy(() -> ReorderPositions.restore(
         currentEntities,
         PositionedEntity::id,
         List.of(
             new ReorderPosition("entity-1", 0),
-            new ReorderPosition("entity-3", 1))))
+            new ReorderPosition("entity-3", 1)),
+        ReorderPositionsTest::withSeqNo))
         .isInstanceOf(IllegalStateException.class);
   }
 
-  private record PositionedEntity(String id, int seqNo) {
+  private static PositionedEntity withSeqNo(
+      PositionedEntity entity,
+      int seqNo) {
+    return new PositionedEntity(entity.id(), seqNo, entity.label());
+  }
+
+  private record PositionedEntity(String id, int seqNo, String label) {
   }
 
 }
