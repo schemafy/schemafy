@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import { observer } from 'mobx-react-lite';
 import {
   CURSOR_TRANSITION_MS,
-  getCursorColor,
+  getRandomColor,
 } from '@/features/collaboration/utils';
 import { collaborationStore } from '@/store/collaboration.store';
 import { useInactivityTimer } from '@/features/collaboration/hooks/useInactivityTimer';
@@ -76,7 +76,7 @@ export const ChatInput = observer(
     const sessionId = collaborationStore.sessionId ?? '';
     const activeMessages =
       collaborationStore.activeChatMessages.get(sessionId) ?? [];
-    const color = getCursorColor(sessionId);
+    const color = getRandomColor(collaborationStore.currentUser?.id ?? '');
 
     const resetInactivityTimer = useInactivityTimer(
       onCancel,
