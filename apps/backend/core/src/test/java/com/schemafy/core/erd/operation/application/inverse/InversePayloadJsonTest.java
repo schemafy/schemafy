@@ -8,6 +8,7 @@ import org.junit.jupiter.api.Test;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.schemafy.core.common.json.JsonCodec;
 import com.schemafy.core.erd.column.domain.ColumnTypeArguments;
+import com.schemafy.core.erd.index.domain.type.SortDirection;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -15,6 +16,37 @@ import static org.assertj.core.api.Assertions.assertThat;
 class InversePayloadJsonTest {
 
   private final JsonCodec jsonCodec = new JsonCodec(new ObjectMapper().findAndRegisterModules());
+
+  @Test
+  @DisplayName("meta/extra 상세 속성 inverse subtype을 손실 없이 복원한다")
+  void serializeMetaExtraInversePayloads() {
+    List<InversePayload> payloads = List.of(
+        new ChangeTableMetaInverse("table-1", "", null),
+        new ChangeTableExtraInverse("table-1", "{\"position\":{\"x\":10,\"y\":20}}"),
+        new ChangeColumnMetaInverse(
+            "column-1",
+            false,
+            "utf8mb4",
+            null,
+            "",
+            List.of(new ChangeColumnMetaInverse.FkColumnMetaRevert(
+                "fk-column-1",
+                "utf8mb4",
+                null))),
+        new ChangeRelationshipExtraInverse(
+            "relationship-1",
+            "{\"controlPoint1\":{\"x\":10,\"y\":20}}"),
+        new ChangeConstraintCheckExprInverse("constraint-1", null),
+        new ChangeConstraintDefaultExprInverse("constraint-2", "0"),
+        new ChangeIndexColumnSortDirectionInverse("index-column-1", SortDirection.ASC));
+
+    for (InversePayload payload : payloads) {
+      String json = jsonCodec.toJson(payload);
+      InversePayload parsed = jsonCodec.fromJson(json, InversePayload.class);
+
+      assertThat(parsed).isEqualTo(payload);
+    }
+  }
 
   @Test
   @DisplayName("column type arguments의 파생 empty 프로퍼티를 직렬화하지 않는다")
