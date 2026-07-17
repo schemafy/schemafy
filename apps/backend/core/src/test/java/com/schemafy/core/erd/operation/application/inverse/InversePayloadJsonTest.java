@@ -17,6 +17,33 @@ class InversePayloadJsonTest {
   private final JsonCodec jsonCodec = new JsonCodec(new ObjectMapper().findAndRegisterModules());
 
   @Test
+  @DisplayName("reorder inverse는 전체 position과 연산 kind를 복원한다")
+  void serializeReorderInverses_restoresPositionsAndKinds() {
+    List<ReorderPosition> positions = List.of(
+        new ReorderPosition("item-1", 0),
+        new ReorderPosition("item-2", 1));
+    List<InversePayload> payloads = List.of(
+        new ChangeColumnPositionInverse("item-1", positions),
+        new ChangeConstraintColumnPositionInverse("item-1", positions),
+        new ChangeIndexColumnPositionInverse("item-1", positions),
+        new ChangeRelationshipColumnPositionInverse("item-1", positions));
+    List<String> kinds = List.of(
+        "CHANGE_COLUMN_POSITION",
+        "CHANGE_CONSTRAINT_COLUMN_POSITION",
+        "CHANGE_INDEX_COLUMN_POSITION",
+        "CHANGE_RELATIONSHIP_COLUMN_POSITION");
+
+    for (int index = 0; index < payloads.size(); index++) {
+      InversePayload payload = payloads.get(index);
+      String json = jsonCodec.toJson(payload);
+      InversePayload parsed = jsonCodec.fromJson(json, InversePayload.class);
+
+      assertThat(json).contains("\"kind\":\"" + kinds.get(index) + "\"");
+      assertThat(parsed).isEqualTo(payload);
+    }
+  }
+
+  @Test
   @DisplayName("column type arguments의 파생 empty 프로퍼티를 직렬화하지 않는다")
   void serializeChangeColumnTypeInverse_excludesDerivedEmptyProperty() {
     ChangeColumnTypeInverse payload = new ChangeColumnTypeInverse(

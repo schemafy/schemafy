@@ -17,6 +17,8 @@ import com.schemafy.core.erd.index.application.port.out.GetIndexColumnByIdPort;
 import com.schemafy.core.erd.index.application.port.out.GetIndexColumnsByIndexIdPort;
 import com.schemafy.core.erd.index.domain.IndexColumn;
 import com.schemafy.core.erd.index.domain.exception.IndexErrorCode;
+import com.schemafy.core.erd.operation.application.inverse.ChangeIndexColumnPositionInverse;
+import com.schemafy.core.erd.operation.application.inverse.ReorderPosition;
 import com.schemafy.core.erd.operation.application.service.ErdMutationCoordinator;
 import com.schemafy.core.erd.operation.domain.ErdOperationType;
 import com.schemafy.core.project.application.access.AccessTarget;
@@ -79,7 +81,10 @@ public class ChangeIndexColumnPositionService implements ChangeIndexColumnPositi
                                 lockedNormalizedPosition);
                             return changeIndexColumnPositionPort
                                 .changeIndexColumnPositions(indexColumn.indexId(), reordered)
-                                .thenReturn(MutationResult.<Void>of(null, index.tableId()));
+                                .thenReturn(MutationResult.<Void>of(null, index.tableId())
+                                    .withInverse(new ChangeIndexColumnPositionInverse(
+                                        indexColumn.id(),
+                                        toPositions(lockedColumns))));
                           }));
                 })))
         .as(transactionalOperator::transactional);
@@ -127,6 +132,12 @@ public class ChangeIndexColumnPositionService implements ChangeIndexColumnPositi
       }
     }
     return -1;
+  }
+
+  private static List<ReorderPosition> toPositions(List<IndexColumn> columns) {
+    return columns.stream()
+        .map(column -> new ReorderPosition(column.id(), column.seqNo()))
+        .toList();
   }
 
   private static boolean equalsIgnoreCase(String left, String right) {
