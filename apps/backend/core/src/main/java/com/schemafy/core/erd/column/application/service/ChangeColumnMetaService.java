@@ -1,5 +1,6 @@
 package com.schemafy.core.erd.column.application.service;
 
+import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Objects;
@@ -23,6 +24,8 @@ import com.schemafy.core.erd.column.domain.validator.ColumnValidator;
 import com.schemafy.core.erd.constraint.application.port.out.GetConstraintByIdPort;
 import com.schemafy.core.erd.constraint.application.port.out.GetConstraintColumnsByColumnIdPort;
 import com.schemafy.core.erd.constraint.domain.type.ConstraintKind;
+import com.schemafy.core.erd.operation.application.inverse.ChangeColumnMetaInverse;
+import com.schemafy.core.erd.operation.application.inverse.ChangeColumnMetaInverse.FkColumnMetaRevert;
 import com.schemafy.core.erd.operation.application.service.ErdMutationCoordinator;
 import com.schemafy.core.erd.operation.domain.ErdOperationType;
 import com.schemafy.core.erd.relationship.application.port.out.GetRelationshipColumnsByColumnIdPort;
@@ -62,6 +65,8 @@ public class ChangeColumnMetaService implements ChangeColumnMetaUseCase {
   @Override
   public Mono<MutationResult<Void>> changeColumnMeta(ChangeColumnMetaCommand command) {
     Set<String> affectedTableIds = ConcurrentHashMap.newKeySet();
+    Set<String> capturedFkColumnIds = ConcurrentHashMap.newKeySet();
+    List<FkColumnMetaRevert> fkRevertList = new ArrayList<>();
     return getColumnByIdPort.findColumnById(command.columnId())
         .switchIfEmpty(Mono.error(new DomainException(ColumnErrorCode.NOT_FOUND, "Column not found")))
         .flatMap(column -> {
@@ -88,8 +93,25 @@ public class ChangeColumnMetaService implements ChangeColumnMetaUseCase {
                                     .then(Mono.defer(() -> applyChange(
                                         lockedColumn,
                                         lockedChange,
-                                        affectedTableIds)))
-                                    .then(Mono.fromCallable(() -> MutationResult.<Void>of(null, affectedTableIds)));
+                                        affectedTableIds,
+                                        fkRevertList,
+                                        capturedFkColumnIds)))
+                                    .then(Mono.fromCallable(() -> MutationResult.<Void>of(null, affectedTableIds)
+                                        .withInverse(new ChangeColumnMetaInverse(
+                                            lockedColumn.id(),
+                                            command.autoIncrement().isPresent()
+                                                ? lockedColumn.autoIncrement()
+                                                : null,
+                                            command.charset().isPresent()
+                                                ? Objects.toString(lockedColumn.charset(), "")
+                                                : null,
+                                            command.collation().isPresent()
+                                                ? Objects.toString(lockedColumn.collation(), "")
+                                                : null,
+                                            command.comment().isPresent()
+                                                ? Objects.toString(lockedColumn.comment(), "")
+                                                : null,
+                                            fkRevertList))));
                               });
                         }));
               });
@@ -168,7 +190,9 @@ public class ChangeColumnMetaService implements ChangeColumnMetaUseCase {
   private Mono<Void> applyChange(
       Column column,
       DirectColumnMetaChange change,
-      Set<String> affectedTableIds) {
+      Set<String> affectedTableIds,
+      List<FkColumnMetaRevert> fkRevertList,
+      Set<String> capturedFkColumnIds) {
     return changeColumnMetaPort.changeColumnMeta(
         column.id(),
         change.portAutoIncrement(),
@@ -180,7 +204,9 @@ public class ChangeColumnMetaService implements ChangeColumnMetaUseCase {
             change.portCharset(),
             change.portCollation(),
             new HashSet<>(),
-            affectedTableIds));
+            affectedTableIds,
+            fkRevertList,
+            capturedFkColumnIds));
   }
 
   private Mono<Void> cascadeCharsetCollationToFkColumns(
@@ -188,18 +214,26 @@ public class ChangeColumnMetaService implements ChangeColumnMetaUseCase {
       String charset,
       String collation,
       Set<String> visited,
-      Set<String> affectedTableIds) {
+      Set<String> affectedTableIds,
+      List<FkColumnMetaRevert> fkRevertList,
+      Set<String> capturedFkColumnIds) {
     if (!visited.add(column.id())) {
       return Mono.empty();
     }
     return getConstraintColumnsByColumnIdPort.findConstraintColumnsByColumnId(column.id())
         .defaultIfEmpty(List.of())
         .flatMap(constraintColumns -> Flux.fromIterable(constraintColumns)
-            .flatMap(cc -> getConstraintByIdPort.findConstraintById(cc.constraintId()))
+            .concatMap(cc -> getConstraintByIdPort.findConstraintById(cc.constraintId()))
             .filter(constraint -> constraint.kind() == ConstraintKind.PRIMARY_KEY)
             .next()
             .flatMap(pk -> propagateCharsetCollationToFkColumns(
-                column, charset, collation, visited, affectedTableIds)));
+                column,
+                charset,
+                collation,
+                visited,
+                affectedTableIds,
+                fkRevertList,
+                capturedFkColumnIds)));
   }
 
   private Mono<Void> propagateCharsetCollationToFkColumns(
@@ -207,22 +241,41 @@ public class ChangeColumnMetaService implements ChangeColumnMetaUseCase {
       String charset,
       String collation,
       Set<String> visited,
-      Set<String> affectedTableIds) {
+      Set<String> affectedTableIds,
+      List<FkColumnMetaRevert> fkRevertList,
+      Set<String> capturedFkColumnIds) {
     return getRelationshipsByPkTableIdPort.findRelationshipsByPkTableId(pkColumn.tableId())
         .defaultIfEmpty(List.of())
         .flatMapMany(Flux::fromIterable)
-        .flatMap(relationship -> {
+        .concatMap(relationship -> {
           affectedTableIds.add(relationship.fkTableId());
           return getRelationshipColumnsByRelationshipIdPort
               .findRelationshipColumnsByRelationshipId(relationship.id())
               .defaultIfEmpty(List.of())
               .flatMapMany(Flux::fromIterable)
               .filter(rc -> rc.pkColumnId().equals(pkColumn.id()))
-              .flatMap(rc -> changeColumnMetaPort.changeColumnMeta(
-                  rc.fkColumnId(), null, charset, collation, null)
-                  .then(getColumnByIdPort.findColumnById(rc.fkColumnId())
-                      .flatMap(fkCol -> cascadeCharsetCollationToFkColumns(
-                          fkCol, charset, collation, visited, affectedTableIds))));
+              .concatMap(rc -> getColumnByIdPort.findColumnById(rc.fkColumnId())
+                  .switchIfEmpty(Mono.error(new DomainException(
+                      ColumnErrorCode.NOT_FOUND,
+                      "Column not found: " + rc.fkColumnId())))
+                  .flatMap(fkColumn -> {
+                    if (capturedFkColumnIds.add(fkColumn.id())) {
+                      fkRevertList.add(new FkColumnMetaRevert(
+                          fkColumn.id(),
+                          charset == null ? null : Objects.toString(fkColumn.charset(), ""),
+                          collation == null ? null : Objects.toString(fkColumn.collation(), "")));
+                    }
+                    return changeColumnMetaPort.changeColumnMeta(
+                        fkColumn.id(), null, charset, collation, null)
+                        .then(cascadeCharsetCollationToFkColumns(
+                            fkColumn,
+                            charset,
+                            collation,
+                            visited,
+                            affectedTableIds,
+                            fkRevertList,
+                            capturedFkColumnIds));
+                  }));
         })
         .then();
   }
