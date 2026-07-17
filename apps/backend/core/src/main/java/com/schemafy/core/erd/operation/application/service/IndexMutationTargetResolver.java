@@ -10,6 +10,7 @@ import com.schemafy.core.erd.index.application.port.in.ChangeIndexTypeCommand;
 import com.schemafy.core.erd.index.application.port.in.CreateIndexCommand;
 import com.schemafy.core.erd.index.application.port.in.DeleteIndexCommand;
 import com.schemafy.core.erd.index.application.port.in.RemoveIndexColumnCommand;
+import com.schemafy.core.erd.operation.application.inverse.ChangeIndexColumnSortDirectionInverse;
 import com.schemafy.core.erd.operation.application.inverse.ChangeIndexNameInverse;
 import com.schemafy.core.erd.operation.application.inverse.ChangeIndexTypeInverse;
 import com.schemafy.core.erd.operation.domain.ErdOperationType;
@@ -91,6 +92,9 @@ class IndexMutationTargetResolver {
   }
 
   private Mono<ResolvedErdMutationTarget> resolveChangeIndexColumnSortDirection(Object payload) {
+    if (payload instanceof ChangeIndexColumnSortDirectionInverse inverse) {
+      return targetLookup.resolveByIndexColumnId(inverse.indexColumnId(), inverse.indexColumnId());
+    }
     ChangeIndexColumnSortDirectionCommand command = requirePayload(
         payload, ChangeIndexColumnSortDirectionCommand.class);
     return targetLookup.resolveByIndexColumnId(command.indexColumnId(), command.indexColumnId());

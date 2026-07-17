@@ -10,6 +10,8 @@ import com.schemafy.core.erd.constraint.application.port.in.ChangeConstraintName
 import com.schemafy.core.erd.constraint.application.port.in.CreateConstraintCommand;
 import com.schemafy.core.erd.constraint.application.port.in.DeleteConstraintCommand;
 import com.schemafy.core.erd.constraint.application.port.in.RemoveConstraintColumnCommand;
+import com.schemafy.core.erd.operation.application.inverse.ChangeConstraintCheckExprInverse;
+import com.schemafy.core.erd.operation.application.inverse.ChangeConstraintDefaultExprInverse;
 import com.schemafy.core.erd.operation.application.inverse.ChangeConstraintNameInverse;
 import com.schemafy.core.erd.operation.domain.ErdOperationType;
 
@@ -56,11 +58,17 @@ class ConstraintMutationTargetResolver {
   }
 
   private Mono<ResolvedErdMutationTarget> resolveChangeConstraintCheckExpr(Object payload) {
+    if (payload instanceof ChangeConstraintCheckExprInverse inverse) {
+      return targetLookup.resolveByConstraintId(inverse.constraintId(), inverse.constraintId());
+    }
     ChangeConstraintCheckExprCommand command = requirePayload(payload, ChangeConstraintCheckExprCommand.class);
     return targetLookup.resolveByConstraintId(command.constraintId(), command.constraintId());
   }
 
   private Mono<ResolvedErdMutationTarget> resolveChangeConstraintDefaultExpr(Object payload) {
+    if (payload instanceof ChangeConstraintDefaultExprInverse inverse) {
+      return targetLookup.resolveByConstraintId(inverse.constraintId(), inverse.constraintId());
+    }
     ChangeConstraintDefaultExprCommand command = requirePayload(payload, ChangeConstraintDefaultExprCommand.class);
     return targetLookup.resolveByConstraintId(command.constraintId(), command.constraintId());
   }
