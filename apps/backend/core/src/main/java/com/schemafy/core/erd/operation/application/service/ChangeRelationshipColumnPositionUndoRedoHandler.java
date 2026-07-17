@@ -1,6 +1,5 @@
 package com.schemafy.core.erd.operation.application.service;
 
-import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -13,6 +12,7 @@ import com.schemafy.core.common.exception.DomainException;
 import com.schemafy.core.common.json.JsonCodec;
 import com.schemafy.core.erd.operation.application.inverse.ChangeRelationshipColumnPositionInverse;
 import com.schemafy.core.erd.operation.application.inverse.ReorderPosition;
+import com.schemafy.core.erd.operation.application.inverse.ReorderPositions;
 import com.schemafy.core.erd.operation.domain.ErdOperationType;
 import com.schemafy.core.erd.relationship.application.port.out.ChangeRelationshipColumnPositionPort;
 import com.schemafy.core.erd.relationship.application.port.out.GetRelationshipByIdPort;
@@ -72,26 +72,26 @@ class ChangeRelationshipColumnPositionUndoRedoHandler
                         .thenReturn(MutationResult.<Void>of(null, affectedTableIds(relationship))
                             .withInverse(new ChangeRelationshipColumnPositionInverse(
                                 relationshipColumn.id(),
-                                toPositions(columns))))))));
+                                ReorderPositions.capture(
+                                    columns,
+                                    RelationshipColumn::id,
+                                    RelationshipColumn::seqNo))))))));
   }
 
   private static List<RelationshipColumn> restorePositions(
       List<RelationshipColumn> columns,
       List<ReorderPosition> positions) {
-    Map<String, Integer> positionsById = positionsById(columns.size(), positions);
+    Map<String, Integer> positionsById = ReorderPositions.indexForRestore(
+        columns,
+        RelationshipColumn::id,
+        positions);
     return columns.stream()
         .map(column -> new RelationshipColumn(
             column.id(),
             column.relationshipId(),
             column.pkColumnId(),
             column.fkColumnId(),
-            requirePosition(positionsById, column.id())))
-        .toList();
-  }
-
-  private static List<ReorderPosition> toPositions(List<RelationshipColumn> columns) {
-    return columns.stream()
-        .map(column -> new ReorderPosition(column.id(), column.seqNo()))
+            positionsById.get(column.id())))
         .toList();
   }
 
@@ -100,34 +100,6 @@ class ChangeRelationshipColumnPositionUndoRedoHandler
     affectedTableIds.add(relationship.fkTableId());
     affectedTableIds.add(relationship.pkTableId());
     return affectedTableIds;
-  }
-
-  private static Map<String, Integer> positionsById(
-      int currentSize,
-      List<ReorderPosition> positions) {
-    if (positions.size() != currentSize) {
-      throw snapshotMismatch();
-    }
-    Map<String, Integer> positionsById = new HashMap<>(positions.size());
-    for (ReorderPosition position : positions) {
-      if (positionsById.put(position.entityId(), position.seqNo()) != null) {
-        throw snapshotMismatch();
-      }
-    }
-    return positionsById;
-  }
-
-  private static int requirePosition(Map<String, Integer> positionsById, String entityId) {
-    Integer position = positionsById.get(entityId);
-    if (position == null) {
-      throw snapshotMismatch();
-    }
-    return position;
-  }
-
-  private static IllegalStateException snapshotMismatch() {
-    return new IllegalStateException(
-        "Relationship column reorder snapshot does not match current columns");
   }
 
 }

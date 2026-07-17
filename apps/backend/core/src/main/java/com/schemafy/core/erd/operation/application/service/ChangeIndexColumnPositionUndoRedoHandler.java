@@ -1,6 +1,5 @@
 package com.schemafy.core.erd.operation.application.service;
 
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -17,6 +16,7 @@ import com.schemafy.core.erd.index.domain.IndexColumn;
 import com.schemafy.core.erd.index.domain.exception.IndexErrorCode;
 import com.schemafy.core.erd.operation.application.inverse.ChangeIndexColumnPositionInverse;
 import com.schemafy.core.erd.operation.application.inverse.ReorderPosition;
+import com.schemafy.core.erd.operation.application.inverse.ReorderPositions;
 import com.schemafy.core.erd.operation.domain.ErdOperationType;
 
 import reactor.core.publisher.Mono;
@@ -65,54 +65,27 @@ class ChangeIndexColumnPositionUndoRedoHandler
                         .thenReturn(MutationResult.<Void>of(null, index.tableId())
                             .withInverse(new ChangeIndexColumnPositionInverse(
                                 indexColumn.id(),
-                                toPositions(columns))))))));
+                                ReorderPositions.capture(
+                                    columns,
+                                    IndexColumn::id,
+                                    IndexColumn::seqNo))))))));
   }
 
   private static List<IndexColumn> restorePositions(
       List<IndexColumn> columns,
       List<ReorderPosition> positions) {
-    Map<String, Integer> positionsById = positionsById(columns.size(), positions);
+    Map<String, Integer> positionsById = ReorderPositions.indexForRestore(
+        columns,
+        IndexColumn::id,
+        positions);
     return columns.stream()
         .map(column -> new IndexColumn(
             column.id(),
             column.indexId(),
             column.columnId(),
-            requirePosition(positionsById, column.id()),
+            positionsById.get(column.id()),
             column.sortDirection()))
         .toList();
-  }
-
-  private static List<ReorderPosition> toPositions(List<IndexColumn> columns) {
-    return columns.stream()
-        .map(column -> new ReorderPosition(column.id(), column.seqNo()))
-        .toList();
-  }
-
-  private static Map<String, Integer> positionsById(
-      int currentSize,
-      List<ReorderPosition> positions) {
-    if (positions.size() != currentSize) {
-      throw snapshotMismatch();
-    }
-    Map<String, Integer> positionsById = new HashMap<>(positions.size());
-    for (ReorderPosition position : positions) {
-      if (positionsById.put(position.entityId(), position.seqNo()) != null) {
-        throw snapshotMismatch();
-      }
-    }
-    return positionsById;
-  }
-
-  private static int requirePosition(Map<String, Integer> positionsById, String entityId) {
-    Integer position = positionsById.get(entityId);
-    if (position == null) {
-      throw snapshotMismatch();
-    }
-    return position;
-  }
-
-  private static IllegalStateException snapshotMismatch() {
-    return new IllegalStateException("Index column reorder snapshot does not match current columns");
   }
 
 }

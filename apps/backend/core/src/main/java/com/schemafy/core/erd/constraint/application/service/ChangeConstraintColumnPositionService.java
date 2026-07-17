@@ -18,7 +18,7 @@ import com.schemafy.core.erd.constraint.application.port.out.GetConstraintColumn
 import com.schemafy.core.erd.constraint.domain.ConstraintColumn;
 import com.schemafy.core.erd.constraint.domain.exception.ConstraintErrorCode;
 import com.schemafy.core.erd.operation.application.inverse.ChangeConstraintColumnPositionInverse;
-import com.schemafy.core.erd.operation.application.inverse.ReorderPosition;
+import com.schemafy.core.erd.operation.application.inverse.ReorderPositions;
 import com.schemafy.core.erd.operation.application.service.ErdMutationCoordinator;
 import com.schemafy.core.erd.operation.domain.ErdOperationType;
 import com.schemafy.core.project.application.access.AccessTarget;
@@ -101,7 +101,10 @@ public class ChangeConstraintColumnPositionService implements ChangeConstraintCo
                                     constraint.tableId())
                                     .withInverse(new ChangeConstraintColumnPositionInverse(
                                         constraintColumn.id(),
-                                        toPositions(lockedColumns))));
+                                        ReorderPositions.capture(
+                                            lockedColumns,
+                                            ConstraintColumn::id,
+                                            ConstraintColumn::seqNo))));
                           }));
                 })))
         .as(transactionalOperator::transactional);
@@ -153,12 +156,6 @@ public class ChangeConstraintColumnPositionService implements ChangeConstraintCo
       }
     }
     return -1;
-  }
-
-  private static List<ReorderPosition> toPositions(List<ConstraintColumn> columns) {
-    return columns.stream()
-        .map(column -> new ReorderPosition(column.id(), column.seqNo()))
-        .toList();
   }
 
   private static boolean equalsIgnoreCase(String left, String right) {

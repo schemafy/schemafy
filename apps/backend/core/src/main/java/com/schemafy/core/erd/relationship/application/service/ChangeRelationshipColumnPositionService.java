@@ -12,7 +12,7 @@ import org.springframework.transaction.reactive.TransactionalOperator;
 import com.schemafy.core.common.MutationResult;
 import com.schemafy.core.common.exception.DomainException;
 import com.schemafy.core.erd.operation.application.inverse.ChangeRelationshipColumnPositionInverse;
-import com.schemafy.core.erd.operation.application.inverse.ReorderPosition;
+import com.schemafy.core.erd.operation.application.inverse.ReorderPositions;
 import com.schemafy.core.erd.operation.application.service.ErdMutationCoordinator;
 import com.schemafy.core.erd.operation.domain.ErdOperationType;
 import com.schemafy.core.erd.relationship.application.port.in.ChangeRelationshipColumnPositionCommand;
@@ -99,7 +99,10 @@ public class ChangeRelationshipColumnPositionService
                                 .thenReturn(MutationResult.<Void>of(null, affectedTableIds)
                                     .withInverse(new ChangeRelationshipColumnPositionInverse(
                                         relationshipColumn.id(),
-                                        toPositions(lockedColumns))));
+                                        ReorderPositions.capture(
+                                            lockedColumns,
+                                            RelationshipColumn::id,
+                                            RelationshipColumn::seqNo))));
                           }));
                 })))
         .as(transactionalOperator::transactional);
@@ -156,12 +159,6 @@ public class ChangeRelationshipColumnPositionService
       }
     }
     return -1;
-  }
-
-  private static List<ReorderPosition> toPositions(List<RelationshipColumn> columns) {
-    return columns.stream()
-        .map(column -> new ReorderPosition(column.id(), column.seqNo()))
-        .toList();
   }
 
   private static boolean equalsIgnoreCase(String left, String right) {

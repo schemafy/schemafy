@@ -17,7 +17,7 @@ import com.schemafy.core.erd.column.application.port.out.GetColumnsByTableIdPort
 import com.schemafy.core.erd.column.domain.Column;
 import com.schemafy.core.erd.column.domain.exception.ColumnErrorCode;
 import com.schemafy.core.erd.operation.application.inverse.ChangeColumnPositionInverse;
-import com.schemafy.core.erd.operation.application.inverse.ReorderPosition;
+import com.schemafy.core.erd.operation.application.inverse.ReorderPositions;
 import com.schemafy.core.erd.operation.application.service.ErdMutationCoordinator;
 import com.schemafy.core.erd.operation.domain.ErdOperationType;
 import com.schemafy.core.project.application.access.AccessTarget;
@@ -75,7 +75,10 @@ public class ChangeColumnPositionService implements ChangeColumnPositionUseCase 
                             .thenReturn(MutationResult.<Void>of(null, column.tableId())
                                 .withInverse(new ChangeColumnPositionInverse(
                                     column.id(),
-                                    toPositions(lockedColumns))));
+                                    ReorderPositions.capture(
+                                        lockedColumns,
+                                        Column::id,
+                                        Column::seqNo))));
                       }));
             }))
         .as(transactionalOperator::transactional);
@@ -123,12 +126,6 @@ public class ChangeColumnPositionService implements ChangeColumnPositionUseCase 
       }
     }
     return -1;
-  }
-
-  private static List<ReorderPosition> toPositions(List<Column> columns) {
-    return columns.stream()
-        .map(column -> new ReorderPosition(column.id(), column.seqNo()))
-        .toList();
   }
 
   private static boolean equalsIgnoreCase(String left, String right) {
