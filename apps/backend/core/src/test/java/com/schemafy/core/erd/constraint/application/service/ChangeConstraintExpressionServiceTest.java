@@ -18,10 +18,12 @@ import com.schemafy.core.erd.constraint.application.port.out.GetConstraintsByTab
 import com.schemafy.core.erd.constraint.domain.exception.ConstraintErrorCode;
 import com.schemafy.core.erd.constraint.domain.type.ConstraintKind;
 import com.schemafy.core.erd.constraint.fixture.ConstraintFixture;
+import com.schemafy.core.erd.operation.application.inverse.ChangeConstraintCheckExprInverse;
 
 import reactor.core.publisher.Mono;
 import reactor.test.StepVerifier;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.given;
@@ -68,7 +70,8 @@ class ChangeConstraintExpressionServiceTest {
           .willReturn(Mono.empty());
 
       StepVerifier.create(sut.changeConstraintCheckExpr(command))
-          .expectNextCount(1)
+          .assertNext(result -> assertThat(result.inversePayload()).isEqualTo(
+              new ChangeConstraintCheckExprInverse(constraint.id(), constraint.checkExpr())))
           .verifyComplete();
 
       then(changeConstraintExpressionPort).should()

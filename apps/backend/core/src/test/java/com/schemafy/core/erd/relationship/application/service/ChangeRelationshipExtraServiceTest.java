@@ -15,6 +15,7 @@ import com.fasterxml.jackson.databind.node.TextNode;
 import com.schemafy.core.common.exception.DomainException;
 import com.schemafy.core.common.json.JsonCodec;
 import com.schemafy.core.common.json.JsonObjectMetadataConverter;
+import com.schemafy.core.erd.operation.application.inverse.ChangeRelationshipExtraInverse;
 import com.schemafy.core.erd.relationship.application.port.out.ChangeRelationshipExtraPort;
 import com.schemafy.core.erd.relationship.application.port.out.GetRelationshipByIdPort;
 import com.schemafy.core.erd.relationship.domain.exception.RelationshipErrorCode;
@@ -23,6 +24,7 @@ import com.schemafy.core.erd.relationship.fixture.RelationshipFixture;
 import reactor.core.publisher.Mono;
 import reactor.test.StepVerifier;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.given;
@@ -62,7 +64,8 @@ class ChangeRelationshipExtraServiceTest {
           .willReturn(Mono.empty());
 
       StepVerifier.create(sut.changeRelationshipExtra(command))
-          .expectNextCount(1)
+          .assertNext(result -> assertThat(result.inversePayload()).isEqualTo(
+              new ChangeRelationshipExtraInverse(relationship.id(), relationship.extra())))
           .verifyComplete();
 
       then(changeRelationshipExtraPort).should()
