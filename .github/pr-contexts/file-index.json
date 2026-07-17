@@ -113,7 +113,8 @@
     398,
     423,
     435,
-    436
+    436,
+    459
   ],
   "apps/backend/api/src/main/java/com/schemafy/api/collaboration/dto/event/CollaborationOutboundFactory.java": [
     337,
@@ -155,7 +156,8 @@
     337,
     383,
     342,
-    436
+    436,
+    459
   ],
   "apps/backend/api/src/main/java/com/schemafy/api/erd/controller/TableController.java": [
     337,
@@ -164,10 +166,12 @@
     444
   ],
   "apps/backend/api/src/main/java/com/schemafy/api/erd/controller/dto/response/SchemaResponse.java": [
-    337
+    337,
+    459
   ],
   "apps/backend/api/src/main/java/com/schemafy/api/project/controller/ProjectController.java": [
-    354
+    354,
+    459
   ],
   "apps/backend/api/src/main/java/com/schemafy/api/project/controller/ProjectInvitationController.java": [
     354
@@ -195,7 +199,8 @@
   "apps/backend/api/src/test/java/com/schemafy/api/erd/broadcast/ErdMutationBroadcasterTest.java": [
     337,
     376,
-    419
+    419,
+    459
   ],
   "apps/backend/api/src/test/java/com/schemafy/api/erd/controller/ColumnControllerTest.java": [
     337,
@@ -221,7 +226,8 @@
     337,
     342,
     436,
-    441
+    441,
+    459
   ],
   "apps/backend/api/src/test/java/com/schemafy/api/erd/controller/TableControllerTest.java": [
     337,
@@ -230,7 +236,8 @@
   ],
   "apps/backend/api/src/test/java/com/schemafy/api/project/controller/ProjectControllerTest.java": [
     354,
-    441
+    441,
+    459
   ],
   "apps/backend/api/src/test/java/com/schemafy/api/project/controller/ProjectInvitationControllerTest.java": [
     354,
@@ -247,7 +254,8 @@
     441
   ],
   "apps/backend/api/src/test/java/com/schemafy/api/project/docs/ProjectApiSnippets.java": [
-    354
+    354,
+    459
   ],
   "apps/backend/api/src/test/java/com/schemafy/api/project/docs/ProjectInvitationApiSnippets.java": [
     354,
@@ -265,7 +273,8 @@
   ],
   "apps/backend/api/src/test/java/com/schemafy/api/testsupport/project/ProjectHttpTestSupport.java": [
     354,
-    358
+    358,
+    459
   ],
   "apps/backend/core/src/main/java/com/schemafy/core/common/MutationResult.java": [
     337,
@@ -608,7 +617,8 @@
   "apps/backend/core/src/main/java/com/schemafy/core/erd/column/application/service/ChangeColumnNameService.java": [
     372,
     383,
-    419
+    419,
+    459
   ],
   "apps/backend/core/src/main/java/com/schemafy/core/erd/column/application/service/ChangeColumnTypeService.java": [
     372,
@@ -1170,7 +1180,8 @@
     369
   ],
   "apps/backend/core/src/main/java/com/schemafy/core/project/application/service/CreateProjectService.java": [
-    369
+    369,
+    459
   ],
   "apps/backend/core/src/main/java/com/schemafy/core/project/application/service/CreateShareLinkService.java": [
     369
@@ -1306,7 +1317,8 @@
   ],
   "apps/backend/core/src/main/java/com/schemafy/core/erd/column/application/service/CreateColumnService.java": [
     376,
-    383
+    383,
+    459
   ],
   "apps/backend/core/src/main/java/com/schemafy/core/erd/column/application/service/DeleteColumnService.java": [
     376,
@@ -1391,7 +1403,8 @@
     441
   ],
   "apps/backend/api/src/main/java/com/schemafy/api/erd/controller/DbVendorController.java": [
-    383
+    383,
+    459
   ],
   "apps/backend/api/src/main/java/com/schemafy/api/erd/controller/MemoController.java": [
     383
@@ -1591,10 +1604,12 @@
     436
   ],
   "apps/backend/api/src/test/java/com/schemafy/api/erd/service/SchemaSnapshotOrchestratorIntegrationTest.java": [
-    342
+    342,
+    459
   ],
   "apps/backend/api/src/test/java/com/schemafy/api/erd/service/SchemaSnapshotOrchestratorTest.java": [
-    342
+    342,
+    459
   ],
   "apps/backend/api/src/test/java/com/schemafy/api/erd/service/TableSnapshotOrchestratorTest.java": [
     342,
@@ -1806,7 +1821,8 @@
     419
   ],
   "apps/backend/core/src/test/java/com/schemafy/core/erd/column/application/service/ChangeColumnNameServiceTest.java": [
-    419
+    419,
+    459
   ],
   "apps/backend/core/src/test/java/com/schemafy/core/erd/column/application/service/ChangeColumnPositionServiceTest.java": [
     419
@@ -1907,7 +1923,8 @@
     444
   ],
   "apps/backend/api/src/main/java/com/schemafy/api/erd/service/vendor/DbVendorApiResponseMapper.java": [
-    422
+    422,
+    459
   ],
   "apps/backend/api/src/test/java/com/schemafy/api/common/security/jwt/WebExchangeErrorWriterTest.java": [
     422
@@ -2215,10 +2232,12 @@
     436
   ],
   "apps/backend/api/src/main/java/com/schemafy/api/erd/service/SchemaDdlExportOrchestrator.java": [
-    436
+    436,
+    459
   ],
   "apps/backend/api/src/main/java/com/schemafy/api/erd/service/ddl/DdlExportSnapshotMapper.java": [
-    436
+    436,
+    459
   ],
   "apps/backend/api/src/main/java/com/schemafy/api/erd/service/util/DdlGenerator.java": [
     436
@@ -2236,7 +2255,8 @@
     436
   ],
   "apps/backend/api/src/test/java/com/schemafy/api/erd/service/SchemaDdlExportOrchestratorTest.java": [
-    436
+    436,
+    459
   ],
   "apps/backend/api/src/test/java/com/schemafy/api/erd/service/util/mysql/MySqlDdlUtilsTest.java": [
     436
@@ -2292,10 +2312,12 @@
     437
   ],
   "apps/backend/core/src/main/java/com/schemafy/core/erd/schema/adapter/out/persistence/SchemaEntity.java": [
-    437
+    437,
+    459
   ],
   "apps/backend/core/src/main/java/com/schemafy/core/erd/schema/adapter/out/persistence/SchemaMapper.java": [
-    437
+    437,
+    459
   ],
   "apps/backend/core/src/main/java/com/schemafy/core/erd/table/adapter/out/persistence/TableEntity.java": [
     437
@@ -2344,7 +2366,8 @@
     441
   ],
   "apps/backend/api/src/test/java/com/schemafy/api/erd/controller/DbVendorControllerTest.java": [
-    441
+    441,
+    459
   ],
   "apps/backend/api/src/test/java/com/schemafy/api/erd/controller/MemoControllerTest.java": [
     441
@@ -2634,5 +2657,86 @@
   ],
   "apps/backend/mcp/src/test/java/com/schemafy/mcp/resource/SchemafyResourceIntegrationTest.java": [
     455
+  ],
+  "apps/backend/api/src/main/java/com/schemafy/api/erd/controller/dto/request/CreateSchemaRequest.java": [
+    459
+  ],
+  "apps/backend/api/src/main/java/com/schemafy/api/erd/controller/dto/response/DbVendorDetailResponse.java": [
+    459
+  ],
+  "apps/backend/api/src/main/java/com/schemafy/api/erd/controller/dto/response/DbVendorSummaryResponse.java": [
+    459
+  ],
+  "apps/backend/api/src/main/java/com/schemafy/api/project/controller/dto/request/CreateProjectRequest.java": [
+    459
+  ],
+  "apps/backend/api/src/main/java/com/schemafy/api/project/controller/dto/response/ProjectResponse.java": [
+    459
+  ],
+  "apps/backend/api/src/main/java/com/schemafy/api/project/controller/dto/response/ProjectSummaryResponse.java": [
+    459
+  ],
+  "apps/backend/api/src/test/java/com/schemafy/api/erd/service/vendor/DbVendorApiResponseMapperTest.java": [
+    459
+  ],
+  "apps/backend/core/src/main/java/com/schemafy/core/erd/schema/application/port/in/CreateSchemaCommand.java": [
+    459
+  ],
+  "apps/backend/core/src/main/java/com/schemafy/core/erd/schema/application/port/in/CreateSchemaResult.java": [
+    459
+  ],
+  "apps/backend/core/src/main/java/com/schemafy/core/erd/schema/application/service/CreateSchemaService.java": [
+    459
+  ],
+  "apps/backend/core/src/main/java/com/schemafy/core/erd/schema/domain/Schema.java": [
+    459
+  ],
+  "apps/backend/core/src/main/java/com/schemafy/core/erd/vendor/adapter/out/persistence/DbVendorEntity.java": [
+    459
+  ],
+  "apps/backend/core/src/main/java/com/schemafy/core/erd/vendor/adapter/out/persistence/DbVendorMapper.java": [
+    459
+  ],
+  "apps/backend/core/src/main/java/com/schemafy/core/erd/vendor/adapter/out/persistence/DbVendorPersistenceAdapter.java": [
+    459
+  ],
+  "apps/backend/core/src/main/java/com/schemafy/core/erd/vendor/adapter/out/persistence/DbVendorRepository.java": [
+    459
+  ],
+  "apps/backend/core/src/main/java/com/schemafy/core/erd/vendor/application/port/in/GetDbVendorQuery.java": [
+    459
+  ],
+  "apps/backend/core/src/main/java/com/schemafy/core/erd/vendor/application/port/in/GetProjectDbVendorQuery.java": [
+    459
+  ],
+  "apps/backend/core/src/main/java/com/schemafy/core/erd/vendor/application/port/in/GetProjectDbVendorUseCase.java": [
+    459
+  ],
+  "apps/backend/core/src/main/java/com/schemafy/core/erd/vendor/application/port/out/GetActiveProjectDbVendorIdPort.java": [
+    459
+  ],
+  "apps/backend/core/src/main/java/com/schemafy/core/erd/vendor/application/port/out/GetDbVendorByIdPort.java": [
+    459
+  ],
+  "apps/backend/core/src/main/java/com/schemafy/core/erd/vendor/application/service/GetDbVendorService.java": [
+    459
+  ],
+  "apps/backend/core/src/main/java/com/schemafy/core/erd/vendor/application/service/GetProjectDbVendorService.java": [
+    459
+  ],
+  "apps/backend/core/src/main/java/com/schemafy/core/erd/vendor/domain/DbVendor.java": [
+    459
+  ],
+  "apps/backend/core/src/main/java/com/schemafy/core/erd/vendor/domain/DbVendorSummary.java": [
+    459
+  ],
+  "apps/backend/core/src/main/java/com/schemafy/core/project/adapter/out/persistence/ProjectPersistenceAdapter.java": [
+    459
+  ],
+  "apps/backend/core/src/main/java/com/schemafy/core/project/application/port/in/CreateProjectCommand.java": [
+    459
+  ],
+  "apps/backend/core/src/main/java/com/schemafy/core/project/domain/Project.java": [
+    459
   ]
 }
