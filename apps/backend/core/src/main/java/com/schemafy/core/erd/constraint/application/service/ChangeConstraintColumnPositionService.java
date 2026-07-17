@@ -138,11 +138,7 @@ public class ChangeConstraintColumnPositionService implements ChangeConstraintCo
     List<ConstraintColumn> updated = new ArrayList<>(reordered.size());
     for (int index = 0; index < reordered.size(); index++) {
       ConstraintColumn column = reordered.get(index);
-      updated.add(new ConstraintColumn(
-          column.id(),
-          column.constraintId(),
-          column.columnId(),
-          index));
+      updated.add(column.withSeqNo(index));
     }
 
     return updated;

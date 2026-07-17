@@ -71,7 +71,7 @@ class ChangeRelationshipColumnPositionUndoRedoHandler
                                 columns,
                                 RelationshipColumn::id,
                                 inversePayload.positions(),
-                                ChangeRelationshipColumnPositionUndoRedoHandler::withSeqNo))
+                                RelationshipColumn::withSeqNo))
                         .thenReturn(MutationResult.<Void>of(null, affectedTableIds(relationship))
                             .withInverse(new ChangeRelationshipColumnPositionInverse(
                                 relationshipColumn.id(),
@@ -79,17 +79,6 @@ class ChangeRelationshipColumnPositionUndoRedoHandler
                                     columns,
                                     RelationshipColumn::id,
                                     RelationshipColumn::seqNo))))))));
-  }
-
-  private static RelationshipColumn withSeqNo(
-      RelationshipColumn column,
-      int seqNo) {
-    return new RelationshipColumn(
-        column.id(),
-        column.relationshipId(),
-        column.pkColumnId(),
-        column.fkColumnId(),
-        seqNo);
   }
 
   private static Set<String> affectedTableIds(Relationship relationship) {

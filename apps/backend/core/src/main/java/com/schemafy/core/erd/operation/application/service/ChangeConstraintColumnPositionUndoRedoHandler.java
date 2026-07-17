@@ -68,7 +68,7 @@ class ChangeConstraintColumnPositionUndoRedoHandler
                                 columns,
                                 ConstraintColumn::id,
                                 inversePayload.positions(),
-                                ChangeConstraintColumnPositionUndoRedoHandler::withSeqNo))
+                                ConstraintColumn::withSeqNo))
                         .thenReturn(MutationResult.<Void>of(null, constraint.tableId())
                             .withInverse(new ChangeConstraintColumnPositionInverse(
                                 constraintColumn.id(),
@@ -76,16 +76,6 @@ class ChangeConstraintColumnPositionUndoRedoHandler
                                     columns,
                                     ConstraintColumn::id,
                                     ConstraintColumn::seqNo))))))));
-  }
-
-  private static ConstraintColumn withSeqNo(
-      ConstraintColumn column,
-      int seqNo) {
-    return new ConstraintColumn(
-        column.id(),
-        column.constraintId(),
-        column.columnId(),
-        seqNo);
   }
 
 }

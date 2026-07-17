@@ -141,12 +141,7 @@ public class ChangeRelationshipColumnPositionService
     List<RelationshipColumn> updated = new ArrayList<>(reordered.size());
     for (int index = 0; index < reordered.size(); index++) {
       RelationshipColumn column = reordered.get(index);
-      updated.add(new RelationshipColumn(
-          column.id(),
-          column.relationshipId(),
-          column.pkColumnId(),
-          column.fkColumnId(),
-          index));
+      updated.add(column.withSeqNo(index));
     }
 
     return updated;

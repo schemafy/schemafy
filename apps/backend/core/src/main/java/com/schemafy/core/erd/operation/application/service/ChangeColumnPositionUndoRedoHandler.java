@@ -57,7 +57,7 @@ class ChangeColumnPositionUndoRedoHandler
                             columns,
                             Column::id,
                             inversePayload.positions(),
-                            ChangeColumnPositionUndoRedoHandler::withSeqNo))
+                            Column::withSeqNo))
                     .thenReturn(MutationResult.<Void>of(null, column.tableId())
                         .withInverse(new ChangeColumnPositionInverse(
                             column.id(),
@@ -65,20 +65,6 @@ class ChangeColumnPositionUndoRedoHandler
                                 columns,
                                 Column::id,
                                 Column::seqNo)))))));
-  }
-
-  private static Column withSeqNo(Column column, int seqNo) {
-    return new Column(
-        column.id(),
-        column.tableId(),
-        column.name(),
-        column.dataType(),
-        column.typeArguments(),
-        seqNo,
-        column.autoIncrement(),
-        column.charset(),
-        column.collation(),
-        column.comment());
   }
 
 }

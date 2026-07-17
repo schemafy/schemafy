@@ -42,7 +42,7 @@ class ReorderPositionsTest {
         currentEntities,
         PositionedEntity::id,
         snapshot,
-        ReorderPositionsTest::withSeqNo);
+        PositionedEntity::withSeqNo);
 
     assertThat(restored).containsExactly(
         new PositionedEntity("entity-2", 1, "second"),
@@ -60,7 +60,7 @@ class ReorderPositionsTest {
         currentEntities,
         PositionedEntity::id,
         List.of(new ReorderPosition("entity-1", 0)),
-        ReorderPositionsTest::withSeqNo))
+        PositionedEntity::withSeqNo))
         .isInstanceOf(IllegalStateException.class);
 
     assertThatThrownBy(() -> ReorderPositions.restore(
@@ -69,7 +69,7 @@ class ReorderPositionsTest {
         List.of(
             new ReorderPosition("entity-1", 0),
             new ReorderPosition("entity-1", 1)),
-        ReorderPositionsTest::withSeqNo))
+        PositionedEntity::withSeqNo))
         .isInstanceOf(IllegalStateException.class);
 
     assertThatThrownBy(() -> ReorderPositions.restore(
@@ -78,17 +78,16 @@ class ReorderPositionsTest {
         List.of(
             new ReorderPosition("entity-1", 0),
             new ReorderPosition("entity-3", 1)),
-        ReorderPositionsTest::withSeqNo))
+        PositionedEntity::withSeqNo))
         .isInstanceOf(IllegalStateException.class);
   }
 
-  private static PositionedEntity withSeqNo(
-      PositionedEntity entity,
-      int seqNo) {
-    return new PositionedEntity(entity.id(), seqNo, entity.label());
-  }
-
   private record PositionedEntity(String id, int seqNo, String label) {
+
+    private PositionedEntity withSeqNo(int nextSeqNo) {
+      return new PositionedEntity(id, nextSeqNo, label);
+    }
+
   }
 
 }

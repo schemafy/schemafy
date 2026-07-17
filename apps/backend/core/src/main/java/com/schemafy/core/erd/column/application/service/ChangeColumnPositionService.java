@@ -103,17 +103,7 @@ public class ChangeColumnPositionService implements ChangeColumnPositionUseCase 
     List<Column> updated = new ArrayList<>(reordered.size());
     for (int index = 0; index < reordered.size(); index++) {
       Column column = reordered.get(index);
-      updated.add(new Column(
-          column.id(),
-          column.tableId(),
-          column.name(),
-          column.dataType(),
-          column.typeArguments(),
-          index,
-          column.autoIncrement(),
-          column.charset(),
-          column.collation(),
-          column.comment()));
+      updated.add(column.withSeqNo(index));
     }
 
     return updated;

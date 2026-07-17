@@ -65,7 +65,7 @@ class ChangeIndexColumnPositionUndoRedoHandler
                                 columns,
                                 IndexColumn::id,
                                 inversePayload.positions(),
-                                ChangeIndexColumnPositionUndoRedoHandler::withSeqNo))
+                                IndexColumn::withSeqNo))
                         .thenReturn(MutationResult.<Void>of(null, index.tableId())
                             .withInverse(new ChangeIndexColumnPositionInverse(
                                 indexColumn.id(),
@@ -73,15 +73,6 @@ class ChangeIndexColumnPositionUndoRedoHandler
                                     columns,
                                     IndexColumn::id,
                                     IndexColumn::seqNo))))))));
-  }
-
-  private static IndexColumn withSeqNo(IndexColumn column, int seqNo) {
-    return new IndexColumn(
-        column.id(),
-        column.indexId(),
-        column.columnId(),
-        seqNo,
-        column.sortDirection());
   }
 
 }

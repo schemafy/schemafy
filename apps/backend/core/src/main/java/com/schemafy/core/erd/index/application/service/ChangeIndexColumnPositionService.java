@@ -117,12 +117,7 @@ public class ChangeIndexColumnPositionService implements ChangeIndexColumnPositi
     List<IndexColumn> updated = new ArrayList<>(reordered.size());
     for (int index = 0; index < reordered.size(); index++) {
       IndexColumn column = reordered.get(index);
-      updated.add(new IndexColumn(
-          column.id(),
-          column.indexId(),
-          column.columnId(),
-          index,
-          column.sortDirection()));
+      updated.add(column.withSeqNo(index));
     }
 
     return updated;
