@@ -16,6 +16,15 @@ spring:
       server:
         name: schemafy-mcp-test
         version: 0.0.1
+        instructions: >
+          Schemafy MCP exposes read-only access to the authenticated user's
+          Schemafy workspaces, projects, schemas, ERD tables, columns, indexes,
+          constraints, relationships, memos, and database vendors. Use these
+          tools whenever the user asks about current Schemafy
+          workspace/project/ERD/schema/database structure or permissions. If an
+          ID is unknown, start with schemafy_list_workspaces, then
+          schemafy_list_projects, schemafy_list_schemas, schemafy_list_tables,
+          and table-detail tools. Do not mutate data.
         protocol: STREAMABLE
         type: ASYNC
         annotation-scanner:
