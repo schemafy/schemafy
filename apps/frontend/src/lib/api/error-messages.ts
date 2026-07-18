@@ -125,6 +125,10 @@ export const ERROR_MESSAGES: Record<string, ErrorMessageInfo> = {
     message: 'Please verify your email before creating an account.',
     category: ErrorCategory.USER_FEEDBACK,
   },
+  USER_AUTH_MAIL_DISABLED: {
+    message: 'Email verification is currently disabled.',
+    category: ErrorCategory.USER_FEEDBACK,
+  },
   ACCOUNT_NOT_ACTIVE: {
     message: 'This account is not active. Please contact support.',
     category: ErrorCategory.USER_FEEDBACK,
