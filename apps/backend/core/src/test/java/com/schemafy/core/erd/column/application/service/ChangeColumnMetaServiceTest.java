@@ -122,8 +122,6 @@ class ChangeColumnMetaServiceTest {
             .willReturn(Mono.just(List.of(column)));
         given(changeColumnMetaPort.changeColumnMeta(any(), any(), any(), any(), any()))
             .willReturn(Mono.empty());
-        given(getConstraintColumnsByColumnIdPort.findConstraintColumnsByColumnId(any()))
-            .willReturn(Mono.just(List.of()));
 
         StepVerifier.create(sut.changeColumnMeta(command))
             .assertNext(result -> assertThat(result.inversePayload()).isEqualTo(
@@ -138,6 +136,7 @@ class ChangeColumnMetaServiceTest {
 
         then(changeColumnMetaPort).should()
             .changeColumnMeta(eq(command.columnId()), eq(true), isNull(), isNull(), isNull());
+        then(getConstraintColumnsByColumnIdPort).shouldHaveNoInteractions();
       }
 
       @Test
@@ -166,8 +165,6 @@ class ChangeColumnMetaServiceTest {
             .willReturn(Mono.just(List.of(column)));
         given(changeColumnMetaPort.changeColumnMeta(any(), any(), any(), any(), any()))
             .willReturn(Mono.empty());
-        given(getConstraintColumnsByColumnIdPort.findConstraintColumnsByColumnId(any()))
-            .willReturn(Mono.just(List.of()));
 
         StepVerifier.create(sut.changeColumnMeta(command))
             .verifyComplete();
@@ -179,6 +176,8 @@ class ChangeColumnMetaServiceTest {
         StepVerifier.create(mutationSupplierRef.get().get())
             .expectNextCount(1)
             .verifyComplete();
+
+        then(getConstraintColumnsByColumnIdPort).shouldHaveNoInteractions();
       }
 
       @Test
@@ -218,8 +217,6 @@ class ChangeColumnMetaServiceTest {
             .willReturn(Mono.just(List.of(column)));
         given(changeColumnMetaPort.changeColumnMeta(any(), any(), any(), any(), any()))
             .willReturn(Mono.empty());
-        given(getConstraintColumnsByColumnIdPort.findConstraintColumnsByColumnId(any()))
-            .willReturn(Mono.just(List.of()));
 
         StepVerifier.create(sut.changeColumnMeta(command))
             .expectNextCount(1)
@@ -227,6 +224,7 @@ class ChangeColumnMetaServiceTest {
 
         then(changeColumnMetaPort).should()
             .changeColumnMeta(eq(command.columnId()), isNull(), isNull(), isNull(), eq("New comment"));
+        then(getConstraintColumnsByColumnIdPort).shouldHaveNoInteractions();
       }
 
       @Test

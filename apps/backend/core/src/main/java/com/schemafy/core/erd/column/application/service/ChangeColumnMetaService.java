@@ -193,20 +193,23 @@ public class ChangeColumnMetaService implements ChangeColumnMetaUseCase {
       Set<String> affectedTableIds,
       List<FkColumnMetaRevert> fkRevertList,
       Set<String> capturedFkColumnIds) {
-    return changeColumnMetaPort.changeColumnMeta(
+    Mono<Void> directChange = changeColumnMetaPort.changeColumnMeta(
         column.id(),
         change.portAutoIncrement(),
         change.portCharset(),
         change.portCollation(),
-        change.portComment())
-        .then(cascadeCharsetCollationToFkColumns(
-            column,
-            change.portCharset(),
-            change.portCollation(),
-            new HashSet<>(),
-            affectedTableIds,
-            fkRevertList,
-            capturedFkColumnIds));
+        change.portComment());
+    if (change.portCharset() == null && change.portCollation() == null) {
+      return directChange;
+    }
+    return directChange.then(cascadeCharsetCollationToFkColumns(
+        column,
+        change.portCharset(),
+        change.portCollation(),
+        new HashSet<>(),
+        affectedTableIds,
+        fkRevertList,
+        capturedFkColumnIds));
   }
 
   private Mono<Void> cascadeCharsetCollationToFkColumns(
