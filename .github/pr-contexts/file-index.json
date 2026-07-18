@@ -678,7 +678,8 @@
   "apps/backend/core/src/main/java/com/schemafy/core/erd/operation/application/inverse/InversePayload.java": [
     372,
     375,
-    376
+    376,
+    460
   ],
   "apps/backend/core/src/main/java/com/schemafy/core/erd/operation/application/port/out/IncrementSchemaCollaborationRevisionPort.java": [
     372
@@ -733,7 +734,8 @@
     412,
     419,
     422,
-    444
+    444,
+    460
   ],
   "apps/backend/core/src/test/java/com/schemafy/core/erd/table/application/service/ChangeTableNameServiceTest.java": [
     372,
@@ -1070,11 +1072,13 @@
   ],
   "apps/backend/core/src/main/java/com/schemafy/core/erd/operation/application/service/ColumnMutationTargetResolver.java": [
     375,
-    376
+    376,
+    460
   ],
   "apps/backend/core/src/main/java/com/schemafy/core/erd/operation/application/service/ConstraintMutationTargetResolver.java": [
     375,
-    376
+    376,
+    460
   ],
   "apps/backend/core/src/main/java/com/schemafy/core/erd/operation/application/service/ErdMutationTargetFinalizer.java": [
     375,
@@ -1092,11 +1096,13 @@
   ],
   "apps/backend/core/src/main/java/com/schemafy/core/erd/operation/application/service/IndexMutationTargetResolver.java": [
     375,
-    376
+    376,
+    460
   ],
   "apps/backend/core/src/main/java/com/schemafy/core/erd/operation/application/service/RelationshipMutationTargetResolver.java": [
     375,
-    376
+    376,
+    460
   ],
   "apps/backend/core/src/main/java/com/schemafy/core/erd/operation/application/service/ResolvedErdMutationTarget.java": [
     375
@@ -1440,7 +1446,8 @@
   ],
   "apps/backend/core/src/main/java/com/schemafy/core/erd/column/application/service/ChangeColumnPositionService.java": [
     383,
-    419
+    419,
+    460
   ],
   "apps/backend/core/src/main/java/com/schemafy/core/erd/column/application/service/GetColumnService.java": [
     383
@@ -1450,7 +1457,8 @@
   ],
   "apps/backend/core/src/main/java/com/schemafy/core/erd/constraint/application/service/ChangeConstraintColumnPositionService.java": [
     383,
-    419
+    419,
+    460
   ],
   "apps/backend/core/src/main/java/com/schemafy/core/erd/constraint/application/service/ChangeConstraintExpressionService.java": [
     383,
@@ -1470,7 +1478,8 @@
   ],
   "apps/backend/core/src/main/java/com/schemafy/core/erd/index/application/service/ChangeIndexColumnPositionService.java": [
     383,
-    419
+    419,
+    460
   ],
   "apps/backend/core/src/main/java/com/schemafy/core/erd/index/application/service/ChangeIndexColumnSortDirectionService.java": [
     383,
@@ -1801,7 +1810,8 @@
     418
   ],
   "apps/backend/core/src/main/java/com/schemafy/core/erd/relationship/application/service/ChangeRelationshipColumnPositionService.java": [
-    419
+    419,
+    460
   ],
   "apps/backend/core/src/main/java/com/schemafy/core/erd/relationship/application/service/ChangeRelationshipExtraService.java": [
     419,
@@ -1825,10 +1835,12 @@
     459
   ],
   "apps/backend/core/src/test/java/com/schemafy/core/erd/column/application/service/ChangeColumnPositionServiceTest.java": [
-    419
+    419,
+    460
   ],
   "apps/backend/core/src/test/java/com/schemafy/core/erd/constraint/application/service/ChangeConstraintColumnPositionServiceTest.java": [
-    419
+    419,
+    460
   ],
   "apps/backend/core/src/test/java/com/schemafy/core/erd/constraint/application/service/ChangeConstraintExpressionServiceTest.java": [
     419
@@ -1837,7 +1849,8 @@
     419
   ],
   "apps/backend/core/src/test/java/com/schemafy/core/erd/index/application/service/ChangeIndexColumnPositionServiceTest.java": [
-    419
+    419,
+    460
   ],
   "apps/backend/core/src/test/java/com/schemafy/core/erd/index/application/service/ChangeIndexColumnSortDirectionServiceTest.java": [
     419
@@ -1852,7 +1865,8 @@
     419
   ],
   "apps/backend/core/src/test/java/com/schemafy/core/erd/relationship/application/service/ChangeRelationshipColumnPositionServiceTest.java": [
-    419
+    419,
+    460
   ],
   "apps/backend/core/src/test/java/com/schemafy/core/erd/relationship/application/service/ChangeRelationshipExtraServiceTest.java": [
     419,
@@ -1936,7 +1950,8 @@
     422
   ],
   "apps/backend/core/src/test/java/com/schemafy/core/erd/operation/application/inverse/InversePayloadJsonTest.java": [
-    422
+    422,
+    460
   ],
   "apps/backend/api/src/main/java/com/schemafy/api/user/adapter/out/AuthTokenRedisAdapter.java": [
     423
@@ -2738,5 +2753,50 @@
   ],
   "apps/backend/core/src/main/java/com/schemafy/core/project/domain/Project.java": [
     459
+  ],
+  "apps/backend/core/src/main/java/com/schemafy/core/erd/column/domain/Column.java": [
+    460
+  ],
+  "apps/backend/core/src/main/java/com/schemafy/core/erd/constraint/domain/ConstraintColumn.java": [
+    460
+  ],
+  "apps/backend/core/src/main/java/com/schemafy/core/erd/index/domain/IndexColumn.java": [
+    460
+  ],
+  "apps/backend/core/src/main/java/com/schemafy/core/erd/operation/application/inverse/ChangeColumnPositionInverse.java": [
+    460
+  ],
+  "apps/backend/core/src/main/java/com/schemafy/core/erd/operation/application/inverse/ChangeConstraintColumnPositionInverse.java": [
+    460
+  ],
+  "apps/backend/core/src/main/java/com/schemafy/core/erd/operation/application/inverse/ChangeIndexColumnPositionInverse.java": [
+    460
+  ],
+  "apps/backend/core/src/main/java/com/schemafy/core/erd/operation/application/inverse/ChangeRelationshipColumnPositionInverse.java": [
+    460
+  ],
+  "apps/backend/core/src/main/java/com/schemafy/core/erd/operation/application/inverse/ReorderPosition.java": [
+    460
+  ],
+  "apps/backend/core/src/main/java/com/schemafy/core/erd/operation/application/inverse/ReorderPositions.java": [
+    460
+  ],
+  "apps/backend/core/src/main/java/com/schemafy/core/erd/operation/application/service/ChangeColumnPositionUndoRedoHandler.java": [
+    460
+  ],
+  "apps/backend/core/src/main/java/com/schemafy/core/erd/operation/application/service/ChangeConstraintColumnPositionUndoRedoHandler.java": [
+    460
+  ],
+  "apps/backend/core/src/main/java/com/schemafy/core/erd/operation/application/service/ChangeIndexColumnPositionUndoRedoHandler.java": [
+    460
+  ],
+  "apps/backend/core/src/main/java/com/schemafy/core/erd/operation/application/service/ChangeRelationshipColumnPositionUndoRedoHandler.java": [
+    460
+  ],
+  "apps/backend/core/src/main/java/com/schemafy/core/erd/relationship/domain/RelationshipColumn.java": [
+    460
+  ],
+  "apps/backend/core/src/test/java/com/schemafy/core/erd/operation/application/inverse/ReorderPositionsTest.java": [
+    460
   ]
 }
