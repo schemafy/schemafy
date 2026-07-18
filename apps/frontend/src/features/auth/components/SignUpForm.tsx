@@ -279,11 +279,8 @@ export const SignUpForm = () => {
           onBlur={handleBlur}
         />
         {emailVerificationRequired && (
-          <div className="flex shrink-0 flex-col gap-1 py-3 pr-4">
-            <span
-              aria-hidden="true"
-              className="invisible mb-1 font-overline-md"
-            >
+          <div className="flex shrink-0 flex-col gap-1.5 py-2.5 pr-4">
+            <span aria-hidden="true" className="invisible font-overline-xs">
               Action
             </span>
             <Button
@@ -313,11 +310,8 @@ export const SignUpForm = () => {
             onChange={handleVerificationCodeChange}
             onBlur={handleVerificationBlur}
           />
-          <div className="flex shrink-0 flex-col gap-1 py-3 pr-4">
-            <span
-              aria-hidden="true"
-              className="invisible mb-1 font-overline-md"
-            >
+          <div className="flex shrink-0 flex-col gap-1.5 py-2.5 pr-4">
+            <span aria-hidden="true" className="invisible font-overline-xs">
               Action
             </span>
             <Button
