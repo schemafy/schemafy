@@ -350,6 +350,7 @@ public class GenerateSchemaMermaidService implements
         .replace('\r', ' ')
         .replace('\n', ' ')
         .replace('\t', ' ')
+        .replace("#", "#35;")
         .replace("\"", "#34;");
   }
 

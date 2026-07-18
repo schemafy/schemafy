@@ -120,6 +120,49 @@ class GenerateSchemaMermaidServiceTest {
   }
 
   @Test
+  @DisplayName("Mermaid entity code와 실제 문자를 충돌 없이 구분한다")
+  void escapesMermaidEntityCodeMarkersWithoutCollision() {
+    RelationshipSnapshot relationship = relationship(
+        "relationship-1", "table-quote", "table-entity-code",
+        "relation\"#34;", RelationshipKind.NON_IDENTIFYING,
+        Cardinality.ONE_TO_MANY,
+        "column-parent-id", "column-child-parent-id");
+    TableSnapshot quoteTable = table(
+        "table-quote", "entity\"",
+        List.of(column("column-parent-id", "table-quote", "id", "BIGINT", 0)),
+        List.of(constraint("pk-parent", "table-quote",
+            ConstraintKind.PRIMARY_KEY, "column-parent-id")),
+        List.of());
+    TableSnapshot entityCodeTable = table(
+        "table-entity-code", "entity#34;",
+        List.of(
+            column("column-child-parent-id", "table-entity-code",
+                "parent_id", "BIGINT", 0),
+            column("column-status", "table-entity-code", "status", "ENUM",
+                new ColumnTypeArguments(null, null, null,
+                    List.of("\"", "#34;")),
+                1)),
+        List.of(),
+        List.of(relationship));
+
+    StepVerifier.create(sut.generateSchemaMermaid(
+        new GenerateSchemaMermaidCommand(schema(quoteTable, entityCodeTable))))
+        .assertNext(mermaid -> assertThat(mermaid).isEqualTo("""
+            erDiagram
+                T1["entity#34;"] {
+                    BIGINT id PK
+                }
+                T2["entity#35;34;"] {
+                    BIGINT parent_id FK
+                    ENUM status "ENUM('#34;', '#35;34;')"
+                }
+
+                T1 |o..o{ T2 : "relation#34;#35;34;"\
+            """))
+        .verifyComplete();
+  }
+
+  @Test
   @DisplayName("nullable self relationship을 선택적 1:1 identifying 관계로 생성한다")
   void generatesNullableSelfRelationship() {
     RelationshipSnapshot managerRelationship = relationship(
