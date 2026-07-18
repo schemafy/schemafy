@@ -207,7 +207,7 @@ class AuthControllerTest extends UserHttpTestSupport {
   @DisplayName("이메일 검증 토큰 없이 회원가입하면 EMAIL_NOT_VERIFIED를 반환한다")
   void signUpFailEmailNotVerified() {
     SignUpRequest request = new SignUpRequest("test@example.com",
-        "Test User", "password", VALID_SIGNUP_VERIFICATION_TOKEN);
+        "Test User", "password", null);
 
     webTestClient.post().uri(API_BASE_PATH + "/users/signup")
         .contentType(MediaType.APPLICATION_JSON)

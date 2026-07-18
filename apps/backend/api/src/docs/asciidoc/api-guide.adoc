@@ -3679,7 +3679,8 @@ include::{snippets}/relationship-column-change-position/response-fields.adoc[]
 
 === 회원가입
 
-이메일 인증이 완료된 사용자를 생성하고 JWT 토큰을 발급합니다.
+이메일 인증 기능이 활성화된 경우 인증 완료 토큰을 확인한 뒤 사용자를 생성하고 JWT 토큰을 발급합니다.
+비활성화된 경우에는 인증 토큰 없이 가입할 수 있습니다.
 
 [source]
 ----

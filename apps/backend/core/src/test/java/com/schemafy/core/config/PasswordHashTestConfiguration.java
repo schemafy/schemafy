@@ -7,6 +7,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import org.springframework.boot.test.context.TestConfiguration;
 import org.springframework.context.annotation.Bean;
 
+import com.schemafy.core.user.application.port.out.AuthMailPolicyPort;
 import com.schemafy.core.user.application.port.out.AuthTokenPort;
 import com.schemafy.core.user.application.port.out.PasswordHashPort;
 import com.schemafy.core.user.application.port.out.SendEmailVerificationPort;
@@ -22,6 +23,11 @@ import reactor.core.publisher.Mono;
 public class PasswordHashTestConfiguration {
 
   private static final String TEST_PREFIX = "{test}";
+
+  @Bean
+  public AuthMailPolicyPort authMailPolicyPort() {
+    return () -> true;
+  }
 
   @Bean
   public PasswordHashPort passwordHashPort() {

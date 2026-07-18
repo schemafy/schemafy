@@ -61,7 +61,7 @@ public class AuthController {
         .map(result -> ResponseEntity.ok(VerifySignUpEmailResponse.from(result)));
   }
 
-  /** 이메일 인증이 완료된 사용자를 가입시키고 JWT 토큰을 발급합니다. */
+  /** 설정에 따라 이메일 인증을 확인한 뒤 사용자를 가입시키고 JWT 토큰을 발급합니다. */
   @PostMapping("/users/signup")
   public Mono<ResponseEntity<UserInfoResponse>> signUp(
       @Valid @RequestBody SignUpRequest request) {
