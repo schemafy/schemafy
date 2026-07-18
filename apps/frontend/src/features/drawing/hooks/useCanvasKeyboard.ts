@@ -40,7 +40,7 @@ export const useCanvasKeyboard = ({
       )
         return;
 
-      if ((e.ctrlKey || e.metaKey) && e.key === 'z' && !e.shiftKey && onUndo) {
+      if ((e.ctrlKey || e.metaKey) && e.code === 'KeyZ' && !e.shiftKey && onUndo) {
         e.preventDefault();
         onUndo();
         return;
@@ -48,7 +48,7 @@ export const useCanvasKeyboard = ({
 
       if (
         (e.ctrlKey || e.metaKey) &&
-        ((e.code === 'KeyZ' && e.shiftKey) || e.key === 'y') &&
+        ((e.code === 'KeyZ' && e.shiftKey) || e.code === 'KeyY') &&
         onRedo
       ) {
         e.preventDefault();
@@ -71,7 +71,7 @@ export const useCanvasKeyboard = ({
       }
 
       if (
-        e.key === '/' &&
+        (e.key === '/' || e.code === 'Slash') &&
         !isChatOpen &&
         (activeTool === 'pointer' || activeTool === 'hand')
       ) {
