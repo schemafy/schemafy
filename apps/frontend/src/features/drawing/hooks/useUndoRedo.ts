@@ -12,10 +12,13 @@ export const useUndoRedo = () => {
   const { mutate: redo } = useRedo();
   const { syncAffectedTables } = useErdCache(selectedSchemaId);
 
+  const isUndoRedoPending = operationHistoryStore.isPending(selectedSchemaId);
   const canUndo =
-    operationHistoryStore.getUndoableOpIds(selectedSchemaId).length > 0;
+    operationHistoryStore.getUndoableOpIds(selectedSchemaId).length > 0 &&
+    !isUndoRedoPending;
   const canRedo =
-    operationHistoryStore.getRedoOpIds(selectedSchemaId).length > 0;
+    operationHistoryStore.getRedoOpIds(selectedSchemaId).length > 0 &&
+    !isUndoRedoPending;
 
   const handleUndo = useCallback(() => {
     if (operationHistoryStore.isPending(selectedSchemaId)) return;
