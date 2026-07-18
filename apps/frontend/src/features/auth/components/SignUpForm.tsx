@@ -286,7 +286,7 @@ export const SignUpForm = () => {
             <Button
               type="button"
               disabled={isSubmitting || isSendingCode || isVerifyingCode}
-              className="h-[58px] min-w-[88px]"
+              className="h-[51px] min-w-[88px]"
               onClick={handleSendCode}
             >
               {isSendingCode ? 'Sending...' : 'Send'}
@@ -319,7 +319,7 @@ export const SignUpForm = () => {
               disabled={
                 !sentEmail || isSubmitting || isSendingCode || isVerifyingCode
               }
-              className="h-[58px] min-w-[88px]"
+              className="h-[51px] min-w-[88px]"
               onClick={handleVerifyCode}
             >
               {isVerifyingCode ? 'Verifying...' : 'Verify'}
