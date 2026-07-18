@@ -13,6 +13,7 @@ import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 
 import com.schemafy.core.config.R2dbcTestConfiguration;
+import com.schemafy.core.erd.index.domain.type.IndexType;
 
 import reactor.core.publisher.Mono;
 import reactor.test.StepVerifier;
@@ -101,6 +102,14 @@ class DbVendorPersistenceAdapterTest {
             assertThat(vendor.version()).isEqualTo("8.0");
             assertThat(vendor.datatypeMappings()).contains("schemaVersion");
             assertThat(vendor.datatypeMappings()).contains("TINYINT");
+            assertThat(vendor.capabilities().schemaVersion()).isEqualTo(1);
+            assertThat(vendor.capabilities().indexes().supportedTypes())
+                .containsExactlyInAnyOrder(
+                    IndexType.BTREE,
+                    IndexType.FULLTEXT,
+                    IndexType.SPATIAL);
+            assertThat(vendor.capabilities().indexes().sortDirectionTypes())
+                .containsExactly(IndexType.BTREE);
           })
           .verifyComplete();
     }
@@ -195,10 +204,15 @@ class DbVendorPersistenceAdapterTest {
       String displayName,
       String name,
       String version) {
-    return databaseClient.sql("""
-        INSERT INTO db_vendors (id, display_name, name, version, datatype_mappings)
-        VALUES (:id, :displayName, :name, :version, '{}')
-        """)
+    return databaseClient.sql(
+        """
+            INSERT INTO db_vendors (
+              id, display_name, name, version, datatype_mappings, capabilities
+            ) VALUES (
+              :id, :displayName, :name, :version, '{}',
+              '{"schemaVersion":1,"indexes":{"supportedTypes":["BTREE","FULLTEXT","SPATIAL"],"sortDirectionTypes":["BTREE"]}}'
+            )
+            """)
         .bind("id", id)
         .bind("displayName", displayName)
         .bind("name", name)
@@ -211,10 +225,15 @@ class DbVendorPersistenceAdapterTest {
       String displayName,
       String name,
       String version) {
-    return databaseClient.sql("""
-        INSERT INTO db_vendors (display_name, name, version, datatype_mappings)
-        VALUES (:displayName, :name, :version, '{}')
-        """)
+    return databaseClient.sql(
+        """
+            INSERT INTO db_vendors (
+              display_name, name, version, datatype_mappings, capabilities
+            ) VALUES (
+              :displayName, :name, :version, '{}',
+              '{"schemaVersion":1,"indexes":{"supportedTypes":["BTREE","FULLTEXT","SPATIAL"],"sortDirectionTypes":["BTREE"]}}'
+            )
+            """)
         .bind("displayName", displayName)
         .bind("name", name)
         .bind("version", version)

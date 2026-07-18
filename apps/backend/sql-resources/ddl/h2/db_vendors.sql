@@ -4,6 +4,7 @@ CREATE TABLE IF NOT EXISTS db_vendors (
     name              VARCHAR(64)  NOT NULL,
     version           VARCHAR(64)  NOT NULL,
     datatype_mappings JSON         NOT NULL,
+    capabilities      JSON         NOT NULL,
     created_at        TIMESTAMP    NOT NULL DEFAULT CURRENT_TIMESTAMP,
     updated_at        TIMESTAMP    NOT NULL DEFAULT CURRENT_TIMESTAMP,
     deleted_at        TIMESTAMP    NULL,

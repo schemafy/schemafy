@@ -1,8 +1,13 @@
 package com.schemafy.core.erd.vendor.fixture;
 
+import java.util.Set;
+
+import com.schemafy.core.erd.index.domain.policy.IndexCapabilities;
+import com.schemafy.core.erd.index.domain.type.IndexType;
 import com.schemafy.core.erd.vendor.application.port.in.GetDbVendorQuery;
 import com.schemafy.core.erd.vendor.domain.DbVendor;
 import com.schemafy.core.erd.vendor.domain.DbVendorSummary;
+import com.schemafy.core.erd.vendor.domain.VendorCapabilities;
 
 public class DbVendorFixture {
 
@@ -19,7 +24,16 @@ public class DbVendorFixture {
         DEFAULT_DISPLAY_NAME,
         DEFAULT_NAME,
         DEFAULT_VERSION,
-        DEFAULT_DATATYPE_MAPPINGS);
+        DEFAULT_DATATYPE_MAPPINGS,
+        defaultCapabilities());
+  }
+
+  public static VendorCapabilities defaultCapabilities() {
+    return new VendorCapabilities(
+        1,
+        new IndexCapabilities(
+            Set.of(IndexType.BTREE, IndexType.FULLTEXT, IndexType.SPATIAL),
+            Set.of(IndexType.BTREE)));
   }
 
   public static DbVendorSummary defaultDbVendorSummary() {

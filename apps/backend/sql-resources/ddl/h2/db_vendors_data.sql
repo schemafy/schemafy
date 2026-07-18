@@ -1,4 +1,5 @@
-MERGE INTO db_vendors (id, display_name, name, version, datatype_mappings, created_at, updated_at)
+MERGE INTO db_vendors (
+    id, display_name, name, version, datatype_mappings, capabilities, created_at, updated_at)
 KEY (id)
 VALUES (
     1,
@@ -252,6 +253,13 @@ VALUES (
           "parameters": []
         }
       ]
+    }',
+    '{
+      "schemaVersion": 1,
+      "indexes": {
+        "supportedTypes": ["BTREE", "FULLTEXT", "SPATIAL"],
+        "sortDirectionTypes": ["BTREE"]
+      }
     }',
     CURRENT_TIMESTAMP,
     CURRENT_TIMESTAMP

@@ -1,4 +1,5 @@
-INSERT IGNORE INTO db_vendors (id, display_name, name, version, datatype_mappings, created_at, updated_at)
+INSERT IGNORE INTO db_vendors (
+    id, display_name, name, version, datatype_mappings, capabilities, created_at, updated_at)
 VALUES (
     1,
     'MySQL 8.0',
@@ -251,6 +252,13 @@ VALUES (
           "parameters": []
         }
       ]
+    }',
+    '{
+      "schemaVersion": 1,
+      "indexes": {
+        "supportedTypes": ["BTREE", "FULLTEXT", "SPATIAL"],
+        "sortDirectionTypes": ["BTREE"]
+      }
     }',
     CURRENT_TIMESTAMP,
     CURRENT_TIMESTAMP
