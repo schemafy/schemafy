@@ -1,9 +1,9 @@
 package com.schemafy.core.erd.ddl.application.port.in;
 
 import com.schemafy.core.erd.ddl.domain.DdlExportVendor;
-import com.schemafy.core.erd.ddl.domain.DdlSchemaSnapshot;
+import com.schemafy.core.erd.export.domain.SchemaExportSnapshot;
 
 public record GenerateSchemaDdlCommand(
-    DdlSchemaSnapshot snapshot,
+    SchemaExportSnapshot snapshot,
     DdlExportVendor targetDbVendor) {
 }

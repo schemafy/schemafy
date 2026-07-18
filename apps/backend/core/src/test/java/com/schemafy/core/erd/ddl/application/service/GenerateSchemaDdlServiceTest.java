@@ -9,9 +9,9 @@ import com.schemafy.core.common.exception.DomainException;
 import com.schemafy.core.erd.ddl.application.port.in.GenerateSchemaDdlCommand;
 import com.schemafy.core.erd.ddl.domain.DdlExportVendor;
 import com.schemafy.core.erd.ddl.domain.DdlGenerator;
-import com.schemafy.core.erd.ddl.domain.DdlSchemaSnapshot;
-import com.schemafy.core.erd.ddl.domain.DdlSchemaSnapshot.SchemaSnapshot;
 import com.schemafy.core.erd.ddl.domain.exception.DdlErrorCode;
+import com.schemafy.core.erd.export.domain.SchemaExportSnapshot;
+import com.schemafy.core.erd.export.domain.SchemaExportSnapshot.SchemaSnapshot;
 
 import reactor.core.publisher.Mono;
 import reactor.test.StepVerifier;
@@ -22,7 +22,7 @@ class GenerateSchemaDdlServiceTest {
   @Test
   @DisplayName("targetDbVendor에 맞는 core DDL generator로 라우팅한다")
   void routesToDdlGeneratorByTargetDbVendor() {
-    DdlSchemaSnapshot snapshot = new DdlSchemaSnapshot(
+    SchemaExportSnapshot snapshot = new SchemaExportSnapshot(
         new SchemaSnapshot("schema-1", "mysql", "app", null, null),
         java.util.List.of());
     DdlGenerator mysqlGenerator = new StubDdlGenerator(
@@ -43,7 +43,7 @@ class GenerateSchemaDdlServiceTest {
   @Test
   @DisplayName("지원하지 않는 targetDbVendor이면 예외가 발생한다")
   void throwsWhenTargetDbVendorIsUnsupported() {
-    DdlSchemaSnapshot snapshot = new DdlSchemaSnapshot(
+    SchemaExportSnapshot snapshot = new SchemaExportSnapshot(
         new SchemaSnapshot("schema-1", "mysql", "app", null, null),
         java.util.List.of());
     GenerateSchemaDdlService sut = new GenerateSchemaDdlService(
@@ -62,11 +62,11 @@ class GenerateSchemaDdlServiceTest {
 
   private record StubDdlGenerator(
       DdlExportVendor exportVendor,
-      DdlSchemaSnapshot expectedSnapshot,
+      SchemaExportSnapshot expectedSnapshot,
       String ddl) implements DdlGenerator {
 
     @Override
-    public String generate(DdlSchemaSnapshot snapshot) {
+    public String generate(SchemaExportSnapshot snapshot) {
       if (snapshot != expectedSnapshot) {
         return "wrong";
       }

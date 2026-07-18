@@ -1,0 +1,163 @@
+package com.schemafy.api.erd.service.export;
+
+import java.util.List;
+import java.util.Map;
+
+import org.springframework.transaction.ReactiveTransaction;
+import org.springframework.transaction.ReactiveTransactionManager;
+
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.Mock;
+import org.mockito.junit.jupiter.MockitoExtension;
+
+import com.schemafy.api.erd.controller.dto.response.ColumnResponse;
+import com.schemafy.api.erd.controller.dto.response.TableResponse;
+import com.schemafy.api.erd.controller.dto.response.TableSnapshotResponse;
+import com.schemafy.api.erd.service.TableSnapshotOrchestrator;
+import com.schemafy.core.erd.schema.application.port.in.GetSchemaQuery;
+import com.schemafy.core.erd.schema.application.port.in.GetSchemaWithRevisionResult;
+import com.schemafy.core.erd.schema.application.port.in.GetSchemaWithRevisionUseCase;
+import com.schemafy.core.erd.schema.domain.Schema;
+import com.schemafy.core.erd.table.application.port.in.GetTablesBySchemaIdQuery;
+import com.schemafy.core.erd.table.application.port.in.GetTablesBySchemaIdUseCase;
+import com.schemafy.core.erd.table.domain.Table;
+
+import reactor.core.publisher.Flux;
+import reactor.core.publisher.Mono;
+import reactor.test.StepVerifier;
+
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyList;
+import static org.mockito.BDDMockito.given;
+import static org.mockito.BDDMockito.then;
+import static org.mockito.Mockito.lenient;
+
+@ExtendWith(MockitoExtension.class)
+@DisplayName("SchemaExportSnapshotReader")
+class SchemaExportSnapshotReaderTest {
+
+  @Mock
+  GetSchemaWithRevisionUseCase getSchemaWithRevisionUseCase;
+
+  @Mock
+  GetTablesBySchemaIdUseCase getTablesBySchemaIdUseCase;
+
+  @Mock
+  TableSnapshotOrchestrator tableSnapshotOrchestrator;
+
+  @Mock
+  ReactiveTransactionManager transactionManager;
+
+  @Mock
+  ReactiveTransaction transaction;
+
+  SchemaExportSnapshotReader sut;
+
+  @BeforeEach
+  void setUp() {
+    given(transactionManager.getReactiveTransaction(any()))
+        .willReturn(Mono.just(transaction));
+    lenient().when(transactionManager.commit(transaction))
+        .thenReturn(Mono.empty());
+    lenient().when(transactionManager.rollback(transaction))
+        .thenReturn(Mono.empty());
+
+    sut = new SchemaExportSnapshotReader(
+        getSchemaWithRevisionUseCase,
+        getTablesBySchemaIdUseCase,
+        tableSnapshotOrchestrator,
+        new SchemaExportSnapshotMapper(),
+        transactionManager);
+  }
+
+  @Test
+  @DisplayName("schema revision과 strict table snapshot을 공통 export snapshot으로 읽는다")
+  void readsSchemaExportSnapshot() {
+    String schemaId = "schema-1";
+    Schema schema = new Schema(schemaId, "project-1", "mysql", "main_schema",
+        "utf8mb4", "utf8mb4_general_ci");
+    Table table = new Table("table-1", schemaId, "users", "utf8mb4",
+        "utf8mb4_general_ci");
+    TableSnapshotResponse tableSnapshot = new TableSnapshotResponse(
+        new TableResponse(table.id(), schemaId, table.name(), table.charset(),
+            table.collation(), null),
+        List.of(new ColumnResponse(
+            "column-1", table.id(), "id", "BIGINT", null, 0, true,
+            null, null, null)),
+        List.of(),
+        List.of(),
+        List.of());
+
+    given(getSchemaWithRevisionUseCase.getSchemaWithRevision(any(GetSchemaQuery.class)))
+        .willReturn(Mono.just(new GetSchemaWithRevisionResult(schema, 42L)));
+    given(getTablesBySchemaIdUseCase.getTablesBySchemaId(any(GetTablesBySchemaIdQuery.class)))
+        .willReturn(Flux.just(table));
+    given(tableSnapshotOrchestrator.getTableSnapshotsStrict(anyList()))
+        .willReturn(Mono.just(Map.of(table.id(), tableSnapshot)));
+
+    StepVerifier.create(sut.readSchemaExportSnapshot(schemaId))
+        .assertNext(result -> {
+          assertThat(result.currentRevision()).isEqualTo(42L);
+          assertThat(result.snapshot().schema().id()).isEqualTo(schemaId);
+          assertThat(result.snapshot().tables()).hasSize(1);
+          assertThat(result.snapshot().tables().getFirst().columns()).hasSize(1);
+        })
+        .verifyComplete();
+
+    then(getSchemaWithRevisionUseCase).should()
+        .getSchemaWithRevision(new GetSchemaQuery(schemaId));
+    then(getTablesBySchemaIdUseCase).should()
+        .getTablesBySchemaId(new GetTablesBySchemaIdQuery(schemaId));
+  }
+
+  @Test
+  @DisplayName("테이블이 없으면 strict snapshot 조회 없이 빈 export snapshot을 반환한다")
+  void readsEmptySchemaExportSnapshot() {
+    String schemaId = "schema-1";
+    Schema schema = new Schema(schemaId, "project-1", "mysql", "empty_schema",
+        "utf8mb4", "utf8mb4_general_ci");
+
+    given(getSchemaWithRevisionUseCase.getSchemaWithRevision(any(GetSchemaQuery.class)))
+        .willReturn(Mono.just(new GetSchemaWithRevisionResult(schema, 7L)));
+    given(getTablesBySchemaIdUseCase.getTablesBySchemaId(any(GetTablesBySchemaIdQuery.class)))
+        .willReturn(Flux.empty());
+
+    StepVerifier.create(sut.readSchemaExportSnapshot(schemaId))
+        .assertNext(result -> {
+          assertThat(result.currentRevision()).isEqualTo(7L);
+          assertThat(result.snapshot().tables()).isEmpty();
+        })
+        .verifyComplete();
+
+    then(tableSnapshotOrchestrator).shouldHaveNoInteractions();
+  }
+
+  @Test
+  @DisplayName("strict table snapshot 조회 실패를 전파하고 read transaction을 rollback한다")
+  void propagatesStrictSnapshotFailure() {
+    String schemaId = "schema-1";
+    Schema schema = new Schema(schemaId, "project-1", "mysql", "main_schema",
+        "utf8mb4", "utf8mb4_general_ci");
+    Table table = new Table("table-1", schemaId, "users", "utf8mb4",
+        "utf8mb4_general_ci");
+    RuntimeException failure = new RuntimeException("snapshot failure");
+
+    given(getSchemaWithRevisionUseCase.getSchemaWithRevision(any(GetSchemaQuery.class)))
+        .willReturn(Mono.just(new GetSchemaWithRevisionResult(schema, 42L)));
+    given(getTablesBySchemaIdUseCase.getTablesBySchemaId(any(GetTablesBySchemaIdQuery.class)))
+        .willReturn(Flux.just(table));
+    given(tableSnapshotOrchestrator.getTableSnapshotsStrict(anyList()))
+        .willReturn(Mono.error(failure));
+
+    StepVerifier.create(sut.readSchemaExportSnapshot(schemaId))
+        .expectErrorMatches(error -> error == failure)
+        .verify();
+
+    then(transactionManager).should().rollback(transaction);
+  }
+
+}
