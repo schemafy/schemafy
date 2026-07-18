@@ -303,7 +303,8 @@
     376,
     412,
     422,
-    419
+    419,
+    460
   ],
   "apps/backend/core/src/main/java/com/schemafy/core/erd/operation/application/service/DefaultUndoRedoEligibilityService.java": [
     352
@@ -1803,7 +1804,8 @@
   "apps/backend/core/src/test/java/com/schemafy/core/erd/operation/application/service/DefaultErdMutationCoordinatorTest.java": [
     412,
     422,
-    419
+    419,
+    460
   ],
   "apps/backend/core/src/test/java/com/schemafy/core/erd/operation/application/service/UndoRedoErdOperationServiceTest.java": [
     412
