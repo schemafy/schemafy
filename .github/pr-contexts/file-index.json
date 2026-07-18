@@ -114,7 +114,8 @@
     423,
     435,
     436,
-    459
+    459,
+    468
   ],
   "apps/backend/api/src/main/java/com/schemafy/api/collaboration/dto/event/CollaborationOutboundFactory.java": [
     337,
@@ -157,7 +158,8 @@
     383,
     342,
     436,
-    459
+    459,
+    468
   ],
   "apps/backend/api/src/main/java/com/schemafy/api/erd/controller/TableController.java": [
     337,
@@ -227,7 +229,8 @@
     342,
     436,
     441,
-    459
+    459,
+    468
   ],
   "apps/backend/api/src/test/java/com/schemafy/api/erd/controller/TableControllerTest.java": [
     337,
@@ -2270,7 +2273,8 @@
   ],
   "apps/backend/api/src/main/java/com/schemafy/api/erd/service/SchemaDdlExportOrchestrator.java": [
     436,
-    459
+    459,
+    468
   ],
   "apps/backend/api/src/main/java/com/schemafy/api/erd/service/ddl/DdlExportSnapshotMapper.java": [
     436,
@@ -2293,7 +2297,8 @@
   ],
   "apps/backend/api/src/test/java/com/schemafy/api/erd/service/SchemaDdlExportOrchestratorTest.java": [
     436,
-    459
+    459,
+    468
   ],
   "apps/backend/api/src/test/java/com/schemafy/api/erd/service/util/mysql/MySqlDdlUtilsTest.java": [
     436
@@ -2308,7 +2313,8 @@
     436
   ],
   "apps/backend/core/src/main/java/com/schemafy/core/erd/ddl/application/port/in/GenerateSchemaDdlCommand.java": [
-    436
+    436,
+    468
   ],
   "apps/backend/core/src/main/java/com/schemafy/core/erd/ddl/application/port/in/GenerateSchemaDdlUseCase.java": [
     436
@@ -2320,7 +2326,8 @@
     436
   ],
   "apps/backend/core/src/main/java/com/schemafy/core/erd/ddl/domain/DdlGenerator.java": [
-    436
+    436,
+    468
   ],
   "apps/backend/core/src/main/java/com/schemafy/core/erd/ddl/domain/DdlSchemaSnapshot.java": [
     436
@@ -2331,16 +2338,19 @@
   "apps/backend/core/src/main/java/com/schemafy/core/erd/ddl/domain/mysql/MySqlDdlGenerator.java": [
     436,
     445,
-    423
+    423,
+    468
   ],
   "apps/backend/core/src/test/java/com/schemafy/core/erd/ddl/application/service/GenerateSchemaDdlServiceTest.java": [
-    436
+    436,
+    468
   ],
   "apps/backend/core/src/test/java/com/schemafy/core/erd/ddl/domain/DdlExportVendorTest.java": [
     436
   ],
   "apps/backend/core/src/test/java/com/schemafy/core/erd/ddl/domain/mysql/MySqlDdlGeneratorTest.java": [
-    436
+    436,
+    468
   ],
   "apps/backend/core/src/main/java/com/schemafy/core/erd/operation/adapter/out/persistence/SchemaCollaborationStateEntity.java": [
     437
@@ -2868,5 +2878,38 @@
   ],
   "apps/frontend/src/features/auth/hooks/useFormState.ts": [
     463
+  ],
+  "apps/backend/api/src/main/java/com/schemafy/api/erd/controller/dto/response/SchemaMermaidExportResponse.java": [
+    468
+  ],
+  "apps/backend/api/src/main/java/com/schemafy/api/erd/service/SchemaMermaidExportOrchestrator.java": [
+    468
+  ],
+  "apps/backend/api/src/main/java/com/schemafy/api/erd/service/export/SchemaExportSnapshotMapper.java": [
+    468
+  ],
+  "apps/backend/api/src/main/java/com/schemafy/api/erd/service/export/SchemaExportSnapshotReader.java": [
+    468
+  ],
+  "apps/backend/api/src/test/java/com/schemafy/api/erd/service/SchemaMermaidExportOrchestratorTest.java": [
+    468
+  ],
+  "apps/backend/api/src/test/java/com/schemafy/api/erd/service/export/SchemaExportSnapshotReaderTest.java": [
+    468
+  ],
+  "apps/backend/core/src/main/java/com/schemafy/core/erd/export/domain/SchemaExportSnapshot.java": [
+    468
+  ],
+  "apps/backend/core/src/main/java/com/schemafy/core/erd/mermaid/application/port/in/GenerateSchemaMermaidCommand.java": [
+    468
+  ],
+  "apps/backend/core/src/main/java/com/schemafy/core/erd/mermaid/application/port/in/GenerateSchemaMermaidUseCase.java": [
+    468
+  ],
+  "apps/backend/core/src/main/java/com/schemafy/core/erd/mermaid/application/service/GenerateSchemaMermaidService.java": [
+    468
+  ],
+  "apps/backend/core/src/test/java/com/schemafy/core/erd/mermaid/application/service/GenerateSchemaMermaidServiceTest.java": [
+    468
   ]
 }
