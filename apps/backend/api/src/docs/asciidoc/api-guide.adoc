@@ -1762,6 +1762,37 @@ include::{snippets}/schema-ddl-export/response-fields.adoc[]
 
 ---
 
+==== Schema Mermaid Export
+
+스키마를 Mermaid ER diagram으로 export합니다.
+
+[source]
+----
+GET /api/v1.0/schemas/{schemaId}/exports/mermaid
+----
+
+[discrete]
+==== 요청
+
+include::{snippets}/schema-mermaid-export/http-request.adoc[]
+include::{snippets}/schema-mermaid-export/request-headers.adoc[]
+include::{snippets}/schema-mermaid-export/path-parameters.adoc[]
+include::{snippets}/schema-mermaid-export/curl-request.adoc[]
+
+[discrete]
+==== 응답
+
+include::{snippets}/schema-mermaid-export/response-headers.adoc[]
+include::{snippets}/schema-mermaid-export/response-body.adoc[]
+include::{snippets}/schema-mermaid-export/http-response.adoc[]
+
+[discrete]
+==== 응답 필드
+
+include::{snippets}/schema-mermaid-export/response-fields.adoc[]
+
+---
+
 ==== Schema 이름 변경
 
 스키마 이름을 변경합니다.
