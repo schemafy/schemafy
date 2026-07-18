@@ -75,10 +75,7 @@ export const SignUpForm = () => {
     handleBlur,
     runAllValidations,
     resetForm,
-  } = useFormState(
-    initialForm,
-    validationRules,
-  );
+  } = useFormState(initialForm, validationRules);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const navigate = useNavigate();
 
