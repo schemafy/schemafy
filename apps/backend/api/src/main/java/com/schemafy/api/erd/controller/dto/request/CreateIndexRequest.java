@@ -2,6 +2,7 @@ package com.schemafy.api.erd.controller.dto.request;
 
 import java.util.List;
 
+import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 
@@ -11,5 +12,5 @@ public record CreateIndexRequest(
     @NotBlank(message = "tableId는 필수입니다.") String tableId,
     String name,
     @NotNull(message = "type은 필수입니다.") IndexType type,
-    List<CreateIndexColumnRequest> columns) {
+    List<@Valid CreateIndexColumnRequest> columns) {
 }

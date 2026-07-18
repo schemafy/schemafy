@@ -27,6 +27,7 @@ import com.schemafy.core.erd.index.domain.type.SortDirection;
 import com.schemafy.core.erd.index.fixture.IndexFixture;
 import com.schemafy.core.erd.operation.application.inverse.StructuralSnapshot;
 import com.schemafy.core.erd.operation.application.service.StructuralSnapshotService;
+import com.schemafy.core.erd.vendor.fixture.DbVendorFixture;
 import com.schemafy.core.ulid.application.port.out.UlidGeneratorPort;
 
 import reactor.core.publisher.Mono;
@@ -34,6 +35,7 @@ import reactor.test.StepVerifier;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.then;
 import static org.mockito.Mockito.lenient;
@@ -66,6 +68,9 @@ class AddIndexColumnServiceTest {
   @Mock
   TransactionalOperator transactionalOperator;
 
+  @Mock
+  IndexCapabilityResolver indexCapabilityResolver;
+
   @InjectMocks
   AddIndexColumnService sut;
 
@@ -77,6 +82,8 @@ class AddIndexColumnServiceTest {
         .thenReturn(Mono.just(structuralSnapshot()));
     lenient().when(structuralSnapshotService.captureBySchemaId(any()))
         .thenReturn(Mono.just(structuralSnapshot()));
+    lenient().when(indexCapabilityResolver.resolve(any(), anyString()))
+        .thenReturn(Mono.just(DbVendorFixture.defaultCapabilities().indexes()));
   }
 
   @Nested
@@ -248,6 +255,33 @@ class AddIndexColumnServiceTest {
             assertThat(result.result().sortDirection()).isEqualTo(SortDirection.DESC);
           })
           .verifyComplete();
+    }
+
+    @Test
+    @DisplayName("지원하지 않는 타입의 인덱스에는 컬럼을 추가할 수 없다")
+    void rejectsUnsupportedIndexType() {
+      var command = IndexFixture.addColumnCommand("index1", "col2", 1, SortDirection.ASC);
+      var index = IndexFixture.hashIndexWithId("index1");
+      var existingColumns = List.of(
+          IndexFixture.indexColumn("ic1", "index1", "col1", 0, SortDirection.ASC));
+      var tableColumns = List.of(
+          ColumnFixture.columnWithId("col1"),
+          ColumnFixture.columnWithId("col2"));
+
+      given(getIndexByIdPort.findIndexById("index1"))
+          .willReturn(Mono.just(index));
+      given(getIndexColumnsByIndexIdPort.findIndexColumnsByIndexId("index1"))
+          .willReturn(Mono.just(existingColumns));
+      given(getColumnsByTableIdPort.findColumnsByTableId(index.tableId()))
+          .willReturn(Mono.just(tableColumns));
+      given(getIndexesByTableIdPort.findIndexesByTableId(index.tableId()))
+          .willReturn(Mono.just(List.of(index)));
+
+      StepVerifier.create(sut.addIndexColumn(command))
+          .expectErrorMatches(DomainException.hasErrorCode(IndexErrorCode.TYPE_INVALID))
+          .verify();
+
+      then(createIndexColumnPort).shouldHaveNoInteractions();
     }
 
   }
