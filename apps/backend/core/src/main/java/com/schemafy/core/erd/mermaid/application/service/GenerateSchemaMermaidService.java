@@ -99,16 +99,19 @@ public class GenerateSchemaMermaidService implements
 
     Map<String, EnumSet<AttributeKey>> keysByColumnId = attributeKeys(
         snapshot, context);
+    Set<String> notNullColumnIds = context.notNullColumnIds(table.id());
     String attributes = columns.stream()
         .map(column -> generateAttribute(column,
             keysByColumnId.getOrDefault(column.id(),
-                EnumSet.noneOf(AttributeKey.class))))
+                EnumSet.noneOf(AttributeKey.class)),
+            notNullColumnIds.contains(column.id())))
         .collect(Collectors.joining("\n"));
     return declaration + " {\n" + attributes + "\n    }";
   }
 
   private String generateAttribute(Column column,
-      EnumSet<AttributeKey> keys) {
+      EnumSet<AttributeKey> keys,
+      boolean notNull) {
     String name = column.name();
     if (!ATTRIBUTE_NAME_PATTERN.matcher(name).matches()) {
       throw new DomainException(ColumnErrorCode.NAME_INVALID,
@@ -130,11 +133,21 @@ public class GenerateSchemaMermaidService implements
             .collect(Collectors.joining(", "));
     String formattedDataType = formatDataType(dataType,
         column.typeArguments());
-    String typeArgumentComment = formattedDataType.equals(dataType)
+    List<String> metadata = new ArrayList<>();
+    if (!formattedDataType.equals(dataType)) {
+      metadata.add(formattedDataType);
+    }
+    if (notNull) {
+      metadata.add("NOT NULL");
+    }
+    if (column.autoIncrement()) {
+      metadata.add("AUTO_INCREMENT");
+    }
+    String metadataComment = metadata.isEmpty()
         ? ""
-        : " \"" + escapeQuotedText(formattedDataType) + "\"";
+        : " \"" + escapeQuotedText(String.join("; ", metadata)) + "\"";
     return "        " + dataType + " " + name + suffix
-        + typeArgumentComment;
+        + metadataComment;
   }
 
   private static String formatDataType(String dataType,

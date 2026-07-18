@@ -70,11 +70,11 @@ class GenerateSchemaMermaidServiceTest {
         .assertNext(mermaid -> assertThat(mermaid).isEqualTo("""
             erDiagram
                 T1["orders"] {
-                    BIGINT id PK
-                    BIGINT user_id PK, FK, UK
+                    BIGINT id PK "NOT NULL"
+                    BIGINT user_id PK, FK, UK "NOT NULL"
                 }
                 T2["users"] {
-                    BIGINT id PK
+                    BIGINT id PK "NOT NULL"
                     VARCHAR email UK
                 }
 
@@ -120,6 +120,38 @@ class GenerateSchemaMermaidServiceTest {
   }
 
   @Test
+  @DisplayName("NOT NULL과 AUTO_INCREMENT를 Mermaid attribute에 표시한다")
+  void includesColumnOptions() {
+    TableSnapshot users = table(
+        "table-users", "users",
+        List.of(
+            column("column-id", "table-users", "id", "BIGINT",
+                null, 0, true),
+            column("column-email", "table-users", "email", "VARCHAR",
+                new ColumnTypeArguments(255, null, null), 1),
+            column("column-nickname", "table-users", "nickname", "VARCHAR",
+                new ColumnTypeArguments(50, null, null), 2)),
+        List.of(
+            constraint("pk-users", "table-users", ConstraintKind.PRIMARY_KEY,
+                "column-id"),
+            constraint("nn-users-email", "table-users", ConstraintKind.NOT_NULL,
+                "column-email")),
+        List.of());
+
+    StepVerifier.create(sut.generateSchemaMermaid(
+        new GenerateSchemaMermaidCommand(schema(users))))
+        .assertNext(mermaid -> assertThat(mermaid).isEqualTo("""
+            erDiagram
+                T1["users"] {
+                    BIGINT id PK "NOT NULL; AUTO_INCREMENT"
+                    VARCHAR email "VARCHAR(255); NOT NULL"
+                    VARCHAR nickname "VARCHAR(50)"
+                }\
+            """))
+        .verifyComplete();
+  }
+
+  @Test
   @DisplayName("Mermaid entity code와 실제 문자를 충돌 없이 구분한다")
   void escapesMermaidEntityCodeMarkersWithoutCollision() {
     RelationshipSnapshot relationship = relationship(
@@ -150,7 +182,7 @@ class GenerateSchemaMermaidServiceTest {
         .assertNext(mermaid -> assertThat(mermaid).isEqualTo("""
             erDiagram
                 T1["entity#34;"] {
-                    BIGINT id PK
+                    BIGINT id PK "NOT NULL"
                 }
                 T2["entity#35;34;"] {
                     BIGINT parent_id FK
@@ -184,7 +216,7 @@ class GenerateSchemaMermaidServiceTest {
         .assertNext(mermaid -> assertThat(mermaid).isEqualTo("""
             erDiagram
                 T1["employees"] {
-                    BIGINT id PK
+                    BIGINT id PK "NOT NULL"
                     BIGINT manager_id FK
                 }
 
@@ -285,8 +317,14 @@ class GenerateSchemaMermaidServiceTest {
 
   private Column column(String id, String tableId, String name,
       String dataType, ColumnTypeArguments typeArguments, int seqNo) {
+    return column(id, tableId, name, dataType, typeArguments, seqNo, false);
+  }
+
+  private Column column(String id, String tableId, String name,
+      String dataType, ColumnTypeArguments typeArguments, int seqNo,
+      boolean autoIncrement) {
     return new Column(
-        id, tableId, name, dataType, typeArguments, seqNo, false,
+        id, tableId, name, dataType, typeArguments, seqNo, autoIncrement,
         null, null, null);
   }
 
