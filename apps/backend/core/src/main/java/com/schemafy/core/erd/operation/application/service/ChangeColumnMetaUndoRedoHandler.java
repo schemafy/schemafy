@@ -2,6 +2,7 @@ package com.schemafy.core.erd.operation.application.service;
 
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -90,12 +91,14 @@ class ChangeColumnMetaUndoRedoHandler
   private List<FkColumnMetaRevert> toForwardRevertList(
       List<FkColumnMetaRevert> inverseRevertList,
       List<Column> columns) {
+    Map<String, FkColumnMetaRevert> inverseRevertByColumnId = inverseRevertList.stream()
+        .collect(Collectors.toMap(
+            FkColumnMetaRevert::columnId,
+            revert -> revert,
+            (first, ignored) -> first));
     return columns.stream()
         .map(column -> {
-          FkColumnMetaRevert inverseRevert = inverseRevertList.stream()
-              .filter(revert -> revert.columnId().equals(column.id()))
-              .findFirst()
-              .orElseThrow();
+          FkColumnMetaRevert inverseRevert = inverseRevertByColumnId.get(column.id());
           return new FkColumnMetaRevert(
               column.id(),
               inverseRevert.oldCharset() == null
