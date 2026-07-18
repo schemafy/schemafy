@@ -17,6 +17,7 @@ import com.schemafy.core.erd.index.application.port.out.GetIndexesByTableIdPort;
 import com.schemafy.core.erd.index.domain.Index;
 import com.schemafy.core.erd.index.domain.IndexColumn;
 import com.schemafy.core.erd.index.domain.exception.IndexErrorCode;
+import com.schemafy.core.erd.index.domain.policy.IndexCapabilities;
 import com.schemafy.core.erd.index.domain.type.IndexType;
 import com.schemafy.core.erd.index.domain.validator.IndexValidator;
 import com.schemafy.core.erd.operation.application.inverse.ChangeIndexTypeInverse;
@@ -41,6 +42,7 @@ public class ChangeIndexTypeService implements ChangeIndexTypeUseCase {
   private final GetIndexByIdPort getIndexByIdPort;
   private final GetIndexesByTableIdPort getIndexesByTableIdPort;
   private final GetIndexColumnsByIndexIdPort getIndexColumnsByIndexIdPort;
+  private final IndexCapabilityResolver indexCapabilityResolver;
   private ErdMutationCoordinator erdMutationCoordinator = ErdMutationCoordinator.noop();
 
   @Autowired
@@ -54,28 +56,36 @@ public class ChangeIndexTypeService implements ChangeIndexTypeUseCase {
       IndexValidator.validateType(command.type());
       return getIndexByIdPort.findIndexById(command.indexId())
           .switchIfEmpty(Mono.error(new DomainException(IndexErrorCode.NOT_FOUND, "Index not found")))
-          .flatMap(index -> {
-            if (index.type() == command.type()) {
-              return Mono.just(MutationResult.<Void>noop(null, index.tableId()));
-            }
-            return erdMutationCoordinator.coordinate(ErdOperationType.CHANGE_INDEX_TYPE, command,
-                () -> getIndexByIdPort.findIndexById(command.indexId())
-                    .switchIfEmpty(Mono.error(new DomainException(IndexErrorCode.NOT_FOUND, "Index not found")))
-                    .flatMap(lockedIndex -> {
-                      if (lockedIndex.type() == command.type()) {
-                        return Mono.just(MutationResult.<Void>noop(null, lockedIndex.tableId()));
-                      }
-                      return validateTypeChange(lockedIndex, command.type())
-                          .then(Mono.defer(() -> changeIndexTypePort
-                              .changeIndexType(lockedIndex.id(), command.type())))
-                          .thenReturn(MutationResult.<Void>of(null, lockedIndex.tableId())
-                              .withInverse(new ChangeIndexTypeInverse(lockedIndex.id(), lockedIndex.type())));
-                    }));
-          });
+          .flatMap(index -> indexCapabilityResolver.resolve(INDEX, index.id())
+              .flatMap(capabilities -> {
+                IndexValidator.validateType(capabilities, command.type());
+                if (index.type() == command.type()) {
+                  return Mono.just(MutationResult.<Void>noop(null, index.tableId()));
+                }
+                return erdMutationCoordinator.coordinate(ErdOperationType.CHANGE_INDEX_TYPE, command,
+                    () -> getIndexByIdPort.findIndexById(command.indexId())
+                        .switchIfEmpty(Mono.error(
+                            new DomainException(IndexErrorCode.NOT_FOUND, "Index not found")))
+                        .flatMap(lockedIndex -> {
+                          if (lockedIndex.type() == command.type()) {
+                            return Mono.just(MutationResult.<Void>noop(null, lockedIndex.tableId()));
+                          }
+                          return validateTypeChange(lockedIndex, command.type(), capabilities)
+                              .then(Mono.defer(() -> changeIndexTypePort
+                                  .changeIndexType(lockedIndex.id(), command.type())))
+                              .thenReturn(MutationResult.<Void>of(null, lockedIndex.tableId())
+                                  .withInverse(new ChangeIndexTypeInverse(
+                                      lockedIndex.id(), lockedIndex.type())));
+                        }));
+              }));
     });
   }
 
-  private Mono<Void> validateTypeChange(Index index, IndexType type) {
+  private Mono<Void> validateTypeChange(
+      Index index,
+      IndexType type,
+      IndexCapabilities capabilities) {
+    IndexValidator.validateType(capabilities, type);
     return getIndexesByTableIdPort.findIndexesByTableId(index.tableId())
         .defaultIfEmpty(List.of())
         .flatMap(indexes -> fetchIndexColumns(indexes)
@@ -83,6 +93,7 @@ public class ChangeIndexTypeService implements ChangeIndexTypeUseCase {
                 .findIndexColumnsByIndexId(index.id())
                 .defaultIfEmpty(List.of())
                 .doOnNext(columns -> IndexValidator.validateDefinitionUniqueness(
+                    capabilities,
                     indexes,
                     indexColumnsByIndexId,
                     type,
