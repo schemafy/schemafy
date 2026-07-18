@@ -7,20 +7,15 @@ import com.schemafy.api.erd.service.export.SchemaExportSnapshotReader;
 import com.schemafy.core.erd.mermaid.application.port.in.GenerateSchemaMermaidCommand;
 import com.schemafy.core.erd.mermaid.application.port.in.GenerateSchemaMermaidUseCase;
 
+import lombok.RequiredArgsConstructor;
 import reactor.core.publisher.Mono;
 
 @Service
+@RequiredArgsConstructor
 public class SchemaMermaidExportOrchestrator {
 
   private final SchemaExportSnapshotReader schemaExportSnapshotReader;
   private final GenerateSchemaMermaidUseCase generateSchemaMermaidUseCase;
-
-  public SchemaMermaidExportOrchestrator(
-      SchemaExportSnapshotReader schemaExportSnapshotReader,
-      GenerateSchemaMermaidUseCase generateSchemaMermaidUseCase) {
-    this.schemaExportSnapshotReader = schemaExportSnapshotReader;
-    this.generateSchemaMermaidUseCase = generateSchemaMermaidUseCase;
-  }
 
   public Mono<SchemaMermaidExportResponse> exportSchemaMermaid(
       String schemaId) {

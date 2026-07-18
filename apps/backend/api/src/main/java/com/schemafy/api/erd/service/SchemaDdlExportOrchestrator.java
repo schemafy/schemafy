@@ -8,20 +8,15 @@ import com.schemafy.core.erd.ddl.application.port.in.GenerateSchemaDdlCommand;
 import com.schemafy.core.erd.ddl.application.port.in.GenerateSchemaDdlUseCase;
 import com.schemafy.core.erd.ddl.domain.DdlExportVendor;
 
+import lombok.RequiredArgsConstructor;
 import reactor.core.publisher.Mono;
 
 @Service
+@RequiredArgsConstructor
 public class SchemaDdlExportOrchestrator {
 
   private final SchemaExportSnapshotReader schemaExportSnapshotReader;
   private final GenerateSchemaDdlUseCase generateSchemaDdlUseCase;
-
-  public SchemaDdlExportOrchestrator(
-      SchemaExportSnapshotReader schemaExportSnapshotReader,
-      GenerateSchemaDdlUseCase generateSchemaDdlUseCase) {
-    this.schemaExportSnapshotReader = schemaExportSnapshotReader;
-    this.generateSchemaDdlUseCase = generateSchemaDdlUseCase;
-  }
 
   public Mono<SchemaDdlExportResponse> exportSchemaDdl(String schemaId,
       String targetDbVendor) {
