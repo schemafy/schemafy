@@ -40,7 +40,12 @@ export const useCanvasKeyboard = ({
       )
         return;
 
-      if ((e.ctrlKey || e.metaKey) && e.code === 'KeyZ' && !e.shiftKey && onUndo) {
+      if (
+        (e.ctrlKey || e.metaKey) &&
+        e.code === 'KeyZ' &&
+        !e.shiftKey &&
+        onUndo
+      ) {
         e.preventDefault();
         onUndo();
         return;
