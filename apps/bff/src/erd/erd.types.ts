@@ -17,6 +17,8 @@ export type JsonObject = {
   [key: string]: JsonValue;
 };
 
+export type IndexType = 'BTREE' | 'HASH' | 'FULLTEXT' | 'SPATIAL' | 'OTHER';
+
 export type SchemaResponse = {
   id: string;
   projectId: string;
@@ -125,7 +127,7 @@ export type IndexResponse = {
   id: string;
   tableId: string;
   name: string;
-  type: string;
+  type: IndexType;
 };
 
 export type IndexColumnResponse = {
@@ -145,7 +147,7 @@ export type CreateIndexColumnRequest = {
 export type CreateIndexRequest = {
   tableId: string;
   name: string;
-  type: string;
+  type: IndexType;
   columns?: CreateIndexColumnRequest[];
 };
 
@@ -154,7 +156,7 @@ export type ChangeIndexNameRequest = {
 };
 
 export type ChangeIndexTypeRequest = {
-  type: string;
+  type: IndexType;
 };
 
 export type AddIndexColumnRequest = {

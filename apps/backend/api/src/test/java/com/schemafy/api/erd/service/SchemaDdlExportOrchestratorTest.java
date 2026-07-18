@@ -2,6 +2,7 @@ package com.schemafy.api.erd.service;
 
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 import org.springframework.transaction.ReactiveTransaction;
 import org.springframework.transaction.ReactiveTransactionManager;
@@ -20,6 +21,8 @@ import com.schemafy.api.erd.service.ddl.DdlExportSnapshotMapper;
 import com.schemafy.core.erd.ddl.application.port.in.GenerateSchemaDdlCommand;
 import com.schemafy.core.erd.ddl.application.port.in.GenerateSchemaDdlUseCase;
 import com.schemafy.core.erd.ddl.domain.DdlExportVendor;
+import com.schemafy.core.erd.index.domain.policy.IndexCapabilities;
+import com.schemafy.core.erd.index.domain.type.IndexType;
 import com.schemafy.core.erd.schema.application.port.in.GetSchemaQuery;
 import com.schemafy.core.erd.schema.application.port.in.GetSchemaWithRevisionResult;
 import com.schemafy.core.erd.schema.application.port.in.GetSchemaWithRevisionUseCase;
@@ -30,6 +33,7 @@ import com.schemafy.core.erd.table.domain.Table;
 import com.schemafy.core.erd.vendor.application.port.in.GetProjectDbVendorQuery;
 import com.schemafy.core.erd.vendor.application.port.in.GetProjectDbVendorUseCase;
 import com.schemafy.core.erd.vendor.domain.DbVendor;
+import com.schemafy.core.erd.vendor.domain.VendorCapabilities;
 
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
@@ -136,7 +140,7 @@ class SchemaDdlExportOrchestratorTest {
         .getTablesBySchemaId(new GetTablesBySchemaIdQuery(schemaId));
     then(generateSchemaDdlUseCase).should().generateSchemaDdl(argThat(
         command -> command.snapshot().schema().id().equals(schemaId)
-            && command.snapshot().schema().dbVendorName().equals("mariadb")
+            && command.snapshot().schema().dbVendorName().equals("mysql")
             && command.targetDbVendor().equals(DdlExportVendor.MYSQL)
             && command.snapshot().tables().size() == 1
             && command.snapshot().tables().getFirst().columns().size() == 1));
@@ -176,10 +180,17 @@ class SchemaDdlExportOrchestratorTest {
   private static DbVendor sourceDbVendor() {
     return new DbVendor(
         1,
-        "MariaDB 11",
-        "mariadb",
-        "11",
-        "{}");
+        "MySQL 8.0",
+        "mysql",
+        "8.0",
+        "{}",
+        new VendorCapabilities(1, mysqlIndexCapabilities()));
+  }
+
+  private static IndexCapabilities mysqlIndexCapabilities() {
+    return new IndexCapabilities(
+        Set.of(IndexType.BTREE, IndexType.FULLTEXT, IndexType.SPATIAL),
+        Set.of(IndexType.BTREE));
   }
 
 }

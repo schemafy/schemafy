@@ -5,6 +5,7 @@ import org.springframework.stereotype.Component;
 import com.schemafy.core.common.json.JsonCodec;
 import com.schemafy.core.erd.vendor.domain.DbVendor;
 import com.schemafy.core.erd.vendor.domain.DbVendorSummary;
+import com.schemafy.core.erd.vendor.domain.VendorCapabilities;
 
 @Component
 class DbVendorMapper {
@@ -21,7 +22,8 @@ class DbVendorMapper {
         entity.getDisplayName(),
         entity.getName(),
         entity.getVersion(),
-        jsonCodec.normalizePersistedJson(entity.getDatatypeMappings()));
+        jsonCodec.normalizePersistedJson(entity.getDatatypeMappings()),
+        jsonCodec.fromPersistedJson(entity.getCapabilities(), VendorCapabilities.class));
   }
 
   DbVendorSummary toSummary(DbVendorEntity entity) {

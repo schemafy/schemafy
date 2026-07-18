@@ -1,8 +1,18 @@
+import type { IndexType } from '@/types/erd.types';
+
 export type DbVendorSummary = {
   id: number;
   displayName: string;
   name: string;
   version: string;
+};
+
+export type VendorCapabilities = {
+  schemaVersion: number;
+  indexes: {
+    supportedTypes: IndexType[];
+    sortDirectionTypes: IndexType[];
+  };
 };
 
 export type DatatypeParameter = {
@@ -34,4 +44,5 @@ export type DbVendorDetail = {
   name: string;
   version: string;
   datatypeMappings: DatatypeMappings;
+  capabilities: VendorCapabilities;
 };

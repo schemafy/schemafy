@@ -814,9 +814,11 @@ class ProjectUseCaseIntegrationTest extends ProjectDomainIntegrationSupport {
   private void insertDeletedDbVendor() {
     databaseClient.sql("""
         INSERT INTO db_vendors (
-          id, display_name, name, version, datatype_mappings, deleted_at
+          id, display_name, name, version, datatype_mappings, capabilities, deleted_at
         ) VALUES (
-          :id, 'Deleted Vendor', 'deleted-vendor', '1.0', '{}', CURRENT_TIMESTAMP
+          :id, 'Deleted Vendor', 'deleted-vendor', '1.0', '{}',
+          '{"schemaVersion":1,"indexes":{"supportedTypes":["BTREE"],"sortDirectionTypes":["BTREE"]}}',
+          CURRENT_TIMESTAMP
         )
         """)
         .bind("id", DELETED_DB_VENDOR_ID)

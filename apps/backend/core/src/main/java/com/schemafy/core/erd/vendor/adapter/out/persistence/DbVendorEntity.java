@@ -33,6 +33,9 @@ class DbVendorEntity {
   @Column("datatype_mappings")
   private String datatypeMappings;
 
+  @Column("capabilities")
+  private String capabilities;
+
   @CreatedDate
   private Instant createdAt;
 
