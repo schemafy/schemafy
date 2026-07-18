@@ -11,13 +11,19 @@ import com.schemafy.api.common.exception.AuthErrorCode;
 import com.schemafy.api.common.security.jwt.JwtProvider;
 import com.schemafy.api.common.security.jwt.JwtTokenIssuer;
 import com.schemafy.api.user.controller.dto.request.LoginRequest;
+import com.schemafy.api.user.controller.dto.request.SendSignUpEmailCodeRequest;
 import com.schemafy.api.user.controller.dto.request.SignUpRequest;
+import com.schemafy.api.user.controller.dto.request.VerifySignUpEmailRequest;
+import com.schemafy.api.user.controller.dto.response.SignUpEmailVerificationResponse;
 import com.schemafy.api.user.controller.dto.response.UserInfoResponse;
+import com.schemafy.api.user.controller.dto.response.VerifySignUpEmailResponse;
 import com.schemafy.core.common.exception.DomainException;
 import com.schemafy.core.user.application.port.in.GetUserByIdQuery;
 import com.schemafy.core.user.application.port.in.GetUserByIdUseCase;
 import com.schemafy.core.user.application.port.in.LoginUserUseCase;
+import com.schemafy.core.user.application.port.in.SendSignUpEmailCodeUseCase;
 import com.schemafy.core.user.application.port.in.SignUpUserUseCase;
+import com.schemafy.core.user.application.port.in.VerifySignUpEmailUseCase;
 import com.schemafy.core.user.domain.User;
 
 import lombok.RequiredArgsConstructor;
@@ -31,12 +37,31 @@ import reactor.core.publisher.Mono;
 public class AuthController {
 
   private final SignUpUserUseCase signUpUserUseCase;
+  private final SendSignUpEmailCodeUseCase sendSignUpEmailCodeUseCase;
+  private final VerifySignUpEmailUseCase verifySignUpEmailUseCase;
   private final LoginUserUseCase loginUserUseCase;
   private final GetUserByIdUseCase getUserByIdUseCase;
   private final JwtProvider jwtProvider;
   private final JwtTokenIssuer jwtTokenIssuer;
 
-  /** 회원가입 API 새로운 사용자를 등록하고 JWT 토큰을 발급합니다. */
+  /** 회원가입 이메일 인증 코드를 발송합니다. */
+  @PostMapping("/users/signup/email-code")
+  public Mono<ResponseEntity<SignUpEmailVerificationResponse>> sendSignUpEmailCode(
+      @Valid @RequestBody SendSignUpEmailCodeRequest request) {
+    return sendSignUpEmailCodeUseCase.sendSignUpEmailCode(request.toCommand())
+        .map(result -> ResponseEntity.accepted()
+            .body(SignUpEmailVerificationResponse.from(result)));
+  }
+
+  /** 회원가입 이메일 인증 코드를 검증합니다. */
+  @PostMapping("/users/signup/email-code/verify")
+  public Mono<ResponseEntity<VerifySignUpEmailResponse>> verifySignUpEmail(
+      @Valid @RequestBody VerifySignUpEmailRequest request) {
+    return verifySignUpEmailUseCase.verifySignUpEmail(request.toCommand())
+        .map(result -> ResponseEntity.ok(VerifySignUpEmailResponse.from(result)));
+  }
+
+  /** 이메일 인증이 완료된 사용자를 가입시키고 JWT 토큰을 발급합니다. */
   @PostMapping("/users/signup")
   public Mono<ResponseEntity<UserInfoResponse>> signUp(
       @Valid @RequestBody SignUpRequest request) {

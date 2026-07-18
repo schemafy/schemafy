@@ -18,7 +18,8 @@ class SignUpUserCommandTest {
     assertThatThrownBy(() -> new SignUpUserCommand(
         "test@example.com",
         "Tester",
-        "passwrd"))
+        "passwrd",
+        "signup-token"))
         .matches(DomainException.hasErrorCode(UserErrorCode.INVALID_PARAMETER));
   }
 
@@ -28,7 +29,8 @@ class SignUpUserCommandTest {
     assertThatThrownBy(() -> new SignUpUserCommand(
         "test@example.com",
         " ",
-        "password"))
+        "password",
+        "signup-token"))
         .matches(DomainException.hasErrorCode(UserErrorCode.INVALID_PARAMETER));
   }
 
@@ -38,8 +40,20 @@ class SignUpUserCommandTest {
     assertThatThrownBy(() -> new SignUpUserCommand(
         "invalid-email",
         "Tester",
-        "password"))
+        "password",
+        "signup-token"))
         .isInstanceOf(IllegalArgumentException.class);
+  }
+
+  @Test
+  @DisplayName("signup verification token이 없으면 EMAIL_NOT_VERIFIED를 반환한다")
+  void rejectsMissingSignupVerificationToken() {
+    assertThatThrownBy(() -> new SignUpUserCommand(
+        "test@example.com",
+        "Tester",
+        "password",
+        " "))
+        .matches(DomainException.hasErrorCode(UserErrorCode.EMAIL_NOT_VERIFIED));
   }
 
   @Test
@@ -48,7 +62,8 @@ class SignUpUserCommandTest {
     SignUpUserCommand command = new SignUpUserCommand(
         "TEST@EXAMPLE.COM",
         "Tester",
-        "password");
+        "password",
+        "signup-token");
 
     assertThat(command.email()).isEqualTo("test@example.com");
   }

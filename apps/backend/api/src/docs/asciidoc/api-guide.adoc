@@ -3679,7 +3679,7 @@ include::{snippets}/relationship-column-change-position/response-fields.adoc[]
 
 === 회원가입
 
-사용자 계정을 생성하고 JWT 토큰을 발급합니다.
+이메일 인증이 완료된 사용자를 생성하고 JWT 토큰을 발급합니다.
 
 [source]
 ----
@@ -3700,6 +3700,56 @@ include::{snippets}/user-signup/response-headers.adoc[]
 include::{snippets}/user-signup/response-body.adoc[]
 include::{snippets}/user-signup/http-response.adoc[]
 include::{snippets}/user-signup/response-fields.adoc[]
+
+---
+
+=== 회원가입 이메일 인증 코드 발송
+
+회원가입에 사용할 이메일로 6자리 인증 코드를 발송합니다.
+
+[source]
+----
+POST /public/api/v1.0/users/signup/email-code
+----
+
+[discrete]
+==== 요청
+
+include::{snippets}/user-signup-email-code/http-request.adoc[]
+include::{snippets}/user-signup-email-code/request-fields.adoc[]
+include::{snippets}/user-signup-email-code/curl-request.adoc[]
+
+[discrete]
+==== 응답
+
+include::{snippets}/user-signup-email-code/response-body.adoc[]
+include::{snippets}/user-signup-email-code/http-response.adoc[]
+include::{snippets}/user-signup-email-code/response-fields.adoc[]
+
+---
+
+=== 회원가입 이메일 인증 코드 검증
+
+이메일 인증 코드를 검증하고 최종 회원가입에 사용할 검증 토큰을 발급합니다.
+
+[source]
+----
+POST /public/api/v1.0/users/signup/email-code/verify
+----
+
+[discrete]
+==== 요청
+
+include::{snippets}/user-signup-email-code-verify/http-request.adoc[]
+include::{snippets}/user-signup-email-code-verify/request-fields.adoc[]
+include::{snippets}/user-signup-email-code-verify/curl-request.adoc[]
+
+[discrete]
+==== 응답
+
+include::{snippets}/user-signup-email-code-verify/response-body.adoc[]
+include::{snippets}/user-signup-email-code-verify/http-response.adoc[]
+include::{snippets}/user-signup-email-code-verify/response-fields.adoc[]
 
 ---
 

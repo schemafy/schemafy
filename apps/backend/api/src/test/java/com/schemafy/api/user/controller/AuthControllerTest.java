@@ -8,7 +8,6 @@ import org.springframework.boot.test.autoconfigure.web.reactive.AutoConfigureWeb
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.http.MediaType;
 import org.springframework.test.context.ActiveProfiles;
-import org.springframework.test.web.reactive.server.EntityExchangeResult;
 import org.springframework.test.web.reactive.server.WebTestClient;
 
 import org.junit.jupiter.api.BeforeEach;
@@ -22,14 +21,16 @@ import com.jayway.jsonpath.JsonPath;
 import com.schemafy.api.common.constant.ApiPath;
 import com.schemafy.api.common.exception.AuthErrorCode;
 import com.schemafy.api.common.exception.CommonErrorCode;
+import com.schemafy.api.testsupport.user.CapturingEmailVerificationTestAdapter;
+import com.schemafy.api.testsupport.user.InMemoryAuthTokenTestAdapter;
 import com.schemafy.api.testsupport.user.UserHttpTestSupport;
 import com.schemafy.api.user.controller.dto.request.LoginRequest;
+import com.schemafy.api.user.controller.dto.request.SendSignUpEmailCodeRequest;
 import com.schemafy.api.user.controller.dto.request.SignUpRequest;
+import com.schemafy.api.user.controller.dto.request.VerifySignUpEmailRequest;
 import com.schemafy.core.ulid.application.service.UlidGenerator;
+import com.schemafy.core.user.domain.UserStatus;
 import com.schemafy.core.user.domain.exception.UserErrorCode;
-
-import reactor.core.publisher.Mono;
-import reactor.test.StepVerifier;
 
 import static com.epages.restdocs.apispec.WebTestClientRestDocumentationWrapper.document;
 import static com.schemafy.api.user.docs.UserApiSnippets.*;
@@ -45,20 +46,144 @@ class AuthControllerTest extends UserHttpTestSupport {
   private static final String API_BASE_PATH = ApiPath.PUBLIC_API.replace(
       "{version}",
       "v1.0");
+  private static final String VALID_SIGNUP_VERIFICATION_TOKEN = "BBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBB";
 
   @Autowired
   private WebTestClient webTestClient;
 
+  @Autowired
+  private CapturingEmailVerificationTestAdapter emailVerificationTestAdapter;
+
+  @Autowired
+  private InMemoryAuthTokenTestAdapter authTokenTestAdapter;
+
   @BeforeEach
   void setUp() {
+    emailVerificationTestAdapter.clear();
+    authTokenTestAdapter.clear();
     cleanupUserFixtures().block();
   }
 
   @Test
-  @DisplayName("회원가입에 성공한다")
+  @DisplayName("회원가입 이메일 인증 코드 발송에 성공한다")
+  void sendSignUpEmailCodeSuccess() {
+    SendSignUpEmailCodeRequest request = new SendSignUpEmailCodeRequest(
+        "test@example.com");
+
+    webTestClient.post().uri(API_BASE_PATH + "/users/signup/email-code")
+        .contentType(MediaType.APPLICATION_JSON)
+        .bodyValue(request)
+        .exchange()
+        .expectStatus().isAccepted()
+        .expectHeader().doesNotExist("Authorization")
+        .expectBody()
+        .consumeWith(document("user-signup-email-code",
+            sendSignUpEmailCodeRequest(),
+            signUpEmailVerificationResponse()))
+        .jsonPath("$.email").isEqualTo("test@example.com")
+        .jsonPath("$.expiresAt").isNotEmpty();
+
+    assertThat(getUserByEmail("test@example.com")).isNull();
+    assertThat(emailVerificationTestAdapter.get("test@example.com")).isNotNull();
+  }
+
+  @Test
+  @DisplayName("기존 회원가입 이메일 인증 코드가 유효하면 같은 인증 만료 시각을 반환하고 인증 메일을 추가 발송하지 않는다")
+  void sendSignUpEmailCodeReturnsVerificationExpiresAtWithoutSendingMailWhenCodeIsStillValid() {
+    SendSignUpEmailCodeRequest request = new SendSignUpEmailCodeRequest(
+        "test@example.com");
+
+    webTestClient.post().uri(API_BASE_PATH + "/users/signup/email-code")
+        .contentType(MediaType.APPLICATION_JSON)
+        .bodyValue(request)
+        .exchange()
+        .expectStatus().isAccepted()
+        .expectBody()
+        .jsonPath("$.email").isEqualTo("test@example.com")
+        .jsonPath("$.expiresAt").isNotEmpty();
+
+    CapturingEmailVerificationTestAdapter.SentVerificationCode firstSentCode = emailVerificationTestAdapter.get(
+        "test@example.com");
+
+    webTestClient.post().uri(API_BASE_PATH + "/users/signup/email-code")
+        .contentType(MediaType.APPLICATION_JSON)
+        .bodyValue(request)
+        .exchange()
+        .expectStatus().isAccepted()
+        .expectBody()
+        .jsonPath("$.email").isEqualTo("test@example.com")
+        .jsonPath("$.expiresAt").isEqualTo(firstSentCode.expiresAt().toString());
+
+    CapturingEmailVerificationTestAdapter.SentVerificationCode secondSentCode = emailVerificationTestAdapter.get(
+        "test@example.com");
+    assertThat(secondSentCode.code()).isEqualTo(firstSentCode.code());
+    assertThat(emailVerificationTestAdapter.sendCount("test@example.com"))
+        .isEqualTo(1);
+  }
+
+  @Test
+  @DisplayName("회원가입 이메일 인증에 성공하면 signup verification token을 발급한다")
+  void verifySignUpEmailSuccess() {
+    webTestClient.post().uri(API_BASE_PATH + "/users/signup/email-code")
+        .contentType(MediaType.APPLICATION_JSON)
+        .bodyValue(new SendSignUpEmailCodeRequest("test@example.com"))
+        .exchange()
+        .expectStatus().isAccepted();
+
+    String code = emailVerificationTestAdapter.get("test@example.com").code();
+    VerifySignUpEmailRequest verifyRequest = new VerifySignUpEmailRequest(
+        "test@example.com", code);
+
+    webTestClient.post().uri(API_BASE_PATH + "/users/signup/email-code/verify")
+        .contentType(MediaType.APPLICATION_JSON)
+        .bodyValue(verifyRequest)
+        .exchange()
+        .expectStatus().isOk()
+        .expectHeader().doesNotExist("Authorization")
+        .expectBody()
+        .consumeWith(document("user-signup-email-code-verify",
+            verifySignUpEmailRequest(),
+            verifySignUpEmailResponse()))
+        .jsonPath("$.email").isEqualTo("test@example.com")
+        .jsonPath("$.signupVerificationToken").isNotEmpty()
+        .jsonPath("$.expiresAt").isNotEmpty();
+  }
+
+  @Test
+  @DisplayName("회원가입 이메일 인증 코드는 재사용할 수 없다")
+  void verifySignUpEmailCodeCannotBeReused() {
+    webTestClient.post().uri(API_BASE_PATH + "/users/signup/email-code")
+        .contentType(MediaType.APPLICATION_JSON)
+        .bodyValue(new SendSignUpEmailCodeRequest("test@example.com"))
+        .exchange()
+        .expectStatus().isAccepted();
+
+    String code = emailVerificationTestAdapter.get("test@example.com").code();
+    VerifySignUpEmailRequest verifyRequest = new VerifySignUpEmailRequest(
+        "test@example.com", code);
+
+    webTestClient.post().uri(API_BASE_PATH + "/users/signup/email-code/verify")
+        .contentType(MediaType.APPLICATION_JSON)
+        .bodyValue(verifyRequest)
+        .exchange()
+        .expectStatus().isOk();
+
+    webTestClient.post().uri(API_BASE_PATH + "/users/signup/email-code/verify")
+        .contentType(MediaType.APPLICATION_JSON)
+        .bodyValue(verifyRequest)
+        .exchange()
+        .expectStatus().isBadRequest()
+        .expectBody()
+        .jsonPath("$.reason")
+        .isEqualTo(UserErrorCode.VERIFICATION_CODE_EXPIRED.code());
+  }
+
+  @Test
+  @DisplayName("이메일 인증이 완료된 회원가입에 성공하면 토큰을 발급한다")
   void signUpSuccess() {
+    String signupVerificationToken = verifyEmailAndGetSignupToken("test@example.com");
     SignUpRequest request = new SignUpRequest("test@example.com",
-        "Test User", "password");
+        "Test User", "password", signupVerificationToken);
 
     webTestClient.post().uri(API_BASE_PATH + "/users/signup")
         .contentType(MediaType.APPLICATION_JSON)
@@ -70,22 +195,30 @@ class AuthControllerTest extends UserHttpTestSupport {
         .expectBody()
         .consumeWith(document("user-signup",
             signUpRequest(),
-            signUpResponseHeaders(),
-            signUpResponse()))
-        .jsonPath("$.id").isNotEmpty()
+            loginResponseHeaders(),
+            loginResponse()))
         .jsonPath("$.email").isEqualTo("test@example.com");
 
-    StepVerifier.create(Mono.justOrEmpty(getUserByEmail("test@example.com")))
-        .as("user should be persisted with auditing columns")
-        .assertNext(user -> {
-          assertThat(user.email()).isEqualTo("test@example.com");
-          assertThat(user.name()).isEqualTo("Test User");
-          assertThat(user.id()).isNotNull();
-          assertThat(user.createdAt()).isNotNull();
-          assertThat(user.updatedAt()).isNotNull();
-          assertThat(user.deletedAt()).isNull();
-        })
-        .verifyComplete();
+    assertThat(getUserByEmail("test@example.com").status())
+        .isEqualTo(UserStatus.ACTIVE);
+  }
+
+  @Test
+  @DisplayName("이메일 검증 토큰 없이 회원가입하면 EMAIL_NOT_VERIFIED를 반환한다")
+  void signUpFailEmailNotVerified() {
+    SignUpRequest request = new SignUpRequest("test@example.com",
+        "Test User", "password", VALID_SIGNUP_VERIFICATION_TOKEN);
+
+    webTestClient.post().uri(API_BASE_PATH + "/users/signup")
+        .contentType(MediaType.APPLICATION_JSON)
+        .bodyValue(request)
+        .exchange()
+        .expectStatus().isForbidden()
+        .expectBody()
+        .jsonPath("$.reason")
+        .isEqualTo(UserErrorCode.EMAIL_NOT_VERIFIED.code());
+
+    assertThat(getUserByEmail("test@example.com")).isNull();
   }
 
   @DisplayName("유효하지 않은 회원가입 요청은 실패한다")
@@ -105,29 +238,46 @@ class AuthControllerTest extends UserHttpTestSupport {
 
   static Stream<Arguments> invalidSignUpRequests() {
     return Stream.of(
-        Arguments.of(new SignUpRequest("", "Test User", "password")),
+        Arguments.of(new SignUpRequest("", "Test User", "password", "token")),
         Arguments.of(new SignUpRequest("invalid-email", "Test User",
-            "password")),
+            "password", "token")),
         Arguments.of(
-            new SignUpRequest("test@example.com", "", "password")),
+            new SignUpRequest("test@example.com", "", "password", "token")),
         Arguments.of(new SignUpRequest("test@example.com", "a".repeat(201),
-            "password")),
+            "password", "token")),
         Arguments.of(new SignUpRequest("test@example.com", "Test User",
-            "passwrd")),
+            "passwrd", "token")),
         Arguments.of(new SignUpRequest("test@example.com", "Test User",
-            "")));
+            "", "token")),
+        Arguments.of(new SignUpRequest("test@example.com", "Test User",
+            "password", "")),
+        Arguments.of(new SignUpRequest("test@example.com", "Test User",
+            "password", "invalid-token")));
+  }
+
+  private String verifyEmailAndGetSignupToken(String email) {
+    webTestClient.post().uri(API_BASE_PATH + "/users/signup/email-code")
+        .contentType(MediaType.APPLICATION_JSON)
+        .bodyValue(new SendSignUpEmailCodeRequest(email))
+        .exchange()
+        .expectStatus().isAccepted();
+    String code = emailVerificationTestAdapter.get(email).code();
+    byte[] body = webTestClient.post().uri(API_BASE_PATH + "/users/signup/email-code/verify")
+        .contentType(MediaType.APPLICATION_JSON)
+        .bodyValue(new VerifySignUpEmailRequest(email, code))
+        .exchange()
+        .expectStatus().isOk()
+        .expectBody()
+        .jsonPath("$.signupVerificationToken").isNotEmpty()
+        .returnResult()
+        .getResponseBody();
+    return JsonPath.read(new String(body), "$.signupVerificationToken");
   }
 
   @Test
   @DisplayName("로그인에 성공한다")
   void loginSuccess() {
-    SignUpRequest signUpRequest = new SignUpRequest("test@example.com",
-        "Test User", "password");
-    webTestClient.post().uri(API_BASE_PATH + "/users/signup")
-        .contentType(MediaType.APPLICATION_JSON)
-        .bodyValue(signUpRequest)
-        .exchange()
-        .expectStatus().isOk();
+    createUser("test@example.com", "Test User", "password");
 
     LoginRequest loginRequest = new LoginRequest("test@example.com",
         "password");
@@ -189,13 +339,7 @@ class AuthControllerTest extends UserHttpTestSupport {
   @Test
   @DisplayName("로그인 시 비밀번호가 틀리면 실패한다")
   void loginFailPasswordMismatch() {
-    SignUpRequest signUpRequest = new SignUpRequest("test@example.com",
-        "Test User", "password");
-    webTestClient.post().uri(API_BASE_PATH + "/users/signup")
-        .contentType(MediaType.APPLICATION_JSON)
-        .bodyValue(signUpRequest)
-        .exchange()
-        .expectStatus().isOk();
+    createUser("test@example.com", "Test User", "password");
 
     LoginRequest loginRequest = new LoginRequest("test@example.com",
         "wrong_password");
@@ -213,18 +357,7 @@ class AuthControllerTest extends UserHttpTestSupport {
   @Test
   @DisplayName("유효한 리프레시 토큰으로 토큰 갱신에 성공한다")
   void refreshTokenSuccess() {
-    SignUpRequest signUpRequest = new SignUpRequest("test@example.com",
-        "Test User", "password");
-    EntityExchangeResult<byte[]> signupResult = webTestClient.post()
-        .uri(API_BASE_PATH + "/users/signup")
-        .contentType(MediaType.APPLICATION_JSON)
-        .bodyValue(signUpRequest)
-        .exchange()
-        .expectStatus().isOk()
-        .expectBody(byte[].class).returnResult();
-
-    String responseBody = new String(signupResult.getResponseBody());
-    String userId = JsonPath.read(responseBody, "$.id");
+    String userId = createUser("test@example.com", "Test User", "password").id();
     String refreshToken = generateRefreshToken(userId);
 
     webTestClient.post().uri(API_BASE_PATH + "/users/refresh")
@@ -242,18 +375,7 @@ class AuthControllerTest extends UserHttpTestSupport {
   @Test
   @DisplayName("잘못된 타입의 토큰으로 갱신 시 실패한다")
   void refreshTokenFailWithAccessToken() {
-    SignUpRequest signUpRequest = new SignUpRequest("test@example.com",
-        "Test User", "password");
-    EntityExchangeResult<byte[]> signupResult = webTestClient.post()
-        .uri(API_BASE_PATH + "/users/signup")
-        .contentType(MediaType.APPLICATION_JSON)
-        .bodyValue(signUpRequest)
-        .exchange()
-        .expectStatus().isOk()
-        .expectBody(byte[].class).returnResult();
-
-    String responseBody = new String(signupResult.getResponseBody());
-    String userId = JsonPath.read(responseBody, "$.id");
+    String userId = createUser("test@example.com", "Test User", "password").id();
     String accessToken = generateAccessToken(userId);
 
     // 쿠키로 Access Token 전달 (잘못된 토큰 타입)

@@ -8,9 +8,12 @@ import com.schemafy.core.common.exception.DomainException;
 import com.schemafy.core.ulid.application.port.out.UlidGeneratorPort;
 import com.schemafy.core.user.application.port.in.SignUpUserCommand;
 import com.schemafy.core.user.application.port.in.SignUpUserUseCase;
+import com.schemafy.core.user.application.port.out.AuthTokenPort;
 import com.schemafy.core.user.application.port.out.CreateUserPort;
 import com.schemafy.core.user.application.port.out.ExistsUserByEmailPort;
 import com.schemafy.core.user.application.port.out.PasswordHashPort;
+import com.schemafy.core.user.domain.AuthTokenConsumeResult;
+import com.schemafy.core.user.domain.AuthTokenType;
 import com.schemafy.core.user.domain.User;
 import com.schemafy.core.user.domain.exception.UserErrorCode;
 
@@ -26,17 +29,37 @@ class SignUpUserService implements SignUpUserUseCase {
   private final PasswordHashPort passwordHashPort;
   private final CreateUserPort createUserPort;
   private final UlidGeneratorPort ulidGeneratorPort;
+  private final AuthTokenPort authTokenPort;
 
   @Override
   public Mono<User> signUpUser(SignUpUserCommand command) {
-    return existsUserByEmailPort
-        .existsUserByEmail(command.email())
+    return existsUserByEmailPort.existsUserByEmail(command.email())
         .flatMap(exists -> exists
             ? Mono.error(new DomainException(UserErrorCode.ALREADY_EXISTS))
-            : createNewUser(command))
+            : consumeSignupVerification(command)
+                .then(Mono.defer(() -> createNewUser(command))))
         .onErrorMap(DuplicateKeyException.class,
             e -> new DomainException(UserErrorCode.ALREADY_EXISTS))
         .as(transactionalOperator::transactional);
+  }
+
+  private Mono<Void> consumeSignupVerification(SignUpUserCommand command) {
+    return authTokenPort.consume(
+        AuthTokenType.SIGNUP_VERIFICATION,
+        command.email(),
+        command.signupVerificationToken())
+        .flatMap(this::handleConsumeResult);
+  }
+
+  private Mono<Void> handleConsumeResult(AuthTokenConsumeResult result) {
+    return switch (result) {
+    case CONSUMED -> Mono.empty();
+    case MISSING -> Mono.error(new DomainException(UserErrorCode.EMAIL_NOT_VERIFIED));
+    case MISMATCH -> Mono.error(new DomainException(
+        UserErrorCode.VERIFICATION_CODE_INVALID));
+    case ATTEMPTS_EXCEEDED -> Mono.error(new DomainException(
+        UserErrorCode.VERIFICATION_ATTEMPTS_EXCEEDED));
+    };
   }
 
   private Mono<User> createNewUser(SignUpUserCommand command) {

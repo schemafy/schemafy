@@ -14,10 +14,14 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import com.schemafy.core.common.exception.DomainException;
 import com.schemafy.core.ulid.application.port.out.UlidGeneratorPort;
 import com.schemafy.core.user.application.port.in.SignUpUserCommand;
+import com.schemafy.core.user.application.port.out.AuthTokenPort;
 import com.schemafy.core.user.application.port.out.CreateUserPort;
 import com.schemafy.core.user.application.port.out.ExistsUserByEmailPort;
 import com.schemafy.core.user.application.port.out.PasswordHashPort;
+import com.schemafy.core.user.domain.AuthTokenConsumeResult;
+import com.schemafy.core.user.domain.AuthTokenType;
 import com.schemafy.core.user.domain.User;
+import com.schemafy.core.user.domain.UserStatus;
 import com.schemafy.core.user.domain.exception.UserErrorCode;
 
 import reactor.core.publisher.Mono;
@@ -44,6 +48,9 @@ class SignUpUserServiceTest {
   UlidGeneratorPort ulidGeneratorPort;
 
   @Mock
+  AuthTokenPort authTokenPort;
+
+  @Mock
   TransactionalOperator transactionalOperator;
 
   @InjectMocks
@@ -56,15 +63,14 @@ class SignUpUserServiceTest {
   }
 
   @Test
-  @DisplayName("회원가입 시 신규 유저를 생성한다")
+  @DisplayName("이메일 인증 토큰이 유효하면 ACTIVE 유저를 생성한다")
   void signUpUser_success() {
-    SignUpUserCommand command = new SignUpUserCommand(
-        "test@example.com",
-        "Tester",
-        "password");
-
+    SignUpUserCommand command = command("test@example.com", "signup-token");
     given(existsUserByEmailPort.existsUserByEmail("test@example.com"))
         .willReturn(Mono.just(false));
+    given(authTokenPort.consume(AuthTokenType.SIGNUP_VERIFICATION,
+        "test@example.com", "signup-token"))
+        .willReturn(Mono.just(AuthTokenConsumeResult.CONSUMED));
     given(ulidGeneratorPort.generate()).willReturn("user-1");
     given(passwordHashPort.hash("password")).willReturn(Mono.just("encoded"));
     given(createUserPort.createUser(any(User.class)))
@@ -74,40 +80,15 @@ class SignUpUserServiceTest {
         .assertNext(user -> {
           assertThat(user.id()).isEqualTo("user-1");
           assertThat(user.email()).isEqualTo("test@example.com");
-          assertThat(user.name()).isEqualTo("Tester");
-          assertThat(user.password()).isEqualTo("encoded");
+          assertThat(user.status()).isEqualTo(UserStatus.ACTIVE);
         })
         .verifyComplete();
   }
 
   @Test
-  @DisplayName("회원가입 시 이메일을 소문자로 정규화해 저장한다")
-  void signUpUser_normalizesUppercaseEmail() {
-    SignUpUserCommand command = new SignUpUserCommand(
-        "TEST@EXAMPLE.COM",
-        "Tester",
-        "password");
-
-    given(existsUserByEmailPort.existsUserByEmail("test@example.com"))
-        .willReturn(Mono.just(false));
-    given(ulidGeneratorPort.generate()).willReturn("user-1");
-    given(passwordHashPort.hash("password")).willReturn(Mono.just("encoded"));
-    given(createUserPort.createUser(any(User.class)))
-        .willAnswer(invocation -> Mono.just(invocation.getArgument(0, User.class)));
-
-    StepVerifier.create(sut.signUpUser(command))
-        .assertNext(user -> assertThat(user.email()).isEqualTo("test@example.com"))
-        .verifyComplete();
-  }
-
-  @Test
-  @DisplayName("회원가입 시 이미 존재하는 이메일이면 ALREADY_EXISTS를 반환한다")
+  @DisplayName("이미 가입된 이메일이면 ALREADY_EXISTS를 반환한다")
   void signUpUser_alreadyExists() {
-    SignUpUserCommand command = new SignUpUserCommand(
-        "test@example.com",
-        "Tester",
-        "password");
-
+    SignUpUserCommand command = command("test@example.com", "signup-token");
     given(existsUserByEmailPort.existsUserByEmail("test@example.com"))
         .willReturn(Mono.just(true));
 
@@ -121,35 +102,33 @@ class SignUpUserServiceTest {
   }
 
   @Test
-  @DisplayName("회원가입 시 대소문자가 달라도 중복 이메일로 처리한다")
-  void signUpUser_alreadyExists_caseInsensitive() {
-    SignUpUserCommand command = new SignUpUserCommand(
-        "TEST@EXAMPLE.COM",
-        "Tester",
-        "password");
-
-    given(existsUserByEmailPort.existsUserByEmail("test@example.com"))
-        .willReturn(Mono.just(true));
-
-    StepVerifier.create(sut.signUpUser(command))
-        .expectErrorSatisfies(error -> {
-          assertThat(error).isInstanceOf(DomainException.class);
-          assertThat(((DomainException) error).getErrorCode())
-              .isEqualTo(UserErrorCode.ALREADY_EXISTS);
-        })
-        .verify();
-  }
-
-  @Test
-  @DisplayName("회원가입 저장 시 unique 충돌이면 ALREADY_EXISTS로 매핑한다")
-  void signUpUser_duplicateKey_mapsAlreadyExists() {
-    SignUpUserCommand command = new SignUpUserCommand(
-        "test@example.com",
-        "Tester",
-        "password");
-
+  @DisplayName("이메일 인증 토큰이 없으면 EMAIL_NOT_VERIFIED를 반환한다")
+  void signUpUser_missingSignupVerification() {
+    SignUpUserCommand command = command("test@example.com", "signup-token");
     given(existsUserByEmailPort.existsUserByEmail("test@example.com"))
         .willReturn(Mono.just(false));
+    given(authTokenPort.consume(AuthTokenType.SIGNUP_VERIFICATION,
+        "test@example.com", "signup-token"))
+        .willReturn(Mono.just(AuthTokenConsumeResult.MISSING));
+
+    StepVerifier.create(sut.signUpUser(command))
+        .expectErrorSatisfies(error -> {
+          assertThat(error).isInstanceOf(DomainException.class);
+          assertThat(((DomainException) error).getErrorCode())
+              .isEqualTo(UserErrorCode.EMAIL_NOT_VERIFIED);
+        })
+        .verify();
+  }
+
+  @Test
+  @DisplayName("회원가입 저장 시 unique 충돌이면 ALREADY_EXISTS를 반환한다")
+  void signUpUser_duplicateKey_mapsAlreadyExists() {
+    SignUpUserCommand command = command("test@example.com", "signup-token");
+    given(existsUserByEmailPort.existsUserByEmail("test@example.com"))
+        .willReturn(Mono.just(false));
+    given(authTokenPort.consume(AuthTokenType.SIGNUP_VERIFICATION,
+        "test@example.com", "signup-token"))
+        .willReturn(Mono.just(AuthTokenConsumeResult.CONSUMED));
     given(ulidGeneratorPort.generate()).willReturn("user-1");
     given(passwordHashPort.hash("password")).willReturn(Mono.just("encoded"));
     given(createUserPort.createUser(any(User.class)))
@@ -162,6 +141,10 @@ class SignUpUserServiceTest {
               .isEqualTo(UserErrorCode.ALREADY_EXISTS);
         })
         .verify();
+  }
+
+  private SignUpUserCommand command(String email, String token) {
+    return new SignUpUserCommand(email, "Tester", "password", token);
   }
 
 }

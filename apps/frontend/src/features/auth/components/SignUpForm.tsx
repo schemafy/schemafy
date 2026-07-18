@@ -2,22 +2,26 @@ import { Button, InputField } from '@/components';
 import { useFormState } from '../hooks';
 import { useState } from 'react';
 import { useNavigate } from '@tanstack/react-router';
-import { signUp } from '@/features/auth/api';
+import {
+  sendSignUpEmailCode,
+  signUp,
+  verifySignUpEmail,
+} from '@/features/auth/api';
+import type { SignUpEmailVerificationResponse } from '@/features/auth/api/types';
 import { authStore } from '@/store/auth.store';
-import type { ValidationRules, SignUpFormValues } from '../types';
+import { toast } from 'sonner';
 import { reportUnexpectedError } from '@/lib';
+import type {
+  SignUpFormValues,
+  SignUpVerificationFormValues,
+  ValidationRules,
+} from '../types';
 
 const formFields = [
   {
     label: 'Name',
     type: 'text' as const,
     name: 'name' as const,
-    required: true,
-  },
-  {
-    label: 'Email',
-    type: 'email' as const,
-    name: 'email' as const,
     required: true,
   },
   {
@@ -39,6 +43,10 @@ const initialForm: SignUpFormValues = {
   email: '',
   password: '',
   confirmPassword: '',
+};
+
+const initialVerificationForm: SignUpVerificationFormValues = {
+  code: '',
 };
 
 const validationRules: ValidationRules<SignUpFormValues> = {
@@ -67,19 +75,159 @@ const validationRules: ValidationRules<SignUpFormValues> = {
   },
 };
 
+const verificationValidationRules: ValidationRules<SignUpVerificationFormValues> =
+  {
+    code: (value: string) => {
+      if (!value.trim()) return 'Verification code is required.';
+      if (!/^\d{6}$/.test(value)) return 'Enter the 6-digit code.';
+      return '';
+    },
+  };
+
 export const SignUpForm = () => {
   const { form, errors, handleChange, handleBlur, resetForm } = useFormState(
     initialForm,
     validationRules,
   );
+  const {
+    form: verificationForm,
+    errors: verificationErrors,
+    handleChange: handleVerificationChange,
+    handleBlur: handleVerificationBlur,
+    resetForm: resetVerificationForm,
+  } = useFormState(initialVerificationForm, verificationValidationRules);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isSendingCode, setIsSendingCode] = useState(false);
+  const [isVerifyingCode, setIsVerifyingCode] = useState(false);
+  const [sentEmail, setSentEmail] = useState<string | null>(null);
+  const [lastEmailVerification, setLastEmailVerification] =
+    useState<SignUpEmailVerificationResponse | null>(null);
+  const [signupVerificationToken, setSignupVerificationToken] = useState('');
+  const [formError, setFormError] = useState('');
   const navigate = useNavigate();
+
+  const emailError = validationRules.email?.(form.email, form) ?? '';
+  const verificationCodeError =
+    verificationValidationRules.code?.(
+      verificationForm.code,
+      verificationForm,
+    ) ?? '';
+
+  const handleFormChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.name === 'email') {
+      setSentEmail(null);
+      setSignupVerificationToken('');
+      resetVerificationForm();
+    }
+    setFormError('');
+    handleChange(e);
+  };
+
+  const handleVerificationCodeChange = (
+    e: React.ChangeEvent<HTMLInputElement>,
+  ) => {
+    setSignupVerificationToken('');
+    setFormError('');
+    handleVerificationChange(e);
+  };
+
+  const hasActiveEmailVerification = (
+    previous: SignUpEmailVerificationResponse | null,
+    current: SignUpEmailVerificationResponse,
+  ) => {
+    if (!previous || previous.email !== current.email) {
+      return false;
+    }
+
+    const expiresAt = Date.parse(previous.expiresAt);
+    return Number.isFinite(expiresAt) && expiresAt > Date.now();
+  };
+
+  const handleSendCode = async () => {
+    if (emailError) {
+      setFormError(emailError);
+      return;
+    }
+
+    setIsSendingCode(true);
+    setFormError('');
+
+    try {
+      const verification = await sendSignUpEmailCode({ email: form.email });
+      const alreadySent = hasActiveEmailVerification(
+        lastEmailVerification,
+        verification,
+      );
+
+      setSentEmail(verification.email);
+      setLastEmailVerification(verification);
+      setSignupVerificationToken('');
+      resetVerificationForm();
+
+      if (alreadySent) {
+        toast.info(
+          <>
+            A verification email was already sent.
+            <br />
+            Check your inbox or use the existing code.
+          </>,
+        );
+      } else {
+        toast.success('Verification email sent. Please check your inbox.');
+      }
+    } catch (error) {
+      reportUnexpectedError(error, {
+        context: 'Unexpected sign-up email code send failure.',
+      });
+    } finally {
+      setIsSendingCode(false);
+    }
+  };
+
+  const handleVerifyCode = async () => {
+    if (!sentEmail) {
+      setFormError('Please send a verification code first.');
+      return;
+    }
+    if (verificationCodeError) {
+      setFormError(verificationCodeError);
+      return;
+    }
+
+    setIsVerifyingCode(true);
+    setFormError('');
+
+    try {
+      const result = await verifySignUpEmail({
+        email: sentEmail,
+        code: verificationForm.code,
+      });
+      setSignupVerificationToken(result.signupVerificationToken);
+    } catch (error) {
+      reportUnexpectedError(error, {
+        context: 'Unexpected sign-up email verification failure.',
+      });
+    } finally {
+      setIsVerifyingCode(false);
+    }
+  };
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
 
+    const currentErrors = [
+      validationRules.email?.(form.email, form),
+      validationRules.name?.(form.name, form),
+      validationRules.password?.(form.password, form),
+      validationRules.confirmPassword?.(form.confirmPassword, form),
+    ].filter(Boolean);
     const hasErrors = Object.keys(errors).length > 0;
-    if (hasErrors) {
+    if (hasErrors || currentErrors.length > 0) {
+      setFormError(currentErrors[0] ?? 'Please check your input.');
+      return;
+    }
+    if (!signupVerificationToken) {
+      setFormError('Please verify your email before creating an account.');
       return;
     }
 
@@ -90,10 +238,15 @@ export const SignUpForm = () => {
         email: form.email,
         name: form.name,
         password: form.password,
+        signupVerificationToken,
       });
 
       authStore.setUser(user);
       resetForm();
+      resetVerificationForm();
+      setSentEmail(null);
+      setLastEmailVerification(null);
+      setSignupVerificationToken('');
       navigate({ to: '/' });
     } catch (error) {
       reportUnexpectedError(error, {
@@ -110,6 +263,64 @@ export const SignUpForm = () => {
       className="flex w-full max-w-[480px] flex-col gap-2"
       onSubmit={handleSubmit}
     >
+      <div className="flex items-start gap-2">
+        <InputField
+          label="Email"
+          type="email"
+          name="email"
+          placeholder="Email"
+          required
+          disabled={isSubmitting || isSendingCode || isVerifyingCode}
+          value={form.email}
+          error={errors.email}
+          onChange={handleFormChange}
+          onBlur={handleBlur}
+        />
+        <div className="flex shrink-0 flex-col gap-1 py-3 pr-4">
+          <span aria-hidden="true" className="invisible mb-1 font-overline-md">
+            Action
+          </span>
+          <Button
+            type="button"
+            disabled={isSubmitting || isSendingCode || isVerifyingCode}
+            className="h-[58px] min-w-[88px]"
+            onClick={handleSendCode}
+          >
+            {isSendingCode ? 'Sending...' : 'Send'}
+          </Button>
+        </div>
+      </div>
+      <div className="flex items-start gap-2">
+        <InputField
+          label="Verification Code"
+          type="text"
+          name="code"
+          placeholder="000000"
+          required
+          disabled={
+            !sentEmail || isSubmitting || isSendingCode || isVerifyingCode
+          }
+          value={verificationForm.code}
+          error={verificationErrors.code}
+          onChange={handleVerificationCodeChange}
+          onBlur={handleVerificationBlur}
+        />
+        <div className="flex shrink-0 flex-col gap-1 py-3 pr-4">
+          <span aria-hidden="true" className="invisible mb-1 font-overline-md">
+            Action
+          </span>
+          <Button
+            type="button"
+            disabled={
+              !sentEmail || isSubmitting || isSendingCode || isVerifyingCode
+            }
+            className="h-[58px] min-w-[88px]"
+            onClick={handleVerifyCode}
+          >
+            {isVerifyingCode ? 'Verifying...' : 'Verify'}
+          </Button>
+        </div>
+      </div>
       {formFields.map((field) => (
         <InputField
           key={field.name}
@@ -120,15 +331,26 @@ export const SignUpForm = () => {
           disabled={isSubmitting}
           value={form[field.name]}
           error={errors[field.name]}
-          onChange={handleChange}
+          onChange={handleFormChange}
           onBlur={handleBlur}
         />
       ))}
-      <div className="pt-3">
-        <Button type="submit" disabled={isSubmitting} round fullWidth>
-          {isSubmitting ? 'Creating...' : 'Create Account'}
-        </Button>
-      </div>
+      {signupVerificationToken && (
+        <p className="px-4 font-caption-md text-schemafy-primary">
+          Email verified.
+        </p>
+      )}
+      {formError && (
+        <p
+          className="px-4 text-schemafy-destructive font-caption-md"
+          role="alert"
+        >
+          {formError}
+        </p>
+      )}
+      <Button type="submit" disabled={isSubmitting} className="my-4" round>
+        {isSubmitting ? 'Creating...' : 'Create Account'}
+      </Button>
     </form>
   );
 };

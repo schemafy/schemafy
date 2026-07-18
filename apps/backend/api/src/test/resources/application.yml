@@ -30,6 +30,10 @@ spring:
       initial-size: 5
       max-size: 20
 
+  mail:
+    host: localhost
+    port: 25
+
   security:
     user:
       name: test
@@ -57,6 +61,12 @@ oauth:
 
 hmac:
   enabled: false
+
+auth:
+  token:
+    secret: test-auth-token-secret
+  mail:
+    from: no-reply@test.schemafy.com
 
 cors:
   allowed-origins: http://localhost:3000

@@ -33,8 +33,8 @@ import com.schemafy.core.project.domain.Workspace;
 import com.schemafy.core.project.domain.WorkspaceMember;
 import com.schemafy.core.project.domain.WorkspaceRole;
 import com.schemafy.core.ulid.application.service.UlidGenerator;
-import com.schemafy.core.user.application.port.in.SignUpUserCommand;
-import com.schemafy.core.user.application.port.in.SignUpUserUseCase;
+import com.schemafy.core.user.application.port.out.CreateUserPort;
+import com.schemafy.core.user.application.port.out.PasswordHashPort;
 import com.schemafy.core.user.domain.User;
 
 import reactor.core.publisher.Mono;
@@ -47,7 +47,10 @@ abstract class ProjectDomainIntegrationSupport {
   protected DatabaseClient databaseClient;
 
   @Autowired
-  protected SignUpUserUseCase signUpUserUseCase;
+  protected CreateUserPort createUserPort;
+
+  @Autowired
+  protected PasswordHashPort passwordHashPort;
 
   @Autowired
   protected WorkspaceRepository workspaceRepository;
@@ -89,10 +92,13 @@ abstract class ProjectDomainIntegrationSupport {
   }
 
   protected User signUpUser(String email, String name) {
-    return signUpUserUseCase.signUpUser(new SignUpUserCommand(
-        email,
-        name,
-        "password"))
+    return passwordHashPort.hash("password")
+        .map(encodedPassword -> User.signUp(
+            UlidGenerator.generate(),
+            email,
+            name,
+            encodedPassword))
+        .flatMap(createUserPort::createUser)
         .block();
   }
 

@@ -33,23 +33,54 @@ public class UserApiSnippets extends RestDocsSnippets {
 
   // ========== 회원가입 API ==========
 
+  public static Snippet sendSignUpEmailCodeRequest() {
+    return requestFields(
+        fieldWithPath("email").type(JsonFieldType.STRING)
+            .description("인증 코드를 발송할 이메일 (형식: example@domain.com)"));
+  }
+
   public static Snippet signUpRequest() {
     return requestFields(
         fieldWithPath("email").type(JsonFieldType.STRING)
-            .description("사용자 이메일 (형식: example@domain.com)"),
+            .description("인증 완료된 사용자 이메일 (형식: example@domain.com)"),
         fieldWithPath("name").type(JsonFieldType.STRING)
             .description("사용자 이름 (최대 200자)"),
         fieldWithPath("password").type(JsonFieldType.STRING)
-            .description("비밀번호 (8자 이상)"));
+            .description("비밀번호 (8자 이상)"),
+        fieldWithPath("signupVerificationToken").type(JsonFieldType.STRING)
+            .description("이메일 코드 인증 성공 시 발급된 회원가입 검증 토큰 (16~128자)"));
   }
 
   public static Snippet signUpResponseHeaders() {
     return createResponseHeadersSnippet(authResponseHeaders());
   }
 
-  public static Snippet signUpResponse() {
+  public static Snippet signUpEmailVerificationResponse() {
     return createResponseFieldsSnippet(
-        successResponseFields(userInfoFields()));
+        successResponseFields(
+            fieldWithPath("email").type(JsonFieldType.STRING)
+                .description("인증 코드를 발송한 이메일"),
+            fieldWithPath("expiresAt").type(JsonFieldType.STRING)
+                .description("인증 코드 만료 시각")));
+  }
+
+  public static Snippet verifySignUpEmailRequest() {
+    return requestFields(
+        fieldWithPath("email").type(JsonFieldType.STRING)
+            .description("회원가입 이메일"),
+        fieldWithPath("code").type(JsonFieldType.STRING)
+            .description("SMTP로 발송된 6자리 인증 코드"));
+  }
+
+  public static Snippet verifySignUpEmailResponse() {
+    return createResponseFieldsSnippet(
+        successResponseFields(
+            fieldWithPath("email").type(JsonFieldType.STRING)
+                .description("인증이 완료된 이메일"),
+            fieldWithPath("signupVerificationToken").type(JsonFieldType.STRING)
+                .description("최종 회원가입에 사용할 검증 토큰"),
+            fieldWithPath("expiresAt").type(JsonFieldType.STRING)
+                .description("회원가입 검증 토큰 만료 시각")));
   }
 
   // ========== 로그인 API ==========

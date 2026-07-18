@@ -1,5 +1,7 @@
 package com.schemafy.core.user.application.service;
 
+import java.time.Instant;
+
 import org.springframework.dao.DuplicateKeyException;
 import org.springframework.transaction.reactive.TransactionalOperator;
 
@@ -31,6 +33,8 @@ import reactor.test.StepVerifier;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.verify;
 
 @ExtendWith(MockitoExtension.class)
 @DisplayName("OAuth 로그인 또는 회원가입 서비스")
@@ -141,6 +145,83 @@ class LoginOrSignUpOAuthServiceTest {
   }
 
   @Test
+  @DisplayName("OAuth 로그인 시 연결된 유저가 ACTIVE 상태가 아니면 ACCOUNT_NOT_ACTIVE를 반환한다")
+  void loginOrSignUpOAuth_linkedInactiveUser() {
+    LoginOrSignUpOAuthCommand command = new LoginOrSignUpOAuthCommand(
+        "existing@example.com",
+        "Existing User",
+        AuthProvider.GITHUB,
+        "github-inactive");
+
+    UserAuthProvider linked = new UserAuthProvider(
+        "provider-inactive",
+        "user-inactive",
+        AuthProvider.GITHUB,
+        "github-inactive",
+        null,
+        null,
+        null);
+    User inactive = new User(
+        "user-inactive",
+        "existing@example.com",
+        "Existing User",
+        "encoded",
+        UserStatus.INACTIVE,
+        null,
+        null,
+        null);
+
+    given(findUserAuthProviderPort.findUserAuthProvider(AuthProvider.GITHUB, "github-inactive"))
+        .willReturn(Mono.just(linked));
+    given(findUserByIdPort.findUserById("user-inactive"))
+        .willReturn(Mono.just(inactive));
+
+    StepVerifier.create(sut.loginOrSignUpOAuth(command))
+        .expectErrorSatisfies(error -> {
+          assertThat(error).isInstanceOf(DomainException.class);
+          assertThat(((DomainException) error).getErrorCode())
+              .isEqualTo(UserErrorCode.ACCOUNT_NOT_ACTIVE);
+        })
+        .verify();
+  }
+
+  @Test
+  @DisplayName("OAuth 자동 연동 시 기존 유저가 삭제된 계정이면 provider를 생성하지 않는다")
+  void loginOrSignUpOAuth_linkExistingDeletedUser_doesNotCreateProvider() {
+    LoginOrSignUpOAuthCommand command = new LoginOrSignUpOAuthCommand(
+        "deleted@example.com",
+        "Deleted User",
+        AuthProvider.GITHUB,
+        "github-deleted");
+
+    User deleted = new User(
+        "user-deleted",
+        "deleted@example.com",
+        "Deleted User",
+        "encoded",
+        UserStatus.ACTIVE,
+        null,
+        null,
+        Instant.parse("2026-01-01T00:00:00Z"));
+
+    given(findUserAuthProviderPort.findUserAuthProvider(AuthProvider.GITHUB, "github-deleted"))
+        .willReturn(Mono.<UserAuthProvider>empty());
+    given(findUserByEmailPort.findUserByEmail("deleted@example.com"))
+        .willReturn(Mono.just(deleted));
+
+    StepVerifier.create(sut.loginOrSignUpOAuth(command))
+        .expectErrorSatisfies(error -> {
+          assertThat(error).isInstanceOf(DomainException.class);
+          assertThat(((DomainException) error).getErrorCode())
+              .isEqualTo(UserErrorCode.ACCOUNT_NOT_ACTIVE);
+        })
+        .verify();
+
+    verify(createUserAuthProviderPort, never())
+        .createUserAuthProvider(any(UserAuthProvider.class));
+  }
+
+  @Test
   @DisplayName("OAuth 로그인 또는 회원가입 시 대문자 이메일도 기존 유저에 자동 연동한다")
   void loginOrSignUpOAuth_linkExistingUser_caseInsensitiveEmail() {
     LoginOrSignUpOAuthCommand command = new LoginOrSignUpOAuthCommand(
@@ -175,6 +256,63 @@ class LoginOrSignUpOAuthServiceTest {
           assertThat(result.user().email()).isEqualTo("existing@example.com");
         })
         .verifyComplete();
+  }
+
+  @Test
+  @DisplayName("OAuth 자동 연동 중 provider 중복 복구 유저가 ACTIVE 상태가 아니면 ACCOUNT_NOT_ACTIVE를 반환한다")
+  void loginOrSignUpOAuth_duplicateProviderDuringAutoLink_inactiveResolvedUser() {
+    LoginOrSignUpOAuthCommand command = new LoginOrSignUpOAuthCommand(
+        "existing@example.com",
+        "Existing User",
+        AuthProvider.GITHUB,
+        "github-inactive-duplicate");
+
+    User existing = new User(
+        "user-1",
+        "existing@example.com",
+        "Existing User",
+        "encoded",
+        UserStatus.ACTIVE,
+        null,
+        null,
+        null);
+    UserAuthProvider linked = new UserAuthProvider(
+        "provider-duplicate",
+        "user-inactive",
+        AuthProvider.GITHUB,
+        "github-inactive-duplicate",
+        null,
+        null,
+        null);
+    User inactive = new User(
+        "user-inactive",
+        "existing@example.com",
+        "Existing User",
+        "encoded",
+        UserStatus.INACTIVE,
+        null,
+        null,
+        null);
+
+    given(findUserAuthProviderPort.findUserAuthProvider(
+        AuthProvider.GITHUB, "github-inactive-duplicate"))
+        .willReturn(Mono.<UserAuthProvider>empty())
+        .willReturn(Mono.just(linked));
+    given(findUserByEmailPort.findUserByEmail("existing@example.com"))
+        .willReturn(Mono.just(existing));
+    given(ulidGeneratorPort.generate()).willReturn("provider-duplicate");
+    given(createUserAuthProviderPort.createUserAuthProvider(any(UserAuthProvider.class)))
+        .willReturn(Mono.error(new DuplicateKeyException("duplicate")));
+    given(findUserByIdPort.findUserById("user-inactive"))
+        .willReturn(Mono.just(inactive));
+
+    StepVerifier.create(sut.loginOrSignUpOAuth(command))
+        .expectErrorSatisfies(error -> {
+          assertThat(error).isInstanceOf(DomainException.class);
+          assertThat(((DomainException) error).getErrorCode())
+              .isEqualTo(UserErrorCode.ACCOUNT_NOT_ACTIVE);
+        })
+        .verify();
   }
 
   @Test

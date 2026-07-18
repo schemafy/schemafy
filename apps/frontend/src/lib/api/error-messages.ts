@@ -101,6 +101,50 @@ export const ERROR_MESSAGES: Record<string, ErrorMessageInfo> = {
     message: 'Invalid email or password. Please try again.',
     category: ErrorCategory.USER_FEEDBACK,
   },
+  USER_EMAIL_NOT_VERIFIED: {
+    message: 'Please verify your email before signing in.',
+    category: ErrorCategory.USER_FEEDBACK,
+  },
+  USER_VERIFICATION_CODE_EXPIRED: {
+    message: 'The verification code has expired. Please request a new one.',
+    category: ErrorCategory.USER_FEEDBACK,
+  },
+  USER_VERIFICATION_CODE_INVALID: {
+    message: 'Invalid verification code. Please try again.',
+    category: ErrorCategory.USER_FEEDBACK,
+  },
+  USER_VERIFICATION_ATTEMPTS_EXCEEDED: {
+    message: 'Too many failed attempts. Please request a new code.',
+    category: ErrorCategory.USER_FEEDBACK,
+  },
+  USER_EMAIL_DELIVERY_FAILED: {
+    message: 'Failed to send verification email. Please try again later.',
+    category: ErrorCategory.USER_FEEDBACK,
+  },
+  EMAIL_NOT_VERIFIED: {
+    message: 'Please verify your email before creating an account.',
+    category: ErrorCategory.USER_FEEDBACK,
+  },
+  ACCOUNT_NOT_ACTIVE: {
+    message: 'This account is not active. Please contact support.',
+    category: ErrorCategory.USER_FEEDBACK,
+  },
+  VERIFICATION_CODE_EXPIRED: {
+    message: 'The verification code has expired. Please request a new one.',
+    category: ErrorCategory.USER_FEEDBACK,
+  },
+  VERIFICATION_CODE_INVALID: {
+    message: 'Invalid verification code. Please try again.',
+    category: ErrorCategory.USER_FEEDBACK,
+  },
+  VERIFICATION_ATTEMPTS_EXCEEDED: {
+    message: 'Too many failed attempts. Please request a new code.',
+    category: ErrorCategory.USER_FEEDBACK,
+  },
+  EMAIL_DELIVERY_FAILED: {
+    message: 'Failed to send verification email. Please try again later.',
+    category: ErrorCategory.USER_FEEDBACK,
+  },
 
   VALIDATION_FAILED: CHECK_INPUT,
   VALIDATION_SERVICE_UNAVAILABLE: {

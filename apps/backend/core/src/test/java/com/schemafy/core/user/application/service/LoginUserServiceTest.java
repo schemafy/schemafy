@@ -1,5 +1,7 @@
 package com.schemafy.core.user.application.service;
 
+import java.time.Instant;
+
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -123,6 +125,58 @@ class LoginUserServiceTest {
           assertThat(error).isInstanceOf(DomainException.class);
           assertThat(((DomainException) error).getErrorCode())
               .isEqualTo(UserErrorCode.LOGIN_FAILED);
+        })
+        .verify();
+  }
+
+  @Test
+  @DisplayName("로그인 시 ACTIVE 상태가 아니면 ACCOUNT_NOT_ACTIVE를 반환한다")
+  void loginUser_inactiveUser() {
+    LoginUserCommand command = new LoginUserCommand("test@example.com", "raw");
+    User user = new User(
+        "user-1",
+        "test@example.com",
+        "Tester",
+        "encoded",
+        UserStatus.INACTIVE,
+        null,
+        null,
+        null);
+
+    given(findUserByEmailPort.findUserByEmail("test@example.com"))
+        .willReturn(Mono.just(user));
+
+    StepVerifier.create(sut.loginUser(command))
+        .expectErrorSatisfies(error -> {
+          assertThat(error).isInstanceOf(DomainException.class);
+          assertThat(((DomainException) error).getErrorCode())
+              .isEqualTo(UserErrorCode.ACCOUNT_NOT_ACTIVE);
+        })
+        .verify();
+  }
+
+  @Test
+  @DisplayName("로그인 시 삭제된 계정이면 ACCOUNT_NOT_ACTIVE를 반환한다")
+  void loginUser_deletedUser() {
+    LoginUserCommand command = new LoginUserCommand("test@example.com", "raw");
+    User user = new User(
+        "user-1",
+        "test@example.com",
+        "Tester",
+        "encoded",
+        UserStatus.ACTIVE,
+        null,
+        null,
+        Instant.parse("2026-01-01T00:00:00Z"));
+
+    given(findUserByEmailPort.findUserByEmail("test@example.com"))
+        .willReturn(Mono.just(user));
+
+    StepVerifier.create(sut.loginUser(command))
+        .expectErrorSatisfies(error -> {
+          assertThat(error).isInstanceOf(DomainException.class);
+          assertThat(((DomainException) error).getErrorCode())
+              .isEqualTo(UserErrorCode.ACCOUNT_NOT_ACTIVE);
         })
         .verify();
   }
