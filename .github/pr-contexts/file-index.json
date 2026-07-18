@@ -553,7 +553,8 @@
     361,
     386,
     390,
-    443
+    443,
+    463
   ],
   "apps/frontend/src/features/auth/hooks/useAuthBootstrap.ts": [
     361,
@@ -2864,5 +2865,8 @@
   ],
   "apps/backend/core/src/test/java/com/schemafy/core/erd/operation/integration/ErdMetaExtraUndoRedoIntegrationTest.java": [
     461
+  ],
+  "apps/frontend/src/features/auth/hooks/useFormState.ts": [
+    463
   ]
 }
