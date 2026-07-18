@@ -68,7 +68,14 @@ const validationRules: ValidationRules<SignUpFormValues> = {
 };
 
 export const SignUpForm = () => {
-  const { form, errors, handleChange, handleBlur, resetForm } = useFormState(
+  const {
+    form,
+    errors,
+    handleChange,
+    handleBlur,
+    runAllValidations,
+    resetForm,
+  } = useFormState(
     initialForm,
     validationRules,
   );
@@ -78,8 +85,7 @@ export const SignUpForm = () => {
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
 
-    const hasErrors = Object.keys(errors).length > 0;
-    if (hasErrors) {
+    if (!runAllValidations(form)) {
       return;
     }
 
