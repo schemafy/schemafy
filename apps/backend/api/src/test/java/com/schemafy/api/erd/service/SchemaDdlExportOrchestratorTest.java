@@ -142,6 +142,7 @@ class SchemaDdlExportOrchestratorTest {
         command -> command.snapshot().schema().id().equals(schemaId)
             && command.snapshot().schema().dbVendorName().equals("mysql")
             && command.targetDbVendor().equals(DdlExportVendor.MYSQL)
+            && command.indexCapabilities().equals(mysqlIndexCapabilities())
             && command.snapshot().tables().size() == 1
             && command.snapshot().tables().getFirst().columns().size() == 1));
   }

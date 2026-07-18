@@ -79,7 +79,8 @@ public class SchemaDdlExportOrchestrator {
                     .generateSchemaDdl(new GenerateSchemaDdlCommand(
                         ddlExportSnapshotMapper.toSnapshot(
                             schema, tuple.getT2().values(), tuple.getT1().name()),
-                        exportVendor))
+                        exportVendor,
+                        tuple.getT1().capabilities().indexes()))
                     .map(ddl -> new SchemaDdlExportResponse(
                         schema.id(),
                         result.currentRevision(),
