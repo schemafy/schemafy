@@ -21,6 +21,7 @@ import com.schemafy.core.erd.column.domain.exception.ColumnErrorCode;
 import com.schemafy.core.erd.constraint.domain.type.ConstraintKind;
 import com.schemafy.core.erd.export.domain.SchemaExportSnapshot;
 import com.schemafy.core.erd.export.domain.SchemaExportSnapshot.Column;
+import com.schemafy.core.erd.export.domain.SchemaExportSnapshot.Constraint;
 import com.schemafy.core.erd.export.domain.SchemaExportSnapshot.ConstraintSnapshot;
 import com.schemafy.core.erd.export.domain.SchemaExportSnapshot.Relationship;
 import com.schemafy.core.erd.export.domain.SchemaExportSnapshot.RelationshipColumn;
@@ -90,7 +91,6 @@ public class GenerateSchemaMermaidService implements
     String declaration = "    " + context.entityId(table.id())
         + "[\"" + escapeQuotedText(table.name()) + "\"]";
     List<Column> columns = snapshot.columns().stream()
-        .peek(column -> requireColumn(column, table.id()))
         .sorted(COLUMN_COMPARATOR)
         .toList();
     if (columns.isEmpty()) {
@@ -185,12 +185,8 @@ public class GenerateSchemaMermaidService implements
       RenderContext context) {
     Map<String, EnumSet<AttributeKey>> keysByColumnId = new HashMap<>();
     for (ConstraintSnapshot constraintSnapshot : snapshot.constraints()) {
-      if (constraintSnapshot == null || constraintSnapshot.constraint() == null
-          || constraintSnapshot.constraint().kind() == null) {
-        throw new DomainException(RelationshipErrorCode.INVALID_VALUE,
-            "Constraint snapshot must be complete");
-      }
-      AttributeKey key = switch (constraintSnapshot.constraint().kind()) {
+      Constraint constraint = requireConstraint(constraintSnapshot);
+      AttributeKey key = switch (constraint.kind()) {
       case PRIMARY_KEY -> AttributeKey.PK;
       case UNIQUE -> AttributeKey.UK;
       default -> null;
@@ -298,6 +294,16 @@ public class GenerateSchemaMermaidService implements
           "Relationship kind and cardinality are required");
     }
     return relationship;
+  }
+
+  private static Constraint requireConstraint(
+      ConstraintSnapshot snapshot) {
+    if (snapshot == null || snapshot.constraint() == null
+        || snapshot.constraint().kind() == null) {
+      throw new DomainException(RelationshipErrorCode.INVALID_VALUE,
+          "Constraint snapshot must be complete");
+    }
+    return snapshot.constraint();
   }
 
   private static List<RelationshipColumn> requireRelationshipColumns(
@@ -417,12 +423,7 @@ public class GenerateSchemaMermaidService implements
         Map<String, Column> columnsById) {
       Set<String> notNullColumnIds = new HashSet<>();
       for (ConstraintSnapshot constraintSnapshot : snapshot.constraints()) {
-        if (constraintSnapshot == null || constraintSnapshot.constraint() == null
-            || constraintSnapshot.constraint().kind() == null) {
-          throw new DomainException(RelationshipErrorCode.INVALID_VALUE,
-              "Constraint snapshot must be complete");
-        }
-        ConstraintKind kind = constraintSnapshot.constraint().kind();
+        ConstraintKind kind = requireConstraint(constraintSnapshot).kind();
         if (kind != ConstraintKind.PRIMARY_KEY
             && kind != ConstraintKind.NOT_NULL) {
           continue;
