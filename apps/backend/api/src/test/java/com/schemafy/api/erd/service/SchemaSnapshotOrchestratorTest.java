@@ -76,7 +76,7 @@ class SchemaSnapshotOrchestratorTest {
   @DisplayName("schema revision과 strict table snapshots를 함께 반환한다")
   void returnsRevisionAndSnapshots() {
     String schemaId = "schema-1";
-    Schema schema = new Schema(schemaId, "project-1", "mariadb", "main_schema",
+    Schema schema = new Schema(schemaId, "project-1", "main_schema",
         "utf8mb4", "utf8mb4_general_ci");
     Table table1 = new Table("table-1", schemaId, "users", "utf8mb4",
         "utf8mb4_general_ci");
@@ -131,7 +131,7 @@ class SchemaSnapshotOrchestratorTest {
   @DisplayName("테이블이 없으면 빈 snapshots를 반환한다")
   void returnsEmptySnapshotsWhenSchemaHasNoTables() {
     String schemaId = "schema-1";
-    Schema schema = new Schema(schemaId, "project-1", "mariadb", "main_schema",
+    Schema schema = new Schema(schemaId, "project-1", "main_schema",
         "utf8mb4", "utf8mb4_general_ci");
 
     given(getSchemaWithRevisionUseCase.getSchemaWithRevision(any(GetSchemaQuery.class)))
@@ -153,7 +153,7 @@ class SchemaSnapshotOrchestratorTest {
   @DisplayName("strict snapshot 조회 실패는 그대로 전파한다")
   void propagatesStrictSnapshotFailure() {
     String schemaId = "schema-1";
-    Schema schema = new Schema(schemaId, "project-1", "mariadb", "main_schema",
+    Schema schema = new Schema(schemaId, "project-1", "main_schema",
         "utf8mb4", "utf8mb4_general_ci");
     Table table = new Table("table-1", schemaId, "users", "utf8mb4",
         "utf8mb4_general_ci");

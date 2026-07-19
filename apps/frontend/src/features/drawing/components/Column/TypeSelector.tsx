@@ -1,6 +1,6 @@
 import { useState, useMemo, useEffect, useRef, Fragment } from 'react';
+import type { DatatypeParameter, VendorDatatype } from '@/features/vendor';
 import type { TypeSelectorProps } from '../../types';
-import type { VendorDatatype, DatatypeParameter } from '../../api';
 import {
   Select,
   SelectGroup,

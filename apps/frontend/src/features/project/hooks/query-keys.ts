@@ -4,6 +4,9 @@ export const projectKeys = {
     [...projectKeys.all, 'list', workspaceId] as const,
   list: (workspaceId: string, page: number, size: number) =>
     [...projectKeys.lists(workspaceId), { page, size }] as const,
+  mySharedLists: () => [...projectKeys.all, 'mySharedList'] as const,
+  mySharedList: (page: number, size: number) =>
+    [...projectKeys.mySharedLists(), { page, size }] as const,
   detail: (projectId: string) =>
     [...projectKeys.all, 'detail', projectId] as const,
   membersAll: (projectId: string) =>

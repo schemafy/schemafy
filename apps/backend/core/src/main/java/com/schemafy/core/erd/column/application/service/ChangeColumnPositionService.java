@@ -16,6 +16,8 @@ import com.schemafy.core.erd.column.application.port.out.GetColumnByIdPort;
 import com.schemafy.core.erd.column.application.port.out.GetColumnsByTableIdPort;
 import com.schemafy.core.erd.column.domain.Column;
 import com.schemafy.core.erd.column.domain.exception.ColumnErrorCode;
+import com.schemafy.core.erd.operation.application.inverse.ChangeColumnPositionInverse;
+import com.schemafy.core.erd.operation.application.inverse.ReorderPositions;
 import com.schemafy.core.erd.operation.application.service.ErdMutationCoordinator;
 import com.schemafy.core.erd.operation.domain.ErdOperationType;
 import com.schemafy.core.project.application.access.AccessTarget;
@@ -70,7 +72,13 @@ public class ChangeColumnPositionService implements ChangeColumnPositionUseCase 
                             lockedNormalizedPosition);
                         return changeColumnPositionPort
                             .changeColumnPositions(column.tableId(), reordered)
-                            .thenReturn(MutationResult.<Void>of(null, column.tableId()));
+                            .thenReturn(MutationResult.<Void>of(null, column.tableId())
+                                .withInverse(new ChangeColumnPositionInverse(
+                                    column.id(),
+                                    ReorderPositions.capture(
+                                        lockedColumns,
+                                        Column::id,
+                                        Column::seqNo))));
                       }));
             }))
         .as(transactionalOperator::transactional);
@@ -95,17 +103,7 @@ public class ChangeColumnPositionService implements ChangeColumnPositionUseCase 
     List<Column> updated = new ArrayList<>(reordered.size());
     for (int index = 0; index < reordered.size(); index++) {
       Column column = reordered.get(index);
-      updated.add(new Column(
-          column.id(),
-          column.tableId(),
-          column.name(),
-          column.dataType(),
-          column.typeArguments(),
-          index,
-          column.autoIncrement(),
-          column.charset(),
-          column.collation(),
-          column.comment()));
+      updated.add(column.withSeqNo(index));
     }
 
     return updated;

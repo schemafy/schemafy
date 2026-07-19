@@ -27,7 +27,6 @@ class SchemaTest {
 
       assertThat(schema.id()).isEqualTo(SchemaFixture.DEFAULT_ID);
       assertThat(schema.projectId()).isEqualTo(SchemaFixture.DEFAULT_PROJECT_ID);
-      assertThat(schema.dbVendorName()).isEqualTo(SchemaFixture.DEFAULT_DB_VENDOR);
       assertThat(schema.name()).isEqualTo(SchemaFixture.DEFAULT_NAME);
       assertThat(schema.charset()).isEqualTo(SchemaFixture.DEFAULT_CHARSET);
       assertThat(schema.collation()).isEqualTo(SchemaFixture.DEFAULT_COLLATION);
@@ -41,7 +40,6 @@ class SchemaTest {
       assertThatThrownBy(() -> new Schema(
           invalidId,
           SchemaFixture.DEFAULT_PROJECT_ID,
-          SchemaFixture.DEFAULT_DB_VENDOR,
           SchemaFixture.DEFAULT_NAME,
           SchemaFixture.DEFAULT_CHARSET,
           SchemaFixture.DEFAULT_COLLATION))
@@ -57,7 +55,6 @@ class SchemaTest {
       assertThatThrownBy(() -> new Schema(
           SchemaFixture.DEFAULT_ID,
           invalidProjectId,
-          SchemaFixture.DEFAULT_DB_VENDOR,
           SchemaFixture.DEFAULT_NAME,
           SchemaFixture.DEFAULT_CHARSET,
           SchemaFixture.DEFAULT_COLLATION))
@@ -70,7 +67,7 @@ class SchemaTest {
     @ValueSource(strings = { "  ", "\t", "\n" })
     @DisplayName("dbVendorName이 blank이면 예외가 발생한다")
     void throwsWhenDbVendorNameIsBlank(String invalidDbVendorName) {
-      assertThatThrownBy(() -> new Schema(
+      assertThatThrownBy(() -> Schema.create(
           SchemaFixture.DEFAULT_ID,
           SchemaFixture.DEFAULT_PROJECT_ID,
           invalidDbVendorName,
@@ -89,12 +86,41 @@ class SchemaTest {
       assertThatThrownBy(() -> new Schema(
           SchemaFixture.DEFAULT_ID,
           SchemaFixture.DEFAULT_PROJECT_ID,
-          SchemaFixture.DEFAULT_DB_VENDOR,
           invalidName,
           SchemaFixture.DEFAULT_CHARSET,
           SchemaFixture.DEFAULT_COLLATION))
           .isInstanceOf(DomainException.class)
           .hasMessageContaining("name");
+    }
+
+    @ParameterizedTest
+    @NullAndEmptySource
+    @ValueSource(strings = { "  ", "\t", "\n" })
+    @DisplayName("복원 시 charset이 blank이면 예외가 발생한다")
+    void throwsWhenResolvedCharsetIsBlank(String invalidCharset) {
+      assertThatThrownBy(() -> new Schema(
+          SchemaFixture.DEFAULT_ID,
+          SchemaFixture.DEFAULT_PROJECT_ID,
+          SchemaFixture.DEFAULT_NAME,
+          invalidCharset,
+          SchemaFixture.DEFAULT_COLLATION))
+          .isInstanceOf(DomainException.class)
+          .hasMessageContaining("charset");
+    }
+
+    @ParameterizedTest
+    @NullAndEmptySource
+    @ValueSource(strings = { "  ", "\t", "\n" })
+    @DisplayName("복원 시 collation이 blank이면 예외가 발생한다")
+    void throwsWhenResolvedCollationIsBlank(String invalidCollation) {
+      assertThatThrownBy(() -> new Schema(
+          SchemaFixture.DEFAULT_ID,
+          SchemaFixture.DEFAULT_PROJECT_ID,
+          SchemaFixture.DEFAULT_NAME,
+          SchemaFixture.DEFAULT_CHARSET,
+          invalidCollation))
+          .isInstanceOf(DomainException.class)
+          .hasMessageContaining("collation");
     }
 
   }

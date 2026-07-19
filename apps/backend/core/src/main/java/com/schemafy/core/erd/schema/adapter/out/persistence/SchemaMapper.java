@@ -11,7 +11,6 @@ class SchemaMapper {
     return new SchemaEntity(
         schema.id(),
         schema.projectId(),
-        schema.dbVendorName(),
         schema.name(),
         schema.charset(),
         schema.collation());
@@ -21,7 +20,6 @@ class SchemaMapper {
     return new Schema(
         entity.getId(),
         entity.getProjectId(),
-        entity.getDbVendorName(),
         entity.getName(),
         entity.getCharset(),
         entity.getCollation());

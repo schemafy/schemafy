@@ -20,10 +20,13 @@ import com.schemafy.core.erd.column.application.port.out.GetColumnsByTableIdPort
 import com.schemafy.core.erd.column.domain.Column;
 import com.schemafy.core.erd.column.domain.exception.ColumnErrorCode;
 import com.schemafy.core.erd.column.fixture.ColumnFixture;
+import com.schemafy.core.erd.operation.application.inverse.ChangeColumnPositionInverse;
+import com.schemafy.core.erd.operation.application.inverse.ReorderPosition;
 
 import reactor.core.publisher.Mono;
 import reactor.test.StepVerifier;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyList;
 import static org.mockito.ArgumentMatchers.eq;
@@ -90,7 +93,12 @@ class ChangeColumnPositionServiceTest {
             .willReturn(Mono.empty());
 
         StepVerifier.create(sut.changeColumnPosition(command))
-            .expectNextCount(1)
+            .assertNext(result -> assertThat(result.inversePayload()).isEqualTo(
+                new ChangeColumnPositionInverse(
+                    column.id(),
+                    List.of(
+                        new ReorderPosition(column.id(), 0),
+                        new ReorderPosition("01ARZ3NDEKTSV4RRFFQ69G5C02", 1)))))
             .verifyComplete();
 
         then(changeColumnPositionPort).should()
@@ -132,7 +140,9 @@ class ChangeColumnPositionServiceTest {
             .willReturn(Mono.just(initialColumns), Mono.just(lockedColumns));
 
         StepVerifier.create(sut.changeColumnPosition(command))
-            .expectNextMatches(result -> result.operation() == null && result.noOp())
+            .expectNextMatches(result -> result.operation() == null
+                && result.inversePayload() == null
+                && result.noOp())
             .verifyComplete();
 
         then(changeColumnPositionPort).shouldHaveNoInteractions();

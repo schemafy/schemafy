@@ -17,6 +17,8 @@ import com.schemafy.core.erd.constraint.application.port.out.GetConstraintColumn
 import com.schemafy.core.erd.constraint.application.port.out.GetConstraintColumnsByConstraintIdPort;
 import com.schemafy.core.erd.constraint.domain.ConstraintColumn;
 import com.schemafy.core.erd.constraint.domain.exception.ConstraintErrorCode;
+import com.schemafy.core.erd.operation.application.inverse.ChangeConstraintColumnPositionInverse;
+import com.schemafy.core.erd.operation.application.inverse.ReorderPositions;
 import com.schemafy.core.erd.operation.application.service.ErdMutationCoordinator;
 import com.schemafy.core.erd.operation.domain.ErdOperationType;
 import com.schemafy.core.project.application.access.AccessTarget;
@@ -96,7 +98,13 @@ public class ChangeConstraintColumnPositionService implements ChangeConstraintCo
                                 .changeConstraintColumnPositions(
                                     constraintColumn.constraintId(), reordered)
                                 .thenReturn(MutationResult.<Void>of(null,
-                                    constraint.tableId()));
+                                    constraint.tableId())
+                                    .withInverse(new ChangeConstraintColumnPositionInverse(
+                                        constraintColumn.id(),
+                                        ReorderPositions.capture(
+                                            lockedColumns,
+                                            ConstraintColumn::id,
+                                            ConstraintColumn::seqNo))));
                           }));
                 })))
         .as(transactionalOperator::transactional);
@@ -130,11 +138,7 @@ public class ChangeConstraintColumnPositionService implements ChangeConstraintCo
     List<ConstraintColumn> updated = new ArrayList<>(reordered.size());
     for (int index = 0; index < reordered.size(); index++) {
       ConstraintColumn column = reordered.get(index);
-      updated.add(new ConstraintColumn(
-          column.id(),
-          column.constraintId(),
-          column.columnId(),
-          index));
+      updated.add(column.withSeqNo(index));
     }
 
     return updated;

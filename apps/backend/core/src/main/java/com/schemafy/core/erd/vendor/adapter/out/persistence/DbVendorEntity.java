@@ -18,6 +18,9 @@ import lombok.NoArgsConstructor;
 class DbVendorEntity {
 
   @Id
+  @Column("id")
+  private Integer id;
+
   @Column("display_name")
   private String displayName;
 
@@ -29,6 +32,9 @@ class DbVendorEntity {
 
   @Column("datatype_mappings")
   private String datatypeMappings;
+
+  @Column("capabilities")
+  private String capabilities;
 
   @CreatedDate
   private Instant createdAt;

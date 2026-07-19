@@ -25,7 +25,7 @@ public class SchemaDdlExportOrchestrator {
       return schemaExportSnapshotReader.readSchemaExportSnapshot(schemaId)
           .flatMap(result -> generateSchemaDdlUseCase
               .generateSchemaDdl(new GenerateSchemaDdlCommand(
-                  result.snapshot(), exportVendor))
+                  result.snapshot(), exportVendor, result.indexCapabilities()))
               .map(ddl -> new SchemaDdlExportResponse(
                   result.snapshot().schema().id(),
                   result.currentRevision(),

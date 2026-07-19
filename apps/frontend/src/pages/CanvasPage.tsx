@@ -131,7 +131,7 @@ const CanvasContent = observer(() => {
 export const CanvasPage = () => {
   const { projectId } = useParams({ from: '/project/$projectId' });
   const navigate = useNavigate();
-  const { isProjectError, isLoadingProject, projectError } =
+  const { project, isProjectError, isLoadingProject, projectError } =
     useProject(projectId);
   const isForbidden =
     axios.isAxiosError(projectError) && projectError.response?.status === 403;
@@ -143,10 +143,13 @@ export const CanvasPage = () => {
   }, [isProjectError, isForbidden, navigate]);
 
   if (isLoadingProject || isForbidden) return null;
-  if (isProjectError) return <NotFoundPage />;
+  if (isProjectError || !project) return <NotFoundPage />;
 
   return (
-    <SelectedSchemaProvider projectId={projectId}>
+    <SelectedSchemaProvider
+      projectId={projectId}
+      dbVendorId={project.dbVendorId}
+    >
       <MemoProvider>
         <CanvasContent />
       </MemoProvider>

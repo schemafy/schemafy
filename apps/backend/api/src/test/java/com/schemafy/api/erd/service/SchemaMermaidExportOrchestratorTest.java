@@ -1,6 +1,7 @@
 package com.schemafy.api.erd.service;
 
 import java.util.List;
+import java.util.Set;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -13,6 +14,7 @@ import com.schemafy.api.erd.service.export.SchemaExportSnapshotReader;
 import com.schemafy.api.erd.service.export.SchemaExportSnapshotReader.SchemaExportSnapshotResult;
 import com.schemafy.core.erd.export.domain.SchemaExportSnapshot;
 import com.schemafy.core.erd.export.domain.SchemaExportSnapshot.SchemaSnapshot;
+import com.schemafy.core.erd.index.domain.policy.IndexCapabilities;
 import com.schemafy.core.erd.mermaid.application.port.in.GenerateSchemaMermaidCommand;
 import com.schemafy.core.erd.mermaid.application.port.in.GenerateSchemaMermaidUseCase;
 
@@ -52,7 +54,8 @@ class SchemaMermaidExportOrchestratorTest {
         new SchemaSnapshot(schemaId, "mysql", "main_schema", null, null),
         List.of());
     given(schemaExportSnapshotReader.readSchemaExportSnapshot(schemaId))
-        .willReturn(Mono.just(new SchemaExportSnapshotResult(snapshot, 42L)));
+        .willReturn(Mono.just(new SchemaExportSnapshotResult(
+            snapshot, 42L, new IndexCapabilities(Set.of(), Set.of()))));
     given(generateSchemaMermaidUseCase.generateSchemaMermaid(
         any(GenerateSchemaMermaidCommand.class)))
         .willReturn(Mono.just("erDiagram"));

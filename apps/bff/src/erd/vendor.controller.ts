@@ -11,11 +11,8 @@ export class VendorController {
     return this.vendorService.listVendors(authHeader);
   }
 
-  @Get('vendors/:displayName')
-  async getVendor(
-    @Param('displayName') displayName: string,
-    @AuthHeader() authHeader: string,
-  ) {
-    return this.vendorService.getVendor(displayName, authHeader);
+  @Get('vendors/:id')
+  async getVendor(@Param('id') id: string, @AuthHeader() authHeader: string) {
+    return this.vendorService.getVendor(id, authHeader);
   }
 }

@@ -2,6 +2,7 @@ package com.schemafy.api.erd.service.export;
 
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 import org.springframework.transaction.ReactiveTransaction;
 import org.springframework.transaction.ReactiveTransactionManager;
@@ -17,6 +18,8 @@ import com.schemafy.api.erd.controller.dto.response.ColumnResponse;
 import com.schemafy.api.erd.controller.dto.response.TableResponse;
 import com.schemafy.api.erd.controller.dto.response.TableSnapshotResponse;
 import com.schemafy.api.erd.service.TableSnapshotOrchestrator;
+import com.schemafy.core.erd.index.domain.policy.IndexCapabilities;
+import com.schemafy.core.erd.index.domain.type.IndexType;
 import com.schemafy.core.erd.schema.application.port.in.GetSchemaQuery;
 import com.schemafy.core.erd.schema.application.port.in.GetSchemaWithRevisionResult;
 import com.schemafy.core.erd.schema.application.port.in.GetSchemaWithRevisionUseCase;
@@ -24,6 +27,10 @@ import com.schemafy.core.erd.schema.domain.Schema;
 import com.schemafy.core.erd.table.application.port.in.GetTablesBySchemaIdQuery;
 import com.schemafy.core.erd.table.application.port.in.GetTablesBySchemaIdUseCase;
 import com.schemafy.core.erd.table.domain.Table;
+import com.schemafy.core.erd.vendor.application.port.in.GetProjectDbVendorQuery;
+import com.schemafy.core.erd.vendor.application.port.in.GetProjectDbVendorUseCase;
+import com.schemafy.core.erd.vendor.domain.DbVendor;
+import com.schemafy.core.erd.vendor.domain.VendorCapabilities;
 
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
@@ -42,6 +49,9 @@ class SchemaExportSnapshotReaderTest {
 
   @Mock
   GetSchemaWithRevisionUseCase getSchemaWithRevisionUseCase;
+
+  @Mock
+  GetProjectDbVendorUseCase getProjectDbVendorUseCase;
 
   @Mock
   GetTablesBySchemaIdUseCase getTablesBySchemaIdUseCase;
@@ -68,6 +78,7 @@ class SchemaExportSnapshotReaderTest {
 
     sut = new SchemaExportSnapshotReader(
         getSchemaWithRevisionUseCase,
+        getProjectDbVendorUseCase,
         getTablesBySchemaIdUseCase,
         tableSnapshotOrchestrator,
         new SchemaExportSnapshotMapper(),
@@ -78,7 +89,7 @@ class SchemaExportSnapshotReaderTest {
   @DisplayName("schema revision과 strict table snapshot을 공통 export snapshot으로 읽는다")
   void readsSchemaExportSnapshot() {
     String schemaId = "schema-1";
-    Schema schema = new Schema(schemaId, "project-1", "mysql", "main_schema",
+    Schema schema = new Schema(schemaId, "project-1", "main_schema",
         "utf8mb4", "utf8mb4_general_ci");
     Table table = new Table("table-1", schemaId, "users", "utf8mb4",
         "utf8mb4_general_ci");
@@ -94,6 +105,9 @@ class SchemaExportSnapshotReaderTest {
 
     given(getSchemaWithRevisionUseCase.getSchemaWithRevision(any(GetSchemaQuery.class)))
         .willReturn(Mono.just(new GetSchemaWithRevisionResult(schema, 42L)));
+    given(getProjectDbVendorUseCase.getProjectDbVendor(
+        new GetProjectDbVendorQuery(schema.projectId())))
+        .willReturn(Mono.just(sourceDbVendor()));
     given(getTablesBySchemaIdUseCase.getTablesBySchemaId(any(GetTablesBySchemaIdQuery.class)))
         .willReturn(Flux.just(table));
     given(tableSnapshotOrchestrator.getTableSnapshotsStrict(anyList()))
@@ -103,6 +117,8 @@ class SchemaExportSnapshotReaderTest {
         .assertNext(result -> {
           assertThat(result.currentRevision()).isEqualTo(42L);
           assertThat(result.snapshot().schema().id()).isEqualTo(schemaId);
+          assertThat(result.snapshot().schema().dbVendorName()).isEqualTo("mysql");
+          assertThat(result.indexCapabilities()).isEqualTo(mysqlIndexCapabilities());
           assertThat(result.snapshot().tables()).hasSize(1);
           assertThat(result.snapshot().tables().getFirst().columns()).hasSize(1);
         })
@@ -110,6 +126,8 @@ class SchemaExportSnapshotReaderTest {
 
     then(getSchemaWithRevisionUseCase).should()
         .getSchemaWithRevision(new GetSchemaQuery(schemaId));
+    then(getProjectDbVendorUseCase).should()
+        .getProjectDbVendor(new GetProjectDbVendorQuery(schema.projectId()));
     then(getTablesBySchemaIdUseCase).should()
         .getTablesBySchemaId(new GetTablesBySchemaIdQuery(schemaId));
   }
@@ -118,11 +136,14 @@ class SchemaExportSnapshotReaderTest {
   @DisplayName("테이블이 없으면 strict snapshot 조회 없이 빈 export snapshot을 반환한다")
   void readsEmptySchemaExportSnapshot() {
     String schemaId = "schema-1";
-    Schema schema = new Schema(schemaId, "project-1", "mysql", "empty_schema",
+    Schema schema = new Schema(schemaId, "project-1", "empty_schema",
         "utf8mb4", "utf8mb4_general_ci");
 
     given(getSchemaWithRevisionUseCase.getSchemaWithRevision(any(GetSchemaQuery.class)))
         .willReturn(Mono.just(new GetSchemaWithRevisionResult(schema, 7L)));
+    given(getProjectDbVendorUseCase.getProjectDbVendor(
+        new GetProjectDbVendorQuery(schema.projectId())))
+        .willReturn(Mono.just(sourceDbVendor()));
     given(getTablesBySchemaIdUseCase.getTablesBySchemaId(any(GetTablesBySchemaIdQuery.class)))
         .willReturn(Flux.empty());
 
@@ -140,7 +161,7 @@ class SchemaExportSnapshotReaderTest {
   @DisplayName("strict table snapshot 조회 실패를 전파하고 read transaction을 rollback한다")
   void propagatesStrictSnapshotFailure() {
     String schemaId = "schema-1";
-    Schema schema = new Schema(schemaId, "project-1", "mysql", "main_schema",
+    Schema schema = new Schema(schemaId, "project-1", "main_schema",
         "utf8mb4", "utf8mb4_general_ci");
     Table table = new Table("table-1", schemaId, "users", "utf8mb4",
         "utf8mb4_general_ci");
@@ -148,6 +169,9 @@ class SchemaExportSnapshotReaderTest {
 
     given(getSchemaWithRevisionUseCase.getSchemaWithRevision(any(GetSchemaQuery.class)))
         .willReturn(Mono.just(new GetSchemaWithRevisionResult(schema, 42L)));
+    given(getProjectDbVendorUseCase.getProjectDbVendor(
+        new GetProjectDbVendorQuery(schema.projectId())))
+        .willReturn(Mono.just(sourceDbVendor()));
     given(getTablesBySchemaIdUseCase.getTablesBySchemaId(any(GetTablesBySchemaIdQuery.class)))
         .willReturn(Flux.just(table));
     given(tableSnapshotOrchestrator.getTableSnapshotsStrict(anyList()))
@@ -158,6 +182,22 @@ class SchemaExportSnapshotReaderTest {
         .verify();
 
     then(transactionManager).should().rollback(transaction);
+  }
+
+  private static DbVendor sourceDbVendor() {
+    return new DbVendor(
+        1,
+        "MySQL 8.0",
+        "mysql",
+        "8.0",
+        "{}",
+        new VendorCapabilities(1, mysqlIndexCapabilities()));
+  }
+
+  private static IndexCapabilities mysqlIndexCapabilities() {
+    return new IndexCapabilities(
+        Set.of(IndexType.BTREE, IndexType.FULLTEXT, IndexType.SPATIAL),
+        Set.of(IndexType.BTREE));
   }
 
 }

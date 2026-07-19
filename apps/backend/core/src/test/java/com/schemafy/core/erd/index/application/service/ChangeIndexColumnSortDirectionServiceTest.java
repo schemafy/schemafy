@@ -23,11 +23,13 @@ import com.schemafy.core.erd.index.domain.exception.IndexErrorCode;
 import com.schemafy.core.erd.index.domain.type.IndexType;
 import com.schemafy.core.erd.index.domain.type.SortDirection;
 import com.schemafy.core.erd.index.fixture.IndexFixture;
+import com.schemafy.core.erd.vendor.fixture.DbVendorFixture;
 
 import reactor.core.publisher.Mono;
 import reactor.test.StepVerifier;
 
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.then;
@@ -55,6 +57,9 @@ class ChangeIndexColumnSortDirectionServiceTest {
   @Mock
   TransactionalOperator transactionalOperator;
 
+  @Mock
+  IndexCapabilityResolver indexCapabilityResolver;
+
   @InjectMocks
   ChangeIndexColumnSortDirectionService sut;
 
@@ -62,6 +67,8 @@ class ChangeIndexColumnSortDirectionServiceTest {
   void setUpTransaction() {
     lenient().when(transactionalOperator.transactional(any(Mono.class)))
         .thenAnswer(invocation -> invocation.getArgument(0));
+    lenient().when(indexCapabilityResolver.resolve(any(), anyString()))
+        .thenReturn(Mono.just(DbVendorFixture.defaultCapabilities().indexes()));
   }
 
   @Nested
@@ -292,6 +299,26 @@ class ChangeIndexColumnSortDirectionServiceTest {
 
       then(changeIndexColumnSortDirectionPort).should()
           .changeIndexColumnSortDirection(eq("ic1"), eq(SortDirection.DESC));
+    }
+
+    @Test
+    @DisplayName("지원하지 않는 타입의 인덱스는 정렬 방향을 변경할 수 없다")
+    void rejectsUnsupportedIndexType() {
+      var command = IndexFixture.changeSortDirectionCommand("ic1", SortDirection.DESC);
+      var indexColumn = IndexFixture.indexColumn(
+          "ic1", "index1", "col1", 0, SortDirection.ASC);
+      var index = IndexFixture.index("index1", "table1", "idx_hash", IndexType.HASH);
+
+      given(getIndexColumnByIdPort.findIndexColumnById("ic1"))
+          .willReturn(Mono.just(indexColumn));
+      given(getIndexByIdPort.findIndexById("index1"))
+          .willReturn(Mono.just(index));
+
+      StepVerifier.create(sut.changeIndexColumnSortDirection(command))
+          .expectErrorMatches(DomainException.hasErrorCode(IndexErrorCode.TYPE_INVALID))
+          .verify();
+
+      then(changeIndexColumnSortDirectionPort).shouldHaveNoInteractions();
     }
 
   }

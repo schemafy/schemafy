@@ -63,7 +63,6 @@ public class SchemaController {
       @Valid @RequestBody CreateSchemaRequest request) {
     CreateSchemaCommand command = new CreateSchemaCommand(
         request.projectId(),
-        request.dbVendorName(),
         request.name(),
         request.charset(),
         request.collation());

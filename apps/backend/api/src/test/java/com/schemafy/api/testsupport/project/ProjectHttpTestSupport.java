@@ -30,6 +30,8 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 public abstract class ProjectHttpTestSupport extends UserHttpTestSupport {
 
+  protected static final Integer DB_VENDOR_ID = 1;
+
   @Autowired
   protected DatabaseClient databaseClient;
 
@@ -94,7 +96,7 @@ public abstract class ProjectHttpTestSupport extends UserHttpTestSupport {
       String workspaceId,
       String name,
       String description) {
-    return projectRepository.save(Project.create(nextId(), workspaceId, name,
+    return projectRepository.save(Project.create(nextId(), workspaceId, DB_VENDOR_ID, name,
         description)).block();
   }
 

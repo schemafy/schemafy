@@ -1,6 +1,8 @@
-MERGE INTO db_vendors (display_name, name, version, datatype_mappings, created_at, updated_at)
-KEY (display_name)
+MERGE INTO db_vendors (
+    id, display_name, name, version, datatype_mappings, capabilities, created_at, updated_at)
+KEY (id)
 VALUES (
+    1,
     'MySQL 8.0',
     'mysql',
     '8.0',
@@ -252,7 +254,13 @@ VALUES (
         }
       ]
     }',
+    '{
+      "schemaVersion": 1,
+      "indexes": {
+        "supportedTypes": ["BTREE", "FULLTEXT", "SPATIAL"],
+        "sortDirectionTypes": ["BTREE"]
+      }
+    }',
     CURRENT_TIMESTAMP,
     CURRENT_TIMESTAMP
 );
-

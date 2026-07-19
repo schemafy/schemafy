@@ -17,10 +17,12 @@ public class DbVendorApiResponseMapper {
 
   public DbVendorDetailResponse toDbVendorDetailResponse(DbVendor vendor) {
     return new DbVendorDetailResponse(
+        vendor.id(),
         vendor.displayName(),
         vendor.name(),
         vendor.version(),
-        jsonCodec.fromJson(vendor.datatypeMappings(), JsonNode.class));
+        jsonCodec.fromJson(vendor.datatypeMappings(), JsonNode.class),
+        vendor.capabilities());
   }
 
 }

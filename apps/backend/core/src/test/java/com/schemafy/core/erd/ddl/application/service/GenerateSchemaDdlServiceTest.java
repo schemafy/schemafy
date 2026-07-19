@@ -11,7 +11,13 @@ import com.schemafy.core.erd.ddl.domain.DdlExportVendor;
 import com.schemafy.core.erd.ddl.domain.DdlGenerator;
 import com.schemafy.core.erd.ddl.domain.exception.DdlErrorCode;
 import com.schemafy.core.erd.export.domain.SchemaExportSnapshot;
+import com.schemafy.core.erd.export.domain.SchemaExportSnapshot.Index;
+import com.schemafy.core.erd.export.domain.SchemaExportSnapshot.IndexSnapshot;
 import com.schemafy.core.erd.export.domain.SchemaExportSnapshot.SchemaSnapshot;
+import com.schemafy.core.erd.export.domain.SchemaExportSnapshot.Table;
+import com.schemafy.core.erd.export.domain.SchemaExportSnapshot.TableSnapshot;
+import com.schemafy.core.erd.index.domain.type.IndexType;
+import com.schemafy.core.erd.vendor.fixture.DbVendorFixture;
 
 import reactor.core.publisher.Mono;
 import reactor.test.StepVerifier;
@@ -33,7 +39,10 @@ class GenerateSchemaDdlServiceTest {
         List.of(mysqlGenerator, postgresGenerator));
 
     Mono<String> result = sut.generateSchemaDdl(
-        new GenerateSchemaDdlCommand(snapshot, DdlExportVendor.MYSQL));
+        new GenerateSchemaDdlCommand(
+            snapshot,
+            DdlExportVendor.MYSQL,
+            DbVendorFixture.defaultCapabilities().indexes()));
 
     StepVerifier.create(result)
         .expectNext("MYSQL DDL")
@@ -52,11 +61,38 @@ class GenerateSchemaDdlServiceTest {
 
     Mono<String> result = sut.generateSchemaDdl(
         new GenerateSchemaDdlCommand(snapshot,
-            DdlExportVendor.of("postgresql")));
+            DdlExportVendor.of("postgresql"),
+            DbVendorFixture.defaultCapabilities().indexes()));
 
     StepVerifier.create(result)
         .expectErrorMatches(DomainException.hasErrorCode(
             DdlErrorCode.UNSUPPORTED_VENDOR))
+        .verify();
+  }
+
+  @Test
+  @DisplayName("프로젝트 벤더가 지원하지 않는 인덱스 타입이면 생성 전에 거부한다")
+  void rejectsUnsupportedIndexTypeBeforeGeneration() {
+    SchemaExportSnapshot snapshot = new SchemaExportSnapshot(
+        new SchemaSnapshot("schema-1", "mysql", "app", null, null),
+        List.of(new TableSnapshot(
+            new Table("table-1", "schema-1", "users", null, null),
+            List.of(),
+            List.of(),
+            List.of(),
+            List.of(new IndexSnapshot(
+                new Index("index-1", "table-1", "idx_users", IndexType.HASH),
+                List.of())))));
+    GenerateSchemaDdlService sut = new GenerateSchemaDdlService(
+        List.of(new StubDdlGenerator(DdlExportVendor.MYSQL, snapshot, "MYSQL DDL")));
+
+    Mono<String> result = sut.generateSchemaDdl(new GenerateSchemaDdlCommand(
+        snapshot,
+        DdlExportVendor.MYSQL,
+        DbVendorFixture.defaultCapabilities().indexes()));
+
+    StepVerifier.create(result)
+        .expectError(DomainException.class)
         .verify();
   }
 
