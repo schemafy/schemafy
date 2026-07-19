@@ -14,6 +14,8 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import com.schemafy.core.common.exception.DomainException;
+import com.schemafy.core.erd.operation.application.inverse.ChangeRelationshipColumnPositionInverse;
+import com.schemafy.core.erd.operation.application.inverse.ReorderPosition;
 import com.schemafy.core.erd.relationship.application.port.in.ChangeRelationshipColumnPositionCommand;
 import com.schemafy.core.erd.relationship.application.port.out.ChangeRelationshipColumnPositionPort;
 import com.schemafy.core.erd.relationship.application.port.out.GetRelationshipByIdPort;
@@ -25,6 +27,7 @@ import com.schemafy.core.erd.relationship.fixture.RelationshipFixture;
 import reactor.core.publisher.Mono;
 import reactor.test.StepVerifier;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyList;
 import static org.mockito.ArgumentMatchers.eq;
@@ -83,7 +86,12 @@ class ChangeRelationshipColumnPositionServiceTest {
           .willReturn(Mono.empty());
 
       StepVerifier.create(sut.changeRelationshipColumnPosition(command))
-          .expectNextCount(1)
+          .assertNext(result -> assertThat(result.inversePayload()).isEqualTo(
+              new ChangeRelationshipColumnPositionInverse(
+                  column1.id(),
+                  List.of(
+                      new ReorderPosition(column1.id(), 0),
+                      new ReorderPosition(column2.id(), 1)))))
           .verifyComplete();
 
       then(changeRelationshipColumnPositionPort).should()
@@ -112,7 +120,9 @@ class ChangeRelationshipColumnPositionServiceTest {
               Mono.just(List.of(column2, lockedColumn1)));
 
       StepVerifier.create(sut.changeRelationshipColumnPosition(command))
-          .expectNextMatches(result -> result.operation() == null && result.noOp())
+          .expectNextMatches(result -> result.operation() == null
+              && result.inversePayload() == null
+              && result.noOp())
           .verifyComplete();
 
       then(changeRelationshipColumnPositionPort).shouldHaveNoInteractions();

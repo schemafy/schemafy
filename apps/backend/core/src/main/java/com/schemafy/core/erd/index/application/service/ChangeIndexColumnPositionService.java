@@ -17,6 +17,8 @@ import com.schemafy.core.erd.index.application.port.out.GetIndexColumnByIdPort;
 import com.schemafy.core.erd.index.application.port.out.GetIndexColumnsByIndexIdPort;
 import com.schemafy.core.erd.index.domain.IndexColumn;
 import com.schemafy.core.erd.index.domain.exception.IndexErrorCode;
+import com.schemafy.core.erd.operation.application.inverse.ChangeIndexColumnPositionInverse;
+import com.schemafy.core.erd.operation.application.inverse.ReorderPositions;
 import com.schemafy.core.erd.operation.application.service.ErdMutationCoordinator;
 import com.schemafy.core.erd.operation.domain.ErdOperationType;
 import com.schemafy.core.project.application.access.AccessTarget;
@@ -79,7 +81,13 @@ public class ChangeIndexColumnPositionService implements ChangeIndexColumnPositi
                                 lockedNormalizedPosition);
                             return changeIndexColumnPositionPort
                                 .changeIndexColumnPositions(indexColumn.indexId(), reordered)
-                                .thenReturn(MutationResult.<Void>of(null, index.tableId()));
+                                .thenReturn(MutationResult.<Void>of(null, index.tableId())
+                                    .withInverse(new ChangeIndexColumnPositionInverse(
+                                        indexColumn.id(),
+                                        ReorderPositions.capture(
+                                            lockedColumns,
+                                            IndexColumn::id,
+                                            IndexColumn::seqNo))));
                           }));
                 })))
         .as(transactionalOperator::transactional);
@@ -109,12 +117,7 @@ public class ChangeIndexColumnPositionService implements ChangeIndexColumnPositi
     List<IndexColumn> updated = new ArrayList<>(reordered.size());
     for (int index = 0; index < reordered.size(); index++) {
       IndexColumn column = reordered.get(index);
-      updated.add(new IndexColumn(
-          column.id(),
-          column.indexId(),
-          column.columnId(),
-          index,
-          column.sortDirection()));
+      updated.add(column.withSeqNo(index));
     }
 
     return updated;
