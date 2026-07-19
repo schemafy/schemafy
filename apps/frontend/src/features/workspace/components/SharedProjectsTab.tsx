@@ -6,6 +6,7 @@ import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuTrigger,
+  LoadingState,
   Pagination,
 } from '@/components';
 import type { ProjectSummaryResponse } from '@/features/project/api';
@@ -21,7 +22,12 @@ export const SharedProjectsTab = () => {
     null,
   );
 
-  const { projects, projectsData, leaveProject } = useMySharedProjects(
+  const {
+    projects,
+    projectsData,
+    isLoadingProjects,
+    leaveProject,
+  } = useMySharedProjects(
     currentPage - 1,
   );
 
@@ -31,6 +37,10 @@ export const SharedProjectsTab = () => {
 
   return (
     <div className="flex flex-col gap-4">
+      {isLoadingProjects ? (
+        <LoadingState className="min-h-[200px]" label="Loading projects..." />
+      ) : (
+        <div className="flex flex-col gap-4">
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
         <div className="relative min-w-0 flex-1">
           <Search
@@ -206,6 +216,8 @@ export const SharedProjectsTab = () => {
           }
         }}
       />
+    </div>
+      )}
     </div>
   );
 };

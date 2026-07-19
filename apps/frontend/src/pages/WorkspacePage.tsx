@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { cn, toCapitalized } from '@/lib';
-import { Button, QueryStateBoundary } from '@/components';
+import { Button, LoadingState, QueryStateBoundary } from '@/components';
 import {
   ConfirmDialog,
   InviteDialog,
@@ -38,7 +38,10 @@ export const WorkspacePage = () => {
     leaveWorkspace,
   } = useWorkspaces();
   const isMyProjectsSelected = selectedWorkspaceId === MY_PROJECTS_ID;
-  const { workspace: selectedWorkspace } = useWorkspace(
+  const {
+    workspace: selectedWorkspace,
+    isPendingWorkspace,
+  } = useWorkspace(
     isMyProjectsSelected ? '' : selectedWorkspaceId,
   );
 
@@ -111,6 +114,11 @@ export const WorkspacePage = () => {
                 <SharedProjectsTab />
               </div>
             </div>
+          ) : isPendingWorkspace ? (
+            <LoadingState
+              className="min-h-full"
+              label="Loading workspace..."
+            />
           ) : (
             <div className="flex min-w-0 flex-1 justify-center overflow-x-hidden px-4 py-6 sm:px-6 lg:px-10">
               <div className="flex w-full max-w-6xl flex-col gap-5 transition-transform duration-300">

@@ -6,6 +6,7 @@ import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuTrigger,
+  LoadingState,
   Pagination,
 } from '@/components';
 import { useProjects } from '@/features/project/hooks/useProjects';
@@ -35,7 +36,12 @@ export const WorkspaceProjectsTab = ({
     null,
   );
 
-  const { projects, projectsData, leaveProject } = useProjects(
+  const {
+    projects,
+    projectsData,
+    isLoadingProjects,
+    leaveProject,
+  } = useProjects(
     workspaceId,
     currentPage - 1,
   );
@@ -45,7 +51,11 @@ export const WorkspaceProjectsTab = ({
   );
 
   return (
-    <div className="flex flex-col gap-4">
+        <div className="flex flex-col gap-4">
+          {isLoadingProjects ? (
+            <LoadingState className="min-h-[200px]" label="Loading projects..." />
+          ) : (
+            <div className="flex flex-col gap-4">
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
         <div className="relative min-w-0 flex-1">
           <Search
@@ -242,6 +252,8 @@ export const WorkspaceProjectsTab = ({
           }
         }}
       />
+    </div>
+      )}
     </div>
   );
 };
