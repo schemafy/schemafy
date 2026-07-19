@@ -20,6 +20,7 @@ import com.schemafy.core.erd.index.application.port.out.GetIndexesByTableIdPort;
 import com.schemafy.core.erd.index.domain.Index;
 import com.schemafy.core.erd.index.domain.IndexColumn;
 import com.schemafy.core.erd.index.domain.exception.IndexErrorCode;
+import com.schemafy.core.erd.index.domain.policy.IndexCapabilities;
 import com.schemafy.core.erd.index.domain.validator.IndexValidator;
 import com.schemafy.core.erd.operation.application.service.ErdMutationCoordinator;
 import com.schemafy.core.erd.operation.domain.ErdOperationType;
@@ -45,6 +46,7 @@ public class ChangeIndexColumnSortDirectionService
   private final GetIndexByIdPort getIndexByIdPort;
   private final GetIndexColumnsByIndexIdPort getIndexColumnsByIndexIdPort;
   private final GetIndexesByTableIdPort getIndexesByTableIdPort;
+  private final IndexCapabilityResolver indexCapabilityResolver;
   private ErdMutationCoordinator erdMutationCoordinator = ErdMutationCoordinator.noop();
 
   @Autowired
@@ -65,37 +67,45 @@ public class ChangeIndexColumnSortDirectionService
             IndexErrorCode.COLUMN_NOT_FOUND, "Index column not found")))
         .flatMap(indexColumn -> getIndexByIdPort.findIndexById(indexColumn.indexId())
             .switchIfEmpty(Mono.error(new DomainException(IndexErrorCode.NOT_FOUND, "Index not found")))
-            .flatMap(index -> {
-              if (indexColumn.sortDirection() == command.sortDirection()) {
-                return Mono.just(MutationResult.<Void>noop(null, index.tableId()));
-              }
-              return erdMutationCoordinator.coordinate(
-                  ErdOperationType.CHANGE_INDEX_COLUMN_SORT_DIRECTION,
-                  command,
-                  () -> getIndexColumnByIdPort.findIndexColumnById(command.indexColumnId())
-                      .switchIfEmpty(Mono.error(new DomainException(
-                          IndexErrorCode.COLUMN_NOT_FOUND, "Index column not found")))
-                      .flatMap(lockedIndexColumn -> getIndexByIdPort.findIndexById(lockedIndexColumn.indexId())
-                          .switchIfEmpty(Mono.error(new DomainException(IndexErrorCode.NOT_FOUND, "Index not found")))
-                          .flatMap(lockedIndex -> {
-                            if (lockedIndexColumn.sortDirection() == command.sortDirection()) {
-                              return Mono.just(MutationResult.<Void>noop(null, lockedIndex.tableId()));
-                            }
-                            return validateSortDirectionChange(lockedIndex, lockedIndexColumn, command)
-                                .then(Mono.defer(() -> changeIndexColumnSortDirectionPort
-                                    .changeIndexColumnSortDirection(
-                                        lockedIndexColumn.id(),
-                                        command.sortDirection())))
-                                .thenReturn(MutationResult.<Void>of(null, lockedIndex.tableId()));
-                          })));
-            }))
+            .flatMap(index -> indexCapabilityResolver.resolve(INDEX_COLUMN, indexColumn.id())
+                .flatMap(capabilities -> {
+                  IndexValidator.validateType(capabilities, index.type());
+                  if (indexColumn.sortDirection() == command.sortDirection()) {
+                    return Mono.just(MutationResult.<Void>noop(null, index.tableId()));
+                  }
+                  return erdMutationCoordinator.coordinate(
+                      ErdOperationType.CHANGE_INDEX_COLUMN_SORT_DIRECTION,
+                      command,
+                      () -> getIndexColumnByIdPort.findIndexColumnById(command.indexColumnId())
+                          .switchIfEmpty(Mono.error(new DomainException(
+                              IndexErrorCode.COLUMN_NOT_FOUND, "Index column not found")))
+                          .flatMap(lockedIndexColumn -> getIndexByIdPort.findIndexById(lockedIndexColumn.indexId())
+                              .switchIfEmpty(Mono.error(
+                                  new DomainException(IndexErrorCode.NOT_FOUND, "Index not found")))
+                              .flatMap(lockedIndex -> {
+                                if (lockedIndexColumn.sortDirection() == command.sortDirection()) {
+                                  return Mono.just(MutationResult.<Void>noop(null, lockedIndex.tableId()));
+                                }
+                                return validateSortDirectionChange(
+                                    lockedIndex,
+                                    lockedIndexColumn,
+                                    command,
+                                    capabilities)
+                                    .then(Mono.defer(() -> changeIndexColumnSortDirectionPort
+                                        .changeIndexColumnSortDirection(
+                                            lockedIndexColumn.id(),
+                                            command.sortDirection())))
+                                    .thenReturn(MutationResult.<Void>of(null, lockedIndex.tableId()));
+                              })));
+                })))
         .as(transactionalOperator::transactional);
   }
 
   private Mono<Void> validateSortDirectionChange(
       Index index,
       IndexColumn indexColumn,
-      ChangeIndexColumnSortDirectionCommand command) {
+      ChangeIndexColumnSortDirectionCommand command,
+      IndexCapabilities capabilities) {
     return Mono.zip(
         getIndexColumnsByIndexIdPort.findIndexColumnsByIndexId(index.id())
             .defaultIfEmpty(List.of()),
@@ -122,6 +132,7 @@ public class ChangeIndexColumnSortDirectionService
 
               IndexValidator.validateSortDirections(updatedColumns, index.name());
               IndexValidator.validateDefinitionUniqueness(
+                  capabilities,
                   indexes,
                   indexColumnsByIndexId,
                   index.type(),

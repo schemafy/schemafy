@@ -13,6 +13,7 @@ import com.schemafy.core.erd.column.domain.Column;
 import com.schemafy.core.erd.index.domain.Index;
 import com.schemafy.core.erd.index.domain.IndexColumn;
 import com.schemafy.core.erd.index.domain.exception.IndexErrorCode;
+import com.schemafy.core.erd.index.domain.policy.IndexCapabilities;
 import com.schemafy.core.erd.index.domain.type.IndexType;
 import com.schemafy.core.erd.index.domain.type.SortDirection;
 
@@ -40,6 +41,15 @@ public final class IndexValidator {
   public static void validateType(IndexType type) {
     if (type == null) {
       throw new DomainException(IndexErrorCode.TYPE_INVALID, "Index type is required");
+    }
+  }
+
+  public static void validateType(IndexCapabilities capabilities, IndexType type) {
+    validateType(type);
+    if (!capabilities.supports(type)) {
+      throw new DomainException(
+          IndexErrorCode.TYPE_INVALID,
+          "Index type '%s' is not supported".formatted(type));
     }
   }
 
@@ -119,6 +129,7 @@ public final class IndexValidator {
   }
 
   public static void validateDefinitionUniqueness(
+      IndexCapabilities capabilities,
       List<Index> indexes,
       Map<String, List<IndexColumn>> indexColumns,
       IndexType indexType,
@@ -128,7 +139,7 @@ public final class IndexValidator {
     if (indexes == null) {
       return;
     }
-    String candidateDefinition = definitionKey(indexType, candidateColumns);
+    String candidateDefinition = definitionKey(capabilities, indexType, candidateColumns);
     for (Index index : indexes) {
       if (equalsIgnoreCase(index.id(), ignoreIndexId)) {
         continue;
@@ -136,7 +147,7 @@ public final class IndexValidator {
       List<IndexColumn> columns = indexColumns == null
           ? List.of()
           : indexColumns.getOrDefault(index.id(), List.of());
-      String existingDefinition = definitionKey(index.type(), columns);
+      String existingDefinition = definitionKey(capabilities, index.type(), columns);
       if (candidateDefinition.equals(existingDefinition)) {
         throw new DomainException(
             IndexErrorCode.DEFINITION_DUPLICATE,
@@ -147,14 +158,18 @@ public final class IndexValidator {
     }
   }
 
-  private static String definitionKey(IndexType type, List<IndexColumn> columns) {
+  private static String definitionKey(
+      IndexCapabilities capabilities,
+      IndexType type,
+      List<IndexColumn> columns) {
     List<String> columnKeys = new ArrayList<>();
     if (columns != null) {
       for (IndexColumn column : columns) {
         String columnId = normalizeId(column.columnId());
-        String sortDir = column.sortDirection() == null
-            ? ""
-            : column.sortDirection().name();
+        String sortDir = capabilities.sortDirectionAffectsSemantics(type)
+            && column.sortDirection() != null
+                ? column.sortDirection().name()
+                : "";
         columnKeys.add(columnId + ":" + sortDir);
       }
     }

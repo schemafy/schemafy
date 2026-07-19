@@ -8,7 +8,8 @@ public record DbVendor(
     String displayName,
     String name,
     String version,
-    String datatypeMappings) {
+    String datatypeMappings,
+    VendorCapabilities capabilities) {
 
   public DbVendor {
     if (id == null || id <= 0)
@@ -21,6 +22,8 @@ public record DbVendor(
       throw new DomainException(VendorErrorCode.INVALID_VALUE, "version must not be blank");
     if (datatypeMappings == null || datatypeMappings.isBlank())
       throw new DomainException(VendorErrorCode.INVALID_VALUE, "datatypeMappings must not be blank");
+    if (capabilities == null)
+      throw new DomainException(VendorErrorCode.INVALID_VALUE, "capabilities must not be null");
   }
 
 }

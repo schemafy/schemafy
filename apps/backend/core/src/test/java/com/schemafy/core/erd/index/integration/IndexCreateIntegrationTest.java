@@ -154,19 +154,15 @@ class IndexCreateIntegrationTest extends ErdProjectIntegrationSupport {
     }
 
     @Test
-    @DisplayName("HASH 인덱스를 생성한다")
-    void createsHashIndex() {
+    @DisplayName("지원하지 않는 HASH 인덱스 생성을 거부한다")
+    void rejectsHashIndex() {
       var createCommand = new CreateIndexCommand(
           tableId, "idx_hash", IndexType.HASH,
           List.of(new CreateIndexColumnCommand(columnId1, 0, SortDirection.ASC)));
 
       StepVerifier.create(createIndexUseCase.createIndex(createCommand))
-          .assertNext(result -> {
-            var payload = result.result();
-            assertThat(payload.indexId()).isNotNull();
-            assertThat(payload.type()).isEqualTo(IndexType.HASH);
-          })
-          .verifyComplete();
+          .expectErrorMatches(DomainException.hasErrorCode(IndexErrorCode.TYPE_INVALID))
+          .verify();
     }
 
     @Test
@@ -176,12 +172,14 @@ class IndexCreateIntegrationTest extends ErdProjectIntegrationSupport {
           tableId, "idx_fulltext", IndexType.FULLTEXT,
           List.of(new CreateIndexColumnCommand(columnId2, 0, SortDirection.ASC)));
 
-      StepVerifier.create(createIndexUseCase.createIndex(createCommand))
-          .assertNext(result -> {
-            var payload = result.result();
-            assertThat(payload.indexId()).isNotNull();
-            assertThat(payload.type()).isEqualTo(IndexType.FULLTEXT);
-          })
+      var payload = createIndexUseCase.createIndex(createCommand).block().result();
+
+      assertThat(payload.indexId()).isNotNull();
+      assertThat(payload.type()).isEqualTo(IndexType.FULLTEXT);
+      StepVerifier.create(getIndexColumnsByIndexIdUseCase.getIndexColumnsByIndexId(
+          new GetIndexColumnsByIndexIdQuery(payload.indexId())))
+          .assertNext(columns -> assertThat(columns.getFirst().sortDirection())
+              .isEqualTo(SortDirection.ASC))
           .verifyComplete();
     }
 
@@ -251,13 +249,13 @@ class IndexCreateIntegrationTest extends ErdProjectIntegrationSupport {
       var result = createIndexUseCase.createIndex(createCommand).block().result();
 
       StepVerifier.create(changeIndexTypeUseCase.changeIndexType(
-          new ChangeIndexTypeCommand(result.indexId(), IndexType.HASH)))
+          new ChangeIndexTypeCommand(result.indexId(), IndexType.FULLTEXT)))
           .expectNextCount(1)
           .verifyComplete();
 
       StepVerifier.create(getIndexUseCase.getIndex(
           new GetIndexQuery(result.indexId())))
-          .assertNext(index -> assertThat(index.type()).isEqualTo(IndexType.HASH))
+          .assertNext(index -> assertThat(index.type()).isEqualTo(IndexType.FULLTEXT))
           .verifyComplete();
     }
 

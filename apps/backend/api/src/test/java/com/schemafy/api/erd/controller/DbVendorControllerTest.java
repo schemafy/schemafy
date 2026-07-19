@@ -1,5 +1,7 @@
 package com.schemafy.api.erd.controller;
 
+import java.util.Set;
+
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.restdocs.AutoConfigureRestDocs;
 import org.springframework.boot.test.autoconfigure.web.reactive.AutoConfigureWebTestClient;
@@ -13,11 +15,14 @@ import org.junit.jupiter.api.Test;
 
 import com.schemafy.api.common.constant.ApiPath;
 import com.schemafy.api.common.security.WithMockCustomUser;
+import com.schemafy.core.erd.index.domain.policy.IndexCapabilities;
+import com.schemafy.core.erd.index.domain.type.IndexType;
 import com.schemafy.core.erd.vendor.application.port.in.GetDbVendorQuery;
 import com.schemafy.core.erd.vendor.application.port.in.GetDbVendorUseCase;
 import com.schemafy.core.erd.vendor.application.port.in.ListDbVendorsUseCase;
 import com.schemafy.core.erd.vendor.domain.DbVendor;
 import com.schemafy.core.erd.vendor.domain.DbVendorSummary;
+import com.schemafy.core.erd.vendor.domain.VendorCapabilities;
 
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
@@ -92,7 +97,8 @@ class DbVendorControllerTest {
     var vendor = new DbVendor(
         DB_VENDOR_ID,
         "MySQL 8.0", "mysql", "8.0",
-        "{\"schemaVersion\":1,\"vendor\":\"mysql\",\"types\":[]}");
+        "{\"schemaVersion\":1,\"vendor\":\"mysql\",\"types\":[]}",
+        mysqlCapabilities());
 
     given(getDbVendorUseCase.getDbVendor(any(GetDbVendorQuery.class)))
         .willReturn(Mono.just(vendor));
@@ -108,6 +114,9 @@ class DbVendorControllerTest {
         .jsonPath("$.name").isEqualTo("mysql")
         .jsonPath("$.version").isEqualTo("8.0")
         .jsonPath("$.datatypeMappings.schemaVersion").isEqualTo(1)
+        .jsonPath("$.capabilities.schemaVersion").isEqualTo(1)
+        .jsonPath("$.capabilities.indexes.supportedTypes").isArray()
+        .jsonPath("$.capabilities.indexes.sortDirectionTypes[0]").isEqualTo("BTREE")
         .consumeWith(document("vendor-get",
             pathParameters(
                 parameterWithName("id")
@@ -129,7 +138,25 @@ class DbVendorControllerTest {
                 fieldWithPath("datatypeMappings.vendor")
                     .description("벤더 식별자"),
                 fieldWithPath("datatypeMappings.types")
-                    .description("데이터타입 목록"))));
+                    .description("데이터타입 목록"),
+                fieldWithPath("capabilities")
+                    .description("벤더 기능 정보"),
+                fieldWithPath("capabilities.schemaVersion")
+                    .description("기능 정보 스키마 버전"),
+                fieldWithPath("capabilities.indexes")
+                    .description("인덱스 기능 정보"),
+                fieldWithPath("capabilities.indexes.supportedTypes")
+                    .description("지원 인덱스 타입 목록"),
+                fieldWithPath("capabilities.indexes.sortDirectionTypes")
+                    .description("정렬 방향이 의미 있는 인덱스 타입 목록"))));
+  }
+
+  private static VendorCapabilities mysqlCapabilities() {
+    return new VendorCapabilities(
+        1,
+        new IndexCapabilities(
+            Set.of(IndexType.BTREE, IndexType.FULLTEXT, IndexType.SPATIAL),
+            Set.of(IndexType.BTREE)));
   }
 
 }
