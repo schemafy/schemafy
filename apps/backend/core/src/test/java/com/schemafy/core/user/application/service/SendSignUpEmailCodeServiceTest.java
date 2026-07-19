@@ -3,6 +3,7 @@ package com.schemafy.core.user.application.service;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -13,6 +14,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 import com.schemafy.core.common.exception.DomainException;
 import com.schemafy.core.user.application.port.in.SendSignUpEmailCodeCommand;
+import com.schemafy.core.user.application.port.out.AuthMailPolicyPort;
 import com.schemafy.core.user.application.port.out.AuthTokenPort;
 import com.schemafy.core.user.application.port.out.ExistsUserByEmailPort;
 import com.schemafy.core.user.application.port.out.SendEmailVerificationPort;
@@ -47,8 +49,16 @@ class SendSignUpEmailCodeServiceTest {
   @Mock
   SendEmailVerificationPort sendEmailVerificationPort;
 
+  @Mock
+  AuthMailPolicyPort authMailPolicyPort;
+
   @InjectMocks
   SendSignUpEmailCodeService sut;
+
+  @BeforeEach
+  void setUp() {
+    given(authMailPolicyPort.isEnabled()).willReturn(true);
+  }
 
   @Test
   @DisplayName("가입되지 않은 이메일이면 Redis 토큰 저장 후 인증 메일을 발송한다")
@@ -175,6 +185,25 @@ class SendSignUpEmailCodeServiceTest {
               .isEqualTo(UserErrorCode.ALREADY_EXISTS);
         })
         .verify();
+  }
+
+  @Test
+  @DisplayName("인증 메일이 비활성화되면 토큰이나 메일을 생성하지 않고 AUTH_MAIL_DISABLED를 반환한다")
+  void sendSignUpEmailCode_mailDisabled() {
+    given(authMailPolicyPort.isEnabled()).willReturn(false);
+
+    StepVerifier.create(sut.sendSignUpEmailCode(
+        new SendSignUpEmailCodeCommand("test@example.com")))
+        .expectErrorSatisfies(error -> {
+          assertThat(error).isInstanceOf(DomainException.class);
+          assertThat(((DomainException) error).getErrorCode())
+              .isEqualTo(UserErrorCode.AUTH_MAIL_DISABLED);
+        })
+        .verify();
+
+    verify(existsUserByEmailPort, never()).existsUserByEmail(any());
+    verify(authTokenPort, never()).saveIfAbsent(any());
+    verify(sendEmailVerificationPort, never()).sendVerificationCode(any(), any(), any());
   }
 
 }

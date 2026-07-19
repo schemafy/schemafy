@@ -102,7 +102,7 @@ export const ERROR_MESSAGES: Record<string, ErrorMessageInfo> = {
     category: ErrorCategory.USER_FEEDBACK,
   },
   USER_EMAIL_NOT_VERIFIED: {
-    message: 'Please verify your email before signing in.',
+    message: 'Please verify your email to continue.',
     category: ErrorCategory.USER_FEEDBACK,
   },
   USER_VERIFICATION_CODE_EXPIRED: {
@@ -121,8 +121,12 @@ export const ERROR_MESSAGES: Record<string, ErrorMessageInfo> = {
     message: 'Failed to send verification email. Please try again later.',
     category: ErrorCategory.USER_FEEDBACK,
   },
-  EMAIL_NOT_VERIFIED: {
-    message: 'Please verify your email before creating an account.',
+  USER_SIGNUP_VERIFICATION_INVALID: {
+    message: 'Please verify your email to continue.',
+    category: ErrorCategory.USER_FEEDBACK,
+  },
+  USER_AUTH_MAIL_DISABLED: {
+    message: 'Email verification is currently disabled.',
     category: ErrorCategory.USER_FEEDBACK,
   },
   ACCOUNT_NOT_ACTIVE: {

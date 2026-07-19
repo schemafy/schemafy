@@ -16,6 +16,8 @@ import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+import com.schemafy.api.user.config.AuthMailProperties;
+
 import reactor.test.StepVerifier;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -34,9 +36,11 @@ class EmailVerificationMailAdapterTest {
   void sendVerificationCode_sendsMultipartEmail() throws Exception {
     MimeMessage mimeMessage = new JavaMailSenderImpl().createMimeMessage();
     given(mailSender.createMimeMessage()).willReturn(mimeMessage);
+    AuthMailProperties authMailProperties = new AuthMailProperties();
+    authMailProperties.setFrom("no-reply@schemafy.com");
     EmailVerificationMailAdapter sut = new EmailVerificationMailAdapter(
         mailSender,
-        "no-reply@schemafy.com");
+        authMailProperties);
 
     StepVerifier.create(sut.sendVerificationCode(
         "user@example.com",

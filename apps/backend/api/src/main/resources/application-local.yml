@@ -22,6 +22,10 @@ oauth:
 cors:
   allowed-origins: http://localhost:3001
 
+auth:
+  mail:
+    enabled: ${SMTP_ENABLED:false}
+
 management:
   endpoints:
     web:

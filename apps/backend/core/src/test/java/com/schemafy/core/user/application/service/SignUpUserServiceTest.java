@@ -14,6 +14,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import com.schemafy.core.common.exception.DomainException;
 import com.schemafy.core.ulid.application.port.out.UlidGeneratorPort;
 import com.schemafy.core.user.application.port.in.SignUpUserCommand;
+import com.schemafy.core.user.application.port.out.AuthMailPolicyPort;
 import com.schemafy.core.user.application.port.out.AuthTokenPort;
 import com.schemafy.core.user.application.port.out.CreateUserPort;
 import com.schemafy.core.user.application.port.out.ExistsUserByEmailPort;
@@ -30,6 +31,9 @@ import reactor.test.StepVerifier;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
+import static org.mockito.Mockito.lenient;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.verify;
 
 @ExtendWith(MockitoExtension.class)
 @DisplayName("회원가입 유저 서비스")
@@ -51,6 +55,9 @@ class SignUpUserServiceTest {
   AuthTokenPort authTokenPort;
 
   @Mock
+  AuthMailPolicyPort authMailPolicyPort;
+
+  @Mock
   TransactionalOperator transactionalOperator;
 
   @InjectMocks
@@ -60,6 +67,7 @@ class SignUpUserServiceTest {
   void setUp() {
     given(transactionalOperator.transactional(any(Mono.class)))
         .willAnswer(invocation -> invocation.getArgument(0));
+    lenient().when(authMailPolicyPort.isEnabled()).thenReturn(true);
   }
 
   @Test
@@ -104,12 +112,9 @@ class SignUpUserServiceTest {
   @Test
   @DisplayName("이메일 인증 토큰이 없으면 EMAIL_NOT_VERIFIED를 반환한다")
   void signUpUser_missingSignupVerification() {
-    SignUpUserCommand command = command("test@example.com", "signup-token");
+    SignUpUserCommand command = command("test@example.com", null);
     given(existsUserByEmailPort.existsUserByEmail("test@example.com"))
         .willReturn(Mono.just(false));
-    given(authTokenPort.consume(AuthTokenType.SIGNUP_VERIFICATION,
-        "test@example.com", "signup-token"))
-        .willReturn(Mono.just(AuthTokenConsumeResult.MISSING));
 
     StepVerifier.create(sut.signUpUser(command))
         .expectErrorSatisfies(error -> {
@@ -118,6 +123,51 @@ class SignUpUserServiceTest {
               .isEqualTo(UserErrorCode.EMAIL_NOT_VERIFIED);
         })
         .verify();
+
+    verify(authTokenPort, never()).consume(any(), any(), any());
+  }
+
+  @Test
+  @DisplayName("회원가입 인증 토큰 소비 결과가 MISSING이면 SIGNUP_VERIFICATION_INVALID를 반환한다")
+  void signUpUser_invalidSignupVerification() {
+    SignUpUserCommand command = command("test@example.com", "missing-token");
+    given(existsUserByEmailPort.existsUserByEmail("test@example.com"))
+        .willReturn(Mono.just(false));
+    given(authTokenPort.consume(AuthTokenType.SIGNUP_VERIFICATION,
+        "test@example.com", "missing-token"))
+        .willReturn(Mono.just(AuthTokenConsumeResult.MISSING));
+
+    StepVerifier.create(sut.signUpUser(command))
+        .expectErrorSatisfies(error -> {
+          assertThat(error).isInstanceOf(DomainException.class);
+          assertThat(((DomainException) error).getErrorCode())
+              .isEqualTo(UserErrorCode.SIGNUP_VERIFICATION_INVALID);
+          assertThat(((DomainException) error).getErrorCode().code())
+              .isEqualTo("USER_SIGNUP_VERIFICATION_INVALID");
+        })
+        .verify();
+  }
+
+  @Test
+  @DisplayName("인증 메일이 비활성화되면 검증 토큰 없이 ACTIVE 유저를 생성한다")
+  void signUpUser_mailDisabledSkipsSignupVerification() {
+    SignUpUserCommand command = command("test@example.com", null);
+    given(authMailPolicyPort.isEnabled()).willReturn(false);
+    given(existsUserByEmailPort.existsUserByEmail("test@example.com"))
+        .willReturn(Mono.just(false));
+    given(ulidGeneratorPort.generate()).willReturn("user-1");
+    given(passwordHashPort.hash("password")).willReturn(Mono.just("encoded"));
+    given(createUserPort.createUser(any(User.class)))
+        .willAnswer(invocation -> Mono.just(invocation.getArgument(0, User.class)));
+
+    StepVerifier.create(sut.signUpUser(command))
+        .assertNext(user -> {
+          assertThat(user.id()).isEqualTo("user-1");
+          assertThat(user.status()).isEqualTo(UserStatus.ACTIVE);
+        })
+        .verifyComplete();
+
+    verify(authTokenPort, never()).consume(any(), any(), any());
   }
 
   @Test

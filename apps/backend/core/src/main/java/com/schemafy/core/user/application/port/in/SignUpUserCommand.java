@@ -16,9 +16,6 @@ public record SignUpUserCommand(String email, String name, String password,
         || password.length() < UserPolicy.MIN_SIGN_UP_PASSWORD_LENGTH) {
       throw new DomainException(UserErrorCode.INVALID_PARAMETER, "Invalid password");
     }
-    if (signupVerificationToken == null || signupVerificationToken.isBlank()) {
-      throw new DomainException(UserErrorCode.EMAIL_NOT_VERIFIED);
-    }
   }
 
 }
