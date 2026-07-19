@@ -2353,7 +2353,8 @@
   ],
   "apps/backend/core/src/main/java/com/schemafy/core/erd/ddl/application/service/GenerateSchemaDdlService.java": [
     436,
-    466
+    466,
+    468
   ],
   "apps/backend/core/src/main/java/com/schemafy/core/erd/ddl/domain/DdlExportVendor.java": [
     436
@@ -2988,5 +2989,8 @@
   ],
   "apps/backend/core/src/main/java/com/schemafy/core/erd/vendor/domain/VendorCapabilities.java": [
     466
+  ],
+  "apps/backend/api/src/test/java/com/schemafy/api/erd/service/SchemaExportIntegrationTest.java": [
+    468
   ]
 }
