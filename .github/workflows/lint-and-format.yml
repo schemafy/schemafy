@@ -1,8 +1,6 @@
 name: Lint and Format Check
 
 on:
-  push:
-    branches: [ main ]
   pull_request:
     branches: [ main ]
 
@@ -15,10 +13,6 @@ jobs:
     
     steps:
     - uses: actions/checkout@v4
-      with:
-        token: ${{ secrets.GITHUB_TOKEN }}
-        fetch-depth: 0
-        ref: ${{ github.head_ref }}
     
     - name: Setup pnpm
       uses: pnpm/action-setup@v4
