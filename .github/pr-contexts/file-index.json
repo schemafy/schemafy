@@ -74,7 +74,8 @@
     380,
     403,
     442,
-    452
+    452,
+    476
   ],
   "apps/frontend/src/features/drawing/hooks/useCanvasKeyboard.ts": [
     331,
@@ -92,7 +93,8 @@
     358,
     382,
     442,
-    470
+    470,
+    476
   ],
   "apps/frontend/src/store/collaboration.store.ts": [
     291,
@@ -103,7 +105,8 @@
     439,
     442,
     449,
-    470
+    470,
+    476
   ],
   ".github/workflows/test.yml": [
     346
@@ -418,7 +421,8 @@
   "apps/frontend/src/features/collaboration/api/types.ts": [
     337,
     442,
-    449
+    449,
+    476
   ],
   "apps/frontend/src/features/drawing/api/column.api.ts": [
     337
@@ -435,7 +439,8 @@
     331,
     397,
     442,
-    443
+    443,
+    476
   ],
   "apps/frontend/src/features/drawing/components/SchemaSelector.tsx": [
     331,
@@ -470,11 +475,13 @@
   "apps/frontend/src/features/drawing/hooks/useRelationships.ts": [
     331,
     291,
-    393
+    393,
+    476
   ],
   "apps/frontend/src/features/drawing/hooks/useTables.ts": [
     331,
-    442
+    442,
+    476
   ],
   "apps/frontend/src/features/memo/components/MemoPreview.tsx": [
     331
@@ -1002,7 +1009,8 @@
   ],
   "apps/frontend/src/features/drawing/hooks/useSchemaSnapshots.ts": [
     368,
-    442
+    442,
+    476
   ],
   "apps/frontend/src/store/preview.store.ts": [
     368,
@@ -1010,7 +1018,8 @@
   ],
   "apps/frontend/src/store/preview.types.ts": [
     368,
-    442
+    442,
+    476
   ],
   "apps/backend/core/src/main/java/com/schemafy/core/erd/column/adapter/out/persistence/ColumnPersistenceAdapter.java": [
     375
@@ -2992,5 +3001,11 @@
   ],
   "apps/backend/api/src/test/java/com/schemafy/api/erd/service/SchemaExportIntegrationTest.java": [
     468
+  ],
+  "apps/frontend/src/features/drawing/hooks/useControlPointDrag.ts": [
+    476
+  ],
+  "apps/frontend/src/features/drawing/types/relationship.ts": [
+    476
   ]
 }
