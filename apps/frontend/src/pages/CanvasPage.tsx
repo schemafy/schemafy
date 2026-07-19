@@ -17,8 +17,13 @@ import { useEffect } from 'react';
 import axios from 'axios';
 import { NotFoundPage } from './NotFoundPage';
 import { useProject } from '@/features/project/hooks/useProject';
+import { getRoleLevel } from '@/features/project/utils/role';
 
-const CanvasContent = observer(() => {
+interface CanvasContentProps {
+  canEditProject: boolean;
+}
+
+const CanvasContent = observer(({ canEditProject }: CanvasContentProps) => {
   const {
     state: {
       relationshipConfig,
@@ -38,6 +43,7 @@ const CanvasContent = observer(() => {
     data: { tables, memos, relationships },
     handlers: {
       onTableDragStop,
+      onTableDrag,
       onTablesDelete,
       onMemosChange,
       onRelationshipsChange,
@@ -54,7 +60,7 @@ const CanvasContent = observer(() => {
       handlePaneClick,
       handleMouseMove,
     },
-  } = useCanvasController();
+  } = useCanvasController(canEditProject);
 
   return (
     <>
@@ -77,6 +83,7 @@ const CanvasContent = observer(() => {
             relationships={relationships}
             activeTool={activeTool}
             onTableDragStop={onTableDragStop}
+            onTableDrag={onTableDrag}
             onTablesDelete={onTablesDelete}
             onMemosChange={onMemosChange}
             onRelationshipsChange={onRelationshipsChange}
@@ -85,6 +92,7 @@ const CanvasContent = observer(() => {
             handleMoveEnd={handleMoveEnd}
             handlePaneClick={handlePaneClick}
             handleMouseMove={handleMouseMove}
+            canEditProject={canEditProject}
           />
 
           {selectedRelationship && (
@@ -135,6 +143,9 @@ export const CanvasPage = () => {
     useProject(projectId);
   const isForbidden =
     axios.isAxiosError(projectError) && projectError.response?.status === 403;
+  const canEditProject =
+    !!project &&
+    getRoleLevel(project.currentUserRole) <= getRoleLevel('EDITOR');
 
   useEffect(() => {
     if (!isProjectError || !isForbidden) return;
@@ -151,7 +162,7 @@ export const CanvasPage = () => {
       dbVendorId={project.dbVendorId}
     >
       <MemoProvider>
-        <CanvasContent />
+        <CanvasContent canEditProject={canEditProject} />
       </MemoProvider>
     </SelectedSchemaProvider>
   );
