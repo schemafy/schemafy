@@ -1,4 +1,5 @@
 import type { ErdOperation } from '@/features/drawing/api/types';
+import type { RelationshipExtra } from '@/features/drawing/types';
 
 export type PostCursor = {
   type: 'CURSOR';
@@ -26,6 +27,14 @@ export type PostTablePositionPreview = {
   schemaId: string;
   tableId: string;
   position?: { x: number; y: number };
+};
+
+export type PostRelationshipExtraPreview = {
+  type: 'RELATIONSHIP_EXTRA_PREVIEW';
+  action: PreviewAction;
+  schemaId: string;
+  relationshipId: string;
+  extra?: RelationshipExtra;
 };
 
 export type ReceiveJoin = {
@@ -104,6 +113,16 @@ export type ReceiveTablePositionPreview = {
   timestamp: number;
 };
 
+export type ReceiveRelationshipExtraPreview = {
+  type: 'RELATIONSHIP_EXTRA_PREVIEW';
+  sessionId: string;
+  action: PreviewAction;
+  schemaId: string;
+  relationshipId: string;
+  extra?: RelationshipExtra;
+  timestamp: number;
+};
+
 export type ReceiveSessionReady = {
   type: 'SESSION_READY';
   sessionId: string;
@@ -119,6 +138,7 @@ export type WebSocketMessage =
   | ReceiveSchemaFocus
   | ReceiveChat
   | ReceiveTablePositionPreview
+  | ReceiveRelationshipExtraPreview
   | ReceiveErdMutated;
 
 export type ChatMessage = {
