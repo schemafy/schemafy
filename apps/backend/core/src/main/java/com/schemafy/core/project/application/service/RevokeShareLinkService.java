@@ -28,14 +28,15 @@ class RevokeShareLinkService implements RevokeShareLinkUseCase {
   public Mono<ShareLink> revokeShareLink(RevokeShareLinkCommand command) {
     return shareLinkHelper.findShareLinkById(command.shareLinkId(),
         command.projectId())
-        .flatMap(shareLink -> {
-          if (Boolean.TRUE.equals(shareLink.getIsRevoked())) {
-            return Mono.error(
-                new DomainException(ShareLinkErrorCode.NOT_FOUND));
-          }
-          shareLink.revoke();
-          return shareLinkPort.save(shareLink);
-        })
+        .then(shareLinkPort.revokeByIdAndProjectId(
+            command.shareLinkId(), command.projectId()))
+        .flatMap(updated -> updated > 0
+            ? shareLinkPort.findByIdAndProjectIdAndNotDeleted(
+                command.shareLinkId(), command.projectId())
+                .switchIfEmpty(Mono.error(new DomainException(
+                    ShareLinkErrorCode.NOT_FOUND)))
+            : Mono.error(new DomainException(
+                ShareLinkErrorCode.NOT_FOUND)))
         .as(transactionalOperator::transactional);
   }
 
