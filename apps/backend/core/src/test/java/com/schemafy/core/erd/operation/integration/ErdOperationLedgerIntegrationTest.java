@@ -1654,7 +1654,6 @@ class ErdOperationLedgerIntegrationTest extends ErdProjectIntegrationSupport {
     String projectId = createActiveProjectId(suffix);
     String schemaId = createSchemaUseCase.createSchema(new CreateSchemaCommand(
         projectId,
-        "MySQL",
         suffix + "_schema",
         "utf8mb4",
         "utf8mb4_general_ci")).block().result().id();
