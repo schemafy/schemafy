@@ -28,5 +28,5 @@ export const OAuthCallbackPage = observer(() => {
     }
   }, [isInitialized, isAuthLoading, user, navigate, oAuthError]);
 
-  return <LoadingState className="py-16" label="GitHub 로그인 처리 중..." />;
+  return <LoadingState className="py-16" label="Processing GitHub login..." />;
 });
