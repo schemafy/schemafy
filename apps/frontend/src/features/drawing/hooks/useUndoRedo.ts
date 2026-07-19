@@ -41,7 +41,6 @@ export const useUndoRedo = () => {
         }
       },
       onError: (error) => {
-        toast.error('Undo or redo failed. Please try again.');
         if (isKnownUndoRedoError(error)) {
           operationHistoryStore.clearSchemaHistory(selectedSchemaId);
         }
