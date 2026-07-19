@@ -64,7 +64,8 @@ class SignUpUserService implements SignUpUserUseCase {
   private Mono<Void> handleConsumeResult(AuthTokenConsumeResult result) {
     return switch (result) {
     case CONSUMED -> Mono.empty();
-    case MISSING -> Mono.error(new DomainException(UserErrorCode.EMAIL_NOT_VERIFIED));
+    case MISSING -> Mono.error(new DomainException(
+        UserErrorCode.SIGNUP_VERIFICATION_INVALID));
     case MISMATCH -> Mono.error(new DomainException(
         UserErrorCode.VERIFICATION_CODE_INVALID));
     case ATTEMPTS_EXCEEDED -> Mono.error(new DomainException(

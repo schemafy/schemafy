@@ -229,7 +229,7 @@ export const SignUpForm = () => {
       return;
     }
     if (emailVerificationRequired && !signupVerificationToken) {
-      setFormError('Please verify your email before creating an account.');
+      setFormError('Please verify your email to continue.');
       return;
     }
 

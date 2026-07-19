@@ -128,6 +128,27 @@ class SignUpUserServiceTest {
   }
 
   @Test
+  @DisplayName("회원가입 인증 토큰 소비 결과가 MISSING이면 SIGNUP_VERIFICATION_INVALID를 반환한다")
+  void signUpUser_invalidSignupVerification() {
+    SignUpUserCommand command = command("test@example.com", "missing-token");
+    given(existsUserByEmailPort.existsUserByEmail("test@example.com"))
+        .willReturn(Mono.just(false));
+    given(authTokenPort.consume(AuthTokenType.SIGNUP_VERIFICATION,
+        "test@example.com", "missing-token"))
+        .willReturn(Mono.just(AuthTokenConsumeResult.MISSING));
+
+    StepVerifier.create(sut.signUpUser(command))
+        .expectErrorSatisfies(error -> {
+          assertThat(error).isInstanceOf(DomainException.class);
+          assertThat(((DomainException) error).getErrorCode())
+              .isEqualTo(UserErrorCode.SIGNUP_VERIFICATION_INVALID);
+          assertThat(((DomainException) error).getErrorCode().code())
+              .isEqualTo("USER_SIGNUP_VERIFICATION_INVALID");
+        })
+        .verify();
+  }
+
+  @Test
   @DisplayName("인증 메일이 비활성화되면 검증 토큰 없이 ACTIVE 유저를 생성한다")
   void signUpUser_mailDisabledSkipsSignupVerification() {
     SignUpUserCommand command = command("test@example.com", null);

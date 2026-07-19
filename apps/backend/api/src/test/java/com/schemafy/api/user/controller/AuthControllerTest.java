@@ -221,6 +221,24 @@ class AuthControllerTest extends UserHttpTestSupport {
     assertThat(getUserByEmail("test@example.com")).isNull();
   }
 
+  @Test
+  @DisplayName("저장소에 없는 회원가입 인증 토큰으로 가입하면 SIGNUP_VERIFICATION_INVALID를 반환한다")
+  void signUpFailSignupVerificationInvalid() {
+    SignUpRequest request = new SignUpRequest("test@example.com",
+        "Test User", "password", VALID_SIGNUP_VERIFICATION_TOKEN);
+
+    webTestClient.post().uri(API_BASE_PATH + "/users/signup")
+        .contentType(MediaType.APPLICATION_JSON)
+        .bodyValue(request)
+        .exchange()
+        .expectStatus().isForbidden()
+        .expectBody()
+        .jsonPath("$.reason")
+        .isEqualTo(UserErrorCode.SIGNUP_VERIFICATION_INVALID.code());
+
+    assertThat(getUserByEmail("test@example.com")).isNull();
+  }
+
   @DisplayName("유효하지 않은 회원가입 요청은 실패한다")
   @ParameterizedTest
   @MethodSource("invalidSignUpRequests")

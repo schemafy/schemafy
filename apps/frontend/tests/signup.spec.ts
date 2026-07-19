@@ -67,7 +67,7 @@ test.describe('Sign-up Flow', () => {
     await page.getByRole('button', { name: 'Create Account' }).click();
 
     await expect(page.getByRole('alert')).toContainText(
-      'Please verify your email before creating an account.',
+      'Please verify your email to continue.',
     );
     expect(signUpRequested).toBe(false);
   });
