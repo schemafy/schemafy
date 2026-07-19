@@ -7,8 +7,7 @@ on:
     branches: [ main ]
 
 permissions:
-  contents: write
-  pull-requests: write
+  contents: read
 
 jobs:
   lint-and-format:
@@ -62,33 +61,6 @@ jobs:
     
     - name: Run linters
       run: pnpm run lint
-      continue-on-error: true
 
-    - name: Apply formatting (no cache)
-      run: pnpm run format --force
-      continue-on-error: true
-    
-    - name: Check for changes
-      id: check-changes
-      run: |
-        echo "Checking for changes after formatting..."
-        git status --porcelain
-        if [ -n "$(git status --porcelain)" ]; then
-          echo "changes=true" >> $GITHUB_OUTPUT
-        else
-          echo "changes=false" >> $GITHUB_OUTPUT
-        fi
-    
-    - name: Show changes
-      if: steps.check-changes.outputs.changes == 'true'
-      run: |
-        git diff --stat
-    
-    - name: Commit and push changes
-      if: steps.check-changes.outputs.changes == 'true'
-      run: |
-        git config --local user.email "41898282+github-actions[bot]@users.noreply.github.com"
-        git config --local user.name "github-actions[bot]"
-        git add -A
-        git diff --staged --quiet || git commit -m "style: auto-format code"
-        git push
+    - name: Check formatting (no cache)
+      run: pnpm run format:check --force
