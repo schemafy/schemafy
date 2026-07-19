@@ -5,6 +5,7 @@ import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuTrigger,
+  LoadingState,
   Pagination,
 } from '@/components';
 import { ChangeRoleDialog } from './ChangeRoleDialog';
@@ -97,9 +98,7 @@ export const WorkspaceMembersTab = ({
 
       <div className="grid gap-3 md:hidden">
         {isLoadingMembers ? (
-          <div className="schemafy-subtle-card px-4 py-8 text-center font-body-sm text-schemafy-dark-gray">
-            Loading...
-          </div>
+          <LoadingState className="min-h-[200px]" label="Loading members..." />
         ) : (
           members.map((member) => (
             <article
@@ -161,11 +160,11 @@ export const WorkspaceMembersTab = ({
           <tbody>
             {isLoadingMembers ? (
               <tr>
-                <td
-                  colSpan={5}
-                  className="px-5 py-8 text-center font-body-sm text-schemafy-dark-gray"
-                >
-                  Loading...
+                <td colSpan={5} className="px-5 py-8">
+                  <LoadingState
+                    className="min-h-[120px]"
+                    label="Loading members..."
+                  />
                 </td>
               </tr>
             ) : members.length === 0 ? (
