@@ -2,9 +2,11 @@ import type {
   TableSnapshotResponse,
   RelationshipSnapshotResponse,
 } from '@/features/drawing/api';
+import type { RelationshipExtra } from '@/features/drawing/types';
 
 export type PreviewKind = 'TABLE' | 'RELATIONSHIP';
 export type PositionPreviewKind = 'TABLE_POSITION';
+export type ExtraPreviewKind = 'RELATIONSHIP_EXTRA';
 
 export type PreviewEntryBase = {
   previewId: string;
@@ -32,7 +34,14 @@ export type TablePositionPreviewEntry = PreviewEntryBase & {
   position: { x: number; y: number };
 };
 
+export type RelationshipExtraPreviewEntry = PreviewEntryBase & {
+  kind: 'RELATIONSHIP_EXTRA';
+  relationshipId: string;
+  extra: RelationshipExtra;
+};
+
 export type PreviewEntry =
   | TablePreviewEntry
   | RelationshipPreviewEntry
-  | TablePositionPreviewEntry;
+  | TablePositionPreviewEntry
+  | RelationshipExtraPreviewEntry;
