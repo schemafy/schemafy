@@ -12,8 +12,8 @@ import com.schemafy.core.erd.ddl.application.port.in.GenerateSchemaDdlCommand;
 import com.schemafy.core.erd.ddl.application.port.in.GenerateSchemaDdlUseCase;
 import com.schemafy.core.erd.ddl.domain.DdlExportVendor;
 import com.schemafy.core.erd.ddl.domain.DdlGenerator;
-import com.schemafy.core.erd.ddl.domain.DdlSchemaSnapshot;
 import com.schemafy.core.erd.ddl.domain.exception.DdlErrorCode;
+import com.schemafy.core.erd.export.domain.SchemaExportSnapshot;
 import com.schemafy.core.erd.index.domain.policy.IndexCapabilities;
 import com.schemafy.core.erd.index.domain.validator.IndexValidator;
 
@@ -51,11 +51,11 @@ public class GenerateSchemaDdlService implements GenerateSchemaDdlUseCase {
   }
 
   private static void validateIndexCapabilities(
-      DdlSchemaSnapshot snapshot,
+      SchemaExportSnapshot snapshot,
       IndexCapabilities indexCapabilities) {
     snapshot.tables().stream()
         .flatMap(table -> table.indexes().stream())
-        .map(DdlSchemaSnapshot.IndexSnapshot::index)
+        .map(SchemaExportSnapshot.IndexSnapshot::index)
         .forEach(index -> IndexValidator.validateType(indexCapabilities, index.type()));
   }
 

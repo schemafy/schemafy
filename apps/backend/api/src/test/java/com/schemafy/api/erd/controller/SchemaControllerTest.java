@@ -19,10 +19,12 @@ import com.schemafy.api.common.security.WithMockCustomUser;
 import com.schemafy.api.erd.controller.dto.request.ChangeSchemaNameRequest;
 import com.schemafy.api.erd.controller.dto.request.CreateSchemaRequest;
 import com.schemafy.api.erd.controller.dto.response.SchemaDdlExportResponse;
+import com.schemafy.api.erd.controller.dto.response.SchemaMermaidExportResponse;
 import com.schemafy.api.erd.controller.dto.response.SchemaSnapshotsResponse;
 import com.schemafy.api.erd.controller.dto.response.TableResponse;
 import com.schemafy.api.erd.controller.dto.response.TableSnapshotResponse;
 import com.schemafy.api.erd.service.SchemaDdlExportOrchestrator;
+import com.schemafy.api.erd.service.SchemaMermaidExportOrchestrator;
 import com.schemafy.api.erd.service.SchemaSnapshotOrchestrator;
 import com.schemafy.core.common.MutationResult;
 import com.schemafy.core.common.exception.DomainException;
@@ -100,6 +102,9 @@ class SchemaControllerTest {
 
   @MockitoBean
   private SchemaDdlExportOrchestrator schemaDdlExportOrchestrator;
+
+  @MockitoBean
+  private SchemaMermaidExportOrchestrator schemaMermaidExportOrchestrator;
 
   @Test
   @DisplayName("스키마 생성 API 문서화")
@@ -349,6 +354,51 @@ class SchemaControllerTest {
         .expectStatus().isBadRequest();
 
     then(schemaDdlExportOrchestrator).shouldHaveNoInteractions();
+  }
+
+  @Test
+  @DisplayName("스키마 Mermaid export API 문서화")
+  void exportSchemaMermaid() {
+    String schemaId = "06D6W1GAHD51T5NJPK29Q6BCR8";
+    SchemaMermaidExportResponse response = new SchemaMermaidExportResponse(
+        schemaId,
+        42L,
+        """
+            erDiagram
+                T1["users"] {
+                    BIGINT id PK
+                }
+            """.trim());
+
+    given(schemaMermaidExportOrchestrator.exportSchemaMermaid(schemaId))
+        .willReturn(Mono.just(response));
+
+    webTestClient.get()
+        .uri(API_BASE_PATH + "/schemas/{schemaId}/exports/mermaid", schemaId)
+        .header("Accept", "application/json")
+        .exchange()
+        .expectStatus().isOk()
+        .expectBody()
+        .jsonPath("$.schemaId").isEqualTo(schemaId)
+        .jsonPath("$.currentRevision").isEqualTo(42)
+        .jsonPath("$.mermaid").value(org.hamcrest.Matchers.containsString(
+            "erDiagram"))
+        .consumeWith(document("schema-mermaid-export",
+            pathParameters(
+                parameterWithName("schemaId")
+                    .description("Mermaid로 export할 스키마 ID")),
+            requestHeaders(
+                headerWithName("Accept")
+                    .description("응답 포맷 (application/json)")),
+            responseHeaders(
+                headerWithName("Content-Type")
+                    .description("응답 컨텐츠 타입")),
+            responseFields(
+                fieldWithPath("schemaId").description("스키마 ID"),
+                fieldWithPath("currentRevision")
+                    .description("Mermaid 생성 기준 schema revision"),
+                fieldWithPath("mermaid")
+                    .description("생성된 Mermaid ER diagram 문자열"))));
   }
 
   @Test

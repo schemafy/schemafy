@@ -1,4 +1,4 @@
-package com.schemafy.api.erd.service.ddl;
+package com.schemafy.api.erd.service.export;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -20,30 +20,30 @@ import com.schemafy.api.erd.controller.dto.response.SchemaResponse;
 import com.schemafy.api.erd.controller.dto.response.TableResponse;
 import com.schemafy.api.erd.controller.dto.response.TableSnapshotResponse;
 import com.schemafy.core.common.exception.DomainException;
-import com.schemafy.core.erd.ddl.domain.DdlSchemaSnapshot;
-import com.schemafy.core.erd.ddl.domain.DdlSchemaSnapshot.Column;
-import com.schemafy.core.erd.ddl.domain.DdlSchemaSnapshot.Constraint;
-import com.schemafy.core.erd.ddl.domain.DdlSchemaSnapshot.ConstraintColumn;
-import com.schemafy.core.erd.ddl.domain.DdlSchemaSnapshot.ConstraintSnapshot;
-import com.schemafy.core.erd.ddl.domain.DdlSchemaSnapshot.Index;
-import com.schemafy.core.erd.ddl.domain.DdlSchemaSnapshot.IndexColumn;
-import com.schemafy.core.erd.ddl.domain.DdlSchemaSnapshot.IndexSnapshot;
-import com.schemafy.core.erd.ddl.domain.DdlSchemaSnapshot.Relationship;
-import com.schemafy.core.erd.ddl.domain.DdlSchemaSnapshot.RelationshipColumn;
-import com.schemafy.core.erd.ddl.domain.DdlSchemaSnapshot.RelationshipSnapshot;
-import com.schemafy.core.erd.ddl.domain.DdlSchemaSnapshot.SchemaSnapshot;
-import com.schemafy.core.erd.ddl.domain.DdlSchemaSnapshot.Table;
-import com.schemafy.core.erd.ddl.domain.DdlSchemaSnapshot.TableSnapshot;
-import com.schemafy.core.erd.ddl.domain.exception.DdlErrorCode;
+import com.schemafy.core.erd.export.domain.SchemaExportSnapshot;
+import com.schemafy.core.erd.export.domain.SchemaExportSnapshot.Column;
+import com.schemafy.core.erd.export.domain.SchemaExportSnapshot.Constraint;
+import com.schemafy.core.erd.export.domain.SchemaExportSnapshot.ConstraintColumn;
+import com.schemafy.core.erd.export.domain.SchemaExportSnapshot.ConstraintSnapshot;
+import com.schemafy.core.erd.export.domain.SchemaExportSnapshot.Index;
+import com.schemafy.core.erd.export.domain.SchemaExportSnapshot.IndexColumn;
+import com.schemafy.core.erd.export.domain.SchemaExportSnapshot.IndexSnapshot;
+import com.schemafy.core.erd.export.domain.SchemaExportSnapshot.Relationship;
+import com.schemafy.core.erd.export.domain.SchemaExportSnapshot.RelationshipColumn;
+import com.schemafy.core.erd.export.domain.SchemaExportSnapshot.RelationshipSnapshot;
+import com.schemafy.core.erd.export.domain.SchemaExportSnapshot.SchemaSnapshot;
+import com.schemafy.core.erd.export.domain.SchemaExportSnapshot.Table;
+import com.schemafy.core.erd.export.domain.SchemaExportSnapshot.TableSnapshot;
+import com.schemafy.core.erd.relationship.domain.exception.RelationshipErrorCode;
 
 @Component
-public class DdlExportSnapshotMapper {
+public class SchemaExportSnapshotMapper {
 
-  public DdlSchemaSnapshot toSnapshot(
+  public SchemaExportSnapshot toSnapshot(
       SchemaResponse schema,
       Iterable<TableSnapshotResponse> tables,
       String dbVendorName) {
-    return new DdlSchemaSnapshot(
+    return new SchemaExportSnapshot(
         toSchemaSnapshot(schema, dbVendorName),
         toTableSnapshots(tables));
   }
@@ -202,7 +202,7 @@ public class DdlExportSnapshotMapper {
     }
     JsonNode value = extra.get(fieldName);
     if (!value.isTextual()) {
-      throw new DomainException(DdlErrorCode.INVALID_VALUE,
+      throw new DomainException(RelationshipErrorCode.INVALID_VALUE,
           "Relationship extra '%s' must be a string".formatted(fieldName));
     }
     return value.asText();
