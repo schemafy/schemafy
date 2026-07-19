@@ -106,6 +106,21 @@ class ProjectPersistenceAdapterTest {
         .verifyComplete();
   }
 
+  @Test
+  @DisplayName("프로젝트 변경 동기화를 위해 활성 프로젝트를 공유 잠금과 쓰기 잠금으로 조회한다")
+  void findActiveProjectWithMutationLocks() {
+    Workspace workspace = saveWorkspace("Mutation Lock Workspace");
+    Project project = sut.save(Project.create(UlidGenerator.generate(),
+        workspace.getId(), "Mutation Lock Project", "Description")).block();
+
+    StepVerifier.create(sut.lockByIdAndNotDeletedInShareMode(project.getId()))
+        .expectNext(project.getId())
+        .verifyComplete();
+    StepVerifier.create(sut.lockByIdAndNotDeletedForUpdate(project.getId()))
+        .expectNext(project.getId())
+        .verifyComplete();
+  }
+
   private Workspace saveWorkspace(String name) {
     return workspaceRepository.save(Workspace.create(UlidGenerator.generate(), name,
         "Description")).block();

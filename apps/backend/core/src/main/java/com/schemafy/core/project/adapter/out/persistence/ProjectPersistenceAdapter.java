@@ -35,6 +35,20 @@ public class ProjectPersistenceAdapter
   }
 
   @Override
+  public Mono<String> lockByIdAndNotDeletedInShareMode(String projectId) {
+    return projectRepository
+        .findWithSharedLockByIdAndDeletedAtIsNull(projectId)
+        .map(Project::getId);
+  }
+
+  @Override
+  public Mono<String> lockByIdAndNotDeletedForUpdate(String projectId) {
+    return projectRepository
+        .findWithExclusiveLockByIdAndDeletedAtIsNull(projectId)
+        .map(Project::getId);
+  }
+
+  @Override
   public Mono<Boolean> existsActiveProjectById(String projectId) {
     return projectRepository.findByIdAndNotDeleted(projectId)
         .hasElement();
