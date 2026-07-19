@@ -25,6 +25,8 @@ import com.schemafy.core.erd.schema.domain.exception.SchemaErrorCode;
 import com.schemafy.core.erd.table.application.port.out.GetTableByIdPort;
 import com.schemafy.core.erd.table.domain.Table;
 import com.schemafy.core.erd.table.domain.exception.TableErrorCode;
+import com.schemafy.core.erd.vendor.application.port.in.GetProjectDbVendorQuery;
+import com.schemafy.core.erd.vendor.application.port.in.GetProjectDbVendorUseCase;
 import com.schemafy.core.project.application.access.AccessTarget;
 import com.schemafy.core.project.application.access.RequireProjectAccess;
 import com.schemafy.core.project.domain.ProjectRole;
@@ -45,6 +47,7 @@ public class ChangeColumnNameService implements ChangeColumnNameUseCase {
   private final GetColumnsByTableIdPort getColumnsByTableIdPort;
   private final GetTableByIdPort getTableByIdPort;
   private final GetSchemaByIdPort getSchemaByIdPort;
+  private final GetProjectDbVendorUseCase getProjectDbVendorUseCase;
   private final TransactionalOperator transactionalOperator;
   private ErdMutationCoordinator erdMutationCoordinator = ErdMutationCoordinator.noop();
 
@@ -72,14 +75,20 @@ public class ChangeColumnNameService implements ChangeColumnNameUseCase {
                         return Mono.just(MutationResult.<Void>noop(null, lockedColumn.tableId()));
                       }
                       return fetchTableSchemaAndColumns(lockedColumn)
-                          .flatMap(tuple -> {
-                            validateNameChange(tuple, normalizedName, lockedColumn.id());
-                            return changeColumnNamePort.changeColumnName(lockedColumn.id(), normalizedName)
-                                .thenReturn(MutationResult.<Void>of(null, lockedColumn.tableId())
-                                    .withInverse(new ChangeColumnNameInverse(
-                                        lockedColumn.id(),
-                                        lockedColumn.name())));
-                          });
+                          .flatMap(tuple -> getProjectDbVendorUseCase
+                              .getProjectDbVendor(new GetProjectDbVendorQuery(
+                                  tuple.getT2().projectId()))
+                              .flatMap(dbVendor -> {
+                                validateNameChange(tuple, dbVendor.name(),
+                                    normalizedName, lockedColumn.id());
+                                return changeColumnNamePort
+                                    .changeColumnName(lockedColumn.id(), normalizedName)
+                                    .thenReturn(MutationResult.<Void>of(null,
+                                        lockedColumn.tableId())
+                                        .withInverse(new ChangeColumnNameInverse(
+                                            lockedColumn.id(),
+                                            lockedColumn.name())));
+                              }));
                     }));
           });
     }).as(transactionalOperator::transactional);
@@ -100,12 +109,12 @@ public class ChangeColumnNameService implements ChangeColumnNameUseCase {
 
   private void validateNameChange(
       Tuple3<Table, Schema, List<Column>> tuple,
+      String dbVendorName,
       String normalizedName,
       String columnId) {
-    Schema schema = tuple.getT2();
     List<Column> columns = tuple.getT3();
 
-    ColumnValidator.validateReservedKeyword(schema.dbVendorName(), normalizedName);
+    ColumnValidator.validateReservedKeyword(dbVendorName, normalizedName);
     ColumnValidator.validateNameUniqueness(columns, normalizedName, columnId);
   }
 

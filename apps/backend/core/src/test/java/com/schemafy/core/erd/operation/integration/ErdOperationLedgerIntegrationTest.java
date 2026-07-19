@@ -158,13 +158,14 @@ class ErdOperationLedgerIntegrationTest extends ErdProjectIntegrationSupport {
 
     var schemaResult = createSchemaUseCase.createSchema(new CreateSchemaCommand(
         projectId,
-        "MySQL",
         "ledger_schema",
         "utf8mb4",
         "utf8mb4_general_ci")).block().result();
 
     assertThat(currentRevision(schemaResult.id())).isEqualTo(1L);
     assertLastOperation(schemaResult.id(), "CREATE_SCHEMA", 1L, List.of());
+    assertThat(latestOperationPayload(schemaResult.id()).findValue("dbVendorName"))
+        .isNull();
 
     var tableResult = createTableUseCase.createTable(new CreateTableCommand(
         schemaResult.id(),
@@ -194,7 +195,6 @@ class ErdOperationLedgerIntegrationTest extends ErdProjectIntegrationSupport {
 
     String schemaId = createSchemaUseCase.createSchema(new CreateSchemaCommand(
         projectId,
-        "MySQL",
         "single_change_column_type_schema",
         "utf8mb4",
         "utf8mb4_general_ci")).block().result().id();
@@ -239,7 +239,6 @@ class ErdOperationLedgerIntegrationTest extends ErdProjectIntegrationSupport {
 
     String schemaId = createSchemaUseCase.createSchema(new CreateSchemaCommand(
         projectId,
-        "MySQL",
         "single_change_column_type_text_schema",
         "utf8mb4",
         "utf8mb4_general_ci")).block().result().id();
@@ -284,7 +283,6 @@ class ErdOperationLedgerIntegrationTest extends ErdProjectIntegrationSupport {
 
     String schemaId = createSchemaUseCase.createSchema(new CreateSchemaCommand(
         projectId,
-        "MySQL",
         "delete_schema",
         "utf8mb4",
         "utf8mb4_general_ci")).block().result().id();
@@ -349,7 +347,6 @@ class ErdOperationLedgerIntegrationTest extends ErdProjectIntegrationSupport {
 
     String schemaId = createSchemaUseCase.createSchema(new CreateSchemaCommand(
         projectId,
-        "MySQL",
         "noop_relationship_kind_schema",
         "utf8mb4",
         "utf8mb4_general_ci")).block().result().id();
@@ -416,7 +413,6 @@ class ErdOperationLedgerIntegrationTest extends ErdProjectIntegrationSupport {
 
     String schemaId = createSchemaUseCase.createSchema(new CreateSchemaCommand(
         projectId,
-        "MySQL",
         schemaName,
         "utf8mb4",
         "utf8mb4_general_ci")).block().result().id();
@@ -459,7 +455,6 @@ class ErdOperationLedgerIntegrationTest extends ErdProjectIntegrationSupport {
 
     String schemaId = createSchemaUseCase.createSchema(new CreateSchemaCommand(
         projectId,
-        "MySQL",
         "noop_column_type_position_schema",
         "utf8mb4",
         "utf8mb4_general_ci")).block().result().id();
@@ -527,7 +522,6 @@ class ErdOperationLedgerIntegrationTest extends ErdProjectIntegrationSupport {
 
     String schemaId = createSchemaUseCase.createSchema(new CreateSchemaCommand(
         projectId,
-        "MySQL",
         "noop_index_relationship_schema",
         "utf8mb4",
         "utf8mb4_general_ci")).block().result().id();
@@ -631,7 +625,6 @@ class ErdOperationLedgerIntegrationTest extends ErdProjectIntegrationSupport {
 
     String schemaId = createSchemaUseCase.createSchema(new CreateSchemaCommand(
         projectId,
-        "MySQL",
         "table_rename_" + sidePrefix + "_relationship_affected_schema",
         "utf8mb4",
         "utf8mb4_general_ci")).block().result().id();
@@ -705,7 +698,6 @@ class ErdOperationLedgerIntegrationTest extends ErdProjectIntegrationSupport {
 
     String schemaId = createSchemaUseCase.createSchema(new CreateSchemaCommand(
         projectId,
-        "MySQL",
         "create_table_undo_redo_schema",
         "utf8mb4",
         "utf8mb4_general_ci")).block().result().id();
@@ -734,7 +726,6 @@ class ErdOperationLedgerIntegrationTest extends ErdProjectIntegrationSupport {
 
     String schemaId = createSchemaUseCase.createSchema(new CreateSchemaCommand(
         projectId,
-        "MySQL",
         "delete_table_undo_redo_schema",
         "utf8mb4",
         "utf8mb4_general_ci")).block().result().id();
@@ -821,7 +812,6 @@ class ErdOperationLedgerIntegrationTest extends ErdProjectIntegrationSupport {
 
     String schemaId = createSchemaUseCase.createSchema(new CreateSchemaCommand(
         projectId,
-        "MySQL",
         "index_column_undo_redo_schema",
         "utf8mb4",
         "utf8mb4_general_ci")).block().result().id();
@@ -876,7 +866,6 @@ class ErdOperationLedgerIntegrationTest extends ErdProjectIntegrationSupport {
 
     String schemaId = createSchemaUseCase.createSchema(new CreateSchemaCommand(
         projectId,
-        "MySQL",
         "relationship_column_undo_redo_schema",
         "utf8mb4",
         "utf8mb4_general_ci")).block().result().id();
@@ -953,7 +942,6 @@ class ErdOperationLedgerIntegrationTest extends ErdProjectIntegrationSupport {
 
     String schemaId = createSchemaUseCase.createSchema(new CreateSchemaCommand(
         projectId,
-        "MySQL",
         "structural_snapshot_restore_schema",
         "utf8mb4",
         "utf8mb4_general_ci")).block().result().id();
@@ -1063,7 +1051,6 @@ class ErdOperationLedgerIntegrationTest extends ErdProjectIntegrationSupport {
 
     String schemaId = createSchemaUseCase.createSchema(new CreateSchemaCommand(
         projectId,
-        "MySQL",
         "atomic_increment_schema",
         "utf8mb4",
         "utf8mb4_general_ci")).block().result().id();
@@ -1088,7 +1075,6 @@ class ErdOperationLedgerIntegrationTest extends ErdProjectIntegrationSupport {
 
     String schemaId = createSchemaUseCase.createSchema(new CreateSchemaCommand(
         projectId,
-        "MySQL",
         "parallel_mutation_schema",
         "utf8mb4",
         "utf8mb4_general_ci")).block().result().id();
@@ -1130,7 +1116,6 @@ class ErdOperationLedgerIntegrationTest extends ErdProjectIntegrationSupport {
 
     String schemaId = createSchemaUseCase.createSchema(new CreateSchemaCommand(
         projectId,
-        "MySQL",
         "stale_derived_schema",
         "utf8mb4",
         "utf8mb4_general_ci")).block().result().id();
@@ -1165,7 +1150,6 @@ class ErdOperationLedgerIntegrationTest extends ErdProjectIntegrationSupport {
 
     String schemaId = createSchemaUseCase.createSchema(new CreateSchemaCommand(
         projectId,
-        "MySQL",
         "unique_derived_from_schema",
         "utf8mb4",
         "utf8mb4_general_ci")).block().result().id();
@@ -1236,6 +1220,21 @@ class ErdOperationLedgerIntegrationTest extends ErdProjectIntegrationSupport {
         .map((row, metadata) -> row.get("op_id", String.class))
         .one()
         .block();
+  }
+
+  private JsonNode latestOperationPayload(String schemaId) {
+    String rawPayload = databaseClient.sql("""
+        SELECT CAST(payload_json AS VARCHAR) AS payload_json_text
+        FROM erd_operation_log
+        WHERE schema_id = :schemaId
+        ORDER BY committed_revision DESC
+        LIMIT 1
+        """)
+        .bind("schemaId", schemaId)
+        .map((row, metadata) -> row.get("payload_json_text", String.class))
+        .one()
+        .block();
+    return jsonCodec.fromPersistedJson(rawPayload, JsonNode.class);
   }
 
   private Mono<Long> insertDerivedOperationLog(

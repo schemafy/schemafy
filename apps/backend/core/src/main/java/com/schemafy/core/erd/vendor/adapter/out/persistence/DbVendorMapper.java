@@ -17,6 +17,7 @@ class DbVendorMapper {
 
   DbVendor toDomain(DbVendorEntity entity) {
     return new DbVendor(
+        entity.getId(),
         entity.getDisplayName(),
         entity.getName(),
         entity.getVersion(),
@@ -25,6 +26,7 @@ class DbVendorMapper {
 
   DbVendorSummary toSummary(DbVendorEntity entity) {
     return new DbVendorSummary(
+        entity.getId(),
         entity.getDisplayName(),
         entity.getName(),
         entity.getVersion());

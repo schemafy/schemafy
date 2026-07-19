@@ -82,7 +82,6 @@ class CreateMemoServiceTest {
     Schema schema = new Schema(
         "schema-1",
         "project-1",
-        "mysql",
         "schema",
         "utf8mb4",
         "utf8mb4_unicode_ci");

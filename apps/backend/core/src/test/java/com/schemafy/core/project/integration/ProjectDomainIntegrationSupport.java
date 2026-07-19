@@ -43,6 +43,8 @@ import reactor.core.publisher.Mono;
 @ActiveProfiles("test")
 abstract class ProjectDomainIntegrationSupport {
 
+  protected static final Integer DB_VENDOR_ID = 1;
+
   @Autowired
   protected DatabaseClient databaseClient;
 
@@ -125,6 +127,7 @@ abstract class ProjectDomainIntegrationSupport {
     return projectRepository.save(Project.create(
         UlidGenerator.generate(),
         workspace.getId(),
+        DB_VENDOR_ID,
         name,
         description)).block();
   }
@@ -224,7 +227,6 @@ abstract class ProjectDomainIntegrationSupport {
         .block();
     return createSchemaUseCase.createSchema(new CreateSchemaCommand(
         project.getId(),
-        "MySQL",
         name,
         "utf8mb4",
         "utf8mb4_general_ci"))

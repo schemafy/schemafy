@@ -13,10 +13,8 @@ import {
   useIndexes,
   useConstraints,
   useChangeColumnPosition,
-  useSchemas,
-  useVendors,
-  useVendor,
 } from '../../hooks';
+import { useVendor } from '@/features/vendor';
 import { useSelectedSchema } from '../../contexts';
 import { ConnectionHandles } from './ConnectionHandles';
 
@@ -38,18 +36,8 @@ const TableNodeComponent = ({ data, id }: TableProps) => {
     [],
   );
 
-  const { projectId } = useSelectedSchema();
-  const { data: schemas } = useSchemas(projectId);
-  const schema = schemas?.find((s) => s.id === data.schemaId);
-
-  const { data: vendorsData } = useVendors();
-  const vendorDisplayName =
-    schema && vendorsData
-      ? (vendorsData.find((v) => v.name === schema.dbVendorName.toLowerCase())
-          ?.displayName ?? '')
-      : '';
-
-  const { data: vendorData } = useVendor(vendorDisplayName);
+  const { dbVendorId } = useSelectedSchema();
+  const { data: vendorData } = useVendor(dbVendorId);
   const vendorTypes = vendorData?.datatypeMappings?.types ?? [];
 
   const { columns, indexes, constraints } = data;

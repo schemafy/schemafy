@@ -19,7 +19,6 @@ public class SchemaFixture {
     return new Schema(
         DEFAULT_ID,
         DEFAULT_PROJECT_ID,
-        DEFAULT_DB_VENDOR,
         DEFAULT_NAME,
         DEFAULT_CHARSET,
         DEFAULT_COLLATION);
@@ -29,7 +28,6 @@ public class SchemaFixture {
     return new Schema(
         id,
         DEFAULT_PROJECT_ID,
-        DEFAULT_DB_VENDOR,
         DEFAULT_NAME,
         DEFAULT_CHARSET,
         DEFAULT_COLLATION);
@@ -39,14 +37,13 @@ public class SchemaFixture {
     return new Schema(
         DEFAULT_ID,
         DEFAULT_PROJECT_ID,
-        DEFAULT_DB_VENDOR,
         name,
         DEFAULT_CHARSET,
         DEFAULT_COLLATION);
   }
 
   public static Schema schemaWithDbVendor(String dbVendor) {
-    return new Schema(
+    return Schema.create(
         DEFAULT_ID,
         DEFAULT_PROJECT_ID,
         dbVendor,
@@ -58,7 +55,6 @@ public class SchemaFixture {
   public static CreateSchemaCommand createCommand() {
     return new CreateSchemaCommand(
         DEFAULT_PROJECT_ID,
-        DEFAULT_DB_VENDOR,
         DEFAULT_NAME,
         DEFAULT_CHARSET,
         DEFAULT_COLLATION);
@@ -67,7 +63,6 @@ public class SchemaFixture {
   public static CreateSchemaCommand createCommandWithName(String name) {
     return new CreateSchemaCommand(
         DEFAULT_PROJECT_ID,
-        DEFAULT_DB_VENDOR,
         name,
         DEFAULT_CHARSET,
         DEFAULT_COLLATION);
@@ -77,7 +72,6 @@ public class SchemaFixture {
     return new CreateSchemaResult(
         DEFAULT_ID,
         DEFAULT_PROJECT_ID,
-        DEFAULT_DB_VENDOR,
         DEFAULT_NAME,
         DEFAULT_CHARSET,
         DEFAULT_COLLATION);
@@ -87,7 +81,6 @@ public class SchemaFixture {
     return new CreateSchemaResult(
         schema.id(),
         schema.projectId(),
-        schema.dbVendorName(),
         schema.name(),
         schema.charset(),
         schema.collation());

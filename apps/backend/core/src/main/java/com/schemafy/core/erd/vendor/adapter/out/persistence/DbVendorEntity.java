@@ -18,6 +18,9 @@ import lombok.NoArgsConstructor;
 class DbVendorEntity {
 
   @Id
+  @Column("id")
+  private Integer id;
+
   @Column("display_name")
   private String displayName;
 

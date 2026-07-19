@@ -24,12 +24,14 @@ CREATE TABLE IF NOT EXISTS workspace_members (
 CREATE TABLE IF NOT EXISTS projects (
     id           CHAR(26)     NOT NULL,
     workspace_id CHAR(26)     NOT NULL,
+    db_vendor_id INT          NOT NULL,
     name         VARCHAR(255) NOT NULL,
     description  TEXT         NULL,
     created_at   TIMESTAMP    NOT NULL DEFAULT CURRENT_TIMESTAMP,
     updated_at   TIMESTAMP    NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     deleted_at   TIMESTAMP    NULL,
-    CONSTRAINT pk_projects PRIMARY KEY (id)
+    CONSTRAINT pk_projects PRIMARY KEY (id),
+    CONSTRAINT fk_projects_db_vendor FOREIGN KEY (db_vendor_id) REFERENCES db_vendors (id)
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 CREATE TABLE IF NOT EXISTS project_members (

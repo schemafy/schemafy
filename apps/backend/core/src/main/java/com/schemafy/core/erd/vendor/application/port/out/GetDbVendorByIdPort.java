@@ -4,8 +4,8 @@ import com.schemafy.core.erd.vendor.domain.DbVendor;
 
 import reactor.core.publisher.Mono;
 
-public interface GetDbVendorByDisplayNamePort {
+public interface GetDbVendorByIdPort {
 
-  Mono<DbVendor> findByDisplayName(String displayName);
+  Mono<DbVendor> findActiveById(Integer id);
 
 }

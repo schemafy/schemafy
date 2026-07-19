@@ -167,7 +167,6 @@ class DeleteMemoCommentServiceTest {
         .willReturn(Mono.just(new Schema(
             "schema-1",
             "project-1",
-            "MySQL",
             "schema",
             "utf8mb4",
             "utf8mb4_general_ci")));
@@ -225,7 +224,6 @@ class DeleteMemoCommentServiceTest {
     Schema schema = new Schema(
         "schema-1",
         "project-1",
-        "MySQL",
         "schema",
         "utf8mb4",
         "utf8mb4_general_ci");

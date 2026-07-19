@@ -55,10 +55,9 @@ export const SchemaSelector = memo(() => {
     createSchemaMutation.mutate(
       {
         projectId,
-        dbVendorName: firstSchema?.dbVendorName || 'mysql',
         name: trimmedName,
-        charset: firstSchema?.charset || 'utf8mb4',
-        collation: firstSchema?.collation || 'utf8mb4_general_ci',
+        charset: firstSchema?.charset,
+        collation: firstSchema?.collation,
       },
       {
         onSuccess: (response) => {

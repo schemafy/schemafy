@@ -1,6 +1,7 @@
 export type ProjectResponse = {
   id: string;
   workspaceId: string;
+  dbVendorId: number;
   name: string;
   description?: string;
   createdAt: string;
@@ -11,6 +12,7 @@ export type ProjectResponse = {
 export type ProjectSummaryResponse = {
   id: string;
   workspaceId: string;
+  dbVendorId: number;
   name: string;
   description?: string;
   myRole: string;
@@ -55,6 +57,7 @@ export type ProjectInvitationCreateResponse = {
 };
 
 export type CreateProjectRequest = {
+  dbVendorId: number;
   name: string;
   description?: string;
 };
