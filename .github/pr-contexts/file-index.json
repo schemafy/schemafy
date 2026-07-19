@@ -61,7 +61,8 @@
     353
   ],
   ".github/workflows/lint-and-format.yml": [
-    346
+    346,
+    474
   ],
   ".github/workflows/save-pr-context.yml": [
     317,
