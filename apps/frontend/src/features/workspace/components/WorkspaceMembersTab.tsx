@@ -161,7 +161,10 @@ export const WorkspaceMembersTab = ({
             {isLoadingMembers ? (
               <tr>
                 <td colSpan={5} className="px-5 py-8">
-                  <LoadingState className="min-h-[120px]" label="Loading members..." />
+                  <LoadingState
+                    className="min-h-[120px]"
+                    label="Loading members..."
+                  />
                 </td>
               </tr>
             ) : members.length === 0 ? (
