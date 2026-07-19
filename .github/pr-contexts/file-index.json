@@ -23,7 +23,8 @@
     449
   ],
   "apps/frontend/src/features/collaboration/components/index.ts": [
-    291
+    291,
+    470
   ],
   "apps/frontend/src/features/collaboration/hooks/useChatAnimation.ts": [
     291
@@ -89,7 +90,8 @@
     361,
     358,
     382,
-    442
+    442,
+    470
   ],
   "apps/frontend/src/store/collaboration.store.ts": [
     291,
@@ -99,7 +101,8 @@
     400,
     439,
     442,
-    449
+    449,
+    470
   ],
   ".github/workflows/test.yml": [
     346
@@ -500,7 +503,8 @@
   ],
   "apps/frontend/src/App.tsx": [
     361,
-    358
+    358,
+    470
   ],
   "apps/frontend/src/components/Button.tsx": [
     361,
@@ -585,7 +589,8 @@
     358
   ],
   "apps/frontend/src/pages/OAuthCallbackPage.tsx": [
-    361
+    361,
+    470
   ],
   "apps/frontend/src/pages/SignInPage.tsx": [
     361
@@ -598,7 +603,8 @@
     358,
     382,
     405,
-    446
+    446,
+    470
   ],
   "apps/frontend/src/pages/index.ts": [
     361,
@@ -947,7 +953,8 @@
     358,
     382,
     392,
-    405
+    405,
+    470
   ],
   "apps/frontend/src/features/workspace/components/WorkspaceProjectsTab.tsx": [
     358,
@@ -955,7 +962,8 @@
     382,
     392,
     405,
-    446
+    446,
+    470
   ],
   "apps/frontend/src/features/workspace/hooks/useWorkspaces.ts": [
     358,
@@ -2590,10 +2598,12 @@
     446
   ],
   "apps/frontend/src/features/project/hooks/useMySharedProjects.ts": [
-    446
+    446,
+    470
   ],
   "apps/frontend/src/features/workspace/components/SharedProjectsTab.tsx": [
-    446
+    446,
+    470
   ],
   "apps/frontend/src/features/workspace/components/WorkspaceSidebar.tsx": [
     446
@@ -2911,5 +2921,8 @@
   ],
   "apps/backend/core/src/test/java/com/schemafy/core/erd/mermaid/application/service/GenerateSchemaMermaidServiceTest.java": [
     468
+  ],
+  "apps/frontend/src/features/collaboration/components/ConnectionStatusIndicator.tsx": [
+    470
   ]
 }
