@@ -752,7 +752,8 @@
     419,
     422,
     444,
-    460
+    460,
+    473
   ],
   "apps/backend/core/src/test/java/com/schemafy/core/erd/table/application/service/ChangeTableNameServiceTest.java": [
     372,
