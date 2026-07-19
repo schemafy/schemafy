@@ -1,7 +1,6 @@
 package com.schemafy.core.project.application.service;
 
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.reactive.TransactionalOperator;
 
 import com.schemafy.core.project.application.access.RequireProjectAccess;
 import com.schemafy.core.project.application.port.in.ProjectDetail;
@@ -17,21 +16,21 @@ import reactor.core.publisher.Mono;
 @RequiredArgsConstructor
 class UpdateProjectService implements UpdateProjectUseCase {
 
-  private final TransactionalOperator transactionalOperator;
   private final ProjectPort projectPort;
   private final ProjectAccessHelper projectAccessHelper;
+  private final ProjectMutationGuard projectMutationGuard;
 
   @Override
   @RequireProjectAccess(role = ProjectRole.ADMIN)
   public Mono<ProjectDetail> updateProject(UpdateProjectCommand command) {
-    return projectAccessHelper.findProjectById(command.projectId())
-        .flatMap(project -> {
-          project.update(command.name(), command.description());
-          return projectPort.save(project);
-        })
-        .flatMap(savedProject -> projectAccessHelper.buildProjectDetail(
-            savedProject, command.requesterId()))
-        .as(transactionalOperator::transactional);
+    return projectMutationGuard.protectProjectMutation(command.projectId(),
+        () -> projectAccessHelper.findProjectById(command.projectId())
+            .flatMap(project -> {
+              project.update(command.name(), command.description());
+              return projectPort.save(project);
+            })
+            .flatMap(savedProject -> projectAccessHelper.buildProjectDetail(
+                savedProject, command.requesterId())));
   }
 
 }
