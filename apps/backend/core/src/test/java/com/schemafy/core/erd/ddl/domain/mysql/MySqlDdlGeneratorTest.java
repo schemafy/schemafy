@@ -9,6 +9,9 @@ import org.junit.jupiter.api.Test;
 import com.schemafy.core.common.exception.DomainException;
 import com.schemafy.core.erd.column.domain.ColumnTypeArguments;
 import com.schemafy.core.erd.constraint.domain.type.ConstraintKind;
+import com.schemafy.core.erd.ddl.application.port.in.GenerateSchemaDdlCommand;
+import com.schemafy.core.erd.ddl.application.service.GenerateSchemaDdlService;
+import com.schemafy.core.erd.ddl.domain.DdlExportVendor;
 import com.schemafy.core.erd.ddl.domain.DdlSchemaSnapshot;
 import com.schemafy.core.erd.ddl.domain.DdlSchemaSnapshot.Column;
 import com.schemafy.core.erd.ddl.domain.DdlSchemaSnapshot.Constraint;
@@ -28,6 +31,8 @@ import com.schemafy.core.erd.index.domain.type.IndexType;
 import com.schemafy.core.erd.index.domain.type.SortDirection;
 import com.schemafy.core.erd.relationship.domain.type.Cardinality;
 import com.schemafy.core.erd.relationship.domain.type.RelationshipKind;
+import com.schemafy.core.erd.vendor.domain.IdentifierCapabilities;
+import com.schemafy.core.erd.vendor.fixture.DbVendorFixture;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -105,18 +110,67 @@ class MySqlDdlGeneratorTest {
   }
 
   @Test
-  @DisplayName("identifier가 MySQL 최대 길이인 64자를 초과하면 예외가 발생한다")
-  void throwsWhenIdentifierExceedsMysqlLengthLimit() {
-    TableSnapshot table = new TableSnapshot(
-        table("t1", "a".repeat(65)),
+  @DisplayName("legacy snapshot identifier가 vendor profile 제한을 초과하면 대상이 명확한 오류가 발생한다")
+  void throwsActionableErrorWhenLegacyIdentifierExceedsVendorLimit() {
+    String longName = "a".repeat(11);
+    TableSnapshot validTable = new TableSnapshot(
+        table("t1", "users"),
         List.of(column("c1", "t1", "id", "BIGINT", null, 0, false)),
         List.of(),
         List.of(),
         List.of());
+    TableSnapshot longColumn = new TableSnapshot(
+        table("t1", "users"),
+        List.of(column("c1", "t1", longName, "BIGINT", null, 0, false)),
+        List.of(),
+        List.of(),
+        List.of());
+    TableSnapshot longIndex = new TableSnapshot(
+        table("t1", "users"),
+        List.of(column("c1", "t1", "id", "BIGINT", null, 0, false)),
+        List.of(),
+        List.of(),
+        List.of(new IndexSnapshot(
+            new Index("idx1", "t1", longName, IndexType.BTREE),
+            List.of(new IndexColumn("ic1", "idx1", "c1", 0, SortDirection.ASC)))));
+    TableSnapshot longConstraint = new TableSnapshot(
+        table("t1", "users"),
+        List.of(column("c1", "t1", "id", "BIGINT", null, 0, false)),
+        List.of(unique("uk1", "t1", longName, "c1")),
+        List.of(),
+        List.of());
+    TableSnapshot referenced = new TableSnapshot(
+        table("users", "users"),
+        List.of(column("u1", "users", "id", "BIGINT", null, 0, false)),
+        List.of(pk("pk-users", "users", "u1")),
+        List.of(),
+        List.of());
+    RelationshipSnapshot relationship = new RelationshipSnapshot(
+        new Relationship(
+            "r1", "users", "orders", longName,
+            RelationshipKind.NON_IDENTIFYING, Cardinality.ONE_TO_MANY,
+            null, null),
+        List.of(new RelationshipColumn("rc1", "r1", "u1", "o1", 0)));
+    TableSnapshot longRelationship = new TableSnapshot(
+        table("orders", "orders"),
+        List.of(column("o1", "orders", "user_id", "BIGINT", null, 0, false)),
+        List.of(),
+        List.of(relationship),
+        List.of());
 
-    assertThatThrownBy(() -> sut.generate(schema(table)))
-        .isInstanceOf(DomainException.class)
-        .matches(DomainException.hasErrorCode(DdlErrorCode.INVALID_VALUE));
+    assertIdentifierLengthError(new DdlSchemaSnapshot(
+        new SchemaSnapshot("schema-1", "mysql", longName, "utf8mb4", "utf8mb4_unicode_ci"),
+        List.of()), "Schema name");
+    assertIdentifierLengthError(schema(new TableSnapshot(
+        table("t1", longName),
+        validTable.columns(),
+        validTable.constraints(),
+        validTable.relationships(),
+        validTable.indexes())), "Table name");
+    assertIdentifierLengthError(schema(longColumn), "Column name");
+    assertIdentifierLengthError(schema(longIndex), "Index name");
+    assertIdentifierLengthError(schema(longConstraint), "Constraint name");
+    assertIdentifierLengthError(schema(referenced, longRelationship), "Relationship name");
   }
 
   @Test
@@ -647,6 +701,22 @@ class MySqlDdlGeneratorTest {
         new SchemaSnapshot("schema-1", "mysql", "app`schema",
             "utf8mb4", "utf8mb4_unicode_ci"),
         List.of(tables));
+  }
+
+  private void assertIdentifierLengthError(
+      DdlSchemaSnapshot snapshot,
+      String subject) {
+    GenerateSchemaDdlService service = new GenerateSchemaDdlService(List.of(sut));
+
+    assertThatThrownBy(() -> service.generateSchemaDdl(new GenerateSchemaDdlCommand(
+        snapshot,
+        DdlExportVendor.MYSQL,
+        DbVendorFixture.defaultCapabilities().indexes(),
+        IdentifierCapabilities.codePoints(10))).block())
+        .isInstanceOfSatisfying(DomainException.class, exception -> {
+          assertThat(exception.getErrorCode()).isEqualTo(DdlErrorCode.INVALID_VALUE);
+          assertThat(exception.getMessage()).contains(subject, "10", "Unicode code points");
+        });
   }
 
   private TableSnapshot userTable() {
