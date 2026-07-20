@@ -18,6 +18,7 @@ import com.schemafy.core.common.json.JsonObjectMetadataConverter;
 import com.schemafy.core.erd.column.application.port.out.CreateColumnPort;
 import com.schemafy.core.erd.column.application.port.out.GetColumnsByTableIdPort;
 import com.schemafy.core.erd.column.domain.Column;
+import com.schemafy.core.erd.column.domain.validator.ColumnValidator;
 import com.schemafy.core.erd.constraint.application.port.out.GetConstraintColumnsByConstraintIdPort;
 import com.schemafy.core.erd.constraint.application.port.out.GetConstraintsByTableIdPort;
 import com.schemafy.core.erd.constraint.application.service.PkCascadeHelper;
@@ -42,6 +43,8 @@ import com.schemafy.core.erd.relationship.domain.type.RelationshipKind;
 import com.schemafy.core.erd.relationship.domain.validator.RelationshipValidator;
 import com.schemafy.core.erd.table.application.port.out.GetTableByIdPort;
 import com.schemafy.core.erd.table.domain.Table;
+import com.schemafy.core.erd.vendor.application.service.IdentifierCapabilityResolver;
+import com.schemafy.core.erd.vendor.domain.IdentifierCapabilities;
 import com.schemafy.core.project.application.access.AccessTarget;
 import com.schemafy.core.project.application.access.RequireProjectAccess;
 import com.schemafy.core.project.domain.ProjectRole;
@@ -72,6 +75,7 @@ public class CreateRelationshipService implements CreateRelationshipUseCase {
   private final GetRelationshipsBySchemaIdPort getRelationshipsBySchemaIdPort;
   private final GetConstraintsByTableIdPort getConstraintsByTableIdPort;
   private final GetConstraintColumnsByConstraintIdPort getConstraintColumnsByConstraintIdPort;
+  private final IdentifierCapabilityResolver identifierCapabilityResolver;
   private final PkCascadeHelper pkCascadeHelper;
   private final StructuralSnapshotService structuralSnapshotService;
   private final JsonObjectMetadataConverter jsonObjectMetadataConverter;
@@ -90,25 +94,28 @@ public class CreateRelationshipService implements CreateRelationshipUseCase {
       return erdMutationCoordinator.coordinate(ErdOperationType.CREATE_RELATIONSHIP, command,
           () -> loadTargetTables(command)
               .flatMap(tables -> validateCreateRelationship(command, tables)
-                  .then(structuralSnapshotService.captureBySchemaId(tables.fkTable().schemaId()))
-                  .flatMap(beforeSnapshot -> {
-                    Set<String> affectedTableIds = new HashSet<>();
-                    affectedTableIds.add(tables.fkTable().id());
-                    affectedTableIds.add(tables.pkTable().id());
-                    return createRelationshipAuto(
-                        tables.fkTable(),
-                        tables.pkTable(),
-                        command,
-                        canonicalExtra,
-                        affectedTableIds)
-                        .flatMap(result -> structuralSnapshotService.captureBySchemaId(beforeSnapshot.schemaId())
-                            .map(afterSnapshot -> result.withInverse(new CreateRelationshipInverse(
-                                beforeSnapshot.schemaId(),
-                                result.result().relationshipId(),
-                                beforeSnapshot,
-                                afterSnapshot,
-                                result.sortedAffectedTableIds()))));
-                  })));
+                  .then(identifierCapabilityResolver.resolve(TABLE, tables.fkTable().id()))
+                  .flatMap(identifierCapabilities -> structuralSnapshotService
+                      .captureBySchemaId(tables.fkTable().schemaId())
+                      .flatMap(beforeSnapshot -> {
+                        Set<String> affectedTableIds = new HashSet<>();
+                        affectedTableIds.add(tables.fkTable().id());
+                        affectedTableIds.add(tables.pkTable().id());
+                        return createRelationshipAuto(
+                            tables.fkTable(),
+                            tables.pkTable(),
+                            command,
+                            canonicalExtra,
+                            affectedTableIds,
+                            identifierCapabilities)
+                            .flatMap(result -> structuralSnapshotService.captureBySchemaId(beforeSnapshot.schemaId())
+                                .map(afterSnapshot -> result.withInverse(new CreateRelationshipInverse(
+                                    beforeSnapshot.schemaId(),
+                                    result.result().relationshipId(),
+                                    beforeSnapshot,
+                                    afterSnapshot,
+                                    result.sortedAffectedTableIds()))));
+                      }))));
     })
         .as(transactionalOperator::transactional);
   }
@@ -142,8 +149,9 @@ public class CreateRelationshipService implements CreateRelationshipUseCase {
       Table pkTable,
       CreateRelationshipCommand command,
       String canonicalExtra,
-      Set<String> affectedTableIds) {
-    return resolveAutoRelationshipName(fkTable, pkTable)
+      Set<String> affectedTableIds,
+      IdentifierCapabilities identifierCapabilities) {
+    return resolveAutoRelationshipName(fkTable, pkTable, identifierCapabilities)
         .flatMap(normalizedName -> Mono.zip(
             loadPkColumns(pkTable),
             getColumnsByTableIdPort.findColumnsByTableId(fkTable.id()).defaultIfEmpty(List.of()),
@@ -176,7 +184,8 @@ public class CreateRelationshipService implements CreateRelationshipUseCase {
                   normalizedName,
                   pkColumns,
                   fkColumns,
-                  affectedTableIds);
+                  affectedTableIds,
+                  identifierCapabilities);
             }));
   }
 
@@ -188,7 +197,8 @@ public class CreateRelationshipService implements CreateRelationshipUseCase {
       String normalizedName,
       List<Column> pkColumns,
       List<Column> fkColumns,
-      Set<String> affectedTableIds) {
+      Set<String> affectedTableIds,
+      IdentifierCapabilities identifierCapabilities) {
     return Mono.fromCallable(ulidGeneratorPort::generate)
         .flatMap(relationshipId -> {
           Relationship relationship = new Relationship(
@@ -207,7 +217,8 @@ public class CreateRelationshipService implements CreateRelationshipUseCase {
                   command.kind(),
                   pkColumns,
                   fkColumns,
-                  affectedTableIds)
+                  affectedTableIds,
+                  identifierCapabilities)
                   .thenReturn(new CreateRelationshipResult(
                       savedRelationship.id(),
                       savedRelationship.fkTableId(),
@@ -226,7 +237,8 @@ public class CreateRelationshipService implements CreateRelationshipUseCase {
       RelationshipKind kind,
       List<Column> pkColumns,
       List<Column> existingFkColumns,
-      Set<String> affectedTableIds) {
+      Set<String> affectedTableIds,
+      IdentifierCapabilities identifierCapabilities) {
     Set<String> existingNames = new HashSet<>();
     for (Column column : existingFkColumns) {
       existingNames.add(column.name());
@@ -238,7 +250,11 @@ public class CreateRelationshipService implements CreateRelationshipUseCase {
         .concatMap(tuple -> {
           int seqNo = Math.toIntExact(tuple.getT1());
           Column pkColumn = tuple.getT2();
-          String fkColumnName = resolveUniqueName(pkColumn.name(), existingNames);
+          String fkColumnName = resolveUniqueName(
+              pkColumn.name(),
+              existingNames,
+              identifierCapabilities,
+              ColumnValidator.maxNameLength());
           existingNames.add(fkColumnName);
           return Mono.fromCallable(ulidGeneratorPort::generate)
               .flatMap(fkColumnId -> {
@@ -286,21 +302,30 @@ public class CreateRelationshipService implements CreateRelationshipUseCase {
     return name == null ? null : name.trim();
   }
 
-  private Mono<String> resolveAutoRelationshipName(Table fkTable, Table pkTable) {
+  private Mono<String> resolveAutoRelationshipName(
+      Table fkTable,
+      Table pkTable,
+      IdentifierCapabilities identifierCapabilities) {
     String baseName = normalizeName("rel_" + fkTable.name() + "_to_" + pkTable.name());
-    return ensureUniqueRelationshipName(fkTable.id(), baseName, 0)
+    return ensureUniqueRelationshipName(fkTable.id(), baseName, identifierCapabilities, 0)
         .doOnNext(RelationshipValidator::validateName);
   }
 
   private Mono<String> ensureUniqueRelationshipName(
       String fkTableId,
       String baseName,
+      IdentifierCapabilities identifierCapabilities,
       int suffix) {
-    String candidate = suffix == 0 ? baseName : baseName + "_" + suffix;
+    String suffixValue = suffix == 0 ? "" : "_" + suffix;
+    String candidate = identifierCapabilities.fitGeneratedName(baseName, suffixValue);
     return relationshipExistsPort.existsByFkTableIdAndName(fkTableId, candidate)
         .flatMap(exists -> {
           if (exists) {
-            return ensureUniqueRelationshipName(fkTableId, baseName, suffix + 1);
+            return ensureUniqueRelationshipName(
+                fkTableId,
+                baseName,
+                identifierCapabilities,
+                suffix + 1);
           }
           return Mono.just(candidate);
         });
@@ -374,15 +399,23 @@ public class CreateRelationshipService implements CreateRelationshipUseCase {
     return pkColumns;
   }
 
-  private static String resolveUniqueName(String baseName, Set<String> existingNames) {
-    if (!existingNames.contains(baseName)) {
-      return baseName;
-    }
-    int suffix = 1;
-    while (existingNames.contains(baseName + "_" + suffix)) {
+  private static String resolveUniqueName(
+      String baseName,
+      Set<String> existingNames,
+      IdentifierCapabilities identifierCapabilities,
+      int localMaxLength) {
+    int suffix = 0;
+    while (true) {
+      String suffixValue = suffix == 0 ? "" : "_" + suffix;
+      String candidate = identifierCapabilities.fitGeneratedName(
+          baseName,
+          suffixValue,
+          localMaxLength);
+      if (!existingNames.contains(candidate)) {
+        return candidate;
+      }
       suffix++;
     }
-    return baseName + "_" + suffix;
   }
 
   private static String normalizeId(String value) {
