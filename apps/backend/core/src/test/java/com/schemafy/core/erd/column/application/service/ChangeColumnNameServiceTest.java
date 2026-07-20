@@ -25,6 +25,9 @@ import com.schemafy.core.erd.table.application.port.out.GetTableByIdPort;
 import com.schemafy.core.erd.table.fixture.TableFixture;
 import com.schemafy.core.erd.vendor.application.port.in.GetProjectDbVendorQuery;
 import com.schemafy.core.erd.vendor.application.port.in.GetProjectDbVendorUseCase;
+import com.schemafy.core.erd.vendor.domain.DbVendor;
+import com.schemafy.core.erd.vendor.domain.IdentifierCapabilities;
+import com.schemafy.core.erd.vendor.domain.VendorCapabilities;
 import com.schemafy.core.erd.vendor.fixture.DbVendorFixture;
 
 import reactor.core.publisher.Mono;
@@ -153,6 +156,37 @@ class ChangeColumnNameServiceTest {
     }
 
     @Nested
+    @DisplayName("vendor identifier 제한을 넘으면")
+    class WhenNameExceedsVendorIdentifierLimit {
+
+      @Test
+      @DisplayName("컬럼 이름 변경을 거부한다")
+      void rejectsNameThatExceedsVendorLimit() {
+        var command = ColumnFixture.changeNameCommand("a".repeat(11));
+        var column = ColumnFixture.defaultColumn();
+
+        given(getColumnByIdPort.findColumnById(any()))
+            .willReturn(Mono.just(column));
+        given(getTableByIdPort.findTableById(any()))
+            .willReturn(Mono.just(TableFixture.defaultTable()));
+        given(getSchemaByIdPort.findSchemaById(any()))
+            .willReturn(Mono.just(SchemaFixture.defaultSchema()));
+        given(getColumnsByTableIdPort.findColumnsByTableId(any()))
+            .willReturn(Mono.just(List.of(column)));
+        given(getProjectDbVendorUseCase.getProjectDbVendor(
+            new GetProjectDbVendorQuery(SchemaFixture.DEFAULT_PROJECT_ID)))
+            .willReturn(Mono.just(dbVendorWithIdentifierMax(10)));
+
+        StepVerifier.create(sut.changeColumnName(command))
+            .expectErrorMatches(DomainException.hasErrorCode(ColumnErrorCode.NAME_INVALID))
+            .verify();
+
+        then(changeColumnNamePort).shouldHaveNoInteractions();
+      }
+
+    }
+
+    @Nested
     @DisplayName("중복된 이름이 존재하면")
     class WithDuplicateName {
 
@@ -233,6 +267,21 @@ class ChangeColumnNameServiceTest {
 
     }
 
+  }
+
+  private static DbVendor dbVendorWithIdentifierMax(int maxLength) {
+    DbVendor vendor = DbVendorFixture.defaultDbVendor();
+    VendorCapabilities capabilities = vendor.capabilities();
+    return new DbVendor(
+        vendor.id(),
+        vendor.displayName(),
+        vendor.name(),
+        vendor.version(),
+        vendor.datatypeMappings(),
+        new VendorCapabilities(
+            capabilities.schemaVersion(),
+            capabilities.indexes(),
+            IdentifierCapabilities.codePoints(maxLength)));
   }
 
 }

@@ -82,6 +82,10 @@ public final class ColumnValidator {
 
   private ColumnValidator() {}
 
+  public static int maxNameLength() {
+    return NAME_MAX_LENGTH;
+  }
+
   public static void validateName(String name) {
     if (name == null || name.isBlank()) {
       throw new DomainException(ColumnErrorCode.NAME_INVALID, "Column name must not be blank");
