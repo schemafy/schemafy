@@ -1,5 +1,6 @@
 package com.schemafy.core.erd.schema.application.service;
 
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -14,6 +15,8 @@ import com.schemafy.core.erd.schema.application.port.out.GetSchemaByIdPort;
 import com.schemafy.core.erd.schema.application.port.out.SchemaExistsPort;
 import com.schemafy.core.erd.schema.domain.exception.SchemaErrorCode;
 import com.schemafy.core.erd.schema.fixture.SchemaFixture;
+import com.schemafy.core.erd.vendor.application.service.IdentifierCapabilityResolver;
+import com.schemafy.core.erd.vendor.fixture.DbVendorFixture;
 
 import reactor.core.publisher.Mono;
 import reactor.test.StepVerifier;
@@ -35,8 +38,17 @@ class ChangeSchemaNameServiceTest {
   @Mock
   GetSchemaByIdPort getSchemaByIdPort;
 
+  @Mock
+  IdentifierCapabilityResolver identifierCapabilityResolver;
+
   @InjectMocks
   ChangeSchemaNameService sut;
+
+  @BeforeEach
+  void setUpIdentifierCapabilities() {
+    given(identifierCapabilityResolver.resolve(any(), any()))
+        .willReturn(Mono.just(DbVendorFixture.defaultCapabilities().identifiers()));
+  }
 
   @Nested
   @DisplayName("changeSchemaName 메서드는")
@@ -70,6 +82,26 @@ class ChangeSchemaNameServiceTest {
       }
 
       @Test
+      @DisplayName("DB Vendor identifier 최대 길이로 이름을 변경한다")
+      void changesSchemaNameAtIdentifierLimit() {
+        var command = SchemaFixture.changeNameCommand("s".repeat(64));
+
+        given(getSchemaByIdPort.findSchemaById(command.schemaId()))
+            .willReturn(Mono.just(SchemaFixture.defaultSchema()));
+        given(schemaExistsPort.existsActiveByProjectIdAndName(any(), any()))
+            .willReturn(Mono.just(false));
+        given(changeSchemaNamePort.changeSchemaName(any(), any()))
+            .willReturn(Mono.empty());
+
+        StepVerifier.create(sut.changeSchemaName(command))
+            .expectNextCount(1)
+            .verifyComplete();
+
+        then(changeSchemaNamePort).should()
+            .changeSchemaName(command.schemaId(), command.newName());
+      }
+
+      @Test
       @DisplayName("현재 이름과 같으면 변경 없이 성공한다")
       void succeedsWithoutChangeWhenNameIsSame() {
         var command = SchemaFixture.changeNameCommand(SchemaFixture.DEFAULT_NAME);
@@ -80,6 +112,28 @@ class ChangeSchemaNameServiceTest {
         StepVerifier.create(sut.changeSchemaName(command))
             .expectNextMatches(result -> result.operation() == null)
             .verifyComplete();
+
+        then(schemaExistsPort).shouldHaveNoInteractions();
+        then(changeSchemaNamePort).shouldHaveNoInteractions();
+      }
+
+    }
+
+    @Nested
+    @DisplayName("DB Vendor identifier 최대 길이를 초과하면")
+    class WithTooLongName {
+
+      @Test
+      @DisplayName("SchemaInvalidValueException을 발생시킨다")
+      void rejectsSchemaNameOverIdentifierLimit() {
+        var command = SchemaFixture.changeNameCommand("s".repeat(65));
+
+        given(getSchemaByIdPort.findSchemaById(command.schemaId()))
+            .willReturn(Mono.just(SchemaFixture.defaultSchema()));
+
+        StepVerifier.create(sut.changeSchemaName(command))
+            .expectErrorMatches(DomainException.hasErrorCode(SchemaErrorCode.INVALID_VALUE))
+            .verify();
 
         then(schemaExistsPort).shouldHaveNoInteractions();
         then(changeSchemaNamePort).shouldHaveNoInteractions();
