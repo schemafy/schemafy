@@ -812,15 +812,17 @@ class ProjectUseCaseIntegrationTest extends ProjectDomainIntegrationSupport {
   }
 
   private void insertDeletedDbVendor() {
-    databaseClient.sql("""
-        INSERT INTO db_vendors (
-          id, display_name, name, version, datatype_mappings, capabilities, deleted_at
-        ) VALUES (
-          :id, 'Deleted Vendor', 'deleted-vendor', '1.0', '{}',
-          '{"schemaVersion":1,"indexes":{"supportedTypes":["BTREE"],"sortDirectionTypes":["BTREE"]}}',
-          CURRENT_TIMESTAMP
-        )
-        """)
+    databaseClient
+        .sql(
+            """
+                INSERT INTO db_vendors (
+                  id, display_name, name, version, datatype_mappings, capabilities, deleted_at
+                ) VALUES (
+                  :id, 'Deleted Vendor', 'deleted-vendor', '1.0', '{}',
+                  '{"schemaVersion":2,"indexes":{"supportedTypes":["BTREE"],"sortDirectionTypes":["BTREE"]},"identifiers":{"maxLength":64,"lengthUnit":"CODE_POINTS"}}',
+                  CURRENT_TIMESTAMP
+                )
+                """)
         .bind("id", DELETED_DB_VENDOR_ID)
         .fetch()
         .rowsUpdated()

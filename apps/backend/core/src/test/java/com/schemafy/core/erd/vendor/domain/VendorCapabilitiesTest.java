@@ -21,7 +21,7 @@ class VendorCapabilitiesTest {
   @DisplayName("저장 JSON에서 타입이 지정된 capability로 복원한다")
   void restoresFromPersistedJson() {
     String rawJson = """
-        {"schemaVersion":1,"indexes":{"supportedTypes":["BTREE","FULLTEXT","SPATIAL"],"sortDirectionTypes":["BTREE"]}}
+        {"schemaVersion":2,"indexes":{"supportedTypes":["BTREE","FULLTEXT","SPATIAL"],"sortDirectionTypes":["BTREE"]},"identifiers":{"maxLength":64,"lengthUnit":"CODE_POINTS"}}
         """;
 
     VendorCapabilities capabilities = jsonCodec.fromPersistedJson(
@@ -30,6 +30,23 @@ class VendorCapabilitiesTest {
 
     assertThat(capabilities).isEqualTo(DbVendorFixture.defaultCapabilities());
     assertThat(capabilities.indexes().supports(IndexType.HASH)).isFalse();
+    assertThat(capabilities.identifiers().maxLength()).isEqualTo(64);
+    assertThat(capabilities.identifiers().lengthUnit())
+        .isEqualTo(IdentifierLengthUnit.CODE_POINTS);
+  }
+
+  @Test
+  @DisplayName("저장된 identifier capability에는 길이 측정 단위가 필요하다")
+  void rejectsPersistedIdentifierCapabilitiesWithoutLengthUnit() {
+    String rawJson = """
+        {"schemaVersion":2,"indexes":{"supportedTypes":["BTREE"],"sortDirectionTypes":["BTREE"]},"identifiers":{"maxLength":64}}
+        """;
+
+    assertThatThrownBy(() -> jsonCodec.fromPersistedJson(
+        rawJson,
+        VendorCapabilities.class))
+        .isInstanceOf(IllegalArgumentException.class)
+        .hasMessageContaining("Failed to parse JSON");
   }
 
   @Test
@@ -37,7 +54,18 @@ class VendorCapabilitiesTest {
   void rejectsInvalidSchemaVersion() {
     assertThatThrownBy(() -> new VendorCapabilities(
         0,
-        DbVendorFixture.defaultCapabilities().indexes()))
+        DbVendorFixture.defaultCapabilities().indexes(),
+        DbVendorFixture.defaultCapabilities().identifiers()))
+        .isInstanceOf(IllegalArgumentException.class);
+  }
+
+  @Test
+  @DisplayName("identifier capability는 필수다")
+  void rejectsMissingIdentifierCapabilities() {
+    assertThatThrownBy(() -> new VendorCapabilities(
+        2,
+        DbVendorFixture.defaultCapabilities().indexes(),
+        null))
         .isInstanceOf(IllegalArgumentException.class);
   }
 

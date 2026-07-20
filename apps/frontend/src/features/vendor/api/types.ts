@@ -13,6 +13,10 @@ export type VendorCapabilities = {
     supportedTypes: IndexType[];
     sortDirectionTypes: IndexType[];
   };
+  identifiers: {
+    maxLength: number;
+    lengthUnit: 'CODE_POINTS' | 'UTF8_BYTES';
+  };
 };
 
 export type DatatypeParameter = {

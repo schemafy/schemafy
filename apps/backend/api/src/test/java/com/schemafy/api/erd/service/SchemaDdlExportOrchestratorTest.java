@@ -33,6 +33,7 @@ import com.schemafy.core.erd.table.domain.Table;
 import com.schemafy.core.erd.vendor.application.port.in.GetProjectDbVendorQuery;
 import com.schemafy.core.erd.vendor.application.port.in.GetProjectDbVendorUseCase;
 import com.schemafy.core.erd.vendor.domain.DbVendor;
+import com.schemafy.core.erd.vendor.domain.IdentifierCapabilities;
 import com.schemafy.core.erd.vendor.domain.VendorCapabilities;
 
 import reactor.core.publisher.Flux;
@@ -185,7 +186,10 @@ class SchemaDdlExportOrchestratorTest {
         "mysql",
         "8.0",
         "{}",
-        new VendorCapabilities(1, mysqlIndexCapabilities()));
+        new VendorCapabilities(
+            2,
+            mysqlIndexCapabilities(),
+            IdentifierCapabilities.codePoints(64)));
   }
 
   private static IndexCapabilities mysqlIndexCapabilities() {
