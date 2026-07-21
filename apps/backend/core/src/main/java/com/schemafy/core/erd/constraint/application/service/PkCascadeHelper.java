@@ -169,7 +169,7 @@ public class PkCascadeHelper {
               pkColumn.name(),
               fkColumns.stream().map(Column::name).collect(Collectors.toSet()),
               identifierCapabilities,
-              ColumnValidator.maxNameLength());
+              ColumnValidator.schemafyNameMaxLength());
 
           return Mono.fromCallable(ulidGeneratorPort::generate)
               .flatMap(fkColumnId -> {

@@ -254,7 +254,7 @@ public class CreateRelationshipService implements CreateRelationshipUseCase {
               pkColumn.name(),
               existingNames,
               identifierCapabilities,
-              ColumnValidator.maxNameLength());
+              ColumnValidator.schemafyNameMaxLength());
           existingNames.add(fkColumnName);
           return Mono.fromCallable(ulidGeneratorPort::generate)
               .flatMap(fkColumnId -> {
