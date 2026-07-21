@@ -14,6 +14,7 @@ import org.junit.jupiter.api.Test;
 
 import com.schemafy.core.config.R2dbcTestConfiguration;
 import com.schemafy.core.erd.index.domain.type.IndexType;
+import com.schemafy.core.erd.vendor.domain.IdentifierLengthUnit;
 
 import reactor.core.publisher.Mono;
 import reactor.test.StepVerifier;
@@ -102,7 +103,7 @@ class DbVendorPersistenceAdapterTest {
             assertThat(vendor.version()).isEqualTo("8.0");
             assertThat(vendor.datatypeMappings()).contains("schemaVersion");
             assertThat(vendor.datatypeMappings()).contains("TINYINT");
-            assertThat(vendor.capabilities().schemaVersion()).isEqualTo(1);
+            assertThat(vendor.capabilities().schemaVersion()).isEqualTo(2);
             assertThat(vendor.capabilities().indexes().supportedTypes())
                 .containsExactlyInAnyOrder(
                     IndexType.BTREE,
@@ -110,6 +111,9 @@ class DbVendorPersistenceAdapterTest {
                     IndexType.SPATIAL);
             assertThat(vendor.capabilities().indexes().sortDirectionTypes())
                 .containsExactly(IndexType.BTREE);
+            assertThat(vendor.capabilities().identifiers().maxLength()).isEqualTo(64);
+            assertThat(vendor.capabilities().identifiers().lengthUnit())
+                .isEqualTo(IdentifierLengthUnit.CODE_POINTS);
           })
           .verifyComplete();
     }
@@ -210,7 +214,7 @@ class DbVendorPersistenceAdapterTest {
               id, display_name, name, version, datatype_mappings, capabilities
             ) VALUES (
               :id, :displayName, :name, :version, '{}',
-              '{"schemaVersion":1,"indexes":{"supportedTypes":["BTREE","FULLTEXT","SPATIAL"],"sortDirectionTypes":["BTREE"]}}'
+              '{"schemaVersion":2,"indexes":{"supportedTypes":["BTREE","FULLTEXT","SPATIAL"],"sortDirectionTypes":["BTREE"]},"identifiers":{"maxLength":64,"lengthUnit":"CODE_POINTS"}}'
             )
             """)
         .bind("id", id)
@@ -231,7 +235,7 @@ class DbVendorPersistenceAdapterTest {
               display_name, name, version, datatype_mappings, capabilities
             ) VALUES (
               :displayName, :name, :version, '{}',
-              '{"schemaVersion":1,"indexes":{"supportedTypes":["BTREE","FULLTEXT","SPATIAL"],"sortDirectionTypes":["BTREE"]}}'
+              '{"schemaVersion":2,"indexes":{"supportedTypes":["BTREE","FULLTEXT","SPATIAL"],"sortDirectionTypes":["BTREE"]},"identifiers":{"maxLength":64,"lengthUnit":"CODE_POINTS"}}'
             )
             """)
         .bind("displayName", displayName)

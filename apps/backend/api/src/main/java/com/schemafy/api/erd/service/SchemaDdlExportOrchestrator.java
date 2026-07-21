@@ -12,9 +12,11 @@ import com.schemafy.api.erd.controller.dto.response.SchemaDdlExportResponse;
 import com.schemafy.api.erd.controller.dto.response.SchemaResponse;
 import com.schemafy.api.erd.controller.dto.response.TableSnapshotResponse;
 import com.schemafy.api.erd.service.ddl.DdlExportSnapshotMapper;
+import com.schemafy.core.common.exception.DomainException;
 import com.schemafy.core.erd.ddl.application.port.in.GenerateSchemaDdlCommand;
 import com.schemafy.core.erd.ddl.application.port.in.GenerateSchemaDdlUseCase;
 import com.schemafy.core.erd.ddl.domain.DdlExportVendor;
+import com.schemafy.core.erd.ddl.domain.exception.DdlErrorCode;
 import com.schemafy.core.erd.schema.application.port.in.GetSchemaQuery;
 import com.schemafy.core.erd.schema.application.port.in.GetSchemaWithRevisionUseCase;
 import com.schemafy.core.erd.table.application.port.in.GetTablesBySchemaIdQuery;
@@ -75,20 +77,36 @@ public class SchemaDdlExportOrchestrator {
                         .getTableSnapshotsStrict(tableIds));
 
             return Mono.zip(dbVendorMono, snapshotsMono)
-                .flatMap(tuple -> generateSchemaDdlUseCase
-                    .generateSchemaDdl(new GenerateSchemaDdlCommand(
-                        ddlExportSnapshotMapper.toSnapshot(
-                            schema, tuple.getT2().values(), tuple.getT1().name()),
-                        exportVendor,
-                        tuple.getT1().capabilities().indexes()))
-                    .map(ddl -> new SchemaDdlExportResponse(
-                        schema.id(),
-                        result.currentRevision(),
-                        exportVendor.value(),
-                        ddl)));
+                .flatMap(tuple -> {
+                  requireMatchingTargetVendor(exportVendor, tuple.getT1().name());
+                  return generateSchemaDdlUseCase
+                      .generateSchemaDdl(new GenerateSchemaDdlCommand(
+                          ddlExportSnapshotMapper.toSnapshot(
+                              schema, tuple.getT2().values(), tuple.getT1().name()),
+                          exportVendor,
+                          tuple.getT1().capabilities().indexes(),
+                          tuple.getT1().capabilities().identifiers()))
+                      .map(ddl -> new SchemaDdlExportResponse(
+                          schema.id(),
+                          result.currentRevision(),
+                          exportVendor.value(),
+                          ddl));
+                });
           });
     })
         .as(transactionalOperator::transactional);
+  }
+
+  private static void requireMatchingTargetVendor(
+      DdlExportVendor targetDbVendor,
+      String projectDbVendorName) {
+    DdlExportVendor projectDbVendor = DdlExportVendor.of(projectDbVendorName);
+    if (!targetDbVendor.equals(projectDbVendor)) {
+      throw new DomainException(
+          DdlErrorCode.UNSUPPORTED_VENDOR,
+          "DDL export target DB vendor must match the project's DB vendor: "
+              + projectDbVendor.value());
+    }
   }
 
   private static TransactionalOperator createReadTransactionalOperator(

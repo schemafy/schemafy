@@ -14,6 +14,7 @@ import com.schemafy.core.erd.column.application.port.out.CreateColumnPort;
 import com.schemafy.core.erd.column.application.port.out.GetColumnByIdPort;
 import com.schemafy.core.erd.column.application.port.out.GetColumnsByTableIdPort;
 import com.schemafy.core.erd.column.domain.Column;
+import com.schemafy.core.erd.column.domain.validator.ColumnValidator;
 import com.schemafy.core.erd.constraint.application.port.out.ConstraintExistsPort;
 import com.schemafy.core.erd.constraint.application.port.out.CreateConstraintColumnPort;
 import com.schemafy.core.erd.constraint.application.port.out.CreateConstraintPort;
@@ -35,11 +36,15 @@ import com.schemafy.core.erd.relationship.domain.Relationship;
 import com.schemafy.core.erd.relationship.domain.RelationshipColumn;
 import com.schemafy.core.erd.relationship.domain.type.RelationshipKind;
 import com.schemafy.core.erd.table.application.port.out.GetTableByIdPort;
+import com.schemafy.core.erd.vendor.application.service.IdentifierCapabilityResolver;
+import com.schemafy.core.erd.vendor.domain.IdentifierCapabilities;
 import com.schemafy.core.ulid.application.port.out.UlidGeneratorPort;
 
 import lombok.RequiredArgsConstructor;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
+
+import static com.schemafy.core.project.application.access.ProjectAccessResourceType.TABLE;
 
 @Component
 @RequiredArgsConstructor
@@ -64,6 +69,7 @@ public class PkCascadeHelper {
   private final DeleteRelationshipColumnPort deleteRelationshipColumnPort;
   private final DeleteRelationshipColumnsByRelationshipIdPort deleteRelationshipColumnsByRelationshipIdPort;
   private final DeleteRelationshipPort deleteRelationshipPort;
+  private final IdentifierCapabilityResolver identifierCapabilityResolver;
 
   public Mono<List<CascadeCreatedInfo>> cascadeAddPkColumn(
       String pkTableId,
@@ -152,75 +158,80 @@ public class PkCascadeHelper {
         getColumnsByTableIdPort.findColumnsByTableId(fkTableId).defaultIfEmpty(List.of()),
         getRelationshipColumnsByRelationshipIdPort
             .findRelationshipColumnsByRelationshipId(relationship.id())
-            .defaultIfEmpty(List.of())).flatMap(tuple -> {
-              List<Column> fkColumns = tuple.getT1();
-              List<RelationshipColumn> existingRelColumns = tuple.getT2();
+            .defaultIfEmpty(List.of()),
+        identifierCapabilityResolver.resolve(TABLE, fkTableId))
+        .flatMap(tuple -> {
+          List<Column> fkColumns = tuple.getT1();
+          List<RelationshipColumn> existingRelColumns = tuple.getT2();
+          IdentifierCapabilities identifierCapabilities = tuple.getT3();
 
-              String fkColumnName = resolveUniqueName(
-                  pkColumn.name(),
-                  fkColumns.stream().map(Column::name).collect(Collectors.toSet()));
+          String fkColumnName = resolveUniqueName(
+              pkColumn.name(),
+              fkColumns.stream().map(Column::name).collect(Collectors.toSet()),
+              identifierCapabilities,
+              ColumnValidator.schemafyNameMaxLength());
 
-              return Mono.fromCallable(ulidGeneratorPort::generate)
-                  .flatMap(fkColumnId -> {
-                    Column fkColumn = new Column(
-                        fkColumnId,
-                        fkTableId,
-                        fkColumnName,
-                        pkColumn.dataType(),
-                        pkColumn.typeArguments(),
-                        fkColumns.size(),
-                        false,
-                        pkColumn.charset(),
-                        pkColumn.collation(),
-                        null);
+          return Mono.fromCallable(ulidGeneratorPort::generate)
+              .flatMap(fkColumnId -> {
+                Column fkColumn = new Column(
+                    fkColumnId,
+                    fkTableId,
+                    fkColumnName,
+                    pkColumn.dataType(),
+                    pkColumn.typeArguments(),
+                    fkColumns.size(),
+                    false,
+                    pkColumn.charset(),
+                    pkColumn.collation(),
+                    null);
 
-                    return createColumnPort.createColumn(fkColumn)
-                        .flatMap(savedFkColumn -> Mono.fromCallable(ulidGeneratorPort::generate)
-                            .flatMap(relColumnId -> {
-                              RelationshipColumn relColumn = new RelationshipColumn(
-                                  relColumnId,
-                                  relationship.id(),
-                                  pkColumn.id(),
-                                  savedFkColumn.id(),
-                                  existingRelColumns.size());
+                return createColumnPort.createColumn(fkColumn)
+                    .flatMap(savedFkColumn -> Mono.fromCallable(ulidGeneratorPort::generate)
+                        .flatMap(relColumnId -> {
+                          RelationshipColumn relColumn = new RelationshipColumn(
+                              relColumnId,
+                              relationship.id(),
+                              pkColumn.id(),
+                              savedFkColumn.id(),
+                              existingRelColumns.size());
 
-                              return createRelationshipColumnPort.createRelationshipColumn(relColumn)
-                                  .flatMap(savedRelColumn -> {
-                                    List<CascadeCreatedInfo> results = new ArrayList<>();
-                                    CascadeCreatedInfo baseInfo = new CascadeCreatedInfo(
-                                        savedFkColumn.id(),
-                                        savedFkColumn.name(),
-                                        fkTableId,
-                                        savedRelColumn.id(),
-                                        relationship.id(),
-                                        null,
-                                        null);
+                          return createRelationshipColumnPort.createRelationshipColumn(relColumn)
+                              .flatMap(savedRelColumn -> {
+                                List<CascadeCreatedInfo> results = new ArrayList<>();
+                                CascadeCreatedInfo baseInfo = new CascadeCreatedInfo(
+                                    savedFkColumn.id(),
+                                    savedFkColumn.name(),
+                                    fkTableId,
+                                    savedRelColumn.id(),
+                                    relationship.id(),
+                                    null,
+                                    null);
 
-                                    if (relationship.kind() == RelationshipKind.IDENTIFYING) {
-                                      return addColumnToFkTablePk(fkTableId, savedFkColumn, affectedTableIds)
-                                          .flatMap(pkInfo -> {
-                                            results.add(baseInfo.withPkInfo(
-                                                pkInfo.constraintColumnId(),
-                                                pkInfo.constraintId()));
+                                if (relationship.kind() == RelationshipKind.IDENTIFYING) {
+                                  return addColumnToFkTablePk(fkTableId, savedFkColumn, affectedTableIds)
+                                      .flatMap(pkInfo -> {
+                                        results.add(baseInfo.withPkInfo(
+                                            pkInfo.constraintColumnId(),
+                                            pkInfo.constraintId()));
 
-                                            return cascadeAddPkColumn(
-                                                fkTableId,
-                                                savedFkColumn,
-                                                visited,
-                                                affectedTableIds)
-                                                .map(childResults -> {
-                                                  results.addAll(childResults);
-                                                  return results;
-                                                });
-                                          });
-                                    }
+                                        return cascadeAddPkColumn(
+                                            fkTableId,
+                                            savedFkColumn,
+                                            visited,
+                                            affectedTableIds)
+                                            .map(childResults -> {
+                                              results.addAll(childResults);
+                                              return results;
+                                            });
+                                      });
+                                }
 
-                                    results.add(baseInfo);
-                                    return Mono.just(results);
-                                  });
-                            }));
-                  });
-            });
+                                results.add(baseInfo);
+                                return Mono.just(results);
+                              });
+                        }));
+              });
+        });
   }
 
   private Mono<Void> cascadeRemoveFromRelationship(
@@ -370,9 +381,13 @@ public class PkCascadeHelper {
             return Mono.just(existingPk.get());
           }
 
-          return getTableByIdPort.findTableById(tableId)
-              .flatMap(table -> resolveUniqueConstraintName(
-                  table.schemaId(), "pk_" + table.name())
+          return Mono.zip(
+              getTableByIdPort.findTableById(tableId),
+              identifierCapabilityResolver.resolve(TABLE, tableId))
+              .flatMap(tuple -> resolveUniqueConstraintName(
+                  tuple.getT1().schemaId(),
+                  "pk_" + tuple.getT1().name(),
+                  tuple.getT2())
                   .flatMap(pkName -> Mono.fromCallable(ulidGeneratorPort::generate)
                       .flatMap(pkId -> {
                         Constraint newPk = new Constraint(
@@ -450,31 +465,50 @@ public class PkCascadeHelper {
         });
   }
 
-  private Mono<String> resolveUniqueConstraintName(String schemaId, String baseName) {
-    return resolveUniqueConstraintName(schemaId, baseName, 0);
+  private Mono<String> resolveUniqueConstraintName(
+      String schemaId,
+      String baseName,
+      IdentifierCapabilities identifierCapabilities) {
+    return resolveUniqueConstraintName(schemaId, baseName, identifierCapabilities, 0);
   }
 
   private Mono<String> resolveUniqueConstraintName(
-      String schemaId, String baseName, int suffix) {
-    String candidate = suffix == 0 ? baseName : baseName + "_" + suffix;
+      String schemaId,
+      String baseName,
+      IdentifierCapabilities identifierCapabilities,
+      int suffix) {
+    String suffixValue = suffix == 0 ? "" : "_" + suffix;
+    String candidate = identifierCapabilities.fitGeneratedName(baseName, suffixValue);
     return constraintExistsPort.existsBySchemaIdAndName(schemaId, candidate)
         .flatMap(exists -> {
           if (exists) {
-            return resolveUniqueConstraintName(schemaId, baseName, suffix + 1);
+            return resolveUniqueConstraintName(
+                schemaId,
+                baseName,
+                identifierCapabilities,
+                suffix + 1);
           }
           return Mono.just(candidate);
         });
   }
 
-  private String resolveUniqueName(String baseName, Set<String> existingNames) {
-    if (!existingNames.contains(baseName)) {
-      return baseName;
-    }
-    int suffix = 1;
-    while (existingNames.contains(baseName + "_" + suffix)) {
+  private String resolveUniqueName(
+      String baseName,
+      Set<String> existingNames,
+      IdentifierCapabilities identifierCapabilities,
+      int localMaxLength) {
+    int suffix = 0;
+    while (true) {
+      String suffixValue = suffix == 0 ? "" : "_" + suffix;
+      String candidate = identifierCapabilities.fitGeneratedName(
+          baseName,
+          suffixValue,
+          localMaxLength);
+      if (!existingNames.contains(candidate)) {
+        return candidate;
+      }
       suffix++;
     }
-    return baseName + "_" + suffix;
   }
 
   public record CascadeCreatedInfo(

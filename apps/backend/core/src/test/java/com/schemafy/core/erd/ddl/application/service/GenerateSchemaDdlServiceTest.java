@@ -16,11 +16,16 @@ import com.schemafy.core.erd.ddl.domain.DdlSchemaSnapshot.SchemaSnapshot;
 import com.schemafy.core.erd.ddl.domain.DdlSchemaSnapshot.Table;
 import com.schemafy.core.erd.ddl.domain.DdlSchemaSnapshot.TableSnapshot;
 import com.schemafy.core.erd.ddl.domain.exception.DdlErrorCode;
+import com.schemafy.core.erd.ddl.domain.mysql.MySqlDdlGenerator;
 import com.schemafy.core.erd.index.domain.type.IndexType;
+import com.schemafy.core.erd.vendor.domain.IdentifierCapabilities;
+import com.schemafy.core.erd.vendor.domain.IdentifierLengthUnit;
 import com.schemafy.core.erd.vendor.fixture.DbVendorFixture;
 
 import reactor.core.publisher.Mono;
 import reactor.test.StepVerifier;
+
+import static org.assertj.core.api.Assertions.assertThat;
 
 @DisplayName("GenerateSchemaDdlService")
 class GenerateSchemaDdlServiceTest {
@@ -42,7 +47,8 @@ class GenerateSchemaDdlServiceTest {
         new GenerateSchemaDdlCommand(
             snapshot,
             DdlExportVendor.MYSQL,
-            DbVendorFixture.defaultCapabilities().indexes()));
+            DbVendorFixture.defaultCapabilities().indexes(),
+            DbVendorFixture.defaultCapabilities().identifiers()));
 
     StepVerifier.create(result)
         .expectNext("MYSQL DDL")
@@ -62,12 +68,57 @@ class GenerateSchemaDdlServiceTest {
     Mono<String> result = sut.generateSchemaDdl(
         new GenerateSchemaDdlCommand(snapshot,
             DdlExportVendor.of("postgresql"),
-            DbVendorFixture.defaultCapabilities().indexes()));
+            DbVendorFixture.defaultCapabilities().indexes(),
+            DbVendorFixture.defaultCapabilities().identifiers()));
 
     StepVerifier.create(result)
         .expectErrorMatches(DomainException.hasErrorCode(
             DdlErrorCode.UNSUPPORTED_VENDOR))
         .verify();
+  }
+
+  @Test
+  @DisplayName("DDL identifier 길이를 vendor profile의 측정 단위로 검증한다")
+  void validatesIdentifierLengthWithVendorMeasurementUnit() {
+    DdlSchemaSnapshot snapshot = new DdlSchemaSnapshot(
+        new SchemaSnapshot("schema-1", "mysql", "가나다", null, null),
+        List.of());
+    GenerateSchemaDdlService sut = new GenerateSchemaDdlService(
+        List.of(new StubDdlGenerator(DdlExportVendor.MYSQL, snapshot, "MYSQL DDL")));
+
+    Mono<String> result = sut.generateSchemaDdl(new GenerateSchemaDdlCommand(
+        snapshot,
+        DdlExportVendor.MYSQL,
+        DbVendorFixture.defaultCapabilities().indexes(),
+        new IdentifierCapabilities(8, IdentifierLengthUnit.UTF8_BYTES)));
+
+    StepVerifier.create(result)
+        .expectErrorSatisfies(error -> assertThat(error)
+            .isInstanceOf(DomainException.class)
+            .hasMessageContaining("Schema name")
+            .hasMessageContaining("8 UTF-8 bytes"))
+        .verify();
+  }
+
+  @Test
+  @DisplayName("vendor profile이 허용하면 64자를 넘는 MySQL DDL identifier도 생성한다")
+  void generatesIdentifierLongerThanLegacyMysqlConstantWhenProfileAllowsIt() {
+    String schemaName = "a".repeat(65);
+    DdlSchemaSnapshot snapshot = new DdlSchemaSnapshot(
+        new SchemaSnapshot("schema-1", "mysql", schemaName, null, null),
+        List.of());
+    GenerateSchemaDdlService sut = new GenerateSchemaDdlService(
+        List.of(new MySqlDdlGenerator()));
+
+    Mono<String> result = sut.generateSchemaDdl(new GenerateSchemaDdlCommand(
+        snapshot,
+        DdlExportVendor.MYSQL,
+        DbVendorFixture.defaultCapabilities().indexes(),
+        IdentifierCapabilities.codePoints(128)));
+
+    StepVerifier.create(result)
+        .assertNext(ddl -> assertThat(ddl).contains("CREATE SCHEMA IF NOT EXISTS `" + schemaName + "`"))
+        .verifyComplete();
   }
 
   @Test
@@ -89,7 +140,8 @@ class GenerateSchemaDdlServiceTest {
     Mono<String> result = sut.generateSchemaDdl(new GenerateSchemaDdlCommand(
         snapshot,
         DdlExportVendor.MYSQL,
-        DbVendorFixture.defaultCapabilities().indexes()));
+        DbVendorFixture.defaultCapabilities().indexes(),
+        DbVendorFixture.defaultCapabilities().identifiers()));
 
     StepVerifier.create(result)
         .expectError(DomainException.class)

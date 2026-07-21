@@ -22,6 +22,7 @@ import com.schemafy.core.erd.vendor.application.port.in.GetDbVendorUseCase;
 import com.schemafy.core.erd.vendor.application.port.in.ListDbVendorsUseCase;
 import com.schemafy.core.erd.vendor.domain.DbVendor;
 import com.schemafy.core.erd.vendor.domain.DbVendorSummary;
+import com.schemafy.core.erd.vendor.domain.IdentifierCapabilities;
 import com.schemafy.core.erd.vendor.domain.VendorCapabilities;
 
 import reactor.core.publisher.Flux;
@@ -114,9 +115,11 @@ class DbVendorControllerTest {
         .jsonPath("$.name").isEqualTo("mysql")
         .jsonPath("$.version").isEqualTo("8.0")
         .jsonPath("$.datatypeMappings.schemaVersion").isEqualTo(1)
-        .jsonPath("$.capabilities.schemaVersion").isEqualTo(1)
+        .jsonPath("$.capabilities.schemaVersion").isEqualTo(2)
         .jsonPath("$.capabilities.indexes.supportedTypes").isArray()
         .jsonPath("$.capabilities.indexes.sortDirectionTypes[0]").isEqualTo("BTREE")
+        .jsonPath("$.capabilities.identifiers.maxLength").isEqualTo(64)
+        .jsonPath("$.capabilities.identifiers.lengthUnit").isEqualTo("CODE_POINTS")
         .consumeWith(document("vendor-get",
             pathParameters(
                 parameterWithName("id")
@@ -148,15 +151,22 @@ class DbVendorControllerTest {
                 fieldWithPath("capabilities.indexes.supportedTypes")
                     .description("지원 인덱스 타입 목록"),
                 fieldWithPath("capabilities.indexes.sortDirectionTypes")
-                    .description("정렬 방향이 의미 있는 인덱스 타입 목록"))));
+                    .description("정렬 방향이 의미 있는 인덱스 타입 목록"),
+                fieldWithPath("capabilities.identifiers")
+                    .description("식별자 기능 정보"),
+                fieldWithPath("capabilities.identifiers.maxLength")
+                    .description("식별자 최대 길이"),
+                fieldWithPath("capabilities.identifiers.lengthUnit")
+                    .description("식별자 길이 측정 단위"))));
   }
 
   private static VendorCapabilities mysqlCapabilities() {
     return new VendorCapabilities(
-        1,
+        2,
         new IndexCapabilities(
             Set.of(IndexType.BTREE, IndexType.FULLTEXT, IndexType.SPATIAL),
-            Set.of(IndexType.BTREE)));
+            Set.of(IndexType.BTREE)),
+        IdentifierCapabilities.codePoints(64));
   }
 
 }

@@ -255,10 +255,14 @@ VALUES (
       ]
     }',
     '{
-      "schemaVersion": 1,
+      "schemaVersion": 2,
       "indexes": {
         "supportedTypes": ["BTREE", "FULLTEXT", "SPATIAL"],
         "sortDirectionTypes": ["BTREE"]
+      },
+      "identifiers": {
+        "maxLength": 64,
+        "lengthUnit": "CODE_POINTS"
       }
     }',
     CURRENT_TIMESTAMP,

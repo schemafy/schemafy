@@ -18,9 +18,11 @@ import com.schemafy.api.erd.controller.dto.response.ColumnResponse;
 import com.schemafy.api.erd.controller.dto.response.TableResponse;
 import com.schemafy.api.erd.controller.dto.response.TableSnapshotResponse;
 import com.schemafy.api.erd.service.ddl.DdlExportSnapshotMapper;
+import com.schemafy.core.common.exception.DomainException;
 import com.schemafy.core.erd.ddl.application.port.in.GenerateSchemaDdlCommand;
 import com.schemafy.core.erd.ddl.application.port.in.GenerateSchemaDdlUseCase;
 import com.schemafy.core.erd.ddl.domain.DdlExportVendor;
+import com.schemafy.core.erd.ddl.domain.exception.DdlErrorCode;
 import com.schemafy.core.erd.index.domain.policy.IndexCapabilities;
 import com.schemafy.core.erd.index.domain.type.IndexType;
 import com.schemafy.core.erd.schema.application.port.in.GetSchemaQuery;
@@ -33,6 +35,7 @@ import com.schemafy.core.erd.table.domain.Table;
 import com.schemafy.core.erd.vendor.application.port.in.GetProjectDbVendorQuery;
 import com.schemafy.core.erd.vendor.application.port.in.GetProjectDbVendorUseCase;
 import com.schemafy.core.erd.vendor.domain.DbVendor;
+import com.schemafy.core.erd.vendor.domain.IdentifierCapabilities;
 import com.schemafy.core.erd.vendor.domain.VendorCapabilities;
 
 import reactor.core.publisher.Flux;
@@ -143,6 +146,8 @@ class SchemaDdlExportOrchestratorTest {
             && command.snapshot().schema().dbVendorName().equals("mysql")
             && command.targetDbVendor().equals(DdlExportVendor.MYSQL)
             && command.indexCapabilities().equals(mysqlIndexCapabilities())
+            && command.identifierCapabilities().equals(
+                sourceDbVendor().capabilities().identifiers())
             && command.snapshot().tables().size() == 1
             && command.snapshot().tables().getFirst().columns().size() == 1));
   }
@@ -178,6 +183,29 @@ class SchemaDdlExportOrchestratorTest {
             && command.targetDbVendor().equals(DdlExportVendor.MYSQL)));
   }
 
+  @Test
+  @DisplayName("요청 target과 프로젝트 DB vendor가 다르면 capability 적용 전에 거부한다")
+  void rejectsTargetVendorDifferentFromProjectVendor() {
+    String schemaId = "schema-1";
+    Schema schema = new Schema(schemaId, "project-1", "main_schema",
+        "utf8mb4", "utf8mb4_general_ci");
+
+    given(getSchemaWithRevisionUseCase.getSchemaWithRevision(any(GetSchemaQuery.class)))
+        .willReturn(Mono.just(new GetSchemaWithRevisionResult(schema, 42L)));
+    given(getProjectDbVendorUseCase.getProjectDbVendor(
+        new GetProjectDbVendorQuery(schema.projectId())))
+        .willReturn(Mono.just(sourceDbVendor()));
+    given(getTablesBySchemaIdUseCase.getTablesBySchemaId(any(GetTablesBySchemaIdQuery.class)))
+        .willReturn(Flux.empty());
+
+    StepVerifier.create(sut.exportSchemaDdl(schemaId, "postgresql"))
+        .expectErrorMatches(DomainException.hasErrorCode(
+            DdlErrorCode.UNSUPPORTED_VENDOR))
+        .verify();
+
+    then(generateSchemaDdlUseCase).shouldHaveNoInteractions();
+  }
+
   private static DbVendor sourceDbVendor() {
     return new DbVendor(
         1,
@@ -185,7 +213,10 @@ class SchemaDdlExportOrchestratorTest {
         "mysql",
         "8.0",
         "{}",
-        new VendorCapabilities(1, mysqlIndexCapabilities()));
+        new VendorCapabilities(
+            2,
+            mysqlIndexCapabilities(),
+            IdentifierCapabilities.codePoints(64)));
   }
 
   private static IndexCapabilities mysqlIndexCapabilities() {

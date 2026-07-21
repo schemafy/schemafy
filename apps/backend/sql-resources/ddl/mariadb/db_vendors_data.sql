@@ -1,4 +1,4 @@
-INSERT IGNORE INTO db_vendors (
+INSERT INTO db_vendors (
     id, display_name, name, version, datatype_mappings, capabilities, created_at, updated_at)
 VALUES (
     1,
@@ -254,12 +254,19 @@ VALUES (
       ]
     }',
     '{
-      "schemaVersion": 1,
+      "schemaVersion": 2,
       "indexes": {
         "supportedTypes": ["BTREE", "FULLTEXT", "SPATIAL"],
         "sortDirectionTypes": ["BTREE"]
+      },
+      "identifiers": {
+        "maxLength": 64,
+        "lengthUnit": "CODE_POINTS"
       }
     }',
     CURRENT_TIMESTAMP,
     CURRENT_TIMESTAMP
-);
+)
+ON DUPLICATE KEY UPDATE
+    capabilities = VALUES(capabilities),
+    updated_at = CURRENT_TIMESTAMP;
