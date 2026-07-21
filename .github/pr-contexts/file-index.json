@@ -639,7 +639,8 @@
     372,
     383,
     419,
-    459
+    459,
+    477
   ],
   "apps/backend/core/src/main/java/com/schemafy/core/erd/column/application/service/ChangeColumnTypeService.java": [
     372,
@@ -650,12 +651,14 @@
   "apps/backend/core/src/main/java/com/schemafy/core/erd/constraint/application/service/ChangeConstraintNameService.java": [
     372,
     383,
-    419
+    419,
+    477
   ],
   "apps/backend/core/src/main/java/com/schemafy/core/erd/index/application/service/ChangeIndexNameService.java": [
     372,
     383,
-    419
+    419,
+    477
   ],
   "apps/backend/core/src/main/java/com/schemafy/core/erd/index/application/service/ChangeIndexTypeService.java": [
     372,
@@ -747,11 +750,13 @@
   ],
   "apps/backend/core/src/main/java/com/schemafy/core/erd/relationship/application/service/ChangeRelationshipNameService.java": [
     372,
-    419
+    419,
+    477
   ],
   "apps/backend/core/src/main/java/com/schemafy/core/erd/table/application/service/ChangeTableNameService.java": [
     372,
-    419
+    419,
+    477
   ],
   "apps/backend/core/src/test/java/com/schemafy/core/erd/operation/integration/ErdOperationLedgerIntegrationTest.java": [
     372,
@@ -765,7 +770,8 @@
   ],
   "apps/backend/core/src/test/java/com/schemafy/core/erd/table/application/service/ChangeTableNameServiceTest.java": [
     372,
-    419
+    419,
+    477
   ],
   "apps/backend/sql-resources/ddl/h2/erd_operation_log.sql": [
     372,
@@ -1308,7 +1314,8 @@
     407
   ],
   "apps/backend/core/src/test/java/com/schemafy/core/project/integration/ProjectUseCaseIntegrationTest.java": [
-    369
+    369,
+    477
   ],
   "apps/backend/core/src/test/java/com/schemafy/core/project/integration/ShareLinkUseCaseIntegrationTest.java": [
     369
@@ -1364,7 +1371,8 @@
   "apps/backend/core/src/main/java/com/schemafy/core/erd/column/application/service/CreateColumnService.java": [
     376,
     383,
-    459
+    459,
+    477
   ],
   "apps/backend/core/src/main/java/com/schemafy/core/erd/column/application/service/DeleteColumnService.java": [
     376,
@@ -1372,7 +1380,8 @@
   ],
   "apps/backend/core/src/main/java/com/schemafy/core/erd/constraint/application/service/CreateConstraintService.java": [
     376,
-    383
+    383,
+    477
   ],
   "apps/backend/core/src/main/java/com/schemafy/core/erd/constraint/application/service/DeleteConstraintService.java": [
     376,
@@ -1381,7 +1390,8 @@
   "apps/backend/core/src/main/java/com/schemafy/core/erd/index/application/service/CreateIndexService.java": [
     376,
     383,
-    466
+    466,
+    477
   ],
   "apps/backend/core/src/main/java/com/schemafy/core/erd/index/application/service/DeleteIndexService.java": [
     376,
@@ -1429,7 +1439,8 @@
   ],
   "apps/backend/core/src/main/java/com/schemafy/core/erd/relationship/application/service/CreateRelationshipService.java": [
     376,
-    444
+    444,
+    477
   ],
   "apps/backend/core/src/main/java/com/schemafy/core/erd/relationship/application/service/DeleteRelationshipService.java": [
     376,
@@ -1869,7 +1880,8 @@
     461
   ],
   "apps/backend/core/src/main/java/com/schemafy/core/erd/schema/application/service/ChangeSchemaNameService.java": [
-    419
+    419,
+    477
   ],
   "apps/backend/core/src/main/java/com/schemafy/core/erd/table/application/service/ChangeTableExtraService.java": [
     419,
@@ -1886,7 +1898,8 @@
   ],
   "apps/backend/core/src/test/java/com/schemafy/core/erd/column/application/service/ChangeColumnNameServiceTest.java": [
     419,
-    459
+    459,
+    477
   ],
   "apps/backend/core/src/test/java/com/schemafy/core/erd/column/application/service/ChangeColumnPositionServiceTest.java": [
     419,
@@ -1903,7 +1916,8 @@
     461
   ],
   "apps/backend/core/src/test/java/com/schemafy/core/erd/constraint/application/service/ChangeConstraintNameServiceTest.java": [
-    419
+    419,
+    477
   ],
   "apps/backend/core/src/test/java/com/schemafy/core/erd/index/application/service/ChangeIndexColumnPositionServiceTest.java": [
     419,
@@ -1914,7 +1928,8 @@
     461
   ],
   "apps/backend/core/src/test/java/com/schemafy/core/erd/index/application/service/ChangeIndexNameServiceTest.java": [
-    419
+    419,
+    477
   ],
   "apps/backend/core/src/test/java/com/schemafy/core/erd/index/application/service/ChangeIndexTypeServiceTest.java": [
     419
@@ -1935,10 +1950,12 @@
     419
   ],
   "apps/backend/core/src/test/java/com/schemafy/core/erd/relationship/application/service/ChangeRelationshipNameServiceTest.java": [
-    419
+    419,
+    477
   ],
   "apps/backend/core/src/test/java/com/schemafy/core/erd/schema/application/service/ChangeSchemaNameServiceTest.java": [
-    419
+    419,
+    477
   ],
   "apps/backend/core/src/test/java/com/schemafy/core/erd/table/application/service/ChangeTableExtraServiceTest.java": [
     419,
@@ -1953,7 +1970,8 @@
     420
   ],
   "apps/backend/core/src/main/java/com/schemafy/core/erd/constraint/application/service/PkCascadeHelper.java": [
-    421
+    421,
+    477
   ],
   "apps/backend/core/src/main/java/com/schemafy/core/erd/operation/application/service/NestedErdMutations.java": [
     421
@@ -2313,7 +2331,8 @@
     436,
     459,
     468,
-    466
+    466,
+    477
   ],
   "apps/backend/api/src/main/java/com/schemafy/api/erd/service/ddl/DdlExportSnapshotMapper.java": [
     436,
@@ -2338,7 +2357,8 @@
     436,
     459,
     468,
-    466
+    466,
+    477
   ],
   "apps/backend/api/src/test/java/com/schemafy/api/erd/service/util/mysql/MySqlDdlUtilsTest.java": [
     436
@@ -2355,7 +2375,8 @@
   "apps/backend/core/src/main/java/com/schemafy/core/erd/ddl/application/port/in/GenerateSchemaDdlCommand.java": [
     436,
     468,
-    466
+    466,
+    477
   ],
   "apps/backend/core/src/main/java/com/schemafy/core/erd/ddl/application/port/in/GenerateSchemaDdlUseCase.java": [
     436
@@ -2363,7 +2384,8 @@
   "apps/backend/core/src/main/java/com/schemafy/core/erd/ddl/application/service/GenerateSchemaDdlService.java": [
     436,
     466,
-    468
+    468,
+    477
   ],
   "apps/backend/core/src/main/java/com/schemafy/core/erd/ddl/domain/DdlExportVendor.java": [
     436
@@ -2382,19 +2404,22 @@
     436,
     445,
     423,
-    468
+    468,
+    477
   ],
   "apps/backend/core/src/test/java/com/schemafy/core/erd/ddl/application/service/GenerateSchemaDdlServiceTest.java": [
     436,
     468,
-    466
+    466,
+    477
   ],
   "apps/backend/core/src/test/java/com/schemafy/core/erd/ddl/domain/DdlExportVendorTest.java": [
     436
   ],
   "apps/backend/core/src/test/java/com/schemafy/core/erd/ddl/domain/mysql/MySqlDdlGeneratorTest.java": [
     436,
-    468
+    468,
+    477
   ],
   "apps/backend/core/src/main/java/com/schemafy/core/erd/operation/adapter/out/persistence/SchemaCollaborationStateEntity.java": [
     437
@@ -2459,7 +2484,8 @@
   "apps/backend/api/src/test/java/com/schemafy/api/erd/controller/DbVendorControllerTest.java": [
     441,
     459,
-    466
+    466,
+    477
   ],
   "apps/backend/api/src/test/java/com/schemafy/api/erd/controller/MemoControllerTest.java": [
     441
@@ -2596,7 +2622,8 @@
     444
   ],
   "apps/backend/core/src/main/java/com/schemafy/core/erd/table/application/service/CreateTableService.java": [
-    444
+    444,
+    477
   ],
   "apps/backend/core/src/test/java/com/schemafy/core/common/json/JsonObjectMetadataConverterTest.java": [
     444
@@ -2608,7 +2635,8 @@
     444
   ],
   "apps/backend/core/src/test/java/com/schemafy/core/erd/relationship/application/service/CreateRelationshipServiceTest.java": [
-    444
+    444,
+    477
   ],
   "apps/backend/core/src/test/java/com/schemafy/core/erd/relationship/domain/RelationshipTest.java": [
     444
@@ -2617,7 +2645,8 @@
     444
   ],
   "apps/backend/core/src/test/java/com/schemafy/core/erd/table/application/service/CreateTableServiceTest.java": [
-    444
+    444,
+    477
   ],
   "apps/backend/core/src/test/java/com/schemafy/core/erd/table/fixture/TableFixture.java": [
     444
@@ -2773,7 +2802,8 @@
   ],
   "apps/backend/api/src/test/java/com/schemafy/api/erd/service/vendor/DbVendorApiResponseMapperTest.java": [
     459,
-    466
+    466,
+    477
   ],
   "apps/backend/core/src/main/java/com/schemafy/core/erd/schema/application/port/in/CreateSchemaCommand.java": [
     459
@@ -2782,7 +2812,8 @@
     459
   ],
   "apps/backend/core/src/main/java/com/schemafy/core/erd/schema/application/service/CreateSchemaService.java": [
-    459
+    459,
+    477
   ],
   "apps/backend/core/src/main/java/com/schemafy/core/erd/schema/domain/Schema.java": [
     459
@@ -2997,7 +3028,8 @@
     466
   ],
   "apps/backend/core/src/main/java/com/schemafy/core/erd/vendor/domain/VendorCapabilities.java": [
-    466
+    466,
+    477
   ],
   "apps/backend/api/src/test/java/com/schemafy/api/erd/service/SchemaExportIntegrationTest.java": [
     468
@@ -3007,5 +3039,59 @@
   ],
   "apps/frontend/src/features/drawing/types/relationship.ts": [
     476
+  ],
+  "apps/backend/core/src/main/java/com/schemafy/core/erd/column/domain/validator/ColumnValidator.java": [
+    477
+  ],
+  "apps/backend/core/src/main/java/com/schemafy/core/erd/vendor/application/service/IdentifierCapabilityResolver.java": [
+    477
+  ],
+  "apps/backend/core/src/main/java/com/schemafy/core/erd/vendor/domain/IdentifierCapabilities.java": [
+    477
+  ],
+  "apps/backend/core/src/main/java/com/schemafy/core/erd/vendor/domain/IdentifierLengthUnit.java": [
+    477
+  ],
+  "apps/backend/core/src/main/java/com/schemafy/core/erd/vendor/domain/validator/IdentifierValidator.java": [
+    477
+  ],
+  "apps/backend/core/src/test/java/com/schemafy/core/erd/column/application/service/CreateColumnServiceTest.java": [
+    477
+  ],
+  "apps/backend/core/src/test/java/com/schemafy/core/erd/column/domain/validator/ColumnValidatorTest.java": [
+    477
+  ],
+  "apps/backend/core/src/test/java/com/schemafy/core/erd/constraint/application/service/CreateConstraintServiceTest.java": [
+    477
+  ],
+  "apps/backend/core/src/test/java/com/schemafy/core/erd/constraint/application/service/PkCascadeHelperTest.java": [
+    477
+  ],
+  "apps/backend/core/src/test/java/com/schemafy/core/erd/index/application/service/CreateIndexServiceTest.java": [
+    477
+  ],
+  "apps/backend/core/src/test/java/com/schemafy/core/erd/schema/application/service/CreateSchemaServiceTest.java": [
+    477
+  ],
+  "apps/backend/core/src/test/java/com/schemafy/core/erd/vendor/adapter/out/persistence/DbVendorPersistenceAdapterTest.java": [
+    477
+  ],
+  "apps/backend/core/src/test/java/com/schemafy/core/erd/vendor/application/service/IdentifierCapabilityResolverTest.java": [
+    477
+  ],
+  "apps/backend/core/src/test/java/com/schemafy/core/erd/vendor/domain/IdentifierCapabilitiesTest.java": [
+    477
+  ],
+  "apps/backend/core/src/test/java/com/schemafy/core/erd/vendor/domain/VendorCapabilitiesTest.java": [
+    477
+  ],
+  "apps/backend/core/src/test/java/com/schemafy/core/erd/vendor/domain/validator/IdentifierValidatorTest.java": [
+    477
+  ],
+  "apps/backend/core/src/test/java/com/schemafy/core/erd/vendor/fixture/DbVendorFixture.java": [
+    477
+  ],
+  "apps/backend/sql-resources/ddl/h2/db_vendors_data.sql": [
+    477
   ]
 }
