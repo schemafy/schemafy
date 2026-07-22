@@ -96,7 +96,7 @@ public class JwtAuthenticationFilter implements WebFilter {
           claims -> claims.get(CLAIM_NAME, String.class));
       AuthenticatedUser principal = createPrincipal(userId, userName);
       UsernamePasswordAuthenticationToken authentication = new UsernamePasswordAuthenticationToken(
-          principal, null, principal.asAuthorities());
+          principal, null, principal.getAuthorities());
 
       return AuthenticationResult.success(authentication);
 
@@ -116,7 +116,7 @@ public class JwtAuthenticationFilter implements WebFilter {
   }
 
   private AuthenticatedUser createPrincipal(String userId, String userName) {
-    return AuthenticatedUser.withAllRoles(userId, userName);
+    return AuthenticatedUser.of(userId, userName);
   }
 
   private boolean isPublicPath(ServerHttpRequest request) {
