@@ -1734,7 +1734,8 @@
     398
   ],
   "apps/backend/api/src/main/java/com/schemafy/api/collaboration/handler/CollaborationWebSocketHandler.java": [
-    398
+    398,
+    480
   ],
   "apps/backend/api/src/main/java/com/schemafy/api/collaboration/service/CollaborationDirectMessageSender.java": [
     398
@@ -1775,7 +1776,8 @@
     398
   ],
   "apps/backend/api/src/test/java/com/schemafy/api/collaboration/handler/CollaborationWebSocketHandlerTest.java": [
-    398
+    398,
+    480
   ],
   "apps/backend/api/src/test/java/com/schemafy/api/collaboration/service/CollaborationDirectMessageSenderTest.java": [
     398
@@ -3097,5 +3099,11 @@
   ],
   "apps/frontend/src/lib/config/query-client.ts": [
     452
+  ],
+  "apps/backend/api/src/main/java/com/schemafy/api/collaboration/security/ProjectAccessValidator.java": [
+    480
+  ],
+  "apps/backend/api/src/test/java/com/schemafy/api/collaboration/security/ProjectAccessValidatorTest.java": [
+    480
   ]
 }
