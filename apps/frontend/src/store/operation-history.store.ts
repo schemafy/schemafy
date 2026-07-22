@@ -12,7 +12,6 @@ export class OperationHistoryStore {
   clientIdsByOpId: Map<string, string> = new Map();
   undoableOpIdsBySchemaId: Map<string, string[]> = new Map();
   redoOpIdsBySchemaId: Map<string, string[]> = new Map();
-  pendingBySchemaId: Map<string, boolean> = new Map();
 
   constructor() {
     makeObservable(this, {
@@ -20,7 +19,6 @@ export class OperationHistoryStore {
       clientIdsByOpId: observable.shallow,
       undoableOpIdsBySchemaId: observable.shallow,
       redoOpIdsBySchemaId: observable.shallow,
-      pendingBySchemaId: observable.shallow,
       pendingOperations: computed,
       undoableOperations: computed,
       markPending: action,
@@ -33,8 +31,6 @@ export class OperationHistoryStore {
       pushRedoOpId: action,
       popRedoOpId: action,
       clearRedoStack: action,
-      setPending: action,
-      clearPending: action,
       clearSchemaHistory: action,
       clearAll: action,
     });
@@ -87,9 +83,12 @@ export class OperationHistoryStore {
 
     if (!clientOperationId) return;
 
+    const existing = this.operationsByClientId.get(clientOperationId);
+
+    if (existing?.status === 'undoable') return;
+
     this.clearRedoStack(schemaId);
 
-    const existing = this.operationsByClientId.get(clientOperationId);
     const next: LocalOperationMetadata = {
       clientOperationId,
       schemaId,
@@ -206,18 +205,6 @@ export class OperationHistoryStore {
     this.redoOpIdsBySchemaId.delete(schemaId);
   }
 
-  isPending(schemaId: string): boolean {
-    return this.pendingBySchemaId.get(schemaId) ?? false;
-  }
-
-  setPending(schemaId: string) {
-    this.pendingBySchemaId.set(schemaId, true);
-  }
-
-  clearPending(schemaId: string) {
-    this.pendingBySchemaId.delete(schemaId);
-  }
-
   clearSchemaHistory(schemaId: string) {
     [...this.operationsByClientId.entries()].forEach(
       ([clientOperationId, operation]) => {
@@ -238,7 +225,6 @@ export class OperationHistoryStore {
     this.clientIdsByOpId.clear();
     this.undoableOpIdsBySchemaId.clear();
     this.redoOpIdsBySchemaId.clear();
-    this.pendingBySchemaId.clear();
   }
 
   private filterByStatus(status: LocalOperationStatus) {
