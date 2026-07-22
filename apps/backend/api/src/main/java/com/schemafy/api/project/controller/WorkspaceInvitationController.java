@@ -6,7 +6,6 @@ import jakarta.validation.constraints.Positive;
 import jakarta.validation.constraints.PositiveOrZero;
 
 import org.springframework.http.HttpStatus;
-import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
@@ -43,7 +42,6 @@ public class WorkspaceInvitationController {
   private final RejectWorkspaceInvitationUseCase rejectWorkspaceInvitationUseCase;
   private final WorkspaceMemberOrchestrator workspaceMemberOrchestrator;
 
-  @PreAuthorize("hasAnyRole('ADMIN')")
   @PostMapping("/workspaces/{workspaceId}/invitations")
   @ResponseStatus(HttpStatus.CREATED)
   public Mono<WorkspaceInvitationCreateResponse> createInvitation(
@@ -60,7 +58,6 @@ public class WorkspaceInvitationController {
         .map(WorkspaceInvitationCreateResponse::of);
   }
 
-  @PreAuthorize("hasAnyRole('ADMIN')")
   @GetMapping("/workspaces/{workspaceId}/invitations")
   public Mono<PageResponse<WorkspaceInvitationResponse>> getInvitations(
       @PathVariable String workspaceId,
