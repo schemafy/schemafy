@@ -157,6 +157,44 @@ class ShareLinkUseCaseIntegrationTest extends ProjectDomainIntegrationSupport {
   }
 
   @Test
+  @DisplayName("삭제된 공유 링크의 접근 횟수와 마지막 접근 시각은 변경되지 않는다")
+  void incrementAccessCount_doesNotUpdateDeletedShareLink() {
+    User admin = signUpUser("admin-share-deleted-access@test.com", "Admin");
+    var workspace = saveWorkspace("Deleted Access WS", "Description");
+    saveWorkspaceMember(workspace, admin, WorkspaceRole.ADMIN);
+    var project = saveProject(workspace, "Deleted Access Project");
+    saveProjectMember(project, admin, ProjectRole.ADMIN);
+    ShareLink link = saveShareLink(project);
+    deleteShareLinkUseCase.deleteShareLink(new DeleteShareLinkCommand(
+        project.getId(), link.getId(), admin.id())).block();
+
+    shareLinkRepository.incrementAccessCount(link.getId()).block();
+
+    ShareLink deletedLink = shareLinkRepository.findById(link.getId()).block();
+    assertThat(deletedLink.getAccessCount()).isZero();
+    assertThat(deletedLink.getLastAccessedAt()).isNull();
+  }
+
+  @Test
+  @DisplayName("폐기된 공유 링크의 접근 횟수와 마지막 접근 시각은 변경되지 않는다")
+  void incrementAccessCount_doesNotUpdateRevokedShareLink() {
+    User admin = signUpUser("admin-share-revoked-access@test.com", "Admin");
+    var workspace = saveWorkspace("Revoked Access WS", "Description");
+    saveWorkspaceMember(workspace, admin, WorkspaceRole.ADMIN);
+    var project = saveProject(workspace, "Revoked Access Project");
+    saveProjectMember(project, admin, ProjectRole.ADMIN);
+    ShareLink link = saveShareLink(project);
+    revokeShareLinkUseCase.revokeShareLink(new RevokeShareLinkCommand(
+        project.getId(), link.getId(), admin.id())).block();
+
+    shareLinkRepository.incrementAccessCount(link.getId()).block();
+
+    ShareLink revokedLink = shareLinkRepository.findById(link.getId()).block();
+    assertThat(revokedLink.getAccessCount()).isZero();
+    assertThat(revokedLink.getLastAccessedAt()).isNull();
+  }
+
+  @Test
   @DisplayName("공유 링크 접근은 익명 공개 접근을 허용한다")
   void accessShareLink_allowsAnonymousPublicAccess() {
     User admin = signUpUser("admin-share-public@test.com", "Admin");

@@ -10,6 +10,8 @@ import org.junit.jupiter.api.Test;
 
 import com.schemafy.core.config.R2dbcTestConfiguration;
 import com.schemafy.core.project.domain.Project;
+import com.schemafy.core.project.domain.ProjectMember;
+import com.schemafy.core.project.domain.ProjectRole;
 import com.schemafy.core.project.domain.Workspace;
 import com.schemafy.core.ulid.application.service.UlidGenerator;
 
@@ -102,6 +104,44 @@ class ProjectPersistenceAdapterTest {
           assertThat(updated.getId()).isEqualTo(project.getId());
           assertThat(updated.getName()).isEqualTo("After");
           assertThat(updated.getDescription()).isEqualTo("Updated");
+        })
+        .verifyComplete();
+  }
+
+  @Test
+  @DisplayName("프로젝트 변경 동기화를 위해 활성 프로젝트를 공유 잠금과 쓰기 잠금으로 조회한다")
+  void findActiveProjectWithMutationLocks() {
+    Workspace workspace = saveWorkspace("Mutation Lock Workspace");
+    Project project = sut.save(Project.create(UlidGenerator.generate(),
+        workspace.getId(), "Mutation Lock Project", "Description")).block();
+
+    StepVerifier.create(sut.lockByIdAndNotDeletedInShareMode(project.getId()))
+        .expectNext(project.getId())
+        .verifyComplete();
+    StepVerifier.create(sut.lockByIdAndNotDeletedForUpdate(project.getId()))
+        .expectNext(project.getId())
+        .verifyComplete();
+  }
+
+  @Test
+  @DisplayName("삭제된 프로젝트 멤버십의 역할은 조건부 수정으로 변경하지 않는다")
+  void updateRoleIfActiveDoesNotRestoreDeletedMembership() {
+    Workspace workspace = saveWorkspace("Member Update Workspace");
+    Project project = sut.save(Project.create(UlidGenerator.generate(),
+        workspace.getId(), "Member Update Project", "Description")).block();
+    ProjectMember member = projectMemberRepository.save(ProjectMember.create(
+        UlidGenerator.generate(), project.getId(), "user-id", ProjectRole.VIEWER)).block();
+    sut.softDeleteByProjectIdAndUserId(project.getId(), member.getUserId()).block();
+
+    StepVerifier.create(sut.updateRoleIfActive(project.getId(), member.getUserId(),
+        ProjectRole.EDITOR.name()))
+        .expectNext(0L)
+        .verifyComplete();
+
+    StepVerifier.create(projectMemberRepository.findById(member.getId()))
+        .assertNext(persisted -> {
+          assertThat(persisted.isDeleted()).isTrue();
+          assertThat(persisted.getRoleAsEnum()).isEqualTo(ProjectRole.VIEWER);
         })
         .verifyComplete();
   }

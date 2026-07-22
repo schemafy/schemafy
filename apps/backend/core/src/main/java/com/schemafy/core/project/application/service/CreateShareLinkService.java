@@ -3,7 +3,6 @@ package com.schemafy.core.project.application.service;
 import java.util.UUID;
 
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.reactive.TransactionalOperator;
 
 import com.schemafy.core.project.application.access.RequireProjectAccess;
 import com.schemafy.core.project.application.port.in.CreateShareLinkCommand;
@@ -20,22 +19,22 @@ import reactor.core.publisher.Mono;
 @RequiredArgsConstructor
 class CreateShareLinkService implements CreateShareLinkUseCase {
 
-  private final TransactionalOperator transactionalOperator;
   private final UlidGeneratorPort ulidGeneratorPort;
   private final ShareLinkPort shareLinkPort;
   private final ShareLinkHelper shareLinkHelper;
+  private final ProjectMutationGuard projectMutationGuard;
 
   @Override
   @RequireProjectAccess(role = ProjectRole.ADMIN)
   public Mono<ShareLink> createShareLink(CreateShareLinkCommand command) {
-    return shareLinkHelper.findProjectById(command.projectId())
-        .flatMap(project -> Mono.fromCallable(ulidGeneratorPort::generate)
-            .flatMap(id -> {
-              String code = UUID.randomUUID().toString().replace("-", "");
-              return shareLinkPort.save(
-                  ShareLink.create(id, command.projectId(), code));
-            }))
-        .as(transactionalOperator::transactional);
+    return projectMutationGuard.protectChildCreation(command.projectId(),
+        () -> shareLinkHelper.findProjectById(command.projectId())
+            .flatMap(project -> Mono.fromCallable(ulidGeneratorPort::generate)
+                .flatMap(id -> {
+                  String code = UUID.randomUUID().toString().replace("-", "");
+                  return shareLinkPort.save(
+                      ShareLink.create(id, command.projectId(), code));
+                })));
   }
 
 }

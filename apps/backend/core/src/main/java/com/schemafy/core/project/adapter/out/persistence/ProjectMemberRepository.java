@@ -1,5 +1,6 @@
 package com.schemafy.core.project.adapter.out.persistence;
 
+import org.springframework.data.r2dbc.repository.Modifying;
 import org.springframework.data.r2dbc.repository.Query;
 import org.springframework.data.repository.reactive.ReactiveCrudRepository;
 
@@ -28,6 +29,28 @@ public interface ProjectMemberRepository
 
   @Query("UPDATE project_members SET deleted_at = CURRENT_TIMESTAMP, updated_at = CURRENT_TIMESTAMP WHERE project_id = :projectId AND deleted_at IS NULL")
   Mono<Void> softDeleteByProjectId(String projectId);
+
+  @Modifying
+  @Query("""
+      UPDATE project_members
+      SET deleted_at = CURRENT_TIMESTAMP,
+          updated_at = CURRENT_TIMESTAMP
+      WHERE project_id = :projectId
+        AND user_id = :userId
+        AND deleted_at IS NULL
+      """)
+  Mono<Long> softDeleteByProjectIdAndUserId(String projectId, String userId);
+
+  @Modifying
+  @Query("""
+      UPDATE project_members
+      SET role = :role,
+          updated_at = CURRENT_TIMESTAMP
+      WHERE project_id = :projectId
+        AND user_id = :userId
+        AND deleted_at IS NULL
+      """)
+  Mono<Long> updateRoleIfActive(String projectId, String userId, String role);
 
   @Query("SELECT COUNT(*) FROM project_members WHERE project_id = :projectId AND role = :role AND deleted_at IS NULL")
   Mono<Long> countByProjectIdAndRoleAndNotDeleted(String projectId,

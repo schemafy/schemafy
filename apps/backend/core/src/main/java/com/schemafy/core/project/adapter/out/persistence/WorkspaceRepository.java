@@ -1,6 +1,8 @@
 package com.schemafy.core.project.adapter.out.persistence;
 
 import org.springframework.data.r2dbc.repository.Query;
+import org.springframework.data.relational.core.sql.LockMode;
+import org.springframework.data.relational.repository.Lock;
 import org.springframework.data.repository.reactive.ReactiveCrudRepository;
 
 import com.schemafy.core.project.domain.Workspace;
@@ -16,6 +18,12 @@ public interface WorkspaceRepository
       WHERE id = :id AND deleted_at IS NULL
       """)
   Mono<Workspace> findByIdAndNotDeleted(String id);
+
+  @Lock(LockMode.PESSIMISTIC_READ)
+  Mono<Workspace> findWithSharedLockByIdAndDeletedAtIsNull(String id);
+
+  @Lock(LockMode.PESSIMISTIC_WRITE)
+  Mono<Workspace> findWithExclusiveLockByIdAndDeletedAtIsNull(String id);
 
   @Query("""
       SELECT w.* FROM workspaces w
