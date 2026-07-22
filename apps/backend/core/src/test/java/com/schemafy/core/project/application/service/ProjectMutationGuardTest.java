@@ -23,8 +23,8 @@ import reactor.core.publisher.Mono;
 import reactor.test.StepVerifier;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.inOrder;
+import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
@@ -49,7 +49,7 @@ class ProjectMutationGuardTest {
   void setUp() {
     sut = new ProjectMutationGuard(projectPort, workspacePort,
         transactionalOperator);
-    when(transactionalOperator.<Object>transactional(
+    lenient().when(transactionalOperator.<Object>transactional(
         ArgumentMatchers.<Mono<Object>>any()))
         .thenAnswer(invocation -> invocation.<Mono<Object>>getArgument(0));
   }
@@ -107,44 +107,60 @@ class ProjectMutationGuardTest {
   }
 
   @Test
-  @DisplayName("프로젝트 변경은 프로젝트만 배타 잠금한다")
-  void protectProjectMutation_locksOnlyProject() {
-    when(projectPort.lockByIdAndNotDeletedForUpdate("project-id"))
-        .thenReturn(Mono.just("project-id"));
-
-    StepVerifier.create(sut.protectProjectMutation(
-        "project-id", () -> Mono.just("done")))
-        .expectNext("done")
-        .verifyComplete();
-
-    verify(projectPort).lockByIdAndNotDeletedForUpdate("project-id");
-    verifyNoInteractions(workspacePort);
-  }
-
-  @Test
-  @DisplayName("워크스페이스와 프로젝트를 함께 잠글 때 워크스페이스를 먼저 잠근다")
-  void protectWorkspaceAndProjectMutation_locksWorkspaceBeforeProject() {
+  @DisplayName("프로젝트 삭제는 워크스페이스 공유 잠금 후 프로젝트 배타 잠금을 획득한다")
+  void protectProjectDeletion_locksWorkspaceSharedThenProjectExclusive() {
     Project project = Project.create("project-id", "workspace-id", "Project",
         "Description");
     Workspace workspace = Workspace.create("workspace-id", "Workspace",
         "Description");
+
     when(projectPort.findByIdAndNotDeleted("project-id"))
         .thenReturn(Mono.just(project));
-    when(workspacePort.findByIdAndNotDeletedForUpdate("workspace-id"))
+    when(workspacePort.findByIdAndNotDeletedInShareMode("workspace-id"))
         .thenReturn(Mono.just(workspace));
     when(projectPort.lockByIdAndNotDeletedForUpdate("project-id"))
         .thenReturn(Mono.just("project-id"));
 
-    StepVerifier.create(sut.protectWorkspaceAndProjectMutation(
+    StepVerifier.create(sut.protectProjectDeletion(
         "project-id", () -> Mono.just("done")))
         .expectNext("done")
         .verifyComplete();
 
+    verify(workspacePort).findByIdAndNotDeletedInShareMode("workspace-id");
+    verify(projectPort).lockByIdAndNotDeletedForUpdate("project-id");
     InOrder lockOrder = inOrder(workspacePort, projectPort);
     lockOrder.verify(workspacePort)
-        .findByIdAndNotDeletedForUpdate("workspace-id");
-    lockOrder.verify(projectPort)
-        .lockByIdAndNotDeletedForUpdate("project-id");
+        .findByIdAndNotDeletedInShareMode("workspace-id");
+    lockOrder.verify(projectPort).lockByIdAndNotDeletedForUpdate("project-id");
+  }
+
+  @Test
+  @DisplayName("프로젝트 삭제 대상이 없으면 작업을 실행하지 않는다")
+  void protectProjectDeletion_rejectsMissingProject() {
+    when(projectPort.findByIdAndNotDeleted("project-id"))
+        .thenReturn(Mono.empty());
+
+    StepVerifier.create(sut.protectProjectDeletion(
+        "project-id", () -> Mono.just("done")))
+        .expectError()
+        .verify();
+
+    verifyNoInteractions(workspacePort);
+  }
+
+  @Test
+  @DisplayName("하위 생성은 프로젝트 공유 잠금만 획득한다")
+  void protectChildCreation_locksOnlyProject() {
+    when(projectPort.lockByIdAndNotDeletedInShareMode("project-id"))
+        .thenReturn(Mono.just("project-id"));
+
+    StepVerifier.create(sut.protectChildCreation(
+        "project-id", () -> Mono.just("done")))
+        .expectNext("done")
+        .verifyComplete();
+
+    verify(projectPort).lockByIdAndNotDeletedInShareMode("project-id");
+    verifyNoInteractions(workspacePort);
   }
 
 }

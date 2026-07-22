@@ -19,6 +19,9 @@ public interface WorkspaceRepository
       """)
   Mono<Workspace> findByIdAndNotDeleted(String id);
 
+  @Lock(LockMode.PESSIMISTIC_READ)
+  Mono<Workspace> findWithSharedLockByIdAndDeletedAtIsNull(String id);
+
   @Lock(LockMode.PESSIMISTIC_WRITE)
   Mono<Workspace> findWithExclusiveLockByIdAndDeletedAtIsNull(String id);
 

@@ -11,6 +11,8 @@ public interface WorkspacePort {
 
   Mono<Workspace> findByIdAndNotDeleted(String workspaceId);
 
+  Mono<Workspace> findByIdAndNotDeletedInShareMode(String workspaceId);
+
   Mono<Workspace> findByIdAndNotDeletedForUpdate(String workspaceId);
 
   Flux<Workspace> findByUserIdWithPaging(String userId, int limit, int offset);

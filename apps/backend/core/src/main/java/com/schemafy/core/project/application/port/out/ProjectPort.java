@@ -13,6 +13,8 @@ public interface ProjectPort {
 
   Mono<Project> findByIdAndNotDeleted(String projectId);
 
+  Mono<Long> updateIfActive(String projectId, String name, String description);
+
   Mono<String> lockByIdAndNotDeletedInShareMode(String projectId);
 
   Mono<String> lockByIdAndNotDeletedForUpdate(String projectId);

@@ -26,8 +26,11 @@ class RepositoryLockMetadataTest {
   }
 
   @Test
-  @DisplayName("워크스페이스 잠금 조회에 배타 잠금을 선언한다")
-  void workspaceHierarchyQueryDeclaresExclusiveLock() {
+  @DisplayName("워크스페이스 저장소는 공유 잠금과 배타 잠금을 구분한다")
+  void workspaceRepositoryDistinguishesSharedAndExclusiveLocks() {
+    assertLockMode(WorkspaceRepository.class,
+        "findWithSharedLockByIdAndDeletedAtIsNull",
+        LockMode.PESSIMISTIC_READ);
     assertLockMode(WorkspaceRepository.class,
         "findWithExclusiveLockByIdAndDeletedAtIsNull",
         LockMode.PESSIMISTIC_WRITE);

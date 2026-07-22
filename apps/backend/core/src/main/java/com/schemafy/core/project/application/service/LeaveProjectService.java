@@ -15,13 +15,11 @@ import reactor.core.publisher.Mono;
 class LeaveProjectService implements LeaveProjectUseCase {
 
   private final ProjectAccessHelper projectAccessHelper;
-  private final ProjectMutationGuard projectMutationGuard;
 
   @Override
   @RequireProjectAccess(role = ProjectRole.VIEWER)
   public Mono<Void> leaveProject(LeaveProjectCommand command) {
-    return projectMutationGuard.protectWorkspaceAndProjectMutation(command.projectId(),
-        () -> applyLeave(command));
+    return applyLeave(command);
   }
 
   private Mono<Void> applyLeave(LeaveProjectCommand command) {

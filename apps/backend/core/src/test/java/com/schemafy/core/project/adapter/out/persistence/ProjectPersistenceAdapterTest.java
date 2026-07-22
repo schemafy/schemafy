@@ -10,6 +10,8 @@ import org.junit.jupiter.api.Test;
 
 import com.schemafy.core.config.R2dbcTestConfiguration;
 import com.schemafy.core.project.domain.Project;
+import com.schemafy.core.project.domain.ProjectMember;
+import com.schemafy.core.project.domain.ProjectRole;
 import com.schemafy.core.project.domain.Workspace;
 import com.schemafy.core.ulid.application.service.UlidGenerator;
 
@@ -118,6 +120,29 @@ class ProjectPersistenceAdapterTest {
         .verifyComplete();
     StepVerifier.create(sut.lockByIdAndNotDeletedForUpdate(project.getId()))
         .expectNext(project.getId())
+        .verifyComplete();
+  }
+
+  @Test
+  @DisplayName("삭제된 프로젝트 멤버십의 역할은 조건부 수정으로 변경하지 않는다")
+  void updateRoleIfActiveDoesNotRestoreDeletedMembership() {
+    Workspace workspace = saveWorkspace("Member Update Workspace");
+    Project project = sut.save(Project.create(UlidGenerator.generate(),
+        workspace.getId(), "Member Update Project", "Description")).block();
+    ProjectMember member = projectMemberRepository.save(ProjectMember.create(
+        UlidGenerator.generate(), project.getId(), "user-id", ProjectRole.VIEWER)).block();
+    sut.softDeleteByProjectIdAndUserId(project.getId(), member.getUserId()).block();
+
+    StepVerifier.create(sut.updateRoleIfActive(project.getId(), member.getUserId(),
+        ProjectRole.EDITOR.name()))
+        .expectNext(0L)
+        .verifyComplete();
+
+    StepVerifier.create(projectMemberRepository.findById(member.getId()))
+        .assertNext(persisted -> {
+          assertThat(persisted.isDeleted()).isTrue();
+          assertThat(persisted.getRoleAsEnum()).isEqualTo(ProjectRole.VIEWER);
+        })
         .verifyComplete();
   }
 

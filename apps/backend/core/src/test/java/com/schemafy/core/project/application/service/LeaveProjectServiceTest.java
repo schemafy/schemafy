@@ -1,8 +1,5 @@
 package com.schemafy.core.project.application.service;
 
-import java.util.function.Supplier;
-
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -17,7 +14,6 @@ import com.schemafy.core.project.domain.ProjectRole;
 import reactor.core.publisher.Mono;
 import reactor.test.StepVerifier;
 
-import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.then;
 
@@ -31,19 +27,8 @@ class LeaveProjectServiceTest {
   @Mock
   ProjectAccessHelper projectAccessHelper;
 
-  @Mock
-  ProjectMutationGuard projectMutationGuard;
-
   @InjectMocks
   LeaveProjectService sut;
-
-  @BeforeEach
-  void setUp() {
-    given(projectMutationGuard.<Void>protectWorkspaceAndProjectMutation(
-        any(String.class), any()))
-        .willAnswer(invocation -> invocation
-            .<Supplier<Mono<Void>>>getArgument(1).get());
-  }
 
   @Test
   @DisplayName("프로젝트 멤버가 탈퇴하면 멤버십만 삭제한다")

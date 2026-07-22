@@ -26,6 +26,10 @@ public interface ProjectMemberPort {
 
   Mono<Void> softDeleteByProjectId(String projectId);
 
+  Mono<Long> softDeleteByProjectIdAndUserId(String projectId, String userId);
+
+  Mono<Long> updateRoleIfActive(String projectId, String userId, String role);
+
   Mono<Long> countByProjectIdAndRoleAndNotDeleted(
       String projectId,
       String role);

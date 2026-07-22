@@ -21,7 +21,7 @@ class DeleteProjectService implements DeleteProjectUseCase {
   @Override
   @RequireProjectAccess(role = ProjectRole.ADMIN)
   public Mono<Void> deleteProject(DeleteProjectCommand command) {
-    return projectMutationGuard.protectWorkspaceAndProjectMutation(command.projectId(),
+    return projectMutationGuard.protectProjectDeletion(command.projectId(),
         () -> projectAccessHelper.findProjectById(command.projectId())
             .flatMap(projectCascadeHelper::softDeleteLockedProjectCascade));
   }

@@ -20,9 +20,7 @@ import lombok.RequiredArgsConstructor;
 import reactor.core.publisher.Mono;
 import reactor.util.retry.Retry;
 
-/**
- * 주의: 재시도 시 {@code action}이 다시 실행될 수 있으므로 롤백되지 않는 외부 부수효과를 포함하지 않는다.
- */
+/** 주의: 재시도 시 {@code action}이 다시 실행될 수 있으므로 롤백되지 않는 외부 부수효과를 포함하지 않는다. */
 @Component
 @RequiredArgsConstructor
 public class ProjectMutationGuard {
@@ -43,22 +41,13 @@ public class ProjectMutationGuard {
         .retryWhen(lockRetry(projectId));
   }
 
-  public <T> Mono<T> protectProjectMutation(
-      String projectId,
-      Supplier<Mono<T>> action) {
-    return Mono.defer(() -> lockProjectForUpdate(projectId)
-        .then(Mono.defer(action)))
-        .as(transactionalOperator::transactional)
-        .retryWhen(lockRetry(projectId));
-  }
-
-  public <T> Mono<T> protectWorkspaceAndProjectMutation(
+  public <T> Mono<T> protectProjectDeletion(
       String projectId,
       Supplier<Mono<T>> action) {
     return projectPort.findByIdAndNotDeleted(projectId)
         .switchIfEmpty(Mono.error(new DomainException(
             ProjectErrorCode.NOT_FOUND)))
-        .flatMap(project -> Mono.defer(() -> lockWorkspace(project.getWorkspaceId())
+        .flatMap(project -> Mono.defer(() -> lockWorkspaceInShareMode(project.getWorkspaceId())
             .then(lockProjectForUpdate(projectId))
             .then(Mono.defer(action)))
             .as(transactionalOperator::transactional)
@@ -79,8 +68,8 @@ public class ProjectMutationGuard {
         .then();
   }
 
-  private Mono<Void> lockWorkspace(String workspaceId) {
-    return workspacePort.findByIdAndNotDeletedForUpdate(workspaceId)
+  private Mono<Void> lockWorkspaceInShareMode(String workspaceId) {
+    return workspacePort.findByIdAndNotDeletedInShareMode(workspaceId)
         .switchIfEmpty(Mono.error(new DomainException(
             WorkspaceErrorCode.NOT_FOUND)))
         .then();

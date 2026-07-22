@@ -21,8 +21,6 @@ import com.schemafy.core.project.application.port.in.DeleteProjectCommand;
 import com.schemafy.core.project.application.port.in.DeleteProjectUseCase;
 import com.schemafy.core.project.application.port.in.DeleteShareLinkCommand;
 import com.schemafy.core.project.application.port.in.DeleteShareLinkUseCase;
-import com.schemafy.core.project.application.port.in.LeaveProjectCommand;
-import com.schemafy.core.project.application.port.in.LeaveProjectUseCase;
 import com.schemafy.core.project.application.port.in.UpdateProjectCommand;
 import com.schemafy.core.project.application.port.in.UpdateProjectUseCase;
 import com.schemafy.core.project.application.service.ProjectMutationGuard;
@@ -47,9 +45,6 @@ class ProjectMutationConcurrencyIntegrationTest
 
   @Autowired
   private ProjectMutationGuard projectMutationGuard;
-
-  @Autowired
-  private LeaveProjectUseCase leaveProjectUseCase;
 
   @Autowired
   private DeleteProjectUseCase deleteProjectUseCase;
@@ -82,7 +77,7 @@ class ProjectMutationConcurrencyIntegrationTest
       assertThat(mutationLocked.await(3, TimeUnit.SECONDS)).isTrue();
 
       Future<?> exclusive = executor.submit(() -> projectMutationGuard
-          .protectWorkspaceAndProjectMutation(project.getId(), () -> Mono.fromRunnable(
+          .protectProjectDeletion(project.getId(), () -> Mono.fromRunnable(
               exclusiveStarted::countDown))
           .block());
 
@@ -176,7 +171,8 @@ class ProjectMutationConcurrencyIntegrationTest
           project.getId(), "Updated", "Updated", admin.id())).block();
     } catch (DomainException error) {
       if (error.getErrorCode() != ProjectErrorCode.NOT_FOUND
-          && error.getErrorCode() != ProjectErrorCode.ACCESS_DENIED) {
+          && error.getErrorCode() != ProjectErrorCode.ACCESS_DENIED
+          && error.getErrorCode() != ProjectErrorCode.MEMBER_NOT_FOUND) {
         throw error;
       }
     }
@@ -189,7 +185,8 @@ class ProjectMutationConcurrencyIntegrationTest
     CountDownLatch done = new CountDownLatch(tasks.size());
     ConcurrentLinkedQueue<Throwable> errors = new ConcurrentLinkedQueue<>();
 
-    try (ExecutorService executor = Executors.newFixedThreadPool(tasks.size())) {
+    ExecutorService executor = Executors.newFixedThreadPool(tasks.size());
+    try {
       for (CheckedTask task : tasks) {
         executor.submit(() -> {
           ready.countDown();
@@ -203,9 +200,13 @@ class ProjectMutationConcurrencyIntegrationTest
           }
         });
       }
-      ready.await();
+      assertThat(ready.await(3, TimeUnit.SECONDS)).isTrue();
       start.countDown();
-      done.await();
+      assertThat(done.await(10, TimeUnit.SECONDS)).isTrue();
+    } finally {
+      start.countDown();
+      executor.shutdownNow();
+      assertThat(executor.awaitTermination(3, TimeUnit.SECONDS)).isTrue();
     }
     return errors;
   }

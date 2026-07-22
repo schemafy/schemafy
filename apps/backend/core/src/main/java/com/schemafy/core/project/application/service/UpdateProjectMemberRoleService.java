@@ -3,12 +3,14 @@ package com.schemafy.core.project.application.service;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.reactive.TransactionalOperator;
 
+import com.schemafy.core.common.exception.DomainException;
 import com.schemafy.core.project.application.access.RequireProjectAccess;
 import com.schemafy.core.project.application.port.in.UpdateProjectMemberRoleCommand;
 import com.schemafy.core.project.application.port.in.UpdateProjectMemberRoleUseCase;
 import com.schemafy.core.project.application.port.out.ProjectMemberPort;
 import com.schemafy.core.project.domain.ProjectMember;
 import com.schemafy.core.project.domain.ProjectRole;
+import com.schemafy.core.project.domain.exception.ProjectErrorCode;
 
 import lombok.RequiredArgsConstructor;
 import reactor.core.publisher.Mono;
@@ -40,11 +42,15 @@ class UpdateProjectMemberRoleService implements UpdateProjectMemberRoleUseCase {
               : Mono.empty();
 
           return workspaceAdminGuard
+              .then(projectMemberPort.updateRoleIfActive(target.getProjectId(),
+                  target.getUserId(), command.role().name()))
+              .filter(updatedRows -> updatedRows > 0)
+              .switchIfEmpty(Mono.error(new DomainException(
+                  ProjectErrorCode.MEMBER_NOT_FOUND)))
               .then(Mono.fromSupplier(() -> {
                 target.updateRole(command.role());
                 return target;
-              }))
-              .flatMap(projectMemberPort::save);
+              }));
         })
         .as(transactionalOperator::transactional);
   }

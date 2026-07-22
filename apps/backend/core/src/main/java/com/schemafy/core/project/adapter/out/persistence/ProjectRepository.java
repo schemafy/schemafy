@@ -1,5 +1,6 @@
 package com.schemafy.core.project.adapter.out.persistence;
 
+import org.springframework.data.r2dbc.repository.Modifying;
 import org.springframework.data.r2dbc.repository.Query;
 import org.springframework.data.relational.core.sql.LockMode;
 import org.springframework.data.relational.repository.Lock;
@@ -20,6 +21,17 @@ public interface ProjectRepository extends ReactiveCrudRepository<Project, Strin
 
   @Query("SELECT * FROM projects WHERE id = :id AND deleted_at IS NULL")
   Mono<Project> findByIdAndNotDeleted(String id);
+
+  @Modifying
+  @Query("""
+      UPDATE projects
+      SET name = :name,
+          description = :description,
+          updated_at = CURRENT_TIMESTAMP
+      WHERE id = :id
+        AND deleted_at IS NULL
+      """)
+  Mono<Long> updateIfActive(String id, String name, String description);
 
   @Query("SELECT * FROM projects WHERE workspace_id = :workspaceId AND deleted_at IS NULL")
   Flux<Project> findByWorkspaceIdAndNotDeleted(String workspaceId);
