@@ -1,21 +1,16 @@
-import { FolderKanban, MoreHorizontal, Search } from 'lucide-react';
+import { Search } from 'lucide-react';
 import { useState } from 'react';
-import { useNavigate } from '@tanstack/react-router';
 import {
-  Button,
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuTrigger,
   LoadingState,
   Pagination,
 } from '@/components';
 import type { ProjectSummaryResponse } from '@/features/project/api';
 import { useMySharedProjects } from '@/features/project/hooks/useMySharedProjects';
-import { formatDate, toCapitalized } from '@/lib';
 import { ConfirmDialog } from './ConfirmDialog';
+import { SharedProjectCard } from './SharedProjectCard';
+import { SharedProjectRow } from './SharedProjectRow';
 
 export const SharedProjectsTab = () => {
-  const navigate = useNavigate();
   const [searchQuery, setSearchQuery] = useState('');
   const [currentPage, setCurrentPage] = useState(1);
   const [leaveTarget, setLeaveTarget] = useState<ProjectSummaryResponse | null>(
@@ -50,7 +45,6 @@ export const SharedProjectsTab = () => {
               />
             </div>
           </div>
-
           <div className="grid gap-3 md:hidden">
             {filtered.length === 0 ? (
               <div className="schemafy-subtle-card px-4 py-8 text-center font-body-sm text-schemafy-dark-gray">
@@ -58,53 +52,11 @@ export const SharedProjectsTab = () => {
               </div>
             ) : (
               filtered.map((project) => (
-                <article
+                <SharedProjectCard
                   key={project.id}
-                  className="schemafy-subtle-card flex flex-col gap-4 p-4"
-                >
-                  <div className="flex items-start justify-between gap-3">
-                    <div className="flex min-w-0 items-start gap-3">
-                      <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-schemafy-glass-border bg-schemafy-secondary text-schemafy-soft-blue">
-                        <FolderKanban className="h-4 w-4" />
-                      </span>
-                      <div className="min-w-0">
-                        <h3 className="truncate font-heading-sm text-schemafy-text">
-                          {project.name}
-                        </h3>
-                        {project.description && (
-                          <p className="mt-1 line-clamp-2 font-body-sm text-schemafy-dark-gray">
-                            {project.description}
-                          </p>
-                        )}
-                        <p className="mt-1 font-caption-md text-schemafy-dark-gray">
-                          Updated {formatDate(new Date(project.updatedAt))}
-                        </p>
-                      </div>
-                    </div>
-                    <SharedProjectActions
-                      project={project}
-                      onLeaveClick={setLeaveTarget}
-                    />
-                  </div>
-                  <div className="flex items-center justify-between gap-3">
-                    <span className="schemafy-badge px-3 py-1 font-caption-md">
-                      {toCapitalized(project.myRole)}
-                    </span>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      className="h-9 px-4"
-                      onClick={() =>
-                        void navigate({
-                          to: '/project/$projectId',
-                          params: { projectId: project.id },
-                        })
-                      }
-                    >
-                      Open
-                    </Button>
-                  </div>
-                </article>
+                  project={project}
+                  onLeaveClick={setLeaveTarget}
+                />
               ))
             )}
           </div>
@@ -137,48 +89,11 @@ export const SharedProjectsTab = () => {
                   </tr>
                 ) : (
                   filtered.map((project) => (
-                    <tr
+                    <SharedProjectRow
                       key={project.id}
-                      className="cursor-pointer border-b border-schemafy-glass-border transition-colors last:border-b-0 hover:bg-schemafy-secondary/40"
-                      onClick={() =>
-                        void navigate({
-                          to: '/project/$projectId',
-                          params: { projectId: project.id },
-                        })
-                      }
-                    >
-                      <td className="px-5 py-4">
-                        <div className="flex min-w-0 items-center gap-3">
-                          <div className="min-w-0">
-                            <p className="truncate font-heading-xs text-schemafy-text">
-                              {project.name}
-                            </p>
-                            {project.description && (
-                              <p className="truncate font-caption-md text-schemafy-dark-gray">
-                                {project.description}
-                              </p>
-                            )}
-                          </div>
-                        </div>
-                      </td>
-                      <td className="px-5 py-4 font-body-sm text-schemafy-dark-gray">
-                        {formatDate(new Date(project.updatedAt))}
-                      </td>
-                      <td className="px-5 py-4">
-                        <span className="schemafy-badge px-3 py-1 font-body-sm">
-                          {toCapitalized(project.myRole)}
-                        </span>
-                      </td>
-                      <td
-                        className="px-5 py-4"
-                        onClick={(e) => e.stopPropagation()}
-                      >
-                        <SharedProjectActions
-                          project={project}
-                          onLeaveClick={setLeaveTarget}
-                        />
-                      </td>
-                    </tr>
+                      project={project}
+                      onLeaveClick={setLeaveTarget}
+                    />
                   ))
                 )}
               </tbody>
@@ -216,37 +131,4 @@ export const SharedProjectsTab = () => {
   );
 };
 
-const SharedProjectActions = ({
-  project,
-  onLeaveClick,
-}: {
-  project: ProjectSummaryResponse;
-  onLeaveClick: (project: ProjectSummaryResponse) => void;
-}) => {
-  return (
-    <DropdownMenu>
-      <DropdownMenuTrigger asChild>
-        <button
-          type="button"
-          className="schemafy-icon-button schemafy-focus-ring flex h-8 w-8 items-center justify-center"
-        >
-          <MoreHorizontal size={16} />
-        </button>
-      </DropdownMenuTrigger>
-      <DropdownMenuContent
-        sideOffset={4}
-        align="end"
-        className="!min-w-0 flex flex-col gap-0.5 !p-1.5"
-      >
-        <Button
-          variant="none"
-          size="none"
-          className="schemafy-menu-button whitespace-nowrap px-3 py-2 font-caption-md text-schemafy-destructive"
-          onClick={() => onLeaveClick(project)}
-        >
-          Leave
-        </Button>
-      </DropdownMenuContent>
-    </DropdownMenu>
-  );
-};
+
