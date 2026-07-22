@@ -180,16 +180,20 @@
   ],
   "apps/backend/api/src/main/java/com/schemafy/api/project/controller/ProjectController.java": [
     354,
-    459
+    459,
+    481
   ],
   "apps/backend/api/src/main/java/com/schemafy/api/project/controller/ProjectInvitationController.java": [
-    354
+    354,
+    481
   ],
   "apps/backend/api/src/main/java/com/schemafy/api/project/controller/WorkspaceController.java": [
-    354
+    354,
+    481
   ],
   "apps/backend/api/src/main/java/com/schemafy/api/project/controller/WorkspaceInvitationController.java": [
-    354
+    354,
+    481
   ],
   "apps/backend/api/src/test/java/com/schemafy/api/collaboration/dto/event/ErdMutatedEventTest.java": [
     337
@@ -213,11 +217,13 @@
   ],
   "apps/backend/api/src/test/java/com/schemafy/api/erd/controller/ColumnControllerTest.java": [
     337,
-    441
+    441,
+    481
   ],
   "apps/backend/api/src/test/java/com/schemafy/api/erd/controller/ConstraintControllerTest.java": [
     337,
-    441
+    441,
+    481
   ],
   "apps/backend/api/src/test/java/com/schemafy/api/erd/controller/ErdOperationFixtures.java": [
     337
@@ -225,12 +231,14 @@
   "apps/backend/api/src/test/java/com/schemafy/api/erd/controller/IndexControllerTest.java": [
     337,
     441,
-    466
+    466,
+    481
   ],
   "apps/backend/api/src/test/java/com/schemafy/api/erd/controller/RelationshipControllerTest.java": [
     337,
     441,
-    444
+    444,
+    481
   ],
   "apps/backend/api/src/test/java/com/schemafy/api/erd/controller/SchemaControllerTest.java": [
     337,
@@ -238,12 +246,14 @@
     436,
     441,
     459,
-    468
+    468,
+    481
   ],
   "apps/backend/api/src/test/java/com/schemafy/api/erd/controller/TableControllerTest.java": [
     337,
     441,
-    444
+    444,
+    481
   ],
   "apps/backend/api/src/test/java/com/schemafy/api/project/controller/ProjectControllerTest.java": [
     354,
@@ -1459,7 +1469,8 @@
   ],
   "apps/backend/api/src/main/java/com/schemafy/api/common/security/jwt/JwtAuthenticationFilter.java": [
     383,
-    441
+    441,
+    481
   ],
   "apps/backend/api/src/main/java/com/schemafy/api/erd/controller/DbVendorController.java": [
     383,
@@ -1478,7 +1489,8 @@
   ],
   "apps/backend/api/src/test/java/com/schemafy/api/common/config/JwtAuthenticationFilterTest.java": [
     383,
-    441
+    441,
+    481
   ],
   "apps/backend/api/src/test/java/com/schemafy/api/common/config/SecurityConfigTest.java": [
     383,
@@ -2460,7 +2472,8 @@
     441
   ],
   "apps/backend/api/src/main/java/com/schemafy/api/common/security/SecurityConfig.java": [
-    441
+    441,
+    481
   ],
   "apps/backend/api/src/main/java/com/schemafy/api/common/security/hmac/HmacVerificationFilter.java": [
     441
@@ -2479,7 +2492,8 @@
     444
   ],
   "apps/backend/api/src/test/java/com/schemafy/api/common/config/TestSecurityConfig.java": [
-    441
+    441,
+    481
   ],
   "apps/backend/api/src/test/java/com/schemafy/api/common/security/hmac/HmacVerificationFilterTest.java": [
     441
@@ -2488,13 +2502,16 @@
     441,
     459,
     466,
-    477
+    477,
+    481
   ],
   "apps/backend/api/src/test/java/com/schemafy/api/erd/controller/MemoControllerTest.java": [
-    441
+    441,
+    481
   ],
   "apps/backend/api/src/test/java/com/schemafy/api/erd/controller/OperationControllerTest.java": [
-    441
+    441,
+    481
   ],
   "apps/backend/api/src/test/java/com/schemafy/api/project/controller/PublicShareLinkControllerTest.java": [
     441
@@ -3105,5 +3122,17 @@
   ],
   "apps/backend/api/src/test/java/com/schemafy/api/collaboration/security/ProjectAccessValidatorTest.java": [
     480
+  ],
+  "apps/backend/api/src/main/java/com/schemafy/api/common/security/principal/AuthenticatedUser.java": [
+    481
+  ],
+  "apps/backend/api/src/test/java/com/schemafy/api/common/security/WithMockCustomUser.java": [
+    481
+  ],
+  "apps/backend/api/src/test/java/com/schemafy/api/common/security/WithMockCustomUserSecurityContextFactory.java": [
+    481
+  ],
+  "apps/backend/core/src/main/java/com/schemafy/core/project/domain/ProjectRole.java": [
+    481
   ]
 }
