@@ -11,12 +11,14 @@ export class OperationHistoryStore {
   operationsByClientId: Map<string, LocalOperationMetadata> = new Map();
   clientIdsByOpId: Map<string, string> = new Map();
   undoableOpIdsBySchemaId: Map<string, string[]> = new Map();
+  redoOpIdsBySchemaId: Map<string, string[]> = new Map();
 
   constructor() {
     makeObservable(this, {
       operationsByClientId: observable.shallow,
       clientIdsByOpId: observable.shallow,
       undoableOpIdsBySchemaId: observable.shallow,
+      redoOpIdsBySchemaId: observable.shallow,
       pendingOperations: computed,
       undoableOperations: computed,
       markPending: action,
@@ -24,6 +26,11 @@ export class OperationHistoryStore {
       markNoOp: action,
       markFailed: action,
       handleErdMutated: action,
+      removeUndoableOpId: action,
+      addUndoableOpId: action,
+      pushRedoOpId: action,
+      popRedoOpId: action,
+      clearRedoStack: action,
       clearSchemaHistory: action,
       clearAll: action,
     });
@@ -77,6 +84,11 @@ export class OperationHistoryStore {
     if (!clientOperationId) return;
 
     const existing = this.operationsByClientId.get(clientOperationId);
+
+    if (existing?.status === 'undoable') return;
+
+    this.clearRedoStack(schemaId);
+
     const next: LocalOperationMetadata = {
       clientOperationId,
       schemaId,
@@ -156,6 +168,43 @@ export class OperationHistoryStore {
     return this.operationsByClientId.get(clientOperationId) ?? null;
   }
 
+  removeUndoableOpId(schemaId: string, opId: string) {
+    const opIds = this.undoableOpIdsBySchemaId.get(schemaId);
+    if (!opIds) return;
+    this.undoableOpIdsBySchemaId.set(
+      schemaId,
+      opIds.filter((id) => id !== opId),
+    );
+  }
+
+  addUndoableOpId(schemaId: string, opId: string) {
+    const opIds = this.undoableOpIdsBySchemaId.get(schemaId) ?? [];
+    if (!opIds.includes(opId)) {
+      this.undoableOpIdsBySchemaId.set(schemaId, [...opIds, opId]);
+    }
+  }
+
+  getRedoOpIds(schemaId: string) {
+    return this.redoOpIdsBySchemaId.get(schemaId) ?? [];
+  }
+
+  pushRedoOpId(schemaId: string, opId: string) {
+    const opIds = this.redoOpIdsBySchemaId.get(schemaId) ?? [];
+    this.redoOpIdsBySchemaId.set(schemaId, [...opIds, opId]);
+  }
+
+  popRedoOpId(schemaId: string): string | undefined {
+    const opIds = this.redoOpIdsBySchemaId.get(schemaId);
+    if (!opIds || opIds.length === 0) return undefined;
+    const popped = opIds[opIds.length - 1];
+    this.redoOpIdsBySchemaId.set(schemaId, opIds.slice(0, -1));
+    return popped;
+  }
+
+  clearRedoStack(schemaId: string) {
+    this.redoOpIdsBySchemaId.delete(schemaId);
+  }
+
   clearSchemaHistory(schemaId: string) {
     [...this.operationsByClientId.entries()].forEach(
       ([clientOperationId, operation]) => {
@@ -168,12 +217,14 @@ export class OperationHistoryStore {
       },
     );
     this.undoableOpIdsBySchemaId.delete(schemaId);
+    this.redoOpIdsBySchemaId.delete(schemaId);
   }
 
   clearAll() {
     this.operationsByClientId.clear();
     this.clientIdsByOpId.clear();
     this.undoableOpIdsBySchemaId.clear();
+    this.redoOpIdsBySchemaId.clear();
   }
 
   private filterByStatus(status: LocalOperationStatus) {

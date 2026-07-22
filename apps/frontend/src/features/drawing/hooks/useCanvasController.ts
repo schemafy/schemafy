@@ -8,6 +8,7 @@ import { useMemoContext } from '../../memo/hooks/useMemoStore';
 import { useSelectedSchema } from '../contexts';
 import { useSchemas } from './useSchemas';
 import { useErdMutationSync } from './useErdMutationSync';
+import { useUndoRedo } from './useUndoRedo';
 import type { Point, RelationshipConfig } from '../types';
 import { collaborationStore } from '@/store/collaboration.store';
 import { useThrottledCallback } from '@/hooks/useThrottledCallback';
@@ -53,6 +54,8 @@ export const useCanvasController = () => {
     return () => window.removeEventListener('mousemove', handleGlobalMouseMove);
   }, []);
 
+  const { handleUndo, handleRedo } = useUndoRedo();
+
   useCanvasKeyboard({
     mousePositionRef,
     isChatOpen: chat.isOpen,
@@ -60,6 +63,8 @@ export const useCanvasController = () => {
     activeTool,
     openChatInput: chat.open,
     setActiveTool,
+    onUndo: handleUndo,
+    onRedo: handleRedo,
   });
 
   const schemaIds = useMemo(() => schemas?.map((s) => s.id) ?? [], [schemas]);

@@ -297,6 +297,27 @@ export const ERROR_MESSAGES: Record<string, ErrorMessageInfo> = {
     category: ErrorCategory.USER_FEEDBACK,
   },
 
+  OPERATION_NOT_FOUND: {
+    message: 'Operation not found. It may have been removed.',
+    category: ErrorCategory.USER_FEEDBACK,
+  },
+  OPERATION_SUPERSEDED: {
+    message: 'Operation has been superseded by newer changes.',
+    category: ErrorCategory.USER_FEEDBACK,
+  },
+  OPERATION_ALREADY_UNDONE: {
+    message: 'Operation has already been undone.',
+    category: ErrorCategory.USER_FEEDBACK,
+  },
+  OPERATION_REDO_NOT_ELIGIBLE: {
+    message: 'Operation is not eligible for redo.',
+    category: ErrorCategory.USER_FEEDBACK,
+  },
+  OPERATION_UNSUPPORTED: {
+    message: 'This operation type is not supported.',
+    category: ErrorCategory.USER_FEEDBACK,
+  },
+
   BAD_REQUEST: CHECK_INPUT,
   UNAUTHORIZED: {
     message: 'Please sign in to continue.',
