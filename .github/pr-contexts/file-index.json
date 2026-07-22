@@ -792,7 +792,8 @@
   ],
   "apps/frontend/src/features/drawing/api/mutation-request.ts": [
     374,
-    419
+    419,
+    452
   ],
   "apps/frontend/src/features/drawing/hooks/useSchemaMutations.ts": [
     374,
@@ -3093,5 +3094,8 @@
   ],
   "apps/backend/sql-resources/ddl/h2/db_vendors_data.sql": [
     477
+  ],
+  "apps/frontend/src/lib/config/query-client.ts": [
+    452
   ]
 }
