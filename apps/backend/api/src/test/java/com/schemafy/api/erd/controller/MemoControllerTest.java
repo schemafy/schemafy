@@ -51,7 +51,7 @@ import static org.springframework.restdocs.request.RequestDocumentation.pathPara
 @AutoConfigureWebTestClient
 @AutoConfigureRestDocs
 @DisplayName("MemoController 통합 테스트")
-@WithMockCustomUser(roles = "EDITOR")
+@WithMockCustomUser
 class MemoControllerTest {
 
   private static final ObjectMapper objectMapper = new ObjectMapper()

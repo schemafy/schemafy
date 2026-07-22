@@ -68,7 +68,7 @@ import static org.springframework.restdocs.request.RequestDocumentation.queryPar
 @AutoConfigureWebTestClient
 @AutoConfigureRestDocs
 @DisplayName("SchemaController 통합 테스트")
-@WithMockCustomUser(roles = "EDITOR")
+@WithMockCustomUser
 class SchemaControllerTest {
 
   private static final ObjectMapper objectMapper = new ObjectMapper()
@@ -478,7 +478,6 @@ class SchemaControllerTest {
   }
 
   @Test
-  @WithMockCustomUser(roles = "ADMIN")
   @DisplayName("스키마 삭제 API 문서화")
   void deleteSchema() throws Exception {
     String schemaId = "06D6W1GAHD51T5NJPK29Q6BCR8";

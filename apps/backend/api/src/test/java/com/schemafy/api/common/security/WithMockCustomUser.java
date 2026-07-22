@@ -11,6 +11,4 @@ public @interface WithMockCustomUser {
 
   String userId() default "01ARZ3NDEKTSV4RRFFQ69G5FAV";
 
-  String[] roles() default { "EDITOR" };
-
 }
