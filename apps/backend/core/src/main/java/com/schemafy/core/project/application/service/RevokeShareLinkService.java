@@ -21,15 +21,12 @@ class RevokeShareLinkService implements RevokeShareLinkUseCase {
 
   private final TransactionalOperator transactionalOperator;
   private final ShareLinkPort shareLinkPort;
-  private final ShareLinkHelper shareLinkHelper;
 
   @Override
   @RequireProjectAccess(role = ProjectRole.ADMIN)
   public Mono<ShareLink> revokeShareLink(RevokeShareLinkCommand command) {
-    return shareLinkHelper.findShareLinkById(command.shareLinkId(),
+    return shareLinkPort.revokeByIdAndProjectId(command.shareLinkId(),
         command.projectId())
-        .then(shareLinkPort.revokeByIdAndProjectId(
-            command.shareLinkId(), command.projectId()))
         .flatMap(updated -> updated > 0
             ? shareLinkPort.findByIdAndProjectIdAndNotDeleted(
                 command.shareLinkId(), command.projectId())

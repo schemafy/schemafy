@@ -20,15 +20,12 @@ class DeleteShareLinkService implements DeleteShareLinkUseCase {
 
   private final TransactionalOperator transactionalOperator;
   private final ShareLinkPort shareLinkPort;
-  private final ShareLinkHelper shareLinkHelper;
 
   @Override
   @RequireProjectAccess(role = ProjectRole.ADMIN)
   public Mono<Void> deleteShareLink(DeleteShareLinkCommand command) {
-    return shareLinkHelper.findShareLinkById(command.shareLinkId(),
+    return shareLinkPort.softDeleteByIdAndProjectId(command.shareLinkId(),
         command.projectId())
-        .then(shareLinkPort.softDeleteByIdAndProjectId(
-            command.shareLinkId(), command.projectId()))
         .flatMap(updated -> updated > 0
             ? Mono.<Void>empty()
             : Mono.<Void>error(new DomainException(
