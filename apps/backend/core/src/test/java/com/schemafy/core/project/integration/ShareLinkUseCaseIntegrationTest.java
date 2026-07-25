@@ -157,6 +157,30 @@ class ShareLinkUseCaseIntegrationTest extends ProjectDomainIntegrationSupport {
   }
 
   @Test
+  @DisplayName("만료 시각이 없는 공유 링크도 접근 횟수를 증가시킨다")
+  void accessShareLink_withoutExpirationIncrementsAccessMetadata() {
+    User admin = signUpUser("admin-share-no-expiry@test.com", "Admin");
+    var workspace = saveWorkspace("No Expiry Access WS", "Description");
+    saveWorkspaceMember(workspace, admin, WorkspaceRole.ADMIN);
+    var project = saveProject(workspace, "No Expiry Access Project");
+    saveProjectMember(project, admin, ProjectRole.ADMIN);
+    ShareLink link = saveShareLink(project, null);
+
+    Project accessedProject = accessShareLinkUseCase.accessShareLink(new AccessShareLinkQuery(
+        link.getCode(),
+        admin.id(),
+        "127.0.0.1",
+        "JUnit"))
+        .block();
+
+    ShareLink updatedLink = shareLinkRepository.findById(link.getId()).block();
+
+    assertThat(accessedProject.getId()).isEqualTo(project.getId());
+    assertThat(updatedLink.getAccessCount()).isEqualTo(1L);
+    assertThat(updatedLink.getLastAccessedAt()).isNotNull();
+  }
+
+  @Test
   @DisplayName("삭제된 공유 링크의 접근 횟수와 마지막 접근 시각은 변경되지 않는다")
   void incrementAccessCount_doesNotUpdateDeletedShareLink() {
     User admin = signUpUser("admin-share-deleted-access@test.com", "Admin");

@@ -23,7 +23,10 @@ public interface ShareLinkRepository
       WHERE id = :id
         AND deleted_at IS NULL
         AND is_revoked = FALSE
-        AND expires_at > CURRENT_TIMESTAMP
+        AND (
+          expires_at IS NULL
+          OR expires_at > CURRENT_TIMESTAMP
+        )
       """)
   Mono<Void> incrementAccessCount(String id);
 
