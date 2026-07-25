@@ -125,10 +125,6 @@ export const ERROR_MESSAGES: Record<string, ErrorMessageInfo> = {
     message: 'Please verify your email before creating an account.',
     category: ErrorCategory.USER_FEEDBACK,
   },
-  ACCOUNT_NOT_ACTIVE: {
-    message: 'This account is not active. Please contact support.',
-    category: ErrorCategory.USER_FEEDBACK,
-  },
   VERIFICATION_CODE_EXPIRED: {
     message: 'The verification code has expired. Please request a new one.',
     category: ErrorCategory.USER_FEEDBACK,
