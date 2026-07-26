@@ -37,10 +37,7 @@ export const SharedProjectCard = ({
             </p>
           </div>
         </div>
-        <SharedProjectActions
-          project={project}
-          onLeaveClick={onLeaveClick}
-        />
+        <SharedProjectActions project={project} onLeaveClick={onLeaveClick} />
       </div>
       <div className="flex items-center justify-between gap-3">
         <span className="schemafy-badge px-3 py-1 font-caption-md">

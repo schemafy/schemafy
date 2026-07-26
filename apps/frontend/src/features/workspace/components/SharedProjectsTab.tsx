@@ -1,9 +1,6 @@
 import { Search } from 'lucide-react';
 import { useState } from 'react';
-import {
-  LoadingState,
-  Pagination,
-} from '@/components';
+import { LoadingState, Pagination } from '@/components';
 import type { ProjectSummaryResponse } from '@/features/project/api';
 import { useMySharedProjects } from '@/features/project/hooks/useMySharedProjects';
 import { ConfirmDialog } from './ConfirmDialog';
@@ -130,5 +127,3 @@ export const SharedProjectsTab = () => {
     </div>
   );
 };
-
-

@@ -63,7 +63,7 @@ const CanvasContent = observer(() => {
 
   return (
     <>
-      <div className='flex flex-1 overflow-hidden bg-schemafy-canvas'>
+      <div className="flex flex-1 overflow-hidden bg-schemafy-canvas">
         <Toolbar
           setActiveTool={setActiveTool}
           activeTool={activeTool}
@@ -71,8 +71,8 @@ const CanvasContent = observer(() => {
           onRelationshipConfigChange={setRelationshipConfig}
         />
 
-        <div className='relative flex-1 overflow-hidden'>
-          <div className='absolute right-6 top-6 z-10'>
+        <div className="relative flex-1 overflow-hidden">
+          <div className="absolute right-6 top-6 z-10">
             <SchemaSelector />
           </div>
 
@@ -149,10 +149,10 @@ export const CanvasPage = () => {
 
   if (isProjectError && !isForbidden) return <NotFoundPage />;
   if (isLoadingProject) {
-    return <LoadingState className='min-h-screen' label='Loading project...' />;
+    return <LoadingState className="min-h-screen" label="Loading project..." />;
   }
   if (isForbidden) {
-    return <LoadingState className='min-h-screen' label='Redirecting...' />;
+    return <LoadingState className="min-h-screen" label="Redirecting..." />;
   }
 
   return (
@@ -162,7 +162,7 @@ export const CanvasPage = () => {
     >
       <MemoProvider>
         <CanvasContent />
-        <div className='fixed bottom-4 right-4 z-50'>
+        <div className="fixed bottom-4 right-4 z-50">
           <ConnectionStatusIndicator />
         </div>
       </MemoProvider>
