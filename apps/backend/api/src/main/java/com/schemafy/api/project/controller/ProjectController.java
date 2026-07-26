@@ -88,6 +88,7 @@ public class ProjectController {
     String userId = authentication.getName();
     return createProjectUseCase.createProject(new CreateProjectCommand(
         workspaceId,
+        request.dbVendorId(),
         request.name(),
         request.description(),
         userId))

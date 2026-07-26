@@ -2,6 +2,7 @@ package com.schemafy.core.erd.index.application.service;
 
 import java.util.List;
 
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -19,12 +20,16 @@ import com.schemafy.core.erd.index.domain.exception.IndexErrorCode;
 import com.schemafy.core.erd.index.domain.type.IndexType;
 import com.schemafy.core.erd.index.domain.type.SortDirection;
 import com.schemafy.core.erd.index.fixture.IndexFixture;
+import com.schemafy.core.erd.vendor.fixture.DbVendorFixture;
 
 import reactor.core.publisher.Mono;
 import reactor.test.StepVerifier;
 
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.then;
+import static org.mockito.Mockito.lenient;
 
 @ExtendWith(MockitoExtension.class)
 @DisplayName("ChangeIndexTypeService")
@@ -42,8 +47,17 @@ class ChangeIndexTypeServiceTest {
   @Mock
   GetIndexColumnsByIndexIdPort getIndexColumnsByIndexIdPort;
 
+  @Mock
+  IndexCapabilityResolver indexCapabilityResolver;
+
   @InjectMocks
   ChangeIndexTypeService sut;
+
+  @BeforeEach
+  void setUpCapabilities() {
+    lenient().when(indexCapabilityResolver.resolve(any(), anyString()))
+        .thenReturn(Mono.just(DbVendorFixture.defaultCapabilities().indexes()));
+  }
 
   @Nested
   @DisplayName("changeIndexType 메서드는")
@@ -52,7 +66,7 @@ class ChangeIndexTypeServiceTest {
     @Test
     @DisplayName("유효한 타입으로 변경한다")
     void changesTypeWithValidInput() {
-      var command = IndexFixture.changeTypeCommand("index1", IndexType.HASH);
+      var command = IndexFixture.changeTypeCommand("index1", IndexType.FULLTEXT);
       var index = IndexFixture.btreeIndexWithId("index1");
       var indexColumns = List.of(IndexFixture.indexColumnWithIndexId("index1"));
 
@@ -62,14 +76,14 @@ class ChangeIndexTypeServiceTest {
           .willReturn(Mono.just(List.of(index)));
       given(getIndexColumnsByIndexIdPort.findIndexColumnsByIndexId("index1"))
           .willReturn(Mono.just(indexColumns));
-      given(changeIndexTypePort.changeIndexType("index1", IndexType.HASH))
+      given(changeIndexTypePort.changeIndexType("index1", IndexType.FULLTEXT))
           .willReturn(Mono.empty());
 
       StepVerifier.create(sut.changeIndexType(command))
           .expectNextCount(1)
           .verifyComplete();
 
-      then(changeIndexTypePort).should().changeIndexType("index1", IndexType.HASH);
+      then(changeIndexTypePort).should().changeIndexType("index1", IndexType.FULLTEXT);
     }
 
     @Test
@@ -93,9 +107,10 @@ class ChangeIndexTypeServiceTest {
     @Test
     @DisplayName("lock 이후 이미 요청 타입이면 정의 조회 없이 변경 없이 성공한다")
     void succeedsWithoutDefinitionLookupWhenLockedIndexAlreadyHasRequestedType() {
-      var command = IndexFixture.changeTypeCommand("index1", IndexType.HASH);
+      var command = IndexFixture.changeTypeCommand("index1", IndexType.FULLTEXT);
       var initialIndex = IndexFixture.btreeIndexWithId("index1");
-      var lockedIndex = IndexFixture.hashIndexWithId("index1");
+      var lockedIndex = IndexFixture.index(
+          "index1", initialIndex.tableId(), "idx_fulltext", IndexType.FULLTEXT);
 
       given(getIndexByIdPort.findIndexById("index1"))
           .willReturn(Mono.just(initialIndex), Mono.just(lockedIndex));
@@ -124,7 +139,7 @@ class ChangeIndexTypeServiceTest {
     @Test
     @DisplayName("인덱스가 존재하지 않으면 예외가 발생한다")
     void throwsWhenIndexNotExists() {
-      var command = IndexFixture.changeTypeCommand("nonexistent", IndexType.HASH);
+      var command = IndexFixture.changeTypeCommand("nonexistent", IndexType.FULLTEXT);
 
       given(getIndexByIdPort.findIndexById("nonexistent"))
           .willReturn(Mono.empty());
@@ -139,10 +154,11 @@ class ChangeIndexTypeServiceTest {
     @Test
     @DisplayName("같은 컬럼 조합과 타입의 인덱스가 이미 존재하면 예외가 발생한다")
     void throwsWhenDuplicateDefinition() {
-      var command = IndexFixture.changeTypeCommand("index1", IndexType.HASH);
+      var command = IndexFixture.changeTypeCommand("index1", IndexType.FULLTEXT);
       var index = IndexFixture.btreeIndexWithId("index1");
-      var existingHashIndex = IndexFixture.hashIndexWithId("index2");
-      var indexes = List.of(index, existingHashIndex);
+      var existingFulltextIndex = IndexFixture.index(
+          "index2", index.tableId(), "idx_fulltext", IndexType.FULLTEXT);
+      var indexes = List.of(index, existingFulltextIndex);
 
       var index1Columns = List.of(
           IndexFixture.indexColumn("ic1", "index1", "col1", 0, SortDirection.ASC));
@@ -160,6 +176,22 @@ class ChangeIndexTypeServiceTest {
 
       StepVerifier.create(sut.changeIndexType(command))
           .expectErrorMatches(DomainException.hasErrorCode(IndexErrorCode.DEFINITION_DUPLICATE))
+          .verify();
+
+      then(changeIndexTypePort).shouldHaveNoInteractions();
+    }
+
+    @Test
+    @DisplayName("지원하지 않는 HASH 타입으로 변경하면 예외가 발생한다")
+    void rejectsUnsupportedType() {
+      var command = IndexFixture.changeTypeCommand("index1", IndexType.HASH);
+      var index = IndexFixture.btreeIndexWithId("index1");
+
+      given(getIndexByIdPort.findIndexById("index1"))
+          .willReturn(Mono.just(index));
+
+      StepVerifier.create(sut.changeIndexType(command))
+          .expectErrorMatches(DomainException.hasErrorCode(IndexErrorCode.TYPE_INVALID))
           .verify();
 
       then(changeIndexTypePort).shouldHaveNoInteractions();

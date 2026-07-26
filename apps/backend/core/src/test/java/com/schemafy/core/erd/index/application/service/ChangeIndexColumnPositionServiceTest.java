@@ -21,10 +21,13 @@ import com.schemafy.core.erd.index.application.port.out.GetIndexColumnsByIndexId
 import com.schemafy.core.erd.index.domain.exception.IndexErrorCode;
 import com.schemafy.core.erd.index.domain.type.SortDirection;
 import com.schemafy.core.erd.index.fixture.IndexFixture;
+import com.schemafy.core.erd.operation.application.inverse.ChangeIndexColumnPositionInverse;
+import com.schemafy.core.erd.operation.application.inverse.ReorderPosition;
 
 import reactor.core.publisher.Mono;
 import reactor.test.StepVerifier;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyList;
 import static org.mockito.ArgumentMatchers.eq;
@@ -83,7 +86,13 @@ class ChangeIndexColumnPositionServiceTest {
           .willReturn(Mono.empty());
 
       StepVerifier.create(sut.changeIndexColumnPosition(command))
-          .expectNextCount(1)
+          .assertNext(result -> assertThat(result.inversePayload()).isEqualTo(
+              new ChangeIndexColumnPositionInverse(
+                  indexColumn.id(),
+                  List.of(
+                      new ReorderPosition("ic1", 0),
+                      new ReorderPosition("ic2", 1),
+                      new ReorderPosition("ic3", 2)))))
           .verifyComplete();
 
       then(changeIndexColumnPositionPort).should()
@@ -108,7 +117,9 @@ class ChangeIndexColumnPositionServiceTest {
               Mono.just(List.of(otherColumn, lockedIndexColumn)));
 
       StepVerifier.create(sut.changeIndexColumnPosition(command))
-          .expectNextMatches(result -> result.operation() == null && result.noOp())
+          .expectNextMatches(result -> result.operation() == null
+              && result.inversePayload() == null
+              && result.noOp())
           .verifyComplete();
 
       then(changeIndexColumnPositionPort).shouldHaveNoInteractions();

@@ -1641,7 +1641,7 @@ DB 벤더의 상세 정보(데이터타입 매핑 포함)를 조회합니다.
 
 [source]
 ----
-GET /api/v1.0/vendors/{displayName}
+GET /api/v1.0/vendors/{id}
 ----
 
 [discrete]

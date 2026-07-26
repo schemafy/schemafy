@@ -502,7 +502,7 @@ class SchemafyResourceIntegrationTest {
 
     @Override
     public Flux<DbVendorSummary> listDbVendors() {
-      return Flux.just(new DbVendorSummary("MySQL 8", "mysql", "8.0"));
+      return Flux.just(new DbVendorSummary(1, "MySQL 8", "mysql", "8.0"));
     }
 
     @Override
@@ -575,11 +575,11 @@ class SchemafyResourceIntegrationTest {
     }
 
     private Project project(String workspaceId) {
-      return Project.create("project-1", workspaceId, "Orders", "Order domain");
+      return Project.create("project-1", workspaceId, 1, "Orders", "Order domain");
     }
 
     private Schema schema(String projectId) {
-      return new Schema("schema-1", projectId, "mysql", "commerce", null, null);
+      return Schema.create("schema-1", projectId, "mysql", "commerce", null, null);
     }
 
     private Table table(String schemaId) {

@@ -9,6 +9,7 @@ import com.schemafy.core.erd.column.application.port.in.ChangeColumnTypeCommand;
 import com.schemafy.core.erd.column.application.port.in.CreateColumnCommand;
 import com.schemafy.core.erd.column.application.port.in.DeleteColumnCommand;
 import com.schemafy.core.erd.operation.application.inverse.ChangeColumnNameInverse;
+import com.schemafy.core.erd.operation.application.inverse.ChangeColumnPositionInverse;
 import com.schemafy.core.erd.operation.application.inverse.ChangeColumnTypeInverse;
 import com.schemafy.core.erd.operation.domain.ErdOperationType;
 
@@ -66,6 +67,9 @@ class ColumnMutationTargetResolver {
   }
 
   private Mono<ResolvedErdMutationTarget> resolveChangeColumnPosition(Object payload) {
+    if (payload instanceof ChangeColumnPositionInverse inverse) {
+      return targetLookup.resolveByColumnId(inverse.columnId(), inverse.columnId());
+    }
     ChangeColumnPositionCommand command = requirePayload(payload, ChangeColumnPositionCommand.class);
     return targetLookup.resolveByColumnId(command.columnId(), command.columnId());
   }

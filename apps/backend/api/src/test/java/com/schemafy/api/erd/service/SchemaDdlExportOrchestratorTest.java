@@ -2,6 +2,7 @@ package com.schemafy.api.erd.service;
 
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 import org.springframework.transaction.ReactiveTransaction;
 import org.springframework.transaction.ReactiveTransactionManager;
@@ -20,6 +21,8 @@ import com.schemafy.api.erd.service.ddl.DdlExportSnapshotMapper;
 import com.schemafy.core.erd.ddl.application.port.in.GenerateSchemaDdlCommand;
 import com.schemafy.core.erd.ddl.application.port.in.GenerateSchemaDdlUseCase;
 import com.schemafy.core.erd.ddl.domain.DdlExportVendor;
+import com.schemafy.core.erd.index.domain.policy.IndexCapabilities;
+import com.schemafy.core.erd.index.domain.type.IndexType;
 import com.schemafy.core.erd.schema.application.port.in.GetSchemaQuery;
 import com.schemafy.core.erd.schema.application.port.in.GetSchemaWithRevisionResult;
 import com.schemafy.core.erd.schema.application.port.in.GetSchemaWithRevisionUseCase;
@@ -27,6 +30,10 @@ import com.schemafy.core.erd.schema.domain.Schema;
 import com.schemafy.core.erd.table.application.port.in.GetTablesBySchemaIdQuery;
 import com.schemafy.core.erd.table.application.port.in.GetTablesBySchemaIdUseCase;
 import com.schemafy.core.erd.table.domain.Table;
+import com.schemafy.core.erd.vendor.application.port.in.GetProjectDbVendorQuery;
+import com.schemafy.core.erd.vendor.application.port.in.GetProjectDbVendorUseCase;
+import com.schemafy.core.erd.vendor.domain.DbVendor;
+import com.schemafy.core.erd.vendor.domain.VendorCapabilities;
 
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
@@ -46,6 +53,9 @@ class SchemaDdlExportOrchestratorTest {
 
   @Mock
   GetSchemaWithRevisionUseCase getSchemaWithRevisionUseCase;
+
+  @Mock
+  GetProjectDbVendorUseCase getProjectDbVendorUseCase;
 
   @Mock
   GetTablesBySchemaIdUseCase getTablesBySchemaIdUseCase;
@@ -75,6 +85,7 @@ class SchemaDdlExportOrchestratorTest {
 
     sut = new SchemaDdlExportOrchestrator(
         getSchemaWithRevisionUseCase,
+        getProjectDbVendorUseCase,
         getTablesBySchemaIdUseCase,
         tableSnapshotOrchestrator,
         generateSchemaDdlUseCase,
@@ -86,7 +97,7 @@ class SchemaDdlExportOrchestratorTest {
   @DisplayName("schema snapshot을 core DDL use case로 전달하고 export 응답을 반환한다")
   void exportsSchemaDdl() {
     String schemaId = "schema-1";
-    Schema schema = new Schema(schemaId, "project-1", "mysql", "main_schema",
+    Schema schema = new Schema(schemaId, "project-1", "main_schema",
         "utf8mb4", "utf8mb4_general_ci");
     Table table = new Table("table-1", schemaId, "users", "utf8mb4",
         "utf8mb4_general_ci");
@@ -102,6 +113,9 @@ class SchemaDdlExportOrchestratorTest {
 
     given(getSchemaWithRevisionUseCase.getSchemaWithRevision(any(GetSchemaQuery.class)))
         .willReturn(Mono.just(new GetSchemaWithRevisionResult(schema, 42L)));
+    given(getProjectDbVendorUseCase.getProjectDbVendor(
+        new GetProjectDbVendorQuery(schema.projectId())))
+        .willReturn(Mono.just(sourceDbVendor()));
     given(getTablesBySchemaIdUseCase.getTablesBySchemaId(any(GetTablesBySchemaIdQuery.class)))
         .willReturn(Flux.just(table));
     given(tableSnapshotOrchestrator.getTableSnapshotsStrict(anyList()))
@@ -120,11 +134,15 @@ class SchemaDdlExportOrchestratorTest {
 
     then(getSchemaWithRevisionUseCase).should()
         .getSchemaWithRevision(new GetSchemaQuery(schemaId));
+    then(getProjectDbVendorUseCase).should()
+        .getProjectDbVendor(new GetProjectDbVendorQuery(schema.projectId()));
     then(getTablesBySchemaIdUseCase).should()
         .getTablesBySchemaId(new GetTablesBySchemaIdQuery(schemaId));
     then(generateSchemaDdlUseCase).should().generateSchemaDdl(argThat(
         command -> command.snapshot().schema().id().equals(schemaId)
+            && command.snapshot().schema().dbVendorName().equals("mysql")
             && command.targetDbVendor().equals(DdlExportVendor.MYSQL)
+            && command.indexCapabilities().equals(mysqlIndexCapabilities())
             && command.snapshot().tables().size() == 1
             && command.snapshot().tables().getFirst().columns().size() == 1));
   }
@@ -133,11 +151,14 @@ class SchemaDdlExportOrchestratorTest {
   @DisplayName("테이블이 없어도 빈 table snapshot으로 DDL 생성을 요청한다")
   void exportsEmptySchemaDdl() {
     String schemaId = "schema-1";
-    Schema schema = new Schema(schemaId, "project-1", "mysql", "empty_schema",
+    Schema schema = new Schema(schemaId, "project-1", "empty_schema",
         "utf8mb4", "utf8mb4_general_ci");
 
     given(getSchemaWithRevisionUseCase.getSchemaWithRevision(any(GetSchemaQuery.class)))
         .willReturn(Mono.just(new GetSchemaWithRevisionResult(schema, 7L)));
+    given(getProjectDbVendorUseCase.getProjectDbVendor(
+        new GetProjectDbVendorQuery(schema.projectId())))
+        .willReturn(Mono.just(sourceDbVendor()));
     given(getTablesBySchemaIdUseCase.getTablesBySchemaId(any(GetTablesBySchemaIdQuery.class)))
         .willReturn(Flux.empty());
     given(generateSchemaDdlUseCase.generateSchemaDdl(any(GenerateSchemaDdlCommand.class)))
@@ -155,6 +176,22 @@ class SchemaDdlExportOrchestratorTest {
     then(generateSchemaDdlUseCase).should().generateSchemaDdl(argThat(
         command -> command.snapshot().tables().isEmpty()
             && command.targetDbVendor().equals(DdlExportVendor.MYSQL)));
+  }
+
+  private static DbVendor sourceDbVendor() {
+    return new DbVendor(
+        1,
+        "MySQL 8.0",
+        "mysql",
+        "8.0",
+        "{}",
+        new VendorCapabilities(1, mysqlIndexCapabilities()));
+  }
+
+  private static IndexCapabilities mysqlIndexCapabilities() {
+    return new IndexCapabilities(
+        Set.of(IndexType.BTREE, IndexType.FULLTEXT, IndexType.SPATIAL),
+        Set.of(IndexType.BTREE));
   }
 
 }

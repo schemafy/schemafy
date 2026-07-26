@@ -26,6 +26,8 @@ import com.schemafy.core.erd.schema.domain.exception.SchemaErrorCode;
 import com.schemafy.core.erd.table.application.port.out.GetTableByIdPort;
 import com.schemafy.core.erd.table.domain.Table;
 import com.schemafy.core.erd.table.domain.exception.TableErrorCode;
+import com.schemafy.core.erd.vendor.application.port.in.GetProjectDbVendorQuery;
+import com.schemafy.core.erd.vendor.application.port.in.GetProjectDbVendorUseCase;
 import com.schemafy.core.project.application.access.AccessTarget;
 import com.schemafy.core.project.application.access.RequireProjectAccess;
 import com.schemafy.core.project.domain.ProjectRole;
@@ -46,6 +48,7 @@ public class CreateColumnService implements CreateColumnUseCase {
   private final CreateColumnPort createColumnPort;
   private final GetTableByIdPort getTableByIdPort;
   private final GetSchemaByIdPort getSchemaByIdPort;
+  private final GetProjectDbVendorUseCase getProjectDbVendorUseCase;
   private final GetColumnsByTableIdPort getColumnsByTableIdPort;
   private final TransactionalOperator transactionalOperator;
   private final StructuralSnapshotService structuralSnapshotService;
@@ -69,7 +72,15 @@ public class CreateColumnService implements CreateColumnUseCase {
             .flatMap(beforeSnapshot -> getTableByIdPort.findTableById(command.tableId())
                 .switchIfEmpty(Mono.error(new DomainException(TableErrorCode.NOT_FOUND, "Table not found")))
                 .flatMap(table -> fetchSchemaAndColumns(table)
-                    .flatMap(tuple -> createColumn(table, tuple, command, typeArguments))
+                    .flatMap(tuple -> getProjectDbVendorUseCase
+                        .getProjectDbVendor(new GetProjectDbVendorQuery(
+                            tuple.getT1().projectId()))
+                        .flatMap(dbVendor -> createColumn(
+                            table,
+                            tuple.getT2(),
+                            dbVendor.name(),
+                            command,
+                            typeArguments)))
                     .map(result -> MutationResult.of(result, table.id())))
                 .flatMap(result -> structuralSnapshotService.captureBySchemaId(beforeSnapshot.schemaId())
                     .map(afterSnapshot -> result.withInverse(new CreateColumnInverse(
@@ -91,11 +102,10 @@ public class CreateColumnService implements CreateColumnUseCase {
 
   private Mono<CreateColumnResult> createColumn(
       Table table,
-      Tuple2<Schema, List<Column>> tuple,
+      List<Column> existingColumns,
+      String dbVendorName,
       CreateColumnCommand command,
       ColumnTypeArguments typeArguments) {
-    Schema schema = tuple.getT1();
-    List<Column> existingColumns = tuple.getT2();
     String normalizedName = normalizeName(command.name());
     String normalizedDataType = ColumnValidator.normalizeDataType(command.dataType());
     String charset = normalizeOptional(command.charset());
@@ -103,7 +113,7 @@ public class CreateColumnService implements CreateColumnUseCase {
     String comment = normalizeOptional(command.comment());
 
     ColumnValidator.validateName(normalizedName);
-    ColumnValidator.validateReservedKeyword(schema.dbVendorName(), normalizedName);
+    ColumnValidator.validateReservedKeyword(dbVendorName, normalizedName);
     ColumnValidator.validateNameUniqueness(existingColumns, normalizedName, null);
     ColumnValidator.validateDataType(normalizedDataType);
     ColumnValidator.validateTypeArguments(normalizedDataType, typeArguments);

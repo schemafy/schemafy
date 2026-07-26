@@ -22,6 +22,7 @@ import com.schemafy.core.erd.index.application.port.out.GetIndexesByTableIdPort;
 import com.schemafy.core.erd.index.domain.Index;
 import com.schemafy.core.erd.index.domain.IndexColumn;
 import com.schemafy.core.erd.index.domain.exception.IndexErrorCode;
+import com.schemafy.core.erd.index.domain.policy.IndexCapabilities;
 import com.schemafy.core.erd.index.domain.validator.IndexValidator;
 import com.schemafy.core.erd.operation.application.inverse.AddIndexColumnInverse;
 import com.schemafy.core.erd.operation.application.service.ErdMutationCoordinator;
@@ -53,6 +54,7 @@ public class AddIndexColumnService implements AddIndexColumnUseCase {
   private final GetIndexColumnsByIndexIdPort getIndexColumnsByIndexIdPort;
   private final GetIndexesByTableIdPort getIndexesByTableIdPort;
   private final GetColumnsByTableIdPort getColumnsByTableIdPort;
+  private final IndexCapabilityResolver indexCapabilityResolver;
   private final StructuralSnapshotService structuralSnapshotService;
   private ErdMutationCoordinator erdMutationCoordinator = ErdMutationCoordinator.noop();
 
@@ -82,11 +84,15 @@ public class AddIndexColumnService implements AddIndexColumnUseCase {
     return getIndexByIdPort
         .findIndexById(command.indexId())
         .switchIfEmpty(Mono.error(new DomainException(IndexErrorCode.NOT_FOUND, "Index not found")))
-        .flatMap(index -> validateAndAdd(index, command)
+        .flatMap(index -> indexCapabilityResolver.resolve(INDEX, index.id())
+            .flatMap(capabilities -> validateAndAdd(index, capabilities, command))
             .map(result -> MutationResult.of(result, index.tableId())));
   }
 
-  private Mono<AddIndexColumnResult> validateAndAdd(Index index, AddIndexColumnCommand command) {
+  private Mono<AddIndexColumnResult> validateAndAdd(
+      Index index,
+      IndexCapabilities capabilities,
+      AddIndexColumnCommand command) {
     return Mono.zip(
         getIndexColumnsByIndexIdPort.findIndexColumnsByIndexId(index.id())
             .defaultIfEmpty(List.of()),
@@ -114,11 +120,13 @@ public class AddIndexColumnService implements AddIndexColumnUseCase {
                   .map(IndexColumn::seqNo)
                   .toList();
 
+              IndexValidator.validateType(capabilities, index.type());
               IndexValidator.validateSeqNoIntegrity(seqNos);
               IndexValidator.validateSortDirections(updatedColumns, index.name());
               IndexValidator.validateColumnExistence(tableColumns, updatedColumns, index.name());
               IndexValidator.validateColumnUniqueness(updatedColumns, index.name());
               IndexValidator.validateDefinitionUniqueness(
+                  capabilities,
                   indexes,
                   indexColumnsByIndexId,
                   index.type(),

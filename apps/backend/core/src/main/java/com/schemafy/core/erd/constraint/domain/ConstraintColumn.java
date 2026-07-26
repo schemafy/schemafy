@@ -5,4 +5,9 @@ public record ConstraintColumn(
     String constraintId,
     String columnId,
     int seqNo) {
+
+  public ConstraintColumn withSeqNo(int nextSeqNo) {
+    return new ConstraintColumn(id, constraintId, columnId, nextSeqNo);
+  }
+
 }
