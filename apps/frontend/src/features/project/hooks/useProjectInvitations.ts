@@ -19,7 +19,7 @@ export const useProjectInvitations = (
   const invitationsQuery = useQuery({
     queryKey: projectKeys.invitations(projectId, page, size),
     queryFn: () => getInvitations(projectId, page, size),
-    enabled: !!projectId && enabled,
+    enabled: Boolean(projectId) && enabled,
   });
   const createInvitationMutation = useCreateInvitationMutation(projectId);
 

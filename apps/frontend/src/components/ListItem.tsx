@@ -50,7 +50,7 @@ export const ListItem = ({
             </button>
           </div>
         </div>
-        <Tag count={count} isEntity={!!description} />
+        <Tag count={count} isEntity={Boolean(description)} />
       </div>
       <div className="flex w-full flex-wrap items-center justify-between gap-x-4 gap-y-1 font-body-xs text-schemafy-dark-gray">
         <p className="min-w-0 break-words">{description}</p>

@@ -227,7 +227,7 @@ export const WorkspaceMembersTab = ({
       </div>
 
       <ChangeRoleDialog
-        open={!!roleChangeTarget}
+        open={roleChangeTarget !== null}
         onOpenChange={(open) => !open && setRoleChangeTarget(null)}
         selectedRole={selectedRole}
         onSelectedRoleChange={setSelectedRole}
@@ -237,7 +237,7 @@ export const WorkspaceMembersTab = ({
       />
 
       <ConfirmDialog
-        open={!!removeTarget}
+        open={removeTarget !== null}
         onOpenChange={(open) => !open && setRemoveTarget(null)}
         title="Remove Member"
         description={`Would you like to remove ${removeTarget?.userName}(${removeTarget?.userEmail}) from the workspace?`}

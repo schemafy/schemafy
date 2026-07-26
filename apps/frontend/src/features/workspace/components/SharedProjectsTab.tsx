@@ -109,7 +109,7 @@ export const SharedProjectsTab = () => {
           </div>
 
           <ConfirmDialog
-            open={!!leaveTarget}
+            open={leaveTarget !== null}
             onOpenChange={(open) => !open && setLeaveTarget(null)}
             title="Leave Project"
             description={`Would you like to leave ${leaveTarget?.name}?`}

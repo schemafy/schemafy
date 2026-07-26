@@ -13,7 +13,7 @@ export const useVendor = (displayName: string) => {
   return useQuery({
     queryKey: ['vendors', displayName],
     queryFn: () => getVendor(displayName),
-    enabled: !!displayName,
+    enabled: Boolean(displayName),
     staleTime: Infinity,
   });
 };

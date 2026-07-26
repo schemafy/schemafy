@@ -219,7 +219,7 @@ export const WorkspaceProjectsTab = ({
           />
 
           <ProjectFormDialog
-            open={!!editTarget}
+            open={editTarget !== null}
             onOpenChange={(open) => !open && setEditTarget(null)}
             mode="edit"
             workspaceId={workspaceId}
@@ -229,7 +229,7 @@ export const WorkspaceProjectsTab = ({
           />
 
           <ConfirmDialog
-            open={!!leaveTarget}
+            open={leaveTarget !== null}
             onOpenChange={(open) => !open && setLeaveTarget(null)}
             title="Leave Project"
             description={`Would you like to leave ${leaveTarget?.name}?`}
