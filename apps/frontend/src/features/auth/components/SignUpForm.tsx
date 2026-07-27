@@ -49,6 +49,8 @@ const initialVerificationForm: SignUpVerificationFormValues = {
   code: '',
 };
 
+const emailVerificationRequired = import.meta.env.SMTP_ENABLED !== 'false';
+
 const validationRules: ValidationRules<SignUpFormValues> = {
   name: (value: string) => {
     if (!value.trim()) return 'Name is required.';
@@ -226,8 +228,8 @@ export const SignUpForm = () => {
       setFormError(currentErrors[0] ?? 'Please check your input.');
       return;
     }
-    if (!signupVerificationToken) {
-      setFormError('Please verify your email before creating an account.');
+    if (emailVerificationRequired && !signupVerificationToken) {
+      setFormError('Please verify your email to continue.');
       return;
     }
 
@@ -238,7 +240,7 @@ export const SignUpForm = () => {
         email: form.email,
         name: form.name,
         password: form.password,
-        signupVerificationToken,
+        ...(emailVerificationRequired && { signupVerificationToken }),
       });
 
       authStore.setUser(user);
@@ -276,51 +278,55 @@ export const SignUpForm = () => {
           onChange={handleFormChange}
           onBlur={handleBlur}
         />
-        <div className="flex shrink-0 flex-col gap-1 py-3 pr-4">
-          <span aria-hidden="true" className="invisible mb-1 font-overline-md">
-            Action
-          </span>
-          <Button
-            type="button"
-            disabled={isSubmitting || isSendingCode || isVerifyingCode}
-            className="h-[58px] min-w-[88px]"
-            onClick={handleSendCode}
-          >
-            {isSendingCode ? 'Sending...' : 'Send'}
-          </Button>
-        </div>
+        {emailVerificationRequired && (
+          <div className="flex shrink-0 flex-col gap-1.5 py-2.5 pr-4">
+            <span aria-hidden="true" className="invisible font-overline-xs">
+              Action
+            </span>
+            <Button
+              type="button"
+              disabled={isSubmitting || isSendingCode || isVerifyingCode}
+              className="h-[51px] min-w-[88px]"
+              onClick={handleSendCode}
+            >
+              {isSendingCode ? 'Sending...' : 'Send'}
+            </Button>
+          </div>
+        )}
       </div>
-      <div className="flex items-start gap-2">
-        <InputField
-          label="Verification Code"
-          type="text"
-          name="code"
-          placeholder="000000"
-          required
-          disabled={
-            !sentEmail || isSubmitting || isSendingCode || isVerifyingCode
-          }
-          value={verificationForm.code}
-          error={verificationErrors.code}
-          onChange={handleVerificationCodeChange}
-          onBlur={handleVerificationBlur}
-        />
-        <div className="flex shrink-0 flex-col gap-1 py-3 pr-4">
-          <span aria-hidden="true" className="invisible mb-1 font-overline-md">
-            Action
-          </span>
-          <Button
-            type="button"
+      {emailVerificationRequired && (
+        <div className="flex items-start gap-2">
+          <InputField
+            label="Verification Code"
+            type="text"
+            name="code"
+            placeholder="000000"
+            required
             disabled={
               !sentEmail || isSubmitting || isSendingCode || isVerifyingCode
             }
-            className="h-[58px] min-w-[88px]"
-            onClick={handleVerifyCode}
-          >
-            {isVerifyingCode ? 'Verifying...' : 'Verify'}
-          </Button>
+            value={verificationForm.code}
+            error={verificationErrors.code}
+            onChange={handleVerificationCodeChange}
+            onBlur={handleVerificationBlur}
+          />
+          <div className="flex shrink-0 flex-col gap-1.5 py-2.5 pr-4">
+            <span aria-hidden="true" className="invisible font-overline-xs">
+              Action
+            </span>
+            <Button
+              type="button"
+              disabled={
+                !sentEmail || isSubmitting || isSendingCode || isVerifyingCode
+              }
+              className="h-[51px] min-w-[88px]"
+              onClick={handleVerifyCode}
+            >
+              {isVerifyingCode ? 'Verifying...' : 'Verify'}
+            </Button>
+          </div>
         </div>
-      </div>
+      )}
       {formFields.map((field) => (
         <InputField
           key={field.name}
@@ -328,6 +334,7 @@ export const SignUpForm = () => {
           type={field.type}
           name={field.name}
           placeholder={field.label}
+          required={field.required}
           disabled={isSubmitting}
           value={form[field.name]}
           error={errors[field.name]}
@@ -335,7 +342,7 @@ export const SignUpForm = () => {
           onBlur={handleBlur}
         />
       ))}
-      {signupVerificationToken && (
+      {emailVerificationRequired && signupVerificationToken && (
         <p className="px-4 font-caption-md text-schemafy-primary">
           Email verified.
         </p>

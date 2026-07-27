@@ -66,6 +66,7 @@ auth:
   token:
     secret: test-auth-token-secret
   mail:
+    enabled: true
     from: no-reply@test.schemafy.com
 
 cors:

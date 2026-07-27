@@ -48,7 +48,8 @@ public class UserApiSnippets extends RestDocsSnippets {
         fieldWithPath("password").type(JsonFieldType.STRING)
             .description("비밀번호 (8자 이상)"),
         fieldWithPath("signupVerificationToken").type(JsonFieldType.STRING)
-            .description("이메일 코드 인증 성공 시 발급된 회원가입 검증 토큰 (16~128자)"));
+            .description("이메일 인증 기능 활성화 시 필요한 회원가입 검증 토큰 (16~128자)")
+            .optional());
   }
 
   public static Snippet signUpResponseHeaders() {

@@ -2,7 +2,7 @@ export type SignUpRequest = {
   email: string;
   name: string;
   password: string;
-  signupVerificationToken: string;
+  signupVerificationToken?: string;
 };
 
 export type SignInRequest = {

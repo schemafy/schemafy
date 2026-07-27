@@ -8,6 +8,7 @@ import com.schemafy.core.common.exception.DomainException;
 import com.schemafy.core.user.application.port.in.VerifySignUpEmailCommand;
 import com.schemafy.core.user.application.port.in.VerifySignUpEmailResult;
 import com.schemafy.core.user.application.port.in.VerifySignUpEmailUseCase;
+import com.schemafy.core.user.application.port.out.AuthMailPolicyPort;
 import com.schemafy.core.user.application.port.out.AuthTokenPort;
 import com.schemafy.core.user.application.port.out.ExistsUserByEmailPort;
 import com.schemafy.core.user.application.security.SignupVerificationTokenGenerator;
@@ -27,10 +28,14 @@ class VerifySignUpEmailService implements VerifySignUpEmailUseCase {
   private final ExistsUserByEmailPort existsUserByEmailPort;
   private final AuthTokenPort authTokenPort;
   private final SignupVerificationTokenGenerator signupVerificationTokenGenerator;
+  private final AuthMailPolicyPort authMailPolicyPort;
 
   @Override
   public Mono<VerifySignUpEmailResult> verifySignUpEmail(
       VerifySignUpEmailCommand command) {
+    if (!authMailPolicyPort.isEnabled()) {
+      return Mono.error(new DomainException(UserErrorCode.AUTH_MAIL_DISABLED));
+    }
     return existsUserByEmailPort.existsUserByEmail(command.email())
         .flatMap(exists -> exists
             ? Mono.error(new DomainException(UserErrorCode.ALREADY_EXISTS))

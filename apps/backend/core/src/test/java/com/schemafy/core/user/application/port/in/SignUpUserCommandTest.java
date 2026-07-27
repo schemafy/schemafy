@@ -46,14 +46,15 @@ class SignUpUserCommandTest {
   }
 
   @Test
-  @DisplayName("signup verification token이 없으면 EMAIL_NOT_VERIFIED를 반환한다")
-  void rejectsMissingSignupVerificationToken() {
-    assertThatThrownBy(() -> new SignUpUserCommand(
+  @DisplayName("signup verification token이 없어도 command를 생성한다")
+  void acceptsMissingSignupVerificationToken() {
+    SignUpUserCommand command = new SignUpUserCommand(
         "test@example.com",
         "Tester",
         "password",
-        " "))
-        .matches(DomainException.hasErrorCode(UserErrorCode.EMAIL_NOT_VERIFIED));
+        null);
+
+    assertThat(command.signupVerificationToken()).isNull();
   }
 
   @Test

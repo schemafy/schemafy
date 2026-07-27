@@ -1,5 +1,6 @@
 package com.schemafy.core.user.application.service;
 
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -9,6 +10,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 import com.schemafy.core.common.exception.DomainException;
 import com.schemafy.core.user.application.port.in.VerifySignUpEmailCommand;
+import com.schemafy.core.user.application.port.out.AuthMailPolicyPort;
 import com.schemafy.core.user.application.port.out.AuthTokenPort;
 import com.schemafy.core.user.application.port.out.ExistsUserByEmailPort;
 import com.schemafy.core.user.application.security.SignupVerificationTokenGenerator;
@@ -23,6 +25,8 @@ import reactor.test.StepVerifier;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.verify;
 
 @ExtendWith(MockitoExtension.class)
 @DisplayName("회원가입 이메일 인증 서비스")
@@ -37,8 +41,16 @@ class VerifySignUpEmailServiceTest {
   @Mock
   SignupVerificationTokenGenerator signupVerificationTokenGenerator;
 
+  @Mock
+  AuthMailPolicyPort authMailPolicyPort;
+
   @InjectMocks
   VerifySignUpEmailService sut;
+
+  @BeforeEach
+  void setUp() {
+    given(authMailPolicyPort.isEnabled()).willReturn(true);
+  }
 
   @Test
   @DisplayName("인증 코드가 맞으면 signup verification token을 발급한다")
@@ -139,6 +151,25 @@ class VerifySignUpEmailServiceTest {
               .isEqualTo(UserErrorCode.ALREADY_EXISTS);
         })
         .verify();
+  }
+
+  @Test
+  @DisplayName("인증 메일이 비활성화되면 토큰을 소비하지 않고 AUTH_MAIL_DISABLED를 반환한다")
+  void verifySignUpEmail_mailDisabled() {
+    given(authMailPolicyPort.isEnabled()).willReturn(false);
+
+    StepVerifier.create(sut.verifySignUpEmail(
+        new VerifySignUpEmailCommand("test@example.com", "123456")))
+        .expectErrorSatisfies(error -> {
+          assertThat(error).isInstanceOf(DomainException.class);
+          assertThat(((DomainException) error).getErrorCode())
+              .isEqualTo(UserErrorCode.AUTH_MAIL_DISABLED);
+        })
+        .verify();
+
+    verify(existsUserByEmailPort, never()).existsUserByEmail(any());
+    verify(authTokenPort, never()).consume(any(), any(), any());
+    verify(signupVerificationTokenGenerator, never()).generate();
   }
 
 }

@@ -20,6 +20,10 @@ mcp:
 cors:
   allowed-origins: ${JWT_ALLOWED_ORIGINS:http://localhost:3000}
 
+auth:
+  mail:
+    enabled: ${SMTP_ENABLED:true}
+
 springdoc:
   api-docs:
     enabled: false

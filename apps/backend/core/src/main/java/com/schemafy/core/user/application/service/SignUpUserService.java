@@ -8,6 +8,7 @@ import com.schemafy.core.common.exception.DomainException;
 import com.schemafy.core.ulid.application.port.out.UlidGeneratorPort;
 import com.schemafy.core.user.application.port.in.SignUpUserCommand;
 import com.schemafy.core.user.application.port.in.SignUpUserUseCase;
+import com.schemafy.core.user.application.port.out.AuthMailPolicyPort;
 import com.schemafy.core.user.application.port.out.AuthTokenPort;
 import com.schemafy.core.user.application.port.out.CreateUserPort;
 import com.schemafy.core.user.application.port.out.ExistsUserByEmailPort;
@@ -30,6 +31,7 @@ class SignUpUserService implements SignUpUserUseCase {
   private final CreateUserPort createUserPort;
   private final UlidGeneratorPort ulidGeneratorPort;
   private final AuthTokenPort authTokenPort;
+  private final AuthMailPolicyPort authMailPolicyPort;
 
   @Override
   public Mono<User> signUpUser(SignUpUserCommand command) {
@@ -44,6 +46,14 @@ class SignUpUserService implements SignUpUserUseCase {
   }
 
   private Mono<Void> consumeSignupVerification(SignUpUserCommand command) {
+    // 인증 메일이 비활성화된 환경에서는 코드를 전달할 수 없으므로 가입 검증 생략.
+    if (!authMailPolicyPort.isEnabled()) {
+      return Mono.empty();
+    }
+    if (command.signupVerificationToken() == null
+        || command.signupVerificationToken().isBlank()) {
+      return Mono.error(new DomainException(UserErrorCode.EMAIL_NOT_VERIFIED));
+    }
     return authTokenPort.consume(
         AuthTokenType.SIGNUP_VERIFICATION,
         command.email(),
@@ -54,7 +64,8 @@ class SignUpUserService implements SignUpUserUseCase {
   private Mono<Void> handleConsumeResult(AuthTokenConsumeResult result) {
     return switch (result) {
     case CONSUMED -> Mono.empty();
-    case MISSING -> Mono.error(new DomainException(UserErrorCode.EMAIL_NOT_VERIFIED));
+    case MISSING -> Mono.error(new DomainException(
+        UserErrorCode.SIGNUP_VERIFICATION_INVALID));
     case MISMATCH -> Mono.error(new DomainException(
         UserErrorCode.VERIFICATION_CODE_INVALID));
     case ATTEMPTS_EXCEEDED -> Mono.error(new DomainException(

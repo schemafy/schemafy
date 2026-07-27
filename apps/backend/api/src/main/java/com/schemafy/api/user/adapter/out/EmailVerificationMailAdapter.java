@@ -5,13 +5,13 @@ import java.time.Instant;
 import jakarta.mail.MessagingException;
 import jakarta.mail.internet.MimeMessage;
 
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Profile;
 import org.springframework.mail.MailException;
 import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.mail.javamail.MimeMessageHelper;
 import org.springframework.stereotype.Component;
 
+import com.schemafy.api.user.config.AuthMailProperties;
 import com.schemafy.core.common.exception.DomainException;
 import com.schemafy.core.user.application.port.out.SendEmailVerificationPort;
 import com.schemafy.core.user.domain.exception.UserErrorCode;
@@ -30,9 +30,9 @@ public class EmailVerificationMailAdapter implements SendEmailVerificationPort {
 
   public EmailVerificationMailAdapter(
       JavaMailSender mailSender,
-      @Value("${auth.mail.from}") String from) {
+      AuthMailProperties authMailProperties) {
     this.mailSender = mailSender;
-    this.from = from;
+    this.from = authMailProperties.getFrom();
   }
 
   @Override
