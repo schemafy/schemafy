@@ -27,6 +27,7 @@ import com.schemafy.core.collaboration.dto.event.CollaborationOutboundFactory;
 import com.schemafy.core.collaboration.dto.event.CursorEvent;
 import com.schemafy.core.collaboration.dto.event.ErdMutatedEvent;
 import com.schemafy.core.collaboration.dto.event.LeaveEvent;
+import com.schemafy.core.collaboration.service.CollaborationEventPublisher;
 import com.schemafy.core.common.json.JsonCodec;
 import com.schemafy.core.erd.operation.domain.CommittedErdOperation;
 import com.schemafy.core.erd.operation.domain.ErdOperationDerivationKind;

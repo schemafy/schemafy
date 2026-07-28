@@ -23,6 +23,7 @@ import com.schemafy.core.collaboration.dto.event.CollaborationInbound;
 import com.schemafy.core.collaboration.dto.event.CollaborationOutbound;
 import com.schemafy.core.collaboration.dto.event.CollaborationOutboundFactory;
 import com.schemafy.core.collaboration.dto.event.CursorEvent;
+import com.schemafy.core.collaboration.service.CollaborationEventPublisher;
 import com.schemafy.core.common.json.JsonCodec;
 
 import lombok.extern.slf4j.Slf4j;

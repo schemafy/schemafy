@@ -1,10 +1,10 @@
-package com.schemafy.api.collaboration.service;
+package com.schemafy.core.collaboration.service;
 
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.data.redis.core.ReactiveStringRedisTemplate;
 import org.springframework.stereotype.Service;
 
-import com.schemafy.api.collaboration.constant.CollaborationConstants;
-import com.schemafy.api.common.config.ConditionalOnRedisEnabled;
+import com.schemafy.core.collaboration.CollaborationChannel;
 import com.schemafy.core.collaboration.dto.event.CollaborationOutbound;
 import com.schemafy.core.common.json.JsonCodec;
 
@@ -15,14 +15,14 @@ import reactor.core.publisher.Mono;
 @Slf4j
 @Service
 @RequiredArgsConstructor
-@ConditionalOnRedisEnabled
+@ConditionalOnProperty(name = "spring.data.redis.enabled", havingValue = "true", matchIfMissing = false)
 public class CollaborationEventPublisher {
 
   private final ReactiveStringRedisTemplate redisTemplate;
   private final JsonCodec jsonCodec;
 
   public Mono<Void> publish(String projectId, CollaborationOutbound event) {
-    String channelName = CollaborationConstants.CHANNEL_PREFIX + projectId;
+    String channelName = CollaborationChannel.forProject(projectId);
 
     return serializeToJson(event)
         .flatMap(eventJson -> redisTemplate.convertAndSend(channelName,

@@ -8,8 +8,8 @@ import jakarta.annotation.PreDestroy;
 import org.springframework.data.redis.core.ReactiveStringRedisTemplate;
 import org.springframework.stereotype.Service;
 
-import com.schemafy.api.collaboration.constant.CollaborationConstants;
 import com.schemafy.api.common.config.ConditionalOnRedisEnabled;
+import com.schemafy.core.collaboration.CollaborationChannel;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -44,7 +44,7 @@ public class RedisSubscriptionService {
 
   private void subscribeToChannels() {
     subscription = redisTemplate
-        .listenToPattern(CollaborationConstants.CHANNEL_PATTERN)
+        .listenToPattern(CollaborationChannel.PATTERN)
         .flatMap(message -> {
           String channel = message.getChannel();
           String payload = message.getMessage();
@@ -76,12 +76,7 @@ public class RedisSubscriptionService {
   }
 
   private String extractProjectId(String channel) {
-    if (channel != null
-        && channel.startsWith(CollaborationConstants.CHANNEL_PREFIX)) {
-      return channel
-          .substring(CollaborationConstants.CHANNEL_PREFIX.length());
-    }
-    return channel;
+    return CollaborationChannel.extractProjectId(channel);
   }
 
   public void shutdown() {

@@ -5,9 +5,9 @@ import java.util.Set;
 import org.springframework.stereotype.Service;
 
 import com.schemafy.api.collaboration.constant.CollaborationConstants;
-import com.schemafy.api.collaboration.service.CollaborationEventPublisher;
 import com.schemafy.api.common.config.ConditionalOnRedisEnabled;
 import com.schemafy.core.collaboration.dto.event.CollaborationOutboundFactory;
+import com.schemafy.core.collaboration.service.CollaborationEventPublisher;
 import com.schemafy.core.erd.operation.domain.CommittedErdOperation;
 import com.schemafy.core.erd.schema.application.port.out.GetSchemaByIdPort;
 import com.schemafy.core.erd.table.application.port.out.GetTableByIdPort;
