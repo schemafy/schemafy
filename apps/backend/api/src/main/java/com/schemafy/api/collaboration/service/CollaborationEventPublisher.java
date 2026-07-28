@@ -4,8 +4,8 @@ import org.springframework.data.redis.core.ReactiveStringRedisTemplate;
 import org.springframework.stereotype.Service;
 
 import com.schemafy.api.collaboration.constant.CollaborationConstants;
-import com.schemafy.api.collaboration.dto.event.CollaborationOutbound;
 import com.schemafy.api.common.config.ConditionalOnRedisEnabled;
+import com.schemafy.core.collaboration.dto.event.CollaborationOutbound;
 import com.schemafy.core.common.json.JsonCodec;
 
 import lombok.RequiredArgsConstructor;

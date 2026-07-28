@@ -11,11 +11,11 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
-import com.schemafy.api.collaboration.dto.PreviewAction;
-import com.schemafy.api.collaboration.dto.event.TablePositionPreviewEvent;
 import com.schemafy.api.collaboration.service.CollaborationEventPublisher;
 import com.schemafy.api.collaboration.service.SessionRegistry;
 import com.schemafy.api.collaboration.service.model.SessionEntry;
+import com.schemafy.core.collaboration.dto.PreviewAction;
+import com.schemafy.core.collaboration.dto.event.TablePositionPreviewEvent;
 
 import reactor.core.publisher.Mono;
 import reactor.test.StepVerifier;

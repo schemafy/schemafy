@@ -1,9 +1,9 @@
-package com.schemafy.api.collaboration.dto.event;
+package com.schemafy.core.collaboration.dto.event;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonSubTypes;
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
-import com.schemafy.api.collaboration.dto.CollaborationEventType;
+import com.schemafy.core.collaboration.dto.CollaborationEventType;
 
 @JsonInclude(JsonInclude.Include.NON_NULL)
 @JsonTypeInfo(use = JsonTypeInfo.Id.NAME, property = "type", visible = true)

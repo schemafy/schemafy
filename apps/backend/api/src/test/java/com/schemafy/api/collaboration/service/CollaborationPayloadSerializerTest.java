@@ -6,10 +6,10 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.schemafy.api.collaboration.dto.CursorPosition;
-import com.schemafy.api.collaboration.dto.event.CollaborationOutboundFactory;
-import com.schemafy.api.collaboration.dto.event.CursorEvent;
-import com.schemafy.api.collaboration.dto.event.ErdMutatedEvent;
+import com.schemafy.core.collaboration.dto.CursorPosition;
+import com.schemafy.core.collaboration.dto.event.CollaborationOutboundFactory;
+import com.schemafy.core.collaboration.dto.event.CursorEvent;
+import com.schemafy.core.collaboration.dto.event.ErdMutatedEvent;
 import com.schemafy.core.common.json.JsonCodec;
 import com.schemafy.core.erd.operation.domain.CommittedErdOperation;
 import com.schemafy.core.erd.operation.domain.ErdOperationDerivationKind;

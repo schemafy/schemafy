@@ -10,19 +10,19 @@ import java.util.stream.Collectors;
 import org.springframework.stereotype.Service;
 
 import com.schemafy.api.collaboration.dto.BroadcastMessage;
-import com.schemafy.api.collaboration.dto.CollaborationEventType;
-import com.schemafy.api.collaboration.dto.CursorPosition;
-import com.schemafy.api.collaboration.dto.ProjectPresenceParticipant;
-import com.schemafy.api.collaboration.dto.event.CollaborationInbound;
-import com.schemafy.api.collaboration.dto.event.CollaborationOutbound;
-import com.schemafy.api.collaboration.dto.event.CollaborationOutboundFactory;
-import com.schemafy.api.collaboration.dto.event.CursorEvent;
 import com.schemafy.api.collaboration.service.handler.InboundMessageHandler;
 import com.schemafy.api.collaboration.service.handler.MessageContext;
 import com.schemafy.api.collaboration.service.model.SessionEntry;
 import com.schemafy.api.collaboration.service.presence.ProjectPresenceSession;
 import com.schemafy.api.collaboration.service.presence.ProjectPresenceStore;
 import com.schemafy.api.common.config.ConditionalOnRedisEnabled;
+import com.schemafy.core.collaboration.dto.CollaborationEventType;
+import com.schemafy.core.collaboration.dto.CursorPosition;
+import com.schemafy.core.collaboration.dto.ProjectPresenceParticipant;
+import com.schemafy.core.collaboration.dto.event.CollaborationInbound;
+import com.schemafy.core.collaboration.dto.event.CollaborationOutbound;
+import com.schemafy.core.collaboration.dto.event.CollaborationOutboundFactory;
+import com.schemafy.core.collaboration.dto.event.CursorEvent;
 import com.schemafy.core.common.json.JsonCodec;
 
 import lombok.extern.slf4j.Slf4j;

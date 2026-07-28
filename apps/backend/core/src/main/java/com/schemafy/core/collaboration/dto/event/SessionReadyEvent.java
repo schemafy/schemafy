@@ -1,10 +1,10 @@
-package com.schemafy.api.collaboration.dto.event;
+package com.schemafy.core.collaboration.dto.event;
 
 import java.util.List;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
-import com.schemafy.api.collaboration.dto.CollaborationEventType;
-import com.schemafy.api.collaboration.dto.ProjectPresenceParticipant;
+import com.schemafy.core.collaboration.dto.CollaborationEventType;
+import com.schemafy.core.collaboration.dto.ProjectPresenceParticipant;
 
 public final class SessionReadyEvent {
 

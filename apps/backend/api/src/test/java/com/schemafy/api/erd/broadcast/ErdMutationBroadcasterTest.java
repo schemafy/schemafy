@@ -12,9 +12,9 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import com.schemafy.api.collaboration.constant.CollaborationConstants;
-import com.schemafy.api.collaboration.dto.event.CollaborationOutbound;
-import com.schemafy.api.collaboration.dto.event.ErdMutatedEvent;
 import com.schemafy.api.collaboration.service.CollaborationEventPublisher;
+import com.schemafy.core.collaboration.dto.event.CollaborationOutbound;
+import com.schemafy.core.collaboration.dto.event.ErdMutatedEvent;
 import com.schemafy.core.erd.operation.domain.CommittedErdOperation;
 import com.schemafy.core.erd.operation.domain.ErdOperationDerivationKind;
 import com.schemafy.core.erd.schema.application.port.out.GetSchemaByIdPort;

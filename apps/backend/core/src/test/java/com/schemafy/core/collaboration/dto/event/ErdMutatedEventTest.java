@@ -1,4 +1,4 @@
-package com.schemafy.api.collaboration.dto.event;
+package com.schemafy.core.collaboration.dto.event;
 
 import java.util.Set;
 
@@ -6,7 +6,7 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.schemafy.api.collaboration.dto.CollaborationEventType;
+import com.schemafy.core.collaboration.dto.CollaborationEventType;
 import com.schemafy.core.erd.operation.domain.CommittedErdOperation;
 import com.schemafy.core.erd.operation.domain.ErdOperationDerivationKind;
 

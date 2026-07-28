@@ -4,11 +4,11 @@ import java.util.List;
 
 import org.springframework.stereotype.Component;
 
-import com.schemafy.api.collaboration.dto.ProjectPresenceParticipant;
-import com.schemafy.api.collaboration.dto.event.CollaborationOutbound;
-import com.schemafy.api.collaboration.dto.event.CollaborationOutboundFactory;
 import com.schemafy.api.collaboration.service.model.SessionEntry;
 import com.schemafy.api.common.config.ConditionalOnRedisEnabled;
+import com.schemafy.core.collaboration.dto.ProjectPresenceParticipant;
+import com.schemafy.core.collaboration.dto.event.CollaborationOutbound;
+import com.schemafy.core.collaboration.dto.event.CollaborationOutboundFactory;
 
 import lombok.RequiredArgsConstructor;
 import reactor.core.publisher.Mono;

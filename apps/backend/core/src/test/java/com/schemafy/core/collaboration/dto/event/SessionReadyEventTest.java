@@ -1,4 +1,4 @@
-package com.schemafy.api.collaboration.dto.event;
+package com.schemafy.core.collaboration.dto.event;
 
 import java.util.List;
 
@@ -6,8 +6,8 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.schemafy.api.collaboration.dto.CollaborationEventType;
-import com.schemafy.api.collaboration.dto.ProjectPresenceParticipant;
+import com.schemafy.core.collaboration.dto.CollaborationEventType;
+import com.schemafy.core.collaboration.dto.ProjectPresenceParticipant;
 
 import static org.assertj.core.api.Assertions.assertThat;
 

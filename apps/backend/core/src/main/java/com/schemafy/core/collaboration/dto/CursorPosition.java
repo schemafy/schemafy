@@ -1,4 +1,4 @@
-package com.schemafy.api.collaboration.dto;
+package com.schemafy.core.collaboration.dto;
 
 public record CursorPosition(
     double x,

@@ -1,4 +1,4 @@
-package com.schemafy.api.collaboration.dto;
+package com.schemafy.core.collaboration.dto;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonValue;
