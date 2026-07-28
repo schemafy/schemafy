@@ -1,13 +1,13 @@
-package com.schemafy.api.erd.broadcast;
+package com.schemafy.core.erd.broadcast;
 
 import java.util.Set;
 
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Service;
 
-import com.schemafy.api.collaboration.constant.CollaborationConstants;
-import com.schemafy.api.common.config.ConditionalOnRedisEnabled;
 import com.schemafy.core.collaboration.dto.event.CollaborationOutboundFactory;
 import com.schemafy.core.collaboration.service.CollaborationEventPublisher;
+import com.schemafy.core.erd.operation.ErdOperationContexts;
 import com.schemafy.core.erd.operation.domain.CommittedErdOperation;
 import com.schemafy.core.erd.schema.application.port.out.GetSchemaByIdPort;
 import com.schemafy.core.erd.table.application.port.out.GetTableByIdPort;
@@ -19,7 +19,7 @@ import reactor.core.publisher.Mono;
 @Slf4j
 @Service
 @RequiredArgsConstructor
-@ConditionalOnRedisEnabled
+@ConditionalOnProperty(name = "spring.data.redis.enabled", havingValue = "true", matchIfMissing = false)
 public class ErdMutationBroadcaster {
 
   private final GetTableByIdPort getTableByIdPort;
@@ -101,8 +101,8 @@ public class ErdMutationBroadcaster {
       Set<String> affectedTableIds,
       CommittedErdOperation operation) {
     return Mono.deferContextual(reactorCtx -> {
-      String sessionId = reactorCtx.getOrDefault(
-          CollaborationConstants.SESSION_ID_CONTEXT_KEY, null);
+      String sessionId = ErdOperationContexts.metadata(reactorCtx)
+          .sessionId();
       return eventPublisher.publish(ctx.projectId(),
           CollaborationOutboundFactory.erdMutated(sessionId,
               ctx.schemaId(), affectedTableIds, operation));

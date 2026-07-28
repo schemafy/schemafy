@@ -1,4 +1,4 @@
-package com.schemafy.api.erd.broadcast;
+package com.schemafy.core.erd.broadcast;
 
 import java.util.Set;
 
@@ -11,10 +11,10 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
-import com.schemafy.api.collaboration.constant.CollaborationConstants;
 import com.schemafy.core.collaboration.dto.event.CollaborationOutbound;
 import com.schemafy.core.collaboration.dto.event.ErdMutatedEvent;
 import com.schemafy.core.collaboration.service.CollaborationEventPublisher;
+import com.schemafy.core.erd.operation.ErdOperationContexts;
 import com.schemafy.core.erd.operation.domain.CommittedErdOperation;
 import com.schemafy.core.erd.operation.domain.ErdOperationDerivationKind;
 import com.schemafy.core.erd.schema.application.port.out.GetSchemaByIdPort;
@@ -111,9 +111,7 @@ class ErdMutationBroadcasterTest {
           .willReturn(Mono.empty());
 
       StepVerifier.create(broadcaster.broadcast(tableIds, OPERATION)
-          .contextWrite(ctx -> ctx.put(
-              CollaborationConstants.SESSION_ID_CONTEXT_KEY,
-              "session-1")))
+          .contextWrite(ErdOperationContexts.withSessionId("session-1")))
           .verifyComplete();
 
       ArgumentCaptor<CollaborationOutbound> captor = ArgumentCaptor

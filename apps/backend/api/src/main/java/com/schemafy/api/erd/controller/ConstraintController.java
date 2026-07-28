@@ -17,7 +17,6 @@ import org.springframework.web.bind.annotation.RestController;
 
 import com.schemafy.api.common.constant.ApiPath;
 import com.schemafy.api.common.type.MutationResponse;
-import com.schemafy.api.erd.broadcast.ErdMutationBroadcaster;
 import com.schemafy.api.erd.controller.dto.request.AddConstraintColumnRequest;
 import com.schemafy.api.erd.controller.dto.request.ChangeConstraintCheckExprRequest;
 import com.schemafy.api.erd.controller.dto.request.ChangeConstraintColumnPositionRequest;
@@ -29,6 +28,7 @@ import com.schemafy.api.erd.controller.dto.response.AddConstraintColumnResponse;
 import com.schemafy.api.erd.controller.dto.response.ConstraintColumnResponse;
 import com.schemafy.api.erd.controller.dto.response.ConstraintResponse;
 import com.schemafy.core.common.exception.DomainException;
+import com.schemafy.core.erd.broadcast.ErdMutationBroadcaster;
 import com.schemafy.core.erd.constraint.application.port.in.AddConstraintColumnCommand;
 import com.schemafy.core.erd.constraint.application.port.in.AddConstraintColumnUseCase;
 import com.schemafy.core.erd.constraint.application.port.in.ChangeConstraintCheckExprCommand;

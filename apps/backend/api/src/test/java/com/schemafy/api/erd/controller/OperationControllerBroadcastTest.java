@@ -12,8 +12,8 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
-import com.schemafy.api.erd.broadcast.ErdMutationBroadcaster;
 import com.schemafy.core.common.MutationResult;
+import com.schemafy.core.erd.broadcast.ErdMutationBroadcaster;
 import com.schemafy.core.erd.operation.application.inverse.CreateTableInverse;
 import com.schemafy.core.erd.operation.application.inverse.StructuralSnapshot;
 import com.schemafy.core.erd.operation.application.port.in.RedoErdOperationUseCase;
