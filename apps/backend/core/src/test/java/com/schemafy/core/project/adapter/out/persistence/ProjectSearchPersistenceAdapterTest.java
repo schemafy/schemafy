@@ -1,5 +1,7 @@
 package com.schemafy.core.project.adapter.out.persistence;
 
+import java.time.Instant;
+
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.data.r2dbc.DataR2dbcTest;
 import org.springframework.context.annotation.Import;
@@ -61,10 +63,12 @@ class ProjectSearchPersistenceAdapterTest {
   @Test
   @DisplayName("워크스페이스 멤버 검색은 사용자 정보를 포함한 read projection을 반환한다")
   void searchWorkspaceMembers_returnsUserProjection() {
+    Instant createdAt = Instant.parse("2025-01-01T00:00:00Z");
     Workspace workspace = saveWorkspace("Search Workspace");
     UserFixture user = saveUser("alice@example.com", "Alice Engineer");
     WorkspaceMember member = saveWorkspaceMember(workspace, user.id(),
         WorkspaceRole.ADMIN);
+    setWorkspaceMemberCreatedAt(member.getId(), createdAt);
 
     StepVerifier.create(sut.searchWorkspaceMembers(
         workspace.getId(), "ALICE", 0, 5))
@@ -72,7 +76,7 @@ class ProjectSearchPersistenceAdapterTest {
           assertThat(page.totalElements()).isEqualTo(1);
           assertThat(page.content()).containsExactly(new MemberSearchResult(
               user.id(), user.name(), user.email(), member.getRole(),
-              member.getCreatedAt()));
+              createdAt));
         })
         .verifyComplete();
   }
@@ -80,11 +84,13 @@ class ProjectSearchPersistenceAdapterTest {
   @Test
   @DisplayName("프로젝트 멤버 검색은 사용자 이메일과 가입 시각을 포함한 read projection을 반환한다")
   void searchProjectMembers_returnsUserProjection() {
+    Instant joinedAt = Instant.parse("2025-01-01T00:00:00Z");
     Workspace workspace = saveWorkspace("Project Search Workspace");
     Project project = saveProject(workspace, "Project Search");
     UserFixture user = saveUser("bob@example.com", "Bob Designer");
     ProjectMember member = saveProjectMember(project, user.id(),
         ProjectRole.EDITOR);
+    setProjectMemberJoinedAt(member.getId(), joinedAt);
 
     StepVerifier.create(sut.searchProjectMembers(
         project.getId(), "BOB@EXAMPLE.COM", 0, 5))
@@ -92,7 +98,7 @@ class ProjectSearchPersistenceAdapterTest {
           assertThat(page.totalElements()).isEqualTo(1);
           assertThat(page.content()).containsExactly(new MemberSearchResult(
               user.id(), user.name(), user.email(), member.getRole(),
-              member.getJoinedAt()));
+              joinedAt));
         })
         .verifyComplete();
   }
@@ -155,8 +161,9 @@ class ProjectSearchPersistenceAdapterTest {
 
   private WorkspaceMember saveWorkspaceMember(Workspace workspace,
       String userId, WorkspaceRole role) {
-    return workspaceMemberRepository.save(WorkspaceMember.create(
-        UlidGenerator.generate(), workspace.getId(), userId, role)).block();
+    return workspaceMemberRepository.save(
+        WorkspaceMember.create(UlidGenerator.generate(), workspace.getId(),
+            userId, role)).block();
   }
 
   private Project saveProject(Workspace workspace, String name) {
@@ -168,6 +175,24 @@ class ProjectSearchPersistenceAdapterTest {
       ProjectRole role) {
     return projectMemberRepository.save(ProjectMember.create(
         UlidGenerator.generate(), project.getId(), userId, role)).block();
+  }
+
+  private void setWorkspaceMemberCreatedAt(String memberId, Instant createdAt) {
+    databaseClient.sql("UPDATE workspace_members SET created_at = :createdAt WHERE id = :memberId")
+        .bind("createdAt", createdAt)
+        .bind("memberId", memberId)
+        .fetch()
+        .rowsUpdated()
+        .block();
+  }
+
+  private void setProjectMemberJoinedAt(String memberId, Instant joinedAt) {
+    databaseClient.sql("UPDATE project_members SET joined_at = :joinedAt WHERE id = :memberId")
+        .bind("joinedAt", joinedAt)
+        .bind("memberId", memberId)
+        .fetch()
+        .rowsUpdated()
+        .block();
   }
 
   private UserFixture saveUser(String email, String name) {
