@@ -23,11 +23,13 @@ import com.schemafy.core.erd.index.domain.exception.IndexErrorCode;
 import com.schemafy.core.erd.index.domain.type.IndexType;
 import com.schemafy.core.erd.index.domain.type.SortDirection;
 import com.schemafy.core.erd.index.fixture.IndexFixture;
+import com.schemafy.core.erd.operation.application.inverse.ChangeIndexColumnSortDirectionInverse;
 import com.schemafy.core.erd.vendor.fixture.DbVendorFixture;
 
 import reactor.core.publisher.Mono;
 import reactor.test.StepVerifier;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
@@ -95,7 +97,8 @@ class ChangeIndexColumnSortDirectionServiceTest {
           .willReturn(Mono.empty());
 
       StepVerifier.create(sut.changeIndexColumnSortDirection(command))
-          .expectNextCount(1)
+          .assertNext(result -> assertThat(result.inversePayload()).isEqualTo(
+              new ChangeIndexColumnSortDirectionInverse(indexColumn.id(), SortDirection.ASC)))
           .verifyComplete();
 
       then(changeIndexColumnSortDirectionPort).should()
