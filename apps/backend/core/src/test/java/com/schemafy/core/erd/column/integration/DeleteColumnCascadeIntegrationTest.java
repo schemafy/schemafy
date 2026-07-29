@@ -110,7 +110,7 @@ class DeleteColumnCascadeIntegrationTest extends ErdProjectIntegrationSupport {
       void setUp() {
         String projectId = createActiveProjectId("delete_column_single_fk");
         var schemaResult = createSchemaUseCase.createSchema(new CreateSchemaCommand(
-            projectId, "MySQL", "pk_delete_single_fk_schema",
+            projectId, "pk_delete_single_fk_schema",
             "utf8mb4", "utf8mb4_general_ci")).block().result();
         schemaId = schemaResult.id();
 
@@ -191,7 +191,7 @@ class DeleteColumnCascadeIntegrationTest extends ErdProjectIntegrationSupport {
       void setUp() {
         String projectId = createActiveProjectId("delete_column_multi_fk");
         var schemaResult = createSchemaUseCase.createSchema(new CreateSchemaCommand(
-            projectId, "MySQL", "pk_delete_multi_fk_schema",
+            projectId, "pk_delete_multi_fk_schema",
             "utf8mb4", "utf8mb4_general_ci")).block().result();
         schemaId = schemaResult.id();
 
@@ -266,7 +266,7 @@ class DeleteColumnCascadeIntegrationTest extends ErdProjectIntegrationSupport {
       void setUp() {
         String projectId = createActiveProjectId("delete_column_chain");
         var schemaResult = createSchemaUseCase.createSchema(new CreateSchemaCommand(
-            projectId, "MySQL", "chain_cascade_schema",
+            projectId, "chain_cascade_schema",
             "utf8mb4", "utf8mb4_general_ci")).block().result();
         schemaId = schemaResult.id();
 
@@ -350,7 +350,7 @@ class DeleteColumnCascadeIntegrationTest extends ErdProjectIntegrationSupport {
     void setUp() {
       String projectId = createActiveProjectId("delete_fk_column_only");
       var schemaResult = createSchemaUseCase.createSchema(new CreateSchemaCommand(
-          projectId, "MySQL", "fk_only_delete_schema",
+          projectId, "fk_only_delete_schema",
           "utf8mb4", "utf8mb4_general_ci")).block().result();
       schemaId = schemaResult.id();
 

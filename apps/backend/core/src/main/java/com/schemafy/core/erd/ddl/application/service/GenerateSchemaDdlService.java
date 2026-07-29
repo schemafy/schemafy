@@ -13,6 +13,9 @@ import com.schemafy.core.erd.ddl.application.port.in.GenerateSchemaDdlUseCase;
 import com.schemafy.core.erd.ddl.domain.DdlExportVendor;
 import com.schemafy.core.erd.ddl.domain.DdlGenerator;
 import com.schemafy.core.erd.ddl.domain.exception.DdlErrorCode;
+import com.schemafy.core.erd.export.domain.SchemaExportSnapshot;
+import com.schemafy.core.erd.index.domain.policy.IndexCapabilities;
+import com.schemafy.core.erd.index.domain.validator.IndexValidator;
 
 import reactor.core.publisher.Mono;
 
@@ -42,8 +45,18 @@ public class GenerateSchemaDdlService implements GenerateSchemaDdlUseCase {
             "Unsupported DDL export target DB vendor: "
                 + command.targetDbVendor().value());
       }
+      validateIndexCapabilities(command.snapshot(), command.indexCapabilities());
       return generator.generate(command.snapshot());
     });
+  }
+
+  private static void validateIndexCapabilities(
+      SchemaExportSnapshot snapshot,
+      IndexCapabilities indexCapabilities) {
+    snapshot.tables().stream()
+        .flatMap(table -> table.indexes().stream())
+        .map(SchemaExportSnapshot.IndexSnapshot::index)
+        .forEach(index -> IndexValidator.validateType(indexCapabilities, index.type()));
   }
 
 }

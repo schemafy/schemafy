@@ -208,6 +208,11 @@ export const ERROR_MESSAGES: Record<string, ErrorMessageInfo> = {
     message: 'Cannot remove the last owner. Please assign another owner first.',
     category: ErrorCategory.USER_FEEDBACK,
   },
+  PROJECT_WORKSPACE_ADMIN_PROJECT_ADMIN_PROTECTED: {
+    message:
+      'Workspace admins cannot leave projects. Leave the workspace instead.',
+    category: ErrorCategory.USER_FEEDBACK,
+  },
   PROJECT_WORKSPACE_MEMBERSHIP_REQUIRED: {
     message: 'You must be a workspace member to access this project.',
     category: ErrorCategory.USER_FEEDBACK,

@@ -26,6 +26,7 @@ import com.schemafy.core.erd.index.application.port.out.IndexExistsPort;
 import com.schemafy.core.erd.index.domain.Index;
 import com.schemafy.core.erd.index.domain.IndexColumn;
 import com.schemafy.core.erd.index.domain.exception.IndexErrorCode;
+import com.schemafy.core.erd.index.domain.policy.IndexCapabilities;
 import com.schemafy.core.erd.index.domain.validator.IndexValidator;
 import com.schemafy.core.erd.operation.application.inverse.CreateIndexInverse;
 import com.schemafy.core.erd.operation.application.service.ErdMutationCoordinator;
@@ -59,6 +60,7 @@ public class CreateIndexService implements CreateIndexUseCase {
   private final GetColumnsByTableIdPort getColumnsByTableIdPort;
   private final GetIndexesByTableIdPort getIndexesByTableIdPort;
   private final GetIndexColumnsByIndexIdPort getIndexColumnsByIndexIdPort;
+  private final IndexCapabilityResolver indexCapabilityResolver;
   private final StructuralSnapshotService structuralSnapshotService;
   private ErdMutationCoordinator erdMutationCoordinator = ErdMutationCoordinator.noop();
 
@@ -82,7 +84,11 @@ public class CreateIndexService implements CreateIndexUseCase {
 
           return getTableByIdPort.findTableById(command.tableId())
               .switchIfEmpty(Mono.error(new DomainException(TableErrorCode.NOT_FOUND, "Table not found")))
-              .flatMap(table -> {
+              .zipWith(indexCapabilityResolver.resolve(TABLE, command.tableId()))
+              .flatMap(tuple -> {
+                Table table = tuple.getT1();
+                IndexCapabilities capabilities = tuple.getT2();
+                IndexValidator.validateType(capabilities, command.type());
                 Mono<String> nameMono;
                 if (autoName) {
                   nameMono = resolveAutoIndexName(table);
@@ -98,7 +104,8 @@ public class CreateIndexService implements CreateIndexUseCase {
                       });
                 }
 
-                return nameMono.flatMap(resolvedName -> validateAndCreate(table, command, resolvedName, columnCommands)
+                return nameMono.flatMap(resolvedName -> validateAndCreate(
+                    table, capabilities, command, resolvedName, columnCommands)
                     .map(result -> MutationResult.of(result, table.id())));
               });
         })
@@ -114,6 +121,7 @@ public class CreateIndexService implements CreateIndexUseCase {
 
   private Mono<CreateIndexResult> validateAndCreate(
       Table table,
+      IndexCapabilities capabilities,
       CreateIndexCommand command,
       String normalizedName,
       List<CreateIndexColumnCommand> columnCommands) {
@@ -135,6 +143,7 @@ public class CreateIndexService implements CreateIndexUseCase {
               IndexValidator.validateColumnExistence(columns, indexColumns, normalizedName);
               IndexValidator.validateColumnUniqueness(indexColumns, normalizedName);
               IndexValidator.validateDefinitionUniqueness(
+                  capabilities,
                   indexes,
                   indexColumnsByIndexId,
                   command.type(),

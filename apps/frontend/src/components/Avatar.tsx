@@ -2,6 +2,7 @@ import * as React from 'react';
 import * as AvatarPrimitive from '@radix-ui/react-avatar';
 import { type VariantProps, cva } from 'class-variance-authority';
 import { cn } from '@/lib';
+import { getRandomColor, getInitials } from '@/features/collaboration/utils';
 
 const avatarVariants = cva(`rounded-full`, {
   variants: {
@@ -23,11 +24,22 @@ interface CustomAvatarProps
     React.ComponentPropsWithoutRef<typeof AvatarPrimitive.Root>,
     VariantProps<typeof avatarVariants> {
   src?: string;
+  name?: string;
   alt?: string;
+  color?: string;
 }
 
 export const Avatar = ((
-  { className, size, deactivate, src, alt, ...props }: CustomAvatarProps,
+  {
+    className,
+    size,
+    deactivate,
+    src,
+    name,
+    alt,
+    color,
+    ...props
+  }: CustomAvatarProps,
   ref: React.Ref<HTMLDivElement>,
 ) => {
   return (
@@ -36,7 +48,13 @@ export const Avatar = ((
       className={cn(avatarVariants({ size, deactivate }), className)}
       {...props}
     >
-      {src && <AvatarImage src={src} alt={alt || 'Avatar'} />}
+      {src && <AvatarImage src={src} alt={alt || name || 'Avatar'} />}
+      <AvatarPrimitive.Fallback
+        className="flex h-full w-full items-center justify-center rounded-full text-xs font-medium"
+        style={{ backgroundColor: color || getRandomColor(name || '') }}
+      >
+        {getInitials(name || '?')}
+      </AvatarPrimitive.Fallback>
     </AvatarRoot>
   );
 }) as React.ComponentType<CustomAvatarProps>;

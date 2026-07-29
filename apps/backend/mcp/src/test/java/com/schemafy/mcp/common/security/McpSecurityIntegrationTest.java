@@ -167,7 +167,7 @@ class McpSecurityIntegrationTest {
   }
 
   @Test
-  @DisplayName("유효한 MCP 토큰이면 initialize 요청이 성공하고 빈 tool 목록 상태를 유지한다")
+  @DisplayName("유효한 MCP 토큰이면 initialize 요청이 성공하고 read-only tool 목록을 노출한다")
   void initializesWithValidToken() {
     String token = tokenFactory.validToken();
     EntityExchangeResult<byte[]> initializeResult = webTestClient.post()
@@ -197,7 +197,10 @@ class McpSecurityIntegrationTest {
         .expectStatus().isOk()
         .expectBody()
         .consumeWith(result -> assertThat(new String(result.getResponseBody()))
-            .contains("\"tools\":[]"));
+            .contains("schemafy_list_workspaces")
+            .contains("schemafy_list_projects")
+            .contains("schemafy_get_schema")
+            .doesNotContain("schemafy_read_resource"));
   }
 
   private Map<String, Object> initializeRequest() {

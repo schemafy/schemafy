@@ -104,6 +104,8 @@ public class CollaborationWebSocketHandler implements WebSocketHandler {
     String userId = authInfo.getUserId();
 
     return projectAccessValidator.canAccess(projectId, userId)
+        .onErrorResume(error -> handleAccessValidationError(session,
+            projectId, error).then(Mono.empty()))
         .flatMap(hasAccess -> {
           if (hasAccess) {
             return handleAuthenticated(session, authInfo,
@@ -227,6 +229,15 @@ public class CollaborationWebSocketHandler implements WebSocketHandler {
         session.getId(), projectId);
     return session.close(CloseStatus.POLICY_VIOLATION
         .withReason("Access denied to project"));
+  }
+
+  private Mono<Void> handleAccessValidationError(WebSocketSession session,
+      String projectId, Throwable error) {
+    log.error(
+        "[CollaborationWebSocketHandler] Project access validation failed: sessionId={}, projectId={}",
+        session.getId(), projectId, error);
+    return session.close(CloseStatus.SERVER_ERROR
+        .withReason("Project access validation failed"));
   }
 
   private Mono<Void> handleInvalidProjectId(WebSocketSession session) {

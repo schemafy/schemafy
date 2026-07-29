@@ -12,12 +12,14 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import com.schemafy.core.common.exception.DomainException;
-import com.schemafy.core.erd.schema.application.port.out.ActiveProjectExistsPort;
 import com.schemafy.core.erd.schema.application.port.out.CreateSchemaPort;
 import com.schemafy.core.erd.schema.application.port.out.SchemaExistsPort;
 import com.schemafy.core.erd.schema.domain.Schema;
 import com.schemafy.core.erd.schema.domain.exception.SchemaErrorCode;
 import com.schemafy.core.erd.schema.fixture.SchemaFixture;
+import com.schemafy.core.erd.vendor.application.port.in.GetProjectDbVendorQuery;
+import com.schemafy.core.erd.vendor.application.port.in.GetProjectDbVendorUseCase;
+import com.schemafy.core.erd.vendor.fixture.DbVendorFixture;
 import com.schemafy.core.project.domain.exception.ProjectErrorCode;
 import com.schemafy.core.ulid.application.port.out.UlidGeneratorPort;
 
@@ -34,7 +36,7 @@ import static org.mockito.BDDMockito.then;
 class CreateSchemaServiceTest {
 
   @Mock
-  ActiveProjectExistsPort activeProjectExistsPort;
+  GetProjectDbVendorUseCase getProjectDbVendorUseCase;
 
   @Mock
   UlidGeneratorPort ulidGeneratorPort;
@@ -71,8 +73,8 @@ class CreateSchemaServiceTest {
         var command = SchemaFixture.createCommand();
         var schema = SchemaFixture.defaultSchema();
 
-        given(activeProjectExistsPort.existsActiveProjectById(any()))
-            .willReturn(Mono.just(true));
+        given(getProjectDbVendorUseCase.getProjectDbVendor(any()))
+            .willReturn(Mono.just(DbVendorFixture.defaultDbVendor()));
         given(schemaExistsPort.existsActiveByProjectIdAndName(any(), any()))
             .willReturn(Mono.just(false));
         given(ulidGeneratorPort.generate())
@@ -85,15 +87,14 @@ class CreateSchemaServiceTest {
               var payload = result.result();
               assertThat(payload.id()).isEqualTo(SchemaFixture.DEFAULT_ID);
               assertThat(payload.projectId()).isEqualTo(command.projectId());
-              assertThat(payload.dbVendorName()).isEqualTo(command.dbVendorName());
               assertThat(payload.name()).isEqualTo(command.name());
               assertThat(payload.charset()).isEqualTo(command.charset());
               assertThat(payload.collation()).isEqualTo(command.collation());
             })
             .verifyComplete();
 
-        then(activeProjectExistsPort).should()
-            .existsActiveProjectById(command.projectId());
+        then(getProjectDbVendorUseCase).should()
+            .getProjectDbVendor(new GetProjectDbVendorQuery(command.projectId()));
         then(schemaExistsPort).should()
             .existsActiveByProjectIdAndName(command.projectId(), command.name());
         then(createSchemaPort).should().createSchema(any(Schema.class));
@@ -110,8 +111,8 @@ class CreateSchemaServiceTest {
       void throwsSchemaNameDuplicateException() {
         var command = SchemaFixture.createCommand();
 
-        given(activeProjectExistsPort.existsActiveProjectById(any()))
-            .willReturn(Mono.just(true));
+        given(getProjectDbVendorUseCase.getProjectDbVendor(any()))
+            .willReturn(Mono.just(DbVendorFixture.defaultDbVendor()));
         given(schemaExistsPort.existsActiveByProjectIdAndName(any(), any()))
             .willReturn(Mono.just(true));
 
@@ -134,15 +135,16 @@ class CreateSchemaServiceTest {
       void throwsProjectNotFoundException() {
         var command = SchemaFixture.createCommand();
 
-        given(activeProjectExistsPort.existsActiveProjectById(any()))
-            .willReturn(Mono.just(false));
+        given(getProjectDbVendorUseCase.getProjectDbVendor(any()))
+            .willReturn(Mono.error(new DomainException(ProjectErrorCode.NOT_FOUND,
+                "Project not found: " + command.projectId())));
 
         StepVerifier.create(sut.createSchema(command))
             .expectErrorMatches(DomainException.hasErrorCode(ProjectErrorCode.NOT_FOUND))
             .verify();
 
-        then(activeProjectExistsPort).should()
-            .existsActiveProjectById(command.projectId());
+        then(getProjectDbVendorUseCase).should()
+            .getProjectDbVendor(new GetProjectDbVendorQuery(command.projectId()));
         then(schemaExistsPort).shouldHaveNoInteractions();
         then(createSchemaPort).shouldHaveNoInteractions();
         then(ulidGeneratorPort).shouldHaveNoInteractions();
@@ -159,15 +161,16 @@ class CreateSchemaServiceTest {
       void throwsProjectNotFoundException() {
         var command = SchemaFixture.createCommand();
 
-        given(activeProjectExistsPort.existsActiveProjectById(any()))
-            .willReturn(Mono.just(false));
+        given(getProjectDbVendorUseCase.getProjectDbVendor(any()))
+            .willReturn(Mono.error(new DomainException(ProjectErrorCode.NOT_FOUND,
+                "Project not found: " + command.projectId())));
 
         StepVerifier.create(sut.createSchema(command))
             .expectErrorMatches(DomainException.hasErrorCode(ProjectErrorCode.NOT_FOUND))
             .verify();
 
-        then(activeProjectExistsPort).should()
-            .existsActiveProjectById(command.projectId());
+        then(getProjectDbVendorUseCase).should()
+            .getProjectDbVendor(new GetProjectDbVendorQuery(command.projectId()));
         then(schemaExistsPort).shouldHaveNoInteractions();
         then(createSchemaPort).shouldHaveNoInteractions();
         then(ulidGeneratorPort).shouldHaveNoInteractions();

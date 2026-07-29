@@ -6,6 +6,7 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
 import com.schemafy.core.common.exception.DomainException;
+import com.schemafy.core.erd.vendor.domain.exception.VendorErrorCode;
 import com.schemafy.core.project.application.port.in.CreateProjectCommand;
 import com.schemafy.core.project.application.port.in.CreateProjectUseCase;
 import com.schemafy.core.project.application.port.in.DeleteProjectCommand;
@@ -39,6 +40,8 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 @DisplayName("프로젝트 유스케이스 통합 테스트")
 class ProjectUseCaseIntegrationTest extends ProjectDomainIntegrationSupport {
+
+  private static final Integer DELETED_DB_VENDOR_ID = 2;
 
   @Autowired
   private CreateProjectUseCase createProjectUseCase;
@@ -81,6 +84,7 @@ class ProjectUseCaseIntegrationTest extends ProjectDomainIntegrationSupport {
 
     ProjectDetail detail = createProjectUseCase.createProject(new CreateProjectCommand(
         workspace.getId(),
+        DB_VENDOR_ID,
         "Project A",
         "Description",
         creator.id()))
@@ -97,6 +101,7 @@ class ProjectUseCaseIntegrationTest extends ProjectDomainIntegrationSupport {
         .block();
 
     assertThat(detail.currentUserRole()).isEqualTo(ProjectRole.ADMIN.name());
+    assertThat(detail.project().getDbVendorId()).isEqualTo(DB_VENDOR_ID);
     assertThat(creatorMember.getRoleAsEnum()).isEqualTo(ProjectRole.ADMIN);
     assertThat(memberProjectMember.getRoleAsEnum()).isEqualTo(ProjectRole.VIEWER);
     assertThat(deletedProjectMember).isNull();
@@ -111,6 +116,7 @@ class ProjectUseCaseIntegrationTest extends ProjectDomainIntegrationSupport {
 
     StepVerifier.create(createProjectUseCase.createProject(new CreateProjectCommand(
         workspace.getId(),
+        DB_VENDOR_ID,
         "Denied Project",
         "Description",
         member.id())))
@@ -126,11 +132,51 @@ class ProjectUseCaseIntegrationTest extends ProjectDomainIntegrationSupport {
 
     StepVerifier.create(createProjectUseCase.createProject(new CreateProjectCommand(
         workspace.getId(),
+        DB_VENDOR_ID,
         "Denied Project",
         "Description",
         requester.id())))
         .expectErrorMatches(DomainException.hasErrorCode(WorkspaceErrorCode.ACCESS_DENIED))
         .verify();
+  }
+
+  @Test
+  @DisplayName("프로젝트 생성은 존재하지 않는 DB 벤더 프로필이면 거부된다")
+  void createProject_rejectsUnknownDbVendorId() {
+    User creator = signUpUser("creator-unknown-vendor@test.com", "Creator");
+    Workspace workspace = saveWorkspace("Unknown Vendor WS", "Description");
+    saveWorkspaceMember(workspace, creator, WorkspaceRole.ADMIN);
+
+    StepVerifier.create(createProjectUseCase.createProject(new CreateProjectCommand(
+        workspace.getId(),
+        999,
+        "Project",
+        "Description",
+        creator.id())))
+        .expectErrorMatches(DomainException.hasErrorCode(VendorErrorCode.NOT_FOUND))
+        .verify();
+  }
+
+  @Test
+  @DisplayName("프로젝트 생성은 삭제된 DB 벤더 프로필이면 거부된다")
+  void createProject_rejectsDeletedDbVendorId() {
+    User creator = signUpUser("creator-deleted-vendor@test.com", "Creator");
+    Workspace workspace = saveWorkspace("Deleted Vendor WS", "Description");
+    saveWorkspaceMember(workspace, creator, WorkspaceRole.ADMIN);
+    insertDeletedDbVendor();
+
+    try {
+      StepVerifier.create(createProjectUseCase.createProject(new CreateProjectCommand(
+          workspace.getId(),
+          DELETED_DB_VENDOR_ID,
+          "Project",
+          "Description",
+          creator.id())))
+          .expectErrorMatches(DomainException.hasErrorCode(VendorErrorCode.NOT_FOUND))
+          .verify();
+    } finally {
+      deleteDbVendor(DELETED_DB_VENDOR_ID);
+    }
   }
 
   @Test
@@ -180,6 +226,7 @@ class ProjectUseCaseIntegrationTest extends ProjectDomainIntegrationSupport {
 
     assertThat(updated).isNotNull();
     assertThat(updated.project().getName()).isEqualTo("New Name");
+    assertThat(updated.project().getDbVendorId()).isEqualTo(DB_VENDOR_ID);
     assertThat(updated.currentUserRole()).isEqualTo(ProjectRole.ADMIN.name());
   }
 
@@ -762,6 +809,30 @@ class ProjectUseCaseIntegrationTest extends ProjectDomainIntegrationSupport {
     assertThat(deletedMember).isNotNull();
     assertThat(deletedMember.isDeleted()).isTrue();
     assertThat(projectRepository.findByIdAndNotDeleted(project.getId()).block()).isNotNull();
+  }
+
+  private void insertDeletedDbVendor() {
+    databaseClient.sql("""
+        INSERT INTO db_vendors (
+          id, display_name, name, version, datatype_mappings, capabilities, deleted_at
+        ) VALUES (
+          :id, 'Deleted Vendor', 'deleted-vendor', '1.0', '{}',
+          '{"schemaVersion":1,"indexes":{"supportedTypes":["BTREE"],"sortDirectionTypes":["BTREE"]}}',
+          CURRENT_TIMESTAMP
+        )
+        """)
+        .bind("id", DELETED_DB_VENDOR_ID)
+        .fetch()
+        .rowsUpdated()
+        .block();
+  }
+
+  private void deleteDbVendor(Integer id) {
+    databaseClient.sql("DELETE FROM db_vendors WHERE id = :id")
+        .bind("id", id)
+        .fetch()
+        .rowsUpdated()
+        .block();
   }
 
 }

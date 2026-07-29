@@ -17,12 +17,12 @@ export class VendorService {
   }
 
   async getVendor(
-    displayName: string,
+    id: string,
     authHeader: string,
   ): Promise<DbVendorDetailResponse> {
     const response =
       await this.backendClient.client.get<DbVendorDetailResponse>(
-        `/api/v1.0/vendors/${encodeURIComponent(displayName)}`,
+        `/api/v1.0/vendors/${encodeURIComponent(id)}`,
         this.backendClient.getAuthConfig(authHeader),
       );
     return response.data;

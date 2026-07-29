@@ -11,6 +11,7 @@ import com.schemafy.core.erd.constraint.application.port.in.CreateConstraintComm
 import com.schemafy.core.erd.constraint.application.port.in.DeleteConstraintCommand;
 import com.schemafy.core.erd.constraint.application.port.in.RemoveConstraintColumnCommand;
 import com.schemafy.core.erd.operation.application.inverse.ChangeConstraintCheckExprInverse;
+import com.schemafy.core.erd.operation.application.inverse.ChangeConstraintColumnPositionInverse;
 import com.schemafy.core.erd.operation.application.inverse.ChangeConstraintDefaultExprInverse;
 import com.schemafy.core.erd.operation.application.inverse.ChangeConstraintNameInverse;
 import com.schemafy.core.erd.operation.domain.ErdOperationType;
@@ -95,6 +96,10 @@ class ConstraintMutationTargetResolver {
   }
 
   private Mono<ResolvedErdMutationTarget> resolveChangeConstraintColumnPosition(Object payload) {
+    if (payload instanceof ChangeConstraintColumnPositionInverse inverse) {
+      return targetLookup.resolveByConstraintColumnId(
+          inverse.constraintColumnId(), inverse.constraintColumnId());
+    }
     ChangeConstraintColumnPositionCommand command = requirePayload(
         payload, ChangeConstraintColumnPositionCommand.class);
     return targetLookup.resolveByConstraintColumnId(command.constraintColumnId(), command.constraintColumnId());

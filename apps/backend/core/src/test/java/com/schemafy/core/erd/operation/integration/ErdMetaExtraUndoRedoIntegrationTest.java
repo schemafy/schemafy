@@ -330,7 +330,6 @@ class ErdMetaExtraUndoRedoIntegrationTest extends ErdProjectIntegrationSupport {
     String projectId = createActiveProjectId(prefix);
     String schemaId = createSchemaUseCase.createSchema(new CreateSchemaCommand(
         projectId,
-        "MySQL",
         prefix + "_schema",
         "utf8mb4",
         "utf8mb4_general_ci")).block().result().id();

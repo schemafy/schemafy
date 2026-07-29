@@ -1,5 +1,5 @@
 import { useQuery } from '@tanstack/react-query';
-import { listVendors, getVendor } from '../api/vendor.api';
+import { getVendor, listVendors } from '../api/vendor.api';
 
 export const useVendors = () => {
   return useQuery({
@@ -9,11 +9,11 @@ export const useVendors = () => {
   });
 };
 
-export const useVendor = (displayName: string) => {
+export const useVendor = (id: number) => {
   return useQuery({
-    queryKey: ['vendors', displayName],
-    queryFn: () => getVendor(displayName),
-    enabled: !!displayName,
+    queryKey: ['vendors', id],
+    queryFn: () => getVendor(id),
+    enabled: id > 0,
     staleTime: Infinity,
   });
 };
