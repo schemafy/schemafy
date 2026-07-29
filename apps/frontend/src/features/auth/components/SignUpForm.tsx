@@ -1,21 +1,11 @@
 import { Button, InputField } from '@/components';
-import { useFormState } from '../hooks';
 import { useState } from 'react';
-import { useNavigate } from '@tanstack/react-router';
 import {
-  sendSignUpEmailCode,
-  signUp,
-  verifySignUpEmail,
-} from '@/features/auth/api';
-import type { SignUpEmailVerificationResponse } from '@/features/auth/api/types';
-import { authStore } from '@/store/auth.store';
-import { toast } from 'sonner';
-import { reportUnexpectedError } from '@/lib';
-import type {
-  SignUpFormValues,
-  SignUpVerificationFormValues,
-  ValidationRules,
-} from '../types';
+  useFormState,
+  useSignUpEmailVerification,
+  useSignUpSubmission,
+} from '../hooks';
+import type { SignUpFormValues, ValidationRules } from '../types';
 
 const formFields = [
   {
@@ -43,10 +33,6 @@ const initialForm: SignUpFormValues = {
   email: '',
   password: '',
   confirmPassword: '',
-};
-
-const initialVerificationForm: SignUpVerificationFormValues = {
-  code: '',
 };
 
 const emailVerificationRequired = import.meta.env.SMTP_ENABLED !== 'false';
@@ -77,193 +63,46 @@ const validationRules: ValidationRules<SignUpFormValues> = {
   },
 };
 
-const verificationValidationRules: ValidationRules<SignUpVerificationFormValues> =
-  {
-    code: (value: string) => {
-      if (!value.trim()) return 'Verification code is required.';
-      if (!/^\d{6}$/.test(value)) return 'Enter the 6-digit code.';
-      return '';
-    },
-  };
-
 export const SignUpForm = () => {
   const { form, errors, handleChange, handleBlur, resetForm } = useFormState(
     initialForm,
     validationRules,
   );
-  const {
-    form: verificationForm,
-    errors: verificationErrors,
-    handleChange: handleVerificationChange,
-    handleBlur: handleVerificationBlur,
-    resetForm: resetVerificationForm,
-  } = useFormState(initialVerificationForm, verificationValidationRules);
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const [isSendingCode, setIsSendingCode] = useState(false);
-  const [isVerifyingCode, setIsVerifyingCode] = useState(false);
-  const [sentEmail, setSentEmail] = useState<string | null>(null);
-  const [lastEmailVerification, setLastEmailVerification] =
-    useState<SignUpEmailVerificationResponse | null>(null);
-  const [signupVerificationToken, setSignupVerificationToken] = useState('');
   const [formError, setFormError] = useState('');
-  const navigate = useNavigate();
-
+  const clearFormError = () => setFormError('');
   const emailError = validationRules.email?.(form.email, form) ?? '';
-  const verificationCodeError =
-    verificationValidationRules.code?.(
-      verificationForm.code,
-      verificationForm,
-    ) ?? '';
-
-  const handleFormChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (e.target.name === 'email') {
-      setSentEmail(null);
-      setSignupVerificationToken('');
-      resetVerificationForm();
-    }
-    setFormError('');
-    handleChange(e);
-  };
-
-  const handleVerificationCodeChange = (
-    e: React.ChangeEvent<HTMLInputElement>,
-  ) => {
-    setSignupVerificationToken('');
-    setFormError('');
-    handleVerificationChange(e);
-  };
-
-  const hasActiveEmailVerification = (
-    previous: SignUpEmailVerificationResponse | null,
-    current: SignUpEmailVerificationResponse,
-  ) => {
-    if (!previous || previous.email !== current.email) {
-      return false;
-    }
-
-    const expiresAt = Date.parse(previous.expiresAt);
-    return Number.isFinite(expiresAt) && expiresAt > Date.now();
-  };
-
-  const handleSendCode = async () => {
-    if (emailError) {
-      setFormError(emailError);
-      return;
-    }
-
-    setIsSendingCode(true);
-    setFormError('');
-
-    try {
-      const verification = await sendSignUpEmailCode({ email: form.email });
-      const alreadySent = hasActiveEmailVerification(
-        lastEmailVerification,
-        verification,
-      );
-
-      setSentEmail(verification.email);
-      setLastEmailVerification(verification);
-      setSignupVerificationToken('');
-      resetVerificationForm();
-
-      if (alreadySent) {
-        toast.info(
-          <>
-            A verification email was already sent.
-            <br />
-            Check your inbox or use the existing code.
-          </>,
-        );
-      } else {
-        toast.success('Verification email sent. Please check your inbox.');
-      }
-    } catch (error) {
-      reportUnexpectedError(error, {
-        context: 'Unexpected sign-up email code send failure.',
-      });
-    } finally {
-      setIsSendingCode(false);
-    }
-  };
-
-  const handleVerifyCode = async () => {
-    if (!sentEmail) {
-      setFormError('Please send a verification code first.');
-      return;
-    }
-    if (verificationCodeError) {
-      setFormError(verificationCodeError);
-      return;
-    }
-
-    setIsVerifyingCode(true);
-    setFormError('');
-
-    try {
-      const result = await verifySignUpEmail({
-        email: sentEmail,
-        code: verificationForm.code,
-      });
-      setSignupVerificationToken(result.signupVerificationToken);
-    } catch (error) {
-      reportUnexpectedError(error, {
-        context: 'Unexpected sign-up email verification failure.',
-      });
-    } finally {
-      setIsVerifyingCode(false);
-    }
-  };
-
-  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
-    e.preventDefault();
-
-    const currentErrors = [
-      validationRules.email?.(form.email, form),
-      validationRules.name?.(form.name, form),
-      validationRules.password?.(form.password, form),
-      validationRules.confirmPassword?.(form.confirmPassword, form),
-    ].filter(Boolean);
-    const hasErrors = Object.keys(errors).length > 0;
-    if (hasErrors || currentErrors.length > 0) {
-      setFormError(currentErrors[0] ?? 'Please check your input.');
-      return;
-    }
-    if (emailVerificationRequired && !signupVerificationToken) {
-      setFormError('Please verify your email to continue.');
-      return;
-    }
-
-    setIsSubmitting(true);
-
-    try {
-      const user = await signUp({
-        email: form.email,
-        name: form.name,
-        password: form.password,
-        ...(emailVerificationRequired && { signupVerificationToken }),
-      });
-
-      authStore.setUser(user);
+  const emailVerification = useSignUpEmailVerification({
+    emailError,
+    setFormError,
+    clearFormError,
+  });
+  const signUpSubmission = useSignUpSubmission({
+    form,
+    errors,
+    validationRules,
+    emailVerificationRequired,
+    signupVerificationToken: emailVerification.signupVerificationToken,
+    setFormError,
+    onSuccess: () => {
       resetForm();
-      resetVerificationForm();
-      setSentEmail(null);
-      setLastEmailVerification(null);
-      setSignupVerificationToken('');
-      navigate({ to: '/' });
-    } catch (error) {
-      reportUnexpectedError(error, {
-        context: 'Unexpected sign-up form failure.',
-      });
-    } finally {
-      setIsSubmitting(false);
+      emailVerification.resetVerification();
+    },
+  });
+  const isVerificationDisabled =
+    signUpSubmission.isSubmitting || emailVerification.isVerificationPending;
+  const handleFormChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    clearFormError();
+    if (event.target.name === 'email') {
+      emailVerification.resetVerification();
     }
+    handleChange(event);
   };
 
   return (
     <form
       noValidate
       className="flex w-full max-w-[480px] flex-col gap-2"
-      onSubmit={handleSubmit}
+      onSubmit={signUpSubmission.handleSubmit}
     >
       <div className="flex items-start gap-2">
         <InputField
@@ -272,7 +111,7 @@ export const SignUpForm = () => {
           name="email"
           placeholder="Email"
           required
-          disabled={isSubmitting || isSendingCode || isVerifyingCode}
+          disabled={isVerificationDisabled}
           value={form.email}
           error={errors.email}
           onChange={handleFormChange}
@@ -285,11 +124,11 @@ export const SignUpForm = () => {
             </span>
             <Button
               type="button"
-              disabled={isSubmitting || isSendingCode || isVerifyingCode}
+              disabled={isVerificationDisabled}
               className="h-[51px] min-w-[88px]"
-              onClick={handleSendCode}
+              onClick={() => emailVerification.handleSendCode(form.email)}
             >
-              {isSendingCode ? 'Sending...' : 'Send'}
+              {emailVerification.isSendingCode ? 'Sending...' : 'Send'}
             </Button>
           </div>
         )}
@@ -302,13 +141,11 @@ export const SignUpForm = () => {
             name="code"
             placeholder="000000"
             required
-            disabled={
-              !sentEmail || isSubmitting || isSendingCode || isVerifyingCode
-            }
-            value={verificationForm.code}
-            error={verificationErrors.code}
-            onChange={handleVerificationCodeChange}
-            onBlur={handleVerificationBlur}
+            disabled={!emailVerification.sentEmail || isVerificationDisabled}
+            value={emailVerification.verificationForm.code}
+            error={emailVerification.verificationErrors.code}
+            onChange={emailVerification.handleVerificationCodeChange}
+            onBlur={emailVerification.handleVerificationBlur}
           />
           <div className="flex shrink-0 flex-col gap-1.5 py-2.5 pr-4">
             <span aria-hidden="true" className="invisible font-overline-xs">
@@ -316,13 +153,11 @@ export const SignUpForm = () => {
             </span>
             <Button
               type="button"
-              disabled={
-                !sentEmail || isSubmitting || isSendingCode || isVerifyingCode
-              }
+              disabled={!emailVerification.sentEmail || isVerificationDisabled}
               className="h-[51px] min-w-[88px]"
-              onClick={handleVerifyCode}
+              onClick={emailVerification.handleVerifyCode}
             >
-              {isVerifyingCode ? 'Verifying...' : 'Verify'}
+              {emailVerification.isVerifyingCode ? 'Verifying...' : 'Verify'}
             </Button>
           </div>
         </div>
@@ -335,18 +170,19 @@ export const SignUpForm = () => {
           name={field.name}
           placeholder={field.label}
           required={field.required}
-          disabled={isSubmitting}
+          disabled={signUpSubmission.isSubmitting}
           value={form[field.name]}
           error={errors[field.name]}
           onChange={handleFormChange}
           onBlur={handleBlur}
         />
       ))}
-      {emailVerificationRequired && signupVerificationToken && (
-        <p className="px-4 font-caption-md text-schemafy-primary">
-          Email verified.
-        </p>
-      )}
+      {emailVerificationRequired &&
+        emailVerification.signupVerificationToken && (
+          <p className="px-4 font-caption-md text-schemafy-primary">
+            Email verified.
+          </p>
+        )}
       {formError && (
         <p
           className="px-4 text-schemafy-destructive font-caption-md"
@@ -355,8 +191,13 @@ export const SignUpForm = () => {
           {formError}
         </p>
       )}
-      <Button type="submit" disabled={isSubmitting} className="my-4" round>
-        {isSubmitting ? 'Creating...' : 'Create Account'}
+      <Button
+        type="submit"
+        disabled={signUpSubmission.isSubmitting}
+        className="my-4"
+        round
+      >
+        {signUpSubmission.isSubmitting ? 'Creating...' : 'Create Account'}
       </Button>
     </form>
   );
