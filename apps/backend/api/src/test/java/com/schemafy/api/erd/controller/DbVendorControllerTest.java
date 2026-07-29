@@ -43,7 +43,7 @@ import static org.springframework.restdocs.request.RequestDocumentation.pathPara
 @AutoConfigureWebTestClient
 @AutoConfigureRestDocs
 @DisplayName("DbVendorController 통합 테스트")
-@WithMockCustomUser(roles = "VIEWER")
+@WithMockCustomUser
 class DbVendorControllerTest {
 
   private static final Integer DB_VENDOR_ID = 1;

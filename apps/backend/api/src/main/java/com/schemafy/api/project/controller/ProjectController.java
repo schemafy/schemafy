@@ -7,7 +7,6 @@ import jakarta.validation.constraints.PositiveOrZero;
 
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
-import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
@@ -78,7 +77,6 @@ public class ProjectController {
   @Value("${app.base-url:http://localhost:8080}")
   private String baseUrl;
 
-  @PreAuthorize("hasAnyRole('ADMIN')")
   @PostMapping("/workspaces/{workspaceId}/projects")
   @ResponseStatus(HttpStatus.CREATED)
   public Mono<ProjectResponse> createProject(
@@ -95,7 +93,6 @@ public class ProjectController {
         .map(ProjectResponse::from);
   }
 
-  @PreAuthorize("hasAnyRole('ADMIN','EDITOR','VIEWER')")
   @GetMapping("/workspaces/{workspaceId}/projects")
   public Mono<PageResponse<ProjectSummaryResponse>> getProjects(
       @PathVariable String workspaceId,
@@ -115,7 +112,6 @@ public class ProjectController {
             result.totalElements()));
   }
 
-  @PreAuthorize("hasAnyRole('ADMIN','EDITOR','VIEWER')")
   @GetMapping("/projects/{projectId}")
   public Mono<ProjectResponse> getProject(
       @PathVariable String projectId,
@@ -125,7 +121,6 @@ public class ProjectController {
         .map(ProjectResponse::from);
   }
 
-  @PreAuthorize("hasAnyRole('ADMIN','EDITOR','VIEWER')")
   @GetMapping("/projects/shared/me")
   public Mono<PageResponse<ProjectSummaryResponse>> getMySharedProjects(
       @RequestParam(defaultValue = "0") @PositiveOrZero int page,
@@ -142,7 +137,6 @@ public class ProjectController {
             result.totalElements()));
   }
 
-  @PreAuthorize("hasAnyRole('ADMIN')")
   @PutMapping("/projects/{projectId}")
   public Mono<ProjectResponse> updateProject(
       @PathVariable String projectId,
@@ -157,7 +151,6 @@ public class ProjectController {
         .map(ProjectResponse::from);
   }
 
-  @PreAuthorize("hasAnyRole('ADMIN')")
   @DeleteMapping("/projects/{projectId}")
   @ResponseStatus(HttpStatus.NO_CONTENT)
   public Mono<Void> deleteProject(@PathVariable String projectId,
@@ -168,7 +161,6 @@ public class ProjectController {
         userId));
   }
 
-  @PreAuthorize("hasAnyRole('ADMIN','EDITOR','VIEWER')")
   @GetMapping("/projects/{projectId}/members")
   public Mono<PageResponse<ProjectMemberResponse>> getMembers(
       @PathVariable String projectId,
@@ -184,7 +176,6 @@ public class ProjectController {
         .map(result -> result.map(ProjectMemberResponse::from));
   }
 
-  @PreAuthorize("hasAnyRole('ADMIN')")
   @PatchMapping("/projects/{projectId}/members/{userId}/role")
   public Mono<ProjectMemberResponse> updateMemberRole(
       @PathVariable String projectId,
@@ -201,7 +192,6 @@ public class ProjectController {
         .map(ProjectMemberResponse::from);
   }
 
-  @PreAuthorize("hasAnyRole('ADMIN')")
   @DeleteMapping("/projects/{projectId}/members/{userId}")
   @ResponseStatus(HttpStatus.NO_CONTENT)
   public Mono<Void> removeMember(@PathVariable String projectId, @PathVariable String userId,
@@ -211,7 +201,6 @@ public class ProjectController {
         new RemoveProjectMemberCommand(projectId, userId, requester));
   }
 
-  @PreAuthorize("hasAnyRole('ADMIN','EDITOR','VIEWER')")
   @DeleteMapping("/projects/{projectId}/members/me")
   @ResponseStatus(HttpStatus.NO_CONTENT)
   public Mono<Void> leaveProject(
@@ -224,7 +213,6 @@ public class ProjectController {
 
   // ========== ShareLink Management ==========
 
-  @PreAuthorize("hasAnyRole('ADMIN')")
   @PostMapping("/projects/{projectId}/share-links")
   @ResponseStatus(HttpStatus.CREATED)
   public Mono<ShareLinkResponse> createShareLink(
@@ -238,7 +226,6 @@ public class ProjectController {
         .map(shareLink -> ShareLinkResponse.of(shareLink, baseUrl, version));
   }
 
-  @PreAuthorize("hasAnyRole('ADMIN')")
   @GetMapping("/projects/{projectId}/share-links")
   public Mono<PageResponse<ShareLinkResponse>> getShareLinks(
       @PathVariable String version,
@@ -261,7 +248,6 @@ public class ProjectController {
             result.totalElements()));
   }
 
-  @PreAuthorize("hasAnyRole('ADMIN')")
   @GetMapping("/projects/{projectId}/share-links/{shareLinkId}")
   public Mono<ShareLinkResponse> getShareLink(
       @PathVariable String version,
@@ -276,7 +262,6 @@ public class ProjectController {
         .map(shareLink -> ShareLinkResponse.of(shareLink, baseUrl, version));
   }
 
-  @PreAuthorize("hasAnyRole('ADMIN')")
   @PatchMapping("/projects/{projectId}/share-links/{shareLinkId}/revoke")
   public Mono<ShareLinkResponse> revokeShareLink(
       @PathVariable String version,
@@ -291,7 +276,6 @@ public class ProjectController {
         .map(shareLink -> ShareLinkResponse.of(shareLink, baseUrl, version));
   }
 
-  @PreAuthorize("hasAnyRole('ADMIN')")
   @DeleteMapping("/projects/{projectId}/share-links/{shareLinkId}")
   @ResponseStatus(HttpStatus.NO_CONTENT)
   public Mono<Void> deleteShareLink(
