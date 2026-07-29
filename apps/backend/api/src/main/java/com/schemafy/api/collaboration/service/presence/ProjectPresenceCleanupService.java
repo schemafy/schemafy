@@ -6,7 +6,7 @@ import jakarta.annotation.PreDestroy;
 import org.springframework.stereotype.Service;
 
 import com.schemafy.api.collaboration.service.CollaborationService;
-import com.schemafy.api.common.config.ConditionalOnRedisEnabled;
+import com.schemafy.core.common.config.ConditionalOnRedisEnabled;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;

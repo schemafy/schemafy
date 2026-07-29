@@ -8,8 +8,8 @@ import jakarta.annotation.PreDestroy;
 import org.springframework.data.redis.core.ReactiveStringRedisTemplate;
 import org.springframework.stereotype.Service;
 
-import com.schemafy.api.common.config.ConditionalOnRedisEnabled;
 import com.schemafy.core.collaboration.CollaborationChannel;
+import com.schemafy.core.common.config.ConditionalOnRedisEnabled;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;

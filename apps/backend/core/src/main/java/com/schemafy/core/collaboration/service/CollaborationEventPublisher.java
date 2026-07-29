@@ -1,11 +1,11 @@
 package com.schemafy.core.collaboration.service;
 
-import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.data.redis.core.ReactiveStringRedisTemplate;
 import org.springframework.stereotype.Service;
 
 import com.schemafy.core.collaboration.CollaborationChannel;
 import com.schemafy.core.collaboration.dto.event.CollaborationOutbound;
+import com.schemafy.core.common.config.ConditionalOnRedisEnabled;
 import com.schemafy.core.common.json.JsonCodec;
 
 import lombok.RequiredArgsConstructor;
@@ -15,7 +15,7 @@ import reactor.core.publisher.Mono;
 @Slf4j
 @Service
 @RequiredArgsConstructor
-@ConditionalOnProperty(name = "spring.data.redis.enabled", havingValue = "true", matchIfMissing = false)
+@ConditionalOnRedisEnabled
 public class CollaborationEventPublisher {
 
   private final ReactiveStringRedisTemplate redisTemplate;

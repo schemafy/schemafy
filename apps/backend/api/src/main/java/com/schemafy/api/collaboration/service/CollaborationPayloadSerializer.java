@@ -2,8 +2,8 @@ package com.schemafy.api.collaboration.service;
 
 import org.springframework.stereotype.Component;
 
-import com.schemafy.api.common.config.ConditionalOnRedisEnabled;
 import com.schemafy.core.collaboration.dto.event.CollaborationOutbound;
+import com.schemafy.core.common.config.ConditionalOnRedisEnabled;
 import com.schemafy.core.common.json.JsonCodec;
 
 import lombok.RequiredArgsConstructor;

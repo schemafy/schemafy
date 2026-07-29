@@ -2,11 +2,11 @@ package com.schemafy.core.erd.broadcast;
 
 import java.util.Set;
 
-import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Service;
 
 import com.schemafy.core.collaboration.dto.event.CollaborationOutboundFactory;
 import com.schemafy.core.collaboration.service.CollaborationEventPublisher;
+import com.schemafy.core.common.config.ConditionalOnRedisEnabled;
 import com.schemafy.core.erd.operation.ErdOperationContexts;
 import com.schemafy.core.erd.operation.domain.CommittedErdOperation;
 import com.schemafy.core.erd.schema.application.port.out.GetSchemaByIdPort;
@@ -19,7 +19,7 @@ import reactor.core.publisher.Mono;
 @Slf4j
 @Service
 @RequiredArgsConstructor
-@ConditionalOnProperty(name = "spring.data.redis.enabled", havingValue = "true", matchIfMissing = false)
+@ConditionalOnRedisEnabled
 public class ErdMutationBroadcaster {
 
   private final GetTableByIdPort getTableByIdPort;

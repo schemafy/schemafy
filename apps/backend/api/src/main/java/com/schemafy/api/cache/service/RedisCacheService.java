@@ -8,7 +8,7 @@ import org.springframework.stereotype.Service;
 
 import com.schemafy.api.cache.config.CacheProperties;
 import com.schemafy.api.cache.service.dto.CacheStatsDto;
-import com.schemafy.api.common.config.ConditionalOnRedisEnabled;
+import com.schemafy.core.common.config.ConditionalOnRedisEnabled;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;

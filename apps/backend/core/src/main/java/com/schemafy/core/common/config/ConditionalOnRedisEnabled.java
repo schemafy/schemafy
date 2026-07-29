@@ -1,4 +1,4 @@
-package com.schemafy.api.common.config;
+package com.schemafy.core.common.config;
 
 import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;
