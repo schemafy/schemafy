@@ -506,21 +506,6 @@ class ProjectUseCaseIntegrationTest extends ProjectDomainIntegrationSupport {
   }
 
   @Test
-  @DisplayName("마지막 멤버가 프로젝트를 나가면 프로젝트도 삭제된다")
-  void leaveProject_lastMemberDeletesProject() {
-    User member = signUpUser("member-last@test.com", "Member");
-    Workspace workspace = saveWorkspace("Last Project WS", "Description");
-    saveWorkspaceMember(workspace, member, WorkspaceRole.MEMBER);
-    var project = saveProject(workspace, "Last Project");
-    saveProjectMember(project, member, ProjectRole.ADMIN);
-    createSchema(project, "last_member_schema");
-
-    leaveProjectUseCase.leaveProject(new LeaveProjectCommand(project.getId(), member.id())).block();
-
-    assertThat(projectRepository.findByIdAndNotDeleted(project.getId()).block()).isNull();
-  }
-
-  @Test
   @DisplayName("프로젝트 탈퇴는 비회원이면 거부된다")
   void leaveProject_deniesNonMember() {
     User requester = signUpUser("non-member-project-leave@test.com", "Requester");

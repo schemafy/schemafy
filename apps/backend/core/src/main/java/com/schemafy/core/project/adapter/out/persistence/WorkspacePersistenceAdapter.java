@@ -29,6 +29,18 @@ public class WorkspacePersistenceAdapter
   }
 
   @Override
+  public Mono<Workspace> findByIdAndNotDeletedInShareMode(String workspaceId) {
+    return workspaceRepository
+        .findWithSharedLockByIdAndDeletedAtIsNull(workspaceId);
+  }
+
+  @Override
+  public Mono<Workspace> findByIdAndNotDeletedForUpdate(String workspaceId) {
+    return workspaceRepository
+        .findWithExclusiveLockByIdAndDeletedAtIsNull(workspaceId);
+  }
+
+  @Override
   public Flux<Workspace> findByUserIdWithPaging(String userId, int limit,
       int offset) {
     return workspaceRepository.findByUserIdWithPaging(userId, limit, offset);

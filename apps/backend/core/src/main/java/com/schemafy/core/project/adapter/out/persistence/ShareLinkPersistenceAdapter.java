@@ -30,6 +30,19 @@ public class ShareLinkPersistenceAdapter implements ShareLinkPort {
   }
 
   @Override
+  public Mono<Long> softDeleteByIdAndProjectId(String shareLinkId,
+      String projectId) {
+    return shareLinkRepository.softDeleteByIdAndProjectId(shareLinkId,
+        projectId);
+  }
+
+  @Override
+  public Mono<Long> revokeByIdAndProjectId(String shareLinkId,
+      String projectId) {
+    return shareLinkRepository.revokeByIdAndProjectId(shareLinkId, projectId);
+  }
+
+  @Override
   public Flux<ShareLink> findByProjectIdAndNotDeleted(String projectId,
       int limit, int offset) {
     return shareLinkRepository.findByProjectIdAndNotDeleted(projectId, limit,

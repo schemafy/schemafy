@@ -46,8 +46,8 @@ class ProjectAccessHelper {
   }
 
   Mono<Void> softDeleteMember(ProjectMember member) {
-    member.delete();
-    return projectMemberPort.save(member).then();
+    return projectMemberPort.softDeleteByProjectIdAndUserId(member.getProjectId(),
+        member.getUserId()).then();
   }
 
   Mono<Void> validateWorkspaceAdminGuard(

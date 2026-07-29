@@ -27,6 +27,13 @@ class ProjectCascadeHelper {
   private final ShareLinkPort shareLinkPort;
 
   Mono<Void> softDeleteProjectCascade(Project project) {
+    return projectPort.lockByIdAndNotDeletedForUpdate(project.getId())
+        .then(projectPort.findById(project.getId()))
+        .defaultIfEmpty(project)
+        .flatMap(this::softDeleteLockedProjectCascade);
+  }
+
+  Mono<Void> softDeleteLockedProjectCascade(Project project) {
     String projectId = project.getId();
     Mono<Void> deleteSchemas = getSchemasByProjectIdPort.findSchemasByProjectId(projectId)
         .concatMap(schema -> deleteSchemaUseCase.deleteSchema(new DeleteSchemaCommand(schema.id()))

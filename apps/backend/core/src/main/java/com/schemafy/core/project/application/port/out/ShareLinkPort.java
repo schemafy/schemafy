@@ -13,6 +13,10 @@ public interface ShareLinkPort {
 
   Mono<Void> incrementAccessCount(String shareLinkId);
 
+  Mono<Long> softDeleteByIdAndProjectId(String shareLinkId, String projectId);
+
+  Mono<Long> revokeByIdAndProjectId(String shareLinkId, String projectId);
+
   Flux<ShareLink> findByProjectIdAndNotDeleted(
       String projectId,
       int limit,
