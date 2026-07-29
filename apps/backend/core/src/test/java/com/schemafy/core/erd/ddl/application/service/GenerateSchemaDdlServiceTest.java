@@ -9,14 +9,14 @@ import com.schemafy.core.common.exception.DomainException;
 import com.schemafy.core.erd.ddl.application.port.in.GenerateSchemaDdlCommand;
 import com.schemafy.core.erd.ddl.domain.DdlExportVendor;
 import com.schemafy.core.erd.ddl.domain.DdlGenerator;
-import com.schemafy.core.erd.ddl.domain.DdlSchemaSnapshot;
-import com.schemafy.core.erd.ddl.domain.DdlSchemaSnapshot.Index;
-import com.schemafy.core.erd.ddl.domain.DdlSchemaSnapshot.IndexSnapshot;
-import com.schemafy.core.erd.ddl.domain.DdlSchemaSnapshot.SchemaSnapshot;
-import com.schemafy.core.erd.ddl.domain.DdlSchemaSnapshot.Table;
-import com.schemafy.core.erd.ddl.domain.DdlSchemaSnapshot.TableSnapshot;
 import com.schemafy.core.erd.ddl.domain.exception.DdlErrorCode;
 import com.schemafy.core.erd.ddl.domain.mysql.MySqlDdlGenerator;
+import com.schemafy.core.erd.export.domain.SchemaExportSnapshot;
+import com.schemafy.core.erd.export.domain.SchemaExportSnapshot.Index;
+import com.schemafy.core.erd.export.domain.SchemaExportSnapshot.IndexSnapshot;
+import com.schemafy.core.erd.export.domain.SchemaExportSnapshot.SchemaSnapshot;
+import com.schemafy.core.erd.export.domain.SchemaExportSnapshot.Table;
+import com.schemafy.core.erd.export.domain.SchemaExportSnapshot.TableSnapshot;
 import com.schemafy.core.erd.index.domain.type.IndexType;
 import com.schemafy.core.erd.vendor.domain.IdentifierCapabilities;
 import com.schemafy.core.erd.vendor.domain.IdentifierLengthUnit;
@@ -33,7 +33,7 @@ class GenerateSchemaDdlServiceTest {
   @Test
   @DisplayName("targetDbVendor에 맞는 core DDL generator로 라우팅한다")
   void routesToDdlGeneratorByTargetDbVendor() {
-    DdlSchemaSnapshot snapshot = new DdlSchemaSnapshot(
+    SchemaExportSnapshot snapshot = new SchemaExportSnapshot(
         new SchemaSnapshot("schema-1", "mysql", "app", null, null),
         java.util.List.of());
     DdlGenerator mysqlGenerator = new StubDdlGenerator(
@@ -58,7 +58,7 @@ class GenerateSchemaDdlServiceTest {
   @Test
   @DisplayName("지원하지 않는 targetDbVendor이면 예외가 발생한다")
   void throwsWhenTargetDbVendorIsUnsupported() {
-    DdlSchemaSnapshot snapshot = new DdlSchemaSnapshot(
+    SchemaExportSnapshot snapshot = new SchemaExportSnapshot(
         new SchemaSnapshot("schema-1", "mysql", "app", null, null),
         java.util.List.of());
     GenerateSchemaDdlService sut = new GenerateSchemaDdlService(
@@ -80,7 +80,7 @@ class GenerateSchemaDdlServiceTest {
   @Test
   @DisplayName("DDL identifier 길이를 vendor profile의 측정 단위로 검증한다")
   void validatesIdentifierLengthWithVendorMeasurementUnit() {
-    DdlSchemaSnapshot snapshot = new DdlSchemaSnapshot(
+    SchemaExportSnapshot snapshot = new SchemaExportSnapshot(
         new SchemaSnapshot("schema-1", "mysql", "가나다", null, null),
         List.of());
     GenerateSchemaDdlService sut = new GenerateSchemaDdlService(
@@ -104,7 +104,7 @@ class GenerateSchemaDdlServiceTest {
   @DisplayName("vendor profile이 허용하면 64자를 넘는 MySQL DDL identifier도 생성한다")
   void generatesIdentifierLongerThanLegacyMysqlConstantWhenProfileAllowsIt() {
     String schemaName = "a".repeat(65);
-    DdlSchemaSnapshot snapshot = new DdlSchemaSnapshot(
+    SchemaExportSnapshot snapshot = new SchemaExportSnapshot(
         new SchemaSnapshot("schema-1", "mysql", schemaName, null, null),
         List.of());
     GenerateSchemaDdlService sut = new GenerateSchemaDdlService(
@@ -124,7 +124,7 @@ class GenerateSchemaDdlServiceTest {
   @Test
   @DisplayName("프로젝트 벤더가 지원하지 않는 인덱스 타입이면 생성 전에 거부한다")
   void rejectsUnsupportedIndexTypeBeforeGeneration() {
-    DdlSchemaSnapshot snapshot = new DdlSchemaSnapshot(
+    SchemaExportSnapshot snapshot = new SchemaExportSnapshot(
         new SchemaSnapshot("schema-1", "mysql", "app", null, null),
         List.of(new TableSnapshot(
             new Table("table-1", "schema-1", "users", null, null),
@@ -150,11 +150,11 @@ class GenerateSchemaDdlServiceTest {
 
   private record StubDdlGenerator(
       DdlExportVendor exportVendor,
-      DdlSchemaSnapshot expectedSnapshot,
+      SchemaExportSnapshot expectedSnapshot,
       String ddl) implements DdlGenerator {
 
     @Override
-    public String generate(DdlSchemaSnapshot snapshot) {
+    public String generate(SchemaExportSnapshot snapshot) {
       if (snapshot != expectedSnapshot) {
         return "wrong";
       }

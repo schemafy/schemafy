@@ -71,7 +71,7 @@ import static org.mockito.BDDMockito.then;
 @AutoConfigureWebTestClient
 @AutoConfigureRestDocs
 @DisplayName("IndexController 통합 테스트")
-@WithMockCustomUser(roles = "EDITOR")
+@WithMockCustomUser
 class IndexControllerTest {
 
   private static final ObjectMapper objectMapper = new ObjectMapper()
@@ -297,7 +297,6 @@ class IndexControllerTest {
   }
 
   @Test
-  @WithMockCustomUser(roles = "ADMIN")
   @DisplayName("인덱스 삭제 API 문서화")
   void deleteIndex() {
     String indexId = "06D6W6CAHD51T5NJPK29Q6BCRG";

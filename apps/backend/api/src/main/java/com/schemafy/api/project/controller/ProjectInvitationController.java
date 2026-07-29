@@ -6,7 +6,6 @@ import jakarta.validation.constraints.Positive;
 import jakarta.validation.constraints.PositiveOrZero;
 
 import org.springframework.http.HttpStatus;
-import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
@@ -43,7 +42,6 @@ public class ProjectInvitationController {
   private final RejectProjectInvitationUseCase rejectProjectInvitationUseCase;
   private final ProjectMemberOrchestrator projectMemberOrchestrator;
 
-  @PreAuthorize("hasAnyRole('ADMIN')")
   @PostMapping("/projects/{projectId}/invitations")
   @ResponseStatus(HttpStatus.CREATED)
   public Mono<ProjectInvitationCreateResponse> createInvitation(
@@ -60,7 +58,6 @@ public class ProjectInvitationController {
         .map(ProjectInvitationCreateResponse::of);
   }
 
-  @PreAuthorize("hasAnyRole('ADMIN')")
   @GetMapping("/projects/{projectId}/invitations")
   public Mono<PageResponse<ProjectInvitationResponse>> listInvitations(
       @PathVariable String projectId,

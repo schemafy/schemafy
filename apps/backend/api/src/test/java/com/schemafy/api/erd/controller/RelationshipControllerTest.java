@@ -74,7 +74,7 @@ import static org.mockito.BDDMockito.then;
 @AutoConfigureWebTestClient
 @AutoConfigureRestDocs
 @DisplayName("RelationshipController 통합 테스트")
-@WithMockCustomUser(roles = "EDITOR")
+@WithMockCustomUser
 class RelationshipControllerTest {
 
   private static final ObjectMapper objectMapper = new ObjectMapper()
@@ -570,7 +570,6 @@ class RelationshipControllerTest {
   }
 
   @Test
-  @WithMockCustomUser(roles = "ADMIN")
   @DisplayName("관계 삭제 API 문서화")
   void deleteRelationship() {
     String relationshipId = "06D6W8CAHD51T5NJPK29Q6BCRK";

@@ -13,8 +13,8 @@ import com.schemafy.core.erd.ddl.application.port.in.GenerateSchemaDdlCommand;
 import com.schemafy.core.erd.ddl.application.port.in.GenerateSchemaDdlUseCase;
 import com.schemafy.core.erd.ddl.domain.DdlExportVendor;
 import com.schemafy.core.erd.ddl.domain.DdlGenerator;
-import com.schemafy.core.erd.ddl.domain.DdlSchemaSnapshot;
 import com.schemafy.core.erd.ddl.domain.exception.DdlErrorCode;
+import com.schemafy.core.erd.export.domain.SchemaExportSnapshot;
 import com.schemafy.core.erd.index.domain.policy.IndexCapabilities;
 import com.schemafy.core.erd.index.domain.validator.IndexValidator;
 import com.schemafy.core.erd.vendor.domain.IdentifierCapabilities;
@@ -57,16 +57,16 @@ public class GenerateSchemaDdlService implements GenerateSchemaDdlUseCase {
   }
 
   private static void validateIndexCapabilities(
-      DdlSchemaSnapshot snapshot,
+      SchemaExportSnapshot snapshot,
       IndexCapabilities indexCapabilities) {
     snapshot.tables().stream()
         .flatMap(table -> table.indexes().stream())
-        .map(DdlSchemaSnapshot.IndexSnapshot::index)
+        .map(SchemaExportSnapshot.IndexSnapshot::index)
         .forEach(index -> IndexValidator.validateType(indexCapabilities, index.type()));
   }
 
   private static void validateIdentifierCapabilities(
-      DdlSchemaSnapshot snapshot,
+      SchemaExportSnapshot snapshot,
       IdentifierCapabilities identifierCapabilities) {
     if (snapshot == null || snapshot.schema() == null) {
       return;
@@ -76,7 +76,7 @@ public class GenerateSchemaDdlService implements GenerateSchemaDdlUseCase {
         identifierCapabilities,
         snapshot.schema().name(),
         "Schema name");
-    for (DdlSchemaSnapshot.TableSnapshot tableSnapshot : snapshot.tables()) {
+    for (SchemaExportSnapshot.TableSnapshot tableSnapshot : snapshot.tables()) {
       if (tableSnapshot == null) {
         continue;
       }
@@ -94,7 +94,7 @@ public class GenerateSchemaDdlService implements GenerateSchemaDdlUseCase {
               "Column name"));
       tableSnapshot.constraints().stream()
           .filter(Objects::nonNull)
-          .map(DdlSchemaSnapshot.ConstraintSnapshot::constraint)
+          .map(SchemaExportSnapshot.ConstraintSnapshot::constraint)
           .filter(Objects::nonNull)
           .forEach(constraint -> validateIdentifierLength(
               identifierCapabilities,
@@ -102,7 +102,7 @@ public class GenerateSchemaDdlService implements GenerateSchemaDdlUseCase {
               "Constraint name"));
       tableSnapshot.indexes().stream()
           .filter(Objects::nonNull)
-          .map(DdlSchemaSnapshot.IndexSnapshot::index)
+          .map(SchemaExportSnapshot.IndexSnapshot::index)
           .filter(Objects::nonNull)
           .forEach(index -> validateIdentifierLength(
               identifierCapabilities,
@@ -110,7 +110,7 @@ public class GenerateSchemaDdlService implements GenerateSchemaDdlUseCase {
               "Index name"));
       tableSnapshot.relationships().stream()
           .filter(Objects::nonNull)
-          .map(DdlSchemaSnapshot.RelationshipSnapshot::relationship)
+          .map(SchemaExportSnapshot.RelationshipSnapshot::relationship)
           .filter(Objects::nonNull)
           .forEach(relationship -> validateIdentifierLength(
               identifierCapabilities,
