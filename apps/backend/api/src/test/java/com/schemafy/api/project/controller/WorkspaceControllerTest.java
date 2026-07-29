@@ -473,11 +473,11 @@ class WorkspaceControllerTest extends ProjectHttpTestSupport {
     assertThat(deletedWorkspace).isNull();
 
     Project deletedProject = projectRepository
-        .findByIdAndNotDeleted(project.getId()).block();
+        .findByIdAndDeletedAtIsNull(project.getId()).block();
     assertThat(deletedProject).isNull();
 
     ProjectMember activeProjectMember = projectMemberRepository
-        .findByProjectIdAndUserIdAndNotDeleted(project.getId(), testUser2Id).block();
+        .findByProjectIdAndUserIdAndDeletedAtIsNull(project.getId(), testUser2Id).block();
     assertThat(activeProjectMember).isNull();
   }
 

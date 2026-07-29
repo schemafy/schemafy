@@ -146,8 +146,8 @@ class ProjectControllerTest extends ProjectHttpTestSupport {
   @Test
   @DisplayName("워크스페이스 멤버가 아닌 사용자는 프로젝트를 생성할 수 없다")
   void createProjectFailWhenNotWorkspaceMember() {
-    // Remove user2 from workspace
-    workspaceMemberRepository.findByWorkspaceIdAndUserIdAndNotDeleted(testWorkspaceId, testUser2Id)
+    workspaceMemberRepository
+        .findByWorkspaceIdAndUserIdAndDeletedAtIsNull(testWorkspaceId, testUser2Id)
         .flatMap(workspaceMemberRepository::delete).block();
 
     CreateProjectRequest request = new CreateProjectRequest("My Project",
@@ -206,7 +206,8 @@ class ProjectControllerTest extends ProjectHttpTestSupport {
 
     ProjectMember member = addProjectMember(project.getId(), testUser2Id, ProjectRole.VIEWER);
 
-    workspaceMemberRepository.findByWorkspaceIdAndUserIdAndNotDeleted(testWorkspaceId, testUser2Id)
+    workspaceMemberRepository
+        .findByWorkspaceIdAndUserIdAndDeletedAtIsNull(testWorkspaceId, testUser2Id)
         .flatMap(workspaceMemberRepository::delete)
         .block();
 
@@ -664,7 +665,7 @@ class ProjectControllerTest extends ProjectHttpTestSupport {
     addProjectMember(project.getId(), testUser2Id, ProjectRole.ADMIN);
 
     WorkspaceMember targetWorkspaceMember = workspaceMemberRepository
-        .findByWorkspaceIdAndUserIdAndNotDeleted(testWorkspaceId, testUser2Id)
+        .findByWorkspaceIdAndUserIdAndDeletedAtIsNull(testWorkspaceId, testUser2Id)
         .block();
     targetWorkspaceMember.updateRole(WorkspaceRole.ADMIN);
     workspaceMemberRepository.save(targetWorkspaceMember).block();
@@ -686,7 +687,7 @@ class ProjectControllerTest extends ProjectHttpTestSupport {
     addProjectMember(project.getId(), testUser2Id, ProjectRole.ADMIN);
 
     WorkspaceMember targetWorkspaceMember = workspaceMemberRepository
-        .findByWorkspaceIdAndUserIdAndNotDeleted(testWorkspaceId, testUser2Id)
+        .findByWorkspaceIdAndUserIdAndDeletedAtIsNull(testWorkspaceId, testUser2Id)
         .block();
     targetWorkspaceMember.updateRole(WorkspaceRole.ADMIN);
     workspaceMemberRepository.save(targetWorkspaceMember).block();
@@ -755,7 +756,7 @@ class ProjectControllerTest extends ProjectHttpTestSupport {
             ProjectApiSnippets.leaveProjectRequestHeaders()));
 
     ProjectMember deletedMember = projectMemberRepository
-        .findByProjectIdAndUserIdAndNotDeleted(project.getId(),
+        .findByProjectIdAndUserIdAndDeletedAtIsNull(project.getId(),
             testUser2Id)
         .block();
     assertThat(deletedMember).isNull();
@@ -777,7 +778,7 @@ class ProjectControllerTest extends ProjectHttpTestSupport {
         .expectStatus().isNoContent();
 
     Project deletedProject = projectRepository
-        .findByIdAndNotDeleted(project.getId()).block();
+        .findByIdAndDeletedAtIsNull(project.getId()).block();
     assertThat(deletedProject).isNull();
   }
 
@@ -805,11 +806,11 @@ class ProjectControllerTest extends ProjectHttpTestSupport {
     assertThat(deletedProjectAdmin.isDeleted()).isTrue();
 
     ProjectMember remainedProjectViewer = projectMemberRepository
-        .findByProjectIdAndUserIdAndNotDeleted(project.getId(), testUserId)
+        .findByProjectIdAndUserIdAndDeletedAtIsNull(project.getId(), testUserId)
         .block();
     assertThat(remainedProjectViewer).isNotNull();
 
-    Project remainedProject = projectRepository.findByIdAndNotDeleted(project.getId()).block();
+    Project remainedProject = projectRepository.findByIdAndDeletedAtIsNull(project.getId()).block();
     assertThat(remainedProject).isNotNull();
   }
 

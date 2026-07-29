@@ -3,6 +3,7 @@ package com.schemafy.core.project.adapter.out.persistence;
 import org.springframework.data.r2dbc.repository.Query;
 import org.springframework.data.repository.reactive.ReactiveCrudRepository;
 
+import com.schemafy.core.project.application.port.in.MemberSearchResult;
 import com.schemafy.core.project.domain.WorkspaceMember;
 
 import reactor.core.publisher.Flux;
@@ -11,13 +12,7 @@ import reactor.core.publisher.Mono;
 public interface WorkspaceMemberRepository
     extends ReactiveCrudRepository<WorkspaceMember, String> {
 
-  @Query("""
-      SELECT * FROM workspace_members
-      WHERE workspace_id = :workspaceId
-        AND user_id = :userId
-        AND deleted_at IS NULL
-      """)
-  Mono<WorkspaceMember> findByWorkspaceIdAndUserIdAndNotDeleted(
+  Mono<WorkspaceMember> findByWorkspaceIdAndUserIdAndDeletedAtIsNull(
       String workspaceId, String userId);
 
   @Query("""
@@ -31,19 +26,42 @@ public interface WorkspaceMemberRepository
       int limit, int offset);
 
   @Query("""
-      SELECT * FROM workspace_members
-      WHERE workspace_id = :workspaceId
-        AND deleted_at IS NULL
-      ORDER BY created_at ASC
+      SELECT
+        wm.user_id AS user_id,
+        u.name AS user_name,
+        u.email AS user_email,
+        wm.role AS role,
+        wm.created_at AS joined_at
+      FROM workspace_members wm
+      INNER JOIN users u ON u.id = wm.user_id
+      WHERE wm.workspace_id = :workspaceId
+        AND wm.deleted_at IS NULL
+        AND (
+            LOWER(u.name) LIKE :pattern ESCAPE '!'
+            OR LOWER(u.email) LIKE :pattern ESCAPE '!'
+        )
+      ORDER BY wm.created_at ASC
+      LIMIT :limit OFFSET :offset
       """)
-  Flux<WorkspaceMember> findAllByWorkspaceIdAndNotDeleted(String workspaceId);
+  Flux<MemberSearchResult> searchMemberResultsByWorkspaceIdAndUser(
+      String workspaceId, String pattern, int limit, int offset);
+
+  Flux<WorkspaceMember> findAllByWorkspaceIdAndDeletedAtIsNullOrderByCreatedAtAsc(
+      String workspaceId);
+
+  Mono<Long> countByWorkspaceIdAndDeletedAtIsNull(String workspaceId);
 
   @Query("""
-      SELECT COUNT(*) FROM workspace_members
-      WHERE workspace_id = :workspaceId
-        AND deleted_at IS NULL
+      SELECT COUNT(*) FROM workspace_members wm
+      INNER JOIN users u ON u.id = wm.user_id
+      WHERE wm.workspace_id = :workspaceId
+        AND wm.deleted_at IS NULL
+        AND (
+          LOWER(u.name) LIKE :pattern ESCAPE '!'
+          OR LOWER(u.email) LIKE :pattern ESCAPE '!'
+        )
       """)
-  Mono<Long> countByWorkspaceIdAndNotDeleted(String workspaceId);
+  Mono<Long> countByWorkspaceIdAndUser(String workspaceId, String pattern);
 
   @Query("""
       UPDATE workspace_members
@@ -53,34 +71,14 @@ public interface WorkspaceMemberRepository
       """)
   Mono<Void> softDeleteByWorkspaceId(String workspaceId);
 
-  @Query("""
-      SELECT EXISTS(
-          SELECT 1 FROM workspace_members
-          WHERE workspace_id = :workspaceId
-            AND user_id = :userId
-            AND deleted_at IS NULL
-      )
-      """)
-  Mono<Boolean> existsByWorkspaceIdAndUserIdAndNotDeleted(String workspaceId,
+  Mono<Boolean> existsByWorkspaceIdAndUserIdAndDeletedAtIsNull(String workspaceId,
       String userId);
 
-  @Query("""
-      SELECT COUNT(*) FROM workspace_members
-      WHERE workspace_id = :workspaceId
-        AND role = :role
-        AND deleted_at IS NULL
-      """)
-  Mono<Long> countByWorkspaceIdAndRoleAndNotDeleted(String workspaceId,
+  Mono<Long> countByWorkspaceIdAndRoleAndDeletedAtIsNull(String workspaceId,
       String role);
 
-  @Query("""
-      SELECT * FROM workspace_members
-      WHERE workspace_id = :workspaceId
-        AND user_id = :userId
-      ORDER BY created_at DESC
-      LIMIT 1
-      """)
-  Mono<WorkspaceMember> findLatestByWorkspaceIdAndUserId(String workspaceId,
+  Mono<WorkspaceMember> findFirstByWorkspaceIdAndUserIdOrderByCreatedAtDesc(
+      String workspaceId,
       String userId);
 
 }

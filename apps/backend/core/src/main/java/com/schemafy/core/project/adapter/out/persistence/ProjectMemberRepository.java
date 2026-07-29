@@ -3,6 +3,7 @@ package com.schemafy.core.project.adapter.out.persistence;
 import org.springframework.data.r2dbc.repository.Query;
 import org.springframework.data.repository.reactive.ReactiveCrudRepository;
 
+import com.schemafy.core.project.application.port.in.MemberSearchResult;
 import com.schemafy.core.project.domain.ProjectMember;
 
 import reactor.core.publisher.Flux;
@@ -11,31 +12,59 @@ import reactor.core.publisher.Mono;
 public interface ProjectMemberRepository
     extends ReactiveCrudRepository<ProjectMember, String> {
 
-  @Query("SELECT * FROM project_members WHERE project_id = :projectId AND user_id = :userId AND deleted_at IS NULL")
-  Mono<ProjectMember> findByProjectIdAndUserIdAndNotDeleted(String projectId,
+  Mono<ProjectMember> findByProjectIdAndUserIdAndDeletedAtIsNull(String projectId,
       String userId);
 
   @Query("SELECT * FROM project_members WHERE project_id = :projectId AND deleted_at IS NULL ORDER BY joined_at LIMIT :limit OFFSET :offset")
   Flux<ProjectMember> findByProjectIdAndNotDeleted(String projectId,
       int limit, int offset);
 
-  @Query("SELECT COUNT(*) FROM project_members WHERE project_id = :projectId AND deleted_at IS NULL")
-  Mono<Long> countByProjectIdAndNotDeleted(String projectId);
+  @Query("""
+      SELECT
+        pm.user_id AS user_id,
+        u.name AS user_name,
+        u.email AS user_email,
+        pm.role AS role,
+        pm.joined_at AS joined_at
+      FROM project_members pm
+      INNER JOIN users u ON u.id = pm.user_id
+      WHERE pm.project_id = :projectId
+        AND pm.deleted_at IS NULL
+        AND (
+          LOWER(u.name) LIKE :pattern ESCAPE '!'
+          OR LOWER(u.email) LIKE :pattern ESCAPE '!'
+        )
+      ORDER BY pm.joined_at ASC
+      LIMIT :limit OFFSET :offset
+      """)
+  Flux<MemberSearchResult> searchMemberResultsByProjectIdAndUser(
+      String projectId, String pattern, int limit, int offset);
 
-  @Query("SELECT EXISTS(SELECT 1 FROM project_members WHERE project_id = :projectId AND user_id = :userId AND deleted_at IS NULL)")
-  Mono<Boolean> existsByProjectIdAndUserIdAndNotDeleted(String projectId,
+  Mono<Long> countByProjectIdAndDeletedAtIsNull(String projectId);
+
+  @Query("""
+      SELECT COUNT(*) FROM project_members pm
+      INNER JOIN users u ON u.id = pm.user_id
+      WHERE pm.project_id = :projectId
+        AND pm.deleted_at IS NULL
+        AND (
+          LOWER(u.name) LIKE :pattern ESCAPE '!'
+          OR LOWER(u.email) LIKE :pattern ESCAPE '!'
+        )
+      """)
+  Mono<Long> countByProjectIdAndUser(String projectId, String pattern);
+
+  Mono<Boolean> existsByProjectIdAndUserIdAndDeletedAtIsNull(String projectId,
       String userId);
 
   @Query("UPDATE project_members SET deleted_at = CURRENT_TIMESTAMP, updated_at = CURRENT_TIMESTAMP WHERE project_id = :projectId AND deleted_at IS NULL")
   Mono<Void> softDeleteByProjectId(String projectId);
 
-  @Query("SELECT COUNT(*) FROM project_members WHERE project_id = :projectId AND role = :role AND deleted_at IS NULL")
-  Mono<Long> countByProjectIdAndRoleAndNotDeleted(String projectId,
+  Mono<Long> countByProjectIdAndRoleAndDeletedAtIsNull(String projectId,
       String role);
 
-  @Query("SELECT * FROM project_members WHERE project_id = :projectId AND user_id = :userId ORDER BY created_at DESC LIMIT 1")
-  Mono<ProjectMember> findLatestByProjectIdAndUserId(String projectId,
-      String userId);
+  Mono<ProjectMember> findFirstByProjectIdAndUserIdOrderByCreatedAtDesc(
+      String projectId, String userId);
 
   @Query("""
       SELECT pm.role FROM project_members pm
