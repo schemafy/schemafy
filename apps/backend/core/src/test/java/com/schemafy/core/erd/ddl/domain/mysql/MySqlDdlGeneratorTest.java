@@ -9,21 +9,21 @@ import org.junit.jupiter.api.Test;
 import com.schemafy.core.common.exception.DomainException;
 import com.schemafy.core.erd.column.domain.ColumnTypeArguments;
 import com.schemafy.core.erd.constraint.domain.type.ConstraintKind;
-import com.schemafy.core.erd.ddl.domain.DdlSchemaSnapshot;
-import com.schemafy.core.erd.ddl.domain.DdlSchemaSnapshot.Column;
-import com.schemafy.core.erd.ddl.domain.DdlSchemaSnapshot.Constraint;
-import com.schemafy.core.erd.ddl.domain.DdlSchemaSnapshot.ConstraintColumn;
-import com.schemafy.core.erd.ddl.domain.DdlSchemaSnapshot.ConstraintSnapshot;
-import com.schemafy.core.erd.ddl.domain.DdlSchemaSnapshot.Index;
-import com.schemafy.core.erd.ddl.domain.DdlSchemaSnapshot.IndexColumn;
-import com.schemafy.core.erd.ddl.domain.DdlSchemaSnapshot.IndexSnapshot;
-import com.schemafy.core.erd.ddl.domain.DdlSchemaSnapshot.Relationship;
-import com.schemafy.core.erd.ddl.domain.DdlSchemaSnapshot.RelationshipColumn;
-import com.schemafy.core.erd.ddl.domain.DdlSchemaSnapshot.RelationshipSnapshot;
-import com.schemafy.core.erd.ddl.domain.DdlSchemaSnapshot.SchemaSnapshot;
-import com.schemafy.core.erd.ddl.domain.DdlSchemaSnapshot.Table;
-import com.schemafy.core.erd.ddl.domain.DdlSchemaSnapshot.TableSnapshot;
 import com.schemafy.core.erd.ddl.domain.exception.DdlErrorCode;
+import com.schemafy.core.erd.export.domain.SchemaExportSnapshot;
+import com.schemafy.core.erd.export.domain.SchemaExportSnapshot.Column;
+import com.schemafy.core.erd.export.domain.SchemaExportSnapshot.Constraint;
+import com.schemafy.core.erd.export.domain.SchemaExportSnapshot.ConstraintColumn;
+import com.schemafy.core.erd.export.domain.SchemaExportSnapshot.ConstraintSnapshot;
+import com.schemafy.core.erd.export.domain.SchemaExportSnapshot.Index;
+import com.schemafy.core.erd.export.domain.SchemaExportSnapshot.IndexColumn;
+import com.schemafy.core.erd.export.domain.SchemaExportSnapshot.IndexSnapshot;
+import com.schemafy.core.erd.export.domain.SchemaExportSnapshot.Relationship;
+import com.schemafy.core.erd.export.domain.SchemaExportSnapshot.RelationshipColumn;
+import com.schemafy.core.erd.export.domain.SchemaExportSnapshot.RelationshipSnapshot;
+import com.schemafy.core.erd.export.domain.SchemaExportSnapshot.SchemaSnapshot;
+import com.schemafy.core.erd.export.domain.SchemaExportSnapshot.Table;
+import com.schemafy.core.erd.export.domain.SchemaExportSnapshot.TableSnapshot;
 import com.schemafy.core.erd.index.domain.type.IndexType;
 import com.schemafy.core.erd.index.domain.type.SortDirection;
 import com.schemafy.core.erd.relationship.domain.type.Cardinality;
@@ -40,7 +40,7 @@ class MySqlDdlGeneratorTest {
   @Test
   @DisplayName("schema/table/column/constraint/index/relationship snapshot으로 MySQL DDL을 생성한다")
   void generateFullSchemaDdl() {
-    DdlSchemaSnapshot snapshot = schema(
+    SchemaExportSnapshot snapshot = schema(
         userTable(),
         orderTable());
 
@@ -252,7 +252,7 @@ class MySqlDdlGeneratorTest {
   @Test
   @DisplayName("지원하지 않는 vendor이면 예외가 발생한다")
   void throwsForUnsupportedVendor() {
-    DdlSchemaSnapshot snapshot = new DdlSchemaSnapshot(
+    SchemaExportSnapshot snapshot = new SchemaExportSnapshot(
         new SchemaSnapshot("schema-1", "postgresql", "app", null, null),
         List.of(userTable()));
 
@@ -642,8 +642,8 @@ class MySqlDdlGeneratorTest {
         .matches(DomainException.hasErrorCode(DdlErrorCode.COLUMN_NOT_FOUND));
   }
 
-  private DdlSchemaSnapshot schema(TableSnapshot... tables) {
-    return new DdlSchemaSnapshot(
+  private SchemaExportSnapshot schema(TableSnapshot... tables) {
+    return new SchemaExportSnapshot(
         new SchemaSnapshot("schema-1", "mysql", "app`schema",
             "utf8mb4", "utf8mb4_unicode_ci"),
         List.of(tables));

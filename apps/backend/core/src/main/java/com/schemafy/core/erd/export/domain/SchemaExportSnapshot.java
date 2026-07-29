@@ -1,4 +1,4 @@
-package com.schemafy.core.erd.ddl.domain;
+package com.schemafy.core.erd.export.domain;
 
 import java.util.List;
 
@@ -9,11 +9,11 @@ import com.schemafy.core.erd.index.domain.type.SortDirection;
 import com.schemafy.core.erd.relationship.domain.type.Cardinality;
 import com.schemafy.core.erd.relationship.domain.type.RelationshipKind;
 
-public record DdlSchemaSnapshot(
+public record SchemaExportSnapshot(
     SchemaSnapshot schema,
     List<TableSnapshot> tables) {
 
-  public DdlSchemaSnapshot {
+  public SchemaExportSnapshot {
     tables = List.copyOf(tables == null ? List.of() : tables);
   }
 
