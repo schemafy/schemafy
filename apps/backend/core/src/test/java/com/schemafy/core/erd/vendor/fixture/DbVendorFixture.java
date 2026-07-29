@@ -7,6 +7,7 @@ import com.schemafy.core.erd.index.domain.type.IndexType;
 import com.schemafy.core.erd.vendor.application.port.in.GetDbVendorQuery;
 import com.schemafy.core.erd.vendor.domain.DbVendor;
 import com.schemafy.core.erd.vendor.domain.DbVendorSummary;
+import com.schemafy.core.erd.vendor.domain.IdentifierCapabilities;
 import com.schemafy.core.erd.vendor.domain.VendorCapabilities;
 
 public class DbVendorFixture {
@@ -30,10 +31,11 @@ public class DbVendorFixture {
 
   public static VendorCapabilities defaultCapabilities() {
     return new VendorCapabilities(
-        1,
+        2,
         new IndexCapabilities(
             Set.of(IndexType.BTREE, IndexType.FULLTEXT, IndexType.SPATIAL),
-            Set.of(IndexType.BTREE)));
+            Set.of(IndexType.BTREE)),
+        IdentifierCapabilities.codePoints(64));
   }
 
   public static DbVendorSummary defaultDbVendorSummary() {

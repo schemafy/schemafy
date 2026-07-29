@@ -30,6 +30,7 @@ import com.schemafy.core.erd.table.domain.Table;
 import com.schemafy.core.erd.vendor.application.port.in.GetProjectDbVendorQuery;
 import com.schemafy.core.erd.vendor.application.port.in.GetProjectDbVendorUseCase;
 import com.schemafy.core.erd.vendor.domain.DbVendor;
+import com.schemafy.core.erd.vendor.domain.IdentifierCapabilities;
 import com.schemafy.core.erd.vendor.domain.VendorCapabilities;
 
 import reactor.core.publisher.Flux;
@@ -119,6 +120,8 @@ class SchemaExportSnapshotReaderTest {
           assertThat(result.snapshot().schema().id()).isEqualTo(schemaId);
           assertThat(result.snapshot().schema().dbVendorName()).isEqualTo("mysql");
           assertThat(result.indexCapabilities()).isEqualTo(mysqlIndexCapabilities());
+          assertThat(result.identifierCapabilities())
+              .isEqualTo(IdentifierCapabilities.codePoints(64));
           assertThat(result.snapshot().tables()).hasSize(1);
           assertThat(result.snapshot().tables().getFirst().columns()).hasSize(1);
         })
@@ -191,7 +194,10 @@ class SchemaExportSnapshotReaderTest {
         "mysql",
         "8.0",
         "{}",
-        new VendorCapabilities(1, mysqlIndexCapabilities()));
+        new VendorCapabilities(
+            2,
+            mysqlIndexCapabilities(),
+            IdentifierCapabilities.codePoints(64)));
   }
 
   private static IndexCapabilities mysqlIndexCapabilities() {

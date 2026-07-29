@@ -12,6 +12,7 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import com.schemafy.core.common.exception.DomainException;
+import com.schemafy.core.erd.schema.application.port.in.CreateSchemaCommand;
 import com.schemafy.core.erd.schema.application.port.out.CreateSchemaPort;
 import com.schemafy.core.erd.schema.application.port.out.SchemaExistsPort;
 import com.schemafy.core.erd.schema.domain.Schema;
@@ -98,6 +99,57 @@ class CreateSchemaServiceTest {
         then(schemaExistsPort).should()
             .existsActiveByProjectIdAndName(command.projectId(), command.name());
         then(createSchemaPort).should().createSchema(any(Schema.class));
+      }
+
+      @Test
+      @DisplayName("DB Vendor identifier 최대 길이의 스키마를 생성한다")
+      void createsSchemaAtIdentifierLimit() {
+        var baseCommand = SchemaFixture.createCommand();
+        var command = new CreateSchemaCommand(
+            baseCommand.projectId(),
+            "s".repeat(64),
+            baseCommand.charset(),
+            baseCommand.collation());
+
+        given(getProjectDbVendorUseCase.getProjectDbVendor(any()))
+            .willReturn(Mono.just(DbVendorFixture.defaultDbVendor()));
+        given(schemaExistsPort.existsActiveByProjectIdAndName(any(), any()))
+            .willReturn(Mono.just(false));
+        given(ulidGeneratorPort.generate())
+            .willReturn(SchemaFixture.DEFAULT_ID);
+        given(createSchemaPort.createSchema(any(Schema.class)))
+            .willAnswer(invocation -> Mono.just(invocation.getArgument(0)));
+
+        StepVerifier.create(sut.createSchema(command))
+            .assertNext(result -> assertThat(result.result().name()).isEqualTo(command.name()))
+            .verifyComplete();
+      }
+
+    }
+
+    @Nested
+    @DisplayName("DB Vendor identifier 최대 길이를 초과하면")
+    class WithTooLongName {
+
+      @Test
+      @DisplayName("SchemaInvalidValueException을 발생시킨다")
+      void rejectsSchemaOverIdentifierLimit() {
+        var baseCommand = SchemaFixture.createCommand();
+        var command = new CreateSchemaCommand(
+            baseCommand.projectId(),
+            "s".repeat(65),
+            baseCommand.charset(),
+            baseCommand.collation());
+
+        given(getProjectDbVendorUseCase.getProjectDbVendor(any()))
+            .willReturn(Mono.just(DbVendorFixture.defaultDbVendor()));
+
+        StepVerifier.create(sut.createSchema(command))
+            .expectErrorMatches(DomainException.hasErrorCode(SchemaErrorCode.INVALID_VALUE))
+            .verify();
+
+        then(schemaExistsPort).shouldHaveNoInteractions();
+        then(createSchemaPort).shouldHaveNoInteractions();
       }
 
     }

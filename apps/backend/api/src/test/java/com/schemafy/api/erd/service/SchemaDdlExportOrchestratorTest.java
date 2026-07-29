@@ -12,13 +12,16 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 import com.schemafy.api.erd.service.export.SchemaExportSnapshotReader;
 import com.schemafy.api.erd.service.export.SchemaExportSnapshotReader.SchemaExportSnapshotResult;
+import com.schemafy.core.common.exception.DomainException;
 import com.schemafy.core.erd.ddl.application.port.in.GenerateSchemaDdlCommand;
 import com.schemafy.core.erd.ddl.application.port.in.GenerateSchemaDdlUseCase;
 import com.schemafy.core.erd.ddl.domain.DdlExportVendor;
+import com.schemafy.core.erd.ddl.domain.exception.DdlErrorCode;
 import com.schemafy.core.erd.export.domain.SchemaExportSnapshot;
 import com.schemafy.core.erd.export.domain.SchemaExportSnapshot.SchemaSnapshot;
 import com.schemafy.core.erd.index.domain.policy.IndexCapabilities;
 import com.schemafy.core.erd.index.domain.type.IndexType;
+import com.schemafy.core.erd.vendor.domain.IdentifierCapabilities;
 
 import reactor.core.publisher.Mono;
 import reactor.test.StepVerifier;
@@ -56,9 +59,10 @@ class SchemaDdlExportOrchestratorTest {
         new SchemaSnapshot(schemaId, "mysql", "main_schema", null, null),
         List.of());
     IndexCapabilities indexCapabilities = mysqlIndexCapabilities();
+    IdentifierCapabilities identifierCapabilities = IdentifierCapabilities.codePoints(64);
     given(schemaExportSnapshotReader.readSchemaExportSnapshot(schemaId))
         .willReturn(Mono.just(new SchemaExportSnapshotResult(
-            snapshot, 42L, indexCapabilities)));
+            snapshot, 42L, indexCapabilities, identifierCapabilities)));
     given(generateSchemaDdlUseCase.generateSchemaDdl(any(GenerateSchemaDdlCommand.class)))
         .willReturn(Mono.just("DDL"));
 
@@ -74,7 +78,30 @@ class SchemaDdlExportOrchestratorTest {
     then(generateSchemaDdlUseCase).should().generateSchemaDdl(argThat(
         command -> command.snapshot() == snapshot
             && command.targetDbVendor().equals(DdlExportVendor.MYSQL)
-            && command.indexCapabilities().equals(indexCapabilities)));
+            && command.indexCapabilities().equals(indexCapabilities)
+            && command.identifierCapabilities().equals(identifierCapabilities)));
+  }
+
+  @Test
+  @DisplayName("요청 target과 프로젝트 DB vendor가 다르면 capability 적용 전에 거부한다")
+  void rejectsTargetVendorDifferentFromProjectVendor() {
+    String schemaId = "schema-1";
+    SchemaExportSnapshot snapshot = new SchemaExportSnapshot(
+        new SchemaSnapshot(schemaId, "mysql", "main_schema", null, null),
+        List.of());
+    given(schemaExportSnapshotReader.readSchemaExportSnapshot(schemaId))
+        .willReturn(Mono.just(new SchemaExportSnapshotResult(
+            snapshot,
+            42L,
+            mysqlIndexCapabilities(),
+            IdentifierCapabilities.codePoints(64))));
+
+    StepVerifier.create(sut.exportSchemaDdl(schemaId, "postgresql"))
+        .expectErrorMatches(DomainException.hasErrorCode(
+            DdlErrorCode.UNSUPPORTED_VENDOR))
+        .verify();
+
+    then(generateSchemaDdlUseCase).shouldHaveNoInteractions();
   }
 
   private static IndexCapabilities mysqlIndexCapabilities() {

@@ -15,6 +15,7 @@ import com.schemafy.core.erd.column.application.port.out.CreateColumnPort;
 import com.schemafy.core.erd.column.application.port.out.GetColumnsByTableIdPort;
 import com.schemafy.core.erd.column.domain.Column;
 import com.schemafy.core.erd.column.domain.ColumnTypeArguments;
+import com.schemafy.core.erd.column.domain.exception.ColumnErrorCode;
 import com.schemafy.core.erd.column.domain.validator.ColumnValidator;
 import com.schemafy.core.erd.operation.application.inverse.CreateColumnInverse;
 import com.schemafy.core.erd.operation.application.service.ErdMutationCoordinator;
@@ -28,6 +29,8 @@ import com.schemafy.core.erd.table.domain.Table;
 import com.schemafy.core.erd.table.domain.exception.TableErrorCode;
 import com.schemafy.core.erd.vendor.application.port.in.GetProjectDbVendorQuery;
 import com.schemafy.core.erd.vendor.application.port.in.GetProjectDbVendorUseCase;
+import com.schemafy.core.erd.vendor.domain.IdentifierCapabilities;
+import com.schemafy.core.erd.vendor.domain.validator.IdentifierValidator;
 import com.schemafy.core.project.application.access.AccessTarget;
 import com.schemafy.core.project.application.access.RequireProjectAccess;
 import com.schemafy.core.project.domain.ProjectRole;
@@ -79,6 +82,7 @@ public class CreateColumnService implements CreateColumnUseCase {
                             table,
                             tuple.getT2(),
                             dbVendor.name(),
+                            dbVendor.capabilities().identifiers(),
                             command,
                             typeArguments)))
                     .map(result -> MutationResult.of(result, table.id())))
@@ -104,6 +108,7 @@ public class CreateColumnService implements CreateColumnUseCase {
       Table table,
       List<Column> existingColumns,
       String dbVendorName,
+      IdentifierCapabilities identifierCapabilities,
       CreateColumnCommand command,
       ColumnTypeArguments typeArguments) {
     String normalizedName = normalizeName(command.name());
@@ -113,6 +118,11 @@ public class CreateColumnService implements CreateColumnUseCase {
     String comment = normalizeOptional(command.comment());
 
     ColumnValidator.validateName(normalizedName);
+    IdentifierValidator.validateLength(
+        identifierCapabilities,
+        normalizedName,
+        ColumnErrorCode.NAME_INVALID,
+        "Column name");
     ColumnValidator.validateReservedKeyword(dbVendorName, normalizedName);
     ColumnValidator.validateNameUniqueness(existingColumns, normalizedName, null);
     ColumnValidator.validateDataType(normalizedDataType);

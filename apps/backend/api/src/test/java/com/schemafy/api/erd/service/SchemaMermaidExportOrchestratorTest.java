@@ -17,6 +17,7 @@ import com.schemafy.core.erd.export.domain.SchemaExportSnapshot.SchemaSnapshot;
 import com.schemafy.core.erd.index.domain.policy.IndexCapabilities;
 import com.schemafy.core.erd.mermaid.application.port.in.GenerateSchemaMermaidCommand;
 import com.schemafy.core.erd.mermaid.application.port.in.GenerateSchemaMermaidUseCase;
+import com.schemafy.core.erd.vendor.domain.IdentifierCapabilities;
 
 import reactor.core.publisher.Mono;
 import reactor.test.StepVerifier;
@@ -55,7 +56,10 @@ class SchemaMermaidExportOrchestratorTest {
         List.of());
     given(schemaExportSnapshotReader.readSchemaExportSnapshot(schemaId))
         .willReturn(Mono.just(new SchemaExportSnapshotResult(
-            snapshot, 42L, new IndexCapabilities(Set.of(), Set.of()))));
+            snapshot,
+            42L,
+            new IndexCapabilities(Set.of(), Set.of()),
+            IdentifierCapabilities.codePoints(64))));
     given(generateSchemaMermaidUseCase.generateSchemaMermaid(
         any(GenerateSchemaMermaidCommand.class)))
         .willReturn(Mono.just("erDiagram"));

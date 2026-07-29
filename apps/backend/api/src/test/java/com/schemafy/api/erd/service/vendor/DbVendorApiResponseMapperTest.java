@@ -10,6 +10,7 @@ import com.schemafy.core.common.json.JsonCodec;
 import com.schemafy.core.erd.index.domain.policy.IndexCapabilities;
 import com.schemafy.core.erd.index.domain.type.IndexType;
 import com.schemafy.core.erd.vendor.domain.DbVendor;
+import com.schemafy.core.erd.vendor.domain.IdentifierCapabilities;
 import com.schemafy.core.erd.vendor.domain.VendorCapabilities;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -44,10 +45,11 @@ class DbVendorApiResponseMapperTest {
 
   private static VendorCapabilities mysqlCapabilities() {
     return new VendorCapabilities(
-        1,
+        2,
         new IndexCapabilities(
             Set.of(IndexType.BTREE, IndexType.FULLTEXT, IndexType.SPATIAL),
-            Set.of(IndexType.BTREE)));
+            Set.of(IndexType.BTREE)),
+        IdentifierCapabilities.codePoints(64));
   }
 
 }

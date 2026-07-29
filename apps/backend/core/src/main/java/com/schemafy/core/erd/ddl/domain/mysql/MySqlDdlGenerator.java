@@ -39,7 +39,6 @@ import com.schemafy.core.erd.index.domain.type.IndexType;
 @Component
 public class MySqlDdlGenerator implements DdlGenerator {
 
-  private static final int MAX_IDENTIFIER_LENGTH = 64;
   private static final int MAX_COLUMN_COMMENT_LENGTH = 1024;
   private static final int MAX_BIT_LENGTH = 64;
   private static final int MAX_CHAR_LENGTH = 255;
@@ -1015,10 +1014,6 @@ public class MySqlDdlGenerator implements DdlGenerator {
 
   private static String requireIdentifier(String value, String name) {
     String identifier = requireNonBlank(value, name);
-    if (identifier.length() > MAX_IDENTIFIER_LENGTH) {
-      throw invalid(name + " must be at most " + MAX_IDENTIFIER_LENGTH
-          + " characters");
-    }
     if (identifier.endsWith(" ")) {
       throw invalid(name + " must not end with a space");
     }

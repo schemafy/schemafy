@@ -20,6 +20,7 @@ import com.schemafy.core.erd.table.application.port.in.GetTablesBySchemaIdUseCas
 import com.schemafy.core.erd.table.domain.Table;
 import com.schemafy.core.erd.vendor.application.port.in.GetProjectDbVendorQuery;
 import com.schemafy.core.erd.vendor.application.port.in.GetProjectDbVendorUseCase;
+import com.schemafy.core.erd.vendor.domain.IdentifierCapabilities;
 
 import reactor.core.publisher.Mono;
 
@@ -72,7 +73,8 @@ public class SchemaExportSnapshotReader {
                   snapshotMapper.toSnapshot(
                       schema, tuple.getT2().values(), tuple.getT1().name()),
                   result.currentRevision(),
-                  tuple.getT1().capabilities().indexes()));
+                  tuple.getT1().capabilities().indexes(),
+                  tuple.getT1().capabilities().identifiers()));
         })
         .as(transactionalOperator::transactional);
   }
@@ -89,7 +91,8 @@ public class SchemaExportSnapshotReader {
   public record SchemaExportSnapshotResult(
       SchemaExportSnapshot snapshot,
       long currentRevision,
-      IndexCapabilities indexCapabilities) {
+      IndexCapabilities indexCapabilities,
+      IdentifierCapabilities identifierCapabilities) {
   }
 
 }
