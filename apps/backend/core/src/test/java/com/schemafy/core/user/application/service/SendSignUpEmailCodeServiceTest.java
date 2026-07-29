@@ -29,8 +29,10 @@ import reactor.test.StepVerifier;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 
 @ExtendWith(MockitoExtension.class)
@@ -143,6 +145,60 @@ class SendSignUpEmailCodeServiceTest {
         })
         .verifyComplete();
 
+    verify(sendEmailVerificationPort, never()).sendVerificationCode(any(), any(), any());
+  }
+
+  @Test
+  @DisplayName("토큰 선점 실패 후 기존 토큰을 찾지 못하면 재시도하여 새 인증 코드를 발급한다")
+  void sendSignUpEmailCode_saveIfAbsentLostAndExistingTokenMissingRetriesIssuance() {
+    SendSignUpEmailCodeCommand command = new SendSignUpEmailCodeCommand(
+        "test@example.com");
+    given(existsUserByEmailPort.existsUserByEmail("test@example.com"))
+        .willReturn(Mono.just(false));
+    given(authTokenPort.findExpiresAt(AuthTokenType.EMAIL_VERIFICATION, "test@example.com"))
+        .willReturn(Mono.empty());
+    given(verificationCodeGenerator.generate()).willReturn("123456", "654321");
+    given(authTokenPort.saveIfAbsent(any(AuthToken.class)))
+        .willReturn(Mono.just(false), Mono.just(true));
+    given(sendEmailVerificationPort.sendVerificationCode(any(), any(), any()))
+        .willReturn(Mono.empty());
+
+    StepVerifier.create(sut.sendSignUpEmailCode(command))
+        .assertNext(result -> {
+          assertThat(result.email()).isEqualTo("test@example.com");
+          assertThat(result.expiresAt()).isAfter(Instant.now());
+        })
+        .verifyComplete();
+
+    verify(authTokenPort, times(2)).saveIfAbsent(any(AuthToken.class));
+    verify(sendEmailVerificationPort).sendVerificationCode(
+        eq("test@example.com"),
+        eq("654321"),
+        any(Instant.class));
+  }
+
+  @Test
+  @DisplayName("토큰 선점 실패 후 기존 토큰이 계속 없으면 세 번 시도 후 종료한다")
+  void sendSignUpEmailCode_missingWinningTokenExhaustsAfterThreeAttempts() {
+    SendSignUpEmailCodeCommand command = new SendSignUpEmailCodeCommand(
+        "test@example.com");
+    given(existsUserByEmailPort.existsUserByEmail("test@example.com"))
+        .willReturn(Mono.just(false));
+    given(authTokenPort.findExpiresAt(AuthTokenType.EMAIL_VERIFICATION, "test@example.com"))
+        .willReturn(Mono.empty());
+    given(verificationCodeGenerator.generate()).willReturn("123456");
+    given(authTokenPort.saveIfAbsent(any(AuthToken.class)))
+        .willReturn(
+            Mono.just(false),
+            Mono.just(false),
+            Mono.just(false),
+            Mono.just(true));
+
+    StepVerifier.create(sut.sendSignUpEmailCode(command))
+        .expectError(IllegalStateException.class)
+        .verify();
+
+    verify(authTokenPort, times(3)).saveIfAbsent(any(AuthToken.class));
     verify(sendEmailVerificationPort, never()).sendVerificationCode(any(), any(), any());
   }
 

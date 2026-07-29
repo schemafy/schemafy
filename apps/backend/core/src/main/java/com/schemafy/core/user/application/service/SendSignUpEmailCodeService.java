@@ -48,29 +48,32 @@ class SendSignUpEmailCodeService implements SendSignUpEmailCodeUseCase {
   }
 
   private Mono<SignUpEmailVerificationResult> issueVerificationCode(String email) {
-    String code = verificationCodeGenerator.generate();
-    Instant expiresAt = Instant.now().plus(AuthPolicy.EMAIL_VERIFICATION_TTL);
-    AuthToken token = new AuthToken(
-        AuthTokenType.EMAIL_VERIFICATION,
-        email,
-        code,
-        0,
-        AuthPolicy.EMAIL_VERIFICATION_MAX_ATTEMPTS,
-        expiresAt);
+    return Mono.defer(() -> {
+      String code = verificationCodeGenerator.generate();
+      Instant expiresAt = Instant.now().plus(AuthPolicy.EMAIL_VERIFICATION_TTL);
+      AuthToken token = new AuthToken(
+          AuthTokenType.EMAIL_VERIFICATION,
+          email,
+          code,
+          0,
+          AuthPolicy.EMAIL_VERIFICATION_MAX_ATTEMPTS,
+          expiresAt);
 
-    return authTokenPort.saveIfAbsent(token)
-        .flatMap(saved -> {
-          if (saved) {
-            return sendEmailVerificationPort.sendVerificationCode(email, code, expiresAt)
-                .onErrorResume(error -> authTokenPort.delete(AuthTokenType.EMAIL_VERIFICATION, email)
-                    .onErrorResume(deleteError -> Mono.empty())
-                    .then(Mono.error(error)))
-                .thenReturn(new SignUpEmailVerificationResult(email, expiresAt));
-          }
-          return authTokenPort.findExpiresAt(AuthTokenType.EMAIL_VERIFICATION, email)
-              .map(existingExpiresAt -> new SignUpEmailVerificationResult(email, existingExpiresAt))
-              .switchIfEmpty(Mono.defer(() -> issueVerificationCode(email)));
-        });
+      return authTokenPort.saveIfAbsent(token)
+          .flatMap(saved -> {
+            if (saved) {
+              return sendEmailVerificationPort.sendVerificationCode(email, code, expiresAt)
+                  .onErrorResume(
+                      error -> authTokenPort.delete(AuthTokenType.EMAIL_VERIFICATION, email)
+                          .onErrorResume(deleteError -> Mono.empty())
+                          .then(Mono.error(error)))
+                  .thenReturn(new SignUpEmailVerificationResult(email, expiresAt));
+            }
+            return authTokenPort.findExpiresAt(AuthTokenType.EMAIL_VERIFICATION, email)
+                .map(existingExpiresAt -> new SignUpEmailVerificationResult(email,
+                    existingExpiresAt));
+          });
+    }).repeatWhenEmpty(2, repeats -> repeats);
   }
 
 }
