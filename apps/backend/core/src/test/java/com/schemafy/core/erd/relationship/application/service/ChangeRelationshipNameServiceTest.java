@@ -1,5 +1,6 @@
 package com.schemafy.core.erd.relationship.application.service;
 
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -14,14 +15,18 @@ import com.schemafy.core.erd.relationship.application.port.out.GetRelationshipBy
 import com.schemafy.core.erd.relationship.application.port.out.RelationshipExistsPort;
 import com.schemafy.core.erd.relationship.domain.exception.RelationshipErrorCode;
 import com.schemafy.core.erd.relationship.fixture.RelationshipFixture;
+import com.schemafy.core.erd.vendor.application.service.IdentifierCapabilityResolver;
+import com.schemafy.core.erd.vendor.domain.IdentifierCapabilities;
 
 import reactor.core.publisher.Mono;
 import reactor.test.StepVerifier;
 
+import static com.schemafy.core.project.application.access.ProjectAccessResourceType.RELATIONSHIP;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.then;
+import static org.mockito.Mockito.lenient;
 
 @ExtendWith(MockitoExtension.class)
 @DisplayName("ChangeRelationshipNameService")
@@ -36,8 +41,17 @@ class ChangeRelationshipNameServiceTest {
   @Mock
   GetRelationshipByIdPort getRelationshipByIdPort;
 
+  @Mock
+  IdentifierCapabilityResolver identifierCapabilityResolver;
+
   @InjectMocks
   ChangeRelationshipNameService sut;
+
+  @BeforeEach
+  void setUpIdentifierCapabilities() {
+    lenient().when(identifierCapabilityResolver.resolve(any(), any()))
+        .thenReturn(Mono.just(IdentifierCapabilities.codePoints(64)));
+  }
 
   @Nested
   @DisplayName("changeRelationshipName 메서드는")
@@ -88,6 +102,24 @@ class ChangeRelationshipNameServiceTest {
           .expectErrorMatches(DomainException.hasErrorCode(RelationshipErrorCode.NAME_INVALID))
           .verify();
 
+      then(changeRelationshipNamePort).shouldHaveNoInteractions();
+    }
+
+    @Test
+    @DisplayName("DB vendor 제한을 넘는 65자 이름이면 기존 이름 오류가 발생한다")
+    void throwsWhenNameExceedsVendorLimit() {
+      var command = RelationshipFixture.changeNameCommand("r".repeat(65));
+      var relationship = RelationshipFixture.defaultRelationship();
+
+      given(getRelationshipByIdPort.findRelationshipById(any()))
+          .willReturn(Mono.just(relationship));
+
+      StepVerifier.create(sut.changeRelationshipName(command))
+          .expectErrorMatches(DomainException.hasErrorCode(RelationshipErrorCode.NAME_INVALID))
+          .verify();
+
+      then(identifierCapabilityResolver).should().resolve(RELATIONSHIP, relationship.id());
+      then(relationshipExistsPort).shouldHaveNoInteractions();
       then(changeRelationshipNamePort).shouldHaveNoInteractions();
     }
 

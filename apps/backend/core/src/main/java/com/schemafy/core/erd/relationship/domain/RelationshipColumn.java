@@ -6,4 +6,14 @@ public record RelationshipColumn(
     String pkColumnId,
     String fkColumnId,
     int seqNo) {
+
+  public RelationshipColumn withSeqNo(int nextSeqNo) {
+    return new RelationshipColumn(
+        id,
+        relationshipId,
+        pkColumnId,
+        fkColumnId,
+        nextSeqNo);
+  }
+
 }

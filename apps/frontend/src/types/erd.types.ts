@@ -3,7 +3,6 @@ export const SCHEMA_NAME_CONSTRAINTS = {
   MAX_LENGTH: 20,
 } as const;
 
-export type DbVendorId = 'MYSQL';
 export type IndexType = 'BTREE' | 'HASH' | 'FULLTEXT' | 'SPATIAL' | 'OTHER';
 export type IndexSortDir = 'ASC' | 'DESC';
 export type ConstraintKind =
@@ -115,7 +114,6 @@ export interface Table {
 export interface Schema {
   id: string;
   projectId: string;
-  dbVendorId: DbVendorId;
   name: string;
   charset: string;
   collation: string;

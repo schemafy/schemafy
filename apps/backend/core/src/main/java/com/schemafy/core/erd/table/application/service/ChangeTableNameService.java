@@ -26,7 +26,6 @@ import com.schemafy.core.erd.relationship.application.port.out.ChangeRelationshi
 import com.schemafy.core.erd.relationship.application.port.out.GetRelationshipsByTableIdPort;
 import com.schemafy.core.erd.relationship.application.port.out.RelationshipExistsPort;
 import com.schemafy.core.erd.relationship.domain.Relationship;
-import com.schemafy.core.erd.relationship.domain.validator.RelationshipValidator;
 import com.schemafy.core.erd.table.application.port.in.ChangeTableNameCommand;
 import com.schemafy.core.erd.table.application.port.in.ChangeTableNameUseCase;
 import com.schemafy.core.erd.table.application.port.out.ChangeTableNamePort;
@@ -34,6 +33,9 @@ import com.schemafy.core.erd.table.application.port.out.GetTableByIdPort;
 import com.schemafy.core.erd.table.application.port.out.TableExistsPort;
 import com.schemafy.core.erd.table.domain.Table;
 import com.schemafy.core.erd.table.domain.exception.TableErrorCode;
+import com.schemafy.core.erd.vendor.application.service.IdentifierCapabilityResolver;
+import com.schemafy.core.erd.vendor.domain.IdentifierCapabilities;
+import com.schemafy.core.erd.vendor.domain.validator.IdentifierValidator;
 import com.schemafy.core.project.application.access.AccessTarget;
 import com.schemafy.core.project.application.access.RequireProjectAccess;
 import com.schemafy.core.project.domain.ProjectRole;
@@ -59,6 +61,7 @@ public class ChangeTableNameService implements ChangeTableNameUseCase {
   private final GetRelationshipsByTableIdPort getRelationshipsByTableIdPort;
   private final ChangeRelationshipNamePort changeRelationshipNamePort;
   private final RelationshipExistsPort relationshipExistsPort;
+  private final IdentifierCapabilityResolver identifierCapabilityResolver;
   private ErdMutationCoordinator erdMutationCoordinator = ErdMutationCoordinator.noop();
 
   @Autowired
@@ -71,50 +74,64 @@ public class ChangeTableNameService implements ChangeTableNameUseCase {
     return getTableByIdPort.findTableById(command.tableId())
         .switchIfEmpty(Mono.error(
             new DomainException(TableErrorCode.NOT_FOUND, "Table not found: " + command.tableId())))
-        .flatMap(table -> {
-          if (Objects.equals(table.name(), command.newName())) {
-            return Mono.just(MutationResult.<Void>noop(null, table.id()));
-          }
-          return erdMutationCoordinator.coordinate(ErdOperationType.CHANGE_TABLE_NAME, command,
-              () -> getTableByIdPort.findTableById(command.tableId())
-                  .switchIfEmpty(Mono.error(
-                      new DomainException(TableErrorCode.NOT_FOUND, "Table not found: " + command.tableId())))
-                  .flatMap(lockedTable -> {
-                    if (Objects.equals(lockedTable.name(), command.newName())) {
-                      return Mono.just(MutationResult.<Void>noop(null, lockedTable.id()));
-                    }
-                    return tableExistsPort.existsBySchemaIdAndName(lockedTable.schemaId(), command.newName())
-                        .flatMap(exists -> {
-                          if (exists) {
-                            return Mono.error(new DomainException(TableErrorCode.NAME_DUPLICATE,
-                                "A table with the name '" + command.newName() + "' already exists in the schema."));
-                          }
+        .flatMap(table -> identifierCapabilityResolver.resolve(TABLE, command.tableId())
+            .flatMap(identifiers -> {
+              IdentifierValidator.validateLength(
+                  identifiers,
+                  command.newName(),
+                  TableErrorCode.INVALID_VALUE,
+                  "Table name");
+              if (Objects.equals(table.name(), command.newName())) {
+                return Mono.just(MutationResult.<Void>noop(null, table.id()));
+              }
+              return erdMutationCoordinator.coordinate(ErdOperationType.CHANGE_TABLE_NAME, command,
+                  () -> getTableByIdPort.findTableById(command.tableId())
+                      .switchIfEmpty(Mono.error(
+                          new DomainException(TableErrorCode.NOT_FOUND, "Table not found: " + command.tableId())))
+                      .flatMap(lockedTable -> {
+                        if (Objects.equals(lockedTable.name(), command.newName())) {
+                          return Mono.just(MutationResult.<Void>noop(null, lockedTable.id()));
+                        }
+                        return tableExistsPort.existsBySchemaIdAndName(lockedTable.schemaId(), command.newName())
+                            .flatMap(exists -> {
+                              if (exists) {
+                                return Mono.error(new DomainException(TableErrorCode.NAME_DUPLICATE,
+                                    "A table with the name '" + command.newName()
+                                        + "' already exists in the schema."));
+                              }
 
-                          return buildRenamePlan(lockedTable, command.newName())
-                              .flatMap(plan -> changeTableNamePort.changeTableName(
-                                  command.tableId(),
-                                  command.newName())
-                                  .then(applyConstraintRenames(plan.constraintRenames()))
-                                  .then(applyRelationshipRenames(plan.relationshipRenames()))
-                                  .thenReturn(MutationResult.<Void>of(null, plan.affectedTableIds(lockedTable.id()))
-                                      .withInverse(plan.toInverse(lockedTable))));
-                        });
-                  }));
-        })
+                              return buildRenamePlan(lockedTable, command.newName(), identifiers)
+                                  .flatMap(plan -> changeTableNamePort.changeTableName(
+                                      command.tableId(),
+                                      command.newName())
+                                      .then(applyConstraintRenames(plan.constraintRenames()))
+                                      .then(applyRelationshipRenames(plan.relationshipRenames()))
+                                      .thenReturn(MutationResult.<Void>of(
+                                          null,
+                                          plan.affectedTableIds(lockedTable.id()))
+                                          .withInverse(plan.toInverse(lockedTable))));
+                            });
+                      }));
+            }))
         .as(transactionalOperator::transactional);
   }
 
-  private Mono<TableRenamePlan> buildRenamePlan(Table oldTable, String newTableName) {
+  private Mono<TableRenamePlan> buildRenamePlan(
+      Table oldTable,
+      String newTableName,
+      IdentifierCapabilities identifiers) {
     Set<String> reservedConstraintNames = new HashSet<>();
     Set<String> reservedRelationshipNames = new HashSet<>();
     Mono<List<ConstraintRenamePlan>> constraintRenames = buildAutoConstraintRenamePlans(
         oldTable,
         newTableName,
-        reservedConstraintNames);
+        reservedConstraintNames,
+        identifiers);
     Mono<List<RelationshipRenamePlan>> relationshipRenames = buildAutoRelationshipRenamePlans(
         oldTable,
         newTableName,
-        reservedRelationshipNames);
+        reservedRelationshipNames,
+        identifiers);
 
     return Mono.zip(constraintRenames, relationshipRenames)
         .map(tuple -> new TableRenamePlan(tuple.getT1(), tuple.getT2()));
@@ -123,7 +140,8 @@ public class ChangeTableNameService implements ChangeTableNameUseCase {
   private Mono<List<ConstraintRenamePlan>> buildAutoConstraintRenamePlans(
       Table oldTable,
       String newTableName,
-      Set<String> reservedConstraintNames) {
+      Set<String> reservedConstraintNames,
+      IdentifierCapabilities identifiers) {
     return getConstraintsByTableIdPort.findConstraintsByTableId(oldTable.id())
         .defaultIfEmpty(List.of())
         .flatMapMany(Flux::fromIterable)
@@ -131,7 +149,8 @@ public class ChangeTableNameService implements ChangeTableNameUseCase {
             constraint,
             oldTable,
             newTableName,
-            reservedConstraintNames))
+            reservedConstraintNames,
+            identifiers))
         .collectList();
   }
 
@@ -139,10 +158,11 @@ public class ChangeTableNameService implements ChangeTableNameUseCase {
       Constraint constraint,
       Table oldTable,
       String newTableName,
-      Set<String> reservedConstraintNames) {
+      Set<String> reservedConstraintNames,
+      IdentifierCapabilities identifiers) {
     String prefix = constraintKindPrefix(constraint.kind());
     String oldBaseName = normalizeName(prefix + oldTable.name());
-    OptionalInt suffixOpt = parseAutoNameSuffix(constraint.name(), oldBaseName);
+    OptionalInt suffixOpt = parseAutoNameSuffix(constraint.name(), oldBaseName, identifiers);
     if (suffixOpt.isEmpty()) {
       return Mono.empty();
     }
@@ -153,7 +173,8 @@ public class ChangeTableNameService implements ChangeTableNameUseCase {
         newBaseName,
         constraint.id(),
         suffix,
-        reservedConstraintNames)
+        reservedConstraintNames,
+        identifiers)
         .flatMap(newName -> {
           if (newName.equals(constraint.name())) {
             return Mono.empty();
@@ -179,15 +200,17 @@ public class ChangeTableNameService implements ChangeTableNameUseCase {
       String baseName,
       String excludeId,
       int suffix,
-      Set<String> reservedConstraintNames) {
-    String candidate = suffix == 0 ? baseName : baseName + "_" + suffix;
+      Set<String> reservedConstraintNames,
+      IdentifierCapabilities identifiers) {
+    String candidate = identifiers.fitGeneratedName(baseName, suffixValue(suffix));
     if (reservedConstraintNames.contains(candidate)) {
       return resolveUniqueConstraintName(
           schemaId,
           baseName,
           excludeId,
           suffix + 1,
-          reservedConstraintNames);
+          reservedConstraintNames,
+          identifiers);
     }
     return constraintExistsPort.existsBySchemaIdAndNameExcludingId(schemaId, candidate, excludeId)
         .flatMap(exists -> {
@@ -197,7 +220,8 @@ public class ChangeTableNameService implements ChangeTableNameUseCase {
                 baseName,
                 excludeId,
                 suffix + 1,
-                reservedConstraintNames);
+                reservedConstraintNames,
+                identifiers);
           }
           return Mono.just(candidate);
         });
@@ -206,7 +230,8 @@ public class ChangeTableNameService implements ChangeTableNameUseCase {
   private Mono<List<RelationshipRenamePlan>> buildAutoRelationshipRenamePlans(
       Table oldTable,
       String newTableName,
-      Set<String> reservedRelationshipNames) {
+      Set<String> reservedRelationshipNames,
+      IdentifierCapabilities identifiers) {
     return getRelationshipsByTableIdPort.findRelationshipsByTableId(oldTable.id())
         .defaultIfEmpty(List.of())
         .flatMapMany(Flux::fromIterable)
@@ -214,7 +239,8 @@ public class ChangeTableNameService implements ChangeTableNameUseCase {
             relationship,
             oldTable,
             newTableName,
-            reservedRelationshipNames))
+            reservedRelationshipNames,
+            identifiers))
         .collectList();
   }
 
@@ -222,7 +248,8 @@ public class ChangeTableNameService implements ChangeTableNameUseCase {
       Relationship relationship,
       Table oldTable,
       String newTableName,
-      Set<String> reservedRelationshipNames) {
+      Set<String> reservedRelationshipNames,
+      IdentifierCapabilities identifiers) {
     boolean isFkRenamed = relationship.fkTableId().equals(oldTable.id());
     boolean isPkRenamed = relationship.pkTableId().equals(oldTable.id());
     if (!isFkRenamed && !isPkRenamed) {
@@ -235,7 +262,8 @@ public class ChangeTableNameService implements ChangeTableNameUseCase {
           oldTable.name(),
           newTableName,
           newTableName,
-          reservedRelationshipNames);
+          reservedRelationshipNames,
+          identifiers);
     }
     String otherTableId = isFkRenamed ? relationship.pkTableId() : relationship.fkTableId();
     return getTableByIdPort.findTableById(otherTableId)
@@ -245,7 +273,8 @@ public class ChangeTableNameService implements ChangeTableNameUseCase {
             isPkRenamed ? oldTable.name() : otherTable.name(),
             isFkRenamed ? newTableName : otherTable.name(),
             isPkRenamed ? newTableName : otherTable.name(),
-            reservedRelationshipNames))
+            reservedRelationshipNames,
+            identifiers))
         .switchIfEmpty(Mono.empty());
   }
 
@@ -255,9 +284,10 @@ public class ChangeTableNameService implements ChangeTableNameUseCase {
       String oldPkName,
       String newFkName,
       String newPkName,
-      Set<String> reservedRelationshipNames) {
+      Set<String> reservedRelationshipNames,
+      IdentifierCapabilities identifiers) {
     String oldBaseName = normalizeName("rel_" + oldFkName + "_to_" + oldPkName);
-    OptionalInt suffixOpt = parseAutoNameSuffix(relationship.name(), oldBaseName);
+    OptionalInt suffixOpt = parseAutoNameSuffix(relationship.name(), oldBaseName, identifiers);
     if (suffixOpt.isEmpty()) {
       return Mono.empty();
     }
@@ -268,12 +298,10 @@ public class ChangeTableNameService implements ChangeTableNameUseCase {
         newBaseName,
         relationship.id(),
         suffix,
-        reservedRelationshipNames)
+        reservedRelationshipNames,
+        identifiers)
         .flatMap(newName -> {
           if (newName.equals(relationship.name())) {
-            return Mono.empty();
-          }
-          if (!isValidRelationshipName(newName)) {
             return Mono.empty();
           }
           reservedRelationshipNames.add(relationshipNameKey(relationship.fkTableId(), newName));
@@ -299,15 +327,17 @@ public class ChangeTableNameService implements ChangeTableNameUseCase {
       String baseName,
       String excludeId,
       int suffix,
-      Set<String> reservedRelationshipNames) {
-    String candidate = suffix == 0 ? baseName : baseName + "_" + suffix;
+      Set<String> reservedRelationshipNames,
+      IdentifierCapabilities identifiers) {
+    String candidate = identifiers.fitGeneratedName(baseName, suffixValue(suffix));
     if (reservedRelationshipNames.contains(relationshipNameKey(fkTableId, candidate))) {
       return resolveUniqueRelationshipName(
           fkTableId,
           baseName,
           excludeId,
           suffix + 1,
-          reservedRelationshipNames);
+          reservedRelationshipNames,
+          identifiers);
     }
     return relationshipExistsPort
         .existsByFkTableIdAndNameExcludingId(fkTableId, candidate, excludeId)
@@ -318,7 +348,8 @@ public class ChangeTableNameService implements ChangeTableNameUseCase {
                 baseName,
                 excludeId,
                 suffix + 1,
-                reservedRelationshipNames);
+                reservedRelationshipNames,
+                identifiers);
           }
           return Mono.just(candidate);
         });
@@ -328,18 +359,30 @@ public class ChangeTableNameService implements ChangeTableNameUseCase {
     return fkTableId + "\u0000" + relationshipName;
   }
 
-  private static OptionalInt parseAutoNameSuffix(String name, String baseName) {
+  private static OptionalInt parseAutoNameSuffix(
+      String name,
+      String baseName,
+      IdentifierCapabilities identifiers) {
     if (name == null || baseName == null) {
       return OptionalInt.empty();
     }
-    if (name.equals(baseName)) {
+    if (name.equals(baseName) || name.equals(identifiers.fitGeneratedName(baseName, ""))) {
       return OptionalInt.of(0);
     }
-    String prefix = baseName + "_";
-    if (!name.startsWith(prefix)) {
-      return OptionalInt.empty();
+    String suffix;
+    String legacyPrefix = baseName + "_";
+    if (name.startsWith(legacyPrefix)) {
+      suffix = name.substring(legacyPrefix.length());
+    } else {
+      int suffixSeparator = name.lastIndexOf('_');
+      if (suffixSeparator < 0) {
+        return OptionalInt.empty();
+      }
+      suffix = name.substring(suffixSeparator + 1);
+      if (!name.equals(identifiers.fitGeneratedName(baseName, "_" + suffix))) {
+        return OptionalInt.empty();
+      }
     }
-    String suffix = name.substring(prefix.length());
     if (suffix.isEmpty()) {
       return OptionalInt.empty();
     }
@@ -369,13 +412,8 @@ public class ChangeTableNameService implements ChangeTableNameUseCase {
     return name == null ? null : name.trim();
   }
 
-  private static boolean isValidRelationshipName(String name) {
-    try {
-      RelationshipValidator.validateName(name);
-      return true;
-    } catch (DomainException exception) {
-      return false;
-    }
+  private static String suffixValue(int suffix) {
+    return suffix == 0 ? "" : "_" + suffix;
   }
 
   private record TableRenamePlan(

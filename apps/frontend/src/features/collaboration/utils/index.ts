@@ -1,2 +1,2 @@
-export { getCursorColor } from './getCursorColor';
+export * from './getRandomColor';
 export * from './constants';

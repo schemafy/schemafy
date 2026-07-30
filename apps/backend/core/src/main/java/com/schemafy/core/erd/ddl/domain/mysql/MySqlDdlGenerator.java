@@ -20,26 +20,25 @@ import com.schemafy.core.erd.column.domain.ColumnTypeArguments;
 import com.schemafy.core.erd.constraint.domain.type.ConstraintKind;
 import com.schemafy.core.erd.ddl.domain.DdlExportVendor;
 import com.schemafy.core.erd.ddl.domain.DdlGenerator;
-import com.schemafy.core.erd.ddl.domain.DdlSchemaSnapshot;
-import com.schemafy.core.erd.ddl.domain.DdlSchemaSnapshot.Column;
-import com.schemafy.core.erd.ddl.domain.DdlSchemaSnapshot.Constraint;
-import com.schemafy.core.erd.ddl.domain.DdlSchemaSnapshot.ConstraintColumn;
-import com.schemafy.core.erd.ddl.domain.DdlSchemaSnapshot.ConstraintSnapshot;
-import com.schemafy.core.erd.ddl.domain.DdlSchemaSnapshot.IndexColumn;
-import com.schemafy.core.erd.ddl.domain.DdlSchemaSnapshot.IndexSnapshot;
-import com.schemafy.core.erd.ddl.domain.DdlSchemaSnapshot.Relationship;
-import com.schemafy.core.erd.ddl.domain.DdlSchemaSnapshot.RelationshipColumn;
-import com.schemafy.core.erd.ddl.domain.DdlSchemaSnapshot.RelationshipSnapshot;
-import com.schemafy.core.erd.ddl.domain.DdlSchemaSnapshot.SchemaSnapshot;
-import com.schemafy.core.erd.ddl.domain.DdlSchemaSnapshot.Table;
-import com.schemafy.core.erd.ddl.domain.DdlSchemaSnapshot.TableSnapshot;
 import com.schemafy.core.erd.ddl.domain.exception.DdlErrorCode;
+import com.schemafy.core.erd.export.domain.SchemaExportSnapshot;
+import com.schemafy.core.erd.export.domain.SchemaExportSnapshot.Column;
+import com.schemafy.core.erd.export.domain.SchemaExportSnapshot.Constraint;
+import com.schemafy.core.erd.export.domain.SchemaExportSnapshot.ConstraintColumn;
+import com.schemafy.core.erd.export.domain.SchemaExportSnapshot.ConstraintSnapshot;
+import com.schemafy.core.erd.export.domain.SchemaExportSnapshot.IndexColumn;
+import com.schemafy.core.erd.export.domain.SchemaExportSnapshot.IndexSnapshot;
+import com.schemafy.core.erd.export.domain.SchemaExportSnapshot.Relationship;
+import com.schemafy.core.erd.export.domain.SchemaExportSnapshot.RelationshipColumn;
+import com.schemafy.core.erd.export.domain.SchemaExportSnapshot.RelationshipSnapshot;
+import com.schemafy.core.erd.export.domain.SchemaExportSnapshot.SchemaSnapshot;
+import com.schemafy.core.erd.export.domain.SchemaExportSnapshot.Table;
+import com.schemafy.core.erd.export.domain.SchemaExportSnapshot.TableSnapshot;
 import com.schemafy.core.erd.index.domain.type.IndexType;
 
 @Component
 public class MySqlDdlGenerator implements DdlGenerator {
 
-  private static final int MAX_IDENTIFIER_LENGTH = 64;
   private static final int MAX_COLUMN_COMMENT_LENGTH = 1024;
   private static final int MAX_BIT_LENGTH = 64;
   private static final int MAX_CHAR_LENGTH = 255;
@@ -113,7 +112,7 @@ public class MySqlDdlGenerator implements DdlGenerator {
   }
 
   @Override
-  public String generate(DdlSchemaSnapshot snapshot) {
+  public String generate(SchemaExportSnapshot snapshot) {
     requireSnapshot(snapshot);
     requireMysqlCompatible(snapshot.schema().dbVendorName());
 
@@ -871,7 +870,7 @@ public class MySqlDdlGenerator implements DdlGenerator {
     return value != null && !value.isBlank();
   }
 
-  private static void requireSnapshot(DdlSchemaSnapshot snapshot) {
+  private static void requireSnapshot(SchemaExportSnapshot snapshot) {
     if (snapshot == null || snapshot.schema() == null) {
       throw invalid("DDL schema snapshot must not be null");
     }
@@ -1015,10 +1014,6 @@ public class MySqlDdlGenerator implements DdlGenerator {
 
   private static String requireIdentifier(String value, String name) {
     String identifier = requireNonBlank(value, name);
-    if (identifier.length() > MAX_IDENTIFIER_LENGTH) {
-      throw invalid(name + " must be at most " + MAX_IDENTIFIER_LENGTH
-          + " characters");
-    }
     if (identifier.endsWith(" ")) {
       throw invalid(name + " must not end with a space");
     }

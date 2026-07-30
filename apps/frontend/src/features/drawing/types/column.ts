@@ -1,5 +1,5 @@
 import type { DragEvent } from 'react';
-import type { VendorDatatype } from '../api';
+import type { VendorDatatype } from '@/features/vendor';
 
 export type ColumnType = {
   id: string;

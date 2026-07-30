@@ -14,6 +14,7 @@ import com.fasterxml.jackson.databind.node.NullNode;
 import com.fasterxml.jackson.databind.node.TextNode;
 import com.schemafy.core.common.json.JsonCodec;
 import com.schemafy.core.common.json.JsonObjectMetadataConverter;
+import com.schemafy.core.erd.operation.application.inverse.ChangeTableExtraInverse;
 import com.schemafy.core.erd.table.application.port.out.ChangeTableExtraPort;
 import com.schemafy.core.erd.table.application.port.out.GetTableByIdPort;
 import com.schemafy.core.erd.table.fixture.TableFixture;
@@ -21,6 +22,7 @@ import com.schemafy.core.erd.table.fixture.TableFixture;
 import reactor.core.publisher.Mono;
 import reactor.test.StepVerifier;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.then;
@@ -62,7 +64,8 @@ class ChangeTableExtraServiceTest {
             .willReturn(Mono.empty());
 
         StepVerifier.create(sut.changeTableExtra(command))
-            .expectNextCount(1)
+            .assertNext(result -> assertThat(result.inversePayload()).isEqualTo(
+                new ChangeTableExtraInverse(command.tableId(), null)))
             .verifyComplete();
 
         then(changeTableExtraPort).should()

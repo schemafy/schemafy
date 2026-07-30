@@ -1,9 +1,12 @@
 package com.schemafy.api.project.controller.dto.request;
 
+import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Positive;
 import jakarta.validation.constraints.Size;
 
 public record CreateProjectRequest(
     @Size(min = 1, max = 255, message = "Project name must be between 1 and 255 characters") String name,
-    String description) {
+    String description,
+    @NotNull(message = "DB Vendor ID is required") @Positive(message = "DB Vendor ID must be positive") Integer dbVendorId) {
 
 }

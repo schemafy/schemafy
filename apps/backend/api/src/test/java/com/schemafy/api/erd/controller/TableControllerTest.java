@@ -57,7 +57,7 @@ import static org.mockito.BDDMockito.then;
 @AutoConfigureWebTestClient
 @AutoConfigureRestDocs
 @DisplayName("TableController 통합 테스트")
-@WithMockCustomUser(roles = "EDITOR")
+@WithMockCustomUser
 class TableControllerTest {
 
   private static final ObjectMapper objectMapper = new ObjectMapper()
@@ -633,7 +633,6 @@ class TableControllerTest {
   }
 
   @Test
-  @WithMockCustomUser(roles = "ADMIN")
   @DisplayName("테이블 삭제 API 문서화")
   void deleteTable() {
     String tableId = "06D6W2BAHD51T5NJPK29Q6BCR9";

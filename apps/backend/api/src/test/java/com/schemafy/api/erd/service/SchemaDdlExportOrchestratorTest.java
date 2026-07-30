@@ -1,10 +1,7 @@
 package com.schemafy.api.erd.service;
 
 import java.util.List;
-import java.util.Map;
-
-import org.springframework.transaction.ReactiveTransaction;
-import org.springframework.transaction.ReactiveTransactionManager;
+import java.util.Set;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -13,99 +10,59 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
-import com.schemafy.api.erd.controller.dto.response.ColumnResponse;
-import com.schemafy.api.erd.controller.dto.response.TableResponse;
-import com.schemafy.api.erd.controller.dto.response.TableSnapshotResponse;
-import com.schemafy.api.erd.service.ddl.DdlExportSnapshotMapper;
+import com.schemafy.api.erd.service.export.SchemaExportSnapshotReader;
+import com.schemafy.api.erd.service.export.SchemaExportSnapshotReader.SchemaExportSnapshotResult;
+import com.schemafy.core.common.exception.DomainException;
 import com.schemafy.core.erd.ddl.application.port.in.GenerateSchemaDdlCommand;
 import com.schemafy.core.erd.ddl.application.port.in.GenerateSchemaDdlUseCase;
 import com.schemafy.core.erd.ddl.domain.DdlExportVendor;
-import com.schemafy.core.erd.schema.application.port.in.GetSchemaQuery;
-import com.schemafy.core.erd.schema.application.port.in.GetSchemaWithRevisionResult;
-import com.schemafy.core.erd.schema.application.port.in.GetSchemaWithRevisionUseCase;
-import com.schemafy.core.erd.schema.domain.Schema;
-import com.schemafy.core.erd.table.application.port.in.GetTablesBySchemaIdQuery;
-import com.schemafy.core.erd.table.application.port.in.GetTablesBySchemaIdUseCase;
-import com.schemafy.core.erd.table.domain.Table;
+import com.schemafy.core.erd.ddl.domain.exception.DdlErrorCode;
+import com.schemafy.core.erd.export.domain.SchemaExportSnapshot;
+import com.schemafy.core.erd.export.domain.SchemaExportSnapshot.SchemaSnapshot;
+import com.schemafy.core.erd.index.domain.policy.IndexCapabilities;
+import com.schemafy.core.erd.index.domain.type.IndexType;
+import com.schemafy.core.erd.vendor.domain.IdentifierCapabilities;
 
-import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 import reactor.test.StepVerifier;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyList;
 import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.then;
-import static org.mockito.Mockito.lenient;
 
 @ExtendWith(MockitoExtension.class)
 @DisplayName("SchemaDdlExportOrchestrator")
 class SchemaDdlExportOrchestratorTest {
 
   @Mock
-  GetSchemaWithRevisionUseCase getSchemaWithRevisionUseCase;
-
-  @Mock
-  GetTablesBySchemaIdUseCase getTablesBySchemaIdUseCase;
-
-  @Mock
-  TableSnapshotOrchestrator tableSnapshotOrchestrator;
+  SchemaExportSnapshotReader schemaExportSnapshotReader;
 
   @Mock
   GenerateSchemaDdlUseCase generateSchemaDdlUseCase;
-
-  @Mock
-  ReactiveTransactionManager transactionManager;
-
-  @Mock
-  ReactiveTransaction transaction;
 
   SchemaDdlExportOrchestrator sut;
 
   @BeforeEach
   void setUp() {
-    given(transactionManager.getReactiveTransaction(any()))
-        .willReturn(Mono.just(transaction));
-    lenient().when(transactionManager.commit(transaction))
-        .thenReturn(Mono.empty());
-    lenient().when(transactionManager.rollback(transaction))
-        .thenReturn(Mono.empty());
-
     sut = new SchemaDdlExportOrchestrator(
-        getSchemaWithRevisionUseCase,
-        getTablesBySchemaIdUseCase,
-        tableSnapshotOrchestrator,
-        generateSchemaDdlUseCase,
-        new DdlExportSnapshotMapper(),
-        transactionManager);
+        schemaExportSnapshotReader,
+        generateSchemaDdlUseCase);
   }
 
   @Test
-  @DisplayName("schema snapshot을 core DDL use case로 전달하고 export 응답을 반환한다")
+  @DisplayName("공통 schema export snapshot을 DDL use case로 전달하고 응답을 반환한다")
   void exportsSchemaDdl() {
     String schemaId = "schema-1";
-    Schema schema = new Schema(schemaId, "project-1", "mysql", "main_schema",
-        "utf8mb4", "utf8mb4_general_ci");
-    Table table = new Table("table-1", schemaId, "users", "utf8mb4",
-        "utf8mb4_general_ci");
-    TableSnapshotResponse snapshot = new TableSnapshotResponse(
-        new TableResponse(table.id(), schemaId, table.name(), table.charset(),
-            table.collation(), null),
-        List.of(new ColumnResponse(
-            "column-1", table.id(), "id", "BIGINT", null, 0, true,
-            null, null, null)),
-        List.of(),
-        List.of(),
+    SchemaExportSnapshot snapshot = new SchemaExportSnapshot(
+        new SchemaSnapshot(schemaId, "mysql", "main_schema", null, null),
         List.of());
-
-    given(getSchemaWithRevisionUseCase.getSchemaWithRevision(any(GetSchemaQuery.class)))
-        .willReturn(Mono.just(new GetSchemaWithRevisionResult(schema, 42L)));
-    given(getTablesBySchemaIdUseCase.getTablesBySchemaId(any(GetTablesBySchemaIdQuery.class)))
-        .willReturn(Flux.just(table));
-    given(tableSnapshotOrchestrator.getTableSnapshotsStrict(anyList()))
-        .willReturn(Mono.just(Map.of(table.id(), snapshot)));
+    IndexCapabilities indexCapabilities = mysqlIndexCapabilities();
+    IdentifierCapabilities identifierCapabilities = IdentifierCapabilities.codePoints(64);
+    given(schemaExportSnapshotReader.readSchemaExportSnapshot(schemaId))
+        .willReturn(Mono.just(new SchemaExportSnapshotResult(
+            snapshot, 42L, indexCapabilities, identifierCapabilities)));
     given(generateSchemaDdlUseCase.generateSchemaDdl(any(GenerateSchemaDdlCommand.class)))
         .willReturn(Mono.just("DDL"));
 
@@ -118,43 +75,39 @@ class SchemaDdlExportOrchestratorTest {
         })
         .verifyComplete();
 
-    then(getSchemaWithRevisionUseCase).should()
-        .getSchemaWithRevision(new GetSchemaQuery(schemaId));
-    then(getTablesBySchemaIdUseCase).should()
-        .getTablesBySchemaId(new GetTablesBySchemaIdQuery(schemaId));
     then(generateSchemaDdlUseCase).should().generateSchemaDdl(argThat(
-        command -> command.snapshot().schema().id().equals(schemaId)
+        command -> command.snapshot() == snapshot
             && command.targetDbVendor().equals(DdlExportVendor.MYSQL)
-            && command.snapshot().tables().size() == 1
-            && command.snapshot().tables().getFirst().columns().size() == 1));
+            && command.indexCapabilities().equals(indexCapabilities)
+            && command.identifierCapabilities().equals(identifierCapabilities)));
   }
 
   @Test
-  @DisplayName("테이블이 없어도 빈 table snapshot으로 DDL 생성을 요청한다")
-  void exportsEmptySchemaDdl() {
+  @DisplayName("요청 target과 프로젝트 DB vendor가 다르면 capability 적용 전에 거부한다")
+  void rejectsTargetVendorDifferentFromProjectVendor() {
     String schemaId = "schema-1";
-    Schema schema = new Schema(schemaId, "project-1", "mysql", "empty_schema",
-        "utf8mb4", "utf8mb4_general_ci");
+    SchemaExportSnapshot snapshot = new SchemaExportSnapshot(
+        new SchemaSnapshot(schemaId, "mysql", "main_schema", null, null),
+        List.of());
+    given(schemaExportSnapshotReader.readSchemaExportSnapshot(schemaId))
+        .willReturn(Mono.just(new SchemaExportSnapshotResult(
+            snapshot,
+            42L,
+            mysqlIndexCapabilities(),
+            IdentifierCapabilities.codePoints(64))));
 
-    given(getSchemaWithRevisionUseCase.getSchemaWithRevision(any(GetSchemaQuery.class)))
-        .willReturn(Mono.just(new GetSchemaWithRevisionResult(schema, 7L)));
-    given(getTablesBySchemaIdUseCase.getTablesBySchemaId(any(GetTablesBySchemaIdQuery.class)))
-        .willReturn(Flux.empty());
-    given(generateSchemaDdlUseCase.generateSchemaDdl(any(GenerateSchemaDdlCommand.class)))
-        .willReturn(Mono.just("EMPTY DDL"));
+    StepVerifier.create(sut.exportSchemaDdl(schemaId, "postgresql"))
+        .expectErrorMatches(DomainException.hasErrorCode(
+            DdlErrorCode.UNSUPPORTED_VENDOR))
+        .verify();
 
-    StepVerifier.create(sut.exportSchemaDdl(schemaId, "mysql"))
-        .assertNext(response -> {
-          assertThat(response.currentRevision()).isEqualTo(7L);
-          assertThat(response.targetDbVendor()).isEqualTo("mysql");
-          assertThat(response.ddl()).isEqualTo("EMPTY DDL");
-        })
-        .verifyComplete();
+    then(generateSchemaDdlUseCase).shouldHaveNoInteractions();
+  }
 
-    then(tableSnapshotOrchestrator).shouldHaveNoInteractions();
-    then(generateSchemaDdlUseCase).should().generateSchemaDdl(argThat(
-        command -> command.snapshot().tables().isEmpty()
-            && command.targetDbVendor().equals(DdlExportVendor.MYSQL)));
+  private static IndexCapabilities mysqlIndexCapabilities() {
+    return new IndexCapabilities(
+        Set.of(IndexType.BTREE, IndexType.FULLTEXT, IndexType.SPATIAL),
+        Set.of(IndexType.BTREE));
   }
 
 }

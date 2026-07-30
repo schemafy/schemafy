@@ -8,6 +8,7 @@ import org.springframework.stereotype.Service;
 import com.schemafy.core.common.MutationResult;
 import com.schemafy.core.common.exception.DomainException;
 import com.schemafy.core.common.json.JsonObjectMetadataConverter;
+import com.schemafy.core.erd.operation.application.inverse.ChangeTableExtraInverse;
 import com.schemafy.core.erd.operation.application.service.ErdMutationCoordinator;
 import com.schemafy.core.erd.operation.domain.ErdOperationType;
 import com.schemafy.core.erd.table.application.port.in.ChangeTableExtraCommand;
@@ -58,7 +59,10 @@ public class ChangeTableExtraService implements ChangeTableExtraUseCase {
                       }
                       return changeTableExtraPort
                           .changeTableExtra(command.tableId(), canonicalExtra)
-                          .thenReturn(MutationResult.<Void>of(null, lockedTable.id()));
+                          .thenReturn(MutationResult.<Void>of(null, lockedTable.id())
+                              .withInverse(new ChangeTableExtraInverse(
+                                  lockedTable.id(),
+                                  lockedTable.extra())));
                     }));
           });
     });
