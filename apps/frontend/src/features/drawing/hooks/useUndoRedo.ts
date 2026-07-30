@@ -22,6 +22,8 @@ export const useUndoRedo = () => {
     !isMutating;
 
   const handleUndo = useCallback(() => {
+    if (isMutating) return;
+
     const latest =
       operationHistoryStore.getLatestUndoableOperation(selectedSchemaId);
     if (!latest?.opId) return;
@@ -40,9 +42,11 @@ export const useUndoRedo = () => {
         }
       },
     });
-  }, [selectedSchemaId, undo, syncAffectedTables]);
+  }, [selectedSchemaId, undo, syncAffectedTables, isMutating]);
 
   const handleRedo = useCallback(() => {
+    if (isMutating) return;
+
     const opId = operationHistoryStore.popRedoOpId(selectedSchemaId);
     if (!opId) return;
 
@@ -60,7 +64,7 @@ export const useUndoRedo = () => {
         }
       },
     });
-  }, [selectedSchemaId, redo, syncAffectedTables]);
+  }, [selectedSchemaId, redo, syncAffectedTables, isMutating]);
 
   return { handleUndo, handleRedo, canUndo, canRedo };
 };
