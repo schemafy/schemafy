@@ -7,8 +7,7 @@ import type { UseSignUpSubmissionProps } from '../types';
 
 export const useSignUpSubmission = ({
   form,
-  errors,
-  validationRules,
+  runAllValidations,
   emailVerificationRequired,
   signupVerificationToken,
   onSuccess,
@@ -20,14 +19,7 @@ export const useSignUpSubmission = ({
   const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
 
-    const currentErrors = [
-      validationRules.email?.(form.email, form),
-      validationRules.name?.(form.name, form),
-      validationRules.password?.(form.password, form),
-      validationRules.confirmPassword?.(form.confirmPassword, form),
-    ].filter(Boolean);
-    if (Object.keys(errors).length > 0 || currentErrors.length > 0) {
-      setFormError(currentErrors[0] ?? 'Please check your input.');
+    if (!runAllValidations(form)) {
       return;
     }
     if (emailVerificationRequired && !signupVerificationToken) {

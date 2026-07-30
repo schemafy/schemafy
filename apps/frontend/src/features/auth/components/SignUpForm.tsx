@@ -64,25 +64,25 @@ const validationRules: ValidationRules<SignUpFormValues> = {
 };
 
 export const SignUpForm = () => {
-  const { 
-      form, 
-      errors, 
-      handleChange, 
-      handleBlur, 
-      runAllValidations, 
-      resetForm 
+  const {
+    form,
+    errors,
+    handleChange,
+    handleBlur,
+    runAllValidations,
+    resetForm,
   } = useFormState(initialForm, validationRules);
-  
+
   const [formError, setFormError] = useState('');
   const clearFormError = () => setFormError('');
   const emailError = validationRules.email?.(form.email, form) ?? '';
-  
+
   const emailVerification = useSignUpEmailVerification({
     emailError,
     setFormError,
     clearFormError,
   });
-  
+
   const signUpSubmission = useSignUpSubmission({
     form,
     runAllValidations,
@@ -94,7 +94,7 @@ export const SignUpForm = () => {
       emailVerification.resetVerification();
     },
   });
-  
+
   const isVerificationDisabled =
     signUpSubmission.isSubmitting || emailVerification.isVerificationPending;
   const handleFormChange = (event: React.ChangeEvent<HTMLInputElement>) => {

@@ -1,4 +1,4 @@
-import type { SignUpFormValues, ValidationRules } from './form';
+import type { SignUpFormValues } from './form';
 
 export interface UseSignUpEmailVerificationProps {
   emailError: string;
@@ -8,8 +8,7 @@ export interface UseSignUpEmailVerificationProps {
 
 export interface UseSignUpSubmissionProps {
   form: SignUpFormValues;
-  errors: Partial<Record<keyof SignUpFormValues, string>>;
-  validationRules: ValidationRules<SignUpFormValues>;
+  runAllValidations: (form: SignUpFormValues) => boolean;
   emailVerificationRequired: boolean;
   signupVerificationToken: string;
   onSuccess: () => void;
