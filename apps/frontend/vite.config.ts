@@ -18,7 +18,7 @@ export default defineConfig(({command}) => {
     },
     server: isDev
       ? {
-        port: 3001,
+        port: 3000,
       }
       : undefined,
   };
