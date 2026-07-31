@@ -15,10 +15,12 @@ const UNDO_REDO_IN_PROGRESS = 'UNDO_REDO_IN_PROGRESS';
 export const isUndoRedoInProgressError = (error: unknown) =>
   error instanceof Error && error.message === UNDO_REDO_IN_PROGRESS;
 
+const hasAnotherMutationInFlight = () => queryClient.isMutating() > 1;
+
 export const createErdMutationConfig = (
   schemaId?: string,
 ): AxiosRequestConfig => {
-  if (schemaId && queryClient.isMutating() > 0) {
+  if (schemaId && hasAnotherMutationInFlight()) {
     throw new Error(UNDO_REDO_IN_PROGRESS);
   }
 
