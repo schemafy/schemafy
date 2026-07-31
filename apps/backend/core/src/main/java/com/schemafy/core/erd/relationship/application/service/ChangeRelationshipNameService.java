@@ -18,6 +18,8 @@ import com.schemafy.core.erd.relationship.application.port.out.GetRelationshipBy
 import com.schemafy.core.erd.relationship.application.port.out.RelationshipExistsPort;
 import com.schemafy.core.erd.relationship.domain.exception.RelationshipErrorCode;
 import com.schemafy.core.erd.relationship.domain.validator.RelationshipValidator;
+import com.schemafy.core.erd.vendor.application.service.IdentifierCapabilityResolver;
+import com.schemafy.core.erd.vendor.domain.validator.IdentifierValidator;
 import com.schemafy.core.project.application.access.AccessTarget;
 import com.schemafy.core.project.application.access.RequireProjectAccess;
 import com.schemafy.core.project.domain.ProjectRole;
@@ -35,6 +37,7 @@ public class ChangeRelationshipNameService implements ChangeRelationshipNameUseC
   private final ChangeRelationshipNamePort changeRelationshipNamePort;
   private final RelationshipExistsPort relationshipExistsPort;
   private final GetRelationshipByIdPort getRelationshipByIdPort;
+  private final IdentifierCapabilityResolver identifierCapabilityResolver;
   private ErdMutationCoordinator erdMutationCoordinator = ErdMutationCoordinator.noop();
 
   @Autowired
@@ -49,42 +52,48 @@ public class ChangeRelationshipNameService implements ChangeRelationshipNameUseC
       RelationshipValidator.validateName(normalizedName);
       return getRelationshipByIdPort.findRelationshipById(command.relationshipId())
           .switchIfEmpty(Mono.error(new DomainException(RelationshipErrorCode.NOT_FOUND, "Relationship not found")))
-          .flatMap(relationship -> {
-            Set<String> affectedTableIds = new HashSet<>();
-            affectedTableIds.add(relationship.fkTableId());
-            affectedTableIds.add(relationship.pkTableId());
-            if (normalizedName.equals(relationship.name())) {
-              return Mono.just(MutationResult.<Void>noop(null, affectedTableIds));
-            }
-            return erdMutationCoordinator.coordinate(ErdOperationType.CHANGE_RELATIONSHIP_NAME, command,
-                () -> getRelationshipByIdPort.findRelationshipById(command.relationshipId())
-                    .switchIfEmpty(Mono.error(new DomainException(
-                        RelationshipErrorCode.NOT_FOUND,
-                        "Relationship not found")))
-                    .flatMap(lockedRelationship -> {
-                      Set<String> lockedAffectedTableIds = affectedTableIds(lockedRelationship.fkTableId(),
-                          lockedRelationship.pkTableId());
-                      if (normalizedName.equals(lockedRelationship.name())) {
-                        return Mono.just(MutationResult.<Void>noop(null, lockedAffectedTableIds));
-                      }
-                      return relationshipExistsPort.existsByFkTableIdAndNameExcludingId(
-                          lockedRelationship.fkTableId(),
-                          normalizedName,
-                          lockedRelationship.id())
-                          .flatMap(exists -> {
-                            if (exists) {
-                              return Mono.error(new DomainException(RelationshipErrorCode.NAME_DUPLICATE,
-                                  "Relationship name '%s' already exists in table".formatted(normalizedName)));
-                            }
-                            return changeRelationshipNamePort
-                                .changeRelationshipName(lockedRelationship.id(), normalizedName)
-                                .thenReturn(MutationResult.<Void>of(null, lockedAffectedTableIds)
-                                    .withInverse(new ChangeRelationshipNameInverse(
-                                        lockedRelationship.id(),
-                                        lockedRelationship.name())));
-                          });
-                    }));
-          });
+          .flatMap(relationship -> identifierCapabilityResolver.resolve(RELATIONSHIP, relationship.id())
+              .flatMap(identifierCapabilities -> {
+                IdentifierValidator.validateLength(
+                    identifierCapabilities,
+                    normalizedName,
+                    RelationshipErrorCode.NAME_INVALID,
+                    "Relationship name");
+                Set<String> affectedTableIds = new HashSet<>();
+                affectedTableIds.add(relationship.fkTableId());
+                affectedTableIds.add(relationship.pkTableId());
+                if (normalizedName.equals(relationship.name())) {
+                  return Mono.just(MutationResult.<Void>noop(null, affectedTableIds));
+                }
+                return erdMutationCoordinator.coordinate(ErdOperationType.CHANGE_RELATIONSHIP_NAME, command,
+                    () -> getRelationshipByIdPort.findRelationshipById(command.relationshipId())
+                        .switchIfEmpty(Mono.error(new DomainException(
+                            RelationshipErrorCode.NOT_FOUND,
+                            "Relationship not found")))
+                        .flatMap(lockedRelationship -> {
+                          Set<String> lockedAffectedTableIds = affectedTableIds(lockedRelationship.fkTableId(),
+                              lockedRelationship.pkTableId());
+                          if (normalizedName.equals(lockedRelationship.name())) {
+                            return Mono.just(MutationResult.<Void>noop(null, lockedAffectedTableIds));
+                          }
+                          return relationshipExistsPort.existsByFkTableIdAndNameExcludingId(
+                              lockedRelationship.fkTableId(),
+                              normalizedName,
+                              lockedRelationship.id())
+                              .flatMap(exists -> {
+                                if (exists) {
+                                  return Mono.error(new DomainException(RelationshipErrorCode.NAME_DUPLICATE,
+                                      "Relationship name '%s' already exists in table".formatted(normalizedName)));
+                                }
+                                return changeRelationshipNamePort
+                                    .changeRelationshipName(lockedRelationship.id(), normalizedName)
+                                    .thenReturn(MutationResult.<Void>of(null, lockedAffectedTableIds)
+                                        .withInverse(new ChangeRelationshipNameInverse(
+                                            lockedRelationship.id(),
+                                            lockedRelationship.name())));
+                              });
+                        }));
+              }));
     });
   }
 

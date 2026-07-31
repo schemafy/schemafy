@@ -27,6 +27,12 @@ import com.schemafy.core.erd.schema.domain.exception.SchemaErrorCode;
 import com.schemafy.core.erd.table.application.port.out.GetTableByIdPort;
 import com.schemafy.core.erd.table.domain.Table;
 import com.schemafy.core.erd.table.domain.exception.TableErrorCode;
+import com.schemafy.core.erd.vendor.application.port.in.GetProjectDbVendorQuery;
+import com.schemafy.core.erd.vendor.application.port.in.GetProjectDbVendorUseCase;
+import com.schemafy.core.erd.vendor.domain.DbVendor;
+import com.schemafy.core.erd.vendor.domain.IdentifierCapabilities;
+import com.schemafy.core.erd.vendor.domain.VendorCapabilities;
+import com.schemafy.core.erd.vendor.fixture.DbVendorFixture;
 import com.schemafy.core.ulid.application.port.out.UlidGeneratorPort;
 
 import reactor.core.publisher.Mono;
@@ -37,6 +43,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.then;
+import static org.mockito.Mockito.lenient;
 
 @ExtendWith(MockitoExtension.class)
 @DisplayName("CreateColumnService")
@@ -61,6 +68,9 @@ class CreateColumnServiceTest {
   GetColumnsByTableIdPort getColumnsByTableIdPort;
 
   @Mock
+  GetProjectDbVendorUseCase getProjectDbVendorUseCase;
+
+  @Mock
   StructuralSnapshotService structuralSnapshotService;
 
   @Mock
@@ -74,6 +84,8 @@ class CreateColumnServiceTest {
     given(transactionalOperator.transactional(any(Mono.class)))
         .willAnswer(invocation -> invocation.getArgument(0));
     stubEmptySnapshots(structuralSnapshotService);
+    lenient().when(getProjectDbVendorUseCase.getProjectDbVendor(any()))
+        .thenReturn(Mono.just(DbVendorFixture.defaultDbVendor()));
   }
 
   @Nested
@@ -113,6 +125,8 @@ class CreateColumnServiceTest {
             .verifyComplete();
 
         then(createColumnPort).should().createColumn(any(Column.class));
+        then(getProjectDbVendorUseCase).should()
+            .getProjectDbVendor(new GetProjectDbVendorQuery(PROJECT_ID));
       }
 
       @Test
@@ -386,6 +400,46 @@ class CreateColumnServiceTest {
     }
 
     @Nested
+    @DisplayName("vendor identifier 제한을 넘으면")
+    class WhenNameExceedsVendorIdentifierLimit {
+
+      @Test
+      @DisplayName("컬럼 생성을 거부한다")
+      void rejectsNameThatExceedsVendorLimit() {
+        CreateColumnCommand defaultCommand = ColumnFixture.createCommand();
+        var command = new CreateColumnCommand(
+            defaultCommand.tableId(),
+            "a".repeat(11),
+            defaultCommand.dataType(),
+            defaultCommand.length(),
+            defaultCommand.precision(),
+            defaultCommand.scale(),
+            defaultCommand.autoIncrement(),
+            defaultCommand.charset(),
+            defaultCommand.collation(),
+            defaultCommand.comment(),
+            defaultCommand.values());
+
+        given(getTableByIdPort.findTableById(any()))
+            .willReturn(Mono.just(createTable()));
+        given(getSchemaByIdPort.findSchemaById(any()))
+            .willReturn(Mono.just(createSchema()));
+        given(getColumnsByTableIdPort.findColumnsByTableId(any()))
+            .willReturn(Mono.just(List.of()));
+        given(getProjectDbVendorUseCase.getProjectDbVendor(
+            new GetProjectDbVendorQuery(PROJECT_ID)))
+            .willReturn(Mono.just(dbVendorWithIdentifierMax(10)));
+
+        StepVerifier.create(sut.createColumn(command))
+            .expectErrorMatches(DomainException.hasErrorCode(ColumnErrorCode.NAME_INVALID))
+            .verify();
+
+        then(createColumnPort).shouldHaveNoInteractions();
+      }
+
+    }
+
+    @Nested
     @DisplayName("VARCHAR에 length가 없으면")
     class WhenVarcharWithoutLength {
 
@@ -559,10 +613,24 @@ class CreateColumnServiceTest {
     return new Schema(
         SCHEMA_ID,
         PROJECT_ID,
-        "MySQL",
         "test_schema",
         "utf8mb4",
         "utf8mb4_general_ci");
+  }
+
+  private static DbVendor dbVendorWithIdentifierMax(int maxLength) {
+    DbVendor vendor = DbVendorFixture.defaultDbVendor();
+    VendorCapabilities capabilities = vendor.capabilities();
+    return new DbVendor(
+        vendor.id(),
+        vendor.displayName(),
+        vendor.name(),
+        vendor.version(),
+        vendor.datatypeMappings(),
+        new VendorCapabilities(
+            capabilities.schemaVersion(),
+            capabilities.indexes(),
+            IdentifierCapabilities.codePoints(maxLength)));
   }
 
 }

@@ -11,6 +11,8 @@ import org.springframework.transaction.reactive.TransactionalOperator;
 
 import com.schemafy.core.common.MutationResult;
 import com.schemafy.core.common.exception.DomainException;
+import com.schemafy.core.erd.operation.application.inverse.ChangeRelationshipColumnPositionInverse;
+import com.schemafy.core.erd.operation.application.inverse.ReorderPositions;
 import com.schemafy.core.erd.operation.application.service.ErdMutationCoordinator;
 import com.schemafy.core.erd.operation.domain.ErdOperationType;
 import com.schemafy.core.erd.relationship.application.port.in.ChangeRelationshipColumnPositionCommand;
@@ -94,7 +96,13 @@ public class ChangeRelationshipColumnPositionService
                             return changeRelationshipColumnPositionPort
                                 .changeRelationshipColumnPositions(
                                     relationshipColumn.relationshipId(), reordered)
-                                .thenReturn(MutationResult.<Void>of(null, affectedTableIds));
+                                .thenReturn(MutationResult.<Void>of(null, affectedTableIds)
+                                    .withInverse(new ChangeRelationshipColumnPositionInverse(
+                                        relationshipColumn.id(),
+                                        ReorderPositions.capture(
+                                            lockedColumns,
+                                            RelationshipColumn::id,
+                                            RelationshipColumn::seqNo))));
                           }));
                 })))
         .as(transactionalOperator::transactional);
@@ -133,12 +141,7 @@ public class ChangeRelationshipColumnPositionService
     List<RelationshipColumn> updated = new ArrayList<>(reordered.size());
     for (int index = 0; index < reordered.size(); index++) {
       RelationshipColumn column = reordered.get(index);
-      updated.add(new RelationshipColumn(
-          column.id(),
-          column.relationshipId(),
-          column.pkColumnId(),
-          column.fkColumnId(),
-          index));
+      updated.add(column.withSeqNo(index));
     }
 
     return updated;

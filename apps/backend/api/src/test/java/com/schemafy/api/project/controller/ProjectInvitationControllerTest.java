@@ -27,8 +27,8 @@ import com.schemafy.core.project.domain.Workspace;
 import com.schemafy.core.project.domain.WorkspaceRole;
 import com.schemafy.core.user.domain.User;
 
+import static com.epages.restdocs.apispec.WebTestClientRestDocumentationWrapper.document;
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.springframework.restdocs.webtestclient.WebTestClientRestDocumentation.document;
 
 @ActiveProfiles("test")
 @SpringBootTest
@@ -291,11 +291,9 @@ class ProjectInvitationControllerTest extends ProjectHttpTestSupport {
           outsiderUser.email(), ProjectRole.VIEWER, adminUserId);
 
       webTestClient.get()
-          .uri(uriBuilder -> uriBuilder
-              .path(API_BASE + "/users/me/invitations/projects")
-              .queryParam("page", 0)
-              .queryParam("size", 20)
-              .build())
+          .uri(API_BASE
+              + "/users/me/invitations/projects?page={page}&size={size}",
+              0, 20)
           .header("Authorization", "Bearer " + outsiderToken)
           .exchange()
           .expectStatus().isOk()

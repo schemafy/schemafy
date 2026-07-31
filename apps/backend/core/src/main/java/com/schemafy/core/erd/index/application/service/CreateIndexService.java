@@ -26,6 +26,7 @@ import com.schemafy.core.erd.index.application.port.out.IndexExistsPort;
 import com.schemafy.core.erd.index.domain.Index;
 import com.schemafy.core.erd.index.domain.IndexColumn;
 import com.schemafy.core.erd.index.domain.exception.IndexErrorCode;
+import com.schemafy.core.erd.index.domain.policy.IndexCapabilities;
 import com.schemafy.core.erd.index.domain.validator.IndexValidator;
 import com.schemafy.core.erd.operation.application.inverse.CreateIndexInverse;
 import com.schemafy.core.erd.operation.application.service.ErdMutationCoordinator;
@@ -34,6 +35,9 @@ import com.schemafy.core.erd.operation.domain.ErdOperationType;
 import com.schemafy.core.erd.table.application.port.out.GetTableByIdPort;
 import com.schemafy.core.erd.table.domain.Table;
 import com.schemafy.core.erd.table.domain.exception.TableErrorCode;
+import com.schemafy.core.erd.vendor.application.service.IdentifierCapabilityResolver;
+import com.schemafy.core.erd.vendor.domain.IdentifierCapabilities;
+import com.schemafy.core.erd.vendor.domain.validator.IdentifierValidator;
 import com.schemafy.core.project.application.access.AccessTarget;
 import com.schemafy.core.project.application.access.RequireProjectAccess;
 import com.schemafy.core.project.domain.ProjectRole;
@@ -59,6 +63,8 @@ public class CreateIndexService implements CreateIndexUseCase {
   private final GetColumnsByTableIdPort getColumnsByTableIdPort;
   private final GetIndexesByTableIdPort getIndexesByTableIdPort;
   private final GetIndexColumnsByIndexIdPort getIndexColumnsByIndexIdPort;
+  private final IndexCapabilityResolver indexCapabilityResolver;
+  private final IdentifierCapabilityResolver identifierCapabilityResolver;
   private final StructuralSnapshotService structuralSnapshotService;
   private ErdMutationCoordinator erdMutationCoordinator = ErdMutationCoordinator.noop();
 
@@ -80,13 +86,25 @@ public class CreateIndexService implements CreateIndexUseCase {
           }
           IndexValidator.validateType(command.type());
 
-          return getTableByIdPort.findTableById(command.tableId())
-              .switchIfEmpty(Mono.error(new DomainException(TableErrorCode.NOT_FOUND, "Table not found")))
-              .flatMap(table -> {
+          return Mono.zip(
+              getTableByIdPort.findTableById(command.tableId())
+                  .switchIfEmpty(Mono.error(new DomainException(TableErrorCode.NOT_FOUND, "Table not found"))),
+              indexCapabilityResolver.resolve(TABLE, command.tableId()),
+              identifierCapabilityResolver.resolve(TABLE, command.tableId()))
+              .flatMap(tuple -> {
+                Table table = tuple.getT1();
+                IndexCapabilities capabilities = tuple.getT2();
+                IdentifierCapabilities identifierCapabilities = tuple.getT3();
+                IndexValidator.validateType(capabilities, command.type());
                 Mono<String> nameMono;
                 if (autoName) {
-                  nameMono = resolveAutoIndexName(table);
+                  nameMono = resolveAutoIndexName(table, identifierCapabilities);
                 } else {
+                  IdentifierValidator.validateLength(
+                      identifierCapabilities,
+                      normalizedName,
+                      IndexErrorCode.NAME_INVALID,
+                      "Index name");
                   nameMono = indexExistsPort.existsByTableIdAndName(table.id(), normalizedName)
                       .flatMap(exists -> {
                         if (exists) {
@@ -98,7 +116,8 @@ public class CreateIndexService implements CreateIndexUseCase {
                       });
                 }
 
-                return nameMono.flatMap(resolvedName -> validateAndCreate(table, command, resolvedName, columnCommands)
+                return nameMono.flatMap(resolvedName -> validateAndCreate(
+                    table, capabilities, command, resolvedName, columnCommands)
                     .map(result -> MutationResult.of(result, table.id())));
               });
         })
@@ -114,6 +133,7 @@ public class CreateIndexService implements CreateIndexUseCase {
 
   private Mono<CreateIndexResult> validateAndCreate(
       Table table,
+      IndexCapabilities capabilities,
       CreateIndexCommand command,
       String normalizedName,
       List<CreateIndexColumnCommand> columnCommands) {
@@ -135,6 +155,7 @@ public class CreateIndexService implements CreateIndexUseCase {
               IndexValidator.validateColumnExistence(columns, indexColumns, normalizedName);
               IndexValidator.validateColumnUniqueness(indexColumns, normalizedName);
               IndexValidator.validateDefinitionUniqueness(
+                  capabilities,
                   indexes,
                   indexColumnsByIndexId,
                   command.type(),
@@ -246,17 +267,24 @@ public class CreateIndexService implements CreateIndexUseCase {
         .toList();
   }
 
-  private Mono<String> resolveAutoIndexName(Table table) {
+  private Mono<String> resolveAutoIndexName(
+      Table table,
+      IdentifierCapabilities identifierCapabilities) {
     String baseName = "idx_" + table.name();
-    return resolveUniqueIndexName(table.id(), baseName, 0);
+    return resolveUniqueIndexName(table.id(), baseName, 0, identifierCapabilities);
   }
 
-  private Mono<String> resolveUniqueIndexName(String tableId, String baseName, int suffix) {
-    String candidate = suffix == 0 ? baseName : baseName + "_" + suffix;
+  private Mono<String> resolveUniqueIndexName(
+      String tableId,
+      String baseName,
+      int suffix,
+      IdentifierCapabilities identifierCapabilities) {
+    String nameSuffix = suffix == 0 ? "" : "_" + suffix;
+    String candidate = identifierCapabilities.fitGeneratedName(baseName, nameSuffix);
     return indexExistsPort.existsByTableIdAndName(tableId, candidate)
         .flatMap(exists -> {
           if (exists) {
-            return resolveUniqueIndexName(tableId, baseName, suffix + 1);
+            return resolveUniqueIndexName(tableId, baseName, suffix + 1, identifierCapabilities);
           }
           return Mono.just(candidate);
         });

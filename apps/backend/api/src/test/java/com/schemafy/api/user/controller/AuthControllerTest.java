@@ -31,9 +31,9 @@ import com.schemafy.core.user.domain.exception.UserErrorCode;
 import reactor.core.publisher.Mono;
 import reactor.test.StepVerifier;
 
+import static com.epages.restdocs.apispec.WebTestClientRestDocumentationWrapper.document;
 import static com.schemafy.api.user.docs.UserApiSnippets.*;
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.springframework.restdocs.webtestclient.WebTestClientRestDocumentation.document;
 
 @ActiveProfiles("test")
 @SpringBootTest

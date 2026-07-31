@@ -1,5 +1,6 @@
 package com.schemafy.core.erd.index.application.service;
 
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -14,10 +15,15 @@ import com.schemafy.core.erd.index.application.port.out.GetIndexByIdPort;
 import com.schemafy.core.erd.index.application.port.out.IndexExistsPort;
 import com.schemafy.core.erd.index.domain.exception.IndexErrorCode;
 import com.schemafy.core.erd.index.fixture.IndexFixture;
+import com.schemafy.core.erd.vendor.application.service.IdentifierCapabilityResolver;
+import com.schemafy.core.erd.vendor.domain.IdentifierCapabilities;
 
 import reactor.core.publisher.Mono;
 import reactor.test.StepVerifier;
 
+import static com.schemafy.core.project.application.access.ProjectAccessResourceType.INDEX;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.then;
 
@@ -34,8 +40,18 @@ class ChangeIndexNameServiceTest {
   @Mock
   GetIndexByIdPort getIndexByIdPort;
 
+  @Mock
+  IdentifierCapabilityResolver identifierCapabilityResolver;
+
   @InjectMocks
   ChangeIndexNameService sut;
+
+  @BeforeEach
+  void setUpIdentifierCapabilities() {
+    org.mockito.Mockito.lenient()
+        .when(identifierCapabilityResolver.resolve(any(), anyString()))
+        .thenReturn(Mono.just(IdentifierCapabilities.codePoints(64)));
+  }
 
   @Nested
   @DisplayName("changeIndexName 메서드는")
@@ -59,6 +75,47 @@ class ChangeIndexNameServiceTest {
           .verifyComplete();
 
       then(changeIndexNamePort).should().changeIndexName("index1", "new_index_name");
+    }
+
+    @Test
+    @DisplayName("DB vendor 제한과 같은 64 코드 포인트 이름으로 변경한다")
+    void changesNameAtVendorLimit() {
+      String newName = "😀".repeat(64);
+      var command = IndexFixture.changeNameCommand("index1", newName);
+      var index = IndexFixture.indexWithId("index1");
+
+      given(getIndexByIdPort.findIndexById("index1"))
+          .willReturn(Mono.just(index));
+      given(indexExistsPort.existsByTableIdAndNameExcludingId(index.tableId(), newName, "index1"))
+          .willReturn(Mono.just(false));
+      given(changeIndexNamePort.changeIndexName("index1", newName))
+          .willReturn(Mono.empty());
+
+      StepVerifier.create(sut.changeIndexName(command))
+          .expectNextCount(1)
+          .verifyComplete();
+
+      then(identifierCapabilityResolver).should().resolve(INDEX, index.id());
+      then(changeIndexNamePort).should().changeIndexName("index1", newName);
+    }
+
+    @Test
+    @DisplayName("DB vendor 제한을 넘는 65 코드 포인트 이름 변경을 거부한다")
+    void rejectsNameOverVendorLimit() {
+      String newName = "😀".repeat(65);
+      var command = IndexFixture.changeNameCommand("index1", newName);
+      var index = IndexFixture.indexWithId("index1");
+
+      given(getIndexByIdPort.findIndexById("index1"))
+          .willReturn(Mono.just(index));
+
+      StepVerifier.create(sut.changeIndexName(command))
+          .expectErrorMatches(DomainException.hasErrorCode(IndexErrorCode.NAME_INVALID))
+          .verify();
+
+      then(identifierCapabilityResolver).should().resolve(INDEX, index.id());
+      then(indexExistsPort).shouldHaveNoInteractions();
+      then(changeIndexNamePort).shouldHaveNoInteractions();
     }
 
     @Test

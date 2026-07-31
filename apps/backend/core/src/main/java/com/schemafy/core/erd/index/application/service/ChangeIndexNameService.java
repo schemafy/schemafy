@@ -15,6 +15,8 @@ import com.schemafy.core.erd.index.domain.validator.IndexValidator;
 import com.schemafy.core.erd.operation.application.inverse.ChangeIndexNameInverse;
 import com.schemafy.core.erd.operation.application.service.ErdMutationCoordinator;
 import com.schemafy.core.erd.operation.domain.ErdOperationType;
+import com.schemafy.core.erd.vendor.application.service.IdentifierCapabilityResolver;
+import com.schemafy.core.erd.vendor.domain.validator.IdentifierValidator;
 import com.schemafy.core.project.application.access.AccessTarget;
 import com.schemafy.core.project.application.access.RequireProjectAccess;
 import com.schemafy.core.project.domain.ProjectRole;
@@ -32,6 +34,7 @@ public class ChangeIndexNameService implements ChangeIndexNameUseCase {
   private final ChangeIndexNamePort changeIndexNamePort;
   private final IndexExistsPort indexExistsPort;
   private final GetIndexByIdPort getIndexByIdPort;
+  private final IdentifierCapabilityResolver identifierCapabilityResolver;
   private ErdMutationCoordinator erdMutationCoordinator = ErdMutationCoordinator.noop();
 
   @Autowired
@@ -57,22 +60,30 @@ public class ChangeIndexNameService implements ChangeIndexNameUseCase {
                       if (normalizedName.equals(lockedIndex.name())) {
                         return Mono.just(MutationResult.<Void>noop(null, lockedIndex.tableId()));
                       }
-                      return indexExistsPort.existsByTableIdAndNameExcludingId(
-                          lockedIndex.tableId(),
-                          normalizedName,
-                          lockedIndex.id())
-                          .flatMap(exists -> {
-                            if (exists) {
-                              return Mono.error(new DomainException(
-                                  IndexErrorCode.NAME_DUPLICATE,
-                                  "Index name '%s' already exists in table".formatted(normalizedName)));
-                            }
-                            return changeIndexNamePort
-                                .changeIndexName(lockedIndex.id(), normalizedName)
-                                .thenReturn(MutationResult.<Void>of(null, lockedIndex.tableId())
-                                    .withInverse(new ChangeIndexNameInverse(
-                                        lockedIndex.id(),
-                                        lockedIndex.name())));
+                      return identifierCapabilityResolver.resolve(INDEX, lockedIndex.id())
+                          .flatMap(identifierCapabilities -> {
+                            IdentifierValidator.validateLength(
+                                identifierCapabilities,
+                                normalizedName,
+                                IndexErrorCode.NAME_INVALID,
+                                "Index name");
+                            return indexExistsPort.existsByTableIdAndNameExcludingId(
+                                lockedIndex.tableId(),
+                                normalizedName,
+                                lockedIndex.id())
+                                .flatMap(exists -> {
+                                  if (exists) {
+                                    return Mono.error(new DomainException(
+                                        IndexErrorCode.NAME_DUPLICATE,
+                                        "Index name '%s' already exists in table".formatted(normalizedName)));
+                                  }
+                                  return changeIndexNamePort
+                                      .changeIndexName(lockedIndex.id(), normalizedName)
+                                      .thenReturn(MutationResult.<Void>of(null, lockedIndex.tableId())
+                                          .withInverse(new ChangeIndexNameInverse(
+                                              lockedIndex.id(),
+                                              lockedIndex.name())));
+                                });
                           });
                     }));
           });

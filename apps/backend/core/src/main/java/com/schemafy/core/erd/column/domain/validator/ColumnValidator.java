@@ -13,7 +13,7 @@ import com.schemafy.core.erd.column.domain.exception.ColumnErrorCode;
 public final class ColumnValidator {
 
   private static final int NAME_MIN_LENGTH = 1;
-  private static final int NAME_MAX_LENGTH = 40;
+  private static final int SCHEMAFY_NAME_MAX_LENGTH = 40;
   private static final Pattern NAME_PATTERN = Pattern.compile("^[A-Za-z_][A-Za-z0-9_]*$");
 
   private static final Set<String> SUPPORTED_TYPES = Set.of(
@@ -82,14 +82,19 @@ public final class ColumnValidator {
 
   private ColumnValidator() {}
 
+  public static int schemafyNameMaxLength() {
+    return SCHEMAFY_NAME_MAX_LENGTH;
+  }
+
   public static void validateName(String name) {
     if (name == null || name.isBlank()) {
       throw new DomainException(ColumnErrorCode.NAME_INVALID, "Column name must not be blank");
     }
     String trimmed = name.trim();
-    if (trimmed.length() < NAME_MIN_LENGTH || trimmed.length() > NAME_MAX_LENGTH) {
+    if (trimmed.length() < NAME_MIN_LENGTH || trimmed.length() > SCHEMAFY_NAME_MAX_LENGTH) {
       throw new DomainException(ColumnErrorCode.NAME_INVALID,
-          "Column name must be between %d and %d characters".formatted(NAME_MIN_LENGTH, NAME_MAX_LENGTH));
+          "Column name must be between %d and %d characters"
+              .formatted(NAME_MIN_LENGTH, SCHEMAFY_NAME_MAX_LENGTH));
     }
     if (!NAME_PATTERN.matcher(trimmed).matches()) {
       throw new DomainException(ColumnErrorCode.NAME_INVALID, "Column name has an invalid format");

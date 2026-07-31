@@ -165,6 +165,9 @@ const ErrorMessages: Record<string, ErrorInfo> = {
   PROJECT_CANNOT_CHANGE_OWN_ROLE: {
     category: ErrorCategory.USER_FEEDBACK,
   },
+  PROJECT_WORKSPACE_ADMIN_PROJECT_ADMIN_PROTECTED: {
+    category: ErrorCategory.USER_FEEDBACK,
+  },
   PROJECT_LAST_OWNER_CANNOT_BE_REMOVED: {
     category: ErrorCategory.USER_FEEDBACK,
   },

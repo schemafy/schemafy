@@ -71,7 +71,7 @@ class ErdMutationBroadcasterTest {
               "test_table", "utf8mb4", "utf8mb4_general_ci")));
       given(getSchemaByIdPort.findSchemaById(schemaId))
           .willReturn(Mono.just(new Schema(schemaId, projectId,
-              "mariadb", "test", "utf8mb4", "utf8mb4_general_ci")));
+              "test", "utf8mb4", "utf8mb4_general_ci")));
       given(eventPublisher.publish(eq(projectId),
           any(CollaborationOutbound.class)))
           .willReturn(Mono.empty());
@@ -105,7 +105,7 @@ class ErdMutationBroadcasterTest {
               "test_table", "utf8mb4", "utf8mb4_general_ci")));
       given(getSchemaByIdPort.findSchemaById(schemaId))
           .willReturn(Mono.just(new Schema(schemaId, projectId,
-              "mariadb", "test", "utf8mb4", "utf8mb4_general_ci")));
+              "test", "utf8mb4", "utf8mb4_general_ci")));
       given(eventPublisher.publish(eq(projectId),
           any(CollaborationOutbound.class)))
           .willReturn(Mono.empty());
@@ -184,7 +184,7 @@ class ErdMutationBroadcasterTest {
               "test_table", "utf8mb4", "utf8mb4_general_ci")));
       given(getSchemaByIdPort.findSchemaById(schemaId))
           .willReturn(Mono.just(new Schema(schemaId, projectId,
-              "mariadb", "test", "utf8mb4", "utf8mb4_general_ci")));
+              "test", "utf8mb4", "utf8mb4_general_ci")));
       given(eventPublisher.publish(eq(projectId),
           any(CollaborationOutbound.class)))
           .willReturn(Mono.error(new RuntimeException("Redis down")));
@@ -207,7 +207,7 @@ class ErdMutationBroadcasterTest {
 
       given(getSchemaByIdPort.findSchemaById(schemaId))
           .willReturn(Mono.just(new Schema(schemaId, projectId,
-              "mariadb", "test", "utf8mb4", "utf8mb4_general_ci")));
+              "test", "utf8mb4", "utf8mb4_general_ci")));
       given(eventPublisher.publish(eq(projectId),
           any(CollaborationOutbound.class)))
           .willReturn(Mono.empty());
@@ -249,7 +249,7 @@ class ErdMutationBroadcasterTest {
 
       given(getSchemaByIdPort.findSchemaById(schemaId))
           .willReturn(Mono.just(new Schema(schemaId, projectId,
-              "mariadb", "test", "utf8mb4", "utf8mb4_general_ci")));
+              "test", "utf8mb4", "utf8mb4_general_ci")));
       given(eventPublisher.publish(eq(projectId),
           any(CollaborationOutbound.class)))
           .willReturn(Mono.empty());
@@ -337,7 +337,7 @@ class ErdMutationBroadcasterTest {
 
       given(getSchemaByIdPort.findSchemaById(schemaId))
           .willReturn(Mono.just(new Schema(schemaId, projectId,
-              "mariadb", "test", "utf8mb4", "utf8mb4_general_ci")));
+              "test", "utf8mb4", "utf8mb4_general_ci")));
 
       StepVerifier.create(broadcaster.resolveFromSchemaId(schemaId))
           .expectNext(new ErdMutationBroadcaster.ResolvedContext(
@@ -373,7 +373,7 @@ class ErdMutationBroadcasterTest {
               "test_table", "utf8mb4", "utf8mb4_general_ci")));
       given(getSchemaByIdPort.findSchemaById(schemaId))
           .willReturn(Mono.just(new Schema(schemaId, projectId,
-              "mariadb", "test", "utf8mb4", "utf8mb4_general_ci")));
+              "test", "utf8mb4", "utf8mb4_general_ci")));
 
       StepVerifier.create(broadcaster.resolveFromTableId(tableId))
           .expectNext(new ErdMutationBroadcaster.ResolvedContext(

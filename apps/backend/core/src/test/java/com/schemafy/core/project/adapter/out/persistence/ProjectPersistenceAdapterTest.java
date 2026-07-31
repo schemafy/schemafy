@@ -22,6 +22,8 @@ import static org.assertj.core.api.Assertions.assertThat;
 @DisplayName("ProjectPersistenceAdapter")
 class ProjectPersistenceAdapterTest {
 
+  private static final Integer DB_VENDOR_ID = 1;
+
   @Autowired
   private ProjectPersistenceAdapter sut;
 
@@ -46,12 +48,13 @@ class ProjectPersistenceAdapterTest {
   void saveAndFindProject() {
     Workspace workspace = saveWorkspace("Project Workspace");
     Project project = Project.create(UlidGenerator.generate(), workspace.getId(),
-        "Project", "Description");
+        DB_VENDOR_ID, "Project", "Description");
 
     StepVerifier.create(sut.save(project))
         .assertNext(saved -> {
           assertThat(saved.getId()).isEqualTo(project.getId());
           assertThat(saved.getWorkspaceId()).isEqualTo(workspace.getId());
+          assertThat(saved.getDbVendorId()).isEqualTo(DB_VENDOR_ID);
           assertThat(saved.getName()).isEqualTo("Project");
           assertThat(saved.getCreatedAt()).isNotNull();
         })
@@ -66,13 +69,38 @@ class ProjectPersistenceAdapterTest {
   }
 
   @Test
+  @DisplayName("findDbVendorIdByProjectId: 활성 프로젝트의 벤더 ID를 반환한다")
+  void findDbVendorId_returnsVendorIdForActiveProject() {
+    Workspace workspace = saveWorkspace("Vendor Workspace");
+    Project project = sut.save(Project.create(UlidGenerator.generate(), workspace.getId(),
+        DB_VENDOR_ID, "Project", "Description")).block();
+
+    StepVerifier.create(sut.findDbVendorIdByProjectId(project.getId()))
+        .expectNext(DB_VENDOR_ID)
+        .verifyComplete();
+  }
+
+  @Test
+  @DisplayName("findDbVendorIdByProjectId: 삭제된 프로젝트이면 empty를 반환한다")
+  void findDbVendorId_returnsEmptyForDeletedProject() {
+    Workspace workspace = saveWorkspace("Deleted Vendor Workspace");
+    Project project = sut.save(Project.create(UlidGenerator.generate(), workspace.getId(),
+        DB_VENDOR_ID, "Project", "Description")).block();
+    project.delete();
+    sut.save(project).block();
+
+    StepVerifier.create(sut.findDbVendorIdByProjectId(project.getId()))
+        .verifyComplete();
+  }
+
+  @Test
   @DisplayName("countByWorkspaceIdAndNotDeleted: 삭제되지 않은 프로젝트만 센다")
   void countByWorkspaceId_countsOnlyActiveProjects() {
     Workspace workspace = saveWorkspace("Count Workspace");
     Project active = sut.save(Project.create(UlidGenerator.generate(), workspace.getId(),
-        "Active", "Description")).block();
+        DB_VENDOR_ID, "Active", "Description")).block();
     Project deleted = sut.save(Project.create(UlidGenerator.generate(), workspace.getId(),
-        "Deleted", "Description")).block();
+        DB_VENDOR_ID, "Deleted", "Description")).block();
     Project loadedDeleted = projectRepository.findById(deleted.getId()).block();
     loadedDeleted.delete();
     sut.save(loadedDeleted).block();
@@ -93,7 +121,7 @@ class ProjectPersistenceAdapterTest {
   void save_updatesLoadedProject() {
     Workspace workspace = saveWorkspace("Update Workspace");
     Project project = sut.save(Project.create(UlidGenerator.generate(),
-        workspace.getId(), "Before", "Description")).block();
+        workspace.getId(), DB_VENDOR_ID, "Before", "Description")).block();
     Project loaded = projectRepository.findById(project.getId()).block();
     loaded.update("After", "Updated");
 
@@ -102,6 +130,7 @@ class ProjectPersistenceAdapterTest {
           assertThat(updated.getId()).isEqualTo(project.getId());
           assertThat(updated.getName()).isEqualTo("After");
           assertThat(updated.getDescription()).isEqualTo("Updated");
+          assertThat(updated.getDbVendorId()).isEqualTo(DB_VENDOR_ID);
         })
         .verifyComplete();
   }

@@ -2,7 +2,6 @@ package com.schemafy.api.common.config;
 
 import org.springframework.context.annotation.*;
 import org.springframework.http.HttpMethod;
-import org.springframework.security.config.annotation.method.configuration.EnableReactiveMethodSecurity;
 import org.springframework.security.config.annotation.web.reactive.EnableWebFluxSecurity;
 import org.springframework.security.config.web.server.SecurityWebFiltersOrder;
 import org.springframework.security.config.web.server.ServerHttpSecurity;
@@ -11,6 +10,7 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.server.SecurityWebFilterChain;
 import org.springframework.security.web.server.context.NoOpServerSecurityContextRepository;
 
+import com.schemafy.api.common.constant.ApiPath;
 import com.schemafy.api.common.security.jwt.JwtAccessDeniedHandler;
 import com.schemafy.api.common.security.jwt.JwtAuthenticationEntryPoint;
 import com.schemafy.api.common.security.jwt.JwtAuthenticationFilter;
@@ -18,7 +18,6 @@ import com.schemafy.api.common.security.jwt.JwtAuthenticationFilter;
 @Profile("test")
 @Configuration
 @EnableWebFluxSecurity
-@EnableReactiveMethodSecurity
 @Import({ JwtAuthenticationEntryPoint.class, JwtAccessDeniedHandler.class,
   JwtAuthenticationFilter.class })
 public class TestSecurityConfig {
@@ -58,6 +57,7 @@ public class TestSecurityConfig {
         .addFilterAt(jwtAuthenticationFilter,
             SecurityWebFiltersOrder.AUTHENTICATION)
         .authorizeExchange(exchanges -> exchanges
+            .pathMatchers(ApiPath.openApiDocsPathPatterns()).permitAll()
             .pathMatchers("/public/api/**").permitAll()
             .pathMatchers(HttpMethod.OPTIONS, "/**").permitAll()
             .anyExchange().authenticated())

@@ -15,7 +15,6 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
-import com.fasterxml.jackson.databind.JsonNode;
 import com.schemafy.api.common.constant.ApiPath;
 import com.schemafy.api.common.type.MutationResponse;
 import com.schemafy.api.erd.broadcast.ErdMutationBroadcaster;
@@ -30,7 +29,6 @@ import com.schemafy.api.erd.controller.dto.response.AddRelationshipColumnRespons
 import com.schemafy.api.erd.controller.dto.response.RelationshipColumnResponse;
 import com.schemafy.api.erd.controller.dto.response.RelationshipResponse;
 import com.schemafy.api.erd.service.relationship.RelationshipApiResponseMapper;
-import com.schemafy.core.common.json.JsonCodec;
 import com.schemafy.core.erd.operation.domain.CommittedErdOperation;
 import com.schemafy.core.erd.relationship.application.port.in.AddRelationshipColumnCommand;
 import com.schemafy.core.erd.relationship.application.port.in.AddRelationshipColumnUseCase;
@@ -80,7 +78,6 @@ public class RelationshipController {
   private final RemoveRelationshipColumnUseCase removeRelationshipColumnUseCase;
   private final GetRelationshipColumnUseCase getRelationshipColumnUseCase;
   private final ChangeRelationshipColumnPositionUseCase changeRelationshipColumnPositionUseCase;
-  private final JsonCodec jsonCodec;
   private final RelationshipApiResponseMapper relationshipResponseMapper;
 
   private final ObjectProvider<ErdMutationBroadcaster> broadcasterProvider;
@@ -93,7 +90,7 @@ public class RelationshipController {
         request.pkTableId(),
         request.kind(),
         request.cardinality(),
-        toOptionalJson(request.extra()));
+        request.extra());
     return createRelationshipUseCase.createRelationship(command)
         .flatMap(result -> broadcastMutation(result.affectedTableIds(),
             result.operation())
@@ -174,7 +171,7 @@ public class RelationshipController {
       @Valid @RequestBody ChangeRelationshipExtraRequest request) {
     ChangeRelationshipExtraCommand command = new ChangeRelationshipExtraCommand(
         relationshipId,
-        toOptionalJson(request.extra()));
+        request.extra());
     return changeRelationshipExtraUseCase.changeRelationshipExtra(command)
         .flatMap(result -> broadcastMutation(result.affectedTableIds(),
             result.operation())
@@ -268,13 +265,6 @@ public class RelationshipController {
       return Mono.empty();
     }
     return broadcaster.broadcast(affectedTableIds, operation);
-  }
-
-  private String toOptionalJson(JsonNode node) {
-    if (node == null || node.isNull()) {
-      return null;
-    }
-    return jsonCodec.toJson(node);
   }
 
 }

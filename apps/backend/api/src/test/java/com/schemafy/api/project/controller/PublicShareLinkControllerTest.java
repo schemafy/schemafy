@@ -27,9 +27,9 @@ import com.schemafy.core.project.domain.exception.ProjectErrorCode;
 import com.schemafy.core.project.domain.exception.ShareLinkErrorCode;
 import com.schemafy.core.user.domain.User;
 
+import static com.epages.restdocs.apispec.WebTestClientRestDocumentationWrapper.document;
 import static com.schemafy.api.project.docs.PublicShareLinkApiSnippets.*;
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.springframework.restdocs.webtestclient.WebTestClientRestDocumentation.document;
 
 @ActiveProfiles("test")
 @SpringBootTest
