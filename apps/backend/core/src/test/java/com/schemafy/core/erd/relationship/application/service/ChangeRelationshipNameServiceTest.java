@@ -1,5 +1,6 @@
 package com.schemafy.core.erd.relationship.application.service;
 
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -14,14 +15,18 @@ import com.schemafy.core.erd.relationship.application.port.out.GetRelationshipBy
 import com.schemafy.core.erd.relationship.application.port.out.RelationshipExistsPort;
 import com.schemafy.core.erd.relationship.domain.exception.RelationshipErrorCode;
 import com.schemafy.core.erd.relationship.fixture.RelationshipFixture;
+import com.schemafy.core.erd.vendor.application.service.IdentifierCapabilityResolver;
+import com.schemafy.core.erd.vendor.domain.IdentifierCapabilities;
 
 import reactor.core.publisher.Mono;
 import reactor.test.StepVerifier;
 
+import static com.schemafy.core.project.application.access.ProjectAccessResourceType.RELATIONSHIP;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.then;
+import static org.mockito.Mockito.lenient;
 
 @ExtendWith(MockitoExtension.class)
 @DisplayName("ChangeRelationshipNameService")
@@ -36,8 +41,17 @@ class ChangeRelationshipNameServiceTest {
   @Mock
   GetRelationshipByIdPort getRelationshipByIdPort;
 
+  @Mock
+  IdentifierCapabilityResolver identifierCapabilityResolver;
+
   @InjectMocks
   ChangeRelationshipNameService sut;
+
+  @BeforeEach
+  void setUpIdentifierCapabilities() {
+    lenient().when(identifierCapabilityResolver.resolve(any(), any()))
+        .thenReturn(Mono.just(IdentifierCapabilities.codePoints(64)));
+  }
 
   @Nested
   @DisplayName("changeRelationshipName 메서드는")
@@ -92,6 +106,24 @@ class ChangeRelationshipNameServiceTest {
     }
 
     @Test
+    @DisplayName("DB vendor 제한을 넘는 65자 이름이면 기존 이름 오류가 발생한다")
+    void throwsWhenNameExceedsVendorLimit() {
+      var command = RelationshipFixture.changeNameCommand("r".repeat(65));
+      var relationship = RelationshipFixture.defaultRelationship();
+
+      given(getRelationshipByIdPort.findRelationshipById(any()))
+          .willReturn(Mono.just(relationship));
+
+      StepVerifier.create(sut.changeRelationshipName(command))
+          .expectErrorMatches(DomainException.hasErrorCode(RelationshipErrorCode.NAME_INVALID))
+          .verify();
+
+      then(identifierCapabilityResolver).should().resolve(RELATIONSHIP, relationship.id());
+      then(relationshipExistsPort).shouldHaveNoInteractions();
+      then(changeRelationshipNamePort).shouldHaveNoInteractions();
+    }
+
+    @Test
     @DisplayName("이름이 중복되면 예외가 발생한다")
     void throwsWhenNameDuplicate() {
       var command = RelationshipFixture.changeNameCommand("duplicate_name");
@@ -110,22 +142,38 @@ class ChangeRelationshipNameServiceTest {
     }
 
     @Test
-    @DisplayName("같은 이름으로 변경 시도해도 자기 자신은 제외하고 검사한다")
+    @DisplayName("같은 이름으로 변경 시도하면 변경 없이 성공한다")
     void excludesSelfWhenCheckingDuplicate() {
       var command = RelationshipFixture.changeNameCommand(RelationshipFixture.DEFAULT_NAME);
       var relationship = RelationshipFixture.defaultRelationship();
 
       given(getRelationshipByIdPort.findRelationshipById(any()))
           .willReturn(Mono.just(relationship));
-      given(relationshipExistsPort.existsByFkTableIdAndNameExcludingId(
-          eq(relationship.fkTableId()), eq(RelationshipFixture.DEFAULT_NAME), eq(relationship.id())))
-          .willReturn(Mono.just(false));
-      given(changeRelationshipNamePort.changeRelationshipName(any(), any()))
-          .willReturn(Mono.empty());
 
       StepVerifier.create(sut.changeRelationshipName(command))
-          .expectNextCount(1)
+          .expectNextMatches(result -> result.operation() == null)
           .verifyComplete();
+
+      then(relationshipExistsPort).shouldHaveNoInteractions();
+      then(changeRelationshipNamePort).shouldHaveNoInteractions();
+    }
+
+    @Test
+    @DisplayName("락 획득 후 이름이 이미 요청값이면 중복 조회 없이 no-op으로 성공한다")
+    void returnsNoOpWhenLockedRelationshipAlreadyHasRequestedName() {
+      var command = RelationshipFixture.changeNameCommand("new_name");
+      var initialRelationship = RelationshipFixture.defaultRelationship();
+      var lockedRelationship = RelationshipFixture.relationshipWithName("new_name");
+
+      given(getRelationshipByIdPort.findRelationshipById(any()))
+          .willReturn(Mono.just(initialRelationship), Mono.just(lockedRelationship));
+
+      StepVerifier.create(sut.changeRelationshipName(command))
+          .expectNextMatches(result -> result.noOp() && result.operation() == null)
+          .verifyComplete();
+
+      then(relationshipExistsPort).shouldHaveNoInteractions();
+      then(changeRelationshipNamePort).shouldHaveNoInteractions();
     }
 
   }

@@ -1,4 +1,5 @@
 import { Component, type ErrorInfo, type ReactNode } from 'react';
+import { reportUnexpectedError } from '@/lib';
 
 interface ErrorBoundaryFallbackProps {
   error: Error;
@@ -26,7 +27,9 @@ export class ErrorBoundary extends Component<
   }
 
   componentDidCatch(error: Error, errorInfo: ErrorInfo) {
-    console.error('[ErrorBoundary]', error, errorInfo);
+    reportUnexpectedError(error, {
+      context: `[ErrorBoundary] ${errorInfo.componentStack}`,
+    });
   }
 
   resetErrorBoundary = () => {

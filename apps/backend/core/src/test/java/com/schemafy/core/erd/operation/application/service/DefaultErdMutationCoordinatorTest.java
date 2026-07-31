@@ -11,11 +11,15 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.CsvSource;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import com.schemafy.core.common.MutationResult;
+import com.schemafy.core.common.exception.DomainException;
 import com.schemafy.core.common.json.JsonCodec;
+import com.schemafy.core.erd.operation.ErdOperationContexts;
 import com.schemafy.core.erd.operation.application.port.out.AppendErdOperationLogPort;
 import com.schemafy.core.erd.operation.application.port.out.FindSchemaCollaborationStatePort;
 import com.schemafy.core.erd.operation.application.port.out.IncrementSchemaCollaborationRevisionPort;
@@ -26,6 +30,7 @@ import com.schemafy.core.erd.operation.domain.ErdOperationLifecycleState;
 import com.schemafy.core.erd.operation.domain.ErdOperationLog;
 import com.schemafy.core.erd.operation.domain.ErdOperationType;
 import com.schemafy.core.erd.operation.domain.SchemaCollaborationState;
+import com.schemafy.core.erd.operation.domain.exception.OperationErrorCode;
 import com.schemafy.core.ulid.application.port.out.UlidGeneratorPort;
 
 import reactor.core.publisher.Mono;
@@ -87,7 +92,7 @@ class DefaultErdMutationCoordinatorTest {
 
     lenient().when(transactionalOperator.transactional(any(Mono.class)))
         .thenAnswer(invocation -> invocation.getArgument(0));
-    lenient().when(jsonCodec.serialize(any())).thenReturn("{}");
+    lenient().when(jsonCodec.toJson(any())).thenReturn("{}");
     lenient().when(ulidGeneratorPort.generate()).thenReturn("operation1");
   }
 
@@ -169,6 +174,100 @@ class DefaultErdMutationCoordinatorTest {
         "{}",
         null,
         "{}"));
+  }
+
+  @Test
+  @DisplayName("mutation supplier가 no-op을 반환하면 revision과 operation log를 남기지 않는다")
+  void skipsCommitWhenMutationReturnsNoOp() {
+    Object payload = new Object();
+    ResolvedErdMutationTarget resolvedTarget = new ResolvedErdMutationTarget(
+        "project1",
+        "schema1",
+        "table1");
+    SchemaCollaborationState lockedState = new SchemaCollaborationState(
+        "schema1",
+        "project1",
+        3L,
+        null,
+        null);
+    List<String> events = new ArrayList<>();
+
+    given(erdMutationTargetResolver.resolveBefore(ErdOperationType.CHANGE_COLUMN_POSITION, payload))
+        .willReturn(Mono.just(resolvedTarget));
+    given(findSchemaCollaborationStatePort.findBySchemaIdForUpdate("schema1"))
+        .willAnswer(invocation -> {
+          events.add("lock");
+          return Mono.just(lockedState);
+        });
+
+    Supplier<Mono<MutationResult<String>>> mutationSupplier = () -> {
+      events.add("mutate");
+      return Mono.just(MutationResult.noop("ok", Set.of("table1")));
+    };
+
+    StepVerifier.create(sut.coordinate(ErdOperationType.CHANGE_COLUMN_POSITION, payload,
+        mutationSupplier))
+        .assertNext(result -> {
+          assertThat(result.result()).isEqualTo("ok");
+          assertThat(result.operation()).isNull();
+          assertThat(result.noOp()).isTrue();
+        })
+        .verifyComplete();
+
+    assertThat(events).containsExactly("lock", "mutate");
+    then(erdMutationTargetFinalizer).shouldHaveNoInteractions();
+    then(incrementSchemaCollaborationRevisionPort).shouldHaveNoInteractions();
+    then(appendErdOperationLogPort).shouldHaveNoInteractions();
+  }
+
+  @ParameterizedTest
+  @CsvSource({
+    "UNDO, SUPERSEDED",
+    "REDO, REDO_NOT_ELIGIBLE"
+  })
+  @DisplayName("stale undo/redo는 mutation 실행 전에 거부한다")
+  void rejectsStaleDerivedMutationBeforeExecutingSupplier(
+      ErdOperationDerivationKind derivationKind,
+      OperationErrorCode expectedErrorCode) {
+    Object payload = new Object();
+    ResolvedErdMutationTarget resolvedTarget = new ResolvedErdMutationTarget(
+        "project1",
+        "schema1",
+        "table1");
+    SchemaCollaborationState lockedState = new SchemaCollaborationState(
+        "schema1",
+        "project1",
+        4L,
+        null,
+        null);
+    List<String> events = new ArrayList<>();
+
+    given(erdMutationTargetResolver.resolveBefore(ErdOperationType.CHANGE_COLUMN_POSITION, payload))
+        .willReturn(Mono.just(resolvedTarget));
+    given(findSchemaCollaborationStatePort.findBySchemaIdForUpdate("schema1"))
+        .willAnswer(invocation -> {
+          events.add("lock");
+          return Mono.just(lockedState);
+        });
+
+    Supplier<Mono<MutationResult<String>>> mutationSupplier = () -> {
+      events.add("mutate");
+      return Mono.just(MutationResult.of("ok", Set.of("table1")));
+    };
+
+    StepVerifier.create(sut.coordinate(
+        ErdOperationType.CHANGE_COLUMN_POSITION,
+        payload,
+        mutationSupplier)
+        .contextWrite(ErdOperationContexts.withDerivation(derivationKind, "base-operation")
+            .andThen(ErdOperationContexts.withBaseSchemaRevision(3L))))
+        .expectErrorMatches(DomainException.hasErrorCode(expectedErrorCode))
+        .verify();
+
+    assertThat(events).containsExactly("lock");
+    then(erdMutationTargetFinalizer).shouldHaveNoInteractions();
+    then(incrementSchemaCollaborationRevisionPort).shouldHaveNoInteractions();
+    then(appendErdOperationLogPort).shouldHaveNoInteractions();
   }
 
 }

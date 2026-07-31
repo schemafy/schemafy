@@ -13,7 +13,6 @@ import com.schemafy.core.common.exception.DomainException;
 import com.schemafy.core.common.json.JsonCodec;
 import com.schemafy.core.erd.operation.ErdOperationContexts;
 import com.schemafy.core.erd.operation.ErdOperationMetadata;
-import com.schemafy.core.erd.operation.application.inverse.InversePayload;
 import com.schemafy.core.erd.operation.application.port.out.AppendErdOperationLogPort;
 import com.schemafy.core.erd.operation.application.port.out.FindSchemaCollaborationStatePort;
 import com.schemafy.core.erd.operation.application.port.out.IncrementSchemaCollaborationRevisionPort;
@@ -91,7 +90,8 @@ class DefaultErdMutationCoordinator implements ErdMutationCoordinator {
       ResolvedErdMutationTarget resolvedTarget,
       SchemaCollaborationState preloadedState,
       ErdOperationMetadata metadata) {
-    return mutationSupplier.get()
+    return validateDerivedMutationRevision(preloadedState, metadata)
+        .then(Mono.defer(mutationSupplier))
         .flatMap(mutationResult -> commitOperation(
             operationType,
             payload,
@@ -99,6 +99,23 @@ class DefaultErdMutationCoordinator implements ErdMutationCoordinator {
             resolvedTarget,
             preloadedState,
             metadata));
+  }
+
+  private Mono<Void> validateDerivedMutationRevision(
+      SchemaCollaborationState preloadedState,
+      ErdOperationMetadata metadata) {
+    if (preloadedState == null || !isDerivedMutation(metadata)) {
+      return Mono.empty();
+    }
+
+    Long expectedRevision = metadata.baseSchemaRevision();
+    if (expectedRevision == null) {
+      return Mono.error(new IllegalStateException("Derived operation requires base schema revision"));
+    }
+    if (preloadedState.currentRevision() != expectedRevision) {
+      return Mono.error(staleDerivedOperation(preloadedState.schemaId(), metadata));
+    }
+    return Mono.empty();
   }
 
   private Mono<SchemaCollaborationState> loadOrCreateSchemaState(String schemaId, String projectId) {
@@ -126,6 +143,10 @@ class DefaultErdMutationCoordinator implements ErdMutationCoordinator {
       ResolvedErdMutationTarget resolvedTarget,
       SchemaCollaborationState preloadedState,
       ErdOperationMetadata metadata) {
+    if (mutationResult.noOp()) {
+      return Mono.just(mutationResult);
+    }
+
     FinalizedErdMutationTarget finalizedTarget = erdMutationTargetFinalizer.finalizeTarget(
         operationType,
         resolvedTarget,
@@ -154,9 +175,7 @@ class DefaultErdMutationCoordinator implements ErdMutationCoordinator {
       }
       return incrementSchemaCollaborationRevisionPort
           .incrementIfCurrentRevision(schemaId, expectedRevision)
-          .switchIfEmpty(Mono.error(new DomainException(
-              staleDerivedOperationErrorCode(metadata),
-              "Schema revision changed before undo/redo commit: schemaId=" + schemaId)));
+          .switchIfEmpty(Mono.error(staleDerivedOperation(schemaId, metadata)));
     }
     return incrementSchemaCollaborationRevisionPort.increment(schemaId);
   }
@@ -172,6 +191,14 @@ class DefaultErdMutationCoordinator implements ErdMutationCoordinator {
       return OperationErrorCode.REDO_NOT_ELIGIBLE;
     }
     return OperationErrorCode.SUPERSEDED;
+  }
+
+  private DomainException staleDerivedOperation(
+      String schemaId,
+      ErdOperationMetadata metadata) {
+    return new DomainException(
+        staleDerivedOperationErrorCode(metadata),
+        "Schema revision changed during undo/redo: schemaId=" + schemaId);
   }
 
   private Mono<SchemaCollaborationState> resolveSchemaState(
@@ -213,15 +240,12 @@ class DefaultErdMutationCoordinator implements ErdMutationCoordinator {
         serializePayload(payload),
         mutationResult.inversePayload() == null
             ? null
-            : jsonCodec.serialize(mutationResult.inversePayload(), InversePayload.class),
-        jsonCodec.serialize(affectedTableIds));
+            : jsonCodec.toJson(mutationResult.inversePayload()),
+        jsonCodec.toJson(affectedTableIds));
   }
 
   private String serializePayload(Object payload) {
-    if (payload instanceof InversePayload inversePayload) {
-      return jsonCodec.serialize(inversePayload, InversePayload.class);
-    }
-    return jsonCodec.serialize(payload);
+    return jsonCodec.toJson(payload);
   }
 
 }

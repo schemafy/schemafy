@@ -1,0 +1,238 @@
+openapi3 {
+	server = '/'
+	title = 'Schemafy API'
+	description = '''
+Schemafy backend API for authentication, project, and ERD workflows.
+Public endpoints use /public/api/v1.0. Authenticated endpoints use /api/v1.0 with JWT bearer tokens.
+HMAC-protected endpoints also require per-request X-Hmac-Signature, X-Hmac-Timestamp, and X-Hmac-Nonce headers when HMAC enforcement is enabled.
+For local development testing with HMAC enabled, use /swagger-ui-hmac.html and enter the development HMAC secret in the browser.
+'''
+	version = 'v1.0'
+	format = 'json'
+	outputDirectory = 'build/api-spec'
+}
+
+tasks.register('sanitizeRestDocsApiSpecResources') {
+	dependsOn test
+
+	doLast {
+		fileTree(snippetsDir) {
+			include '**/resource.json'
+		}.each { resourceFile ->
+			def resource = new groovy.json.JsonSlurper().parse(resourceFile)
+
+			['request': 'requestFields', 'response': 'responseFields'].each { sectionName, fieldName ->
+				def section = resource[sectionName]
+				if (section instanceof Map && section[fieldName] instanceof List) {
+					section[fieldName] = section[fieldName].findAll { field ->
+						def path = field.path
+						!(path instanceof String && (path == '[]' || path.endsWith('[]')))
+					}
+				}
+			}
+
+			resourceFile.text = groovy.json.JsonOutput.prettyPrint(
+					groovy.json.JsonOutput.toJson(resource))
+		}
+	}
+}
+
+tasks.register('enrichOpenApiSpec') {
+	doLast {
+		def specFile = layout.buildDirectory.file('api-spec/openapi3.json').get().asFile
+		def spec = new groovy.json.JsonSlurper().parse(specFile)
+
+		spec.components = spec.components ?: [:]
+		spec.components.securitySchemes = spec.components.securitySchemes ?: [:]
+		spec.components.securitySchemes.remove('bearerAuthJWT')
+		spec.components.securitySchemes.bearerAuth = [
+				type        : 'http',
+				scheme      : 'bearer',
+				bearerFormat: 'JWT',
+				description : 'JWT access token issued by the login or refresh endpoints.'
+		]
+
+		def tagForPath = { path ->
+			if (path.startsWith('/public/api/v1.0/users/')
+					|| path.startsWith('/public/api/v1.0/oauth/')
+					|| path == '/api/v1.0/users/logout') {
+				return 'Auth'
+			}
+			if (path.startsWith('/api/v1.0/users')) {
+				return 'User'
+			}
+			if (path.startsWith('/public/api/v1.0/share/')) {
+				return 'Public Share'
+			}
+			if (path.contains('/share-links')) {
+				return 'Share Link'
+			}
+			if (path.contains('/tables')) {
+				return 'Table'
+			}
+			if (path.contains('/columns')) {
+				return 'Column'
+			}
+			if (path.contains('/constraint-columns')) {
+				return 'Constraint'
+			}
+			if (path.contains('/constraints')) {
+				return 'Constraint'
+			}
+			if (path.contains('/index-columns')) {
+				return 'Index'
+			}
+			if (path.contains('/indexes')) {
+				return 'Index'
+			}
+			if (path.contains('/relationship-columns')) {
+				return 'Relationship'
+			}
+			if (path.contains('/relationships')) {
+				return 'Relationship'
+			}
+			if (path.contains('/memos') || path.contains('/memo-comments')) {
+				return 'Memo'
+			}
+			if (path.contains('/operations')) {
+				return 'Operation'
+			}
+			if (path.contains('/schemas')) {
+				return 'Schema'
+			}
+			if (path.contains('/workspaces')) {
+				return 'Workspace'
+			}
+			if (path.contains('/projects')) {
+				return 'Project'
+			}
+			if (path.contains('/vendors')) {
+				return 'Database Vendor'
+			}
+			if (path.contains('/ulid')) {
+				return 'Utility'
+			}
+			return path.startsWith('/public/api/') ? 'Public' : 'API'
+		}
+
+		def summaryForOperation = { operation ->
+			if (operation.summary || !operation.operationId) {
+				return operation.summary
+			}
+
+			return operation.operationId.split('-')
+					.collect { token -> token ? token[0].toUpperCase() + token.substring(1) : token }
+					.join(' ')
+		}
+
+		def hmacHeaderNames = [
+				'X-Hmac-Signature',
+				'X-Hmac-Timestamp',
+				'X-Hmac-Nonce'
+		]
+
+		def hmacHeaderParameters = [
+				[
+						name       : 'X-Hmac-Signature',
+						in         : 'header',
+						required   : false,
+						schema     : [type: 'string'],
+						example    : '<hex-hmac-signature>',
+						description: 'Required when HMAC enforcement is enabled. HMAC-SHA256 signature of method, raw path with query, timestamp, nonce, and SHA-256 body hash.'
+				],
+				[
+						name       : 'X-Hmac-Timestamp',
+						in         : 'header',
+						required   : false,
+						schema     : [type: 'string'],
+						example    : '<epoch-millis>',
+						description: 'Required when HMAC enforcement is enabled. Unix epoch timestamp in milliseconds.'
+				],
+				[
+						name       : 'X-Hmac-Nonce',
+						in         : 'header',
+						required   : false,
+						schema     : [type: 'string'],
+						example    : '<unique-nonce>',
+						description: 'Required when HMAC enforcement is enabled. Unique nonce for replay protection.'
+				]
+		]
+
+		def removeHeaderParameter = { operation, headerName ->
+			if (!(operation.parameters instanceof List)) {
+				return
+			}
+
+			operation.parameters = operation.parameters.findAll { parameter ->
+				!(parameter instanceof Map
+						&& parameter.in == 'header'
+						&& parameter.name == headerName)
+			}
+			if (operation.parameters.isEmpty()) {
+				operation.remove('parameters')
+			}
+		}
+
+		def addHmacHeaderParameters = { operation ->
+			def parameters = operation.parameters instanceof List
+					? operation.parameters
+					: []
+			operation.parameters = parameters.findAll { parameter ->
+				!(parameter instanceof Map
+						&& parameter.in == 'header'
+						&& hmacHeaderNames.contains(parameter.name))
+			} + hmacHeaderParameters.collect { parameter -> parameter.clone() }
+		}
+
+		def appendHmacDescription = { operation ->
+			def note = 'When HMAC enforcement is enabled, provide fresh X-Hmac-* headers for each request. The default Swagger UI does not compute HMAC signatures automatically; use /swagger-ui-hmac.html for local development signing or paste per-request values manually.'
+			if (!operation.description) {
+				operation.description = note
+				return
+			}
+			if (!operation.description.contains('When HMAC enforcement is enabled')) {
+				operation.description = operation.description + '\n\n' + note
+			}
+		}
+
+		spec.paths.each { path, pathItem ->
+			pathItem.each { method, operation ->
+				if (method in ['get', 'put', 'post', 'delete', 'patch', 'head', 'options', 'trace']) {
+					operation.tags = [tagForPath(path)]
+					operation.summary = summaryForOperation(operation)
+					if (path.startsWith('/api/')) {
+						removeHeaderParameter(operation, 'Authorization')
+						addHmacHeaderParameters(operation)
+						appendHmacDescription(operation)
+						operation.security = [[bearerAuth: []]]
+					}
+				}
+			}
+		}
+
+		specFile.text = groovy.json.JsonOutput.prettyPrint(
+				groovy.json.JsonOutput.toJson(spec))
+	}
+}
+
+afterEvaluate {
+	tasks.named('openapi3') {
+		dependsOn tasks.named('sanitizeRestDocsApiSpecResources')
+	}
+	tasks.named('enrichOpenApiSpec') {
+		dependsOn tasks.named('openapi3')
+	}
+}
+
+def openApiSpecTask = tasks.register('openApiSpecResources', Sync) {
+	dependsOn tasks.named('enrichOpenApiSpec')
+	from(layout.buildDirectory.file('api-spec/openapi3.json'))
+	into(layout.buildDirectory.dir('generated/openapi-static/openapi'))
+}
+
+tasks.named('bootJar') {
+	dependsOn openApiSpecTask
+	from(openApiSpecTask) {
+		into 'BOOT-INF/classes/static/openapi'
+	}
+}

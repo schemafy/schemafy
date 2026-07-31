@@ -1,4 +1,4 @@
-import { ListItem } from '@/components';
+import { Edit, Trash } from 'lucide-react';
 import { SchemaInput } from './SchemaInput';
 
 interface SchemaListItemProps {
@@ -41,13 +41,48 @@ export const SchemaListItem = ({
   }
 
   return (
-    <div onClick={() => onSelect(schema.id)} className="cursor-pointer">
-      <ListItem
-        name={schema.name}
-        count={tableCount}
-        onChange={() => onStartEdit(schema.id, schema.name)}
-        onDelete={() => onDelete(schema.id)}
-      />
+    <div
+      role="button"
+      tabIndex={0}
+      onClick={() => onSelect(schema.id)}
+      onKeyDown={(event) => {
+        if (event.key === 'Enter' || event.key === ' ') {
+          event.preventDefault();
+          onSelect(schema.id);
+        }
+      }}
+      className="schemafy-focus-ring flex h-11 w-full items-center gap-2.5 rounded-xl border border-schemafy-glass-border bg-schemafy-secondary/35 px-3.5 text-left transition-colors hover:bg-schemafy-secondary/60"
+    >
+      <span className="min-w-0 flex-1 truncate font-overline-sm text-schemafy-text">
+        {schema.name}
+      </span>
+      <span className="flex shrink-0 items-center gap-1.5">
+        <button
+          type="button"
+          title="Edit"
+          onClick={(event) => {
+            event.stopPropagation();
+            onStartEdit(schema.id, schema.name);
+          }}
+          className="schemafy-icon-button schemafy-focus-ring flex h-7 w-7 items-center justify-center"
+        >
+          <Edit size={12} />
+        </button>
+        <button
+          type="button"
+          title="Delete"
+          onClick={(event) => {
+            event.stopPropagation();
+            onDelete(schema.id);
+          }}
+          className="schemafy-icon-button schemafy-focus-ring flex h-7 w-7 items-center justify-center hover:text-schemafy-destructive"
+        >
+          <Trash size={12} />
+        </button>
+      </span>
+      <span className="schemafy-badge shrink-0 px-2.5 py-0.5 font-body-xs">
+        {tableCount} entities
+      </span>
     </div>
   );
 };

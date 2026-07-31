@@ -61,19 +61,19 @@ import com.schemafy.core.erd.constraint.domain.type.ConstraintKind;
 
 import reactor.core.publisher.Mono;
 
+import static com.epages.restdocs.apispec.WebTestClientRestDocumentationWrapper.document;
 import static com.schemafy.api.erd.controller.ErdOperationFixtures.OP_ID;
 import static com.schemafy.api.erd.controller.ErdOperationFixtures.committedOperation;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.then;
-import static org.springframework.restdocs.webtestclient.WebTestClientRestDocumentation.document;
 
 @ActiveProfiles("test")
 @SpringBootTest
 @AutoConfigureWebTestClient
 @AutoConfigureRestDocs
 @DisplayName("ConstraintController 통합 테스트")
-@WithMockCustomUser(roles = "EDITOR")
+@WithMockCustomUser
 class ConstraintControllerTest {
 
   private static final ObjectMapper objectMapper = new ObjectMapper()
@@ -494,7 +494,6 @@ class ConstraintControllerTest {
   }
 
   @Test
-  @WithMockCustomUser(roles = "ADMIN")
   @DisplayName("제약조건 삭제 API 문서화")
   void deleteConstraint() {
     String constraintId = "06D6W4CAHD51T5NJPK29Q6BCRC";

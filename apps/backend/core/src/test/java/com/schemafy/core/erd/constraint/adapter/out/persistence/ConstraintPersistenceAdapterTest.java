@@ -354,12 +354,11 @@ class ConstraintPersistenceAdapterTest {
 
   private void createSchema(String schemaId, String name) {
     databaseClient.sql("""
-        INSERT INTO db_schemas (id, project_id, db_vendor_name, name, charset, collation)
-        VALUES (:id, :projectId, :dbVendorName, :name, :charset, :collation)
+        INSERT INTO db_schemas (id, project_id, name, charset, collation)
+        VALUES (:id, :projectId, :name, :charset, :collation)
         """)
         .bind("id", schemaId)
         .bind("projectId", "01ARZ3NDEKTSV4RRFFQ69G5PRJ")
-        .bind("dbVendorName", "MySQL")
         .bind("name", name)
         .bind("charset", "utf8mb4")
         .bind("collation", "utf8mb4_general_ci")

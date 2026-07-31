@@ -16,6 +16,7 @@ import com.schemafy.core.erd.column.application.port.out.GetColumnsByTableIdPort
 import com.schemafy.core.erd.operation.ErdOperationContexts;
 import com.schemafy.core.erd.operation.application.inverse.DeleteTableInverse;
 import com.schemafy.core.erd.operation.application.service.ErdMutationCoordinator;
+import com.schemafy.core.erd.operation.application.service.NestedErdMutations;
 import com.schemafy.core.erd.operation.application.service.StructuralSnapshotService;
 import com.schemafy.core.erd.operation.domain.ErdOperationType;
 import com.schemafy.core.erd.relationship.application.port.in.DeleteRelationshipCommand;
@@ -96,9 +97,8 @@ public class DeleteTableService implements DeleteTableUseCase {
                 affectedTableIds))
             .then(Mono.defer(() -> getColumnsByTableIdPort.findColumnsByTableId(tableId)))
             .flatMapMany(Flux::fromIterable)
-            .concatMap(column -> deleteColumnUseCase.deleteColumn(
-                new DeleteColumnCommand(column.id()))
-                .contextWrite(ErdOperationContexts.suppressNestedMutation())
+            .concatMap(column -> NestedErdMutations.run(
+                deleteColumnUseCase.deleteColumn(new DeleteColumnCommand(column.id())))
                 .doOnNext(result -> affectedTableIds.addAll(result.affectedTableIds()))
                 .then())
             .then(Mono.defer(() -> deleteTablePort.deleteTable(tableId)))
@@ -108,8 +108,8 @@ public class DeleteTableService implements DeleteTableUseCase {
   private Mono<Void> deleteRelationshipIgnoringAlreadyDeleted(
       String relationshipId,
       Set<String> affectedTableIds) {
-    return deleteRelationshipUseCase.deleteRelationship(new DeleteRelationshipCommand(relationshipId))
-        .contextWrite(ErdOperationContexts.suppressNestedMutation())
+    return NestedErdMutations.run(deleteRelationshipUseCase.deleteRelationship(
+        new DeleteRelationshipCommand(relationshipId)))
         .doOnNext(result -> affectedTableIds.addAll(result.affectedTableIds()))
         .then()
         .onErrorResume(DomainException.class, ex -> ex.getErrorCode() == RelationshipErrorCode.NOT_FOUND

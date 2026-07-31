@@ -34,7 +34,7 @@ export const SchemaInput = ({
   const isValid = validateSchemaName(value);
 
   return (
-    <div className="flex flex-col gap-2" onClick={(e) => e.stopPropagation()}>
+    <div className="flex flex-col gap-2.5" onClick={(e) => e.stopPropagation()}>
       <input
         type="text"
         value={value}
@@ -42,14 +42,20 @@ export const SchemaInput = ({
         onKeyDown={handleKeyDown}
         placeholder={placeholder}
         maxLength={SCHEMA_NAME_CONSTRAINTS.MAX_LENGTH}
-        className="p-3 font-body-xs w-full rounded-[8px] bg-schemafy-secondary text-schemafy-text focus:outline-none focus:ring-1 focus:ring-schemafy-primary"
+        className="schemafy-input h-10 w-full px-3 font-body-xs"
         autoFocus
       />
       <div className="flex w-full gap-2">
-        <Button onClick={onSave} disabled={!isValid} size="dropdown" fullWidth>
+        <Button
+          onClick={onSave}
+          disabled={!isValid}
+          size="dropdown"
+          fullWidth
+          className="h-10"
+        >
           {saveLabel}
         </Button>
-        <Button onClick={onCancel} size="dropdown" fullWidth>
+        <Button onClick={onCancel} size="dropdown" fullWidth className="h-10">
           {cancelLabel}
         </Button>
       </div>

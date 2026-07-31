@@ -6,8 +6,8 @@ import com.schemafy.core.common.PageResult;
 import com.schemafy.core.common.exception.DomainException;
 import com.schemafy.core.project.application.port.in.GetMyProjectInvitationsQuery;
 import com.schemafy.core.project.application.port.in.GetMyProjectInvitationsUseCase;
+import com.schemafy.core.project.application.port.in.InvitationSummary;
 import com.schemafy.core.project.application.port.out.InvitationPort;
-import com.schemafy.core.project.domain.Invitation;
 import com.schemafy.core.project.domain.InvitationStatus;
 import com.schemafy.core.project.domain.InvitationType;
 import com.schemafy.core.user.application.port.out.FindUserByIdPort;
@@ -25,7 +25,7 @@ class GetMyProjectInvitationsService
   private final FindUserByIdPort findUserByIdPort;
 
   @Override
-  public Mono<PageResult<Invitation>> getMyProjectInvitations(
+  public Mono<PageResult<InvitationSummary>> getMyProjectInvitations(
       GetMyProjectInvitationsQuery query) {
     return findUserByIdPort.findUserById(query.requesterId())
         .switchIfEmpty(Mono.error(new DomainException(UserErrorCode.NOT_FOUND)))
@@ -34,7 +34,7 @@ class GetMyProjectInvitationsService
             InvitationType.PROJECT.name(),
             InvitationStatus.PENDING.name())
             .flatMap(totalElements -> invitationPort
-                .findByEmailAndTypeAndStatus(
+                .findInvitationSummariesByEmailAndTypeAndStatus(
                     user.email(),
                     InvitationType.PROJECT.name(),
                     InvitationStatus.PENDING.name(),

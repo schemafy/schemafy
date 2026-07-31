@@ -18,9 +18,13 @@ import com.schemafy.api.common.constant.ApiPath;
 import com.schemafy.api.common.security.WithMockCustomUser;
 import com.schemafy.api.erd.controller.dto.request.ChangeSchemaNameRequest;
 import com.schemafy.api.erd.controller.dto.request.CreateSchemaRequest;
+import com.schemafy.api.erd.controller.dto.response.SchemaDdlExportResponse;
+import com.schemafy.api.erd.controller.dto.response.SchemaMermaidExportResponse;
 import com.schemafy.api.erd.controller.dto.response.SchemaSnapshotsResponse;
 import com.schemafy.api.erd.controller.dto.response.TableResponse;
 import com.schemafy.api.erd.controller.dto.response.TableSnapshotResponse;
+import com.schemafy.api.erd.service.SchemaDdlExportOrchestrator;
+import com.schemafy.api.erd.service.SchemaMermaidExportOrchestrator;
 import com.schemafy.api.erd.service.SchemaSnapshotOrchestrator;
 import com.schemafy.core.common.MutationResult;
 import com.schemafy.core.common.exception.DomainException;
@@ -42,12 +46,14 @@ import com.schemafy.core.project.domain.exception.ProjectErrorCode;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
+import static com.epages.restdocs.apispec.WebTestClientRestDocumentationWrapper.document;
 import static com.schemafy.api.erd.controller.ErdOperationFixtures.CLIENT_OPERATION_ID;
 import static com.schemafy.api.erd.controller.ErdOperationFixtures.COMMITTED_REVISION;
 import static com.schemafy.api.erd.controller.ErdOperationFixtures.OP_ID;
 import static com.schemafy.api.erd.controller.ErdOperationFixtures.committedOperation;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
+import static org.mockito.BDDMockito.then;
 import static org.springframework.restdocs.headers.HeaderDocumentation.headerWithName;
 import static org.springframework.restdocs.headers.HeaderDocumentation.requestHeaders;
 import static org.springframework.restdocs.headers.HeaderDocumentation.responseHeaders;
@@ -57,14 +63,14 @@ import static org.springframework.restdocs.payload.PayloadDocumentation.response
 import static org.springframework.restdocs.payload.PayloadDocumentation.subsectionWithPath;
 import static org.springframework.restdocs.request.RequestDocumentation.parameterWithName;
 import static org.springframework.restdocs.request.RequestDocumentation.pathParameters;
-import static org.springframework.restdocs.webtestclient.WebTestClientRestDocumentation.document;
+import static org.springframework.restdocs.request.RequestDocumentation.queryParameters;
 
 @ActiveProfiles("test")
 @SpringBootTest
 @AutoConfigureWebTestClient
 @AutoConfigureRestDocs
 @DisplayName("SchemaController 통합 테스트")
-@WithMockCustomUser(roles = "EDITOR")
+@WithMockCustomUser
 class SchemaControllerTest {
 
   private static final ObjectMapper objectMapper = new ObjectMapper()
@@ -94,12 +100,17 @@ class SchemaControllerTest {
   @MockitoBean
   private SchemaSnapshotOrchestrator schemaSnapshotOrchestrator;
 
+  @MockitoBean
+  private SchemaDdlExportOrchestrator schemaDdlExportOrchestrator;
+
+  @MockitoBean
+  private SchemaMermaidExportOrchestrator schemaMermaidExportOrchestrator;
+
   @Test
   @DisplayName("스키마 생성 API 문서화")
   void createSchema() throws Exception {
     CreateSchemaRequest request = new CreateSchemaRequest(
         "06D6VZBWHSDJBBG0H7D156YZ98",
-        "mariadb",
         "test_schema",
         "utf8mb4",
         "utf8mb4_general_ci");
@@ -107,7 +118,6 @@ class SchemaControllerTest {
     CreateSchemaResult result = new CreateSchemaResult(
         "06D6W1GAHD51T5NJPK29Q6BCR8",
         "06D6VZBWHSDJBBG0H7D156YZ98",
-        "mariadb",
         "test_schema",
         "utf8mb4",
         "utf8mb4_general_ci");
@@ -139,7 +149,6 @@ class SchemaControllerTest {
                     .description("응답 포맷 (application/json)")),
             requestFields(
                 fieldWithPath("projectId").description("프로젝트 ID"),
-                fieldWithPath("dbVendorName").description("DB 벤더 이름"),
                 fieldWithPath("name").description("스키마 이름"),
                 fieldWithPath("charset").description("문자셋 (선택)").optional(),
                 fieldWithPath("collation").description("콜레이션 (선택)").optional()),
@@ -150,7 +159,6 @@ class SchemaControllerTest {
                 fieldWithPath("data").description("생성된 스키마 정보").optional(),
                 fieldWithPath("data.id").description("스키마 ID"),
                 fieldWithPath("data.projectId").description("프로젝트 ID"),
-                fieldWithPath("data.dbVendorName").description("DB 벤더 이름"),
                 fieldWithPath("data.name").description("스키마 이름"),
                 fieldWithPath("data.charset").description("문자셋").optional(),
                 fieldWithPath("data.collation").description("콜레이션").optional(),
@@ -171,7 +179,6 @@ class SchemaControllerTest {
   void createSchemaReturnsNotFoundForMissingProject() throws Exception {
     CreateSchemaRequest request = new CreateSchemaRequest(
         "06D6VZBWHSDJBBG0H7D156YZ98",
-        "mariadb",
         "test_schema",
         "utf8mb4",
         "utf8mb4_general_ci");
@@ -200,7 +207,6 @@ class SchemaControllerTest {
     Schema schema = new Schema(
         schemaId,
         "06D6VZBWHSDJBBG0H7D156YZ98",
-        "mariadb",
         "test_schema",
         "utf8mb4",
         "utf8mb4_general_ci");
@@ -228,7 +234,6 @@ class SchemaControllerTest {
             responseFields(
                 fieldWithPath("id").description("스키마 ID"),
                 fieldWithPath("projectId").description("프로젝트 ID"),
-                fieldWithPath("dbVendorName").description("DB 벤더 이름"),
                 fieldWithPath("name").description("스키마 이름"),
                 fieldWithPath("charset").description("문자셋"),
                 fieldWithPath("collation").description("콜레이션"),
@@ -284,6 +289,119 @@ class SchemaControllerTest {
   }
 
   @Test
+  @DisplayName("스키마 DDL export API 문서화")
+  void exportSchemaDdl() {
+    String schemaId = "06D6W1GAHD51T5NJPK29Q6BCR8";
+    SchemaDdlExportResponse response = new SchemaDdlExportResponse(
+        schemaId,
+        42L,
+        "mysql",
+        """
+            -- Schemafy MySQL DDL Export
+            CREATE TABLE `users` (
+              `id` BIGINT NOT NULL AUTO_INCREMENT,
+              PRIMARY KEY (`id`)
+            ) ENGINE=InnoDB;
+            """.trim());
+
+    given(schemaDdlExportOrchestrator.exportSchemaDdl(schemaId, "mysql"))
+        .willReturn(Mono.just(response));
+
+    webTestClient.get()
+        .uri(API_BASE_PATH
+            + "/schemas/{schemaId}/exports/ddl?targetDbVendor={targetDbVendor}",
+            schemaId, "mysql")
+        .header("Accept", "application/json")
+        .exchange()
+        .expectStatus().isOk()
+        .expectBody()
+        .jsonPath("$.schemaId").isEqualTo(schemaId)
+        .jsonPath("$.currentRevision").isEqualTo(42)
+        .jsonPath("$.targetDbVendor").isEqualTo("mysql")
+        .jsonPath("$.ddl").value(org.hamcrest.Matchers.containsString(
+            "CREATE TABLE `users`"))
+        .consumeWith(document("schema-ddl-export",
+            pathParameters(
+                parameterWithName("schemaId")
+                    .description("DDL을 export할 스키마 ID")),
+            queryParameters(
+                parameterWithName("targetDbVendor")
+                    .description("DDL export 대상 DB vendor. 현재 지원: mysql")),
+            requestHeaders(
+                headerWithName("Accept")
+                    .description("응답 포맷 (application/json)")),
+            responseHeaders(
+                headerWithName("Content-Type")
+                    .description("응답 컨텐츠 타입")),
+            responseFields(
+                fieldWithPath("schemaId").description("스키마 ID"),
+                fieldWithPath("currentRevision")
+                    .description("DDL 생성 기준 schema revision"),
+                fieldWithPath("targetDbVendor")
+                    .description("DDL export 대상 DB vendor"),
+                fieldWithPath("ddl").description("생성된 DDL 문자열"))));
+  }
+
+  @Test
+  @DisplayName("스키마 DDL export API는 targetDbVendor query parameter를 요구한다")
+  void exportSchemaDdlRequiresTargetDbVendor() {
+    String schemaId = "06D6W1GAHD51T5NJPK29Q6BCR8";
+
+    webTestClient.get()
+        .uri(API_BASE_PATH + "/schemas/{schemaId}/exports/ddl", schemaId)
+        .header("Accept", "application/json")
+        .exchange()
+        .expectStatus().isBadRequest();
+
+    then(schemaDdlExportOrchestrator).shouldHaveNoInteractions();
+  }
+
+  @Test
+  @DisplayName("스키마 Mermaid export API 문서화")
+  void exportSchemaMermaid() {
+    String schemaId = "06D6W1GAHD51T5NJPK29Q6BCR8";
+    SchemaMermaidExportResponse response = new SchemaMermaidExportResponse(
+        schemaId,
+        42L,
+        """
+            erDiagram
+                T1["users"] {
+                    BIGINT id PK
+                }
+            """.trim());
+
+    given(schemaMermaidExportOrchestrator.exportSchemaMermaid(schemaId))
+        .willReturn(Mono.just(response));
+
+    webTestClient.get()
+        .uri(API_BASE_PATH + "/schemas/{schemaId}/exports/mermaid", schemaId)
+        .header("Accept", "application/json")
+        .exchange()
+        .expectStatus().isOk()
+        .expectBody()
+        .jsonPath("$.schemaId").isEqualTo(schemaId)
+        .jsonPath("$.currentRevision").isEqualTo(42)
+        .jsonPath("$.mermaid").value(org.hamcrest.Matchers.containsString(
+            "erDiagram"))
+        .consumeWith(document("schema-mermaid-export",
+            pathParameters(
+                parameterWithName("schemaId")
+                    .description("Mermaid로 export할 스키마 ID")),
+            requestHeaders(
+                headerWithName("Accept")
+                    .description("응답 포맷 (application/json)")),
+            responseHeaders(
+                headerWithName("Content-Type")
+                    .description("응답 컨텐츠 타입")),
+            responseFields(
+                fieldWithPath("schemaId").description("스키마 ID"),
+                fieldWithPath("currentRevision")
+                    .description("Mermaid 생성 기준 schema revision"),
+                fieldWithPath("mermaid")
+                    .description("생성된 Mermaid ER diagram 문자열"))));
+  }
+
+  @Test
   @DisplayName("프로젝트별 스키마 목록 조회 API 문서화")
   void getSchemasByProjectId() throws Exception {
     String projectId = "06D6VZBWHSDJBBG0H7D156YZ98";
@@ -291,7 +409,6 @@ class SchemaControllerTest {
     Schema schema1 = new Schema(
         "06D6W1GAHD51T5NJPK29Q6BCR8",
         projectId,
-        "mariadb",
         "test_schema_1",
         "utf8mb4",
         "utf8mb4_general_ci");
@@ -299,7 +416,6 @@ class SchemaControllerTest {
     Schema schema2 = new Schema(
         "06D6W1GAHD51T5NJPK29Q6BCR9",
         projectId,
-        "mariadb",
         "test_schema_2",
         "utf8mb4",
         "utf8mb4_general_ci");
@@ -327,7 +443,6 @@ class SchemaControllerTest {
                 fieldWithPath("[]").description("스키마 목록"),
                 fieldWithPath("[].id").description("스키마 ID"),
                 fieldWithPath("[].projectId").description("프로젝트 ID"),
-                fieldWithPath("[].dbVendorName").description("DB 벤더 이름"),
                 fieldWithPath("[].name").description("스키마 이름"),
                 fieldWithPath("[].charset").description("문자셋"),
                 fieldWithPath("[].collation").description("콜레이션"))));
@@ -413,7 +528,6 @@ class SchemaControllerTest {
   }
 
   @Test
-  @WithMockCustomUser(roles = "ADMIN")
   @DisplayName("스키마 삭제 API 문서화")
   void deleteSchema() throws Exception {
     String schemaId = "06D6W1GAHD51T5NJPK29Q6BCR8";

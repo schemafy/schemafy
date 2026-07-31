@@ -4,14 +4,22 @@ export const RELATIONSHIP_TYPES = {
   'one-to-one': {
     label: '1:1',
     cardinality: 'ONE_TO_ONE',
-    style: { stroke: 'var(--color-schemafy-dark-gray)', strokeWidth: 2 },
+    style: {
+      stroke: 'var(--color-schemafy-edge)',
+      strokeWidth: 1.5,
+      strokeOpacity: 0.78,
+    },
     markerStart: 'erd-one-start',
     markerEnd: 'erd-one-end',
   },
   'one-to-many': {
     label: '1:N',
     cardinality: 'ONE_TO_MANY',
-    style: { stroke: 'var(--color-schemafy-dark-gray)', strokeWidth: 2 },
+    style: {
+      stroke: 'var(--color-schemafy-edge)',
+      strokeWidth: 1.5,
+      strokeOpacity: 0.78,
+    },
     markerStart: 'erd-many-start',
     markerEnd: 'erd-one-end',
   },
@@ -19,12 +27,14 @@ export const RELATIONSHIP_TYPES = {
 
 export const RELATIONSHIP_STYLE_TYPES = {
   solid: {
-    stroke: 'var(--color-schemafy-dark-gray)',
-    strokeWidth: 2,
+    stroke: 'var(--color-schemafy-edge)',
+    strokeWidth: 1.5,
+    strokeOpacity: 0.78,
   },
   dashed: {
-    stroke: 'var(--color-schemafy-dark-gray)',
-    strokeWidth: 2,
+    stroke: 'var(--color-schemafy-edge)',
+    strokeWidth: 1.5,
+    strokeOpacity: 0.78,
     strokeDasharray: '5 5',
   },
 } as const;

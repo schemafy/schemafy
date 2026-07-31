@@ -11,6 +11,8 @@ import org.springframework.transaction.reactive.TransactionalOperator;
 
 import com.schemafy.core.common.MutationResult;
 import com.schemafy.core.common.exception.DomainException;
+import com.schemafy.core.erd.operation.application.inverse.ChangeRelationshipColumnPositionInverse;
+import com.schemafy.core.erd.operation.application.inverse.ReorderPositions;
 import com.schemafy.core.erd.operation.application.service.ErdMutationCoordinator;
 import com.schemafy.core.erd.operation.domain.ErdOperationType;
 import com.schemafy.core.erd.relationship.application.port.in.ChangeRelationshipColumnPositionCommand;
@@ -52,22 +54,57 @@ public class ChangeRelationshipColumnPositionService
   @Override
   public Mono<MutationResult<Void>> changeRelationshipColumnPosition(
       ChangeRelationshipColumnPositionCommand command) {
-    return erdMutationCoordinator.coordinate(ErdOperationType.CHANGE_RELATIONSHIP_COLUMN_POSITION, command,
-        () -> getRelationshipColumnByIdPort.findRelationshipColumnById(command.relationshipColumnId())
-            .switchIfEmpty(Mono.error(new DomainException(RelationshipErrorCode.POSITION_INVALID,
-                "Relationship column not found")))
-            .flatMap(relationshipColumn -> getRelationshipByIdPort
-                .findRelationshipById(relationshipColumn.relationshipId())
-                .switchIfEmpty(Mono.error(new DomainException(RelationshipErrorCode.NOT_FOUND,
-                    "Relationship not found")))
-                .flatMap(relationship -> getRelationshipColumnsByRelationshipIdPort
-                    .findRelationshipColumnsByRelationshipId(relationshipColumn.relationshipId())
-                    .defaultIfEmpty(List.of())
-                    .flatMap(columns -> reorderColumns(
-                        relationshipColumn,
-                        columns,
-                        command.seqNo()))
-                    .thenReturn(MutationResult.<Void>of(null, toTableIdSet(relationship))))))
+    return getRelationshipColumnByIdPort.findRelationshipColumnById(command.relationshipColumnId())
+        .switchIfEmpty(Mono.error(new DomainException(RelationshipErrorCode.POSITION_INVALID,
+            "Relationship column not found")))
+        .flatMap(relationshipColumn -> getRelationshipByIdPort
+            .findRelationshipById(relationshipColumn.relationshipId())
+            .switchIfEmpty(Mono.error(new DomainException(RelationshipErrorCode.NOT_FOUND,
+                "Relationship not found")))
+            .flatMap(relationship -> getRelationshipColumnsByRelationshipIdPort
+                .findRelationshipColumnsByRelationshipId(relationshipColumn.relationshipId())
+                .defaultIfEmpty(List.of())
+                .flatMap(columns -> {
+                  Set<String> affectedTableIds = toTableIdSet(relationship);
+                  int currentPosition = resolveCurrentPosition(relationshipColumn, columns);
+                  int normalizedPosition = Math.clamp(command.seqNo(), 0, columns.size() - 1);
+                  if (currentPosition == normalizedPosition) {
+                    return Mono.just(MutationResult.<Void>noop(null, affectedTableIds));
+                  }
+                  return erdMutationCoordinator.coordinate(
+                      ErdOperationType.CHANGE_RELATIONSHIP_COLUMN_POSITION,
+                      command,
+                      () -> getRelationshipColumnsByRelationshipIdPort
+                          .findRelationshipColumnsByRelationshipId(relationshipColumn.relationshipId())
+                          .defaultIfEmpty(List.of())
+                          .flatMap(lockedColumns -> {
+                            int lockedCurrentPosition = resolveCurrentPosition(
+                                relationshipColumn,
+                                lockedColumns);
+                            int lockedNormalizedPosition = Math.clamp(
+                                command.seqNo(),
+                                0,
+                                lockedColumns.size() - 1);
+                            if (lockedCurrentPosition == lockedNormalizedPosition) {
+                              return Mono.just(MutationResult.<Void>noop(null,
+                                  affectedTableIds));
+                            }
+                            List<RelationshipColumn> reordered = reorderColumns(
+                                lockedColumns,
+                                lockedCurrentPosition,
+                                lockedNormalizedPosition);
+                            return changeRelationshipColumnPositionPort
+                                .changeRelationshipColumnPositions(
+                                    relationshipColumn.relationshipId(), reordered)
+                                .thenReturn(MutationResult.<Void>of(null, affectedTableIds)
+                                    .withInverse(new ChangeRelationshipColumnPositionInverse(
+                                        relationshipColumn.id(),
+                                        ReorderPositions.capture(
+                                            lockedColumns,
+                                            RelationshipColumn::id,
+                                            RelationshipColumn::seqNo))));
+                          }));
+                })))
         .as(transactionalOperator::transactional);
   }
 
@@ -78,38 +115,36 @@ public class ChangeRelationshipColumnPositionService
     return affectedTableIds;
   }
 
-  private Mono<Void> reorderColumns(
+  private int resolveCurrentPosition(
       RelationshipColumn relationshipColumn,
-      List<RelationshipColumn> columns,
-      int nextPosition) {
+      List<RelationshipColumn> columns) {
     if (columns.isEmpty()) {
-      return Mono.error(new DomainException(RelationshipErrorCode.POSITION_INVALID,
-          "Relationship column not found"));
+      throw new DomainException(RelationshipErrorCode.POSITION_INVALID,
+          "Relationship column not found");
     }
+    int currentPosition = findIndex(columns, relationshipColumn.id());
+    if (currentPosition < 0) {
+      throw new DomainException(RelationshipErrorCode.POSITION_INVALID,
+          "Relationship column not found");
+    }
+    return currentPosition;
+  }
 
+  private List<RelationshipColumn> reorderColumns(
+      List<RelationshipColumn> columns,
+      int currentIndex,
+      int normalizedPosition) {
     List<RelationshipColumn> reordered = new ArrayList<>(columns);
-    int currentIndex = findIndex(reordered, relationshipColumn.id());
-    if (currentIndex < 0) {
-      return Mono.error(new DomainException(RelationshipErrorCode.POSITION_INVALID,
-          "Relationship column not found"));
-    }
     RelationshipColumn movingColumn = reordered.remove(currentIndex);
-    int normalizedPosition = Math.clamp(nextPosition, 0, columns.size() - 1);
     reordered.add(normalizedPosition, movingColumn);
 
     List<RelationshipColumn> updated = new ArrayList<>(reordered.size());
     for (int index = 0; index < reordered.size(); index++) {
       RelationshipColumn column = reordered.get(index);
-      updated.add(new RelationshipColumn(
-          column.id(),
-          column.relationshipId(),
-          column.pkColumnId(),
-          column.fkColumnId(),
-          index));
+      updated.add(column.withSeqNo(index));
     }
 
-    return changeRelationshipColumnPositionPort
-        .changeRelationshipColumnPositions(relationshipColumn.relationshipId(), updated);
+    return updated;
   }
 
   private static int findIndex(List<RelationshipColumn> columns, String relationshipColumnId) {

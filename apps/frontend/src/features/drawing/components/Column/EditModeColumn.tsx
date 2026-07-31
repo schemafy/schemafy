@@ -46,7 +46,7 @@ export const EditModeColumn = ({
       : 'Remove Column';
 
   return (
-    <div className="p-2 space-y-2 text-schemafy-text">
+    <div className="space-y-2.5 px-3.5 py-3 text-schemafy-text">
       <div className="flex items-center gap-2">
         <DragHandle
           columnId={column.id}
@@ -58,7 +58,7 @@ export const EditModeColumn = ({
           type="text"
           value={localName}
           onChange={(e) => handleNameChange(e.target.value)}
-          className="flex-1 px-2 py-1 text-sm border border-schemafy-light-gray rounded focus:outline-none focus:ring-1 focus:ring-blue-500"
+          className="schemafy-focus-ring flex-1 rounded-lg border border-schemafy-glass-border bg-schemafy-secondary/60 px-2.5 py-1.5 text-sm text-schemafy-text"
           placeholder="Column name"
         />
 
@@ -72,15 +72,16 @@ export const EditModeColumn = ({
         />
 
         <button
+          type="button"
           onClick={() => {
             onPendingChange?.(false);
             onRemoveColumn(column.id);
           }}
           disabled={isDeleteDisabled}
-          className={`p-1 rounded flex-shrink-0 ${
+          className={`schemafy-focus-ring flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-lg transition-colors ${
             isDeleteDisabled
-              ? 'text-schemafy-dark-gray cursor-not-allowed'
-              : 'text-schemafy-destructive hover:bg-red-100'
+              ? 'cursor-not-allowed text-schemafy-dark-gray'
+              : 'text-schemafy-destructive hover:bg-schemafy-destructive/10'
           }`}
           title={deleteTitle}
         >
@@ -99,7 +100,7 @@ const DragHandle = ({ columnId, onDragStart, onDragEnd }: DragHandleProps) => {
       draggable
       onDragStart={(e) => onDragStart(e, columnId)}
       onDragEnd={onDragEnd}
-      className="cursor-move p-1 hover:bg-schemafy-light-gray rounded transition-colors nodrag"
+      className="nodrag flex h-8 w-8 cursor-move items-center justify-center rounded-lg transition-colors hover:bg-schemafy-secondary"
       title="Drag to reorder"
       onMouseDown={(e) => e.stopPropagation()}
     >
@@ -113,7 +114,7 @@ const ColumnConstraints = ({
   onUpdateColumn,
 }: ColumnConstraintsProps) => {
   return (
-    <div className="flex flex-wrap gap-3 text-xs ml-4">
+    <div className="ml-10 flex flex-wrap gap-x-4 gap-y-2 text-xs">
       {CONSTRAINTS.filter(({ visible }) => visible).map(
         ({ key, label, color }) => {
           const isFkDisabled = column.isForeignKey && key === 'isPrimaryKey';
@@ -126,7 +127,7 @@ const ColumnConstraints = ({
           return (
             <label
               key={key}
-              className={`flex items-center gap-1 ${isDisabled ? 'cursor-not-allowed opacity-60' : 'cursor-pointer'}`}
+              className={`flex items-center gap-1.5 ${isDisabled ? 'cursor-not-allowed opacity-60' : 'cursor-pointer'}`}
               title={title}
             >
               <input
@@ -136,7 +137,7 @@ const ColumnConstraints = ({
                   onUpdateColumn(column.id, key, e.target.checked)
                 }
                 disabled={isDisabled}
-                className="w-3 h-3"
+                className="h-3.5 w-3.5"
               />
               <span className={`${color} font-medium`}>{label}</span>
             </label>

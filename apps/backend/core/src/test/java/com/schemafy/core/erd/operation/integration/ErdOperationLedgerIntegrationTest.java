@@ -1,5 +1,6 @@
 package com.schemafy.core.erd.operation.integration;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.StreamSupport;
 
@@ -14,14 +15,22 @@ import org.junit.jupiter.api.Test;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.schemafy.core.common.exception.DomainException;
 import com.schemafy.core.common.json.JsonCodec;
+import com.schemafy.core.erd.column.application.port.in.ChangeColumnPositionCommand;
+import com.schemafy.core.erd.column.application.port.in.ChangeColumnPositionUseCase;
 import com.schemafy.core.erd.column.application.port.in.ChangeColumnTypeCommand;
 import com.schemafy.core.erd.column.application.port.in.ChangeColumnTypeUseCase;
 import com.schemafy.core.erd.column.application.port.in.CreateColumnCommand;
 import com.schemafy.core.erd.column.application.port.in.CreateColumnUseCase;
+import com.schemafy.core.erd.constraint.application.port.in.ChangeConstraintColumnPositionCommand;
+import com.schemafy.core.erd.constraint.application.port.in.ChangeConstraintColumnPositionUseCase;
 import com.schemafy.core.erd.constraint.application.port.in.CreateConstraintColumnCommand;
 import com.schemafy.core.erd.constraint.application.port.in.CreateConstraintCommand;
 import com.schemafy.core.erd.constraint.application.port.in.CreateConstraintUseCase;
 import com.schemafy.core.erd.constraint.domain.type.ConstraintKind;
+import com.schemafy.core.erd.index.application.port.in.ChangeIndexColumnPositionCommand;
+import com.schemafy.core.erd.index.application.port.in.ChangeIndexColumnPositionUseCase;
+import com.schemafy.core.erd.index.application.port.in.ChangeIndexColumnSortDirectionCommand;
+import com.schemafy.core.erd.index.application.port.in.ChangeIndexColumnSortDirectionUseCase;
 import com.schemafy.core.erd.index.application.port.in.CreateIndexColumnCommand;
 import com.schemafy.core.erd.index.application.port.in.CreateIndexCommand;
 import com.schemafy.core.erd.index.application.port.in.CreateIndexUseCase;
@@ -39,6 +48,12 @@ import com.schemafy.core.erd.operation.application.port.out.IncrementSchemaColla
 import com.schemafy.core.erd.operation.application.service.StructuralSnapshotService;
 import com.schemafy.core.erd.operation.domain.ErdOperationDerivationKind;
 import com.schemafy.core.erd.operation.domain.exception.OperationErrorCode;
+import com.schemafy.core.erd.relationship.application.port.in.ChangeRelationshipCardinalityCommand;
+import com.schemafy.core.erd.relationship.application.port.in.ChangeRelationshipCardinalityUseCase;
+import com.schemafy.core.erd.relationship.application.port.in.ChangeRelationshipColumnPositionCommand;
+import com.schemafy.core.erd.relationship.application.port.in.ChangeRelationshipColumnPositionUseCase;
+import com.schemafy.core.erd.relationship.application.port.in.ChangeRelationshipExtraCommand;
+import com.schemafy.core.erd.relationship.application.port.in.ChangeRelationshipExtraUseCase;
 import com.schemafy.core.erd.relationship.application.port.in.ChangeRelationshipKindCommand;
 import com.schemafy.core.erd.relationship.application.port.in.ChangeRelationshipKindUseCase;
 import com.schemafy.core.erd.relationship.application.port.in.CreateRelationshipCommand;
@@ -99,10 +114,22 @@ class ErdOperationLedgerIntegrationTest extends ErdProjectIntegrationSupport {
   ChangeColumnTypeUseCase changeColumnTypeUseCase;
 
   @Autowired
+  ChangeColumnPositionUseCase changeColumnPositionUseCase;
+
+  @Autowired
   CreateConstraintUseCase createConstraintUseCase;
 
   @Autowired
+  ChangeConstraintColumnPositionUseCase changeConstraintColumnPositionUseCase;
+
+  @Autowired
   CreateIndexUseCase createIndexUseCase;
+
+  @Autowired
+  ChangeIndexColumnPositionUseCase changeIndexColumnPositionUseCase;
+
+  @Autowired
+  ChangeIndexColumnSortDirectionUseCase changeIndexColumnSortDirectionUseCase;
 
   @Autowired
   RemoveIndexColumnUseCase removeIndexColumnUseCase;
@@ -111,10 +138,19 @@ class ErdOperationLedgerIntegrationTest extends ErdProjectIntegrationSupport {
   CreateRelationshipUseCase createRelationshipUseCase;
 
   @Autowired
+  ChangeRelationshipColumnPositionUseCase changeRelationshipColumnPositionUseCase;
+
+  @Autowired
   RemoveRelationshipColumnUseCase removeRelationshipColumnUseCase;
 
   @Autowired
   ChangeRelationshipKindUseCase changeRelationshipKindUseCase;
+
+  @Autowired
+  ChangeRelationshipCardinalityUseCase changeRelationshipCardinalityUseCase;
+
+  @Autowired
+  ChangeRelationshipExtraUseCase changeRelationshipExtraUseCase;
 
   @Autowired
   JsonCodec jsonCodec;
@@ -138,27 +174,28 @@ class ErdOperationLedgerIntegrationTest extends ErdProjectIntegrationSupport {
 
     var schemaResult = createSchemaUseCase.createSchema(new CreateSchemaCommand(
         projectId,
-        "MySQL",
         "ledger_schema",
         "utf8mb4",
         "utf8mb4_general_ci")).block().result();
 
     assertThat(currentRevision(schemaResult.id())).isEqualTo(1L);
     assertLastOperation(schemaResult.id(), "CREATE_SCHEMA", 1L, List.of());
+    assertThat(latestOperationPayload(schemaResult.id()).findValue("dbVendorName"))
+        .isNull();
 
     var tableResult = createTableUseCase.createTable(new CreateTableCommand(
         schemaResult.id(),
         "ledger_table",
         "utf8mb4",
         "utf8mb4_general_ci",
-        "{\"comment\":\"initial\"}")).block().result();
+        jsonObject("{\"comment\":\"initial\"}"))).block().result();
 
     assertThat(currentRevision(schemaResult.id())).isEqualTo(2L);
     assertLastOperation(schemaResult.id(), "CREATE_TABLE", 2L, List.of(tableResult.tableId()));
 
     StepVerifier.create(changeTableExtraUseCase.changeTableExtra(new ChangeTableExtraCommand(
         tableResult.tableId(),
-        "{\"comment\":\"updated\"}")))
+        jsonObject("{\"comment\":\"updated\"}"))))
         .expectNextCount(1)
         .verifyComplete();
 
@@ -174,7 +211,6 @@ class ErdOperationLedgerIntegrationTest extends ErdProjectIntegrationSupport {
 
     String schemaId = createSchemaUseCase.createSchema(new CreateSchemaCommand(
         projectId,
-        "MySQL",
         "single_change_column_type_schema",
         "utf8mb4",
         "utf8mb4_general_ci")).block().result().id();
@@ -219,7 +255,6 @@ class ErdOperationLedgerIntegrationTest extends ErdProjectIntegrationSupport {
 
     String schemaId = createSchemaUseCase.createSchema(new CreateSchemaCommand(
         projectId,
-        "MySQL",
         "single_change_column_type_text_schema",
         "utf8mb4",
         "utf8mb4_general_ci")).block().result().id();
@@ -264,7 +299,6 @@ class ErdOperationLedgerIntegrationTest extends ErdProjectIntegrationSupport {
 
     String schemaId = createSchemaUseCase.createSchema(new CreateSchemaCommand(
         projectId,
-        "MySQL",
         "delete_schema",
         "utf8mb4",
         "utf8mb4_general_ci")).block().result().id();
@@ -329,7 +363,6 @@ class ErdOperationLedgerIntegrationTest extends ErdProjectIntegrationSupport {
 
     String schemaId = createSchemaUseCase.createSchema(new CreateSchemaCommand(
         projectId,
-        "MySQL",
         "noop_relationship_kind_schema",
         "utf8mb4",
         "utf8mb4_general_ci")).block().result().id();
@@ -389,6 +422,417 @@ class ErdOperationLedgerIntegrationTest extends ErdProjectIntegrationSupport {
   }
 
   @Test
+  @DisplayName("같은 schema와 table 이름 재요청은 revision과 operation log를 늘리지 않는다")
+  void doesNotRecordLedgerForNoOpSchemaAndTableNameChanges() {
+    String projectId = createActiveProjectId("erd_operation_noop_schema_table_name");
+    String schemaName = "noop_schema_table_name_schema";
+
+    String schemaId = createSchemaUseCase.createSchema(new CreateSchemaCommand(
+        projectId,
+        schemaName,
+        "utf8mb4",
+        "utf8mb4_general_ci")).block().result().id();
+
+    long beforeSchemaNameRevision = currentRevision(schemaId);
+    long beforeSchemaNameCount = operationCount(schemaId);
+
+    StepVerifier.create(changeSchemaNameUseCase.changeSchemaName(
+        new ChangeSchemaNameCommand(schemaId, schemaName)))
+        .expectNextMatches(result -> result.operation() == null)
+        .verifyComplete();
+
+    assertThat(currentRevision(schemaId)).isEqualTo(beforeSchemaNameRevision);
+    assertThat(operationCount(schemaId)).isEqualTo(beforeSchemaNameCount);
+
+    String tableName = "noop_schema_table_name_table";
+    String tableId = createTableUseCase.createTable(new CreateTableCommand(
+        schemaId,
+        tableName,
+        "utf8mb4",
+        "utf8mb4_general_ci",
+        null)).block().result().tableId();
+
+    long beforeTableNameRevision = currentRevision(schemaId);
+    long beforeTableNameCount = operationCount(schemaId);
+
+    StepVerifier.create(changeTableNameUseCase.changeTableName(
+        new ChangeTableNameCommand(tableId, tableName)))
+        .expectNextMatches(result -> result.operation() == null)
+        .verifyComplete();
+
+    assertThat(currentRevision(schemaId)).isEqualTo(beforeTableNameRevision);
+    assertThat(operationCount(schemaId)).isEqualTo(beforeTableNameCount);
+  }
+
+  @Test
+  @DisplayName("같은 컬럼 type과 position 재요청은 revision과 operation log를 늘리지 않는다")
+  void doesNotRecordLedgerForNoOpColumnTypeAndPositionChanges() {
+    String projectId = createActiveProjectId("erd_operation_noop_column_type_position");
+
+    String schemaId = createSchemaUseCase.createSchema(new CreateSchemaCommand(
+        projectId,
+        "noop_column_type_position_schema",
+        "utf8mb4",
+        "utf8mb4_general_ci")).block().result().id();
+
+    String tableId = createTableUseCase.createTable(new CreateTableCommand(
+        schemaId,
+        "noop_column_type_position_table",
+        "utf8mb4",
+        "utf8mb4_general_ci",
+        null)).block().result().tableId();
+
+    String columnId = createColumnUseCase.createColumn(new CreateColumnCommand(
+        tableId,
+        "name",
+        "VARCHAR",
+        255,
+        null,
+        null,
+        false,
+        "utf8mb4",
+        "utf8mb4_general_ci",
+        null)).block().result().columnId();
+
+    createColumnUseCase.createColumn(new CreateColumnCommand(
+        tableId,
+        "email",
+        "VARCHAR",
+        255,
+        null,
+        null,
+        false,
+        "utf8mb4",
+        "utf8mb4_general_ci",
+        null)).block();
+
+    long beforeTypeRevision = currentRevision(schemaId);
+    long beforeTypeCount = operationCount(schemaId);
+
+    var typeResult = changeColumnTypeUseCase.changeColumnType(new ChangeColumnTypeCommand(
+        columnId,
+        "VARCHAR",
+        255,
+        null,
+        null)).block();
+
+    assertThat(typeResult.operation()).isNull();
+    assertThat(currentRevision(schemaId)).isEqualTo(beforeTypeRevision);
+    assertThat(operationCount(schemaId)).isEqualTo(beforeTypeCount);
+
+    long beforePositionRevision = currentRevision(schemaId);
+    long beforePositionCount = operationCount(schemaId);
+
+    var positionResult = changeColumnPositionUseCase.changeColumnPosition(
+        new ChangeColumnPositionCommand(columnId, 0)).block();
+
+    assertThat(positionResult.operation()).isNull();
+    assertThat(currentRevision(schemaId)).isEqualTo(beforePositionRevision);
+    assertThat(operationCount(schemaId)).isEqualTo(beforePositionCount);
+  }
+
+  @Test
+  @DisplayName("같은 index sort direction과 relationship 속성 재요청은 revision과 operation log를 늘리지 않는다")
+  void doesNotRecordLedgerForNoOpIndexAndRelationshipChanges() {
+    String projectId = createActiveProjectId("erd_operation_noop_index_relationship");
+
+    String schemaId = createSchemaUseCase.createSchema(new CreateSchemaCommand(
+        projectId,
+        "noop_index_relationship_schema",
+        "utf8mb4",
+        "utf8mb4_general_ci")).block().result().id();
+
+    String pkTableId = createTableUseCase.createTable(new CreateTableCommand(
+        schemaId,
+        "users",
+        "utf8mb4",
+        "utf8mb4_general_ci",
+        null)).block().result().tableId();
+
+    String fkTableId = createTableUseCase.createTable(new CreateTableCommand(
+        schemaId,
+        "orders",
+        "utf8mb4",
+        "utf8mb4_general_ci",
+        null)).block().result().tableId();
+
+    String pkColumnId = createColumnUseCase.createColumn(new CreateColumnCommand(
+        pkTableId,
+        "id",
+        "INT",
+        null,
+        null,
+        null,
+        true,
+        null,
+        null,
+        null)).block().result().columnId();
+
+    createConstraintUseCase.createConstraint(new CreateConstraintCommand(
+        pkTableId,
+        "pk_users",
+        ConstraintKind.PRIMARY_KEY,
+        null,
+        null,
+        List.of(new CreateConstraintColumnCommand(pkColumnId, 0)))).block();
+
+    String indexId = createIndexUseCase.createIndex(new CreateIndexCommand(
+        pkTableId,
+        "idx_users_id",
+        IndexType.BTREE,
+        List.of(new CreateIndexColumnCommand(pkColumnId, 0, SortDirection.ASC)))).block().result().indexId();
+    String indexColumnId = firstIndexColumnId(indexId);
+
+    var relationshipResult = createRelationshipUseCase.createRelationship(new CreateRelationshipCommand(
+        fkTableId,
+        pkTableId,
+        RelationshipKind.NON_IDENTIFYING,
+        Cardinality.ONE_TO_MANY,
+        null)).block().result();
+
+    long beforeSortRevision = currentRevision(schemaId);
+    long beforeSortCount = operationCount(schemaId);
+
+    var sortResult = changeIndexColumnSortDirectionUseCase.changeIndexColumnSortDirection(
+        new ChangeIndexColumnSortDirectionCommand(indexColumnId, SortDirection.ASC)).block();
+
+    assertThat(sortResult.operation()).isNull();
+    assertThat(currentRevision(schemaId)).isEqualTo(beforeSortRevision);
+    assertThat(operationCount(schemaId)).isEqualTo(beforeSortCount);
+
+    long beforeCardinalityRevision = currentRevision(schemaId);
+    long beforeCardinalityCount = operationCount(schemaId);
+
+    var cardinalityResult = changeRelationshipCardinalityUseCase.changeRelationshipCardinality(
+        new ChangeRelationshipCardinalityCommand(
+            relationshipResult.relationshipId(),
+            relationshipResult.cardinality())).block();
+
+    assertThat(cardinalityResult.operation()).isNull();
+    assertThat(currentRevision(schemaId)).isEqualTo(beforeCardinalityRevision);
+    assertThat(operationCount(schemaId)).isEqualTo(beforeCardinalityCount);
+
+    long beforeExtraRevision = currentRevision(schemaId);
+    long beforeExtraCount = operationCount(schemaId);
+
+    var extraResult = changeRelationshipExtraUseCase.changeRelationshipExtra(
+        new ChangeRelationshipExtraCommand(relationshipResult.relationshipId(), null)).block();
+
+    assertThat(extraResult.operation()).isNull();
+    assertThat(currentRevision(schemaId)).isEqualTo(beforeExtraRevision);
+    assertThat(operationCount(schemaId)).isEqualTo(beforeExtraCount);
+  }
+
+  @Test
+  @DisplayName("column reorder undo/redo는 모든 sibling position을 복원한다")
+  void columnReorderUndoRedoRestoresAllSiblingPositions() {
+    ReorderFixture fixture = createReorderFixture("column_reorder");
+    List<String> changedOrder = moveFirstToLast(fixture.columnIds());
+
+    var changeResult = changeColumnPositionUseCase.changeColumnPosition(
+        new ChangeColumnPositionCommand(fixture.columnIds().getFirst(), 2)).block();
+
+    assertThat(changeResult.operation().derivationKind())
+        .isEqualTo(ErdOperationDerivationKind.ORIGINAL);
+    assertThat(changeResult.affectedTableIds()).containsExactly(fixture.pkTableId());
+    assertPositions(columnPositions(fixture.pkTableId()), changedOrder);
+
+    var undoResult = undoErdOperationUseCase.undo(
+        new UndoErdOperationCommand(changeResult.operation().opId())).block();
+
+    assertThat(undoResult.operation().derivationKind())
+        .isEqualTo(ErdOperationDerivationKind.UNDO);
+    assertThat(undoResult.affectedTableIds()).containsExactly(fixture.pkTableId());
+    assertPositions(columnPositions(fixture.pkTableId()), fixture.columnIds());
+
+    var redoResult = redoErdOperationUseCase.redo(
+        new RedoErdOperationCommand(changeResult.operation().opId())).block();
+
+    assertThat(redoResult.operation().derivationKind())
+        .isEqualTo(ErdOperationDerivationKind.REDO);
+    assertThat(redoResult.affectedTableIds()).containsExactly(fixture.pkTableId());
+    assertPositions(columnPositions(fixture.pkTableId()), changedOrder);
+    assertLastOperation(
+        fixture.schemaId(),
+        "CHANGE_COLUMN_POSITION",
+        currentRevision(fixture.schemaId()),
+        List.of(fixture.pkTableId()));
+  }
+
+  @Test
+  @DisplayName("constraint column reorder undo/redo는 모든 sibling position을 복원한다")
+  void constraintColumnReorderUndoRedoRestoresAllSiblingPositions() {
+    ReorderFixture fixture = createReorderFixture("constraint_column_reorder");
+    List<String> changedOrder = moveFirstToLast(fixture.constraintColumnIds());
+
+    var changeResult = changeConstraintColumnPositionUseCase.changeConstraintColumnPosition(
+        new ChangeConstraintColumnPositionCommand(
+            fixture.constraintColumnIds().getFirst(),
+            2)).block();
+
+    assertThat(changeResult.operation().derivationKind())
+        .isEqualTo(ErdOperationDerivationKind.ORIGINAL);
+    assertThat(changeResult.affectedTableIds()).containsExactly(fixture.pkTableId());
+    assertPositions(constraintColumnPositions(fixture.constraintId()), changedOrder);
+
+    var undoResult = undoErdOperationUseCase.undo(
+        new UndoErdOperationCommand(changeResult.operation().opId())).block();
+
+    assertThat(undoResult.operation().derivationKind())
+        .isEqualTo(ErdOperationDerivationKind.UNDO);
+    assertThat(undoResult.affectedTableIds()).containsExactly(fixture.pkTableId());
+    assertPositions(
+        constraintColumnPositions(fixture.constraintId()),
+        fixture.constraintColumnIds());
+
+    var redoResult = redoErdOperationUseCase.redo(
+        new RedoErdOperationCommand(changeResult.operation().opId())).block();
+
+    assertThat(redoResult.operation().derivationKind())
+        .isEqualTo(ErdOperationDerivationKind.REDO);
+    assertThat(redoResult.affectedTableIds()).containsExactly(fixture.pkTableId());
+    assertPositions(constraintColumnPositions(fixture.constraintId()), changedOrder);
+    assertLastOperation(
+        fixture.schemaId(),
+        "CHANGE_CONSTRAINT_COLUMN_POSITION",
+        currentRevision(fixture.schemaId()),
+        List.of(fixture.pkTableId()));
+  }
+
+  @Test
+  @DisplayName("index column reorder undo/redo는 모든 sibling position을 복원한다")
+  void indexColumnReorderUndoRedoRestoresAllSiblingPositions() {
+    ReorderFixture fixture = createReorderFixture("index_column_reorder");
+    List<String> changedOrder = moveFirstToLast(fixture.indexColumnIds());
+
+    var changeResult = changeIndexColumnPositionUseCase.changeIndexColumnPosition(
+        new ChangeIndexColumnPositionCommand(
+            fixture.indexColumnIds().getFirst(),
+            2)).block();
+
+    assertThat(changeResult.operation().derivationKind())
+        .isEqualTo(ErdOperationDerivationKind.ORIGINAL);
+    assertThat(changeResult.affectedTableIds()).containsExactly(fixture.pkTableId());
+    assertPositions(indexColumnPositions(fixture.indexId()), changedOrder);
+
+    var undoResult = undoErdOperationUseCase.undo(
+        new UndoErdOperationCommand(changeResult.operation().opId())).block();
+
+    assertThat(undoResult.operation().derivationKind())
+        .isEqualTo(ErdOperationDerivationKind.UNDO);
+    assertThat(undoResult.affectedTableIds()).containsExactly(fixture.pkTableId());
+    assertPositions(indexColumnPositions(fixture.indexId()), fixture.indexColumnIds());
+
+    var redoResult = redoErdOperationUseCase.redo(
+        new RedoErdOperationCommand(changeResult.operation().opId())).block();
+
+    assertThat(redoResult.operation().derivationKind())
+        .isEqualTo(ErdOperationDerivationKind.REDO);
+    assertThat(redoResult.affectedTableIds()).containsExactly(fixture.pkTableId());
+    assertPositions(indexColumnPositions(fixture.indexId()), changedOrder);
+    assertLastOperation(
+        fixture.schemaId(),
+        "CHANGE_INDEX_COLUMN_POSITION",
+        currentRevision(fixture.schemaId()),
+        List.of(fixture.pkTableId()));
+  }
+
+  @Test
+  @DisplayName("relationship column reorder undo/redo는 모든 sibling position을 복원한다")
+  void relationshipColumnReorderUndoRedoRestoresAllSiblingPositions() {
+    ReorderFixture fixture = createReorderFixture("relationship_column_reorder");
+    List<String> changedOrder = moveFirstToLast(fixture.relationshipColumnIds());
+
+    var changeResult = changeRelationshipColumnPositionUseCase.changeRelationshipColumnPosition(
+        new ChangeRelationshipColumnPositionCommand(
+            fixture.relationshipColumnIds().getFirst(),
+            2)).block();
+
+    assertThat(changeResult.operation().derivationKind())
+        .isEqualTo(ErdOperationDerivationKind.ORIGINAL);
+    assertThat(changeResult.affectedTableIds())
+        .containsExactlyInAnyOrder(fixture.pkTableId(), fixture.fkTableId());
+    assertPositions(relationshipColumnPositions(fixture.relationshipId()), changedOrder);
+
+    var undoResult = undoErdOperationUseCase.undo(
+        new UndoErdOperationCommand(changeResult.operation().opId())).block();
+
+    assertThat(undoResult.operation().derivationKind())
+        .isEqualTo(ErdOperationDerivationKind.UNDO);
+    assertThat(undoResult.affectedTableIds())
+        .containsExactlyInAnyOrder(fixture.pkTableId(), fixture.fkTableId());
+    assertPositions(
+        relationshipColumnPositions(fixture.relationshipId()),
+        fixture.relationshipColumnIds());
+
+    var redoResult = redoErdOperationUseCase.redo(
+        new RedoErdOperationCommand(changeResult.operation().opId())).block();
+
+    assertThat(redoResult.operation().derivationKind())
+        .isEqualTo(ErdOperationDerivationKind.REDO);
+    assertThat(redoResult.affectedTableIds())
+        .containsExactlyInAnyOrder(fixture.pkTableId(), fixture.fkTableId());
+    assertPositions(relationshipColumnPositions(fixture.relationshipId()), changedOrder);
+    assertLastOperation(
+        fixture.schemaId(),
+        "CHANGE_RELATIONSHIP_COLUMN_POSITION",
+        currentRevision(fixture.schemaId()),
+        List.of(fixture.pkTableId(), fixture.fkTableId()));
+  }
+
+  @Test
+  @DisplayName("same-position reorder는 revision과 operation log를 늘리지 않는다")
+  void doesNotRecordLedgerForNoOpReorders() {
+    ReorderFixture fixture = createReorderFixture("noop_reorders");
+    long beforeRevision = currentRevision(fixture.schemaId());
+    long beforeCount = operationCount(fixture.schemaId());
+
+    var columnResult = changeColumnPositionUseCase.changeColumnPosition(
+        new ChangeColumnPositionCommand(fixture.columnIds().getFirst(), 0)).block();
+    var constraintResult = changeConstraintColumnPositionUseCase.changeConstraintColumnPosition(
+        new ChangeConstraintColumnPositionCommand(
+            fixture.constraintColumnIds().getFirst(),
+            0)).block();
+    var indexResult = changeIndexColumnPositionUseCase.changeIndexColumnPosition(
+        new ChangeIndexColumnPositionCommand(
+            fixture.indexColumnIds().getFirst(),
+            0)).block();
+    var relationshipResult = changeRelationshipColumnPositionUseCase.changeRelationshipColumnPosition(
+        new ChangeRelationshipColumnPositionCommand(
+            fixture.relationshipColumnIds().getFirst(),
+            0)).block();
+
+    assertThat(List.of(columnResult, constraintResult, indexResult, relationshipResult))
+        .allSatisfy(result -> {
+          assertThat(result.noOp()).isTrue();
+          assertThat(result.operation()).isNull();
+          assertThat(result.inversePayload()).isNull();
+        });
+    assertThat(currentRevision(fixture.schemaId())).isEqualTo(beforeRevision);
+    assertThat(operationCount(fixture.schemaId())).isEqualTo(beforeCount);
+  }
+
+  @Test
+  @DisplayName("최신 operation이 아닌 reorder undo는 SUPERSEDED 처리한다")
+  void rejectsSupersededReorderUndo() {
+    ReorderFixture fixture = createReorderFixture("superseded_reorder");
+    List<String> changedOrder = moveFirstToLast(fixture.columnIds());
+
+    var changeResult = changeColumnPositionUseCase.changeColumnPosition(
+        new ChangeColumnPositionCommand(fixture.columnIds().getFirst(), 2)).block();
+    changeSchemaNameUseCase.changeSchemaName(new ChangeSchemaNameCommand(
+        fixture.schemaId(),
+        "superseded_reorder_schema_renamed")).block();
+
+    StepVerifier.create(undoErdOperationUseCase.undo(
+        new UndoErdOperationCommand(changeResult.operation().opId())))
+        .expectErrorMatches(DomainException.hasErrorCode(OperationErrorCode.SUPERSEDED))
+        .verify();
+
+    assertPositions(columnPositions(fixture.pkTableId()), changedOrder);
+  }
+
+  @Test
   @DisplayName("PK 쪽 table rename으로 관계 이름이 함께 바뀌면 undo/redo affectedTableIds에 양쪽 테이블을 포함한다")
   void tableRenameUndoRedoIncludesRelationshipTablesWhenPkSideNameChanges() {
     assertTableRenameUndoRedoIncludesRelationshipTables(true);
@@ -406,7 +850,6 @@ class ErdOperationLedgerIntegrationTest extends ErdProjectIntegrationSupport {
 
     String schemaId = createSchemaUseCase.createSchema(new CreateSchemaCommand(
         projectId,
-        "MySQL",
         "table_rename_" + sidePrefix + "_relationship_affected_schema",
         "utf8mb4",
         "utf8mb4_general_ci")).block().result().id();
@@ -480,7 +923,6 @@ class ErdOperationLedgerIntegrationTest extends ErdProjectIntegrationSupport {
 
     String schemaId = createSchemaUseCase.createSchema(new CreateSchemaCommand(
         projectId,
-        "MySQL",
         "create_table_undo_redo_schema",
         "utf8mb4",
         "utf8mb4_general_ci")).block().result().id();
@@ -490,7 +932,7 @@ class ErdOperationLedgerIntegrationTest extends ErdProjectIntegrationSupport {
         "users",
         "utf8mb4",
         "utf8mb4_general_ci",
-        "{\"x\":100}")).block();
+        jsonObject("{\"x\":100}"))).block();
     String tableId = createResult.result().tableId();
     String createOpId = createResult.operation().opId();
 
@@ -509,7 +951,6 @@ class ErdOperationLedgerIntegrationTest extends ErdProjectIntegrationSupport {
 
     String schemaId = createSchemaUseCase.createSchema(new CreateSchemaCommand(
         projectId,
-        "MySQL",
         "delete_table_undo_redo_schema",
         "utf8mb4",
         "utf8mb4_general_ci")).block().result().id();
@@ -596,7 +1037,6 @@ class ErdOperationLedgerIntegrationTest extends ErdProjectIntegrationSupport {
 
     String schemaId = createSchemaUseCase.createSchema(new CreateSchemaCommand(
         projectId,
-        "MySQL",
         "index_column_undo_redo_schema",
         "utf8mb4",
         "utf8mb4_general_ci")).block().result().id();
@@ -651,7 +1091,6 @@ class ErdOperationLedgerIntegrationTest extends ErdProjectIntegrationSupport {
 
     String schemaId = createSchemaUseCase.createSchema(new CreateSchemaCommand(
         projectId,
-        "MySQL",
         "relationship_column_undo_redo_schema",
         "utf8mb4",
         "utf8mb4_general_ci")).block().result().id();
@@ -728,7 +1167,6 @@ class ErdOperationLedgerIntegrationTest extends ErdProjectIntegrationSupport {
 
     String schemaId = createSchemaUseCase.createSchema(new CreateSchemaCommand(
         projectId,
-        "MySQL",
         "structural_snapshot_restore_schema",
         "utf8mb4",
         "utf8mb4_general_ci")).block().result().id();
@@ -804,7 +1242,7 @@ class ErdOperationLedgerIntegrationTest extends ErdProjectIntegrationSupport {
         pkTableId,
         RelationshipKind.NON_IDENTIFYING,
         Cardinality.ONE_TO_MANY,
-        "{\"label\":\"target\"}")).block().result().relationshipId();
+        jsonObject("{\"label\":\"target\"}"))).block().result().relationshipId();
     String relationshipColumnId = firstRelationshipColumnId(relationshipId);
 
     StructuralSnapshot targetSnapshot = structuralSnapshotService.captureBySchemaId(schemaId).block();
@@ -838,7 +1276,6 @@ class ErdOperationLedgerIntegrationTest extends ErdProjectIntegrationSupport {
 
     String schemaId = createSchemaUseCase.createSchema(new CreateSchemaCommand(
         projectId,
-        "MySQL",
         "atomic_increment_schema",
         "utf8mb4",
         "utf8mb4_general_ci")).block().result().id();
@@ -863,7 +1300,6 @@ class ErdOperationLedgerIntegrationTest extends ErdProjectIntegrationSupport {
 
     String schemaId = createSchemaUseCase.createSchema(new CreateSchemaCommand(
         projectId,
-        "MySQL",
         "parallel_mutation_schema",
         "utf8mb4",
         "utf8mb4_general_ci")).block().result().id();
@@ -883,7 +1319,7 @@ class ErdOperationLedgerIntegrationTest extends ErdProjectIntegrationSupport {
         .subscribeOn(Schedulers.parallel());
 
     Mono<?> changeTableExtra = Mono.defer(() -> changeTableExtraUseCase.changeTableExtra(
-        new ChangeTableExtraCommand(tableId, "{\"comment\":\"parallel\"}")))
+        new ChangeTableExtraCommand(tableId, jsonObject("{\"comment\":\"parallel\"}"))))
         .subscribeOn(Schedulers.parallel());
 
     StepVerifier.create(Flux.merge(changeSchemaName, changeTableExtra).collectList())
@@ -905,7 +1341,6 @@ class ErdOperationLedgerIntegrationTest extends ErdProjectIntegrationSupport {
 
     String schemaId = createSchemaUseCase.createSchema(new CreateSchemaCommand(
         projectId,
-        "MySQL",
         "stale_derived_schema",
         "utf8mb4",
         "utf8mb4_general_ci")).block().result().id();
@@ -922,7 +1357,7 @@ class ErdOperationLedgerIntegrationTest extends ErdProjectIntegrationSupport {
 
     StepVerifier.create(changeTableExtraUseCase.changeTableExtra(new ChangeTableExtraCommand(
         tableId,
-        "{\"comment\":\"stale\"}"))
+        jsonObject("{\"comment\":\"stale\"}")))
         .contextWrite(ErdOperationContexts.withDerivation(ErdOperationDerivationKind.UNDO, "stale-parent")
             .andThen(ErdOperationContexts.withBaseSchemaRevision(currentRevision - 1))))
         .expectErrorMatches(DomainException.hasErrorCode(OperationErrorCode.SUPERSEDED))
@@ -940,7 +1375,6 @@ class ErdOperationLedgerIntegrationTest extends ErdProjectIntegrationSupport {
 
     String schemaId = createSchemaUseCase.createSchema(new CreateSchemaCommand(
         projectId,
-        "MySQL",
         "unique_derived_from_schema",
         "utf8mb4",
         "utf8mb4_general_ci")).block().result().id();
@@ -1011,6 +1445,21 @@ class ErdOperationLedgerIntegrationTest extends ErdProjectIntegrationSupport {
         .map((row, metadata) -> row.get("op_id", String.class))
         .one()
         .block();
+  }
+
+  private JsonNode latestOperationPayload(String schemaId) {
+    String rawPayload = databaseClient.sql("""
+        SELECT CAST(payload_json AS VARCHAR) AS payload_json_text
+        FROM erd_operation_log
+        WHERE schema_id = :schemaId
+        ORDER BY committed_revision DESC
+        LIMIT 1
+        """)
+        .bind("schemaId", schemaId)
+        .map((row, metadata) -> row.get("payload_json_text", String.class))
+        .one()
+        .block();
+    return jsonCodec.fromPersistedJson(rawPayload, JsonNode.class);
   }
 
   private Mono<Long> insertDerivedOperationLog(
@@ -1201,6 +1650,167 @@ class ErdOperationLedgerIntegrationTest extends ErdProjectIntegrationSupport {
     assertThat(rowsUpdated.block()).isEqualTo(1L);
   }
 
+  private ReorderFixture createReorderFixture(String suffix) {
+    String projectId = createActiveProjectId(suffix);
+    String schemaId = createSchemaUseCase.createSchema(new CreateSchemaCommand(
+        projectId,
+        suffix + "_schema",
+        "utf8mb4",
+        "utf8mb4_general_ci")).block().result().id();
+    String pkTableId = createTableUseCase.createTable(new CreateTableCommand(
+        schemaId,
+        suffix + "_pk_table",
+        "utf8mb4",
+        "utf8mb4_general_ci",
+        null)).block().result().tableId();
+
+    List<String> columnIds = List.of(
+        createReorderColumn(pkTableId, suffix + "_first"),
+        createReorderColumn(pkTableId, suffix + "_second"),
+        createReorderColumn(pkTableId, suffix + "_third"));
+    String constraintId = createConstraintUseCase.createConstraint(new CreateConstraintCommand(
+        pkTableId,
+        "pk_" + suffix,
+        ConstraintKind.PRIMARY_KEY,
+        null,
+        null,
+        List.of(
+            new CreateConstraintColumnCommand(columnIds.get(0), 0),
+            new CreateConstraintColumnCommand(columnIds.get(1), 1),
+            new CreateConstraintColumnCommand(columnIds.get(2), 2))))
+        .block().result().constraintId();
+    String indexId = createIndexUseCase.createIndex(new CreateIndexCommand(
+        pkTableId,
+        "idx_" + suffix,
+        IndexType.BTREE,
+        List.of(
+            new CreateIndexColumnCommand(columnIds.get(0), 0, SortDirection.ASC),
+            new CreateIndexColumnCommand(columnIds.get(1), 1, SortDirection.ASC),
+            new CreateIndexColumnCommand(columnIds.get(2), 2, SortDirection.DESC))))
+        .block().result().indexId();
+    String fkTableId = createTableUseCase.createTable(new CreateTableCommand(
+        schemaId,
+        suffix + "_fk_table",
+        "utf8mb4",
+        "utf8mb4_general_ci",
+        null)).block().result().tableId();
+    String relationshipId = createRelationshipUseCase.createRelationship(new CreateRelationshipCommand(
+        fkTableId,
+        pkTableId,
+        RelationshipKind.NON_IDENTIFYING,
+        Cardinality.ONE_TO_MANY,
+        null)).block().result().relationshipId();
+
+    return new ReorderFixture(
+        schemaId,
+        pkTableId,
+        fkTableId,
+        constraintId,
+        indexId,
+        relationshipId,
+        columnIds,
+        entityIds(constraintColumnPositions(constraintId)),
+        entityIds(indexColumnPositions(indexId)),
+        entityIds(relationshipColumnPositions(relationshipId)));
+  }
+
+  private String createReorderColumn(String tableId, String name) {
+    return createColumnUseCase.createColumn(new CreateColumnCommand(
+        tableId,
+        name,
+        "INT",
+        null,
+        null,
+        null,
+        false,
+        null,
+        null,
+        null)).block().result().columnId();
+  }
+
+  private List<PositionRow> columnPositions(String tableId) {
+    return databaseClient.sql("""
+        SELECT id, seq_no
+        FROM db_columns
+        WHERE table_id = :tableId
+        ORDER BY seq_no
+        """)
+        .bind("tableId", tableId)
+        .map((row, metadata) -> new PositionRow(
+            row.get("id", String.class),
+            ((Number) row.get("seq_no")).intValue()))
+        .all()
+        .collectList()
+        .block();
+  }
+
+  private List<PositionRow> constraintColumnPositions(String constraintId) {
+    return databaseClient.sql("""
+        SELECT id, seq_no
+        FROM db_constraint_columns
+        WHERE constraint_id = :constraintId
+        ORDER BY seq_no
+        """)
+        .bind("constraintId", constraintId)
+        .map((row, metadata) -> new PositionRow(
+            row.get("id", String.class),
+            ((Number) row.get("seq_no")).intValue()))
+        .all()
+        .collectList()
+        .block();
+  }
+
+  private List<PositionRow> indexColumnPositions(String indexId) {
+    return databaseClient.sql("""
+        SELECT id, seq_no
+        FROM db_index_columns
+        WHERE index_id = :indexId
+        ORDER BY seq_no
+        """)
+        .bind("indexId", indexId)
+        .map((row, metadata) -> new PositionRow(
+            row.get("id", String.class),
+            ((Number) row.get("seq_no")).intValue()))
+        .all()
+        .collectList()
+        .block();
+  }
+
+  private List<PositionRow> relationshipColumnPositions(String relationshipId) {
+    return databaseClient.sql("""
+        SELECT id, seq_no
+        FROM db_relationship_columns
+        WHERE relationship_id = :relationshipId
+        ORDER BY seq_no
+        """)
+        .bind("relationshipId", relationshipId)
+        .map((row, metadata) -> new PositionRow(
+            row.get("id", String.class),
+            ((Number) row.get("seq_no")).intValue()))
+        .all()
+        .collectList()
+        .block();
+  }
+
+  private void assertPositions(List<PositionRow> actual, List<String> expectedIds) {
+    assertThat(actual).hasSize(expectedIds.size());
+    for (int index = 0; index < expectedIds.size(); index++) {
+      assertThat(actual.get(index)).isEqualTo(new PositionRow(expectedIds.get(index), index));
+    }
+  }
+
+  private List<String> entityIds(List<PositionRow> positions) {
+    return positions.stream()
+        .map(PositionRow::entityId)
+        .toList();
+  }
+
+  private List<String> moveFirstToLast(List<String> ids) {
+    List<String> reordered = new ArrayList<>(ids);
+    reordered.add(reordered.removeFirst());
+    return List.copyOf(reordered);
+  }
+
   private String firstConstraintColumnId(String constraintId) {
     return databaseClient.sql("""
         SELECT id
@@ -1315,8 +1925,12 @@ class ErdOperationLedgerIntegrationTest extends ErdProjectIntegrationSupport {
     assertThat(columnMetaRow.collation()).isEqualTo(expectedCollation);
   }
 
+  private JsonNode jsonObject(String rawJson) {
+    return jsonCodec.fromJson(rawJson, JsonNode.class);
+  }
+
   private List<String> parseStringArray(String rawJson) {
-    JsonNode node = jsonCodec.parsePersistedNode(rawJson);
+    JsonNode node = jsonCodec.fromPersistedJson(rawJson, JsonNode.class);
     assertThat(node.isArray()).isTrue();
     return StreamSupport.stream(node.spliterator(), false)
         .map(JsonNode::asText)
@@ -1364,6 +1978,22 @@ class ErdOperationLedgerIntegrationTest extends ErdProjectIntegrationSupport {
   }
 
   private record ColumnMetaRow(String charset, String collation) {
+  }
+
+  private record PositionRow(String entityId, int seqNo) {
+  }
+
+  private record ReorderFixture(
+      String schemaId,
+      String pkTableId,
+      String fkTableId,
+      String constraintId,
+      String indexId,
+      String relationshipId,
+      List<String> columnIds,
+      List<String> constraintColumnIds,
+      List<String> indexColumnIds,
+      List<String> relationshipColumnIds) {
   }
 
 }

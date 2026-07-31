@@ -19,10 +19,10 @@ export const ColumnRow = ({
   onPendingChange,
 }: ColumnRowProps) => {
   const rowClassName = `
-    border-b border-schemafy-light-gray last:border-b-0 transition-colors duration-200
-    ${isEditMode ? 'hover:bg-schemafy-secondary' : ''}
+    border-b border-schemafy-glass-border/45 last:border-b-0 transition-colors duration-200
+    ${isEditMode ? 'hover:bg-schemafy-secondary/70' : 'hover:bg-schemafy-secondary/35'}
     ${draggedItem === column.id ? 'opacity-50' : ''}
-    ${dragOverItem === column.id ? 'bg-blue-50 border-blue-200' : ''}
+    ${dragOverItem === column.id ? 'border-schemafy-soft-blue bg-schemafy-soft-blue/10' : ''}
   `.trim();
 
   return (

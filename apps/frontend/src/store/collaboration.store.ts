@@ -8,11 +8,13 @@ import {
 import type {
   ChatMessage,
   CursorPosition,
+  Participant,
   PostChat,
   PostCursor,
   ReceiveChat,
   ReceiveCursor,
   ReceiveErdMutated,
+  ReceiveJoin,
   ReceiveLeave,
   WebSocketMessage,
 } from '@/features/collaboration/api';
@@ -20,6 +22,8 @@ import { authStore } from './auth.store';
 import { previewStore } from './preview.store';
 import { apiClient } from '@/lib/api/client';
 import { toast } from 'sonner';
+import { reportUnexpectedError } from '@/lib';
+import { operationHistoryStore } from './operation-history.store';
 
 const WEBSOCKET_URL =
   import.meta.env.VITE_WS_URL || 'ws://localhost:4000/ws/collaboration';
@@ -28,27 +32,35 @@ const MAX_RECONNECT_ATTEMPTS = 10;
 const BASE_RECONNECT_DELAY_MS = 3000;
 const MAX_RECONNECT_DELAY_MS = 60000;
 
+export type RevisionSyncStatus = 'applied' | 'stale';
+
 export class CollaborationStore {
   cursors: Map<string, CursorPosition> = new Map();
   schemaRevisions: Map<string, number> = new Map();
   activeChatMessages: Map<string, ChatMessage[]> = new Map();
+  participants: Map<string, Participant> = new Map();
   projectId: string | null = null;
   sessionId: string | null = null;
   private ws: WebSocket | null = null;
   private reconnectTimeoutId: number | null = null;
   private reconnectAttempts = 0;
+  private pendingMessages: WebSocketMessage[] = [];
+  private _sessionReady = false;
   private chatMessageListeners: Set<(message: ChatMessage) => void> = new Set();
-  private erdMutatedListeners: Set<(message: ReceiveErdMutated) => void> =
-    new Set();
+  private erdMutatedListeners: Set<
+    (message: ReceiveErdMutated, syncStatus: RevisionSyncStatus) => void
+  > = new Set();
 
   constructor() {
     makeObservable(this, {
       cursors: observable,
       schemaRevisions: observable.shallow,
       activeChatMessages: observable,
+      participants: observable,
       projectId: observable,
       sessionId: observable,
       currentUser: computed,
+      activeParticipants: computed,
       connect: action,
       disconnect: action,
       sendMessage: action,
@@ -64,8 +76,35 @@ export class CollaborationStore {
     return authStore.user;
   }
 
+  get activeParticipants(): Participant[] {
+    const sessionId = this.sessionId;
+    const currentUserId = this.currentUser?.id;
+    const seenUserIds = new Set<string>();
+
+    if (currentUserId) seenUserIds.add(currentUserId);
+
+    return Array.from(this.participants.values()).filter((p) => {
+      if (p.sessionId === sessionId) return false;
+      if (seenUserIds.has(p.userId)) return false;
+      seenUserIds.add(p.userId);
+      return true;
+    });
+  }
+
   getSchemaRevision(schemaId: string): number | null {
     return this.schemaRevisions.get(schemaId) ?? null;
+  }
+
+  getRevisionSyncStatus(
+    schemaId: string,
+    committedRevision: number,
+  ): RevisionSyncStatus {
+    const currentRevision = this.getSchemaRevision(schemaId);
+
+    if (currentRevision === null) return 'applied';
+    if (committedRevision <= currentRevision) return 'stale';
+
+    return 'applied';
   }
 
   setSchemaRevision(schemaId: string, revision: number) {
@@ -105,11 +144,13 @@ export class CollaborationStore {
       this.ws = null;
     }
 
+    this._sessionReady = false;
+    this.pendingMessages = [];
+
     const wsUrl = `${WEBSOCKET_URL}?projectId=${projectId}`;
     this.ws = new WebSocket(wsUrl);
 
     this.ws.onopen = () => {
-      console.log('WebSocket connected');
       this.reconnectAttempts = 0;
     };
 
@@ -117,17 +158,38 @@ export class CollaborationStore {
       try {
         const payload: WebSocketMessage = JSON.parse(event.data);
 
+        if (!this._sessionReady) {
+          if (payload.type === 'JOIN' || payload.type === 'LEAVE') {
+            this.pendingMessages.push(payload);
+            return;
+          }
+        }
+
         if (payload.type === 'SESSION_READY') {
           runInAction(() => {
             this.sessionId = payload.sessionId;
+            this.participants.clear();
+            for (const p of payload.participants) {
+              this.participants.set(p.sessionId, p);
+            }
           });
           apiClient.defaults.headers.common['X-Session-Id'] = payload.sessionId;
+
+          const pending = this.pendingMessages;
+          this.pendingMessages = [];
+          for (const msg of pending) {
+            this.handleMessage(msg);
+          }
+
+          this._sessionReady = true;
           return;
         }
 
         this.handleMessage(payload);
       } catch (error) {
-        console.error('[WebSocket] Parse error', error);
+        reportUnexpectedError(error, {
+          context: '[WebSocket] Failed to parse an incoming message.',
+        });
       }
     };
 
@@ -136,6 +198,7 @@ export class CollaborationStore {
 
       if (this.reconnectAttempts >= MAX_RECONNECT_ATTEMPTS) {
         toast.error('Network Error, please try again later.');
+        this.disconnect();
         return;
       }
 
@@ -154,7 +217,9 @@ export class CollaborationStore {
     };
 
     this.ws.onerror = (event) => {
-      console.error('[WebSocket] error:', event);
+      reportUnexpectedError(event, {
+        context: '[WebSocket] Connection error.',
+      });
     };
   }
 
@@ -174,6 +239,8 @@ export class CollaborationStore {
     }
 
     this.reconnectAttempts = 0;
+    this._sessionReady = false;
+    this.pendingMessages = [];
     delete apiClient.defaults.headers.common['X-Session-Id'];
     previewStore.clearAll();
     runInAction(() => {
@@ -181,7 +248,9 @@ export class CollaborationStore {
       this.cursors.clear();
       this.schemaRevisions.clear();
       this.activeChatMessages.clear();
+      this.participants.clear();
       this.sessionId = null;
+      operationHistoryStore.clearAll();
     });
   }
 
@@ -226,7 +295,12 @@ export class CollaborationStore {
     };
   }
 
-  onErdMutated(listener: (message: ReceiveErdMutated) => void) {
+  onErdMutated(
+    listener: (
+      message: ReceiveErdMutated,
+      syncStatus: RevisionSyncStatus,
+    ) => void,
+  ) {
     this.erdMutatedListeners.add(listener);
 
     return () => {
@@ -240,11 +314,12 @@ export class CollaborationStore {
       content,
     };
 
-    this.send(message, (error) => {
-      console.error('Failed to send chat message:', error);
+    this.send(message, () => {
       setTimeout(() => {
         this.send(message, (retryError) => {
-          console.error('Retry failed:', retryError);
+          reportUnexpectedError(retryError, {
+            userMessage: 'Failed to send the chat message. Please try again.',
+          });
         });
       }, 500);
     });
@@ -254,14 +329,12 @@ export class CollaborationStore {
     const user = this.currentUser;
 
     if (!user) {
-      console.error('User is not logged in');
       return;
     }
 
     const sessionId = this.sessionId;
 
     if (!sessionId) {
-      console.error('Session ID is not available');
       return;
     }
 
@@ -302,7 +375,9 @@ export class CollaborationStore {
       if (onError) {
         onError(error);
       } else {
-        console.error('Failed to send message:', error);
+        reportUnexpectedError(error, {
+          context: 'Failed to send a collaboration message.',
+        });
       }
     }
   }
@@ -316,6 +391,7 @@ export class CollaborationStore {
         this.handleCursorMessage(message);
         break;
       case 'JOIN':
+        this.handleJoinMessage(message);
         break;
       case 'LEAVE':
         this.handleLeaveMessage(message);
@@ -329,11 +405,21 @@ export class CollaborationStore {
   }
 
   private handleErdMutatedMessage(message: ReceiveErdMutated) {
+    const syncStatus = this.getRevisionSyncStatus(
+      message.schemaId,
+      message.operation.committedRevision,
+    );
+
+    if (syncStatus === 'stale') return;
+
     this.setSchemaRevision(
       message.schemaId,
       message.operation.committedRevision,
     );
-    this.erdMutatedListeners.forEach((listener) => listener(message));
+    operationHistoryStore.handleErdMutated(message);
+    this.erdMutatedListeners.forEach((listener) =>
+      listener(message, syncStatus),
+    );
   }
 
   private handleChatMessage(message: ReceiveChat) {
@@ -364,9 +450,22 @@ export class CollaborationStore {
     });
   }
 
+  private handleJoinMessage(message: ReceiveJoin) {
+    const participant: Participant = {
+      sessionId: message.sessionId,
+      userId: message.userId,
+      userName: message.userName,
+    };
+
+    runInAction(() => {
+      this.participants.set(message.sessionId, participant);
+    });
+  }
+
   private handleLeaveMessage(message: ReceiveLeave) {
     previewStore.clearBySession(message.sessionId);
     runInAction(() => {
+      this.participants.delete(message.sessionId);
       this.cursors.delete(message.sessionId);
       this.activeChatMessages.delete(message.sessionId);
     });

@@ -1,5 +1,6 @@
 package com.schemafy.core.erd.column.application.service;
 
+import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Objects;
@@ -23,6 +24,8 @@ import com.schemafy.core.erd.column.domain.validator.ColumnValidator;
 import com.schemafy.core.erd.constraint.application.port.out.GetConstraintByIdPort;
 import com.schemafy.core.erd.constraint.application.port.out.GetConstraintColumnsByColumnIdPort;
 import com.schemafy.core.erd.constraint.domain.type.ConstraintKind;
+import com.schemafy.core.erd.operation.application.inverse.ChangeColumnMetaInverse;
+import com.schemafy.core.erd.operation.application.inverse.ChangeColumnMetaInverse.FkColumnMetaRevert;
 import com.schemafy.core.erd.operation.application.service.ErdMutationCoordinator;
 import com.schemafy.core.erd.operation.domain.ErdOperationType;
 import com.schemafy.core.erd.relationship.application.port.out.GetRelationshipColumnsByColumnIdPort;
@@ -62,22 +65,63 @@ public class ChangeColumnMetaService implements ChangeColumnMetaUseCase {
   @Override
   public Mono<MutationResult<Void>> changeColumnMeta(ChangeColumnMetaCommand command) {
     Set<String> affectedTableIds = ConcurrentHashMap.newKeySet();
-    return erdMutationCoordinator.coordinate(ErdOperationType.CHANGE_COLUMN_META, command,
-        () -> rejectIfForeignKeyColumn(command.columnId())
-            .then(getColumnByIdPort.findColumnById(command.columnId()))
-            .switchIfEmpty(Mono.error(new DomainException(ColumnErrorCode.NOT_FOUND, "Column not found")))
-            .flatMap(column -> {
-              affectedTableIds.add(column.tableId());
-              return getColumnsByTableIdPort.findColumnsByTableId(column.tableId())
-                  .defaultIfEmpty(List.of())
-                  .flatMap(columns -> applyChange(column, columns, command, affectedTableIds));
-            })
-            .then(Mono.fromCallable(() -> MutationResult.<Void>of(null, affectedTableIds))))
+    Set<String> capturedFkColumnIds = ConcurrentHashMap.newKeySet();
+    List<FkColumnMetaRevert> fkRevertList = new ArrayList<>();
+    return getColumnByIdPort.findColumnById(command.columnId())
+        .switchIfEmpty(Mono.error(new DomainException(ColumnErrorCode.NOT_FOUND, "Column not found")))
+        .flatMap(column -> {
+          affectedTableIds.add(column.tableId());
+          return resolveDirectChange(column, command)
+              .flatMap(change -> {
+                if (!change.hasDirectChange()) {
+                  return Mono.just(MutationResult.<Void>noop(null, affectedTableIds));
+                }
+                return erdMutationCoordinator.coordinate(
+                    ErdOperationType.CHANGE_COLUMN_META,
+                    command,
+                    () -> getColumnByIdPort.findColumnById(command.columnId())
+                        .switchIfEmpty(Mono.error(new DomainException(ColumnErrorCode.NOT_FOUND, "Column not found")))
+                        .flatMap(lockedColumn -> {
+                          affectedTableIds.add(lockedColumn.tableId());
+                          return resolveDirectChange(lockedColumn, command)
+                              .flatMap(lockedChange -> {
+                                if (!lockedChange.hasDirectChange()) {
+                                  return Mono.just(MutationResult.<Void>noop(null, affectedTableIds));
+                                }
+                                return validateCrossColumnRules(lockedColumn, lockedChange)
+                                    .then(rejectIfForeignKeyColumn(command.columnId()))
+                                    .then(Mono.defer(() -> applyChange(
+                                        lockedColumn,
+                                        lockedChange,
+                                        affectedTableIds,
+                                        fkRevertList,
+                                        capturedFkColumnIds)))
+                                    .then(Mono.fromCallable(() -> MutationResult.<Void>of(null, affectedTableIds)
+                                        .withInverse(new ChangeColumnMetaInverse(
+                                            lockedColumn.id(),
+                                            command.autoIncrement().isPresent()
+                                                ? lockedColumn.autoIncrement()
+                                                : null,
+                                            command.charset().isPresent()
+                                                ? Objects.toString(lockedColumn.charset(), "")
+                                                : null,
+                                            command.collation().isPresent()
+                                                ? Objects.toString(lockedColumn.collation(), "")
+                                                : null,
+                                            command.comment().isPresent()
+                                                ? Objects.toString(lockedColumn.comment(), "")
+                                                : null,
+                                            fkRevertList))));
+                              });
+                        }));
+              });
+        })
         .as(transactionalOperator::transactional);
   }
 
   private Mono<Void> rejectIfForeignKeyColumn(String columnId) {
     return getRelationshipColumnsByColumnIdPort.findRelationshipColumnsByColumnId(columnId)
+        .defaultIfEmpty(List.of())
         .flatMap(relationshipColumns -> {
           boolean isFk = relationshipColumns.stream()
               .anyMatch(rc -> rc.fkColumnId().equals(columnId));
@@ -89,11 +133,9 @@ public class ChangeColumnMetaService implements ChangeColumnMetaUseCase {
         });
   }
 
-  private Mono<Void> applyChange(
+  private Mono<DirectColumnMetaChange> resolveDirectChange(
       Column column,
-      List<Column> columns,
-      ChangeColumnMetaCommand command,
-      Set<String> affectedTableIds) {
+      ChangeColumnMetaCommand command) {
 
     boolean effectiveAutoIncrement = command.autoIncrement().orElse(column.autoIncrement());
     String effectiveCharset = command.charset().isPresent()
@@ -110,33 +152,64 @@ public class ChangeColumnMetaService implements ChangeColumnMetaUseCase {
     ColumnValidator.validateAutoIncrement(
         normalizedDataType,
         effectiveAutoIncrement,
-        columns,
+        null,
         column.id());
     ColumnValidator.validateCharsetAndCollation(normalizedDataType, effectiveCharset, effectiveCollation);
 
-    Boolean portAutoIncrement = command.autoIncrement().isPresent() ? effectiveAutoIncrement : null;
-    String portCharset = command.charset().isPresent()
-        ? Objects.toString(effectiveCharset, "")
-        : null;
-    String portCollation = command.collation().isPresent()
-        ? Objects.toString(effectiveCollation, "")
-        : null;
-    String portComment = command.comment().isPresent()
-        ? Objects.toString(effectiveComment, "")
-        : null;
+    DirectColumnMetaChange directChange = new DirectColumnMetaChange(
+        command.autoIncrement().isPresent() ? effectiveAutoIncrement : null,
+        command.charset().isPresent()
+            ? Objects.toString(effectiveCharset, "")
+            : null,
+        command.collation().isPresent()
+            ? Objects.toString(effectiveCollation, "")
+            : null,
+        command.comment().isPresent()
+            ? Objects.toString(effectiveComment, "")
+            : null,
+        effectiveAutoIncrement,
+        (command.autoIncrement().isPresent() && column.autoIncrement() != effectiveAutoIncrement)
+            || (command.charset().isPresent() && !Objects.equals(column.charset(), effectiveCharset))
+            || (command.collation().isPresent() && !Objects.equals(column.collation(), effectiveCollation))
+            || (command.comment().isPresent() && !Objects.equals(column.comment(), effectiveComment)));
 
-    return changeColumnMetaPort.changeColumnMeta(
+    return Mono.just(directChange);
+  }
+
+  private Mono<Void> validateCrossColumnRules(Column column, DirectColumnMetaChange change) {
+    return getColumnsByTableIdPort.findColumnsByTableId(column.tableId())
+        .defaultIfEmpty(List.of())
+        .doOnNext(columns -> ColumnValidator.validateAutoIncrement(
+            ColumnValidator.normalizeDataType(column.dataType()),
+            change.effectiveAutoIncrement(),
+            columns,
+            column.id()))
+        .then();
+  }
+
+  private Mono<Void> applyChange(
+      Column column,
+      DirectColumnMetaChange change,
+      Set<String> affectedTableIds,
+      List<FkColumnMetaRevert> fkRevertList,
+      Set<String> capturedFkColumnIds) {
+    Mono<Void> directChange = changeColumnMetaPort.changeColumnMeta(
         column.id(),
-        portAutoIncrement,
-        portCharset,
-        portCollation,
-        portComment)
-        .then(cascadeCharsetCollationToFkColumns(
-            column,
-            portCharset,
-            portCollation,
-            new HashSet<>(),
-            affectedTableIds));
+        change.portAutoIncrement(),
+        change.portCharset(),
+        change.portCollation(),
+        change.portComment());
+    if (change.portCharset() == null && change.portCollation() == null) {
+      return directChange;
+    }
+    return directChange.then(cascadeCharsetCollationToFkColumns(
+        column,
+        change.portCharset(),
+        change.portCollation(),
+        new HashSet<>(),
+        affectedTableIds,
+        fkRevertList,
+        capturedFkColumnIds));
   }
 
   private Mono<Void> cascadeCharsetCollationToFkColumns(
@@ -144,18 +217,26 @@ public class ChangeColumnMetaService implements ChangeColumnMetaUseCase {
       String charset,
       String collation,
       Set<String> visited,
-      Set<String> affectedTableIds) {
+      Set<String> affectedTableIds,
+      List<FkColumnMetaRevert> fkRevertList,
+      Set<String> capturedFkColumnIds) {
     if (!visited.add(column.id())) {
       return Mono.empty();
     }
     return getConstraintColumnsByColumnIdPort.findConstraintColumnsByColumnId(column.id())
         .defaultIfEmpty(List.of())
         .flatMap(constraintColumns -> Flux.fromIterable(constraintColumns)
-            .flatMap(cc -> getConstraintByIdPort.findConstraintById(cc.constraintId()))
+            .concatMap(cc -> getConstraintByIdPort.findConstraintById(cc.constraintId()))
             .filter(constraint -> constraint.kind() == ConstraintKind.PRIMARY_KEY)
             .next()
             .flatMap(pk -> propagateCharsetCollationToFkColumns(
-                column, charset, collation, visited, affectedTableIds)));
+                column,
+                charset,
+                collation,
+                visited,
+                affectedTableIds,
+                fkRevertList,
+                capturedFkColumnIds)));
   }
 
   private Mono<Void> propagateCharsetCollationToFkColumns(
@@ -163,22 +244,41 @@ public class ChangeColumnMetaService implements ChangeColumnMetaUseCase {
       String charset,
       String collation,
       Set<String> visited,
-      Set<String> affectedTableIds) {
+      Set<String> affectedTableIds,
+      List<FkColumnMetaRevert> fkRevertList,
+      Set<String> capturedFkColumnIds) {
     return getRelationshipsByPkTableIdPort.findRelationshipsByPkTableId(pkColumn.tableId())
         .defaultIfEmpty(List.of())
         .flatMapMany(Flux::fromIterable)
-        .flatMap(relationship -> {
+        .concatMap(relationship -> {
           affectedTableIds.add(relationship.fkTableId());
           return getRelationshipColumnsByRelationshipIdPort
               .findRelationshipColumnsByRelationshipId(relationship.id())
               .defaultIfEmpty(List.of())
               .flatMapMany(Flux::fromIterable)
               .filter(rc -> rc.pkColumnId().equals(pkColumn.id()))
-              .flatMap(rc -> changeColumnMetaPort.changeColumnMeta(
-                  rc.fkColumnId(), null, charset, collation, null)
-                  .then(getColumnByIdPort.findColumnById(rc.fkColumnId())
-                      .flatMap(fkCol -> cascadeCharsetCollationToFkColumns(
-                          fkCol, charset, collation, visited, affectedTableIds))));
+              .concatMap(rc -> getColumnByIdPort.findColumnById(rc.fkColumnId())
+                  .switchIfEmpty(Mono.error(new DomainException(
+                      ColumnErrorCode.NOT_FOUND,
+                      "Column not found: " + rc.fkColumnId())))
+                  .flatMap(fkColumn -> {
+                    if (capturedFkColumnIds.add(fkColumn.id())) {
+                      fkRevertList.add(new FkColumnMetaRevert(
+                          fkColumn.id(),
+                          charset == null ? null : Objects.toString(fkColumn.charset(), ""),
+                          collation == null ? null : Objects.toString(fkColumn.collation(), "")));
+                    }
+                    return changeColumnMetaPort.changeColumnMeta(
+                        fkColumn.id(), null, charset, collation, null)
+                        .then(cascadeCharsetCollationToFkColumns(
+                            fkColumn,
+                            charset,
+                            collation,
+                            visited,
+                            affectedTableIds,
+                            fkRevertList,
+                            capturedFkColumnIds));
+                  }));
         })
         .then();
   }
@@ -188,6 +288,15 @@ public class ChangeColumnMetaService implements ChangeColumnMetaUseCase {
       return null;
     }
     return value.trim();
+  }
+
+  private record DirectColumnMetaChange(
+      Boolean portAutoIncrement,
+      String portCharset,
+      String portCollation,
+      String portComment,
+      boolean effectiveAutoIncrement,
+      boolean hasDirectChange) {
   }
 
 }

@@ -155,7 +155,7 @@ public class RedisProjectPresenceStore implements ProjectPresenceStore {
 
   private Mono<String> serializeSession(
       ProjectPresenceSession presenceSession) {
-    return Mono.fromCallable(() -> jsonCodec.serialize(presenceSession))
+    return Mono.fromCallable(() -> jsonCodec.toJson(presenceSession))
         .onErrorMap(IllegalArgumentException.class,
             e -> new RuntimeException(
                 "[RedisProjectPresenceStore] failed to serialize presence session",
@@ -165,7 +165,7 @@ public class RedisProjectPresenceStore implements ProjectPresenceStore {
   private Mono<ProjectPresenceSession> deserializeSession(
       String payload) {
     return Mono.fromCallable(
-        () -> jsonCodec.parse(payload, ProjectPresenceSession.class))
+        () -> jsonCodec.fromJson(payload, ProjectPresenceSession.class))
         .onErrorResume(error -> {
           log.warn(
               "[RedisProjectPresenceStore] Ignoring invalid presence session payload: {}",

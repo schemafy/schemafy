@@ -46,6 +46,15 @@ export class ProjectController {
     );
   }
 
+  @Get('projects/shared/me')
+  async getMySharedProjects(
+    @Query('page') page = 0,
+    @Query('size') size = 5,
+    @AuthHeader() authHeader: string,
+  ) {
+    return this.projectService.getMySharedProjects(+page, +size, authHeader);
+  }
+
   @Get('projects/:projectId')
   async getProject(
     @Param('projectId') projectId: string,

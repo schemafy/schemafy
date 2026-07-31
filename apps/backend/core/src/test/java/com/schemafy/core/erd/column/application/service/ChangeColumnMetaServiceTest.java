@@ -1,6 +1,8 @@
 package com.schemafy.core.erd.column.application.service;
 
 import java.util.List;
+import java.util.concurrent.atomic.AtomicReference;
+import java.util.function.Supplier;
 
 import org.springframework.transaction.reactive.TransactionalOperator;
 
@@ -13,6 +15,7 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+import com.schemafy.core.common.MutationResult;
 import com.schemafy.core.common.PatchField;
 import com.schemafy.core.common.exception.DomainException;
 import com.schemafy.core.erd.column.application.port.out.ChangeColumnMetaPort;
@@ -27,6 +30,9 @@ import com.schemafy.core.erd.constraint.application.port.out.GetConstraintColumn
 import com.schemafy.core.erd.constraint.domain.Constraint;
 import com.schemafy.core.erd.constraint.domain.ConstraintColumn;
 import com.schemafy.core.erd.constraint.domain.type.ConstraintKind;
+import com.schemafy.core.erd.operation.application.inverse.ChangeColumnMetaInverse;
+import com.schemafy.core.erd.operation.application.service.ErdMutationCoordinator;
+import com.schemafy.core.erd.operation.domain.ErdOperationType;
 import com.schemafy.core.erd.relationship.application.port.out.GetRelationshipColumnsByColumnIdPort;
 import com.schemafy.core.erd.relationship.application.port.out.GetRelationshipColumnsByRelationshipIdPort;
 import com.schemafy.core.erd.relationship.application.port.out.GetRelationshipsByPkTableIdPort;
@@ -38,11 +44,13 @@ import com.schemafy.core.erd.relationship.domain.type.RelationshipKind;
 import reactor.core.publisher.Mono;
 import reactor.test.StepVerifier;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.ArgumentMatchers.isNull;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.then;
+import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
 
@@ -92,8 +100,9 @@ class ChangeColumnMetaServiceTest {
 
     @BeforeEach
     void setUpFkCheck() {
-      given(getRelationshipColumnsByColumnIdPort.findRelationshipColumnsByColumnId(any()))
-          .willReturn(Mono.just(List.of()));
+      lenient()
+          .when(getRelationshipColumnsByColumnIdPort.findRelationshipColumnsByColumnId(any()))
+          .thenReturn(Mono.just(List.of()));
     }
 
     @Nested
@@ -113,15 +122,62 @@ class ChangeColumnMetaServiceTest {
             .willReturn(Mono.just(List.of(column)));
         given(changeColumnMetaPort.changeColumnMeta(any(), any(), any(), any(), any()))
             .willReturn(Mono.empty());
-        given(getConstraintColumnsByColumnIdPort.findConstraintColumnsByColumnId(any()))
-            .willReturn(Mono.just(List.of()));
 
         StepVerifier.create(sut.changeColumnMeta(command))
-            .expectNextCount(1)
+            .assertNext(result -> assertThat(result.inversePayload()).isEqualTo(
+                new ChangeColumnMetaInverse(
+                    column.id(),
+                    column.autoIncrement(),
+                    null,
+                    null,
+                    null,
+                    List.of())))
             .verifyComplete();
 
         then(changeColumnMetaPort).should()
             .changeColumnMeta(eq(command.columnId()), eq(true), isNull(), isNull(), isNull());
+        then(getConstraintColumnsByColumnIdPort).shouldHaveNoInteractions();
+      }
+
+      @Test
+      @DisplayName("cross-column 검증은 coordinator supplier 내부에서 실행한다")
+      void validatesCrossColumnRulesInsideCoordinatorSupplier() {
+        var command = ColumnFixture.changeMetaCommand(
+            PatchField.of(true), PatchField.absent(), PatchField.absent(), PatchField.absent());
+        var column = ColumnFixture.intColumn();
+        AtomicReference<Supplier<Mono<?>>> mutationSupplierRef = new AtomicReference<>();
+        sut.setErdMutationCoordinator(new ErdMutationCoordinator() {
+
+          @Override
+          public <T> Mono<MutationResult<T>> coordinate(
+              ErdOperationType operationType,
+              Object payload,
+              Supplier<Mono<MutationResult<T>>> mutationSupplier) {
+            mutationSupplierRef.set(mutationSupplier::get);
+            return Mono.empty();
+          }
+
+        });
+
+        given(getColumnByIdPort.findColumnById(command.columnId()))
+            .willReturn(Mono.just(column));
+        given(getColumnsByTableIdPort.findColumnsByTableId(column.tableId()))
+            .willReturn(Mono.just(List.of(column)));
+        given(changeColumnMetaPort.changeColumnMeta(any(), any(), any(), any(), any()))
+            .willReturn(Mono.empty());
+
+        StepVerifier.create(sut.changeColumnMeta(command))
+            .verifyComplete();
+
+        then(getColumnsByTableIdPort).shouldHaveNoInteractions();
+        then(getRelationshipColumnsByColumnIdPort).shouldHaveNoInteractions();
+        then(changeColumnMetaPort).shouldHaveNoInteractions();
+
+        StepVerifier.create(mutationSupplierRef.get().get())
+            .expectNextCount(1)
+            .verifyComplete();
+
+        then(getConstraintColumnsByColumnIdPort).shouldHaveNoInteractions();
       }
 
       @Test
@@ -161,8 +217,6 @@ class ChangeColumnMetaServiceTest {
             .willReturn(Mono.just(List.of(column)));
         given(changeColumnMetaPort.changeColumnMeta(any(), any(), any(), any(), any()))
             .willReturn(Mono.empty());
-        given(getConstraintColumnsByColumnIdPort.findConstraintColumnsByColumnId(any()))
-            .willReturn(Mono.just(List.of()));
 
         StepVerifier.create(sut.changeColumnMeta(command))
             .expectNextCount(1)
@@ -170,6 +224,86 @@ class ChangeColumnMetaServiceTest {
 
         then(changeColumnMetaPort).should()
             .changeColumnMeta(eq(command.columnId()), isNull(), isNull(), isNull(), eq("New comment"));
+        then(getConstraintColumnsByColumnIdPort).shouldHaveNoInteractions();
+      }
+
+      @Test
+      @DisplayName("직접 컬럼 meta 결과가 같으면 주변 조회 없이 변경 없이 성공한다")
+      void succeedsWithoutCascadeCheckWhenDirectMetaResultIsSame() {
+        var command = ColumnFixture.changeMetaCommand(
+            PatchField.absent(),
+            PatchField.of("utf8mb4"),
+            PatchField.of("utf8mb4_general_ci"),
+            PatchField.absent());
+        var column = ColumnFixture.varcharColumnWithCharset("utf8mb4", "utf8mb4_general_ci");
+
+        given(getColumnByIdPort.findColumnById(command.columnId()))
+            .willReturn(Mono.just(column));
+
+        StepVerifier.create(sut.changeColumnMeta(command))
+            .expectNextMatches(result -> result.operation() == null)
+            .verifyComplete();
+
+        then(getColumnsByTableIdPort).shouldHaveNoInteractions();
+        then(getRelationshipColumnsByColumnIdPort).shouldHaveNoInteractions();
+        then(changeColumnMetaPort).shouldHaveNoInteractions();
+        then(getConstraintColumnsByColumnIdPort).shouldHaveNoInteractions();
+        then(getRelationshipsByPkTableIdPort).shouldHaveNoInteractions();
+      }
+
+      @Test
+      @DisplayName("lock 이후 직접 컬럼 meta 결과가 같으면 주변 조회 없이 변경 없이 성공한다")
+      void succeedsWithoutCascadeCheckWhenLockedDirectMetaResultIsSame() {
+        var command = ColumnFixture.changeMetaCommand(
+            PatchField.absent(),
+            PatchField.of("utf8mb4"),
+            PatchField.of("utf8mb4_unicode_ci"),
+            PatchField.absent());
+        var initialColumn = ColumnFixture.varcharColumnWithCharset("utf8mb4", "utf8mb4_general_ci");
+        var lockedColumn = ColumnFixture.varcharColumnWithCharset("utf8mb4", "utf8mb4_unicode_ci");
+
+        given(getColumnByIdPort.findColumnById(command.columnId()))
+            .willReturn(Mono.just(initialColumn), Mono.just(lockedColumn));
+
+        StepVerifier.create(sut.changeColumnMeta(command))
+            .expectNextMatches(result -> result.operation() == null && result.noOp())
+            .verifyComplete();
+
+        then(getColumnsByTableIdPort).shouldHaveNoInteractions();
+        then(getRelationshipColumnsByColumnIdPort).shouldHaveNoInteractions();
+        then(changeColumnMetaPort).shouldHaveNoInteractions();
+        then(getConstraintColumnsByColumnIdPort).shouldHaveNoInteractions();
+        then(getRelationshipsByPkTableIdPort).shouldHaveNoInteractions();
+      }
+
+      @Test
+      @DisplayName("FK 컬럼의 meta를 실제 변경하면 예외가 발생한다")
+      void rejectsForeignKeyColumnWhenDirectMetaWouldChange() {
+        var command = ColumnFixture.changeMetaCommand(
+            PatchField.absent(),
+            PatchField.of("utf8mb4"),
+            PatchField.of("utf8mb4_unicode_ci"),
+            PatchField.absent());
+        var column = ColumnFixture.varcharColumnWithCharset("utf8mb4", "utf8mb4_general_ci");
+        var relationshipColumn = new RelationshipColumn(
+            "relationship-column-1",
+            "relationship-1",
+            "pk-column-1",
+            column.id(),
+            0);
+
+        given(getColumnByIdPort.findColumnById(command.columnId()))
+            .willReturn(Mono.just(column));
+        given(getColumnsByTableIdPort.findColumnsByTableId(column.tableId()))
+            .willReturn(Mono.just(List.of(column)));
+        given(getRelationshipColumnsByColumnIdPort.findRelationshipColumnsByColumnId(any()))
+            .willReturn(Mono.just(List.of(relationshipColumn)));
+
+        StepVerifier.create(sut.changeColumnMeta(command))
+            .expectErrorMatches(DomainException.hasErrorCode(ColumnErrorCode.FK_PROTECTED))
+            .verify();
+
+        then(changeColumnMetaPort).shouldHaveNoInteractions();
       }
 
     }
@@ -203,7 +337,7 @@ class ChangeColumnMetaServiceTest {
       }
 
       @Test
-      @DisplayName("comment를 null로 설정하면 빈 문자열이 포트에 전달된다")
+      @DisplayName("comment가 이미 null이면 변경 없이 성공한다")
       void clearsCommentToNull() {
         var command = ColumnFixture.changeMetaCommand(
             PatchField.absent(), PatchField.absent(), PatchField.absent(), PatchField.of(null));
@@ -211,19 +345,14 @@ class ChangeColumnMetaServiceTest {
 
         given(getColumnByIdPort.findColumnById(any()))
             .willReturn(Mono.just(column));
-        given(getColumnsByTableIdPort.findColumnsByTableId(any()))
-            .willReturn(Mono.just(List.of(column)));
-        given(changeColumnMetaPort.changeColumnMeta(any(), any(), any(), any(), any()))
-            .willReturn(Mono.empty());
-        given(getConstraintColumnsByColumnIdPort.findConstraintColumnsByColumnId(any()))
-            .willReturn(Mono.just(List.of()));
 
         StepVerifier.create(sut.changeColumnMeta(command))
-            .expectNextCount(1)
+            .expectNextMatches(result -> result.operation() == null)
             .verifyComplete();
 
-        then(changeColumnMetaPort).should()
-            .changeColumnMeta(eq(command.columnId()), isNull(), isNull(), isNull(), eq(""));
+        then(getColumnsByTableIdPort).shouldHaveNoInteractions();
+        then(getRelationshipColumnsByColumnIdPort).shouldHaveNoInteractions();
+        then(changeColumnMetaPort).shouldHaveNoInteractions();
       }
 
     }
@@ -263,8 +392,6 @@ class ChangeColumnMetaServiceTest {
 
         given(getColumnByIdPort.findColumnById(any()))
             .willReturn(Mono.just(column));
-        given(getColumnsByTableIdPort.findColumnsByTableId(any()))
-            .willReturn(Mono.just(List.of(column)));
 
         StepVerifier.create(sut.changeColumnMeta(command))
             .expectErrorMatches(DomainException.hasErrorCode(ColumnErrorCode.AUTO_INCREMENT_NOT_ALLOWED))
@@ -288,8 +415,6 @@ class ChangeColumnMetaServiceTest {
 
         given(getColumnByIdPort.findColumnById(any()))
             .willReturn(Mono.just(column));
-        given(getColumnsByTableIdPort.findColumnsByTableId(any()))
-            .willReturn(Mono.just(List.of(column)));
 
         StepVerifier.create(sut.changeColumnMeta(command))
             .expectErrorMatches(DomainException.hasErrorCode(ColumnErrorCode.CHARSET_NOT_ALLOWED))
@@ -350,15 +475,30 @@ class ChangeColumnMetaServiceTest {
             "rel_name", RelationshipKind.NON_IDENTIFYING, Cardinality.ONE_TO_MANY, null);
         var relationshipColumn = new RelationshipColumn("rc-1", relationshipId, pkColumn.id(),
             fkColumnId, 0);
+        var fkColumn = new Column(
+            fkColumnId,
+            relationship.fkTableId(),
+            "fk_column",
+            pkColumn.dataType(),
+            pkColumn.typeArguments(),
+            0,
+            false,
+            null,
+            null,
+            null);
 
-        given(getColumnByIdPort.findColumnById(any()))
+        given(getColumnByIdPort.findColumnById(pkColumn.id()))
             .willReturn(Mono.just(pkColumn));
+        given(getColumnByIdPort.findColumnById(fkColumnId))
+            .willReturn(Mono.just(fkColumn));
         given(getColumnsByTableIdPort.findColumnsByTableId(any()))
             .willReturn(Mono.just(List.of(pkColumn)));
         given(changeColumnMetaPort.changeColumnMeta(any(), any(), any(), any(), any()))
             .willReturn(Mono.empty());
         given(getConstraintColumnsByColumnIdPort.findConstraintColumnsByColumnId(pkColumn.id()))
             .willReturn(Mono.just(List.of(constraintColumn)));
+        given(getConstraintColumnsByColumnIdPort.findConstraintColumnsByColumnId(fkColumnId))
+            .willReturn(Mono.just(List.of()));
         given(getConstraintByIdPort.findConstraintById(constraintId))
             .willReturn(Mono.just(constraint));
         given(getRelationshipsByPkTableIdPort.findRelationshipsByPkTableId(pkColumn.tableId()))

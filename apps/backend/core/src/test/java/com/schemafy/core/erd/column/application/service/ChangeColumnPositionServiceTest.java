@@ -20,10 +20,13 @@ import com.schemafy.core.erd.column.application.port.out.GetColumnsByTableIdPort
 import com.schemafy.core.erd.column.domain.Column;
 import com.schemafy.core.erd.column.domain.exception.ColumnErrorCode;
 import com.schemafy.core.erd.column.fixture.ColumnFixture;
+import com.schemafy.core.erd.operation.application.inverse.ChangeColumnPositionInverse;
+import com.schemafy.core.erd.operation.application.inverse.ReorderPosition;
 
 import reactor.core.publisher.Mono;
 import reactor.test.StepVerifier;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyList;
 import static org.mockito.ArgumentMatchers.eq;
@@ -90,7 +93,12 @@ class ChangeColumnPositionServiceTest {
             .willReturn(Mono.empty());
 
         StepVerifier.create(sut.changeColumnPosition(command))
-            .expectNextCount(1)
+            .assertNext(result -> assertThat(result.inversePayload()).isEqualTo(
+                new ChangeColumnPositionInverse(
+                    column.id(),
+                    List.of(
+                        new ReorderPosition(column.id(), 0),
+                        new ReorderPosition("01ARZ3NDEKTSV4RRFFQ69G5C02", 1)))))
             .verifyComplete();
 
         then(changeColumnPositionPort).should()
@@ -98,7 +106,50 @@ class ChangeColumnPositionServiceTest {
       }
 
       @Test
-      @DisplayName("같은 위치로 이동해도 정상 처리된다")
+      @DisplayName("lock 이후 이미 목표 위치면 변경 없이 성공한다")
+      void returnsNoOpWhenLockedStateAlreadyMovedToRequestedPosition() {
+        var command = ColumnFixture.changePositionCommand(1);
+        var column = ColumnFixture.defaultColumn();
+        var otherColumn = new Column(
+            "01ARZ3NDEKTSV4RRFFQ69G5C02",
+            ColumnFixture.DEFAULT_TABLE_ID,
+            "col_2",
+            "VARCHAR",
+            column.typeArguments(),
+            1,
+            false,
+            null,
+            null,
+            null);
+        var initialColumns = List.of(column, otherColumn);
+        var lockedColumns = List.of(otherColumn, new Column(
+            column.id(),
+            column.tableId(),
+            column.name(),
+            column.dataType(),
+            column.typeArguments(),
+            1,
+            column.autoIncrement(),
+            column.charset(),
+            column.collation(),
+            column.comment()));
+
+        given(getColumnByIdPort.findColumnById(any()))
+            .willReturn(Mono.just(column));
+        given(getColumnsByTableIdPort.findColumnsByTableId(any()))
+            .willReturn(Mono.just(initialColumns), Mono.just(lockedColumns));
+
+        StepVerifier.create(sut.changeColumnPosition(command))
+            .expectNextMatches(result -> result.operation() == null
+                && result.inversePayload() == null
+                && result.noOp())
+            .verifyComplete();
+
+        then(changeColumnPositionPort).shouldHaveNoInteractions();
+      }
+
+      @Test
+      @DisplayName("같은 위치로 이동하면 변경 없이 성공한다")
       void changesPositionToSameIndex() {
         var command = ColumnFixture.changePositionCommand(0);
         var column = ColumnFixture.defaultColumn();
@@ -120,15 +171,12 @@ class ChangeColumnPositionServiceTest {
             .willReturn(Mono.just(column));
         given(getColumnsByTableIdPort.findColumnsByTableId(any()))
             .willReturn(Mono.just(columns));
-        given(changeColumnPositionPort.changeColumnPositions(any(), anyList()))
-            .willReturn(Mono.empty());
 
         StepVerifier.create(sut.changeColumnPosition(command))
-            .expectNextCount(1)
+            .expectNextMatches(result -> result.operation() == null)
             .verifyComplete();
 
-        then(changeColumnPositionPort).should()
-            .changeColumnPositions(eq(column.tableId()), anyList());
+        then(changeColumnPositionPort).shouldHaveNoInteractions();
       }
 
     }
@@ -138,7 +186,7 @@ class ChangeColumnPositionServiceTest {
     class WithNegativePosition {
 
       @Test
-      @DisplayName("첫 번째 위치로 clamp되어 정상 처리된다")
+      @DisplayName("첫 번째 위치로 clamp되어 변경 없이 성공한다")
       void clampsToFirstPosition() {
         var command = ColumnFixture.changePositionCommand(-1);
         var column = ColumnFixture.defaultColumn();
@@ -160,15 +208,12 @@ class ChangeColumnPositionServiceTest {
             .willReturn(Mono.just(column));
         given(getColumnsByTableIdPort.findColumnsByTableId(any()))
             .willReturn(Mono.just(columns));
-        given(changeColumnPositionPort.changeColumnPositions(any(), anyList()))
-            .willReturn(Mono.empty());
 
         StepVerifier.create(sut.changeColumnPosition(command))
-            .expectNextCount(1)
+            .expectNextMatches(result -> result.operation() == null)
             .verifyComplete();
 
-        then(changeColumnPositionPort).should()
-            .changeColumnPositions(eq(column.tableId()), anyList());
+        then(changeColumnPositionPort).shouldHaveNoInteractions();
       }
 
     }

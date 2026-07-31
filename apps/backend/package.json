@@ -3,11 +3,11 @@
   "private": true,
   "version": "0.0.1",
   "scripts": {
-    "build": "cd ../.. && ./gradlew :api:build :core:build",
+    "build": "cd ../.. && ./gradlew :api:build :core:build :mcp:build",
     "dev": "cd ../.. && ./gradlew :api:bootRun",
     "lint": "echo 'No linter configured for backend'",
-    "format": "cd ../.. && ./gradlew :api:spotlessApply :core:spotlessApply",
-    "format:check": "cd ../.. && ./gradlew :api:spotlessCheck :core:spotlessCheck",
-    "test": "cd ../.. && ./gradlew :api:test :core:test"
+    "format": "cd ../.. && ./gradlew :api:spotlessApply :core:spotlessApply :mcp:spotlessApply",
+    "format:check": "cd ../.. && ./gradlew :api:spotlessCheck :core:spotlessCheck :mcp:spotlessCheck",
+    "test": "cd ../.. && ./gradlew :api:test :core:test :mcp:test"
   }
 }

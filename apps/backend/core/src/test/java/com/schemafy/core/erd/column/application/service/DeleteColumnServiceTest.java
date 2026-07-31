@@ -32,7 +32,7 @@ import com.schemafy.core.erd.index.application.port.out.GetIndexColumnsByColumnI
 import com.schemafy.core.erd.index.application.port.out.GetIndexColumnsByIndexIdPort;
 import com.schemafy.core.erd.index.domain.IndexColumn;
 import com.schemafy.core.erd.index.domain.type.SortDirection;
-import com.schemafy.core.erd.operation.ErdOperationContexts;
+import com.schemafy.core.erd.operation.application.service.NestedErdMutations;
 import com.schemafy.core.erd.operation.application.service.StructuralSnapshotService;
 import com.schemafy.core.erd.relationship.application.port.out.DeleteRelationshipColumnPort;
 import com.schemafy.core.erd.relationship.application.port.out.DeleteRelationshipColumnsByColumnIdPort;
@@ -153,7 +153,7 @@ class DeleteColumnServiceTest {
     }
 
     @Test
-    @DisplayName("nested mutation suppress context에서는 snapshot 없이 컬럼을 삭제한다")
+    @DisplayName("nested mutation runner로 실행하면 snapshot 없이 컬럼을 삭제한다")
     void skipsSnapshotsWhenNestedMutationSuppressed() {
       var command = ColumnFixture.deleteCommand();
 
@@ -167,8 +167,7 @@ class DeleteColumnServiceTest {
       given(deleteColumnPort.deleteColumn(any()))
           .willReturn(Mono.empty());
 
-      StepVerifier.create(sut.deleteColumn(command)
-          .contextWrite(ErdOperationContexts.suppressNestedMutation()))
+      StepVerifier.create(NestedErdMutations.run(sut.deleteColumn(command)))
           .expectNextCount(1)
           .verifyComplete();
 

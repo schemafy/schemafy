@@ -34,6 +34,13 @@ class ColumnValidatorTest {
           .doesNotThrowAnyException();
     }
 
+    @Test
+    @DisplayName("40자 이름은 통과한다")
+    void passesAt40CharacterLimit() {
+      assertThatCode(() -> ColumnValidator.validateName("a".repeat(40)))
+          .doesNotThrowAnyException();
+    }
+
     @ParameterizedTest
     @NullAndEmptySource
     @ValueSource(strings = { "  ", "\t", "\n" })

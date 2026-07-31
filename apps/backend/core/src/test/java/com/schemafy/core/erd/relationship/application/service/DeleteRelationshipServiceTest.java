@@ -15,7 +15,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 import com.schemafy.core.erd.column.application.port.in.DeleteColumnCommand;
 import com.schemafy.core.erd.column.application.port.in.DeleteColumnUseCase;
-import com.schemafy.core.erd.operation.ErdOperationContexts;
+import com.schemafy.core.erd.operation.application.service.NestedErdMutations;
 import com.schemafy.core.erd.operation.application.service.StructuralSnapshotService;
 import com.schemafy.core.erd.relationship.application.port.out.DeleteRelationshipColumnsByRelationshipIdPort;
 import com.schemafy.core.erd.relationship.application.port.out.DeleteRelationshipPort;
@@ -130,7 +130,7 @@ class DeleteRelationshipServiceTest {
     }
 
     @Test
-    @DisplayName("nested mutation suppress context에서는 snapshot 없이 관계를 삭제한다")
+    @DisplayName("nested mutation runner로 실행하면 snapshot 없이 관계를 삭제한다")
     void skipsSnapshotsWhenNestedMutationSuppressed() {
       var command = RelationshipFixture.deleteCommand();
 
@@ -144,8 +144,7 @@ class DeleteRelationshipServiceTest {
       given(deleteRelationshipPort.deleteRelationship(eq(RelationshipFixture.DEFAULT_ID)))
           .willReturn(Mono.empty());
 
-      StepVerifier.create(sut.deleteRelationship(command)
-          .contextWrite(ErdOperationContexts.suppressNestedMutation()))
+      StepVerifier.create(NestedErdMutations.run(sut.deleteRelationship(command)))
           .expectNextCount(1)
           .verifyComplete();
 

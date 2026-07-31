@@ -8,13 +8,12 @@ import com.schemafy.core.erd.operation.domain.SchemaCollaborationState;
 class SchemaCollaborationStateMapper {
 
   SchemaCollaborationStateEntity toEntity(SchemaCollaborationState schemaCollaborationState) {
-    return SchemaCollaborationStateEntity.builder()
-        .schemaId(schemaCollaborationState.schemaId())
-        .projectId(schemaCollaborationState.projectId())
-        .currentRevision(schemaCollaborationState.currentRevision())
-        .createdAt(schemaCollaborationState.createdAt())
-        .updatedAt(schemaCollaborationState.updatedAt())
-        .build();
+    return new SchemaCollaborationStateEntity(
+        schemaCollaborationState.schemaId(),
+        schemaCollaborationState.projectId(),
+        schemaCollaborationState.currentRevision(),
+        schemaCollaborationState.createdAt(),
+        schemaCollaborationState.updatedAt());
   }
 
   SchemaCollaborationState toDomain(SchemaCollaborationStateEntity entity) {

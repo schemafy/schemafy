@@ -12,11 +12,13 @@ export type TableData = {
 };
 
 export const HANDLE_STYLE = {
-  background: '#141414',
-  width: 10,
-  height: 10,
+  background: 'hsl(var(--schemafy-soft-blue) / 0.78)',
+  border: '1px solid var(--color-schemafy-bg)',
+  boxShadow: '0 0 0 1px hsl(var(--schemafy-soft-blue) / 0.16)',
+  width: 8,
+  height: 8,
   opacity: 0,
-  transition: 'opacity 0.2s ease-in-out',
+  transition: 'opacity 0.18s ease-in-out',
 };
 
 export interface TableProps {

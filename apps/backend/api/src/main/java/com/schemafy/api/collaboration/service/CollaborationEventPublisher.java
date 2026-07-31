@@ -35,7 +35,7 @@ public class CollaborationEventPublisher {
   }
 
   private Mono<String> serializeToJson(Object object) {
-    return Mono.fromCallable(() -> jsonCodec.serialize(object))
+    return Mono.fromCallable(() -> jsonCodec.toJson(object))
         .onErrorMap(IllegalArgumentException.class,
             e -> new RuntimeException("[CollaborationEventPublisher] Failed to serialize JSON",
                 e));

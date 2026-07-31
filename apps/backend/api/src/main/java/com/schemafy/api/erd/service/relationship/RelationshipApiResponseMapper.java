@@ -3,7 +3,7 @@ package com.schemafy.api.erd.service.relationship;
 import org.springframework.stereotype.Component;
 
 import com.schemafy.api.erd.controller.dto.response.RelationshipResponse;
-import com.schemafy.core.common.json.JsonCodec;
+import com.schemafy.core.common.json.JsonObjectMetadataConverter;
 import com.schemafy.core.erd.relationship.application.port.in.CreateRelationshipResult;
 import com.schemafy.core.erd.relationship.domain.Relationship;
 
@@ -13,7 +13,7 @@ import lombok.RequiredArgsConstructor;
 @RequiredArgsConstructor
 public class RelationshipApiResponseMapper {
 
-  private final JsonCodec jsonCodec;
+  private final JsonObjectMetadataConverter jsonObjectMetadataConverter;
 
   public RelationshipResponse toRelationshipResponse(
       CreateRelationshipResult result) {
@@ -24,7 +24,7 @@ public class RelationshipApiResponseMapper {
         result.name(),
         result.kind(),
         result.cardinality(),
-        jsonCodec.parseOptionalNode(result.extra()));
+        jsonObjectMetadataConverter.toOptionalJsonNode(result.extra()));
   }
 
   public RelationshipResponse toRelationshipResponse(
@@ -36,7 +36,7 @@ public class RelationshipApiResponseMapper {
         relationship.name(),
         relationship.kind(),
         relationship.cardinality(),
-        jsonCodec.parseOptionalNode(relationship.extra()));
+        jsonObjectMetadataConverter.toOptionalJsonNode(relationship.extra()));
   }
 
 }

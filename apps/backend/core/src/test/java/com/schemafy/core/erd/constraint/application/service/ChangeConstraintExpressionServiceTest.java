@@ -18,10 +18,12 @@ import com.schemafy.core.erd.constraint.application.port.out.GetConstraintsByTab
 import com.schemafy.core.erd.constraint.domain.exception.ConstraintErrorCode;
 import com.schemafy.core.erd.constraint.domain.type.ConstraintKind;
 import com.schemafy.core.erd.constraint.fixture.ConstraintFixture;
+import com.schemafy.core.erd.operation.application.inverse.ChangeConstraintCheckExprInverse;
 
 import reactor.core.publisher.Mono;
 import reactor.test.StepVerifier;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.given;
@@ -68,11 +70,49 @@ class ChangeConstraintExpressionServiceTest {
           .willReturn(Mono.empty());
 
       StepVerifier.create(sut.changeConstraintCheckExpr(command))
-          .expectNextCount(1)
+          .assertNext(result -> assertThat(result.inversePayload()).isEqualTo(
+              new ChangeConstraintCheckExprInverse(constraint.id(), constraint.checkExpr())))
           .verifyComplete();
 
       then(changeConstraintExpressionPort).should()
           .changeConstraintExpressions(eq(constraint.id()), eq("column1 > 10"), eq((String) null));
+    }
+
+    @Test
+    @DisplayName("CHECK 표현식 결과가 같으면 정의 조회 없이 변경 없이 성공한다")
+    void returnsSuccessWithoutMutationWhenCheckExprIsUnchanged() {
+      var constraint = ConstraintFixture.checkConstraintWithExpr("column1 > 0");
+      var command = ConstraintFixture.changeCheckExprCommand(constraint.id(), "  column1 > 0  ");
+
+      given(getConstraintByIdPort.findConstraintById(constraint.id()))
+          .willReturn(Mono.just(constraint));
+
+      StepVerifier.create(sut.changeConstraintCheckExpr(command))
+          .expectNextMatches(result -> result.operation() == null)
+          .verifyComplete();
+
+      then(getConstraintsByTableIdPort).shouldHaveNoInteractions();
+      then(getConstraintColumnsByConstraintIdPort).shouldHaveNoInteractions();
+      then(changeConstraintExpressionPort).shouldHaveNoInteractions();
+    }
+
+    @Test
+    @DisplayName("lock 이후 CHECK 표현식이 이미 요청값이면 정의 조회 없이 변경 없이 성공한다")
+    void returnsNoOpWhenLockedCheckExprAlreadyHasRequestedValue() {
+      var initialConstraint = ConstraintFixture.checkConstraintWithExpr("column1 > 0");
+      var lockedConstraint = ConstraintFixture.checkConstraintWithExpr("column1 > 10");
+      var command = ConstraintFixture.changeCheckExprCommand(initialConstraint.id(), "  column1 > 10  ");
+
+      given(getConstraintByIdPort.findConstraintById(initialConstraint.id()))
+          .willReturn(Mono.just(initialConstraint), Mono.just(lockedConstraint));
+
+      StepVerifier.create(sut.changeConstraintCheckExpr(command))
+          .expectNextMatches(result -> result.operation() == null && result.noOp())
+          .verifyComplete();
+
+      then(getConstraintsByTableIdPort).shouldHaveNoInteractions();
+      then(getConstraintColumnsByConstraintIdPort).shouldHaveNoInteractions();
+      then(changeConstraintExpressionPort).shouldHaveNoInteractions();
     }
 
     @Test
@@ -198,6 +238,24 @@ class ChangeConstraintExpressionServiceTest {
 
       then(changeConstraintExpressionPort).should()
           .changeConstraintExpressions(eq(constraint.id()), eq((String) null), eq("1"));
+    }
+
+    @Test
+    @DisplayName("DEFAULT 표현식 결과가 같으면 정의 조회 없이 변경 없이 성공한다")
+    void returnsSuccessWithoutMutationWhenDefaultExprIsUnchanged() {
+      var constraint = ConstraintFixture.defaultConstraintWithExpr("0");
+      var command = ConstraintFixture.changeDefaultExprCommand(constraint.id(), "  0  ");
+
+      given(getConstraintByIdPort.findConstraintById(constraint.id()))
+          .willReturn(Mono.just(constraint));
+
+      StepVerifier.create(sut.changeConstraintDefaultExpr(command))
+          .expectNextMatches(result -> result.operation() == null)
+          .verifyComplete();
+
+      then(getConstraintsByTableIdPort).shouldHaveNoInteractions();
+      then(getConstraintColumnsByConstraintIdPort).shouldHaveNoInteractions();
+      then(changeConstraintExpressionPort).shouldHaveNoInteractions();
     }
 
     @Test

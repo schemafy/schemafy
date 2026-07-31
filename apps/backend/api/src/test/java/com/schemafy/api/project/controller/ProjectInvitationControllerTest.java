@@ -27,8 +27,8 @@ import com.schemafy.core.project.domain.Workspace;
 import com.schemafy.core.project.domain.WorkspaceRole;
 import com.schemafy.core.user.domain.User;
 
+import static com.epages.restdocs.apispec.WebTestClientRestDocumentationWrapper.document;
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.springframework.restdocs.webtestclient.WebTestClientRestDocumentation.document;
 
 @ActiveProfiles("test")
 @SpringBootTest
@@ -211,6 +211,10 @@ class ProjectInvitationControllerTest extends ProjectHttpTestSupport {
               ProjectInvitationApiSnippets.listInvitationsResponseHeaders(),
               ProjectInvitationApiSnippets.listInvitationsResponse()))
           .jsonPath("$.content.length()").isEqualTo(2)
+          .jsonPath("$.content[0].type").isEqualTo("PROJECT")
+          .jsonPath("$.content[0].targetId").isEqualTo(testProject.getId())
+          .jsonPath("$.content[0].targetName").isEqualTo(testProject.getName())
+          .jsonPath("$.content[0].invitedBy").isEqualTo("Admin")
           .jsonPath("$.totalElements").isEqualTo(2)
           .jsonPath("$.page").isEqualTo(0)
           .jsonPath("$.size").isEqualTo(10);
@@ -287,11 +291,9 @@ class ProjectInvitationControllerTest extends ProjectHttpTestSupport {
           outsiderUser.email(), ProjectRole.VIEWER, adminUserId);
 
       webTestClient.get()
-          .uri(uriBuilder -> uriBuilder
-              .path(API_BASE + "/users/me/invitations/projects")
-              .queryParam("page", 0)
-              .queryParam("size", 20)
-              .build())
+          .uri(API_BASE
+              + "/users/me/invitations/projects?page={page}&size={size}",
+              0, 20)
           .header("Authorization", "Bearer " + outsiderToken)
           .exchange()
           .expectStatus().isOk()
@@ -303,7 +305,13 @@ class ProjectInvitationControllerTest extends ProjectHttpTestSupport {
               ProjectInvitationApiSnippets.listMyInvitationsResponse()))
           .jsonPath("$.content.length()").isEqualTo(2)
           .jsonPath("$.totalElements").isEqualTo(2)
+          .jsonPath("$.content[0].type").isEqualTo("PROJECT")
+          .jsonPath("$.content[0].targetName").isEqualTo(project2.getName())
+          .jsonPath("$.content[0].invitedBy").isEqualTo("Admin")
           .jsonPath("$.content[0].invitedEmail").isEqualTo(outsiderUser.email())
+          .jsonPath("$.content[1].type").isEqualTo("PROJECT")
+          .jsonPath("$.content[1].targetName").isEqualTo(testProject.getName())
+          .jsonPath("$.content[1].invitedBy").isEqualTo("Admin")
           .jsonPath("$.content[1].invitedEmail").isEqualTo(outsiderUser.email());
     }
 

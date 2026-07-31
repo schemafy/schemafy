@@ -3,7 +3,7 @@ package com.schemafy.api.erd.service.table;
 import org.springframework.stereotype.Component;
 
 import com.schemafy.api.erd.controller.dto.response.TableResponse;
-import com.schemafy.core.common.json.JsonCodec;
+import com.schemafy.core.common.json.JsonObjectMetadataConverter;
 import com.schemafy.core.erd.table.application.port.in.CreateTableResult;
 import com.schemafy.core.erd.table.domain.Table;
 
@@ -13,7 +13,7 @@ import lombok.RequiredArgsConstructor;
 @RequiredArgsConstructor
 public class TableApiResponseMapper {
 
-  private final JsonCodec jsonCodec;
+  private final JsonObjectMetadataConverter jsonObjectMetadataConverter;
 
   public TableResponse toTableResponse(CreateTableResult result,
       String schemaId) {
@@ -23,7 +23,7 @@ public class TableApiResponseMapper {
         result.name(),
         result.charset(),
         result.collation(),
-        jsonCodec.parseOptionalNode(result.extra()));
+        jsonObjectMetadataConverter.toOptionalJsonNode(result.extra()));
   }
 
   public TableResponse toTableResponse(Table table) {
@@ -33,7 +33,7 @@ public class TableApiResponseMapper {
         table.name(),
         table.charset(),
         table.collation(),
-        jsonCodec.parseOptionalNode(table.extra()));
+        jsonObjectMetadataConverter.toOptionalJsonNode(table.extra()));
   }
 
 }

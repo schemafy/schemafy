@@ -1,5 +1,6 @@
 import { EntityFormDialog } from '@/components';
 import { useProjects } from '../hooks/useProjects';
+import { CreateProjectDialog } from './CreateProjectDialog';
 
 interface ProjectFormDialogProps {
   open: boolean;
@@ -23,24 +24,33 @@ export const ProjectFormDialog = ({
   const { createProject, updateProject, isCreatingProject, isUpdatingProject } =
     useProjects(workspaceId);
 
-  const handleSubmit = (data: { name: string; description: string }) => {
-    if (mode === 'create') {
-      createProject(data, { onSuccess: () => onOpenChange(false) });
-    } else {
-      updateProject(projectId, data, { onSuccess: () => onOpenChange(false) });
-    }
-  };
+  if (mode === 'create') {
+    return (
+      <CreateProjectDialog
+        open={open}
+        onOpenChange={onOpenChange}
+        isPending={isCreatingProject}
+        onSubmit={(data) =>
+          createProject(data, { onSuccess: () => onOpenChange(false) })
+        }
+      />
+    );
+  }
 
   return (
     <EntityFormDialog
       open={open}
       onOpenChange={onOpenChange}
-      title={mode === 'create' ? 'Create Project' : 'Edit Project'}
-      submitLabel={mode === 'create' ? 'Create' : 'Save'}
+      title="Edit Project"
+      submitLabel="Save"
       initialName={initialName}
       initialDescription={initialDescription}
-      isPending={isCreatingProject || isUpdatingProject}
-      onSubmit={handleSubmit}
+      isPending={isUpdatingProject}
+      onSubmit={(data) =>
+        updateProject(projectId, data, {
+          onSuccess: () => onOpenChange(false),
+        })
+      }
       namePlaceholder="Project name"
     />
   );

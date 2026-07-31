@@ -58,7 +58,7 @@ const CanvasContent = observer(() => {
 
   return (
     <>
-      <div className="flex flex-1">
+      <div className="flex flex-1 overflow-hidden bg-schemafy-canvas">
         <Toolbar
           setActiveTool={setActiveTool}
           activeTool={activeTool}
@@ -66,8 +66,8 @@ const CanvasContent = observer(() => {
           onRelationshipConfigChange={setRelationshipConfig}
         />
 
-        <div className="flex-1 bg-schemafy-secondary relative">
-          <div className="absolute top-4 right-4 z-10">
+        <div className="relative flex-1 overflow-hidden">
+          <div className="absolute right-6 top-6 z-10">
             <SchemaSelector />
           </div>
 
@@ -131,7 +131,7 @@ const CanvasContent = observer(() => {
 export const CanvasPage = () => {
   const { projectId } = useParams({ from: '/project/$projectId' });
   const navigate = useNavigate();
-  const { isProjectError, isLoadingProject, projectError } =
+  const { project, isProjectError, isLoadingProject, projectError } =
     useProject(projectId);
   const isForbidden =
     axios.isAxiosError(projectError) && projectError.response?.status === 403;
@@ -143,10 +143,13 @@ export const CanvasPage = () => {
   }, [isProjectError, isForbidden, navigate]);
 
   if (isLoadingProject || isForbidden) return null;
-  if (isProjectError) return <NotFoundPage />;
+  if (isProjectError || !project) return <NotFoundPage />;
 
   return (
-    <SelectedSchemaProvider projectId={projectId}>
+    <SelectedSchemaProvider
+      projectId={projectId}
+      dbVendorId={project.dbVendorId}
+    >
       <MemoProvider>
         <CanvasContent />
       </MemoProvider>

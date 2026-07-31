@@ -38,33 +38,35 @@ export const MemoThread = ({
   };
 
   return (
-    <div className="bg-schemafy-bg rounded-lg shadow-lg p-4 min-w-[300px] text-schemafy-text flex-col gap-4 flex">
-      <div className="flex justify-between items-center">
+    <div className="schemafy-canvas-panel flex min-w-[320px] flex-col gap-4 rounded-2xl p-5 text-schemafy-text">
+      <div className="flex items-center justify-between">
         <h3 className="font-heading-xs">Memo</h3>
         <div className="flex gap-2">
           <button
+            type="button"
             title="Delete Memo"
             onClick={handleDeleteMemo}
-            className="text-schemafy-dark-gray hover:text-schemafy-text cursor-pointer transition-colors duration-200 hover:bg-schemafy-light-gray rounded-sm p-1"
+            className="schemafy-icon-button schemafy-focus-ring flex h-8 w-8 items-center justify-center text-schemafy-dark-gray hover:text-schemafy-destructive"
           >
-            <Trash size={14} color="var(--color-schemafy-dark-gray)" />
+            <Trash size={14} />
           </button>
           <button
+            type="button"
             onClick={() => setShowThread(false)}
-            className="text-schemafy-dark-gray hover:text-schemafy-text cursor-pointer transition-colors duration-200 hover:bg-schemafy-light-gray rounded-sm p-1"
+            className="schemafy-icon-button schemafy-focus-ring flex h-8 w-8 items-center justify-center text-schemafy-dark-gray"
           >
-            <X size={14} color="var(--color-schemafy-dark-gray)" />
+            <X size={14} />
           </button>
         </div>
       </div>
 
-      <ul className="flex flex-col gap-4">
+      <ul className="schemafy-scrollbar flex max-h-72 flex-col gap-3 overflow-y-auto pr-1">
         {comments.map((comment) => (
           <ReplyItem key={comment.id} memoId={id} comment={comment} />
         ))}
       </ul>
 
-      <div className="flex gap-2 items-center justify-between">
+      <div className="flex items-center justify-between gap-3 border-t border-schemafy-glass-border pt-4">
         <Avatar
           size={'dropdown'}
           src="https://picsum.photos/200/300?random=1"
@@ -75,11 +77,12 @@ export const MemoThread = ({
           onChange={(e) => setReplyInput(e.target.value)}
           onKeyDown={handleKeyDown}
           placeholder="Reply"
-          className="flex-1 bg-schemafy-secondary px-4 py-2 placeholder:text-schemafy-dark-gray text-schemafy-text font-body-sm rounded-lg outline-none focus:outline-none"
+          className="schemafy-input flex-1 px-4 py-2 font-body-sm"
         />
         <button
+          type="button"
           onClick={handleAddReply}
-          className="w-8 h-8 flex justify-center items-center bg-schemafy-button-bg rounded-full"
+          className="schemafy-focus-ring flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-schemafy-button-bg transition-colors duration-200"
         >
           <MoveUp size={14} color="var(--color-schemafy-button-text)" />
         </button>

@@ -21,15 +21,68 @@ public interface InvitationRepository
   Mono<Invitation> findByIdAndNotDeleted(String invitationId);
 
   @Query("""
-      SELECT * FROM invitations
-      WHERE target_type = :targetType
-        AND target_id = :targetId
-        AND deleted_at IS NULL
-      ORDER BY created_at DESC
+      SELECT
+        i.id AS id,
+        i.target_type AS target_type,
+        i.target_id AS target_id,
+        w.name AS target_name,
+        w.description AS target_description,
+        i.invited_email AS invited_email,
+        i.invited_role AS invited_role,
+        u.name AS invited_by,
+        i.status AS status,
+        i.expires_at AS expires_at,
+        i.resolved_at AS resolved_at,
+        i.created_at AS created_at
+      FROM invitations i
+      JOIN workspaces w
+        ON i.target_id = w.id
+       AND w.deleted_at IS NULL
+      LEFT JOIN users u
+        ON i.invited_by = u.id
+       AND u.deleted_at IS NULL
+      WHERE i.target_type = 'WORKSPACE'
+        AND i.target_id = :targetId
+        AND i.deleted_at IS NULL
+      ORDER BY i.created_at DESC
       LIMIT :limit OFFSET :offset
       """)
-  Flux<Invitation> findInvitationsByTargetAndId(
-      String targetType,
+  Flux<InvitationSummary> findWorkspaceInvitationSummariesByTargetId(
+      String targetId,
+      int limit,
+      int offset);
+
+  @Query("""
+      SELECT
+        i.id AS id,
+        i.target_type AS target_type,
+        i.target_id AS target_id,
+        p.name AS target_name,
+        p.description AS target_description,
+        i.invited_email AS invited_email,
+        i.invited_role AS invited_role,
+        u.name AS invited_by,
+        i.status AS status,
+        i.expires_at AS expires_at,
+        i.resolved_at AS resolved_at,
+        i.created_at AS created_at
+      FROM invitations i
+      JOIN projects p
+        ON i.target_id = p.id
+       AND p.deleted_at IS NULL
+      JOIN workspaces w
+        ON i.parent_id = w.id
+       AND w.deleted_at IS NULL
+      LEFT JOIN users u
+        ON i.invited_by = u.id
+       AND u.deleted_at IS NULL
+      WHERE i.target_type = 'PROJECT'
+        AND i.target_id = :targetId
+        AND i.deleted_at IS NULL
+      ORDER BY i.created_at DESC
+      LIMIT :limit OFFSET :offset
+      """)
+  Flux<InvitationSummary> findProjectInvitationSummariesByTargetId(
       String targetId,
       int limit,
       int offset);
@@ -60,18 +113,74 @@ public interface InvitationRepository
       String status);
 
   @Query("""
-      SELECT * FROM invitations
-      WHERE target_type = :targetType
-        AND invited_email = :email
-        AND status = :status
-        AND deleted_at IS NULL
-        AND expires_at > NOW()
-      ORDER BY created_at DESC
+      SELECT
+        i.id AS id,
+        i.target_type AS target_type,
+        i.target_id AS target_id,
+        w.name AS target_name,
+        w.description AS target_description,
+        i.invited_email AS invited_email,
+        i.invited_role AS invited_role,
+        u.name AS invited_by,
+        i.status AS status,
+        i.expires_at AS expires_at,
+        i.resolved_at AS resolved_at,
+        i.created_at AS created_at
+      FROM invitations i
+      JOIN workspaces w
+        ON i.target_id = w.id
+       AND w.deleted_at IS NULL
+      LEFT JOIN users u
+        ON i.invited_by = u.id
+       AND u.deleted_at IS NULL
+      WHERE i.target_type = 'WORKSPACE'
+        AND i.invited_email = :email
+        AND i.status = :status
+        AND i.deleted_at IS NULL
+        AND i.expires_at > NOW()
+      ORDER BY i.created_at DESC
       LIMIT :limit OFFSET :offset
       """)
-  Flux<Invitation> findByEmailAndTypeAndStatus(
+  Flux<InvitationSummary> findWorkspaceInvitationSummariesByEmailAndStatus(
       String email,
-      String targetType,
+      String status,
+      int limit,
+      int offset);
+
+  @Query("""
+      SELECT
+        i.id AS id,
+        i.target_type AS target_type,
+        i.target_id AS target_id,
+        p.name AS target_name,
+        p.description AS target_description,
+        i.invited_email AS invited_email,
+        i.invited_role AS invited_role,
+        u.name AS invited_by,
+        i.status AS status,
+        i.expires_at AS expires_at,
+        i.resolved_at AS resolved_at,
+        i.created_at AS created_at
+      FROM invitations i
+      JOIN projects p
+        ON i.target_id = p.id
+       AND p.deleted_at IS NULL
+      JOIN workspaces w
+        ON i.parent_id = w.id
+       AND w.deleted_at IS NULL
+      LEFT JOIN users u
+        ON i.invited_by = u.id
+       AND u.deleted_at IS NULL
+      WHERE i.target_type = 'PROJECT'
+        AND i.invited_email = :email
+        AND i.status = :status
+        AND i.deleted_at IS NULL
+        AND i.expires_at > NOW()
+      ORDER BY i.created_at DESC
+      LIMIT :limit OFFSET :offset
+      """)
+  Flux<InvitationSummary> findProjectInvitationSummariesByEmailAndStatus(
+      String email,
       String status,
       int limit,
       int offset);
@@ -88,15 +197,19 @@ public interface InvitationRepository
             w.description AS target_description,
             i.invited_email AS invited_email,
             i.invited_role AS invited_role,
-            i.invited_by AS invited_by,
+            u.name AS invited_by,
             i.status AS status,
             i.expires_at AS expires_at,
+            i.resolved_at AS resolved_at,
             i.created_at AS created_at
           FROM invitations i
           JOIN workspaces w
             ON i.target_type = 'WORKSPACE'
            AND i.target_id = w.id
            AND w.deleted_at IS NULL
+          LEFT JOIN users u
+            ON i.invited_by = u.id
+           AND u.deleted_at IS NULL
           WHERE i.invited_email = :email
             AND i.status = :status
             AND i.deleted_at IS NULL
@@ -114,15 +227,22 @@ public interface InvitationRepository
             p.description AS target_description,
             i.invited_email AS invited_email,
             i.invited_role AS invited_role,
-            i.invited_by AS invited_by,
+            u.name AS invited_by,
             i.status AS status,
             i.expires_at AS expires_at,
+            i.resolved_at AS resolved_at,
             i.created_at AS created_at
           FROM invitations i
           JOIN projects p
             ON i.target_type = 'PROJECT'
            AND i.target_id = p.id
            AND p.deleted_at IS NULL
+          JOIN workspaces w
+            ON i.parent_id = w.id
+           AND w.deleted_at IS NULL
+          LEFT JOIN users u
+            ON i.invited_by = u.id
+           AND u.deleted_at IS NULL
           WHERE i.invited_email = :email
             AND i.status = :status
             AND i.deleted_at IS NULL
@@ -151,15 +271,19 @@ public interface InvitationRepository
             w.description AS target_description,
             i.invited_email AS invited_email,
             i.invited_role AS invited_role,
-            i.invited_by AS invited_by,
+            u.name AS invited_by,
             i.status AS status,
             i.expires_at AS expires_at,
+            i.resolved_at AS resolved_at,
             i.created_at AS created_at
           FROM invitations i
           JOIN workspaces w
             ON i.target_type = 'WORKSPACE'
            AND i.target_id = w.id
            AND w.deleted_at IS NULL
+          LEFT JOIN users u
+            ON i.invited_by = u.id
+           AND u.deleted_at IS NULL
           WHERE i.invited_email = :email
             AND i.status = :status
             AND i.deleted_at IS NULL
@@ -178,15 +302,22 @@ public interface InvitationRepository
             p.description AS target_description,
             i.invited_email AS invited_email,
             i.invited_role AS invited_role,
-            i.invited_by AS invited_by,
+            u.name AS invited_by,
             i.status AS status,
             i.expires_at AS expires_at,
+            i.resolved_at AS resolved_at,
             i.created_at AS created_at
           FROM invitations i
           JOIN projects p
             ON i.target_type = 'PROJECT'
            AND i.target_id = p.id
            AND p.deleted_at IS NULL
+          JOIN workspaces w
+            ON i.parent_id = w.id
+           AND w.deleted_at IS NULL
+          LEFT JOIN users u
+            ON i.invited_by = u.id
+           AND u.deleted_at IS NULL
           WHERE i.invited_email = :email
             AND i.status = :status
             AND i.deleted_at IS NULL
@@ -206,16 +337,38 @@ public interface InvitationRepository
       int limit);
 
   @Query("""
-      SELECT COUNT(*) FROM invitations
-      WHERE target_type = :targetType
-        AND invited_email = :email
-        AND status = :status
-        AND deleted_at IS NULL
-        AND expires_at > NOW()
+      SELECT COUNT(*)
+      FROM invitations i
+      JOIN workspaces w
+        ON i.target_id = w.id
+       AND w.deleted_at IS NULL
+      WHERE i.target_type = 'WORKSPACE'
+        AND i.invited_email = :email
+        AND i.status = :status
+        AND i.deleted_at IS NULL
+        AND i.expires_at > NOW()
       """)
-  Mono<Long> countByEmailAndTypeAndStatus(
+  Mono<Long> countWorkspaceByEmailAndStatus(
       String email,
-      String targetType,
+      String status);
+
+  @Query("""
+      SELECT COUNT(*)
+      FROM invitations i
+      JOIN projects p
+        ON i.target_id = p.id
+       AND p.deleted_at IS NULL
+      JOIN workspaces w
+        ON i.parent_id = w.id
+       AND w.deleted_at IS NULL
+      WHERE i.target_type = 'PROJECT'
+        AND i.invited_email = :email
+        AND i.status = :status
+        AND i.deleted_at IS NULL
+        AND i.expires_at > NOW()
+      """)
+  Mono<Long> countProjectByEmailAndStatus(
+      String email,
       String status);
 
   @Modifying

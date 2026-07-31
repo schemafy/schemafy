@@ -5,6 +5,7 @@ import { useNavigate } from '@tanstack/react-router';
 import { signUp } from '@/features/auth/api';
 import { authStore } from '@/store/auth.store';
 import type { ValidationRules, SignUpFormValues } from '../types';
+import { reportUnexpectedError } from '@/lib';
 
 const formFields = [
   {
@@ -67,18 +68,21 @@ const validationRules: ValidationRules<SignUpFormValues> = {
 };
 
 export const SignUpForm = () => {
-  const { form, errors, handleChange, handleBlur, resetForm } = useFormState(
-    initialForm,
-    validationRules,
-  );
+  const {
+    form,
+    errors,
+    handleChange,
+    handleBlur,
+    runAllValidations,
+    resetForm,
+  } = useFormState(initialForm, validationRules);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const navigate = useNavigate();
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
 
-    const hasErrors = Object.keys(errors).length > 0;
-    if (hasErrors) {
+    if (!runAllValidations(form)) {
       return;
     }
 
@@ -94,7 +98,10 @@ export const SignUpForm = () => {
       authStore.setUser(user);
       resetForm();
       navigate({ to: '/' });
-    } catch {
+    } catch (error) {
+      reportUnexpectedError(error, {
+        context: 'Unexpected sign-up form failure.',
+      });
     } finally {
       setIsSubmitting(false);
     }
@@ -103,7 +110,7 @@ export const SignUpForm = () => {
   return (
     <form
       noValidate
-      className="flex flex-col w-full max-w-[480px]"
+      className="flex w-full max-w-[480px] flex-col gap-2"
       onSubmit={handleSubmit}
     >
       {formFields.map((field) => (
@@ -120,9 +127,11 @@ export const SignUpForm = () => {
           onBlur={handleBlur}
         />
       ))}
-      <Button type="submit" disabled={isSubmitting} className="my-4" round>
-        {isSubmitting ? 'Creating...' : 'Create Account'}
-      </Button>
+      <div className="pt-3">
+        <Button type="submit" disabled={isSubmitting} round fullWidth>
+          {isSubmitting ? 'Creating...' : 'Create Account'}
+        </Button>
+      </div>
     </form>
   );
 };

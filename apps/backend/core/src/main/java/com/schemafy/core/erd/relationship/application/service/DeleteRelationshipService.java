@@ -15,6 +15,7 @@ import com.schemafy.core.erd.column.application.port.in.DeleteColumnUseCase;
 import com.schemafy.core.erd.operation.ErdOperationContexts;
 import com.schemafy.core.erd.operation.application.inverse.DeleteRelationshipInverse;
 import com.schemafy.core.erd.operation.application.service.ErdMutationCoordinator;
+import com.schemafy.core.erd.operation.application.service.NestedErdMutations;
 import com.schemafy.core.erd.operation.application.service.StructuralSnapshotService;
 import com.schemafy.core.erd.operation.domain.ErdOperationType;
 import com.schemafy.core.erd.relationship.application.port.in.DeleteRelationshipCommand;
@@ -98,9 +99,8 @@ public class DeleteRelationshipService implements DeleteRelationshipUseCase {
                 return deleteRelationshipColumnsPort.deleteByRelationshipId(relationshipId)
                     .then(deleteRelationshipPort.deleteRelationship(relationshipId))
                     .thenMany(Flux.fromIterable(fkColumnIds))
-                    .concatMap(fkColumnId -> deleteColumnUseCase.deleteColumn(
-                        new DeleteColumnCommand(fkColumnId))
-                        .contextWrite(ErdOperationContexts.suppressNestedMutation())
+                    .concatMap(fkColumnId -> NestedErdMutations.run(deleteColumnUseCase.deleteColumn(
+                        new DeleteColumnCommand(fkColumnId)))
                         .doOnNext(result -> affectedTableIds.addAll(result.affectedTableIds()))
                         .then())
                     .then()

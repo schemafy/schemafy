@@ -42,7 +42,7 @@ export const ChangeRoleDialog = ({
             Role
           </label>
           <Select value={selectedRole} onValueChange={onSelectedRoleChange}>
-            <SelectTrigger className="px-4 py-3 rounded-[12px] font-body-sm">
+            <SelectTrigger className="px-4 py-3 font-body-sm">
               <SelectValue />
             </SelectTrigger>
             <SelectContent>

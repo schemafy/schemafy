@@ -1,5 +1,6 @@
 rootProject.name = 'schemafy'
 
-include ':core', ':api'
+include ':core', ':api', ':mcp'
 project(':core').projectDir = file('apps/backend/core')
 project(':api').projectDir = file('apps/backend/api')
+project(':mcp').projectDir = file('apps/backend/mcp')

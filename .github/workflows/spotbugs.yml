@@ -28,6 +28,8 @@ jobs:
             path: apps/backend/api
           - name: core
             path: apps/backend/core
+          - name: mcp
+            path: apps/backend/mcp
 
     steps:
       - uses: actions/checkout@v4

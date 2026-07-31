@@ -30,10 +30,10 @@ export const InputField = memo(
     const inputId = useId();
 
     return (
-      <div className="flex flex-col flex-grow gap-1 py-3 px-4">
+      <div className="flex flex-grow flex-col gap-1.5 py-2.5">
         <label
           htmlFor={inputId}
-          className="mb-1 font-overline-md text-schemafy-text"
+          className="font-overline-xs text-schemafy-dark-gray"
         >
           {label} {required && '*'}
         </label>
@@ -48,10 +48,8 @@ export const InputField = memo(
           onChange={onChange}
           onBlur={onBlur}
           className={cn(
-            'border border-schemafy-light-gray placeholder-schemafy-dark-gray font-body-md rounded-[12px] p-4',
-            disabled
-              ? 'text-schemafy-dark-gray bg-schemafy-secondary'
-              : 'text-schemafy-text bg-transparent',
+            'schemafy-input px-4 py-3.5 font-body-sm',
+            disabled && 'bg-schemafy-secondary text-schemafy-dark-gray',
           )}
         />
         {error && (

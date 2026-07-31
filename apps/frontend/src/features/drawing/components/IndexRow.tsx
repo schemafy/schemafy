@@ -65,13 +65,13 @@ export const ViewModeIndex = ({ index, tableColumns }: ViewModeIndexProps) => {
     .join(', ');
 
   return (
-    <div className="p-2">
-      <div className="text-xs text-schemafy-dark-gray font-mono">
-        <span className="text-schemafy-text font-medium">{index.name}</span>
+    <div className="px-3 py-2.5">
+      <div className="font-mono text-xs text-schemafy-dark-gray">
+        <span className="font-medium text-schemafy-text">{index.name}</span>
         {columnsStr && (
           <>
             {' '}
-            (<span className="text-schemafy-blue">{columnsStr}</span>)
+            (<span className="text-schemafy-dark-gray">{columnsStr}</span>)
           </>
         )}
         {index.type !== 'BTREE' && (
@@ -82,7 +82,7 @@ export const ViewModeIndex = ({ index, tableColumns }: ViewModeIndexProps) => {
         )}
       </div>
       {index.comment && (
-        <div className="text-xs text-dark-gray mt-1 ml-4">
+        <div className="ml-4 mt-1 text-xs text-schemafy-dark-gray">
           /* {index.comment} */
         </div>
       )}
@@ -105,7 +105,7 @@ export const EditModeIndex = ({
   );
 
   return (
-    <div className="p-2 space-y-2 bg-schemafy-bg text-schemafy-text">
+    <div className="space-y-2.5 bg-schemafy-bg px-3.5 py-3 text-schemafy-text">
       <div className="flex items-center gap-2">
         <EditableNameInput
           name={index.name}
@@ -118,7 +118,7 @@ export const EditModeIndex = ({
           }
           value={index.type}
         >
-          <SelectTrigger className="text-xs font-mono p-1.5 border border-schemafy-light-gray rounded focus:outline-none w-[6rem]">
+          <SelectTrigger className="schemafy-focus-ring w-[6.5rem] rounded-lg border border-schemafy-glass-border bg-schemafy-secondary/60 px-2 py-1.5 font-mono text-xs">
             <SelectValue placeholder={index.type} />
           </SelectTrigger>
           <SelectContent popover="auto">
@@ -138,7 +138,7 @@ export const EditModeIndex = ({
         />
       </div>
 
-      <div className="ml-4 space-y-1">
+      <div className="ml-4 space-y-2">
         {index.columns
           .sort((a, b) => a.seqNo - b.seqNo)
           .map((indexColumn) => (
@@ -153,7 +153,7 @@ export const EditModeIndex = ({
                   }
                   value={indexColumn.sortDir}
                 >
-                  <SelectTrigger className="text-xs font-mono py-1 px-1.5 border border-schemafy-light-gray rounded focus:outline-none w-[6rem]">
+                  <SelectTrigger className="schemafy-focus-ring w-[6.5rem] rounded-lg border border-schemafy-glass-border bg-schemafy-secondary/60 px-2 py-1.5 font-mono text-xs">
                     <SelectValue placeholder={indexColumn.sortDir} />
                   </SelectTrigger>
                   <SelectContent popover="auto">
