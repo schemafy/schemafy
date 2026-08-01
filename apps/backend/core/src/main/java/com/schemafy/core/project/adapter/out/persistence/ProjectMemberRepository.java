@@ -34,7 +34,7 @@ public interface ProjectMemberRepository
           LOWER(u.name) LIKE :pattern ESCAPE '!'
           OR LOWER(u.email) LIKE :pattern ESCAPE '!'
         )
-      ORDER BY pm.joined_at ASC
+      ORDER BY pm.joined_at ASC, pm.id ASC
       LIMIT :limit OFFSET :offset
       """)
   Flux<MemberSearchResult> searchMemberResultsByProjectIdAndUser(

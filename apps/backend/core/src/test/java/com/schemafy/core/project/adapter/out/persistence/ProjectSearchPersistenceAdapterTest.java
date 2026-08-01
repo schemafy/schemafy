@@ -82,6 +82,39 @@ class ProjectSearchPersistenceAdapterTest {
   }
 
   @Test
+  @DisplayName("워크스페이스 멤버 검색은 생성 시각이 같으면 멤버 ID 순으로 페이지를 반환한다")
+  void searchWorkspaceMembers_ordersEqualCreatedAtByMemberId() {
+    Instant createdAt = Instant.parse("2025-01-01T00:00:00Z");
+    Workspace workspace = saveWorkspace("Stable Workspace Member Search");
+    UserFixture firstUser = saveUser(
+        "00000000000000000000000011", "first@example.com", "Stable First");
+    UserFixture secondUser = saveUser(
+        "00000000000000000000000012", "second@example.com", "Stable Second");
+    WorkspaceMember higherIdMember = saveWorkspaceMember(
+        "00000000000000000000000002", workspace, firstUser.id(),
+        WorkspaceRole.MEMBER);
+    WorkspaceMember lowerIdMember = saveWorkspaceMember(
+        "00000000000000000000000001", workspace, secondUser.id(),
+        WorkspaceRole.MEMBER);
+    setWorkspaceMemberCreatedAt(higherIdMember.getId(), createdAt);
+    setWorkspaceMemberCreatedAt(lowerIdMember.getId(), createdAt);
+
+    StepVerifier.create(sut.searchWorkspaceMembers(
+        workspace.getId(), "stable", 0, 1)
+        .zipWith(sut.searchWorkspaceMembers(
+            workspace.getId(), "stable", 1, 1)))
+        .assertNext(pages -> {
+          assertThat(pages.getT1().content())
+              .extracting(MemberSearchResult::userId)
+              .containsExactly(secondUser.id());
+          assertThat(pages.getT2().content())
+              .extracting(MemberSearchResult::userId)
+              .containsExactly(firstUser.id());
+        })
+        .verifyComplete();
+  }
+
+  @Test
   @DisplayName("프로젝트 멤버 검색은 사용자 이메일과 가입 시각을 포함한 read projection을 반환한다")
   void searchProjectMembers_returnsUserProjection() {
     Instant joinedAt = Instant.parse("2025-01-01T00:00:00Z");
@@ -99,6 +132,40 @@ class ProjectSearchPersistenceAdapterTest {
           assertThat(page.content()).containsExactly(new MemberSearchResult(
               user.id(), user.name(), user.email(), member.getRole(),
               joinedAt));
+        })
+        .verifyComplete();
+  }
+
+  @Test
+  @DisplayName("프로젝트 멤버 검색은 가입 시각이 같으면 멤버 ID 순으로 페이지를 반환한다")
+  void searchProjectMembers_ordersEqualJoinedAtByMemberId() {
+    Instant joinedAt = Instant.parse("2025-01-01T00:00:00Z");
+    Workspace workspace = saveWorkspace("Stable Project Member Workspace");
+    Project project = saveProject(workspace, "Stable Project Member Search");
+    UserFixture firstUser = saveUser(
+        "00000000000000000000000011", "first@example.com", "Stable First");
+    UserFixture secondUser = saveUser(
+        "00000000000000000000000012", "second@example.com", "Stable Second");
+    ProjectMember higherIdMember = saveProjectMember(
+        "00000000000000000000000002", project, firstUser.id(),
+        ProjectRole.VIEWER);
+    ProjectMember lowerIdMember = saveProjectMember(
+        "00000000000000000000000001", project, secondUser.id(),
+        ProjectRole.EDITOR);
+    setProjectMemberJoinedAt(higherIdMember.getId(), joinedAt);
+    setProjectMemberJoinedAt(lowerIdMember.getId(), joinedAt);
+
+    StepVerifier.create(sut.searchProjectMembers(
+        project.getId(), "stable", 0, 1)
+        .zipWith(sut.searchProjectMembers(
+            project.getId(), "stable", 1, 1)))
+        .assertNext(pages -> {
+          assertThat(pages.getT1().content())
+              .extracting(MemberSearchResult::userId)
+              .containsExactly(secondUser.id());
+          assertThat(pages.getT2().content())
+              .extracting(MemberSearchResult::userId)
+              .containsExactly(firstUser.id());
         })
         .verifyComplete();
   }
@@ -161,9 +228,13 @@ class ProjectSearchPersistenceAdapterTest {
 
   private WorkspaceMember saveWorkspaceMember(Workspace workspace,
       String userId, WorkspaceRole role) {
+    return saveWorkspaceMember(UlidGenerator.generate(), workspace, userId, role);
+  }
+
+  private WorkspaceMember saveWorkspaceMember(String id, Workspace workspace,
+      String userId, WorkspaceRole role) {
     return workspaceMemberRepository.save(
-        WorkspaceMember.create(UlidGenerator.generate(), workspace.getId(),
-            userId, role)).block();
+        WorkspaceMember.create(id, workspace.getId(), userId, role)).block();
   }
 
   private Project saveProject(Workspace workspace, String name) {
@@ -173,8 +244,13 @@ class ProjectSearchPersistenceAdapterTest {
 
   private ProjectMember saveProjectMember(Project project, String userId,
       ProjectRole role) {
+    return saveProjectMember(UlidGenerator.generate(), project, userId, role);
+  }
+
+  private ProjectMember saveProjectMember(String id, Project project,
+      String userId, ProjectRole role) {
     return projectMemberRepository.save(ProjectMember.create(
-        UlidGenerator.generate(), project.getId(), userId, role)).block();
+        id, project.getId(), userId, role)).block();
   }
 
   private void setWorkspaceMemberCreatedAt(String memberId, Instant createdAt) {
@@ -196,7 +272,10 @@ class ProjectSearchPersistenceAdapterTest {
   }
 
   private UserFixture saveUser(String email, String name) {
-    String id = UlidGenerator.generate();
+    return saveUser(UlidGenerator.generate(), email, name);
+  }
+
+  private UserFixture saveUser(String id, String email, String name) {
     databaseClient.sql("""
         INSERT INTO users (
           id, email, name, password, status, created_at, updated_at

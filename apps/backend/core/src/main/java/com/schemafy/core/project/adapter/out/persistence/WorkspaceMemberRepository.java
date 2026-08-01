@@ -40,7 +40,7 @@ public interface WorkspaceMemberRepository
             LOWER(u.name) LIKE :pattern ESCAPE '!'
             OR LOWER(u.email) LIKE :pattern ESCAPE '!'
         )
-      ORDER BY wm.created_at ASC
+      ORDER BY wm.created_at ASC, wm.id ASC
       LIMIT :limit OFFSET :offset
       """)
   Flux<MemberSearchResult> searchMemberResultsByWorkspaceIdAndUser(
