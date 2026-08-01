@@ -84,4 +84,14 @@ class WorkspaceAccessHelper {
             new DomainException(WorkspaceErrorCode.MEMBER_NOT_FOUND)));
   }
 
+  Mono<WorkspaceMember> findWorkspaceAdminMember(String userId, String workspaceId) {
+    return workspaceMemberPort
+        .findByWorkspaceIdAndUserIdAndNotDeleted(workspaceId, userId)
+        .switchIfEmpty(Mono.error(new DomainException(
+            WorkspaceErrorCode.ACCESS_DENIED)))
+        .flatMap(member -> member.isAdmin()
+            ? Mono.just(member)
+            : Mono.error(new DomainException(WorkspaceErrorCode.ADMIN_REQUIRED)));
+  }
+
 }
