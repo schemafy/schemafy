@@ -34,6 +34,12 @@ const MAX_RECONNECT_DELAY_MS = 60000;
 
 export type RevisionSyncStatus = 'applied' | 'stale';
 
+export type ConnectionStatus =
+  | 'disconnected'
+  | 'connecting'
+  | 'connected'
+  | 'reconnecting';
+
 export class CollaborationStore {
   cursors: Map<string, CursorPosition> = new Map();
   schemaRevisions: Map<string, number> = new Map();
@@ -45,6 +51,7 @@ export class CollaborationStore {
   private reconnectTimeoutId: number | null = null;
   private reconnectAttempts = 0;
   private pendingMessages: WebSocketMessage[] = [];
+  connectionStatus: ConnectionStatus = 'disconnected';
   private _sessionReady = false;
   private chatMessageListeners: Set<(message: ChatMessage) => void> = new Set();
   private erdMutatedListeners: Set<
@@ -59,6 +66,7 @@ export class CollaborationStore {
       participants: observable,
       projectId: observable,
       sessionId: observable,
+      connectionStatus: observable,
       currentUser: computed,
       activeParticipants: computed,
       connect: action,
@@ -146,12 +154,16 @@ export class CollaborationStore {
 
     this._sessionReady = false;
     this.pendingMessages = [];
+    this.connectionStatus = isReconnect ? 'reconnecting' : 'connecting';
 
     const wsUrl = `${WEBSOCKET_URL}?projectId=${projectId}`;
     this.ws = new WebSocket(wsUrl);
 
     this.ws.onopen = () => {
       this.reconnectAttempts = 0;
+      runInAction(() => {
+        this.connectionStatus = 'connected';
+      });
     };
 
     this.ws.onmessage = (event) => {
@@ -197,10 +209,17 @@ export class CollaborationStore {
       if (!this.projectId || this.reconnectTimeoutId) return;
 
       if (this.reconnectAttempts >= MAX_RECONNECT_ATTEMPTS) {
+        runInAction(() => {
+          this.connectionStatus = 'disconnected';
+        });
         toast.error('Network Error, please try again later.');
         this.disconnect();
         return;
       }
+
+      runInAction(() => {
+        this.connectionStatus = 'reconnecting';
+      });
 
       const delay = Math.min(
         BASE_RECONNECT_DELAY_MS * Math.pow(2, this.reconnectAttempts),
@@ -241,6 +260,7 @@ export class CollaborationStore {
     this.reconnectAttempts = 0;
     this._sessionReady = false;
     this.pendingMessages = [];
+    this.connectionStatus = 'disconnected';
     delete apiClient.defaults.headers.common['X-Session-Id'];
     previewStore.clearAll();
     runInAction(() => {
