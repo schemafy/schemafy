@@ -1,7 +1,6 @@
 package com.schemafy.core.project.application.service;
 
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.reactive.TransactionalOperator;
 
 import com.schemafy.core.common.exception.DomainException;
 import com.schemafy.core.project.application.access.RequireProjectAccess;
@@ -19,40 +18,43 @@ import reactor.core.publisher.Mono;
 @RequiredArgsConstructor
 class UpdateProjectMemberRoleService implements UpdateProjectMemberRoleUseCase {
 
-  private final TransactionalOperator transactionalOperator;
   private final ProjectMemberPort projectMemberPort;
   private final ProjectAccessHelper projectAccessHelper;
+  private final WorkspaceMutationGuard workspaceMutationGuard;
 
   @Override
   @RequireProjectAccess(role = ProjectRole.ADMIN)
   public Mono<ProjectMember> updateProjectMemberRole(
       UpdateProjectMemberRoleCommand command) {
-    return Mono.zip(
-        projectAccessHelper.findProjectMember(command.requesterId(),
-            command.projectId()),
-        projectAccessHelper.findProjectMember(command.targetUserId(),
-            command.projectId()))
-        .flatMap(tuple -> {
-          ProjectMember requester = tuple.getT1();
-          ProjectMember target = tuple.getT2();
+    return projectAccessHelper.findProjectById(command.projectId())
+        .flatMap(project -> workspaceMutationGuard.protectShared(project.getWorkspaceId(),
+            () -> Mono.zip(
+                projectAccessHelper.findProjectAdminMember(
+                    command.requesterId(), command.projectId()),
+                projectAccessHelper.findProjectMember(command.targetUserId(), command.projectId()))
+                .flatMap(tuple -> validateAndUpdateMemberRole(
+                    command, tuple.getT1(), tuple.getT2()))));
+  }
 
-          projectAccessHelper.validateRoleChangePermission(requester, target, command.role());
-          Mono<Void> workspaceAdminGuard = target.isAdmin() && !command.role().isAdmin()
-              ? projectAccessHelper.validateWorkspaceAdminGuard(command.projectId(), target)
-              : Mono.empty();
+  private Mono<ProjectMember> validateAndUpdateMemberRole(
+      UpdateProjectMemberRoleCommand command,
+      ProjectMember requester,
+      ProjectMember target) {
+    projectAccessHelper.validateRoleChangePermission(requester, target, command.role());
+    Mono<Void> workspaceAdminGuard = target.isAdmin() && !command.role().isAdmin()
+        ? projectAccessHelper.validateWorkspaceAdminGuard(command.projectId(), target)
+        : Mono.empty();
 
-          return workspaceAdminGuard
-              .then(projectMemberPort.updateRoleIfActive(target.getProjectId(),
-                  target.getUserId(), command.role().name()))
-              .filter(updatedRows -> updatedRows > 0)
-              .switchIfEmpty(Mono.error(new DomainException(
-                  ProjectErrorCode.MEMBER_NOT_FOUND)))
-              .then(Mono.fromSupplier(() -> {
-                target.updateRole(command.role());
-                return target;
-              }));
-        })
-        .as(transactionalOperator::transactional);
+    return workspaceAdminGuard
+        .then(projectMemberPort.updateRoleIfActive(target.getProjectId(),
+            target.getUserId(), command.role().name()))
+        .filter(updatedRows -> updatedRows > 0)
+        .switchIfEmpty(Mono.error(new DomainException(
+            ProjectErrorCode.MEMBER_NOT_FOUND)))
+        .then(Mono.fromSupplier(() -> {
+          target.updateRole(command.role());
+          return target;
+        }));
   }
 
 }

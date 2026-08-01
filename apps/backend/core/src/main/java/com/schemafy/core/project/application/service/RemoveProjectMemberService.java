@@ -1,7 +1,6 @@
 package com.schemafy.core.project.application.service;
 
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.reactive.TransactionalOperator;
 
 import com.schemafy.core.project.application.access.RequireProjectAccess;
 import com.schemafy.core.project.application.port.in.RemoveProjectMemberCommand;
@@ -15,16 +14,21 @@ import reactor.core.publisher.Mono;
 @RequiredArgsConstructor
 class RemoveProjectMemberService implements RemoveProjectMemberUseCase {
 
-  private final TransactionalOperator transactionalOperator;
   private final ProjectAccessHelper projectAccessHelper;
+  private final WorkspaceMutationGuard workspaceMutationGuard;
 
   @Override
   @RequireProjectAccess(role = ProjectRole.ADMIN)
   public Mono<Void> removeProjectMember(RemoveProjectMemberCommand command) {
-    return projectAccessHelper.findProjectMember(command.targetUserId(), command.projectId())
-        .flatMap(target -> projectAccessHelper.validateWorkspaceAdminGuard(command.projectId(), target)
-            .then(projectAccessHelper.softDeleteMember(target)))
-        .as(transactionalOperator::transactional);
+    return projectAccessHelper.findProjectById(command.projectId())
+        .flatMap(project -> workspaceMutationGuard.protectShared(project.getWorkspaceId(),
+            () -> projectAccessHelper.findProjectAdminMember(
+                command.requesterId(), command.projectId())
+                .then(Mono.defer(() -> projectAccessHelper.findProjectMember(
+                    command.targetUserId(), command.projectId())))
+                .flatMap(target -> projectAccessHelper
+                    .validateWorkspaceAdminGuard(command.projectId(), target)
+                    .then(projectAccessHelper.softDeleteMember(target)))));
   }
 
 }

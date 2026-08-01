@@ -17,6 +17,8 @@ import org.junit.jupiter.api.Test;
 import com.schemafy.core.common.exception.DomainException;
 import com.schemafy.core.project.application.port.in.AccessShareLinkQuery;
 import com.schemafy.core.project.application.port.in.AccessShareLinkUseCase;
+import com.schemafy.core.project.application.port.in.CreateProjectInvitationCommand;
+import com.schemafy.core.project.application.port.in.CreateProjectInvitationUseCase;
 import com.schemafy.core.project.application.port.in.DeleteProjectCommand;
 import com.schemafy.core.project.application.port.in.DeleteProjectUseCase;
 import com.schemafy.core.project.application.port.in.DeleteShareLinkCommand;
@@ -24,6 +26,7 @@ import com.schemafy.core.project.application.port.in.DeleteShareLinkUseCase;
 import com.schemafy.core.project.application.port.in.UpdateProjectCommand;
 import com.schemafy.core.project.application.port.in.UpdateProjectUseCase;
 import com.schemafy.core.project.application.service.ProjectMutationGuard;
+import com.schemafy.core.project.domain.InvitationType;
 import com.schemafy.core.project.domain.Project;
 import com.schemafy.core.project.domain.ProjectRole;
 import com.schemafy.core.project.domain.ShareLink;
@@ -48,6 +51,9 @@ class ProjectMutationConcurrencyIntegrationTest
 
   @Autowired
   private DeleteProjectUseCase deleteProjectUseCase;
+
+  @Autowired
+  private CreateProjectInvitationUseCase createProjectInvitationUseCase;
 
   @Autowired
   private AccessShareLinkUseCase accessShareLinkUseCase;
@@ -153,6 +159,29 @@ class ProjectMutationConcurrencyIntegrationTest
     }
   }
 
+  @Test
+  @DisplayName("프로젝트 삭제와 초대 생성이 동시에 실행되어도 삭제된 프로젝트에 활성 대기 초대가 남지 않는다")
+  void concurrentProjectDeletionAndInvitationCreationLeavesNoActiveInvitation()
+      throws InterruptedException {
+    User admin = signUpUser("admin-project-invitation-delete@test.com", "Admin");
+    User invitee = signUpUser("invitee-project-invitation-delete@test.com", "Invitee");
+    Workspace workspace = saveWorkspace("Project Invitation Delete", "Description");
+    saveWorkspaceMember(workspace, admin, WorkspaceRole.ADMIN);
+    saveWorkspaceMember(workspace, invitee, WorkspaceRole.MEMBER);
+    Project project = saveProject(workspace, "Project Invitation Delete");
+    saveProjectMember(project, admin, ProjectRole.ADMIN);
+    List<CheckedTask> tasks = List.of(
+        () -> createProjectInvitationIgnoringDeletion(project, invitee, admin),
+        () -> deleteProjectIgnoringInvitationCreation(project, admin));
+
+    ConcurrentLinkedQueue<Throwable> errors = runConcurrently(tasks);
+
+    assertThat(errors).isEmpty();
+    assertThat(projectRepository.findByIdAndNotDeleted(project.getId()).block()).isNull();
+    assertThat(invitationRepository.countByTarget(InvitationType.PROJECT.name(), project.getId())
+        .block()).isZero();
+  }
+
   private void accessShareLinkIgnoringDeletion(ShareLink link) {
     try {
       accessShareLinkUseCase.accessShareLink(new AccessShareLinkQuery(
@@ -169,6 +198,36 @@ class ProjectMutationConcurrencyIntegrationTest
     try {
       updateProjectUseCase.updateProject(new UpdateProjectCommand(
           project.getId(), "Updated", "Updated", admin.id())).block();
+    } catch (DomainException error) {
+      if (error.getErrorCode() != ProjectErrorCode.NOT_FOUND
+          && error.getErrorCode() != ProjectErrorCode.ACCESS_DENIED
+          && error.getErrorCode() != ProjectErrorCode.MEMBER_NOT_FOUND) {
+        throw error;
+      }
+    }
+  }
+
+  private void createProjectInvitationIgnoringDeletion(
+      Project project,
+      User invitee,
+      User admin) {
+    try {
+      createProjectInvitationUseCase.createProjectInvitation(
+          new CreateProjectInvitationCommand(project.getId(), invitee.email(),
+              ProjectRole.EDITOR, admin.id())).block();
+    } catch (DomainException error) {
+      if (error.getErrorCode() != ProjectErrorCode.NOT_FOUND
+          && error.getErrorCode() != ProjectErrorCode.ACCESS_DENIED
+          && error.getErrorCode() != ProjectErrorCode.MEMBER_NOT_FOUND) {
+        throw error;
+      }
+    }
+  }
+
+  private void deleteProjectIgnoringInvitationCreation(Project project, User admin) {
+    try {
+      deleteProjectUseCase.deleteProject(
+          new DeleteProjectCommand(project.getId(), admin.id())).block();
     } catch (DomainException error) {
       if (error.getErrorCode() != ProjectErrorCode.NOT_FOUND
           && error.getErrorCode() != ProjectErrorCode.ACCESS_DENIED
