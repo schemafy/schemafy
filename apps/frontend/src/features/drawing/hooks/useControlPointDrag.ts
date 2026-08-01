@@ -96,6 +96,15 @@ export const useControlPointDrag = ({
 
       finalControlPoints = newControlPoints;
       setDragControlPoints(newControlPoints);
+
+      const data = dataRef.current;
+      if (data && typeof data.onControlPointDrag === 'function') {
+        data.onControlPointDrag(
+          id,
+          newControlPoints.controlPoint1,
+          newControlPoints.controlPoint2,
+        );
+      }
     };
 
     const handleMouseUp = () => {
