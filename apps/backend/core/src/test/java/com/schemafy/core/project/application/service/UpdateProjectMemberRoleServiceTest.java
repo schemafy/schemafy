@@ -1,6 +1,6 @@
 package com.schemafy.core.project.application.service;
 
-import org.springframework.transaction.reactive.TransactionalOperator;
+import java.util.function.Supplier;
 
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -12,6 +12,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import com.schemafy.core.common.exception.DomainException;
 import com.schemafy.core.project.application.port.in.UpdateProjectMemberRoleCommand;
 import com.schemafy.core.project.application.port.out.ProjectMemberPort;
+import com.schemafy.core.project.domain.Project;
 import com.schemafy.core.project.domain.ProjectMember;
 import com.schemafy.core.project.domain.ProjectRole;
 import com.schemafy.core.project.domain.exception.ProjectErrorCode;
@@ -19,10 +20,10 @@ import com.schemafy.core.project.domain.exception.ProjectErrorCode;
 import reactor.core.publisher.Mono;
 import reactor.test.StepVerifier;
 
+import static com.schemafy.core.project.application.service.MutationGuardTestSupport.invokeGuardAction;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.then;
-import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.never;
 
 @ExtendWith(MockitoExtension.class)
@@ -34,7 +35,7 @@ class UpdateProjectMemberRoleServiceTest {
   private static final String TARGET_ID = "target-id";
 
   @Mock
-  TransactionalOperator transactionalOperator;
+  WorkspaceMutationGuard workspaceMutationGuard;
 
   @Mock
   ProjectMemberPort projectMemberPort;
@@ -54,11 +55,26 @@ class UpdateProjectMemberRoleServiceTest {
         TARGET_ID, ProjectRole.VIEWER);
     UpdateProjectMemberRoleCommand command = new UpdateProjectMemberRoleCommand(
         PROJECT_ID, TARGET_ID, ProjectRole.EDITOR, REQUESTER_ID);
-    stubTransactionPassThrough();
-    given(projectAccessHelper.findProjectMember(REQUESTER_ID, PROJECT_ID))
-        .willReturn(Mono.just(requester));
+    var project = Project.create(PROJECT_ID, "workspace-id", "Project", "Description");
+    var enteredGuard = new java.util.concurrent.atomic.AtomicBoolean();
+    given(projectAccessHelper.findProjectById(PROJECT_ID)).willReturn(Mono.just(project));
+    given(workspaceMutationGuard.protectShared(org.mockito.ArgumentMatchers.eq("workspace-id"),
+        org.mockito.ArgumentMatchers.any()))
+        .willAnswer(invocation -> {
+          enteredGuard.set(true);
+          Supplier<Mono<ProjectMember>> action = invocation.getArgument(1);
+          return action.get();
+        });
+    given(projectAccessHelper.findProjectAdminMember(REQUESTER_ID, PROJECT_ID))
+        .willAnswer(invocation -> {
+          assertThat(enteredGuard).isTrue();
+          return Mono.just(requester);
+        });
     given(projectAccessHelper.findProjectMember(TARGET_ID, PROJECT_ID))
-        .willReturn(Mono.just(target));
+        .willAnswer(invocation -> {
+          assertThat(enteredGuard).isTrue();
+          return Mono.just(target);
+        });
     given(projectMemberPort.updateRoleIfActive(PROJECT_ID, TARGET_ID,
         ProjectRole.EDITOR.name())).willReturn(Mono.just(1L));
 
@@ -70,6 +86,8 @@ class UpdateProjectMemberRoleServiceTest {
     then(projectMemberPort).should().updateRoleIfActive(PROJECT_ID, TARGET_ID,
         ProjectRole.EDITOR.name());
     then(projectMemberPort).should(never()).save(target);
+    then(workspaceMutationGuard).should().protectShared(
+        org.mockito.ArgumentMatchers.eq("workspace-id"), org.mockito.ArgumentMatchers.any());
   }
 
   @Test
@@ -81,8 +99,12 @@ class UpdateProjectMemberRoleServiceTest {
         TARGET_ID, ProjectRole.VIEWER);
     UpdateProjectMemberRoleCommand command = new UpdateProjectMemberRoleCommand(
         PROJECT_ID, TARGET_ID, ProjectRole.EDITOR, REQUESTER_ID);
-    stubTransactionPassThrough();
-    given(projectAccessHelper.findProjectMember(REQUESTER_ID, PROJECT_ID))
+    var project = Project.create(PROJECT_ID, "workspace-id", "Project", "Description");
+    given(projectAccessHelper.findProjectById(PROJECT_ID)).willReturn(Mono.just(project));
+    given(workspaceMutationGuard.protectShared(org.mockito.ArgumentMatchers.eq("workspace-id"),
+        org.mockito.ArgumentMatchers.any()))
+        .willAnswer(invokeGuardAction());
+    given(projectAccessHelper.findProjectAdminMember(REQUESTER_ID, PROJECT_ID))
         .willReturn(Mono.just(requester));
     given(projectAccessHelper.findProjectMember(TARGET_ID, PROJECT_ID))
         .willReturn(Mono.just(target));
@@ -101,10 +123,54 @@ class UpdateProjectMemberRoleServiceTest {
     then(projectMemberPort).should(never()).save(target);
   }
 
-  private void stubTransactionPassThrough() {
-    lenient().when(transactionalOperator.<ProjectMember>transactional(
-        org.mockito.ArgumentMatchers.<Mono<ProjectMember>>any()))
-        .thenAnswer(invocation -> invocation.getArgument(0));
+  @Test
+  @DisplayName("워크스페이스 공유 락 대기 중 요청자가 비관리자로 변경되면 역할을 변경하지 않는다")
+  void rejectsDemotedRequesterAfterAcquiringSharedWorkspaceLock() {
+    ProjectMember target = ProjectMember.create("target-member", PROJECT_ID,
+        TARGET_ID, ProjectRole.VIEWER);
+    UpdateProjectMemberRoleCommand command = new UpdateProjectMemberRoleCommand(
+        PROJECT_ID, TARGET_ID, ProjectRole.EDITOR, REQUESTER_ID);
+    var project = Project.create(PROJECT_ID, "workspace-id", "Project", "Description");
+    given(projectAccessHelper.findProjectById(PROJECT_ID)).willReturn(Mono.just(project));
+    given(workspaceMutationGuard.protectShared(org.mockito.ArgumentMatchers.eq("workspace-id"),
+        org.mockito.ArgumentMatchers.any()))
+        .willAnswer(invokeGuardAction());
+    given(projectAccessHelper.findProjectAdminMember(REQUESTER_ID, PROJECT_ID))
+        .willReturn(Mono.error(new DomainException(ProjectErrorCode.ADMIN_REQUIRED)));
+    given(projectAccessHelper.findProjectMember(TARGET_ID, PROJECT_ID))
+        .willReturn(Mono.just(target));
+
+    StepVerifier.create(sut.updateProjectMemberRole(command))
+        .expectErrorMatches(DomainException.hasErrorCode(ProjectErrorCode.ADMIN_REQUIRED))
+        .verify();
+
+    then(projectMemberPort).should(never()).updateRoleIfActive(
+        PROJECT_ID, TARGET_ID, ProjectRole.EDITOR.name());
+  }
+
+  @Test
+  @DisplayName("워크스페이스 공유 락 대기 중 요청자 멤버십이 삭제되면 역할을 변경하지 않는다")
+  void rejectsRemovedRequesterAfterAcquiringSharedWorkspaceLock() {
+    ProjectMember target = ProjectMember.create("target-member", PROJECT_ID,
+        TARGET_ID, ProjectRole.VIEWER);
+    UpdateProjectMemberRoleCommand command = new UpdateProjectMemberRoleCommand(
+        PROJECT_ID, TARGET_ID, ProjectRole.EDITOR, REQUESTER_ID);
+    var project = Project.create(PROJECT_ID, "workspace-id", "Project", "Description");
+    given(projectAccessHelper.findProjectById(PROJECT_ID)).willReturn(Mono.just(project));
+    given(workspaceMutationGuard.protectShared(org.mockito.ArgumentMatchers.eq("workspace-id"),
+        org.mockito.ArgumentMatchers.any()))
+        .willAnswer(invokeGuardAction());
+    given(projectAccessHelper.findProjectAdminMember(REQUESTER_ID, PROJECT_ID))
+        .willReturn(Mono.error(new DomainException(ProjectErrorCode.ACCESS_DENIED)));
+    given(projectAccessHelper.findProjectMember(TARGET_ID, PROJECT_ID))
+        .willReturn(Mono.just(target));
+
+    StepVerifier.create(sut.updateProjectMemberRole(command))
+        .expectErrorMatches(DomainException.hasErrorCode(ProjectErrorCode.ACCESS_DENIED))
+        .verify();
+
+    then(projectMemberPort).should(never()).updateRoleIfActive(
+        PROJECT_ID, TARGET_ID, ProjectRole.EDITOR.name());
   }
 
 }

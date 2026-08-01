@@ -31,7 +31,7 @@ import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
-@DisplayName("프로젝트 변경 보호 테스트")
+@DisplayName("프로젝트 변경 잠금과 재시도")
 class ProjectMutationGuardTest {
 
   @Mock
