@@ -2,6 +2,7 @@ package com.schemafy.api.collaboration.service;
 
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -15,17 +16,21 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.schemafy.api.collaboration.dto.BroadcastMessage;
-import com.schemafy.api.collaboration.dto.CursorPosition;
-import com.schemafy.api.collaboration.dto.PreviewAction;
-import com.schemafy.api.collaboration.dto.ProjectPresenceParticipant;
-import com.schemafy.api.collaboration.dto.event.CollaborationOutboundFactory;
-import com.schemafy.api.collaboration.dto.event.CursorEvent;
-import com.schemafy.api.collaboration.dto.event.LeaveEvent;
 import com.schemafy.api.collaboration.security.WebSocketAuthInfo;
 import com.schemafy.api.collaboration.service.model.SessionEntry;
 import com.schemafy.api.collaboration.service.presence.ProjectPresenceSession;
 import com.schemafy.api.collaboration.service.presence.ProjectPresenceStore;
+import com.schemafy.core.collaboration.dto.CursorPosition;
+import com.schemafy.core.collaboration.dto.PreviewAction;
+import com.schemafy.core.collaboration.dto.ProjectPresenceParticipant;
+import com.schemafy.core.collaboration.dto.event.CollaborationOutboundFactory;
+import com.schemafy.core.collaboration.dto.event.CursorEvent;
+import com.schemafy.core.collaboration.dto.event.ErdMutatedEvent;
+import com.schemafy.core.collaboration.dto.event.LeaveEvent;
+import com.schemafy.core.collaboration.service.CollaborationEventPublisher;
 import com.schemafy.core.common.json.JsonCodec;
+import com.schemafy.core.erd.operation.domain.CommittedErdOperation;
+import com.schemafy.core.erd.operation.domain.ErdOperationDerivationKind;
 
 import reactor.core.Disposable;
 import reactor.core.publisher.Flux;
@@ -46,6 +51,12 @@ import static org.mockito.Mockito.verify;
 @ExtendWith(MockitoExtension.class)
 @DisplayName("CollaborationService 단위 테스트")
 class CollaborationServiceTest {
+
+  private static final CommittedErdOperation OPERATION = new CommittedErdOperation(
+      "op-1",
+      "client-op-1",
+      42L,
+      ErdOperationDerivationKind.ORIGINAL);
 
   @Mock
   private SessionRegistry sessionRegistry;
@@ -166,6 +177,49 @@ class CollaborationServiceTest {
     assertThat(captor.getValue().message()).contains("\"type\":\"CHAT\"");
     assertThat(captor.getValue().message())
         .contains("\"sessionId\":\"session-1\"");
+  }
+
+  @Test
+  @DisplayName("ERD_MUTATED 이벤트에 sessionId가 있으면 sender를 제외하고 브로드캐스트한다")
+  void handleRedisMessage_excludes_sender_for_erd_mutated_event()
+      throws Exception {
+    ErdMutatedEvent.Outbound event = CollaborationOutboundFactory.erdMutated(
+        "session-1", "schema-1", Set.of("table-1"), OPERATION);
+    String message = objectMapper.writeValueAsString(event);
+
+    StepVerifier.create(
+        collaborationService.handleRedisMessage("project-1", message))
+        .verifyComplete();
+
+    ArgumentCaptor<BroadcastMessage> captor = ArgumentCaptor.forClass(
+        BroadcastMessage.class);
+    verify(sessionRegistry).broadcast(captor.capture());
+    assertThat(captor.getValue().projectId()).isEqualTo("project-1");
+    assertThat(captor.getValue().excludeSessionId())
+        .isEqualTo("session-1");
+    assertThat(captor.getValue().message())
+        .contains("\"type\":\"ERD_MUTATED\"");
+  }
+
+  @Test
+  @DisplayName("ERD_MUTATED 이벤트에 sessionId가 없으면 모든 세션에 브로드캐스트한다")
+  void handleRedisMessage_includes_all_sessions_for_sessionless_erd_mutated_event()
+      throws Exception {
+    ErdMutatedEvent.Outbound event = CollaborationOutboundFactory.erdMutated(
+        null, "schema-1", Set.of("table-1"), OPERATION);
+    String message = objectMapper.writeValueAsString(event);
+
+    StepVerifier.create(
+        collaborationService.handleRedisMessage("project-1", message))
+        .verifyComplete();
+
+    ArgumentCaptor<BroadcastMessage> captor = ArgumentCaptor.forClass(
+        BroadcastMessage.class);
+    verify(sessionRegistry).broadcast(captor.capture());
+    assertThat(captor.getValue().projectId()).isEqualTo("project-1");
+    assertThat(captor.getValue().excludeSessionId()).isNull();
+    assertThat(captor.getValue().message())
+        .contains("\"type\":\"ERD_MUTATED\"");
   }
 
   @Test
