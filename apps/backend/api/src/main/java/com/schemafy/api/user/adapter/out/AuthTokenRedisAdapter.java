@@ -6,10 +6,10 @@ import java.util.List;
 import javax.crypto.SecretKey;
 
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.data.redis.core.ReactiveStringRedisTemplate;
 import org.springframework.stereotype.Component;
 
-import com.schemafy.api.common.config.ConditionalOnRedisEnabled;
 import com.schemafy.api.common.security.hmac.HmacUtil;
 import com.schemafy.core.common.json.JsonCodec;
 import com.schemafy.core.user.application.port.out.AuthTokenPort;
@@ -20,7 +20,7 @@ import com.schemafy.core.user.domain.AuthTokenType;
 import reactor.core.publisher.Mono;
 
 @Component
-@ConditionalOnRedisEnabled
+@ConditionalOnProperty(name = "spring.data.redis.enabled", havingValue = "true")
 public class AuthTokenRedisAdapter implements AuthTokenPort {
 
   private static final String KEY_PREFIX = "auth-token:";
