@@ -83,7 +83,7 @@ export const SignUpForm = () => {
     clearFormError,
   });
 
-  const signUpSubmission = useSignUpSubmission({
+  const { handleSubmit, isSubmitting } = useSignUpSubmission({
     form,
     runAllValidations,
     emailVerificationRequired,
@@ -96,7 +96,7 @@ export const SignUpForm = () => {
   });
 
   const isVerificationDisabled =
-    signUpSubmission.isSubmitting || emailVerification.isVerificationPending;
+    isSubmitting || emailVerification.isVerificationPending;
   const handleFormChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     clearFormError();
     if (event.target.name === 'email') {
@@ -109,7 +109,7 @@ export const SignUpForm = () => {
     <form
       noValidate
       className="flex w-full max-w-[480px] flex-col gap-2"
-      onSubmit={signUpSubmission.handleSubmit}
+      onSubmit={handleSubmit}
     >
       <div className="flex items-start gap-2">
         <InputField
@@ -177,7 +177,7 @@ export const SignUpForm = () => {
           name={field.name}
           placeholder={field.label}
           required={field.required}
-          disabled={signUpSubmission.isSubmitting}
+          disabled={isSubmitting}
           value={form[field.name]}
           error={errors[field.name]}
           onChange={handleFormChange}
@@ -198,13 +198,8 @@ export const SignUpForm = () => {
           {formError}
         </p>
       )}
-      <Button
-        type="submit"
-        disabled={signUpSubmission.isSubmitting}
-        className="my-4"
-        round
-      >
-        {signUpSubmission.isSubmitting ? 'Creating...' : 'Create Account'}
+      <Button type="submit" disabled={isSubmitting} className="my-4" round>
+        {isSubmitting ? 'Creating...' : 'Create Account'}
       </Button>
     </form>
   );
