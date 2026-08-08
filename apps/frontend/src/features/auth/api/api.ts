@@ -5,7 +5,15 @@ import {
   type ErrorPolicy,
   type RequestConfigWithMeta,
 } from '@/lib/api/client';
-import type { SignInRequest, SignUpRequest, AuthResponse } from './types';
+import type {
+  AuthResponse,
+  SendSignUpEmailCodeRequest,
+  SignInRequest,
+  SignUpEmailVerificationResponse,
+  SignUpRequest,
+  VerifySignUpEmailRequest,
+  VerifySignUpEmailResponse,
+} from './types';
 
 import { authStore } from '@/store/auth.store';
 import { clearAuthSession } from '../lib/auth-session';
@@ -21,6 +29,28 @@ const handleTokenResponse = (response: AxiosResponse): string => {
   } else {
     throw new Error('Failed to get token');
   }
+};
+
+export const sendSignUpEmailCode = async (
+  data: SendSignUpEmailCodeRequest,
+): Promise<SignUpEmailVerificationResponse> => {
+  const response = await publicClient.post<SignUpEmailVerificationResponse>(
+    '/users/signup/email-code',
+    data,
+  );
+
+  return response.data;
+};
+
+export const verifySignUpEmail = async (
+  data: VerifySignUpEmailRequest,
+): Promise<VerifySignUpEmailResponse> => {
+  const response = await publicClient.post<VerifySignUpEmailResponse>(
+    '/users/signup/email-code/verify',
+    data,
+  );
+
+  return response.data;
 };
 
 export const signUp = async (data: SignUpRequest): Promise<AuthResponse> => {

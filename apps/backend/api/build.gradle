@@ -44,6 +44,9 @@ dependencies {
 	// redis
 	implementation 'org.springframework.boot:spring-boot-starter-data-redis-reactive'
 
+	// mail
+	implementation 'org.springframework.boot:spring-boot-starter-mail'
+
 	// db
 	implementation 'org.springframework.boot:spring-boot-starter-data-r2dbc'
 	runtimeOnly "io.r2dbc:r2dbc-h2"
