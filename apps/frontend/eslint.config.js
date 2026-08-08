@@ -19,7 +19,9 @@ export default tseslint.config([
       ecmaVersion: 2020,
       globals: globals.browser,
       parserOptions: {
-        projectService: true,
+        projectService: {
+          allowDefaultProject: ['tests/*.spec.ts'],
+        },
         tsconfigRootDir: import.meta.dirname,
       },
     },
