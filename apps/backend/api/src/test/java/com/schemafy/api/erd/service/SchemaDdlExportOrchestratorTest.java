@@ -10,6 +10,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+import com.schemafy.api.erd.fixture.DbVendorApiFixture;
 import com.schemafy.api.erd.service.export.SchemaExportSnapshotReader;
 import com.schemafy.api.erd.service.export.SchemaExportSnapshotReader.SchemaExportSnapshotResult;
 import com.schemafy.core.common.exception.DomainException;
@@ -60,9 +61,10 @@ class SchemaDdlExportOrchestratorTest {
         List.of());
     IndexCapabilities indexCapabilities = mysqlIndexCapabilities();
     IdentifierCapabilities identifierCapabilities = IdentifierCapabilities.codePoints(64);
+    var datatypePolicy = DbVendorApiFixture.mysqlDatatypePolicy();
     given(schemaExportSnapshotReader.readSchemaExportSnapshot(schemaId))
         .willReturn(Mono.just(new SchemaExportSnapshotResult(
-            snapshot, 42L, indexCapabilities, identifierCapabilities)));
+            snapshot, 42L, datatypePolicy, indexCapabilities, identifierCapabilities)));
     given(generateSchemaDdlUseCase.generateSchemaDdl(any(GenerateSchemaDdlCommand.class)))
         .willReturn(Mono.just("DDL"));
 
@@ -78,6 +80,7 @@ class SchemaDdlExportOrchestratorTest {
     then(generateSchemaDdlUseCase).should().generateSchemaDdl(argThat(
         command -> command.snapshot() == snapshot
             && command.targetDbVendor().equals(DdlExportVendor.MYSQL)
+            && command.datatypePolicy() == datatypePolicy
             && command.indexCapabilities().equals(indexCapabilities)
             && command.identifierCapabilities().equals(identifierCapabilities)));
   }
@@ -93,6 +96,7 @@ class SchemaDdlExportOrchestratorTest {
         .willReturn(Mono.just(new SchemaExportSnapshotResult(
             snapshot,
             42L,
+            DbVendorApiFixture.mysqlDatatypePolicy(),
             mysqlIndexCapabilities(),
             IdentifierCapabilities.codePoints(64))));
 

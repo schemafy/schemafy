@@ -17,6 +17,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import com.schemafy.api.erd.controller.dto.response.ColumnResponse;
 import com.schemafy.api.erd.controller.dto.response.TableResponse;
 import com.schemafy.api.erd.controller.dto.response.TableSnapshotResponse;
+import com.schemafy.api.erd.fixture.DbVendorApiFixture;
 import com.schemafy.api.erd.service.TableSnapshotOrchestrator;
 import com.schemafy.core.erd.index.domain.policy.IndexCapabilities;
 import com.schemafy.core.erd.index.domain.type.IndexType;
@@ -153,6 +154,8 @@ class SchemaExportSnapshotReaderTest {
     StepVerifier.create(sut.readSchemaExportSnapshot(schemaId))
         .assertNext(result -> {
           assertThat(result.currentRevision()).isEqualTo(7L);
+          assertThat(result.datatypePolicy())
+              .isEqualTo(DbVendorApiFixture.mysqlDatatypePolicy());
           assertThat(result.snapshot().tables()).isEmpty();
         })
         .verifyComplete();
@@ -193,7 +196,7 @@ class SchemaExportSnapshotReaderTest {
         "MySQL 8.0",
         "mysql",
         "8.0",
-        "{}",
+        DbVendorApiFixture.mysqlDatatypePolicy(),
         new VendorCapabilities(
             2,
             mysqlIndexCapabilities(),
