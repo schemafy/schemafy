@@ -9,7 +9,17 @@ import {
   SelectLabel,
   SelectTrigger,
 } from '@/components';
-import { parseTypeArguments, CATEGORY_LABELS } from './utils';
+import {
+  applyDatatypeParameterInput,
+  CATEGORY_LABELS,
+  hasCompleteRequiredParameters,
+  parseTypeArguments,
+  serializeDatatypeParameterValues,
+} from './utils';
+import type {
+  DatatypeParameterInputState,
+  DatatypeParameterValue,
+} from './utils';
 
 const getCategoryGroup = (category: string): string => {
   const prefix = category.split('_')[0];
@@ -40,16 +50,25 @@ export const TypeSelector = ({
 }: TypeSelectorProps) => {
   const parsed = parseTypeArguments(typeArguments);
   const [pendingType, setPendingType] = useState<string | null>(null);
-  const [pendingParams, setPendingParams] = useState<
-    Record<string, number | string[] | null>
-  >({});
+  const [pendingState, setPendingState] = useState<DatatypeParameterInputState>(
+    {
+      values: {},
+      invalidNames: new Set(),
+    },
+  );
+  const [invalidParamNames, setInvalidParamNames] = useState<Set<string>>(
+    new Set(),
+  );
 
   const displayType = pendingType ?? value;
   const displayTypeConfig = vendorTypes.find((t) => t.sqlType === displayType);
   const params: DatatypeParameter[] = displayTypeConfig?.parameters ?? [];
-  const displayParams: Record<string, number | string[] | null> = pendingType
-    ? pendingParams
-    : parsed;
+  const sortedParams = [...params].sort((a, b) => a.order - b.order);
+  const parsedValues: Record<string, DatatypeParameterValue> = { ...parsed };
+  const displayParams = pendingType ? pendingState.values : parsedValues;
+  const displayInvalidNames = pendingType
+    ? pendingState.invalidNames
+    : invalidParamNames;
 
   const pendingTypeRef = useRef(pendingType);
   pendingTypeRef.current = pendingType;
@@ -74,55 +93,46 @@ export const TypeSelector = ({
 
     if (!hasRequiredParams) {
       setPendingType(null);
-      setPendingParams({});
+      setPendingState({ values: {}, invalidNames: new Set() });
+      setInvalidParamNames(new Set());
       onPendingChange?.(false);
       onChange(newType, '{}');
     } else {
       setPendingType(newType);
-      setPendingParams({});
+      setPendingState({ values: {}, invalidNames: new Set() });
+      setInvalidParamNames(new Set());
       onPendingChange?.(true);
     }
   };
 
-  const parseParamValue = (paramValue: string, valueType: string) => {
-    const trimmed = paramValue.trim();
-    if (!trimmed) return null;
-
-    if (valueType === 'string_array') {
-      return trimmed
-        .split(',')
-        .map((s) => s.trim())
-        .filter(Boolean);
-    }
-
-    const num = Number(trimmed);
-    return !isNaN(num) ? num : null;
-  };
-
   const handleParamBlur = (
-    paramName: string,
+    parameter: DatatypeParameter,
     paramValue: string,
-    valueType: string,
   ) => {
-    const paramVal = parseParamValue(paramValue, valueType);
-
     if (pendingType) {
-      const updated = { ...pendingParams, [paramName]: paramVal };
-      setPendingParams(updated);
+      const updated = applyDatatypeParameterInput(
+        pendingState,
+        parameter,
+        paramValue,
+      );
+      setPendingState(updated);
 
-      const allRequiredFilled = params
-        .filter((p) => p.required)
-        .every((p) => updated[p.name] != null);
-
-      if (allRequiredFilled) {
+      if (hasCompleteRequiredParameters(params, updated)) {
         setPendingType(null);
-        setPendingParams({});
+        setPendingState({ values: {}, invalidNames: new Set() });
         onPendingChange?.(false);
-        onChange(pendingType, JSON.stringify(updated));
+        onChange(pendingType, serializeDatatypeParameterValues(updated.values));
       }
     } else {
-      const updated = { ...parsed, [paramName]: paramVal };
-      onChange(value, JSON.stringify(updated));
+      const updated = applyDatatypeParameterInput(
+        { values: parsedValues, invalidNames: invalidParamNames },
+        parameter,
+        paramValue,
+      );
+      setInvalidParamNames(updated.invalidNames);
+      if (!updated.invalidNames.has(parameter.name)) {
+        onChange(value, serializeDatatypeParameterValues(updated.values));
+      }
     }
   };
 
@@ -146,49 +156,54 @@ export const TypeSelector = ({
             {params.length > 0 && (
               <>
                 <span>(</span>
-                {[...params]
-                  .sort((a, b) => a.order - b.order)
-                  .map((param, i) => {
-                    const isStringArray = param.valueType === 'string_array';
-                    const defaultVal = displayParams[param.name];
-                    const displayVal = isStringArray
-                      ? Array.isArray(defaultVal)
-                        ? defaultVal.join(', ')
-                        : ''
-                      : (defaultVal ?? '');
+                {sortedParams.map((param, i) => {
+                  const isStringArray = param.valueType === 'string_array';
+                  const defaultVal = displayParams[param.name];
+                  const displayVal = isStringArray
+                    ? Array.isArray(defaultVal)
+                      ? defaultVal.join(', ')
+                      : ''
+                    : (defaultVal ?? '');
 
-                    return (
-                      <Fragment key={param.name}>
-                        {i > 0 && <span>,</span>}
-                        <input
-                          key={`${displayType}-${param.name}`}
-                          type={isStringArray ? 'text' : 'number'}
-                          defaultValue={displayVal}
-                          placeholder={
-                            isStringArray ? 'e.g. a, b, c' : param.label
-                          }
-                          onPointerDown={(e) => e.stopPropagation()}
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            e.preventDefault();
-                          }}
-                          onMouseDown={(e) => e.stopPropagation()}
-                          onKeyDown={(e) => {
-                            e.stopPropagation();
-                            if (e.key === 'Enter') e.currentTarget.blur();
-                          }}
-                          onBlur={(e) =>
-                            handleParamBlur(
-                              param.name,
-                              e.target.value,
-                              param.valueType,
-                            )
-                          }
-                          className={`${isStringArray ? 'w-28' : 'w-8'} border-b border-schemafy-dark-gray bg-transparent text-center focus:border-schemafy-soft-blue focus:outline-none [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none`}
-                        />
-                      </Fragment>
-                    );
-                  })}
+                  return (
+                    <Fragment key={param.name}>
+                      {i > 0 && <span>,</span>}
+                      <input
+                        key={`${displayType}-${param.name}`}
+                        type={isStringArray ? 'text' : 'number'}
+                        min={
+                          isStringArray
+                            ? undefined
+                            : (param.minValue ?? undefined)
+                        }
+                        max={
+                          isStringArray
+                            ? undefined
+                            : (param.maxValue ?? undefined)
+                        }
+                        defaultValue={displayVal}
+                        aria-label={`${displayType} ${param.label}`}
+                        aria-invalid={displayInvalidNames.has(param.name)}
+                        data-testid={`datatype-parameter-${param.name}`}
+                        placeholder={
+                          isStringArray ? 'e.g. a, b, c' : param.label
+                        }
+                        onPointerDown={(e) => e.stopPropagation()}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          e.preventDefault();
+                        }}
+                        onMouseDown={(e) => e.stopPropagation()}
+                        onKeyDown={(e) => {
+                          e.stopPropagation();
+                          if (e.key === 'Enter') e.currentTarget.blur();
+                        }}
+                        onBlur={(e) => handleParamBlur(param, e.target.value)}
+                        className={`${isStringArray ? 'w-28' : 'w-8'} border-b ${displayInvalidNames.has(param.name) ? 'border-schemafy-destructive' : 'border-schemafy-dark-gray'} bg-transparent text-center focus:border-schemafy-soft-blue focus:outline-none [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none`}
+                      />
+                    </Fragment>
+                  );
+                })}
                 <span>)</span>
               </>
             )}
