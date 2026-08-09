@@ -1,11 +1,9 @@
-package com.schemafy.core.erd.index.application.service;
+package com.schemafy.core.erd.vendor.application.service;
 
 import org.springframework.stereotype.Component;
 
-import com.schemafy.core.erd.index.domain.policy.IndexCapabilities;
-import com.schemafy.core.erd.vendor.application.service.ProjectDbVendorResolver;
 import com.schemafy.core.erd.vendor.domain.DbVendor;
-import com.schemafy.core.erd.vendor.domain.VendorCapabilities;
+import com.schemafy.core.erd.vendor.domain.datatype.DatatypePolicy;
 import com.schemafy.core.project.application.access.ProjectAccessResourceType;
 
 import lombok.RequiredArgsConstructor;
@@ -13,16 +11,15 @@ import reactor.core.publisher.Mono;
 
 @Component
 @RequiredArgsConstructor
-public class IndexCapabilityResolver {
+public class DatatypePolicyResolver {
 
   private final ProjectDbVendorResolver projectDbVendorResolver;
 
-  public Mono<IndexCapabilities> resolve(
+  public Mono<DatatypePolicy> resolve(
       ProjectAccessResourceType resourceType,
       String resourceId) {
     return projectDbVendorResolver.resolve(resourceType, resourceId)
-        .map(DbVendor::capabilities)
-        .map(VendorCapabilities::indexes);
+        .map(DbVendor::datatypeMappings);
   }
 
 }
