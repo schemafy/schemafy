@@ -29,7 +29,7 @@ import com.schemafy.core.erd.table.domain.Table;
 import com.schemafy.core.erd.table.domain.exception.TableErrorCode;
 import com.schemafy.core.erd.vendor.application.port.in.GetProjectDbVendorQuery;
 import com.schemafy.core.erd.vendor.application.port.in.GetProjectDbVendorUseCase;
-import com.schemafy.core.erd.vendor.domain.IdentifierCapabilities;
+import com.schemafy.core.erd.vendor.domain.DbVendor;
 import com.schemafy.core.erd.vendor.domain.validator.IdentifierValidator;
 import com.schemafy.core.project.application.access.AccessTarget;
 import com.schemafy.core.project.application.access.RequireProjectAccess;
@@ -81,8 +81,7 @@ public class CreateColumnService implements CreateColumnUseCase {
                         .flatMap(dbVendor -> createColumn(
                             table,
                             tuple.getT2(),
-                            dbVendor.name(),
-                            dbVendor.capabilities().identifiers(),
+                            dbVendor,
                             command,
                             typeArguments)))
                     .map(result -> MutationResult.of(result, table.id())))
@@ -107,32 +106,33 @@ public class CreateColumnService implements CreateColumnUseCase {
   private Mono<CreateColumnResult> createColumn(
       Table table,
       List<Column> existingColumns,
-      String dbVendorName,
-      IdentifierCapabilities identifierCapabilities,
+      DbVendor dbVendor,
       CreateColumnCommand command,
       ColumnTypeArguments typeArguments) {
     String normalizedName = normalizeName(command.name());
-    String normalizedDataType = ColumnValidator.normalizeDataType(command.dataType());
     String charset = normalizeOptional(command.charset());
     String collation = normalizeOptional(command.collation());
     String comment = normalizeOptional(command.comment());
 
     ColumnValidator.validateName(normalizedName);
     IdentifierValidator.validateLength(
-        identifierCapabilities,
+        dbVendor.capabilities().identifiers(),
         normalizedName,
         ColumnErrorCode.NAME_INVALID,
         "Column name");
-    ColumnValidator.validateReservedKeyword(dbVendorName, normalizedName);
+    ColumnValidator.validateReservedKeyword(dbVendor.name(), normalizedName);
     ColumnValidator.validateNameUniqueness(existingColumns, normalizedName, null);
-    ColumnValidator.validateDataType(normalizedDataType);
-    ColumnValidator.validateTypeArguments(normalizedDataType, typeArguments);
-    ColumnValidator.validateAutoIncrement(
-        normalizedDataType,
+    var datatype = DatatypePolicyColumnValidator.validate(
+        dbVendor.datatypeMappings(),
+        command.dataType(),
+        typeArguments,
+        command.autoIncrement(),
+        charset,
+        collation);
+    ColumnValidator.validateAutoIncrementUniqueness(
         command.autoIncrement(),
         existingColumns,
         null);
-    ColumnValidator.validateCharsetAndCollation(normalizedDataType, charset, collation);
     int resolvedSeqNo = resolveSeqNo(existingColumns);
     ColumnValidator.validatePosition(resolvedSeqNo);
 
@@ -142,7 +142,7 @@ public class CreateColumnService implements CreateColumnUseCase {
               id,
               table.id(),
               normalizedName,
-              normalizedDataType,
+              datatype.sqlType(),
               typeArguments,
               resolvedSeqNo,
               command.autoIncrement(),

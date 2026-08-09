@@ -180,6 +180,13 @@ public final class ColumnValidator {
       throw new DomainException(ColumnErrorCode.AUTO_INCREMENT_NOT_ALLOWED,
           "Auto increment is only allowed for integer types: " + normalized);
     }
+    validateAutoIncrementUniqueness(autoIncrement, columns, ignoreColumnId);
+  }
+
+  public static void validateAutoIncrementUniqueness(
+      boolean autoIncrement,
+      List<Column> columns,
+      String ignoreColumnId) {
     if (autoIncrement && columns != null) {
       boolean exists = columns.stream()
           .anyMatch(column -> !equalsIgnoreCase(column.id(), ignoreColumnId)
