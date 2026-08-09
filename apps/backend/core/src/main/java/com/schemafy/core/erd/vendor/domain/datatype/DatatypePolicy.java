@@ -21,13 +21,13 @@ public record DatatypePolicy(
     String versionRange,
     List<DatatypeDefinition> types) {
 
-  private static final int CURRENT_SCHEMA_VERSION = 2;
+  private static final int SUPPORTED_SCHEMA_VERSION = 2;
   private static final Pattern VERSION_PATTERN = Pattern.compile("\\d+(?:\\.\\d+)*");
   private static final Pattern RANGE_TERM_PATTERN = Pattern.compile(
       "\\s*(>=|<=|>|<|=)\\s*(\\d+(?:\\.\\d+)*)");
 
   public DatatypePolicy {
-    if (schemaVersion != CURRENT_SCHEMA_VERSION) {
+    if (schemaVersion != SUPPORTED_SCHEMA_VERSION) {
       throw new IllegalArgumentException("Unsupported datatype policy schemaVersion: " + schemaVersion);
     }
     if (vendor == null || vendor.isBlank()) {
