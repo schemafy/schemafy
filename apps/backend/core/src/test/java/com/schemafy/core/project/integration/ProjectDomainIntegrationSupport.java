@@ -37,6 +37,7 @@ import com.schemafy.core.ulid.application.service.UlidGenerator;
 import com.schemafy.core.user.application.port.out.CreateUserPort;
 import com.schemafy.core.user.application.port.out.PasswordHashPort;
 import com.schemafy.core.user.application.port.out.SendEmailVerificationPort;
+import com.schemafy.core.user.application.port.out.SendPasswordResetEmailPort;
 import com.schemafy.core.user.domain.User;
 
 import reactor.core.publisher.Mono;
@@ -58,6 +59,9 @@ abstract class ProjectDomainIntegrationSupport {
 
   @MockitoBean
   protected SendEmailVerificationPort sendEmailVerificationPort;
+
+  @MockitoBean
+  protected SendPasswordResetEmailPort sendPasswordResetEmailPort;
 
   @Autowired
   protected WorkspaceRepository workspaceRepository;

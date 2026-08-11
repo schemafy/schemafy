@@ -93,6 +93,9 @@ oauth:
 sharelink:
   pepper: ${SHARELINK_PEPPER:default-pepper}
 
+app:
+  frontend-url: ${FRONTEND_URL:http://localhost:3000}
+
 auth:
   token:
     secret: ${AUTH_TOKEN_SECRET:${HMAC_SECRET:default-hmac-secret-change-me-in-production}}

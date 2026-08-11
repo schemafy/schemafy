@@ -25,6 +25,7 @@ import com.schemafy.core.project.domain.WorkspaceMember;
 import com.schemafy.core.project.domain.WorkspaceRole;
 import com.schemafy.core.ulid.application.service.UlidGenerator;
 import com.schemafy.core.user.application.port.out.SendEmailVerificationPort;
+import com.schemafy.core.user.application.port.out.SendPasswordResetEmailPort;
 
 import reactor.core.CoreSubscriber;
 import reactor.core.publisher.Hooks;
@@ -55,6 +56,9 @@ public abstract class ErdProjectIntegrationSupport {
 
   @MockitoBean
   protected SendEmailVerificationPort sendEmailVerificationPort;
+
+  @MockitoBean
+  protected SendPasswordResetEmailPort sendPasswordResetEmailPort;
 
   @BeforeEach
   void setUpProjectAccessRequesterContext() {
