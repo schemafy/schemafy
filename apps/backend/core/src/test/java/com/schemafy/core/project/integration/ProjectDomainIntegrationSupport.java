@@ -8,6 +8,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.r2dbc.core.DatabaseClient;
 import org.springframework.test.context.ActiveProfiles;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
 
 import org.junit.jupiter.api.BeforeEach;
 
@@ -35,6 +36,7 @@ import com.schemafy.core.project.domain.WorkspaceRole;
 import com.schemafy.core.ulid.application.service.UlidGenerator;
 import com.schemafy.core.user.application.port.out.CreateUserPort;
 import com.schemafy.core.user.application.port.out.PasswordHashPort;
+import com.schemafy.core.user.application.port.out.SendEmailVerificationPort;
 import com.schemafy.core.user.domain.User;
 
 import reactor.core.publisher.Mono;
@@ -53,6 +55,9 @@ abstract class ProjectDomainIntegrationSupport {
 
   @Autowired
   protected PasswordHashPort passwordHashPort;
+
+  @MockitoBean
+  protected SendEmailVerificationPort sendEmailVerificationPort;
 
   @Autowired
   protected WorkspaceRepository workspaceRepository;

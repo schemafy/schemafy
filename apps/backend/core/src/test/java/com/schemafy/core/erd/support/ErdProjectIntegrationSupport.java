@@ -4,6 +4,7 @@ import java.util.UUID;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.r2dbc.core.DatabaseClient;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
 
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -23,6 +24,7 @@ import com.schemafy.core.project.domain.Workspace;
 import com.schemafy.core.project.domain.WorkspaceMember;
 import com.schemafy.core.project.domain.WorkspaceRole;
 import com.schemafy.core.ulid.application.service.UlidGenerator;
+import com.schemafy.core.user.application.port.out.SendEmailVerificationPort;
 
 import reactor.core.CoreSubscriber;
 import reactor.core.publisher.Hooks;
@@ -50,6 +52,9 @@ public abstract class ErdProjectIntegrationSupport {
 
   @Autowired
   protected DatabaseClient databaseClient;
+
+  @MockitoBean
+  protected SendEmailVerificationPort sendEmailVerificationPort;
 
   @BeforeEach
   void setUpProjectAccessRequesterContext() {
