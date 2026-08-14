@@ -20,8 +20,8 @@ import com.schemafy.api.collaboration.service.CollaborationService;
 import com.schemafy.api.collaboration.service.SessionRegistry;
 import com.schemafy.api.collaboration.service.model.SessionEntry;
 import com.schemafy.api.collaboration.service.presence.CollaborationPresenceProperties;
-import com.schemafy.api.common.config.ConditionalOnRedisEnabled;
 import com.schemafy.api.common.security.principal.AuthenticatedUser;
+import com.schemafy.core.common.config.ConditionalOnRedisEnabled;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;

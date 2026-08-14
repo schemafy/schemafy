@@ -40,7 +40,7 @@ class LoginOrSignUpOAuthService implements LoginOrSignUpOAuthUseCase {
         command.provider(), command.providerUserId())
         .flatMap(authProvider -> findUserByIdPort.findUserById(authProvider.userId()))
         .map(user -> new LoginOrSignUpOAuthResult(user, false))
-        .switchIfEmpty(linkOrCreateOAuthUser(command))
+        .switchIfEmpty(Mono.defer(() -> linkOrCreateOAuthUser(command)))
         .as(transactionalOperator::transactional);
   }
 

@@ -3,14 +3,14 @@ package com.schemafy.api.collaboration.service.handler;
 import org.springframework.stereotype.Component;
 
 import com.fasterxml.jackson.databind.JsonNode;
-import com.schemafy.api.collaboration.dto.CollaborationEventType;
-import com.schemafy.api.collaboration.dto.PreviewAction;
-import com.schemafy.api.collaboration.dto.event.CollaborationInbound;
-import com.schemafy.api.collaboration.dto.event.CollaborationOutboundFactory;
-import com.schemafy.api.collaboration.dto.event.RelationshipExtraPreviewEvent;
-import com.schemafy.api.collaboration.service.CollaborationEventPublisher;
 import com.schemafy.api.collaboration.service.SessionRegistry;
-import com.schemafy.api.common.config.ConditionalOnRedisEnabled;
+import com.schemafy.core.collaboration.dto.CollaborationEventType;
+import com.schemafy.core.collaboration.dto.PreviewAction;
+import com.schemafy.core.collaboration.dto.event.CollaborationInbound;
+import com.schemafy.core.collaboration.dto.event.CollaborationOutboundFactory;
+import com.schemafy.core.collaboration.dto.event.RelationshipExtraPreviewEvent;
+import com.schemafy.core.collaboration.service.CollaborationEventPublisher;
+import com.schemafy.core.common.config.ConditionalOnRedisEnabled;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
