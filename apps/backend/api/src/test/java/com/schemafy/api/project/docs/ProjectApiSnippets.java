@@ -409,4 +409,34 @@ public class ProjectApiSnippets extends RestDocsSnippets {
     return createRequestHeadersSnippet(authorizationHeader());
   }
 
+  // ========== GET/PATCH /api/projects/{projectId}/share-link - 공유 링크 상태 ===========
+
+  public static Snippet projectShareLinkPathParameters() {
+    return pathParameters(parameterWithName("projectId").description("프로젝트 ID"));
+  }
+
+  public static Snippet projectShareLinkRequestHeaders() {
+    return createRequestHeadersSnippet(authorizationHeader());
+  }
+
+  public static Snippet updateProjectShareLinkRequest() {
+    return requestFields(
+        fieldWithPath("isActive").type(JsonFieldType.BOOLEAN)
+            .description("공유 링크 활성 상태"));
+  }
+
+  public static Snippet projectShareLinkResponseHeaders() {
+    return createResponseHeadersSnippet(commonResponseHeaders());
+  }
+
+  public static Snippet projectShareLinkResponse() {
+    return createResponseFieldsSnippet(successResponseFields(
+        fieldWithPath("id").type(JsonFieldType.STRING)
+            .description("공유 링크 ID").optional(),
+        fieldWithPath("url").type(JsonFieldType.STRING)
+            .description("공개 접근 URL").optional(),
+        fieldWithPath("isActive").type(JsonFieldType.BOOLEAN)
+            .description("공유 링크 활성 상태")));
+  }
+
 }

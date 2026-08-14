@@ -16,38 +16,33 @@ import com.schemafy.api.common.type.PageResponse;
 import com.schemafy.api.project.controller.dto.request.CreateProjectRequest;
 import com.schemafy.api.project.controller.dto.request.UpdateProjectMemberRoleRequest;
 import com.schemafy.api.project.controller.dto.request.UpdateProjectRequest;
+import com.schemafy.api.project.controller.dto.request.UpdateProjectShareLinkRequest;
 import com.schemafy.api.project.controller.dto.response.ProjectMemberResponse;
 import com.schemafy.api.project.controller.dto.response.ProjectResponse;
+import com.schemafy.api.project.controller.dto.response.ProjectShareLinkResponse;
 import com.schemafy.api.project.controller.dto.response.ProjectSummaryResponse;
-import com.schemafy.api.project.controller.dto.response.ShareLinkResponse;
 import com.schemafy.api.project.orchestrator.ProjectMemberOrchestrator;
 import com.schemafy.core.project.application.port.in.CreateProjectCommand;
 import com.schemafy.core.project.application.port.in.CreateProjectUseCase;
-import com.schemafy.core.project.application.port.in.CreateShareLinkCommand;
-import com.schemafy.core.project.application.port.in.CreateShareLinkUseCase;
 import com.schemafy.core.project.application.port.in.DeleteProjectCommand;
 import com.schemafy.core.project.application.port.in.DeleteProjectUseCase;
-import com.schemafy.core.project.application.port.in.DeleteShareLinkCommand;
-import com.schemafy.core.project.application.port.in.DeleteShareLinkUseCase;
 import com.schemafy.core.project.application.port.in.GetMySharedProjectsQuery;
 import com.schemafy.core.project.application.port.in.GetMySharedProjectsUseCase;
 import com.schemafy.core.project.application.port.in.GetProjectMembersQuery;
 import com.schemafy.core.project.application.port.in.GetProjectQuery;
+import com.schemafy.core.project.application.port.in.GetProjectShareLinkQuery;
+import com.schemafy.core.project.application.port.in.GetProjectShareLinkUseCase;
 import com.schemafy.core.project.application.port.in.GetProjectUseCase;
 import com.schemafy.core.project.application.port.in.GetProjectsQuery;
 import com.schemafy.core.project.application.port.in.GetProjectsUseCase;
-import com.schemafy.core.project.application.port.in.GetShareLinkQuery;
-import com.schemafy.core.project.application.port.in.GetShareLinkUseCase;
-import com.schemafy.core.project.application.port.in.GetShareLinksQuery;
-import com.schemafy.core.project.application.port.in.GetShareLinksUseCase;
 import com.schemafy.core.project.application.port.in.LeaveProjectCommand;
 import com.schemafy.core.project.application.port.in.LeaveProjectUseCase;
 import com.schemafy.core.project.application.port.in.RemoveProjectMemberCommand;
 import com.schemafy.core.project.application.port.in.RemoveProjectMemberUseCase;
-import com.schemafy.core.project.application.port.in.RevokeShareLinkCommand;
-import com.schemafy.core.project.application.port.in.RevokeShareLinkUseCase;
 import com.schemafy.core.project.application.port.in.UpdateProjectCommand;
 import com.schemafy.core.project.application.port.in.UpdateProjectMemberRoleCommand;
+import com.schemafy.core.project.application.port.in.UpdateProjectShareLinkCommand;
+import com.schemafy.core.project.application.port.in.UpdateProjectShareLinkUseCase;
 import com.schemafy.core.project.application.port.in.UpdateProjectUseCase;
 
 import lombok.RequiredArgsConstructor;
@@ -67,11 +62,8 @@ public class ProjectController {
   private final DeleteProjectUseCase deleteProjectUseCase;
   private final RemoveProjectMemberUseCase removeProjectMemberUseCase;
   private final LeaveProjectUseCase leaveProjectUseCase;
-  private final CreateShareLinkUseCase createShareLinkUseCase;
-  private final GetShareLinksUseCase getShareLinksUseCase;
-  private final GetShareLinkUseCase getShareLinkUseCase;
-  private final RevokeShareLinkUseCase revokeShareLinkUseCase;
-  private final DeleteShareLinkUseCase deleteShareLinkUseCase;
+  private final GetProjectShareLinkUseCase getProjectShareLinkUseCase;
+  private final UpdateProjectShareLinkUseCase updateProjectShareLinkUseCase;
   private final ProjectMemberOrchestrator projectMemberOrchestrator;
 
   @Value("${app.base-url:http://localhost:8080}")
@@ -211,82 +203,32 @@ public class ProjectController {
         userId));
   }
 
-  // ========== ShareLink Management ==========
-
-  @PostMapping("/projects/{projectId}/share-links")
-  @ResponseStatus(HttpStatus.CREATED)
-  public Mono<ShareLinkResponse> createShareLink(
+  @GetMapping("/projects/{projectId}/share-link")
+  public Mono<ProjectShareLinkResponse> getProjectShareLink(
       @PathVariable String version,
       @PathVariable String projectId,
       Authentication authentication) {
     String userId = authentication.getName();
-    return createShareLinkUseCase.createShareLink(new CreateShareLinkCommand(
-        projectId,
-        userId))
-        .map(shareLink -> ShareLinkResponse.of(shareLink, baseUrl, version));
+    return getProjectShareLinkUseCase.getProjectShareLink(
+        new GetProjectShareLinkQuery(projectId, userId))
+        .map(link -> ProjectShareLinkResponse.of(link, baseUrl, version))
+        .defaultIfEmpty(ProjectShareLinkResponse.inactive());
   }
 
-  @GetMapping("/projects/{projectId}/share-links")
-  public Mono<PageResponse<ShareLinkResponse>> getShareLinks(
+  @PatchMapping("/projects/{projectId}/share-link")
+  public Mono<ProjectShareLinkResponse> updateProjectShareLink(
       @PathVariable String version,
       @PathVariable String projectId,
-      @RequestParam(defaultValue = "0") @PositiveOrZero int page,
-      @RequestParam(defaultValue = "10") @Positive @Max(100) int size,
+      @Valid @RequestBody UpdateProjectShareLinkRequest request,
       Authentication authentication) {
     String userId = authentication.getName();
-    return getShareLinksUseCase.getShareLinks(new GetShareLinksQuery(
-        projectId,
-        userId,
-        page,
-        size))
-        .map(result -> PageResponse.of(
-            result.content().stream()
-                .map(link -> ShareLinkResponse.of(link, baseUrl, version))
-                .toList(),
-            result.page(),
-            result.size(),
-            result.totalElements()));
-  }
-
-  @GetMapping("/projects/{projectId}/share-links/{shareLinkId}")
-  public Mono<ShareLinkResponse> getShareLink(
-      @PathVariable String version,
-      @PathVariable String projectId,
-      @PathVariable String shareLinkId,
-      Authentication authentication) {
-    String userId = authentication.getName();
-    return getShareLinkUseCase.getShareLink(new GetShareLinkQuery(
-        projectId,
-        shareLinkId,
-        userId))
-        .map(shareLink -> ShareLinkResponse.of(shareLink, baseUrl, version));
-  }
-
-  @PatchMapping("/projects/{projectId}/share-links/{shareLinkId}/revoke")
-  public Mono<ShareLinkResponse> revokeShareLink(
-      @PathVariable String version,
-      @PathVariable String projectId,
-      @PathVariable String shareLinkId,
-      Authentication authentication) {
-    String userId = authentication.getName();
-    return revokeShareLinkUseCase.revokeShareLink(new RevokeShareLinkCommand(
-        projectId,
-        shareLinkId,
-        userId))
-        .map(shareLink -> ShareLinkResponse.of(shareLink, baseUrl, version));
-  }
-
-  @DeleteMapping("/projects/{projectId}/share-links/{shareLinkId}")
-  @ResponseStatus(HttpStatus.NO_CONTENT)
-  public Mono<Void> deleteShareLink(
-      @PathVariable String projectId,
-      @PathVariable String shareLinkId,
-      Authentication authentication) {
-    String userId = authentication.getName();
-    return deleteShareLinkUseCase.deleteShareLink(new DeleteShareLinkCommand(
-        projectId,
-        shareLinkId,
-        userId));
+    return updateProjectShareLinkUseCase.updateProjectShareLink(
+        new UpdateProjectShareLinkCommand(
+            projectId,
+            request.isActive(),
+            userId))
+        .map(link -> ProjectShareLinkResponse.of(link, baseUrl, version))
+        .defaultIfEmpty(ProjectShareLinkResponse.inactive());
   }
 
 }
