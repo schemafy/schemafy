@@ -26,8 +26,8 @@ import com.schemafy.api.erd.controller.dto.request.CreateTableRequest;
 import com.schemafy.api.erd.controller.dto.response.TableResponse;
 import com.schemafy.api.erd.controller.dto.response.TableSnapshotResponse;
 import com.schemafy.api.erd.service.TableSnapshotOrchestrator;
+import com.schemafy.api.erd.service.sync.ErdStateSyncPublisher;
 import com.schemafy.api.erd.service.table.TableApiResponseMapper;
-import com.schemafy.core.erd.broadcast.ErdMutationBroadcaster;
 import com.schemafy.core.erd.operation.domain.CommittedErdOperation;
 import com.schemafy.core.erd.table.application.port.in.ChangeTableExtraCommand;
 import com.schemafy.core.erd.table.application.port.in.ChangeTableExtraUseCase;
@@ -64,7 +64,7 @@ public class TableController {
   private final DeleteTableUseCase deleteTableUseCase;
   private final TableApiResponseMapper tableResponseMapper;
 
-  private final ObjectProvider<ErdMutationBroadcaster> broadcasterProvider;
+  private final ObjectProvider<ErdStateSyncPublisher> publisherProvider;
 
   @PostMapping("/tables")
   public Mono<MutationResponse<TableResponse>> createTable(
@@ -165,16 +165,16 @@ public class TableController {
   public Mono<MutationResponse<Void>> deleteTable(
       @PathVariable String tableId) {
     DeleteTableCommand command = new DeleteTableCommand(tableId);
-    ErdMutationBroadcaster broadcaster = broadcasterProvider.getIfAvailable();
-    if (broadcaster == null) {
+    ErdStateSyncPublisher publisher = publisherProvider.getIfAvailable();
+    if (publisher == null) {
       return deleteTableUseCase.deleteTable(command)
           .map(result -> MutationResponse.<Void>of(null,
               result.affectedTableIds(), result.operation()));
     }
-    return broadcaster.resolveFromTableId(tableId)
+    return publisher.resolveFromTableId(tableId)
         .flatMap(ctx -> deleteTableUseCase.deleteTable(command)
-            .flatMap(result -> broadcaster
-                .broadcastWithContext(ctx, result.affectedTableIds(),
+            .flatMap(result -> publisher
+                .publishActiveWithContext(ctx, result.affectedTableIds(),
                     result.operation())
                 .thenReturn(result)))
         .map(result -> MutationResponse.<Void>of(null,
@@ -183,11 +183,11 @@ public class TableController {
 
   private Mono<Void> broadcastMutation(Set<String> affectedTableIds,
       CommittedErdOperation operation) {
-    ErdMutationBroadcaster broadcaster = broadcasterProvider.getIfAvailable();
-    if (broadcaster == null) {
+    ErdStateSyncPublisher publisher = publisherProvider.getIfAvailable();
+    if (publisher == null) {
       return Mono.empty();
     }
-    return broadcaster.broadcast(affectedTableIds, operation);
+    return publisher.publishMutation(affectedTableIds, operation);
   }
 
 }
