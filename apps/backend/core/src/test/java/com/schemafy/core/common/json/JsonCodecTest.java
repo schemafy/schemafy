@@ -24,6 +24,22 @@ class JsonCodecTest {
   }
 
   @Test
+  @DisplayName("toJsonNode는 객체의 JSON 구조를 보존한다")
+  void toJsonNode_preservesObjectStructure() {
+    JsonNode node = sut.toJsonNode(new TestPayload(1));
+
+    assertThat(node.path("x").asInt()).isEqualTo(1);
+  }
+
+  @Test
+  @DisplayName("toJsonNode null은 IllegalArgumentException을 던진다")
+  void toJsonNode_nullThrowsIllegalArgumentException() {
+    assertThatThrownBy(() -> sut.toJsonNode(null))
+        .isInstanceOf(IllegalArgumentException.class)
+        .hasMessage("value must not be null");
+  }
+
+  @Test
   @DisplayName("fromJson은 raw JSON을 지정 타입으로 역직렬화한다")
   void fromJson_parsesRawJson() {
     TestPayload payload = sut.fromJson("{\"x\":1}", TestPayload.class);
