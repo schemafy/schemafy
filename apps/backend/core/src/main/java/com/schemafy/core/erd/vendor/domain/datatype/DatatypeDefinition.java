@@ -200,6 +200,12 @@ public record DatatypeDefinition(
     Map<DatatypeParameterName, Integer> optionalDepthByName = new HashMap<>();
     int previousParameterOrder = 0;
     int optionalDepth = 0;
+    int parenthesisDepth = 0;
+    int parenthesisPairs = 0;
+    int declarationPlaceholderCount = 0;
+    int separatorCount = 0;
+    boolean parenthesesValid = true;
+    boolean separatorsValid = true;
     for (int index = sqlType.length(); index < template.length(); index++) {
       char current = template.charAt(index);
       if (current == '[') {
@@ -233,10 +239,28 @@ public record DatatypeDefinition(
         if (!parameter.required() && optionalDepth == 0) {
           throw new IllegalArgumentException("Optional datatype placeholder must be in an optional segment: " + name);
         }
+        parenthesesValid &= parenthesisDepth == 1;
+        separatorsValid &= separatorCount == declarationPlaceholderCount;
+        declarationPlaceholderCount++;
         index = end;
       } else if (current == '}') {
         throw new IllegalArgumentException("Datatype template has an unbalanced placeholder");
-      } else if ("(), ".indexOf(current) < 0) {
+      } else if (current == '(') {
+        parenthesisDepth++;
+        parenthesisPairs++;
+        parenthesesValid &= parenthesisDepth == 1 && parenthesisPairs == 1;
+      } else if (current == ')') {
+        parenthesesValid &= parenthesisDepth == 1;
+        parenthesisDepth--;
+      } else if (current == ',') {
+        separatorsValid &= parenthesisDepth == 1
+            && declarationPlaceholderCount == separatorCount + 1
+            && index + 1 < template.length()
+            && template.charAt(index + 1) == ' ';
+        separatorCount++;
+      } else if (current == ' ') {
+        separatorsValid &= index > sqlType.length() && template.charAt(index - 1) == ',';
+      } else {
         throw new IllegalArgumentException("Datatype template contains an unsupported literal");
       }
     }
@@ -247,6 +271,23 @@ public record DatatypeDefinition(
       throw new IllegalArgumentException("Datatype template placeholders do not match parameters");
     }
     validateDependentPlaceholderNesting(optionalDepthByName);
+    if (parameters.isEmpty()) {
+      if (!template.equals(sqlType)) {
+        throw new IllegalArgumentException(
+            "Datatype template without parameters must equal canonical sqlType");
+      }
+      return;
+    }
+    if (!parenthesesValid || parenthesisDepth != 0 || parenthesisPairs != 1) {
+      throw new IllegalArgumentException(
+          "Datatype template declaration parentheses are invalid");
+    }
+    if (!separatorsValid
+        || declarationPlaceholderCount != parameters.size()
+        || separatorCount != parameters.size() - 1) {
+      throw new IllegalArgumentException(
+          "Datatype template parameter separator is missing or misplaced");
+    }
   }
 
   private static void validateDependentPlaceholderNesting(

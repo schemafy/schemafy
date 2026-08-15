@@ -185,6 +185,28 @@ class DatatypePolicyTest {
         .hasMessageContaining("nested");
   }
 
+  @Test
+  @DisplayName("template의 datatype 선언 괄호가 닫히지 않으면 거부한다")
+  void rejectsUnbalancedDeclarationParentheses() {
+    assertThatThrownBy(() -> definition(
+        "CHAR",
+        List.of(),
+        List.of(integerParameter(DatatypeParameterName.LENGTH, false, 1, 0, 255)),
+        "CHAR[({length}]",
+        properties()))
+        .isInstanceOf(IllegalArgumentException.class)
+        .hasMessageContaining("parentheses");
+  }
+
+  @Test
+  @DisplayName("template의 datatype parameter 사이 구분자가 없으면 거부한다")
+  void rejectsMissingParameterSeparator() {
+    assertThatThrownBy(() -> decimalDefinition(
+        "DECIMAL[({precision}[ {scale}])]"))
+        .isInstanceOf(IllegalArgumentException.class)
+        .hasMessageContaining("separator");
+  }
+
   private static DatatypeDefinition decimalDefinition(String template) {
     return definition(
         "DECIMAL",
