@@ -167,6 +167,35 @@ class DatatypePolicyTest {
         .hasMessageContaining("placeholder");
   }
 
+  @Test
+  @DisplayName("template placeholder가 parameter 순서를 바꾸면 거부한다")
+  void rejectsReorderedTemplatePlaceholders() {
+    assertThatThrownBy(() -> decimalDefinition(
+        "DECIMAL[({scale}[, {precision}])]"))
+        .isInstanceOf(IllegalArgumentException.class)
+        .hasMessageContaining("order");
+  }
+
+  @Test
+  @DisplayName("scale placeholder가 precision의 optional segment 밖에 있으면 거부한다")
+  void rejectsScaleOutsidePrecisionOptionalSegment() {
+    assertThatThrownBy(() -> decimalDefinition(
+        "DECIMAL[({precision})][, {scale}]"))
+        .isInstanceOf(IllegalArgumentException.class)
+        .hasMessageContaining("nested");
+  }
+
+  private static DatatypeDefinition decimalDefinition(String template) {
+    return definition(
+        "DECIMAL",
+        List.of(),
+        List.of(
+            integerParameter(DatatypeParameterName.PRECISION, false, 1, 1, 65),
+            integerParameter(DatatypeParameterName.SCALE, false, 2, 0, 30)),
+        template,
+        properties());
+  }
+
   private static DatatypeProperties properties() {
     return new DatatypeProperties(false, false, Set.of(IndexType.BTREE), "test");
   }

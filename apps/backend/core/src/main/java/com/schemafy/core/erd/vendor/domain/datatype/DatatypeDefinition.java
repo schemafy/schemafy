@@ -197,6 +197,8 @@ public record DatatypeDefinition(
             parameter -> parameter.name().jsonName(),
             parameter -> parameter));
     Set<String> placeholders = new HashSet<>();
+    Map<DatatypeParameterName, Integer> optionalDepthByName = new HashMap<>();
+    int previousParameterOrder = 0;
     int optionalDepth = 0;
     for (int index = sqlType.length(); index < template.length(); index++) {
       char current = template.charAt(index);
@@ -220,6 +222,11 @@ public record DatatypeDefinition(
         if (parameter == null || !placeholders.add(name)) {
           throw new IllegalArgumentException("Datatype template placeholder is unknown or duplicated: " + name);
         }
+        if (parameter.order() <= previousParameterOrder) {
+          throw new IllegalArgumentException("Datatype template placeholders must follow parameter order");
+        }
+        previousParameterOrder = parameter.order();
+        optionalDepthByName.put(parameter.name(), optionalDepth);
         if (parameter.required() && optionalDepth > 0) {
           throw new IllegalArgumentException("Required datatype placeholder cannot be optional: " + name);
         }
@@ -238,6 +245,17 @@ public record DatatypeDefinition(
     }
     if (!placeholders.equals(parameterByName.keySet())) {
       throw new IllegalArgumentException("Datatype template placeholders do not match parameters");
+    }
+    validateDependentPlaceholderNesting(optionalDepthByName);
+  }
+
+  private static void validateDependentPlaceholderNesting(
+      Map<DatatypeParameterName, Integer> optionalDepthByName) {
+    Integer precisionDepth = optionalDepthByName.get(DatatypeParameterName.PRECISION);
+    Integer scaleDepth = optionalDepthByName.get(DatatypeParameterName.SCALE);
+    if (scaleDepth != null && (precisionDepth == null || scaleDepth <= precisionDepth)) {
+      throw new IllegalArgumentException(
+          "Datatype scale placeholder must be nested inside precision optional segment");
     }
   }
 
