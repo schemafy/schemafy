@@ -42,6 +42,21 @@ export const hasCompleteRequiredParameters = (
         state.values[parameter.name] != null,
     );
 
+export const editDatatypeParameterDraft = (
+  state: DatatypeParameterInputState,
+  parameters: DatatypeParameter[],
+  parameter: DatatypeParameter,
+  rawValue: string,
+): { state: DatatypeParameterInputState; isPending: boolean } => {
+  const updated = applyDatatypeParameterInput(state, parameter, rawValue);
+  return {
+    state: updated,
+    isPending:
+      updated.invalidNames.size > 0 ||
+      !hasCompleteRequiredParameters(parameters, updated),
+  };
+};
+
 export const serializeDatatypeParameterValues = (
   values: Record<string, DatatypeParameterValue>,
 ): string =>

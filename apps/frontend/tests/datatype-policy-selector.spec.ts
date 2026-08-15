@@ -2,6 +2,7 @@ import { expect, test } from '@playwright/test';
 import type { DatatypeParameter } from '../src/features/vendor/api/types';
 import {
   applyDatatypeParameterInput,
+  editDatatypeParameterDraft,
   hasCompleteRequiredParameters,
   serializeDatatypeParameterValues,
 } from '../src/features/drawing/components/Column/utils';
@@ -122,5 +123,68 @@ test.describe('datatype policy selector state', () => {
         values: null,
       }),
     ).toBe(JSON.stringify({ precision: 10 }));
+  });
+
+  test('기존 parameter의 invalid edit은 수정될 때까지 pending으로 유지한다', () => {
+    const length = integerParameter({ required: false, maxValue: 255 });
+
+    const invalid = editDatatypeParameterDraft(
+      { values: { length: 100 }, invalidNames: new Set() },
+      [length],
+      length,
+      '256',
+    );
+    expect(invalid.isPending).toBe(true);
+    expect(invalid.state.values).toEqual({ length: 100 });
+    expect(invalid.state.invalidNames).toContain('length');
+
+    const corrected = editDatatypeParameterDraft(
+      invalid.state,
+      [length],
+      length,
+      '200',
+    );
+    expect(corrected.isPending).toBe(false);
+    expect(corrected.state.values).toEqual({ length: 200 });
+    expect(corrected.state.invalidNames.size).toBe(0);
+  });
+
+  test('optional DECIMAL parameter edit은 하나의 draft에 누적한다', () => {
+    const precision = integerParameter({
+      name: 'precision',
+      label: 'Precision (M)',
+      required: false,
+      order: 1,
+      minValue: 1,
+      maxValue: 65,
+    });
+    const scale = integerParameter({
+      name: 'scale',
+      label: 'Scale (D)',
+      required: false,
+      order: 2,
+      minValue: 0,
+      maxValue: 30,
+    });
+
+    const precisionEdit = editDatatypeParameterDraft(
+      { values: {}, invalidNames: new Set() },
+      [precision, scale],
+      precision,
+      '10',
+    );
+    const scaleEdit = editDatatypeParameterDraft(
+      precisionEdit.state,
+      [precision, scale],
+      scale,
+      '2',
+    );
+
+    expect(precisionEdit.isPending).toBe(false);
+    expect(scaleEdit.isPending).toBe(false);
+    expect(scaleEdit.state.values).toEqual({ precision: 10, scale: 2 });
+    expect(serializeDatatypeParameterValues(scaleEdit.state.values)).toBe(
+      JSON.stringify({ precision: 10, scale: 2 }),
+    );
   });
 });

@@ -10,9 +10,8 @@ import {
   SelectTrigger,
 } from '@/components';
 import {
-  applyDatatypeParameterInput,
   CATEGORY_LABELS,
-  hasCompleteRequiredParameters,
+  editDatatypeParameterDraft,
   parseTypeArguments,
   serializeDatatypeParameterValues,
 } from './utils';
@@ -40,6 +39,12 @@ const groupTypesByCategory = (
   return groups;
 };
 
+const parseDraftValues = (
+  typeArguments: string,
+): Record<string, DatatypeParameterValue> => ({
+  ...parseTypeArguments(typeArguments),
+});
+
 export const TypeSelector = ({
   value,
   typeArguments,
@@ -48,36 +53,65 @@ export const TypeSelector = ({
   onChange,
   onPendingChange,
 }: TypeSelectorProps) => {
-  const parsed = parseTypeArguments(typeArguments);
-  const [pendingType, setPendingType] = useState<string | null>(null);
-  const [pendingState, setPendingState] = useState<DatatypeParameterInputState>(
-    {
-      values: {},
+  const incomingValues = useMemo(
+    () => parseDraftValues(typeArguments),
+    [typeArguments],
+  );
+  const incomingSignature = useMemo(
+    () => serializeDatatypeParameterValues(incomingValues),
+    [incomingValues],
+  );
+  const [draftType, setDraftType] = useState(value);
+  const [draftState, setDraftState] = useState<DatatypeParameterInputState>(
+    () => ({
+      values: parseDraftValues(typeArguments),
       invalidNames: new Set(),
-    },
+    }),
   );
-  const [invalidParamNames, setInvalidParamNames] = useState<Set<string>>(
-    new Set(),
-  );
+  const [hasLocalEdits, setHasLocalEdits] = useState(false);
 
-  const displayType = pendingType ?? value;
+  const displayType = draftType;
   const displayTypeConfig = vendorTypes.find((t) => t.sqlType === displayType);
   const params: DatatypeParameter[] = displayTypeConfig?.parameters ?? [];
   const sortedParams = [...params].sort((a, b) => a.order - b.order);
-  const parsedValues: Record<string, DatatypeParameterValue> = { ...parsed };
-  const displayParams = pendingType ? pendingState.values : parsedValues;
-  const displayInvalidNames = pendingType
-    ? pendingState.invalidNames
-    : invalidParamNames;
+  const draftSignature = serializeDatatypeParameterValues(draftState.values);
 
-  const pendingTypeRef = useRef(pendingType);
-  pendingTypeRef.current = pendingType;
+  const pendingRef = useRef(false);
   const onPendingChangeRef = useRef(onPendingChange);
   onPendingChangeRef.current = onPendingChange;
 
+  const notifyPendingChange = (isPending: boolean) => {
+    pendingRef.current = isPending;
+    onPendingChange?.(isPending);
+  };
+
+  useEffect(() => {
+    if (hasLocalEdits) {
+      // Ignore stale mutation snapshots until the server reflects the full draft.
+      if (
+        draftState.invalidNames.size === 0 &&
+        value === draftType &&
+        incomingSignature === draftSignature
+      ) {
+        setHasLocalEdits(false);
+      }
+      return;
+    }
+    setDraftType(value);
+    setDraftState({ values: incomingValues, invalidNames: new Set() });
+  }, [
+    draftSignature,
+    draftState.invalidNames.size,
+    draftType,
+    hasLocalEdits,
+    incomingSignature,
+    incomingValues,
+    value,
+  ]);
+
   useEffect(() => {
     return () => {
-      if (pendingTypeRef.current) onPendingChangeRef.current?.(false);
+      if (pendingRef.current) onPendingChangeRef.current?.(false);
     };
   }, []);
 
@@ -90,18 +124,14 @@ export const TypeSelector = ({
     const newTypeConfig = vendorTypes.find((t) => t.sqlType === newType);
     const hasRequiredParams =
       newTypeConfig?.parameters.some((p) => p.required) ?? false;
+    const nextState = { values: {}, invalidNames: new Set<string>() };
 
+    setDraftType(newType);
+    setDraftState(nextState);
+    setHasLocalEdits(true);
+    notifyPendingChange(hasRequiredParams);
     if (!hasRequiredParams) {
-      setPendingType(null);
-      setPendingState({ values: {}, invalidNames: new Set() });
-      setInvalidParamNames(new Set());
-      onPendingChange?.(false);
       onChange(newType, '{}');
-    } else {
-      setPendingType(newType);
-      setPendingState({ values: {}, invalidNames: new Set() });
-      setInvalidParamNames(new Set());
-      onPendingChange?.(true);
     }
   };
 
@@ -109,30 +139,20 @@ export const TypeSelector = ({
     parameter: DatatypeParameter,
     paramValue: string,
   ) => {
-    if (pendingType) {
-      const updated = applyDatatypeParameterInput(
-        pendingState,
-        parameter,
-        paramValue,
+    const updated = editDatatypeParameterDraft(
+      draftState,
+      params,
+      parameter,
+      paramValue,
+    );
+    setDraftState(updated.state);
+    setHasLocalEdits(true);
+    notifyPendingChange(updated.isPending);
+    if (!updated.isPending) {
+      onChange(
+        draftType,
+        serializeDatatypeParameterValues(updated.state.values),
       );
-      setPendingState(updated);
-
-      if (hasCompleteRequiredParameters(params, updated)) {
-        setPendingType(null);
-        setPendingState({ values: {}, invalidNames: new Set() });
-        onPendingChange?.(false);
-        onChange(pendingType, serializeDatatypeParameterValues(updated.values));
-      }
-    } else {
-      const updated = applyDatatypeParameterInput(
-        { values: parsedValues, invalidNames: invalidParamNames },
-        parameter,
-        paramValue,
-      );
-      setInvalidParamNames(updated.invalidNames);
-      if (!updated.invalidNames.has(parameter.name)) {
-        onChange(value, serializeDatatypeParameterValues(updated.values));
-      }
     }
   };
 
@@ -158,7 +178,7 @@ export const TypeSelector = ({
                 <span>(</span>
                 {sortedParams.map((param, i) => {
                   const isStringArray = param.valueType === 'string_array';
-                  const defaultVal = displayParams[param.name];
+                  const defaultVal = draftState.values[param.name];
                   const displayVal = isStringArray
                     ? Array.isArray(defaultVal)
                       ? defaultVal.join(', ')
@@ -183,7 +203,7 @@ export const TypeSelector = ({
                         }
                         defaultValue={displayVal}
                         aria-label={`${displayType} ${param.label}`}
-                        aria-invalid={displayInvalidNames.has(param.name)}
+                        aria-invalid={draftState.invalidNames.has(param.name)}
                         data-testid={`datatype-parameter-${param.name}`}
                         placeholder={
                           isStringArray ? 'e.g. a, b, c' : param.label
@@ -199,7 +219,7 @@ export const TypeSelector = ({
                           if (e.key === 'Enter') e.currentTarget.blur();
                         }}
                         onBlur={(e) => handleParamBlur(param, e.target.value)}
-                        className={`${isStringArray ? 'w-28' : 'w-8'} border-b ${displayInvalidNames.has(param.name) ? 'border-schemafy-destructive' : 'border-schemafy-dark-gray'} bg-transparent text-center focus:border-schemafy-soft-blue focus:outline-none [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none`}
+                        className={`${isStringArray ? 'w-28' : 'w-8'} border-b ${draftState.invalidNames.has(param.name) ? 'border-schemafy-destructive' : 'border-schemafy-dark-gray'} bg-transparent text-center focus:border-schemafy-soft-blue focus:outline-none [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none`}
                       />
                     </Fragment>
                   );
