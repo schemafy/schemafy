@@ -270,3 +270,49 @@ test.describe('datatype policy selector state', () => {
     ).toBe('DECIMAL(10)');
   });
 });
+
+test('같은 schema의 datatype mutation은 이전 요청이 끝난 후 순서대로 실행한다', async ({
+  page,
+}) => {
+  const payloads: unknown[] = [];
+  let releaseFirstRequest: (() => void) | undefined;
+  const firstRequestBlocked = new Promise<void>((resolve) => {
+    releaseFirstRequest = resolve;
+  });
+
+  await page.route(
+    'http://localhost:4000/api/v1.0/columns/column-1/type',
+    async (route) => {
+      payloads.push(route.request().postDataJSON());
+      if (payloads.length === 1) {
+        await firstRequestBlocked;
+      }
+      await route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify({
+          data: null,
+          affectedTableIds: [],
+          operation: null,
+        }),
+      });
+    },
+  );
+
+  await page.goto('/tests/fixtures/change-column-type-mutation.html');
+  await page.getByTestId('precision-only').click();
+  await expect.poll(() => payloads.length).toBe(1);
+
+  await page.getByTestId('precision-scale').click();
+  await page.waitForTimeout(100);
+  const requestsStartedBeforeFirstCompleted = payloads.length;
+
+  releaseFirstRequest?.();
+  await expect.poll(() => payloads.length).toBe(2);
+
+  expect(requestsStartedBeforeFirstCompleted).toBe(1);
+  expect(payloads).toEqual([
+    { dataType: 'DECIMAL', precision: 10, scale: null },
+    { dataType: 'DECIMAL', precision: 10, scale: 2 },
+  ]);
+});
