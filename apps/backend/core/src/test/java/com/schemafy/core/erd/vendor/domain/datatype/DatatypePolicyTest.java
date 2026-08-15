@@ -186,6 +186,15 @@ class DatatypePolicyTest {
   }
 
   @Test
+  @DisplayName("datatype 선언 괄호가 형제 optional segment를 가로지르면 거부한다")
+  void rejectsDeclarationParenthesesAcrossSiblingOptionalSegments() {
+    assertThatThrownBy(() -> decimalDefinition(
+        "DECIMAL[({precision}][, [{scale}])]"))
+        .isInstanceOf(IllegalArgumentException.class)
+        .hasMessageContaining("parentheses");
+  }
+
+  @Test
   @DisplayName("template의 datatype 선언 괄호가 닫히지 않으면 거부한다")
   void rejectsUnbalancedDeclarationParentheses() {
     assertThatThrownBy(() -> definition(

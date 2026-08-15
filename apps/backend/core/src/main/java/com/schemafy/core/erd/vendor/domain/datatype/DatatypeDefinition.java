@@ -1,5 +1,6 @@
 package com.schemafy.core.erd.vendor.domain.datatype;
 
+import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.HashMap;
@@ -200,6 +201,9 @@ public record DatatypeDefinition(
     Map<DatatypeParameterName, Integer> optionalDepthByName = new HashMap<>();
     int previousParameterOrder = 0;
     int optionalDepth = 0;
+    int nextOptionalSegmentId = 0;
+    int declarationParenthesisSegmentId = 0;
+    ArrayDeque<Integer> optionalSegmentIds = new ArrayDeque<>();
     int parenthesisDepth = 0;
     int parenthesisPairs = 0;
     int declarationPlaceholderCount = 0;
@@ -210,14 +214,16 @@ public record DatatypeDefinition(
       char current = template.charAt(index);
       if (current == '[') {
         optionalDepth++;
+        optionalSegmentIds.push(++nextOptionalSegmentId);
         if (optionalDepth > 2) {
           throw new IllegalArgumentException("Datatype template optional nesting exceeds two levels");
         }
       } else if (current == ']') {
-        optionalDepth--;
-        if (optionalDepth < 0) {
+        if (optionalDepth == 0) {
           throw new IllegalArgumentException("Datatype template has unbalanced optional segments");
         }
+        optionalDepth--;
+        optionalSegmentIds.pop();
       } else if (current == '{') {
         int end = template.indexOf('}', index + 1);
         if (end < 0) {
@@ -248,9 +254,16 @@ public record DatatypeDefinition(
       } else if (current == '(') {
         parenthesisDepth++;
         parenthesisPairs++;
+        declarationParenthesisSegmentId = optionalSegmentIds.isEmpty()
+            ? 0
+            : optionalSegmentIds.peek();
         parenthesesValid &= parenthesisDepth == 1 && parenthesisPairs == 1;
       } else if (current == ')') {
-        parenthesesValid &= parenthesisDepth == 1;
+        int currentOptionalSegmentId = optionalSegmentIds.isEmpty()
+            ? 0
+            : optionalSegmentIds.peek();
+        parenthesesValid &= parenthesisDepth == 1
+            && declarationParenthesisSegmentId == currentOptionalSegmentId;
         parenthesisDepth--;
       } else if (current == ',') {
         separatorsValid &= parenthesisDepth == 1
