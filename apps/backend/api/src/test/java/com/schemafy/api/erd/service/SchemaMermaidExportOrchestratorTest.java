@@ -10,6 +10,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+import com.schemafy.api.erd.fixture.DbVendorApiFixture;
 import com.schemafy.api.erd.service.export.SchemaExportSnapshotReader;
 import com.schemafy.api.erd.service.export.SchemaExportSnapshotReader.SchemaExportSnapshotResult;
 import com.schemafy.core.erd.export.domain.SchemaExportSnapshot;
@@ -58,6 +59,7 @@ class SchemaMermaidExportOrchestratorTest {
         .willReturn(Mono.just(new SchemaExportSnapshotResult(
             snapshot,
             42L,
+            DbVendorApiFixture.mysqlDatatypePolicy(),
             new IndexCapabilities(Set.of(), Set.of()),
             IdentifierCapabilities.codePoints(64))));
     given(generateSchemaMermaidUseCase.generateSchemaMermaid(

@@ -352,6 +352,7 @@ class ColumnPersistenceAdapterTest {
           .assertNext(found -> {
             assertThat(found.charset()).isEqualTo("utf8mb4");
             assertThat(found.collation()).isEqualTo("utf8mb4_general_ci");
+            assertThat(found.typeArguments()).isEqualTo(column.typeArguments());
           })
           .verifyComplete();
     }

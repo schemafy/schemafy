@@ -18,6 +18,8 @@ import com.schemafy.core.erd.export.domain.SchemaExportSnapshot;
 import com.schemafy.core.erd.index.domain.policy.IndexCapabilities;
 import com.schemafy.core.erd.index.domain.validator.IndexValidator;
 import com.schemafy.core.erd.vendor.domain.IdentifierCapabilities;
+import com.schemafy.core.erd.vendor.domain.datatype.DatatypePolicy;
+import com.schemafy.core.erd.vendor.domain.datatype.DatatypeValidationErrorCodes;
 import com.schemafy.core.erd.vendor.domain.validator.IdentifierValidator;
 
 import reactor.core.publisher.Mono;
@@ -52,7 +54,8 @@ public class GenerateSchemaDdlService implements GenerateSchemaDdlUseCase {
       validateIdentifierCapabilities(
           command.snapshot(),
           command.identifierCapabilities());
-      return generator.generate(command.snapshot());
+      validateDatatypePolicy(command.snapshot(), command.datatypePolicy());
+      return generator.generate(command.snapshot(), command.datatypePolicy());
     });
   }
 
@@ -116,6 +119,39 @@ public class GenerateSchemaDdlService implements GenerateSchemaDdlUseCase {
               identifierCapabilities,
               relationship.name(),
               "Relationship name"));
+    }
+  }
+
+  private static void validateDatatypePolicy(
+      SchemaExportSnapshot snapshot,
+      DatatypePolicy datatypePolicy) {
+    if (snapshot == null || snapshot.schema() == null || datatypePolicy == null) {
+      throw new DomainException(
+          DdlErrorCode.INVALID_VALUE,
+          "DDL snapshot and datatype policy must not be null");
+    }
+    if (!datatypePolicy.vendor().equalsIgnoreCase(snapshot.schema().dbVendorName())) {
+      throw new DomainException(
+          DdlErrorCode.INVALID_VALUE,
+          "Datatype policy vendor must match the snapshot DB vendor");
+    }
+    DatatypeValidationErrorCodes errorCodes = DatatypeValidationErrorCodes.all(DdlErrorCode.INVALID_VALUE);
+    for (SchemaExportSnapshot.TableSnapshot table : snapshot.tables()) {
+      if (table == null) {
+        throw new DomainException(DdlErrorCode.INVALID_VALUE, "DDL table snapshot must not be null");
+      }
+      for (SchemaExportSnapshot.Column column : table.columns()) {
+        if (column == null) {
+          throw new DomainException(DdlErrorCode.INVALID_VALUE, "DDL column must not be null");
+        }
+        datatypePolicy.validate(
+            column.dataType(),
+            column.typeArguments(),
+            column.autoIncrement(),
+            column.charset(),
+            column.collation(),
+            errorCodes);
+      }
     }
   }
 

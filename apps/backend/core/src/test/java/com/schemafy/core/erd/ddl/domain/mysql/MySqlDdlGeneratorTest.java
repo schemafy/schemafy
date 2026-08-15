@@ -49,7 +49,7 @@ class MySqlDdlGeneratorTest {
         userTable(),
         orderTable());
 
-    String ddl = sut.generate(snapshot);
+    String ddl = generate(snapshot);
 
     assertThat(ddl).contains(
         "-- Schemafy MySQL DDL Export",
@@ -100,13 +100,47 @@ class MySqlDdlGeneratorTest {
         List.of(),
         List.of());
 
-    String ddl = sut.generate(schema(table));
+    String ddl = generate(schema(table));
 
     assertThat(ddl).contains(
         "CREATE TABLE `select`",
         "  `order` VARCHAR(50) DEFAULT 'O''Reilly\\\\books' COMMENT 'quote '' and slash \\\\ and newline\\n'",
         "  `created_at` DATETIME DEFAULT (CURRENT_TIMESTAMP)",
         "  CONSTRAINT `ck_select_status` CHECK (status IN ('READY', 'DONE'))");
+  }
+
+  @Test
+  @DisplayName("schema-v2 template로 alias와 optional argument 및 value list를 렌더링한다")
+  void rendersDatatypePolicyTemplates() {
+    TableSnapshot table = new TableSnapshot(
+        table("t1", "policy_types"),
+        List.of(
+            column("c1", "t1", "alias_int", "INTEGER", null, 0, false),
+            column("c2", "t1", "amount", "DECIMAL",
+                new ColumnTypeArguments(null, 10, null), 1, false),
+            column("c3", "t1", "fixed_zero", "CHAR",
+                new ColumnTypeArguments(0, null, null), 2, false),
+            column("c4", "t1", "variable_zero", "VARCHAR",
+                new ColumnTypeArguments(0, null, null), 3, false),
+            column("c5", "t1", "enum_value", "ENUM",
+                new ColumnTypeArguments(null, null, null, List.of("it's", "a\\b")),
+                4, false),
+            column("c6", "t1", "set_value", "SET",
+                new ColumnTypeArguments(null, null, null, List.of("A", "B")),
+                5, false)),
+        List.of(),
+        List.of(),
+        List.of());
+
+    String ddl = generate(schema(table));
+
+    assertThat(ddl).contains(
+        "`alias_int` INT",
+        "`amount` DECIMAL(10)",
+        "`fixed_zero` CHAR(0)",
+        "`variable_zero` VARCHAR(0)",
+        "`enum_value` ENUM('it''s', 'a\\\\b')",
+        "`set_value` SET('A', 'B')");
   }
 
   @Test
@@ -201,7 +235,7 @@ class MySqlDdlGeneratorTest {
                 "idx-employees-manager", "manager_id", 0,
                 SortDirection.ASC)))));
 
-    String ddl = sut.generate(schema(employees));
+    String ddl = generate(schema(employees));
 
     assertThat(ddl).contains(
         "CREATE TABLE `employees`",
@@ -251,7 +285,7 @@ class MySqlDdlGeneratorTest {
         List.of(relationship),
         List.of());
 
-    String ddl = sut.generate(schema(subscriptions, invoices));
+    String ddl = generate(schema(subscriptions, invoices));
 
     assertThat(ddl).contains(
         "ALTER TABLE `invoices` ADD CONSTRAINT `fk_invoices_subscription` FOREIGN KEY (`tenant_id`, `subscription_code`) REFERENCES `subscriptions` (`tenant_id`, `code`);");
@@ -293,7 +327,7 @@ class MySqlDdlGeneratorTest {
         List.of(betaToAlpha),
         List.of());
 
-    String ddl = sut.generate(schema(alpha, beta));
+    String ddl = generate(schema(alpha, beta));
 
     int firstAlter = ddl.indexOf("ALTER TABLE");
     assertThat(ddl.indexOf("CREATE TABLE `alpha`")).isLessThan(firstAlter);
@@ -310,7 +344,7 @@ class MySqlDdlGeneratorTest {
         new SchemaSnapshot("schema-1", "postgresql", "app", null, null),
         List.of(userTable()));
 
-    assertThatThrownBy(() -> sut.generate(snapshot))
+    assertThatThrownBy(() -> generate(snapshot))
         .isInstanceOf(DomainException.class)
         .matches(DomainException.hasErrorCode(DdlErrorCode.UNSUPPORTED_VENDOR));
   }
@@ -325,7 +359,7 @@ class MySqlDdlGeneratorTest {
         List.of(),
         List.of());
 
-    assertThatThrownBy(() -> sut.generate(schema(table)))
+    assertThatThrownBy(() -> generate(schema(table)))
         .isInstanceOf(DomainException.class)
         .matches(DomainException.hasErrorCode(DdlErrorCode.INVALID_VALUE));
   }
@@ -350,7 +384,7 @@ class MySqlDdlGeneratorTest {
                 new IndexColumn("ic-orders-id", "idx-orders-tenant-id",
                     "order_id", 1, SortDirection.ASC)))));
 
-    assertThatThrownBy(() -> sut.generate(schema(table)))
+    assertThatThrownBy(() -> generate(schema(table)))
         .isInstanceOf(DomainException.class)
         .matches(DomainException.hasErrorCode(DdlErrorCode.INVALID_VALUE));
   }
@@ -368,7 +402,7 @@ class MySqlDdlGeneratorTest {
         List.of(),
         List.of());
 
-    assertThatThrownBy(() -> sut.generate(schema(table)))
+    assertThatThrownBy(() -> generate(schema(table)))
         .isInstanceOf(DomainException.class)
         .matches(DomainException.hasErrorCode(DdlErrorCode.INVALID_VALUE));
   }
@@ -392,7 +426,7 @@ class MySqlDdlGeneratorTest {
         List.of(relationship),
         List.of());
 
-    assertThatThrownBy(() -> sut.generate(schema(userTable(), orders)))
+    assertThatThrownBy(() -> generate(schema(userTable(), orders)))
         .isInstanceOf(DomainException.class)
         .matches(DomainException.hasErrorCode(DdlErrorCode.INVALID_VALUE));
   }
@@ -410,7 +444,7 @@ class MySqlDdlGeneratorTest {
             List.of(new IndexColumn("ic1", "idx1", "c1", 0,
                 SortDirection.ASC)))));
 
-    assertThatThrownBy(() -> sut.generate(schema(table)))
+    assertThatThrownBy(() -> generate(schema(table)))
         .isInstanceOf(DomainException.class)
         .matches(DomainException.hasErrorCode(DdlErrorCode.INVALID_VALUE));
   }
@@ -429,7 +463,7 @@ class MySqlDdlGeneratorTest {
             List.of(new IndexColumn("ic1", "idx1", "c1", 0,
                 SortDirection.ASC)))));
 
-    assertThatThrownBy(() -> sut.generate(schema(table)))
+    assertThatThrownBy(() -> generate(schema(table)))
         .isInstanceOf(DomainException.class)
         .matches(DomainException.hasErrorCode(DdlErrorCode.INVALID_VALUE));
   }
@@ -445,7 +479,7 @@ class MySqlDdlGeneratorTest {
         List.of(),
         List.of());
 
-    assertThatThrownBy(() -> sut.generate(schema(table)))
+    assertThatThrownBy(() -> generate(schema(table)))
         .isInstanceOf(DomainException.class)
         .matches(DomainException.hasErrorCode(DdlErrorCode.INVALID_VALUE));
   }
@@ -471,10 +505,10 @@ class MySqlDdlGeneratorTest {
         List.of(),
         List.of());
 
-    assertThatThrownBy(() -> sut.generate(schema(enumWithoutValues)))
+    assertThatThrownBy(() -> generate(schema(enumWithoutValues)))
         .isInstanceOf(DomainException.class)
         .matches(DomainException.hasErrorCode(DdlErrorCode.INVALID_VALUE));
-    assertThatThrownBy(() -> sut.generate(schema(setWithTooManyValues)))
+    assertThatThrownBy(() -> generate(schema(setWithTooManyValues)))
         .isInstanceOf(DomainException.class)
         .matches(DomainException.hasErrorCode(DdlErrorCode.INVALID_VALUE));
   }
@@ -496,10 +530,10 @@ class MySqlDdlGeneratorTest {
         List.of(),
         List.of());
 
-    assertThatThrownBy(() -> sut.generate(schema(varcharWithoutLength)))
+    assertThatThrownBy(() -> generate(schema(varcharWithoutLength)))
         .isInstanceOf(DomainException.class)
         .matches(DomainException.hasErrorCode(DdlErrorCode.INVALID_VALUE));
-    assertThatThrownBy(() -> sut.generate(schema(dateWithLength)))
+    assertThatThrownBy(() -> generate(schema(dateWithLength)))
         .isInstanceOf(DomainException.class)
         .matches(DomainException.hasErrorCode(DdlErrorCode.INVALID_VALUE));
   }
@@ -518,7 +552,7 @@ class MySqlDdlGeneratorTest {
             List.of(new IndexColumn("ic1", "idx1", "c1", 0,
                 null)))));
 
-    assertThatThrownBy(() -> sut.generate(schema(table)))
+    assertThatThrownBy(() -> generate(schema(table)))
         .isInstanceOf(DomainException.class)
         .matches(DomainException.hasErrorCode(DdlErrorCode.INVALID_VALUE));
   }
@@ -552,7 +586,7 @@ class MySqlDdlGeneratorTest {
                     "sp-places-location", "place_location", 0,
                     SortDirection.DESC)))));
 
-    String ddl = sut.generate(schema(table));
+    String ddl = generate(schema(table));
 
     assertThat(ddl).contains(
         "ALTER TABLE `places` ADD FULLTEXT INDEX `ft_places_description` (`description`);",
@@ -591,7 +625,7 @@ class MySqlDdlGeneratorTest {
         List.of(relationship),
         List.of());
 
-    assertThatThrownBy(() -> sut.generate(schema(users, orders)))
+    assertThatThrownBy(() -> generate(schema(users, orders)))
         .isInstanceOf(DomainException.class)
         .matches(DomainException.hasErrorCode(DdlErrorCode.INVALID_VALUE));
   }
@@ -615,9 +649,40 @@ class MySqlDdlGeneratorTest {
         List.of(relationship),
         List.of());
 
-    assertThatThrownBy(() -> sut.generate(schema(userTable(), orders)))
+    assertThatThrownBy(() -> generate(schema(userTable(), orders)))
         .isInstanceOf(DomainException.class)
         .matches(DomainException.hasErrorCode(DdlErrorCode.INVALID_VALUE));
+  }
+
+  @Test
+  @DisplayName("FK 호환성은 datatype policy의 canonical foreignKeyGroup을 사용한다")
+  void acceptsForeignKeyAliasesInSamePolicyGroup() {
+    TableSnapshot users = new TableSnapshot(
+        table("users", "users"),
+        List.of(column("u_id", "users", "id", "INTEGER", null, 0, false)),
+        List.of(pk("pk-users", "users", "u_id")),
+        List.of(),
+        List.of());
+    RelationshipSnapshot relationship = new RelationshipSnapshot(
+        new Relationship(
+            "r1", "users", "orders", "fk_orders_user",
+            RelationshipKind.NON_IDENTIFYING, Cardinality.ONE_TO_MANY,
+            null, null),
+        List.of(new RelationshipColumn("rc1", "r1", "u_id", "o_user_id", 0)));
+    TableSnapshot orders = new TableSnapshot(
+        table("orders", "orders"),
+        List.of(
+            column("o_id", "orders", "id", "BIGINT", null, 0, false),
+            column("o_user_id", "orders", "user_id", "INT", null, 1, false)),
+        List.of(pk("pk-orders", "orders", "o_id")),
+        List.of(relationship),
+        List.of());
+
+    String ddl = generate(schema(users, orders));
+
+    assertThat(ddl).contains(
+        "`id` INT",
+        "FOREIGN KEY (`user_id`) REFERENCES `users` (`id`)");
   }
 
   @Test
@@ -641,7 +706,7 @@ class MySqlDdlGeneratorTest {
         List.of(relationship),
         List.of());
 
-    assertThatThrownBy(() -> sut.generate(schema(userTable(), orders)))
+    assertThatThrownBy(() -> generate(schema(userTable(), orders)))
         .isInstanceOf(DomainException.class)
         .matches(DomainException.hasErrorCode(DdlErrorCode.INVALID_VALUE));
   }
@@ -671,7 +736,7 @@ class MySqlDdlGeneratorTest {
         List.of(relationship),
         List.of());
 
-    assertThatThrownBy(() -> sut.generate(schema(usersWithoutKey, orders)))
+    assertThatThrownBy(() -> generate(schema(usersWithoutKey, orders)))
         .isInstanceOf(DomainException.class)
         .matches(DomainException.hasErrorCode(DdlErrorCode.INVALID_VALUE));
   }
@@ -691,7 +756,7 @@ class MySqlDdlGeneratorTest {
         List.of(),
         List.of());
 
-    assertThatThrownBy(() -> sut.generate(schema(table)))
+    assertThatThrownBy(() -> generate(schema(table)))
         .isInstanceOf(DomainException.class)
         .matches(DomainException.hasErrorCode(DdlErrorCode.COLUMN_NOT_FOUND));
   }
@@ -703,6 +768,10 @@ class MySqlDdlGeneratorTest {
         List.of(tables));
   }
 
+  private String generate(SchemaExportSnapshot snapshot) {
+    return sut.generate(snapshot, DbVendorFixture.defaultDatatypePolicy());
+  }
+
   private void assertIdentifierLengthError(
       SchemaExportSnapshot snapshot,
       String subject) {
@@ -711,6 +780,7 @@ class MySqlDdlGeneratorTest {
     assertThatThrownBy(() -> service.generateSchemaDdl(new GenerateSchemaDdlCommand(
         snapshot,
         DdlExportVendor.MYSQL,
+        DbVendorFixture.defaultDatatypePolicy(),
         DbVendorFixture.defaultCapabilities().indexes(),
         IdentifierCapabilities.codePoints(10))).block())
         .isInstanceOfSatisfying(DomainException.class, exception -> {

@@ -12,6 +12,7 @@ import lombok.RequiredArgsConstructor;
 public enum VendorErrorCode implements DomainErrorCode {
 
   NOT_FOUND(HttpStatus.NOT_FOUND),
+  INVALID_DATATYPE_POLICY(HttpStatus.INTERNAL_SERVER_ERROR),
   INVALID_VALUE(HttpStatus.BAD_REQUEST);
 
   private final HttpStatus status;
