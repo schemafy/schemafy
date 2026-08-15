@@ -8,6 +8,13 @@ export type DatatypeParameterInputState = {
   invalidNames: Set<string>;
 };
 
+const DATATYPE_PARAMETER_NAMES: readonly DatatypeParameter['name'][] = [
+  'length',
+  'precision',
+  'scale',
+  'values',
+];
+
 export const applyDatatypeParameterInput = (
   state: DatatypeParameterInputState,
   parameter: DatatypeParameter,
@@ -72,7 +79,9 @@ export const serializeDatatypeParameterValues = (
 ): string =>
   JSON.stringify(
     Object.fromEntries(
-      Object.entries(values).filter(([, value]) => value != null),
+      DATATYPE_PARAMETER_NAMES.map(
+        (name) => [name, values[name]] as const,
+      ).filter(([, value]) => value != null),
     ),
   );
 

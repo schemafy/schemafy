@@ -126,6 +126,12 @@ test.describe('datatype policy selector state', () => {
     ).toBe(JSON.stringify({ precision: 10 }));
   });
 
+  test('policy parameter 입력 순서와 무관하게 canonical payload를 생성한다', () => {
+    expect(serializeDatatypeParameterValues({ scale: 2, precision: 10 })).toBe(
+      JSON.stringify({ precision: 10, scale: 2 }),
+    );
+  });
+
   test('기존 parameter의 invalid edit은 수정될 때까지 pending으로 유지한다', () => {
     const length = integerParameter({ required: false, maxValue: 255 });
 
