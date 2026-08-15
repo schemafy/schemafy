@@ -3,6 +3,7 @@ import type { DatatypeParameter } from '../src/features/vendor/api/types';
 import {
   applyDatatypeParameterInput,
   editDatatypeParameterDraft,
+  formatTypeDisplay,
   hasCompleteRequiredParameters,
   serializeDatatypeParameterValues,
 } from '../src/features/drawing/components/Column/utils';
@@ -186,5 +187,80 @@ test.describe('datatype policy selector state', () => {
     expect(serializeDatatypeParameterValues(scaleEdit.state.values)).toBe(
       JSON.stringify({ precision: 10, scale: 2 }),
     );
+  });
+
+  test('DECIMAL scale-only와 scale이 precision을 초과한 draft는 pending으로 유지한다', () => {
+    const precision = integerParameter({
+      name: 'precision',
+      label: 'Precision (M)',
+      required: false,
+      order: 1,
+      minValue: 1,
+      maxValue: 65,
+    });
+    const scale = integerParameter({
+      name: 'scale',
+      label: 'Scale (D)',
+      required: false,
+      order: 2,
+      minValue: 0,
+      maxValue: 30,
+    });
+
+    const scaleOnly = editDatatypeParameterDraft(
+      { values: {}, invalidNames: new Set() },
+      [precision, scale],
+      scale,
+      '2',
+    );
+    const scaleExceedsPrecision = editDatatypeParameterDraft(
+      scaleOnly.state,
+      [precision, scale],
+      precision,
+      '1',
+    );
+    const corrected = editDatatypeParameterDraft(
+      scaleExceedsPrecision.state,
+      [precision, scale],
+      precision,
+      '10',
+    );
+
+    expect(scaleOnly.isPending).toBe(true);
+    expect(scaleExceedsPrecision.isPending).toBe(true);
+    expect(corrected.isPending).toBe(false);
+  });
+
+  test('ENUM과 SET의 중복 값은 pending으로 유지한다', () => {
+    const values = {
+      name: 'values',
+      label: 'Values',
+      valueType: 'string_array',
+      required: true,
+      order: 1,
+      minValue: null,
+      maxValue: null,
+      minItems: 1,
+      maxItems: 64,
+      minItemLength: 1,
+      maxItemLength: 255,
+    } satisfies DatatypeParameter;
+
+    const duplicate = editDatatypeParameterDraft(
+      { values: {}, invalidNames: new Set() },
+      [values],
+      values,
+      'ACTIVE, ACTIVE',
+    );
+
+    expect(duplicate.isPending).toBe(true);
+    expect(duplicate.state.invalidNames).toContain('values');
+    expect(duplicate.state.values).toEqual({});
+  });
+
+  test('scale 없는 DECIMAL precision을 view mode에 표시한다', () => {
+    expect(
+      formatTypeDisplay('DECIMAL', JSON.stringify({ precision: 10 })),
+    ).toBe('DECIMAL(10)');
   });
 });

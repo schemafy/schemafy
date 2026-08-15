@@ -42,6 +42,15 @@ export const hasCompleteRequiredParameters = (
         state.values[parameter.name] != null,
     );
 
+const hasValidParameterRelationships = (
+  values: Record<string, DatatypeParameterValue>,
+): boolean => {
+  const precision = values.precision;
+  const scale = values.scale;
+  if (typeof scale !== 'number') return true;
+  return typeof precision === 'number' && scale <= precision;
+};
+
 export const editDatatypeParameterDraft = (
   state: DatatypeParameterInputState,
   parameters: DatatypeParameter[],
@@ -53,7 +62,8 @@ export const editDatatypeParameterDraft = (
     state: updated,
     isPending:
       updated.invalidNames.size > 0 ||
-      !hasCompleteRequiredParameters(parameters, updated),
+      !hasCompleteRequiredParameters(parameters, updated) ||
+      !hasValidParameterRelationships(updated.values),
   };
 };
 
@@ -94,6 +104,7 @@ const parseDatatypeParameterInput = (
   if (
     (parameter.minItems != null && values.length < parameter.minItems) ||
     (parameter.maxItems != null && values.length > parameter.maxItems) ||
+    new Set(values).size !== values.length ||
     values.some((value) => {
       const length = Array.from(value).length;
       return (
@@ -133,8 +144,10 @@ export const formatTypeDisplay = (
   if (values && values.length > 0) {
     return `${type}(${values.join(',')})`;
   }
-  if (precision != null && scale != null) {
-    return `${type}(${precision},${scale})`;
+  if (precision != null) {
+    return scale != null
+      ? `${type}(${precision},${scale})`
+      : `${type}(${precision})`;
   }
   if (length != null) {
     return `${type}(${length})`;
