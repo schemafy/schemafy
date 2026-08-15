@@ -80,6 +80,8 @@ class ChangeColumnTypeUndoRedoHandlerTest {
         current.id(),
         "VARCHAR",
         new ColumnTypeArguments(255, null, null),
+        null,
+        null,
         List.of());
     given(getColumnByIdPort.findColumnById(current.id()))
         .willReturn(Mono.just(current));
@@ -107,6 +109,8 @@ class ChangeColumnTypeUndoRedoHandlerTest {
     var inverse = new ChangeColumnTypeInverse(
         current.id(),
         "BIGINT",
+        null,
+        null,
         null,
         List.of(new FkColumnTypeRevert(
             fkCurrent.id(),
@@ -143,6 +147,8 @@ class ChangeColumnTypeUndoRedoHandlerTest {
         current.id(),
         "INTEGER",
         null,
+        null,
+        null,
         List.of(new FkColumnTypeRevert(
             fkCurrent.id(),
             "VARCHAR",
@@ -166,6 +172,8 @@ class ChangeColumnTypeUndoRedoHandlerTest {
                 current.id(),
                 current.dataType(),
                 current.typeArguments(),
+                current.charset(),
+                current.collation(),
                 List.of(new FkColumnTypeRevert(
                     fkCurrent.id(),
                     fkCurrent.dataType(),
@@ -181,6 +189,84 @@ class ChangeColumnTypeUndoRedoHandlerTest {
     then(changeColumnMetaPort).should()
         .changeColumnMeta(
             eq(fkCurrent.id()), isNull(), eq("utf8mb4"), eq("utf8mb4_general_ci"), isNull());
+  }
+
+  @Test
+  @DisplayName("text에서 non-text 타입으로 복원할 때 direct charset과 collation을 제거한다")
+  void clearsDirectTextMetaWhenRestoringNonTextType() {
+    Column current = new Column(
+        ColumnFixture.DEFAULT_ID,
+        ColumnFixture.DEFAULT_TABLE_ID,
+        "value",
+        "VARCHAR",
+        new ColumnTypeArguments(255, null, null),
+        0,
+        false,
+        "utf8mb4",
+        "utf8mb4_general_ci",
+        null);
+    var inverse = new ChangeColumnTypeInverse(
+        current.id(),
+        "INT",
+        null,
+        null,
+        null,
+        List.of());
+    given(getColumnByIdPort.findColumnById(current.id()))
+        .willReturn(Mono.just(current));
+    given(datatypePolicyResolver.resolve(COLUMN, current.id()))
+        .willReturn(Mono.just(DbVendorFixture.defaultDatatypePolicy()));
+    given(changeColumnTypePort.changeColumnType(any(), any(), any()))
+        .willReturn(Mono.empty());
+    given(changeColumnMetaPort.changeColumnMeta(any(), any(), any(), any(), any()))
+        .willReturn(Mono.empty());
+
+    StepVerifier.create(sut.undo(resolved(UndoRedoAction.UNDO, inverse)))
+        .assertNext(result -> assertThat(result.inversePayload()).isEqualTo(
+            new ChangeColumnTypeInverse(
+                current.id(),
+                current.dataType(),
+                current.typeArguments(),
+                current.charset(),
+                current.collation(),
+                List.of())))
+        .verifyComplete();
+
+    then(changeColumnTypePort).should()
+        .changeColumnType(current.id(), "INT", null);
+    then(changeColumnMetaPort).should()
+        .changeColumnMeta(eq(current.id()), isNull(), eq(""), eq(""), isNull());
+  }
+
+  @Test
+  @DisplayName("non-text에서 text 타입으로 복원할 때 direct charset과 collation을 복원한다")
+  void restoresDirectTextMetaWhenRestoringTextType() {
+    Column current = ColumnFixture.intColumn();
+    var inverse = new ChangeColumnTypeInverse(
+        current.id(),
+        "VARCHAR",
+        new ColumnTypeArguments(255, null, null),
+        "utf8mb4",
+        "utf8mb4_general_ci",
+        List.of());
+    given(getColumnByIdPort.findColumnById(current.id()))
+        .willReturn(Mono.just(current));
+    given(datatypePolicyResolver.resolve(COLUMN, current.id()))
+        .willReturn(Mono.just(DbVendorFixture.defaultDatatypePolicy()));
+    given(changeColumnTypePort.changeColumnType(any(), any(), any()))
+        .willReturn(Mono.empty());
+    given(changeColumnMetaPort.changeColumnMeta(any(), any(), any(), any(), any()))
+        .willReturn(Mono.empty());
+
+    StepVerifier.create(sut.redo(resolved(UndoRedoAction.REDO, inverse)))
+        .expectNextCount(1)
+        .verifyComplete();
+
+    then(changeColumnTypePort).should()
+        .changeColumnType(current.id(), "VARCHAR", new ColumnTypeArguments(255, null, null));
+    then(changeColumnMetaPort).should()
+        .changeColumnMeta(
+            eq(current.id()), isNull(), eq("utf8mb4"), eq("utf8mb4_general_ci"), isNull());
   }
 
   private DatatypePolicy intOnlyPolicy() {

@@ -72,6 +72,8 @@ class ChangeColumnTypeUndoRedoHandler
                       column.id(),
                       column.dataType(),
                       column.typeArguments(),
+                      column.charset(),
+                      column.collation(),
                       fkSnapshot.revertList());
                   Set<String> affectedTableIds = new HashSet<>(fkSnapshot.affectedTableIds());
                   affectedTableIds.add(column.tableId());
@@ -109,8 +111,8 @@ class ChangeColumnTypeUndoRedoHandler
         inversePayload.oldDataType(),
         inversePayload.oldTypeArguments(),
         directColumn.autoIncrement(),
-        directColumn.charset(),
-        directColumn.collation());
+        inversePayload.oldCharset(),
+        inversePayload.oldCollation());
     List<ValidatedFkTypeTarget> fkTargets = java.util.stream.IntStream
         .range(0, inversePayload.fkRevertList().size())
         .mapToObj(index -> validateFkTarget(
@@ -122,6 +124,8 @@ class ChangeColumnTypeUndoRedoHandler
         directColumn.id(),
         directDatatype.sqlType(),
         inversePayload.oldTypeArguments(),
+        inversePayload.oldCharset(),
+        inversePayload.oldCollation(),
         fkTargets);
   }
 
@@ -149,6 +153,12 @@ class ChangeColumnTypeUndoRedoHandler
         inverse.columnId(),
         inverse.dataType(),
         inverse.typeArguments())
+        .then(changeColumnMetaPort.changeColumnMeta(
+            inverse.columnId(),
+            null,
+            nullableMetaValue(inverse.charset()),
+            nullableMetaValue(inverse.collation()),
+            null))
         .then(Flux.fromIterable(inverse.fkTargets())
             .concatMap(this::applyFkColumnTypeInverse)
             .then());
@@ -191,6 +201,8 @@ class ChangeColumnTypeUndoRedoHandler
       String columnId,
       String dataType,
       ColumnTypeArguments typeArguments,
+      String charset,
+      String collation,
       List<ValidatedFkTypeTarget> fkTargets) {
   }
 

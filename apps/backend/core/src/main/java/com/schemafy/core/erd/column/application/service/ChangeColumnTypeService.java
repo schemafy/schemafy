@@ -132,6 +132,8 @@ public class ChangeColumnTypeService implements ChangeColumnTypeUseCase {
                                                       lockedColumn.id(),
                                                       lockedColumn.dataType(),
                                                       lockedColumn.typeArguments(),
+                                                      lockedColumn.charset(),
+                                                      lockedColumn.collation(),
                                                       fkRevertList)));
                                         });
                                   });

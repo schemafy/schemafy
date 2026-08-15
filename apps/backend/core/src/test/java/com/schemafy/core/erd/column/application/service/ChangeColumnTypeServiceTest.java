@@ -52,6 +52,7 @@ import reactor.core.publisher.Mono;
 import reactor.test.StepVerifier;
 
 import static com.schemafy.core.project.application.access.ProjectAccessResourceType.COLUMN;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.given;
@@ -466,7 +467,9 @@ class ChangeColumnTypeServiceTest {
             .willReturn(Mono.just(List.of()));
 
         StepVerifier.create(sut.changeColumnType(command))
-            .expectNextCount(1)
+            .assertNext(result -> assertThat(result.inversePayload())
+                .extracting("oldCharset", "oldCollation")
+                .containsExactly("utf8mb4", "utf8mb4_general_ci"))
             .verifyComplete();
 
         then(changeColumnTypePort).should()
@@ -504,7 +507,9 @@ class ChangeColumnTypeServiceTest {
             .willReturn(Mono.just(List.of()));
 
         StepVerifier.create(sut.changeColumnType(command))
-            .expectNextCount(1)
+            .assertNext(result -> assertThat(result.inversePayload())
+                .extracting("oldCharset", "oldCollation")
+                .containsExactly(null, null))
             .verifyComplete();
 
         then(changeColumnTypePort).should()

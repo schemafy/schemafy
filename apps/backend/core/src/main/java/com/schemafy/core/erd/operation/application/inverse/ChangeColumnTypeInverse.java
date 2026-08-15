@@ -8,6 +8,8 @@ public record ChangeColumnTypeInverse(
     String columnId,
     String oldDataType,
     ColumnTypeArguments oldTypeArguments,
+    String oldCharset,
+    String oldCollation,
     List<FkColumnTypeRevert> fkRevertList) implements InversePayload {
 
   public ChangeColumnTypeInverse {
