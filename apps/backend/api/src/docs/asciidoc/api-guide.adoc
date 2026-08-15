@@ -1522,11 +1522,11 @@ ERD 관련 API입니다.
 
 === 실시간 협업 연동
 
-ERD 관련 mutation API(생성, 수정, 삭제)를 호출하면, 같은 프로젝트에 접속 중인 다른 사용자에게 `ERD_MUTATED` 이벤트가 WebSocket을 통해 자동으로 브로드캐스트됩니다.
+ERD 관련 mutation API(생성, 수정, 삭제)를 호출하면, 같은 프로젝트에 접속 중인 클라이언트에게 `ERD_STATE_CHANGED` 이벤트가 WebSocket을 통해 자동으로 브로드캐스트됩니다. 호환 기간에는 기존 `ERD_MUTATED` 이벤트도 함께 발행됩니다.
 
 ==== X-Session-Id 헤더
 
-ERD mutation API를 호출할 때 `X-Session-Id` 헤더를 함께 전송하면, 해당 세션으로 접속한 클라이언트에게는 이벤트가 전송되지 않습니다. 이를 통해 자기 자신의 변경에 대해 중복으로 UI를 갱신하는 것을 방지할 수 있습니다.
+ERD mutation API를 호출할 때 `X-Session-Id` 헤더를 함께 전송하면, 호환용 `ERD_MUTATED` 이벤트는 해당 세션으로 전송되지 않습니다. 전체 상태를 전달하는 `ERD_STATE_CHANGED` 이벤트는 요청 세션을 포함한 모든 세션으로 전송됩니다.
 
 [cols="1,2,1"]
 |===
@@ -1537,11 +1537,11 @@ ERD mutation API를 호출할 때 `X-Session-Id` 헤더를 함께 전송하면, 
 |선택 (협업 환경에서 권장)
 |===
 
-NOTE: `X-Session-Id`를 전송하지 않으면 모든 접속자에게 이벤트가 브로드캐스트됩니다.
+NOTE: `X-Session-Id`를 전송하지 않으면 `ERD_MUTATED`도 모든 접속자에게 브로드캐스트됩니다.
 
 ==== X-Client-Op-Id 헤더
 
-ERD mutation API를 호출할 때 `X-Client-Op-Id` 헤더를 함께 전송하면, 서버는 해당 값을 커밋된 operation metadata에 기록합니다. 이 값은 HTTP mutation 응답의 `operation.clientOperationId`와 `ERD_MUTATED.operation.clientOperationId`로 다시 전달됩니다.
+ERD mutation API를 호출할 때 `X-Client-Op-Id` 헤더를 함께 전송하면, 서버는 해당 값을 커밋된 operation metadata에 기록합니다. 이 값은 HTTP mutation 응답의 `operation.clientOperationId`와 호환용 `ERD_MUTATED.operation.clientOperationId`로 다시 전달됩니다. `ERD_STATE_CHANGED`에는 `operation` 필드가 없습니다.
 
 [cols="1,2,1"]
 |===
@@ -1567,11 +1567,11 @@ ERD mutation API를 호출할 때 `X-Base-Schema-Revision` 헤더를 함께 전�
 |선택
 |===
 
-NOTE: mutation 성공 후 실제 커밋 revision은 HTTP mutation 응답의 `operation.committedRevision`과 `ERD_MUTATED.operation.committedRevision`으로 확인할 수 있습니다.
+NOTE: mutation 성공 후 실제 커밋 revision은 HTTP mutation 응답의 `operation.committedRevision`과 호환용 `ERD_MUTATED.operation.committedRevision`으로 확인할 수 있습니다. `ERD_STATE_CHANGED.revision`은 전체 상태를 읽은 시점의 schema revision입니다.
 
 ==== 대상 API
 
-다음 API들이 mutation 수행 후 `ERD_MUTATED` 이벤트를 발생시킵니다.
+다음 API들이 mutation 수행 후 `ERD_STATE_CHANGED`와 호환용 `ERD_MUTATED` 이벤트를 발생시킵니다.
 
 [cols="1,2"]
 |===
@@ -4662,9 +4662,98 @@ WebSocket 연결이 완료된 직후 현재 클라이언트에게만 1회 전송
 
 ---
 
+===== ERD_STATE_CHANGED
+
+ERD mutation이 커밋된 뒤 해당 schema의 전체 상태를 브로드캐스트합니다. 짧은 시간에 연속된 mutation은 서버에서 coalescing되므로, 각 mutation과 이벤트가 1:1로 대응하지 않을 수 있습니다. ACTIVE 상태는 schema 메타데이터와 모든 table snapshot을 하나의 일관된 읽기 결과로 전달합니다.
+
+[source,json]
+----
+{
+  "type": "ERD_STATE_CHANGED",
+  "schemaId": "01HNQD...",
+  "revision": 42,
+  "state": "ACTIVE",
+  "schema": {
+    "id": "01HNQD...",
+    "projectId": "01HNQC...",
+    "name": "service",
+    "charset": "utf8mb4",
+    "collation": "utf8mb4_general_ci"
+  },
+  "snapshots": {
+    "01HNQE...": {
+      "table": {},
+      "columns": [],
+      "constraints": [],
+      "relationships": [],
+      "indexes": []
+    }
+  },
+  "timestamp": 1703577600000
+}
+----
+
+schema가 삭제된 경우에는 다음 tombstone을 전달합니다.
+
+[source,json]
+----
+{
+  "type": "ERD_STATE_CHANGED",
+  "schemaId": "01HNQD...",
+  "revision": 43,
+  "state": "DELETED",
+  "schema": null,
+  "snapshots": null,
+  "timestamp": 1703577600000
+}
+----
+
+필드
+
+[cols="1,2,1"]
+|===
+|필드 |설명 |타입
+
+|`type`
+|이벤트 타입 (고정값: `ERD_STATE_CHANGED`)
+|String
+
+|`schemaId`
+|변경된 schema ID (ULID)
+|String
+
+|`revision`
+|이 이벤트의 전체 상태를 읽은 schema revision. `DELETED`에서는 삭제 operation의 커밋 revision
+|Number
+
+|`state`
+|schema 존재 상태 (`ACTIVE` 또는 `DELETED`)
+|String
+
+|`schema`
+|`ACTIVE`일 때 schema 메타데이터. `DELETED`일 때 `null`
+|Object|null
+
+|`snapshots`
+|`ACTIVE`일 때 table ID를 key로 하는 전체 table snapshot map. table이 없으면 빈 object. `DELETED`일 때 `null`
+|Object|null
+
+|`timestamp`
+|이벤트 발생 시간 (Unix milliseconds)
+|Number
+|===
+
+NOTE: 이 이벤트에는 `sessionId`, `affectedTableIds`, `operation`이 없습니다. 요청을 보낸 세션도 이벤트를 수신하며, schema 수준 변경도 빈 `affectedTableIds`에 의존하지 않고 동일하게 처리됩니다.
+
+IMPORTANT: 클라이언트는 schema별 마지막 적용 revision을 보관하고, 수신한 `revision`이 마지막 적용 revision보다 큰 경우에만 전체 상태를 교체해야 합니다. coalescing 기본값은 debounce 100ms, max wait 500ms이며 네트워크 순서가 revision 순서를 보장하지는 않습니다.
+
+NOTE: 현재 MCP surface는 읽기 전용이므로 MVP 발행 대상이 아닙니다. 이후 schema 내부를 변경하는 MCP 도구를 추가할 때는 mutation 커밋 후 동일한 `ERD_STATE_CHANGED` 발행 경로를 반드시 연결해야 합니다.
+
+---
+
 ===== ERD_MUTATED
 
-ERD가 변경(생성, 수정, 삭제)되었을 때 브로드캐스트됩니다. REST API를 통한 mutation이 성공하면 서버가 자동으로 발행합니다.
+ERD가 변경(생성, 수정, 삭제)되었을 때 브로드캐스트되는 호환용 이벤트입니다. 기존 클라이언트 전환 기간에는 `ERD_STATE_CHANGED`와 함께 발행되며, 소비자 전환이 끝나면 deprecated 및 제거할 예정입니다.
 
 [source,json]
 ----
@@ -4730,9 +4819,9 @@ ERD가 변경(생성, 수정, 삭제)되었을 때 브로드캐스트됩니다. 
 |Number
 |===
 
-NOTE: 이 이벤트는 REST API의 mutation 결과로 서버가 자동 발행하며, 클라이언트가 WebSocket으로 직접 전송하는 메시지가 아닙니다.
+NOTE: 이 이벤트는 REST API의 mutation 결과로 서버가 자동 발행하며, 클라이언트가 WebSocket으로 직접 전송하는 메시지가 아닙니다. undo/redo 상관관계에 필요한 `operation`은 호환 기간 동안 그대로 유지됩니다.
 
-TIP: 클라이언트는 `affectedTableIds`에 포함된 테이블만 다시 조회하여 UI를 갱신하면 됩니다. 전체 ERD를 다시 불러올 필요가 없습니다.
+TIP: 기존 이벤트를 소비하는 클라이언트는 `affectedTableIds`에 포함된 테이블만 다시 조회할 수 있습니다. 신규 소비자는 `ERD_STATE_CHANGED`의 전체 상태를 revision 기준으로 적용합니다.
 
 ---
 
@@ -4776,5 +4865,9 @@ TIP: 클라이언트는 `affectedTableIds`에 포함된 테이블만 다시 조�
 
 |`ERD_MUTATED`
 |서버 → 클라이언트
-|ERD 변경사항 알림 (REST API mutation 시 자동 발행, `sessionId`는 선택)
+|호환용 ERD 변경 알림 (sender 제외 가능, `operation` 유지, 추후 deprecated 및 제거 예정)
+
+|`ERD_STATE_CHANGED`
+|서버 → 클라이언트
+|revision 기반 ERD 전체 상태 또는 삭제 tombstone (sender 포함)
 |===
