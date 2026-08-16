@@ -4,8 +4,8 @@ import com.schemafy.core.project.domain.ShareLink;
 
 import reactor.core.publisher.Mono;
 
-public interface GetShareLinkUseCase {
+public interface GetProjectShareLinkUseCase {
 
-  Mono<ShareLink> getShareLink(GetShareLinkQuery query);
+  Mono<ShareLink> getProjectShareLink(GetProjectShareLinkQuery query);
 
 }

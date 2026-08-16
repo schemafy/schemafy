@@ -194,18 +194,8 @@ public abstract class ProjectHttpTestSupport extends UserHttpTestSupport {
         .block();
   }
 
-  protected ShareLink saveShareLink(String projectId, String code) {
-    return saveShareLink(projectId, code, null);
-  }
-
-  protected ShareLink saveShareLink(
-      String projectId,
-      String code,
-      Instant expiresAt) {
-    ShareLink shareLink = expiresAt == null
-        ? ShareLink.create(nextId(), projectId, code)
-        : ShareLink.create(nextId(), projectId, code, expiresAt);
-    return shareLinkRepository.save(shareLink).block();
+  protected ShareLink saveShareLink(String projectId) {
+    return shareLinkRepository.save(ShareLink.create(nextId(), projectId)).block();
   }
 
   protected ShareLink saveShareLink(ShareLink shareLink) {

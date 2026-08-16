@@ -1,7 +1,7 @@
 package com.schemafy.core.project.application.port.in;
 
 public record AccessShareLinkQuery(
-    String code,
+    String shareLinkId,
     String userId,
     String ipAddress,
     String userAgent) {

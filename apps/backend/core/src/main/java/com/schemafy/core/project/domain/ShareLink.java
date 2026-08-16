@@ -1,8 +1,5 @@
 package com.schemafy.core.project.domain;
 
-import java.time.Duration;
-import java.time.Instant;
-
 import org.springframework.data.relational.core.mapping.Table;
 
 import com.schemafy.core.common.BaseEntity;
@@ -20,45 +17,26 @@ import lombok.NoArgsConstructor;
 @Table("share_links")
 public class ShareLink extends BaseEntity {
 
-  private static final int DEFAULT_DURATION_DAYS = 14;
-
   private String projectId;
-  private String code;
-  private Instant expiresAt;
-  private Boolean isRevoked;
-  private Instant lastAccessedAt;
-  private Long accessCount;
+  private Boolean isActive;
 
-  public static ShareLink create(String id, String projectId, String code) {
-    Instant expiresAt = Instant.now()
-        .plus(Duration.ofDays(DEFAULT_DURATION_DAYS));
-    return create(id, projectId, code, expiresAt);
-  }
-
-  public static ShareLink create(
-      String id,
-      String projectId,
-      String code,
-      Instant expiresAt) {
+  public static ShareLink create(String id, String projectId) {
     if (projectId == null || projectId.isBlank()) {
       throw new DomainException(ShareLinkErrorCode.INVALID_PROJECT_ID);
     }
-    if (code == null || code.isBlank()) {
-      throw new DomainException(ShareLinkErrorCode.INVALID_LINK);
-    }
-
-    ShareLink shareLink = new ShareLink(projectId, code, expiresAt, false,
-        null, 0L);
+    ShareLink shareLink = new ShareLink(projectId, true);
     shareLink.setId(id);
     return shareLink;
   }
 
-  public void revoke() {
-    this.isRevoked = true;
+  public void activate() {
+    this.isActive = true;
   }
 
-  public boolean isExpired() { return expiresAt != null && Instant.now().isAfter(expiresAt); }
+  public void deactivate() {
+    this.isActive = false;
+  }
 
-  public boolean isActive() { return !Boolean.TRUE.equals(isRevoked) && !isExpired() && !isDeleted(); }
+  public boolean isActive() { return Boolean.TRUE.equals(isActive) && !isDeleted(); }
 
 }

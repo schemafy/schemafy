@@ -28,38 +28,15 @@ class AccessShareLinkService implements AccessShareLinkUseCase {
 
   @Override
   public Mono<Project> accessShareLink(AccessShareLinkQuery query) {
-    String user = query.userId() != null ? query.userId() : "anonymous";
-
-    return shareLinkPort.findByCodeAndNotDeleted(query.code())
+    return shareLinkPort.findByIdAndNotDeleted(query.shareLinkId())
         .switchIfEmpty(Mono.error(
             new DomainException(ShareLinkErrorCode.NOT_FOUND)))
         .flatMap(shareLinkHelper::validateShareLinkAccessible)
-        .doOnNext(shareLink -> log.info(
-            "ShareLink access success - code: {}, projectId: {}, userId: {}, ip: {}, userAgent: {}",
-            maskCode(query.code()), shareLink.getProjectId(), user,
-            query.ipAddress(), query.userAgent()))
-        .flatMap(shareLink -> shareLinkPort.incrementAccessCount(
-            shareLink.getId())
-            .onErrorResume(error -> {
-              log.error(
-                  "Failed to increment access count for ShareLink InvitationId: {}",
-                  shareLink.getId(), error);
-              return Mono.empty();
-            })
-            .then(shareLinkHelper.findProjectById(shareLink.getProjectId()))
+        .flatMap(shareLink -> shareLinkHelper.findProjectById(shareLink.getProjectId())
             .switchIfEmpty(Mono.error(
-                new DomainException(ProjectErrorCode.NOT_FOUND))))
-        .doOnError(error -> log.info(
-            "ShareLink access failed - code: {}, userId: {}, ip: {}, userAgent: {}, reason: {}",
-            maskCode(query.code()), user, query.ipAddress(),
-            query.userAgent(), error.getMessage()));
-  }
-
-  private String maskCode(String code) {
-    if (code == null || code.length() <= 4) {
-      return "***";
-    }
-    return code.substring(0, Math.min(8, code.length())) + "***";
+                new DomainException(ProjectErrorCode.NOT_FOUND)))
+            .doOnNext(project -> log.info("event=share_link_access projectId={} shareLinkId={} ip={} userAgent={}",
+                shareLink.getProjectId(), shareLink.getId(), query.ipAddress(), query.userAgent())));
   }
 
 }

@@ -2,28 +2,16 @@ package com.schemafy.core.project.application.port.out;
 
 import com.schemafy.core.project.domain.ShareLink;
 
-import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
 public interface ShareLinkPort {
 
   Mono<ShareLink> save(ShareLink shareLink);
 
-  Mono<ShareLink> findByCodeAndNotDeleted(String code);
+  Mono<ShareLink> findByIdAndNotDeleted(String id);
 
-  Mono<Void> incrementAccessCount(String shareLinkId);
+  Mono<ShareLink> findByProjectIdAndNotDeleted(String projectId);
 
-  Flux<ShareLink> findByProjectIdAndNotDeleted(
-      String projectId,
-      int limit,
-      int offset);
-
-  Mono<Long> countByProjectIdAndNotDeleted(String projectId);
-
-  Mono<ShareLink> findByIdAndProjectIdAndNotDeleted(
-      String shareLinkId,
-      String projectId);
-
-  Mono<Long> softDeleteByProjectId(String projectId);
+  Mono<Void> deleteByProjectId(String projectId);
 
 }

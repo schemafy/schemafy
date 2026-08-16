@@ -5,7 +5,6 @@ import com.schemafy.core.project.application.port.out.ShareLinkPort;
 import com.schemafy.core.project.domain.ShareLink;
 
 import lombok.RequiredArgsConstructor;
-import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
 @PersistenceAdapter
@@ -20,37 +19,18 @@ public class ShareLinkPersistenceAdapter implements ShareLinkPort {
   }
 
   @Override
-  public Mono<ShareLink> findByCodeAndNotDeleted(String code) {
-    return shareLinkRepository.findByCodeAndNotDeleted(code);
+  public Mono<ShareLink> findByIdAndNotDeleted(String id) {
+    return shareLinkRepository.findByIdAndNotDeleted(id);
   }
 
   @Override
-  public Mono<Void> incrementAccessCount(String shareLinkId) {
-    return shareLinkRepository.incrementAccessCount(shareLinkId);
+  public Mono<ShareLink> findByProjectIdAndNotDeleted(String projectId) {
+    return shareLinkRepository.findByProjectIdAndNotDeleted(projectId);
   }
 
   @Override
-  public Flux<ShareLink> findByProjectIdAndNotDeleted(String projectId,
-      int limit, int offset) {
-    return shareLinkRepository.findByProjectIdAndNotDeleted(projectId, limit,
-        offset);
-  }
-
-  @Override
-  public Mono<Long> countByProjectIdAndNotDeleted(String projectId) {
-    return shareLinkRepository.countByProjectIdAndNotDeleted(projectId);
-  }
-
-  @Override
-  public Mono<ShareLink> findByIdAndProjectIdAndNotDeleted(String shareLinkId,
-      String projectId) {
-    return shareLinkRepository.findByIdAndProjectIdAndNotDeleted(shareLinkId,
-        projectId);
-  }
-
-  @Override
-  public Mono<Long> softDeleteByProjectId(String projectId) {
-    return shareLinkRepository.softDeleteByProjectId(projectId);
+  public Mono<Void> deleteByProjectId(String projectId) {
+    return shareLinkRepository.deleteByProjectId(projectId);
   }
 
 }
