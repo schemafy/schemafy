@@ -9,22 +9,18 @@ import com.schemafy.core.erd.broadcast.ErdMutationBroadcaster;
 import com.schemafy.core.erd.broadcast.ErdMutationBroadcaster.ResolvedContext;
 import com.schemafy.core.erd.operation.domain.CommittedErdOperation;
 
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import reactor.core.publisher.Mono;
 
 @Slf4j
 @Service
+@RequiredArgsConstructor
 @ConditionalOnRedisEnabled
 public class ErdStateSyncPublisher {
 
   private final ErdMutationBroadcaster mutationBroadcaster;
   private final ErdStateSnapshotProducer snapshotProducer;
-
-  public ErdStateSyncPublisher(ErdMutationBroadcaster mutationBroadcaster,
-      ErdStateSnapshotProducer snapshotProducer) {
-    this.mutationBroadcaster = mutationBroadcaster;
-    this.snapshotProducer = snapshotProducer;
-  }
 
   public Mono<Void> publishMutation(Set<String> affectedTableIds,
       CommittedErdOperation operation) {
@@ -89,14 +85,13 @@ public class ErdStateSyncPublisher {
         : affectedTableIds;
     Mono<Void> compatibilityEvent = Mono.defer(() -> mutationBroadcaster
         .broadcastWithContext(context, tableIds, operation));
-    Mono<Void> stateEvent = Mono.fromRunnable(() -> {
+    Mono<Void> stateEvent = Mono.defer(() -> {
       if (deleted) {
-        snapshotProducer.enqueueDeleted(context.projectId(),
-            context.schemaId(), operation.committedRevision());
-      } else {
-        snapshotProducer.enqueueActive(context.projectId(),
+        return snapshotProducer.enqueueDeleted(context.projectId(),
             context.schemaId(), operation.committedRevision());
       }
+      return snapshotProducer.enqueueActive(context.projectId(),
+          context.schemaId(), operation.committedRevision());
     });
     return suppressFailure(deleted ? "deleted" : "active",
         Mono.whenDelayError(compatibilityEvent, stateEvent));

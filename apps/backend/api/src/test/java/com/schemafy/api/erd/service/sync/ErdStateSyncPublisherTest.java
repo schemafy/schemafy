@@ -21,7 +21,6 @@ import reactor.test.StepVerifier;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.then;
-import static org.mockito.Mockito.doThrow;
 
 @ExtendWith(MockitoExtension.class)
 @DisplayName("ErdStateSyncPublisher")
@@ -54,6 +53,8 @@ class ErdStateSyncPublisherTest {
         .willReturn(Mono.just(CONTEXT));
     given(mutationBroadcaster.broadcastWithContext(CONTEXT, tableIds,
         OPERATION)).willReturn(Mono.empty());
+    given(snapshotProducer.enqueueActive("project-1", "schema-1", 42L))
+        .willReturn(Mono.empty());
 
     StepVerifier.create(publisher.publishMutation(tableIds, OPERATION))
         .verifyComplete();
@@ -72,6 +73,8 @@ class ErdStateSyncPublisherTest {
         .willReturn(Mono.just(CONTEXT));
     given(mutationBroadcaster.broadcastWithContext(CONTEXT, Set.of(),
         OPERATION)).willReturn(Mono.empty());
+    given(snapshotProducer.enqueueActive("project-1", "schema-1", 42L))
+        .willReturn(Mono.empty());
 
     StepVerifier.create(publisher.publishSchemaChange("schema-1", OPERATION))
         .verifyComplete();
@@ -88,6 +91,8 @@ class ErdStateSyncPublisherTest {
     Set<String> tableIds = Set.of("table-1");
     given(mutationBroadcaster.broadcastWithContext(CONTEXT, tableIds,
         OPERATION)).willReturn(Mono.empty());
+    given(snapshotProducer.enqueueDeleted("project-1", "schema-1", 42L))
+        .willReturn(Mono.empty());
 
     StepVerifier.create(publisher.publishDeletedWithContext(CONTEXT,
         tableIds, OPERATION))
@@ -113,6 +118,8 @@ class ErdStateSyncPublisherTest {
     given(mutationBroadcaster.broadcastWithContext(CONTEXT,
         Set.of("table-1"), OPERATION))
         .willReturn(Mono.error(new IllegalStateException("legacy failed")));
+    given(snapshotProducer.enqueueActive("project-1", "schema-1", 42L))
+        .willReturn(Mono.empty());
 
     StepVerifier.create(publisher.publishActiveWithContext(CONTEXT,
         Set.of("table-1"), OPERATION))
@@ -129,9 +136,9 @@ class ErdStateSyncPublisherTest {
     given(mutationBroadcaster.broadcastWithContext(CONTEXT,
         Set.of("table-1"), OPERATION))
         .willReturn(Mono.fromRunnable(() -> compatibilitySubscribed.set(true)));
-    doThrow(new IllegalStateException("enqueue failed"))
-        .when(snapshotProducer)
-        .enqueueActive("project-1", "schema-1", 42L);
+    given(snapshotProducer.enqueueActive("project-1", "schema-1", 42L))
+        .willReturn(Mono.error(
+            new IllegalStateException("enqueue failed")));
 
     StepVerifier.create(publisher.publishActiveWithContext(CONTEXT,
         Set.of("table-1"), OPERATION))
