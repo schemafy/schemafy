@@ -119,13 +119,13 @@ class ErdStateSnapshotWorkerTest {
     given(snapshotOrchestrator.getSchemaState("schema-1"))
         .willReturn(Mono.just(snapshot(10L)));
     given(jobStore.isPublishable(job, 10L)).willReturn(Mono.just(false));
-    given(jobStore.requeue(job, 2_000L, Duration.ZERO)).willReturn(Mono.empty());
+    given(jobStore.requeue(job, 2_000L, Duration.ZERO, false)).willReturn(Mono.empty());
 
     worker.process("job-1").block();
 
     verify(eventPublisher, never()).publishStrict(any(), any());
     verify(jobStore, never()).complete(any(), eq(10L), eq(2_000L));
-    verify(jobStore).requeue(job, 2_000L, Duration.ZERO);
+    verify(jobStore).requeue(job, 2_000L, Duration.ZERO, false);
   }
 
   @Test
@@ -139,13 +139,13 @@ class ErdStateSnapshotWorkerTest {
           attempts.incrementAndGet();
           return Mono.error(new IllegalStateException("database unavailable"));
         }));
-    given(jobStore.requeue(job, 2_000L, Duration.ofSeconds(4)))
+    given(jobStore.requeue(job, 2_000L, Duration.ofSeconds(4), true))
         .willReturn(Mono.empty());
 
     worker.process("job-1").block();
 
     assertThat(attempts).hasValue(4);
-    verify(jobStore).requeue(job, 2_000L, Duration.ofSeconds(4));
+    verify(jobStore).requeue(job, 2_000L, Duration.ofSeconds(4), true);
     assertThat(meterRegistry.counter(
         "schemafy.erd.state_snapshot.retry_exhausted", "phase", "build").count())
         .isEqualTo(1D);
@@ -210,14 +210,14 @@ class ErdStateSnapshotWorkerTest {
           publishAttempts.incrementAndGet();
           return Mono.error(new IllegalStateException("Redis publish failed"));
         }));
-    given(jobStore.requeue(job, 2_000L, Duration.ZERO)).willReturn(Mono.empty());
+    given(jobStore.requeue(job, 2_000L, Duration.ZERO, false)).willReturn(Mono.empty());
 
     worker.process("job-1").block();
 
     assertThat(validationAttempts).hasValue(2);
     assertThat(publishAttempts).hasValue(1);
     verify(jobStore, never()).complete(any(), anyLong(), anyLong());
-    verify(jobStore).requeue(job, 2_000L, Duration.ZERO);
+    verify(jobStore).requeue(job, 2_000L, Duration.ZERO, false);
   }
 
   private ErdStateSnapshotJob activeJob(long revision, int failureCount) {

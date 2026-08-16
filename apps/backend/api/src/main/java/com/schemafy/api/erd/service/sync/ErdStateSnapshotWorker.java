@@ -91,7 +91,7 @@ public class ErdStateSnapshotWorker {
         candidate(job).flatMap(candidate -> publishIfCurrent(job, candidate)))
         .flatMap(revision -> jobStore.complete(job, revision, now()))
         .onErrorResume(SupersededJobException.class,
-            error -> jobStore.requeue(job, now(), Duration.ZERO)
+            error -> jobStore.requeue(job, now(), Duration.ZERO, false)
                 .onErrorResume(requeueError -> {
                   logRequeueFailure(job, requeueError);
                   return Mono.empty();
@@ -165,7 +165,7 @@ public class ErdStateSnapshotWorker {
         "[ErdStateSnapshotWorker] processing failed; requeueing: projectId={}, schemaId={}, revision={}, delay={}, error={}",
         job.projectId(), job.schemaId(), job.targetRevision(), delay,
         error.getMessage());
-    return jobStore.requeue(job, now(), delay)
+    return jobStore.requeue(job, now(), delay, true)
         .onErrorResume(requeueError -> {
           logRequeueFailure(job, requeueError);
           return Mono.empty();

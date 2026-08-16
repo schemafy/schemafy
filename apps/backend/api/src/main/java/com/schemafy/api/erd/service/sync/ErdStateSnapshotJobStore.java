@@ -28,6 +28,6 @@ public interface ErdStateSnapshotJobStore {
       long nowEpochMillis);
 
   Mono<Void> requeue(ErdStateSnapshotJob job, long nowEpochMillis,
-      Duration delay);
+      Duration delay, boolean incrementFailure);
 
 }

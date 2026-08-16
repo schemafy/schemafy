@@ -76,8 +76,8 @@ public class RedisErdStateSnapshotJobStore implements ErdStateSnapshotJobStore {
     Range<Double> dueRange = Range.closed(0D, (double) nowEpochMillis);
     return redisTemplate.opsForZSet()
         .rangeByScore(DUE_KEY, dueRange)
-        .take(limit)
-        .concatMap(this::removeIfStale);
+        .concatMap(this::removeIfStale)
+        .take(limit);
   }
 
   @Override
@@ -131,12 +131,13 @@ public class RedisErdStateSnapshotJobStore implements ErdStateSnapshotJobStore {
 
   @Override
   public Mono<Void> requeue(ErdStateSnapshotJob job, long nowEpochMillis,
-      Duration delay) {
+      Duration delay, boolean incrementFailure) {
     return redisTemplate.execute(ErdStateSnapshotRedisScripts.REQUEUE,
         List.of(DUE_KEY, job.jobKey()),
         List.of(job.leaseToken(), Long.toString(job.generation()),
             Long.toString(nowEpochMillis), Long.toString(delay.toMillis()),
-            Long.toString(properties.getCompletedWatermarkTtl().toMillis())))
+            Long.toString(properties.getCompletedWatermarkTtl().toMillis()),
+            Boolean.toString(incrementFailure)))
         .then();
   }
 

@@ -192,7 +192,7 @@ class RedisErdStateSnapshotJobStoreIntegrationTest {
     secondStore.enqueueDeleted("project-1", "schema-1", 11L).block();
 
     firstStore.complete(staleJob, 10L, 1_200L).block();
-    firstStore.requeue(staleJob, 1_200L, Duration.ofMinutes(1)).block();
+    firstStore.requeue(staleJob, 1_200L, Duration.ofMinutes(1), true).block();
 
     ErdStateSnapshotJob currentJob = secondStore.findDueJobKeys(1_200L, 20)
         .next()
@@ -226,6 +226,37 @@ class RedisErdStateSnapshotJobStoreIntegrationTest {
         .isEmpty();
     assertThat(redisTemplate.opsForZSet().score(DUE_KEY, staleJobKey).block())
         .isNull();
+  }
+
+  @Test
+  void processesActiveJobsEvenIfStaleKeysPrecedeThemLimited() {
+    String staleJobKey = "erd:state-snapshot:{coord}:job:missing:missing";
+    redisTemplate.opsForZSet().add(DUE_KEY, staleJobKey, 1_000D).block();
+
+    firstStore.enqueueActive("project-1", "schema-1", 10L).block();
+    String activeJobKey = "erd:state-snapshot:{coord}:job:project-1:schema-1";
+
+    List<String> due = firstStore.findDueJobKeys(1_100L, 1).collectList().block();
+    assertThat(due).containsExactly(activeJobKey);
+    assertThat(redisTemplate.opsForZSet().score(DUE_KEY, staleJobKey).block()).isNull();
+  }
+
+  @Test
+  void requeueCanConditionallyIncrementFailureCount() {
+    firstStore.enqueueActive("project-1", "schema-1", 10L).block();
+    String jobKey = firstStore.findDueJobKeys(1_100L, 20).blockFirst();
+    ErdStateSnapshotJob job = firstStore.claim(jobKey, "lease-1", 1_100L,
+        Duration.ofSeconds(30)).block();
+
+    firstStore.requeue(job, 1_200L, Duration.ZERO, false).block();
+    ErdStateSnapshotJob reclaimed1 = firstStore.claim(jobKey, "lease-2", 1_200L,
+        Duration.ofSeconds(30)).block();
+    assertThat(reclaimed1.failureCount()).isEqualTo(0);
+
+    firstStore.requeue(reclaimed1, 1_300L, Duration.ZERO, true).block();
+    ErdStateSnapshotJob reclaimed2 = firstStore.claim(jobKey, "lease-3", 1_300L,
+        Duration.ofSeconds(30)).block();
+    assertThat(reclaimed2.failureCount()).isEqualTo(1);
   }
 
   private static ErdStateSnapshotProperties properties() {
