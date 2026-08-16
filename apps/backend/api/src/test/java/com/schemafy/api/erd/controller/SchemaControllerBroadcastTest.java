@@ -12,13 +12,20 @@ import org.mockito.InOrder;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+import com.schemafy.api.erd.service.SchemaDdlExportOrchestrator;
+import com.schemafy.api.erd.service.SchemaMermaidExportOrchestrator;
+import com.schemafy.api.erd.service.SchemaSnapshotOrchestrator;
 import com.schemafy.api.erd.service.sync.ErdStateSyncPublisher;
 import com.schemafy.core.common.MutationResult;
 import com.schemafy.core.erd.broadcast.ErdMutationBroadcaster.ResolvedContext;
 import com.schemafy.core.erd.operation.domain.CommittedErdOperation;
 import com.schemafy.core.erd.operation.domain.ErdOperationDerivationKind;
+import com.schemafy.core.erd.schema.application.port.in.ChangeSchemaNameUseCase;
+import com.schemafy.core.erd.schema.application.port.in.CreateSchemaUseCase;
 import com.schemafy.core.erd.schema.application.port.in.DeleteSchemaCommand;
 import com.schemafy.core.erd.schema.application.port.in.DeleteSchemaUseCase;
+import com.schemafy.core.erd.schema.application.port.in.GetSchemaWithRevisionUseCase;
+import com.schemafy.core.erd.schema.application.port.in.GetSchemasByProjectIdUseCase;
 
 import reactor.core.publisher.Mono;
 import reactor.test.StepVerifier;
@@ -38,7 +45,21 @@ class SchemaControllerBroadcastTest {
       "op-1", null, 42L, ErdOperationDerivationKind.ORIGINAL);
 
   @Mock
+  CreateSchemaUseCase createSchemaUseCase;
+  @Mock
+  GetSchemaWithRevisionUseCase getSchemaWithRevisionUseCase;
+  @Mock
+  GetSchemasByProjectIdUseCase getSchemasByProjectIdUseCase;
+  @Mock
+  ChangeSchemaNameUseCase changeSchemaNameUseCase;
+  @Mock
   DeleteSchemaUseCase deleteSchemaUseCase;
+  @Mock
+  SchemaSnapshotOrchestrator schemaSnapshotOrchestrator;
+  @Mock
+  SchemaDdlExportOrchestrator schemaDdlExportOrchestrator;
+  @Mock
+  SchemaMermaidExportOrchestrator schemaMermaidExportOrchestrator;
 
   @Mock
   ObjectProvider<ErdStateSyncPublisher> publisherProvider;
@@ -50,8 +71,11 @@ class SchemaControllerBroadcastTest {
 
   @BeforeEach
   void setUp() {
-    sut = new SchemaController(null, null, null, null,
-        deleteSchemaUseCase, null, null, null, publisherProvider);
+    sut = new SchemaController(createSchemaUseCase, getSchemaWithRevisionUseCase,
+        getSchemasByProjectIdUseCase, changeSchemaNameUseCase,
+        deleteSchemaUseCase, schemaSnapshotOrchestrator,
+        schemaDdlExportOrchestrator, schemaMermaidExportOrchestrator,
+        publisherProvider);
   }
 
   @Test

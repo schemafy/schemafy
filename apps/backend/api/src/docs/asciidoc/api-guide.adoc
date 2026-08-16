@@ -4747,6 +4747,10 @@ NOTE: 이 이벤트에는 `sessionId`, `affectedTableIds`, `operation`이 없습
 
 IMPORTANT: 클라이언트는 schema별 마지막 적용 revision을 보관하고, 수신한 `revision`이 마지막 적용 revision보다 큰 경우에만 전체 상태를 교체해야 합니다. coalescing 기본값은 debounce 100ms, max wait 500ms이며 네트워크 순서가 revision 순서를 보장하지는 않습니다.
 
+NOTE: coalescing과 단일 snapshot 생성 lease는 Redis metadata로 조정되므로 backend API가 여러 instance로 실행되어도 schema별 작업을 공유합니다. lease owner가 중단되면 만료 후 다른 instance가 작업을 이어받을 수 있으며, 중복 수신 가능성은 위 revision 규칙으로 처리합니다. 전체 schema와 table snapshot 본문은 Redis에 저장하지 않고 worker가 database에서 일관된 상태로 읽어 이벤트에만 포함합니다.
+
+WARNING: mutation database commit과 Redis job enqueue는 하나의 transaction이 아닙니다. Redis 장애 또는 commit 직후 process 종료로 enqueue가 실패해도 mutation HTTP 결과는 성공할 수 있으며, 이 짧은 유실 구간을 제거하는 durable DB outbox와 exactly-once delivery는 현재 범위에 포함하지 않습니다.
+
 NOTE: 현재 MCP surface는 읽기 전용이므로 MVP 발행 대상이 아닙니다. 이후 schema 내부를 변경하는 MCP 도구를 추가할 때는 mutation 커밋 후 동일한 `ERD_STATE_CHANGED` 발행 경로를 반드시 연결해야 합니다.
 
 ---
