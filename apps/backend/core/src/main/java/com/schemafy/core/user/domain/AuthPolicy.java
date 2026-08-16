@@ -10,6 +10,9 @@ public final class AuthPolicy {
   public static final Duration SIGNUP_VERIFICATION_TTL = Duration.ofMinutes(10);
   public static final int SIGNUP_VERIFICATION_MAX_ATTEMPTS = 1;
 
+  public static final Duration PASSWORD_RESET_TTL = Duration.ofMinutes(10);
+  public static final int PASSWORD_RESET_MAX_ATTEMPTS = 1;
+
   private AuthPolicy() {}
 
 }
