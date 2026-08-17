@@ -119,13 +119,14 @@ class ErdStateSnapshotWorkerTest {
     given(snapshotOrchestrator.getSchemaState("schema-1"))
         .willReturn(Mono.just(snapshot(10L)));
     given(jobStore.isPublishable(job, 10L)).willReturn(Mono.just(false));
-    given(jobStore.requeue(job, 2_000L, Duration.ZERO, false)).willReturn(Mono.empty());
+    given(jobStore.requeue(job, 2_000L, Duration.ZERO, ErdStateSnapshotRequeueReason.SUPERSEDED)).willReturn(Mono
+        .empty());
 
     worker.process("job-1").block();
 
     verify(eventPublisher, never()).publishStrict(any(), any());
     verify(jobStore, never()).complete(any(), eq(10L), eq(2_000L));
-    verify(jobStore).requeue(job, 2_000L, Duration.ZERO, false);
+    verify(jobStore).requeue(job, 2_000L, Duration.ZERO, ErdStateSnapshotRequeueReason.SUPERSEDED);
   }
 
   @Test
@@ -139,13 +140,13 @@ class ErdStateSnapshotWorkerTest {
           attempts.incrementAndGet();
           return Mono.error(new IllegalStateException("database unavailable"));
         }));
-    given(jobStore.requeue(job, 2_000L, Duration.ofSeconds(4), true))
+    given(jobStore.requeue(job, 2_000L, Duration.ofSeconds(4), ErdStateSnapshotRequeueReason.FAILURE))
         .willReturn(Mono.empty());
 
     worker.process("job-1").block();
 
     assertThat(attempts).hasValue(4);
-    verify(jobStore).requeue(job, 2_000L, Duration.ofSeconds(4), true);
+    verify(jobStore).requeue(job, 2_000L, Duration.ofSeconds(4), ErdStateSnapshotRequeueReason.FAILURE);
     assertThat(meterRegistry.counter(
         "schemafy.erd.state_snapshot.retry_exhausted", "phase", "build").count())
         .isEqualTo(1D);
@@ -170,6 +171,41 @@ class ErdStateSnapshotWorkerTest {
 
     verify(jobStore, atLeast(2)).renewLease(job, 2_000L,
         properties.getLeaseTtl());
+  }
+
+  @Test
+  void swallowsLeaseLossWithoutRequeueingSinceTheInvalidatorAlreadyRescheduled() {
+    ErdStateSnapshotJob job = activeJob(10L, 0);
+    given(jobStore.claim("job-1", "lease-token", 2_000L,
+        properties.getLeaseTtl())).willReturn(Mono.just(job));
+    given(snapshotOrchestrator.getSchemaState("schema-1"))
+        .willReturn(Mono.delay(Duration.ofMillis(35), scheduler)
+            .thenReturn(snapshot(10L)));
+    given(jobStore.renewLease(job, 2_000L, properties.getLeaseTtl()))
+        .willReturn(Mono.just(false));
+
+    worker.process("job-1").block();
+
+    verify(jobStore, never()).requeue(any(), anyLong(), any(), any());
+    verify(jobStore, never()).complete(any(), anyLong(), anyLong());
+  }
+
+  @Test
+  void swallowsARejectedCompletionWithoutRequeueingSinceTheInvalidatorAlreadyRescheduled() {
+    ErdStateSnapshotJob job = activeJob(10L, 0);
+    given(jobStore.claim("job-1", "lease-token", 2_000L,
+        properties.getLeaseTtl())).willReturn(Mono.just(job));
+    given(snapshotOrchestrator.getSchemaState("schema-1"))
+        .willReturn(Mono.just(snapshot(10L)));
+    given(jobStore.isPublishable(job, 10L)).willReturn(Mono.just(true));
+    given(eventPublisher.publishStrict(eq("project-1"), any()))
+        .willReturn(Mono.empty());
+    given(jobStore.complete(job, 10L, 2_000L)).willReturn(
+        Mono.error(new JobTransitionRejectedException("stale generation")));
+
+    worker.process("job-1").block();
+
+    verify(jobStore, never()).requeue(any(), anyLong(), any(), any());
   }
 
   @Test
@@ -210,14 +246,15 @@ class ErdStateSnapshotWorkerTest {
           publishAttempts.incrementAndGet();
           return Mono.error(new IllegalStateException("Redis publish failed"));
         }));
-    given(jobStore.requeue(job, 2_000L, Duration.ZERO, false)).willReturn(Mono.empty());
+    given(jobStore.requeue(job, 2_000L, Duration.ZERO, ErdStateSnapshotRequeueReason.SUPERSEDED)).willReturn(Mono
+        .empty());
 
     worker.process("job-1").block();
 
     assertThat(validationAttempts).hasValue(2);
     assertThat(publishAttempts).hasValue(1);
     verify(jobStore, never()).complete(any(), anyLong(), anyLong());
-    verify(jobStore).requeue(job, 2_000L, Duration.ZERO, false);
+    verify(jobStore).requeue(job, 2_000L, Duration.ZERO, ErdStateSnapshotRequeueReason.SUPERSEDED);
   }
 
   private ErdStateSnapshotJob activeJob(long revision, int failureCount) {

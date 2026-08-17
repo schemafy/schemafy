@@ -18,8 +18,16 @@ end
 
 local firstPendingAt = tonumber(redis.call('HGET', jobKey, 'firstPendingAt') or now)
 local dueAt = math.min(now + debounceMillis, firstPendingAt + maxWaitMillis)
+local currentKind = redis.call('HGET', jobKey, 'kind')
 local generation = tonumber(redis.call('HGET', jobKey, 'generation') or '0')
 local leaseUntil = tonumber(redis.call('HGET', jobKey, 'leaseUntil') or '0')
+
+if currentKind == 'DELETED' then
+  -- A stale DELETED-kind lease must not survive a revival back to ACTIVE.
+  generation = generation + 1
+  leaseUntil = 0
+  redis.call('HSET', jobKey, 'leaseToken', '', 'leaseUntil', 0)
+end
 
 redis.call('HSET', jobKey,
   'projectId', projectId,

@@ -6,6 +6,7 @@ import java.util.function.LongSupplier;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Range;
+import org.springframework.data.redis.connection.Limit;
 import org.springframework.data.redis.core.ReactiveStringRedisTemplate;
 import org.springframework.stereotype.Service;
 
@@ -21,6 +22,10 @@ public class RedisErdStateSnapshotJobStore implements ErdStateSnapshotJobStore {
 
   private static final String DUE_KEY = "erd:state-snapshot:{coord}:due";
   private static final String JOB_KEY_PREFIX = "erd:state-snapshot:{coord}:job:";
+  // Bounds per-tick stale-key probing: caps candidate fetch instead of
+  // scanning the entire due ZSET when garbage (expired job hashes with a
+  // surviving ZSET member) accumulates ahead of live jobs.
+  private static final int STALE_SCAN_MULTIPLIER = 5;
 
   private final ReactiveStringRedisTemplate redisTemplate;
   private final JsonCodec jsonCodec;
@@ -74,8 +79,9 @@ public class RedisErdStateSnapshotJobStore implements ErdStateSnapshotJobStore {
   @Override
   public Flux<String> findDueJobKeys(long nowEpochMillis, int limit) {
     Range<Double> dueRange = Range.closed(0D, (double) nowEpochMillis);
+    Limit scanLimit = Limit.limit().count(limit * STALE_SCAN_MULTIPLIER);
     return redisTemplate.opsForZSet()
-        .rangeByScore(DUE_KEY, dueRange)
+        .rangeByScore(DUE_KEY, dueRange, scanLimit)
         .concatMap(this::removeIfStale)
         .take(limit);
   }
@@ -126,19 +132,31 @@ public class RedisErdStateSnapshotJobStore implements ErdStateSnapshotJobStore {
             job.kind().name(), Long.toString(publishedRevision),
             Long.toString(nowEpochMillis),
             Long.toString(properties.getCompletedWatermarkTtl().toMillis())))
-        .then();
+        .next()
+        .flatMap(applied -> requireApplied(applied, job, "complete"));
   }
 
   @Override
   public Mono<Void> requeue(ErdStateSnapshotJob job, long nowEpochMillis,
-      Duration delay, boolean incrementFailure) {
+      Duration delay, ErdStateSnapshotRequeueReason reason) {
     return redisTemplate.execute(ErdStateSnapshotRedisScripts.REQUEUE,
         List.of(DUE_KEY, job.jobKey()),
         List.of(job.leaseToken(), Long.toString(job.generation()),
             Long.toString(nowEpochMillis), Long.toString(delay.toMillis()),
             Long.toString(properties.getCompletedWatermarkTtl().toMillis()),
-            Boolean.toString(incrementFailure)))
-        .then();
+            Boolean.toString(reason.incrementFailureCount())))
+        .next()
+        .flatMap(applied -> requireApplied(applied, job, "requeue"));
+  }
+
+  private Mono<Void> requireApplied(Long applied, ErdStateSnapshotJob job,
+      String operation) {
+    if (applied == 1L) {
+      return Mono.empty();
+    }
+    return Mono.error(new JobTransitionRejectedException(
+        "%s rejected for jobKey=%s: lease/generation/kind no longer matches"
+            .formatted(operation, job.jobKey())));
   }
 
   private Mono<String> removeIfStale(String jobKey) {

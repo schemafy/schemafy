@@ -15,7 +15,7 @@ if tonumber(redis.call('HGET', jobKey, 'generation') or '-1') ~= generation then
 end
 
 local failureCount = tonumber(redis.call('HGET', jobKey, 'failureCount') or '0')
-if incrementFailure ~= 'false' and incrementFailure ~= '0' then
+if incrementFailure == 'true' then
   failureCount = failureCount + 1
 end
 local dueAt = now + delayMillis

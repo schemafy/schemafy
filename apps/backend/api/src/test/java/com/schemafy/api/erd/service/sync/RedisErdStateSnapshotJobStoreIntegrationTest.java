@@ -23,6 +23,7 @@ import com.schemafy.core.common.json.JsonCodec;
 import reactor.core.publisher.Flux;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 @Testcontainers
 class RedisErdStateSnapshotJobStoreIntegrationTest {
@@ -163,6 +164,28 @@ class RedisErdStateSnapshotJobStoreIntegrationTest {
   }
 
   @Test
+  void activationInvalidatesAnOlderDeletedLease() {
+    firstStore.enqueueDeleted("project-1", "schema-1", 10L).block();
+    String jobKey = firstStore.findDueJobKeys(1_000L, 20).blockFirst();
+    ErdStateSnapshotJob deletedJob = firstStore.claim(jobKey, "lease-deleted",
+        1_000L, Duration.ofSeconds(30)).block();
+
+    now.set(1_200L);
+    secondStore.enqueueActive("project-1", "schema-1", 11L).block();
+
+    assertThat(firstStore.renewLease(deletedJob, 1_200L, Duration.ofSeconds(30))
+        .block()).isFalse();
+    // dueAt = min(now + debounce, firstPendingAt + maxWait) = min(1300, 1500)
+    ErdStateSnapshotJob activeJob = secondStore.findDueJobKeys(1_300L, 20)
+        .next()
+        .flatMap(key -> secondStore.claim(key, "lease-active", 1_300L,
+            Duration.ofSeconds(30)))
+        .block();
+    assertThat(activeJob.kind()).isEqualTo(ErdStateSnapshotJobKind.ACTIVE);
+    assertThat(activeJob.generation()).isGreaterThan(deletedJob.generation());
+  }
+
+  @Test
   void deletionInvalidatesAnOlderActiveLease() {
     firstStore.enqueueActive("project-1", "schema-1", 10L).block();
     String jobKey = firstStore.findDueJobKeys(1_100L, 20).blockFirst();
@@ -191,8 +214,11 @@ class RedisErdStateSnapshotJobStoreIntegrationTest {
     now.set(1_200L);
     secondStore.enqueueDeleted("project-1", "schema-1", 11L).block();
 
-    firstStore.complete(staleJob, 10L, 1_200L).block();
-    firstStore.requeue(staleJob, 1_200L, Duration.ofMinutes(1), true).block();
+    assertThatThrownBy(() -> firstStore.complete(staleJob, 10L, 1_200L).block())
+        .isInstanceOf(JobTransitionRejectedException.class);
+    assertThatThrownBy(() -> firstStore.requeue(staleJob, 1_200L,
+        Duration.ofMinutes(1), ErdStateSnapshotRequeueReason.FAILURE).block())
+        .isInstanceOf(JobTransitionRejectedException.class);
 
     ErdStateSnapshotJob currentJob = secondStore.findDueJobKeys(1_200L, 20)
         .next()
@@ -248,12 +274,14 @@ class RedisErdStateSnapshotJobStoreIntegrationTest {
     ErdStateSnapshotJob job = firstStore.claim(jobKey, "lease-1", 1_100L,
         Duration.ofSeconds(30)).block();
 
-    firstStore.requeue(job, 1_200L, Duration.ZERO, false).block();
+    firstStore.requeue(job, 1_200L, Duration.ZERO,
+        ErdStateSnapshotRequeueReason.SUPERSEDED).block();
     ErdStateSnapshotJob reclaimed1 = firstStore.claim(jobKey, "lease-2", 1_200L,
         Duration.ofSeconds(30)).block();
     assertThat(reclaimed1.failureCount()).isEqualTo(0);
 
-    firstStore.requeue(reclaimed1, 1_300L, Duration.ZERO, true).block();
+    firstStore.requeue(reclaimed1, 1_300L, Duration.ZERO,
+        ErdStateSnapshotRequeueReason.FAILURE).block();
     ErdStateSnapshotJob reclaimed2 = firstStore.claim(jobKey, "lease-3", 1_300L,
         Duration.ofSeconds(30)).block();
     assertThat(reclaimed2.failureCount()).isEqualTo(1);

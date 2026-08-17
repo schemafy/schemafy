@@ -29,6 +29,7 @@ import reactor.util.retry.Retry;
 public class ErdStateSnapshotWorker {
 
   private static final long MAX_RETRIES = 3L;
+  private static final int MAX_BACKOFF_SHIFT = 40;
 
   private final ErdStateSnapshotJobStore jobStore;
   private final SchemaSnapshotOrchestrator snapshotOrchestrator;
@@ -91,12 +92,25 @@ public class ErdStateSnapshotWorker {
         candidate(job).flatMap(candidate -> publishIfCurrent(job, candidate)))
         .flatMap(revision -> jobStore.complete(job, revision, now()))
         .onErrorResume(SupersededJobException.class,
-            error -> jobStore.requeue(job, now(), Duration.ZERO, false)
-                .onErrorResume(requeueError -> {
-                  logRequeueFailure(job, requeueError);
-                  return Mono.empty();
-                }))
+            error -> safeRequeue(job, Duration.ZERO,
+                ErdStateSnapshotRequeueReason.SUPERSEDED))
+        .onErrorResume(this::isBenignSupersession,
+            error -> logBenignSupersession(job, error))
         .onErrorResume(error -> requeueAfterFailure(job, error));
+  }
+
+  private boolean isBenignSupersession(Throwable error) {
+    return error instanceof LeaseLostException
+        || error instanceof JobTransitionRejectedException;
+  }
+
+  private Mono<Void> logBenignSupersession(ErdStateSnapshotJob job,
+      Throwable error) {
+    log.debug(
+        "[ErdStateSnapshotWorker] job superseded by a concurrent update, no requeue needed: projectId={}, schemaId={}, revision={}, error={}",
+        job.projectId(), job.schemaId(), job.targetRevision(),
+        error.getMessage());
+    return Mono.empty();
   }
 
   private Mono<SnapshotCandidate> candidate(ErdStateSnapshotJob job) {
@@ -165,23 +179,29 @@ public class ErdStateSnapshotWorker {
         "[ErdStateSnapshotWorker] processing failed; requeueing: projectId={}, schemaId={}, revision={}, delay={}, error={}",
         job.projectId(), job.schemaId(), job.targetRevision(), delay,
         error.getMessage());
-    return jobStore.requeue(job, now(), delay, true)
-        .onErrorResume(requeueError -> {
-          logRequeueFailure(job, requeueError);
+    return safeRequeue(job, delay, ErdStateSnapshotRequeueReason.FAILURE);
+  }
+
+  private Mono<Void> safeRequeue(ErdStateSnapshotJob job, Duration delay,
+      ErdStateSnapshotRequeueReason reason) {
+    return jobStore.requeue(job, now(), delay, reason)
+        .onErrorResume(JobTransitionRejectedException.class,
+            error -> logBenignSupersession(job, error))
+        .onErrorResume(error -> {
+          logRequeueFailure(job, error);
           return Mono.empty();
         });
   }
 
   private Duration requeueDelay(int failureCount) {
-    Duration delay = properties.getRequeueBackoff();
+    Duration base = properties.getRequeueBackoff();
     Duration maximum = properties.getMaxRequeueBackoff();
-    for (int attempt = 0; attempt < failureCount; attempt++) {
-      if (delay.compareTo(maximum.dividedBy(2)) > 0) {
-        return maximum;
-      }
-      delay = delay.multipliedBy(2);
+    int shift = Math.min(failureCount, MAX_BACKOFF_SHIFT);
+    long delayMillis = base.toMillis() << shift;
+    if (delayMillis < 0 || delayMillis > maximum.toMillis()) {
+      return maximum;
     }
-    return delay.compareTo(maximum) > 0 ? maximum : delay;
+    return Duration.ofMillis(delayMillis);
   }
 
   private void logRequeueFailure(ErdStateSnapshotJob job, Throwable error) {
