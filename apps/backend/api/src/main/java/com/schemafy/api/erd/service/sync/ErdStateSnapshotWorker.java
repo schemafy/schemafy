@@ -134,7 +134,9 @@ public class ErdStateSnapshotWorker {
             .flatMap(publishable -> publishable
                 ? eventPublisher.publishStrict(job.projectId(),
                     candidate.event()).thenReturn(candidate.revision())
-                : Mono.error(new SupersededJobException())));
+                : Mono.error(new SupersededJobException(
+                    "candidate revision no longer publishable for jobKey=%s: candidateRevision=%d"
+                        .formatted(job.jobKey(), candidate.revision())))));
     return withRetry(publishAttempt, "publish", job);
   }
 
@@ -146,7 +148,9 @@ public class ErdStateSnapshotWorker {
             properties.getLeaseTtl()))
         .flatMap(renewed -> renewed
             ? Mono.empty()
-            : Mono.error(new LeaseLostException()))
+            : Mono.error(new LeaseLostException(
+                "lease renewal rejected for jobKey=%s: lease/generation no longer matches"
+                    .formatted(job.jobKey()))))
         .then(Mono.never());
     return Mono.firstWithSignal(action, leaseGuard);
   }
@@ -219,15 +223,31 @@ public class ErdStateSnapshotWorker {
       CollaborationOutbound event) {
   }
 
+  /** Thrown when {@code isPublishable} reports that a build's candidate
+   * revision is no longer current (a newer target, or a delete, already
+   * superseded it). This always means a concurrent enqueue call already
+   * moved this job past the revision this build was for. */
   private static final class SupersededJobException extends RuntimeException {
 
     private static final long serialVersionUID = 1L;
 
+    SupersededJobException(String message) {
+      super(message);
+    }
+
   }
 
+  /** Thrown when a lease-renewal heartbeat is rejected because the lease
+   * token or generation no longer matches the job's current state in
+   * Redis. This always means another worker (or a delete/revival event)
+   * already took over the job. */
   private static final class LeaseLostException extends RuntimeException {
 
     private static final long serialVersionUID = 1L;
+
+    LeaseLostException(String message) {
+      super(message);
+    }
 
   }
 
