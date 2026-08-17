@@ -10,7 +10,7 @@ final class ErdStateSnapshotRedisScripts {
   static final RedisScript<Long> ENQUEUE_ACTIVE = longScript("enqueue-active.lua");
   static final RedisScript<Long> ENQUEUE_DELETED = longScript("enqueue-deleted.lua");
   static final RedisScript<String> CLAIM = stringScript("claim.lua");
-  static final RedisScript<Long> IS_PUBLISHABLE = longScript("is-publishable.lua");
+  static final RedisScript<Long> PUBLISH_IF_CURRENT = longScript("publish-if-current.lua");
   static final RedisScript<Long> RENEW_LEASE = longScript("renew-lease.lua");
   static final RedisScript<Long> COMPLETE = longScript("complete.lua");
   static final RedisScript<Long> REQUEUE = longScript("requeue.lua");

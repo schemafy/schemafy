@@ -21,6 +21,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.schemafy.core.common.json.JsonCodec;
 
 import reactor.core.publisher.Flux;
+import reactor.test.StepVerifier;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -159,8 +160,41 @@ class RedisErdStateSnapshotJobStoreIntegrationTest {
     now.set(1_200L);
     secondStore.enqueueActive("project-1", "schema-1", 12L).block();
 
-    assertThat(firstStore.isPublishable(job, 10L).block()).isFalse();
-    assertThat(firstStore.isPublishable(job, 12L).block()).isTrue();
+    assertThat(firstStore.publishIfCurrent(job, 10L, "payload").block()).isFalse();
+    assertThat(firstStore.publishIfCurrent(job, 12L, "payload").block()).isTrue();
+  }
+
+  @Test
+  void publishIfCurrentNeverPublishesAStaleCandidateEvenWhenTheCheckWouldHavePassedEarlier() {
+    firstStore.enqueueActive("project-1", "schema-1", 10L).block();
+    String jobKey = firstStore.findDueJobKeys(1_100L, 20).blockFirst();
+    ErdStateSnapshotJob job = firstStore.claim(jobKey, "lease-1", 1_100L,
+        Duration.ofSeconds(30)).block();
+
+    // A separate mutation lands between "the candidate was buildable" and
+    // "the candidate is actually broadcast", exactly the gap that used to
+    // exist between the isPublishable() check and the eventPublisher
+    // PUBLISH call. Because the check and the PUBLISH now run inside the
+    // same Lua script, the stale revision-10 candidate must never reach
+    // subscribers, no matter how this mutation interleaves.
+    now.set(1_200L);
+    secondStore.enqueueActive("project-1", "schema-1", 12L).block();
+
+    Flux<String> received = redisTemplate
+        .listenToChannel("collaboration:project-1")
+        .map(message -> message.getMessage());
+
+    StepVerifier.create(received.take(1))
+        .expectSubscription()
+        .thenAwait(Duration.ofMillis(200))
+        .then(() -> {
+          assertThat(firstStore.publishIfCurrent(job, 10L, "stale-payload").block())
+              .isFalse();
+          assertThat(firstStore.publishIfCurrent(job, 12L, "fresh-payload").block())
+              .isTrue();
+        })
+        .expectNext("fresh-payload")
+        .verifyComplete();
   }
 
   @Test
@@ -195,7 +229,7 @@ class RedisErdStateSnapshotJobStoreIntegrationTest {
     now.set(1_200L);
     secondStore.enqueueDeleted("project-1", "schema-1", 11L).block();
 
-    assertThat(firstStore.isPublishable(activeJob, 10L).block()).isFalse();
+    assertThat(firstStore.publishIfCurrent(activeJob, 10L, "payload").block()).isFalse();
     ErdStateSnapshotJob deletedJob = secondStore.findDueJobKeys(1_200L, 20)
         .next()
         .flatMap(key -> secondStore.claim(key, "lease-deleted", 1_200L,

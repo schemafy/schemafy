@@ -11,7 +11,6 @@ import org.springframework.stereotype.Service;
 import com.schemafy.api.erd.service.SchemaSnapshotOrchestrator;
 import com.schemafy.core.collaboration.dto.event.CollaborationOutbound;
 import com.schemafy.core.collaboration.dto.event.CollaborationOutboundFactory;
-import com.schemafy.core.collaboration.service.CollaborationEventPublisher;
 import com.schemafy.core.common.config.ConditionalOnRedisEnabled;
 import com.schemafy.core.common.json.JsonCodec;
 
@@ -34,7 +33,6 @@ public class ErdStateSnapshotWorker {
   private final ErdStateSnapshotJobStore jobStore;
   private final SchemaSnapshotOrchestrator snapshotOrchestrator;
   private final JsonCodec jsonCodec;
-  private final CollaborationEventPublisher eventPublisher;
   private final MeterRegistry meterRegistry;
   private final ErdStateSnapshotProperties properties;
   private final Scheduler scheduler;
@@ -46,10 +44,9 @@ public class ErdStateSnapshotWorker {
       ErdStateSnapshotJobStore jobStore,
       SchemaSnapshotOrchestrator snapshotOrchestrator,
       JsonCodec jsonCodec,
-      CollaborationEventPublisher eventPublisher,
       MeterRegistry meterRegistry,
       ErdStateSnapshotProperties properties) {
-    this(jobStore, snapshotOrchestrator, jsonCodec, eventPublisher,
+    this(jobStore, snapshotOrchestrator, jsonCodec,
         meterRegistry, properties, Schedulers.parallel(),
         System::currentTimeMillis, () -> UUID.randomUUID().toString());
   }
@@ -58,7 +55,6 @@ public class ErdStateSnapshotWorker {
       ErdStateSnapshotJobStore jobStore,
       SchemaSnapshotOrchestrator snapshotOrchestrator,
       JsonCodec jsonCodec,
-      CollaborationEventPublisher eventPublisher,
       MeterRegistry meterRegistry,
       ErdStateSnapshotProperties properties,
       Scheduler scheduler,
@@ -67,7 +63,6 @@ public class ErdStateSnapshotWorker {
     this.jobStore = jobStore;
     this.snapshotOrchestrator = snapshotOrchestrator;
     this.jsonCodec = jsonCodec;
-    this.eventPublisher = eventPublisher;
     this.meterRegistry = meterRegistry;
     this.properties = properties;
     this.scheduler = scheduler;
@@ -129,11 +124,11 @@ public class ErdStateSnapshotWorker {
 
   private Mono<Long> publishIfCurrent(ErdStateSnapshotJob job,
       SnapshotCandidate candidate) {
+    String payload = jsonCodec.toJson(candidate.event());
     Mono<Long> publishAttempt = Mono.defer(
-        () -> jobStore.isPublishable(job, candidate.revision())
-            .flatMap(publishable -> publishable
-                ? eventPublisher.publishStrict(job.projectId(),
-                    candidate.event()).thenReturn(candidate.revision())
+        () -> jobStore.publishIfCurrent(job, candidate.revision(), payload)
+            .flatMap(published -> published
+                ? Mono.just(candidate.revision())
                 : Mono.error(new SupersededJobException(
                     "candidate revision no longer publishable for jobKey=%s: candidateRevision=%d"
                         .formatted(job.jobKey(), candidate.revision())))));
@@ -223,10 +218,13 @@ public class ErdStateSnapshotWorker {
       CollaborationOutbound event) {
   }
 
-  /** Thrown when {@code isPublishable} reports that a build's candidate
+  /** Thrown when {@code publishIfCurrent} reports that a build's candidate
    * revision is no longer current (a newer target, or a delete, already
    * superseded it). This always means a concurrent enqueue call already
-   * moved this job past the revision this build was for. */
+   * moved this job past the revision this build was for. Because the
+   * validity check and the Redis PUBLISH happen inside the same Lua
+   * script, this is also the only way a stale candidate can ever reach
+   * subscribers: either both happen atomically, or neither does. */
   private static final class SupersededJobException extends RuntimeException {
 
     private static final long serialVersionUID = 1L;

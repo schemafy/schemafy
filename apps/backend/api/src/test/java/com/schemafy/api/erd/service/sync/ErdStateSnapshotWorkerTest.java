@@ -16,9 +16,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.schemafy.api.erd.controller.dto.response.SchemaResponse;
 import com.schemafy.api.erd.service.SchemaSnapshotOrchestrator;
 import com.schemafy.api.erd.service.SchemaStateSnapshot;
-import com.schemafy.core.collaboration.dto.event.CollaborationOutbound;
 import com.schemafy.core.collaboration.dto.event.ErdStateChangedEvent;
-import com.schemafy.core.collaboration.service.CollaborationEventPublisher;
 import com.schemafy.core.common.json.JsonCodec;
 
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
@@ -29,6 +27,7 @@ import reactor.core.scheduler.Schedulers;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyLong;
+import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.atLeast;
@@ -43,8 +42,6 @@ class ErdStateSnapshotWorkerTest {
   private ErdStateSnapshotJobStore jobStore;
   @Mock
   private SchemaSnapshotOrchestrator snapshotOrchestrator;
-  @Mock
-  private CollaborationEventPublisher eventPublisher;
 
   private final ErdStateSnapshotProperties properties = properties();
   private final SimpleMeterRegistry meterRegistry = new SimpleMeterRegistry();
@@ -57,7 +54,7 @@ class ErdStateSnapshotWorkerTest {
   @BeforeEach
   void setUp() {
     worker = new ErdStateSnapshotWorker(jobStore, snapshotOrchestrator,
-        jsonCodec, eventPublisher, meterRegistry, properties, scheduler,
+        jsonCodec, meterRegistry, properties, scheduler,
         () -> 2_000L, () -> "lease-token");
   }
 
@@ -74,16 +71,16 @@ class ErdStateSnapshotWorkerTest {
         properties.getLeaseTtl())).willReturn(Mono.just(job));
     given(snapshotOrchestrator.getSchemaState("schema-1"))
         .willReturn(Mono.just(snapshot));
-    given(jobStore.isPublishable(job, 12L)).willReturn(Mono.just(true));
-    given(eventPublisher.publishStrict(eq("project-1"), any()))
-        .willReturn(Mono.empty());
+    given(jobStore.publishIfCurrent(eq(job), eq(12L), anyString()))
+        .willReturn(Mono.just(true));
     given(jobStore.complete(job, 12L, 2_000L)).willReturn(Mono.empty());
 
     worker.process("job-1").block();
 
-    ArgumentCaptor<CollaborationOutbound> eventCaptor = ArgumentCaptor.forClass(CollaborationOutbound.class);
-    verify(eventPublisher).publishStrict(eq("project-1"), eventCaptor.capture());
-    ErdStateChangedEvent.Outbound event = (ErdStateChangedEvent.Outbound) eventCaptor.getValue();
+    ArgumentCaptor<String> payloadCaptor = ArgumentCaptor.forClass(String.class);
+    verify(jobStore).publishIfCurrent(eq(job), eq(12L), payloadCaptor.capture());
+    ErdStateChangedEvent.Outbound event = jsonCodec.fromJson(
+        payloadCaptor.getValue(), ErdStateChangedEvent.Outbound.class);
     assertThat(event.state()).isEqualTo(ErdStateChangedEvent.State.ACTIVE);
     assertThat(event.revision()).isEqualTo(12L);
     assertThat(event.schema().get("id").asText()).isEqualTo("schema-1");
@@ -95,17 +92,17 @@ class ErdStateSnapshotWorkerTest {
     ErdStateSnapshotJob job = deletedJob(11L);
     given(jobStore.claim("job-1", "lease-token", 2_000L,
         properties.getLeaseTtl())).willReturn(Mono.just(job));
-    given(jobStore.isPublishable(job, 11L)).willReturn(Mono.just(true));
-    given(eventPublisher.publishStrict(eq("project-1"), any()))
-        .willReturn(Mono.empty());
+    given(jobStore.publishIfCurrent(eq(job), eq(11L), anyString()))
+        .willReturn(Mono.just(true));
     given(jobStore.complete(job, 11L, 2_000L)).willReturn(Mono.empty());
 
     worker.process("job-1").block();
 
     verify(snapshotOrchestrator, never()).getSchemaState(any());
-    ArgumentCaptor<CollaborationOutbound> eventCaptor = ArgumentCaptor.forClass(CollaborationOutbound.class);
-    verify(eventPublisher).publishStrict(eq("project-1"), eventCaptor.capture());
-    ErdStateChangedEvent.Outbound event = (ErdStateChangedEvent.Outbound) eventCaptor.getValue();
+    ArgumentCaptor<String> payloadCaptor = ArgumentCaptor.forClass(String.class);
+    verify(jobStore).publishIfCurrent(eq(job), eq(11L), payloadCaptor.capture());
+    ErdStateChangedEvent.Outbound event = jsonCodec.fromJson(
+        payloadCaptor.getValue(), ErdStateChangedEvent.Outbound.class);
     assertThat(event.state()).isEqualTo(ErdStateChangedEvent.State.DELETED);
     assertThat(event.schema()).isNull();
     verify(jobStore).complete(job, 11L, 2_000L);
@@ -118,13 +115,13 @@ class ErdStateSnapshotWorkerTest {
         properties.getLeaseTtl())).willReturn(Mono.just(job));
     given(snapshotOrchestrator.getSchemaState("schema-1"))
         .willReturn(Mono.just(snapshot(10L)));
-    given(jobStore.isPublishable(job, 10L)).willReturn(Mono.just(false));
+    given(jobStore.publishIfCurrent(eq(job), eq(10L), anyString()))
+        .willReturn(Mono.just(false));
     given(jobStore.requeue(job, 2_000L, Duration.ZERO, ErdStateSnapshotRequeueReason.SUPERSEDED)).willReturn(Mono
         .empty());
 
     worker.process("job-1").block();
 
-    verify(eventPublisher, never()).publishStrict(any(), any());
     verify(jobStore, never()).complete(any(), eq(10L), eq(2_000L));
     verify(jobStore).requeue(job, 2_000L, Duration.ZERO, ErdStateSnapshotRequeueReason.SUPERSEDED);
   }
@@ -162,9 +159,8 @@ class ErdStateSnapshotWorkerTest {
             .thenReturn(snapshot(10L)));
     given(jobStore.renewLease(job, 2_000L, properties.getLeaseTtl()))
         .willReturn(Mono.just(true));
-    given(jobStore.isPublishable(job, 10L)).willReturn(Mono.just(true));
-    given(eventPublisher.publishStrict(eq("project-1"), any()))
-        .willReturn(Mono.empty());
+    given(jobStore.publishIfCurrent(eq(job), eq(10L), anyString()))
+        .willReturn(Mono.just(true));
     given(jobStore.complete(job, 10L, 2_000L)).willReturn(Mono.empty());
 
     worker.process("job-1").block();
@@ -197,9 +193,8 @@ class ErdStateSnapshotWorkerTest {
         properties.getLeaseTtl())).willReturn(Mono.just(job));
     given(snapshotOrchestrator.getSchemaState("schema-1"))
         .willReturn(Mono.just(snapshot(10L)));
-    given(jobStore.isPublishable(job, 10L)).willReturn(Mono.just(true));
-    given(eventPublisher.publishStrict(eq("project-1"), any()))
-        .willReturn(Mono.empty());
+    given(jobStore.publishIfCurrent(eq(job), eq(10L), anyString()))
+        .willReturn(Mono.just(true));
     given(jobStore.complete(job, 10L, 2_000L)).willReturn(
         Mono.error(new JobTransitionRejectedException("stale generation")));
 
@@ -216,11 +211,10 @@ class ErdStateSnapshotWorkerTest {
         properties.getLeaseTtl())).willReturn(Mono.just(job));
     given(snapshotOrchestrator.getSchemaState("schema-1"))
         .willReturn(Mono.just(snapshot(10L)));
-    given(jobStore.isPublishable(job, 10L)).willReturn(Mono.just(true));
-    given(eventPublisher.publishStrict(eq("project-1"), any()))
-        .willReturn(Mono.defer(() -> publishAttempts.incrementAndGet() < 3
+    given(jobStore.publishIfCurrent(eq(job), eq(10L), anyString()))
+        .willAnswer(ignored -> publishAttempts.incrementAndGet() < 3
             ? Mono.error(new IllegalStateException("Redis publish failed"))
-            : Mono.empty()));
+            : Mono.just(true));
     given(jobStore.complete(job, 10L, 2_000L)).willReturn(Mono.empty());
 
     worker.process("job-1").block();
@@ -231,28 +225,26 @@ class ErdStateSnapshotWorkerTest {
   }
 
   @Test
-  void revalidatesBeforeEachPublishRetry() {
+  void reEvaluatesPublishabilityOnEveryRetryBecauseCheckAndPublishAreAtomic() {
     ErdStateSnapshotJob job = activeJob(10L, 0);
-    AtomicInteger validationAttempts = new AtomicInteger();
     AtomicInteger publishAttempts = new AtomicInteger();
     given(jobStore.claim("job-1", "lease-token", 2_000L,
         properties.getLeaseTtl())).willReturn(Mono.just(job));
     given(snapshotOrchestrator.getSchemaState("schema-1"))
         .willReturn(Mono.just(snapshot(10L)));
-    given(jobStore.isPublishable(job, 10L)).willAnswer(ignored -> Mono.just(
-        validationAttempts.incrementAndGet() == 1));
-    given(eventPublisher.publishStrict(eq("project-1"), any()))
-        .willReturn(Mono.defer(() -> {
-          publishAttempts.incrementAndGet();
-          return Mono.error(new IllegalStateException("Redis publish failed"));
-        }));
+    // Attempt 1 fails with a transient infra error after the check already
+    // passed inside the same Lua script; attempt 2 finds it superseded,
+    // proving each retry re-runs the atomic check+publish, not just publish.
+    given(jobStore.publishIfCurrent(eq(job), eq(10L), anyString()))
+        .willAnswer(ignored -> publishAttempts.incrementAndGet() == 1
+            ? Mono.error(new IllegalStateException("Redis publish failed"))
+            : Mono.just(false));
     given(jobStore.requeue(job, 2_000L, Duration.ZERO, ErdStateSnapshotRequeueReason.SUPERSEDED)).willReturn(Mono
         .empty());
 
     worker.process("job-1").block();
 
-    assertThat(validationAttempts).hasValue(2);
-    assertThat(publishAttempts).hasValue(1);
+    assertThat(publishAttempts).hasValue(2);
     verify(jobStore, never()).complete(any(), anyLong(), anyLong());
     verify(jobStore).requeue(job, 2_000L, Duration.ZERO, ErdStateSnapshotRequeueReason.SUPERSEDED);
   }

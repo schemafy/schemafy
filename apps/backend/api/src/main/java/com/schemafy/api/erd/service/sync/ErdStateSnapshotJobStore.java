@@ -18,8 +18,8 @@ public interface ErdStateSnapshotJobStore {
   Mono<ErdStateSnapshotJob> claim(String jobKey, String leaseToken,
       long nowEpochMillis, Duration leaseTtl);
 
-  Mono<Boolean> isPublishable(ErdStateSnapshotJob job,
-      long candidateRevision);
+  Mono<Boolean> publishIfCurrent(ErdStateSnapshotJob job,
+      long candidateRevision, String payload);
 
   Mono<Boolean> renewLease(ErdStateSnapshotJob job,
       long nowEpochMillis, Duration leaseTtl);

@@ -1,8 +1,10 @@
 local jobKey = KEYS[1]
-local leaseToken = ARGV[1]
-local generation = tonumber(ARGV[2])
-local kind = ARGV[3]
-local candidateRevision = tonumber(ARGV[4])
+local channel = ARGV[1]
+local leaseToken = ARGV[2]
+local generation = tonumber(ARGV[3])
+local kind = ARGV[4]
+local candidateRevision = tonumber(ARGV[5])
+local payload = ARGV[6]
 
 if redis.call('EXISTS', jobKey) == 0 then
   return 0
@@ -26,4 +28,6 @@ end
 if kind == 'ACTIVE' and candidateRevision <= deletedRevision then
   return 0
 end
+
+redis.call('PUBLISH', channel, payload)
 return 1

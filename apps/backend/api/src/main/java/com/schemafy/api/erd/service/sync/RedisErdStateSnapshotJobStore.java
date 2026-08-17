@@ -10,6 +10,7 @@ import org.springframework.data.redis.connection.Limit;
 import org.springframework.data.redis.core.ReactiveStringRedisTemplate;
 import org.springframework.stereotype.Service;
 
+import com.schemafy.core.collaboration.CollaborationChannel;
 import com.schemafy.core.common.config.ConditionalOnRedisEnabled;
 import com.schemafy.core.common.json.JsonCodec;
 
@@ -99,12 +100,13 @@ public class RedisErdStateSnapshotJobStore implements ErdStateSnapshotJobStore {
   }
 
   @Override
-  public Mono<Boolean> isPublishable(ErdStateSnapshotJob job,
-      long candidateRevision) {
-    return redisTemplate.execute(ErdStateSnapshotRedisScripts.IS_PUBLISHABLE,
+  public Mono<Boolean> publishIfCurrent(ErdStateSnapshotJob job,
+      long candidateRevision, String payload) {
+    return redisTemplate.execute(ErdStateSnapshotRedisScripts.PUBLISH_IF_CURRENT,
         List.of(job.jobKey()),
-        List.of(job.leaseToken(), Long.toString(job.generation()),
-            job.kind().name(), Long.toString(candidateRevision)))
+        List.of(CollaborationChannel.forProject(job.projectId()),
+            job.leaseToken(), Long.toString(job.generation()),
+            job.kind().name(), Long.toString(candidateRevision), payload))
         .next()
         .map(result -> result == 1L)
         .defaultIfEmpty(false);
