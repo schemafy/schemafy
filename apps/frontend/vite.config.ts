@@ -29,8 +29,8 @@ export default defineConfig(({ command, mode }) => {
     },
     server: isDev
       ? {
-          port: 3001,
-        }
+        port: 3000,
+      }
       : undefined,
   };
 });
