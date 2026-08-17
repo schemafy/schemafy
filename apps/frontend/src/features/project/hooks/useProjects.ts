@@ -13,7 +13,7 @@ export const useProjects = (workspaceId: string, page = 0, size = 5) => {
   const projectsQuery = useQuery({
     queryKey: projectKeys.list(workspaceId, page, size),
     queryFn: () => getProjects(workspaceId, page, size),
-    enabled: !!workspaceId,
+    enabled: Boolean(workspaceId),
   });
   const createProjectMutation = useCreateProjectMutation(workspaceId);
   const updateProjectMutation = useUpdateProjectMutation(workspaceId);
