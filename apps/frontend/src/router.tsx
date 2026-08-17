@@ -11,6 +11,7 @@ import {
   LandingPage,
   NotFoundPage,
   OAuthCallbackPage,
+  SettingsPage,
   SignInPage,
   SignUpPage,
   WorkspacePage,
@@ -87,6 +88,13 @@ const workspaceRoute = createRoute({
   component: WorkspacePage,
 });
 
+const settingsRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: '/settings',
+  beforeLoad: requireAuth,
+  component: SettingsPage,
+});
+
 const projectRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: '/project/$projectId',
@@ -100,6 +108,7 @@ const routeTree = rootRoute.addChildren([
   signupRoute,
   oauthCallbackRoute,
   workspaceRoute,
+  settingsRoute,
   projectRoute,
 ]);
 
