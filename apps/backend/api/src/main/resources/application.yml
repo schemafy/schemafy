@@ -76,7 +76,7 @@ collaboration:
     max-retry-backoff: ${ERD_STATE_SNAPSHOT_MAX_RETRY_BACKOFF:400ms}
     requeue-backoff: ${ERD_STATE_SNAPSHOT_REQUEUE_BACKOFF:1s}
     max-requeue-backoff: ${ERD_STATE_SNAPSHOT_MAX_REQUEUE_BACKOFF:30s}
-    completed-watermark-ttl: ${ERD_STATE_SNAPSHOT_COMPLETED_WATERMARK_TTL:24h}
+    completed-watermark-ttl: ${ERD_STATE_SNAPSHOT_COMPLETED_WATERMARK_TTL:4h}
 
 hmac:
   secret: ${HMAC_SECRET:default-hmac-secret-change-me-in-production}

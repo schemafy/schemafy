@@ -23,6 +23,6 @@ public class ErdStateSnapshotProperties {
   private Duration maxRetryBackoff = Duration.ofMillis(400);
   private Duration requeueBackoff = Duration.ofSeconds(1);
   private Duration maxRequeueBackoff = Duration.ofSeconds(30);
-  private Duration completedWatermarkTtl = Duration.ofHours(24);
+  private Duration completedWatermarkTtl = Duration.ofHours(4);
 
 }
