@@ -114,7 +114,8 @@ public class ErdStateSnapshotWorker {
           CollaborationOutboundFactory.erdStateChangedDeleted(job.schemaId(),
               job.targetRevision())));
     }
-    return withRetry(snapshotOrchestrator.getSchemaState(job.schemaId()),
+    return withRetry(
+        snapshotOrchestrator.getSchemaStateForSnapshotWorker(job.schemaId()),
         "build", job)
         .map(state -> new SnapshotCandidate(state.revision(),
             CollaborationOutboundFactory.erdStateChangedActive(job.schemaId(),

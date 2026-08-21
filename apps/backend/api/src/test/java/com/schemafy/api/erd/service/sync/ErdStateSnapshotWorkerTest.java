@@ -69,7 +69,7 @@ class ErdStateSnapshotWorkerTest {
     SchemaStateSnapshot snapshot = snapshot(12L);
     given(jobStore.claim("job-1", "lease-token", 2_000L,
         properties.getLeaseTtl())).willReturn(Mono.just(job));
-    given(snapshotOrchestrator.getSchemaState("schema-1"))
+    given(snapshotOrchestrator.getSchemaStateForSnapshotWorker("schema-1"))
         .willReturn(Mono.just(snapshot));
     given(jobStore.publishIfCurrent(eq(job), eq(12L), anyString()))
         .willReturn(Mono.just(true));
@@ -98,7 +98,7 @@ class ErdStateSnapshotWorkerTest {
 
     worker.process("job-1").block();
 
-    verify(snapshotOrchestrator, never()).getSchemaState(any());
+    verify(snapshotOrchestrator, never()).getSchemaStateForSnapshotWorker(any());
     ArgumentCaptor<String> payloadCaptor = ArgumentCaptor.forClass(String.class);
     verify(jobStore).publishIfCurrent(eq(job), eq(11L), payloadCaptor.capture());
     ErdStateChangedEvent.Outbound event = jsonCodec.fromJson(
@@ -113,7 +113,7 @@ class ErdStateSnapshotWorkerTest {
     ErdStateSnapshotJob job = activeJob(10L, 0);
     given(jobStore.claim("job-1", "lease-token", 2_000L,
         properties.getLeaseTtl())).willReturn(Mono.just(job));
-    given(snapshotOrchestrator.getSchemaState("schema-1"))
+    given(snapshotOrchestrator.getSchemaStateForSnapshotWorker("schema-1"))
         .willReturn(Mono.just(snapshot(10L)));
     given(jobStore.publishIfCurrent(eq(job), eq(10L), anyString()))
         .willReturn(Mono.just(false));
@@ -132,7 +132,7 @@ class ErdStateSnapshotWorkerTest {
     AtomicInteger attempts = new AtomicInteger();
     given(jobStore.claim("job-1", "lease-token", 2_000L,
         properties.getLeaseTtl())).willReturn(Mono.just(job));
-    given(snapshotOrchestrator.getSchemaState("schema-1"))
+    given(snapshotOrchestrator.getSchemaStateForSnapshotWorker("schema-1"))
         .willReturn(Mono.defer(() -> {
           attempts.incrementAndGet();
           return Mono.error(new IllegalStateException("database unavailable"));
@@ -154,7 +154,7 @@ class ErdStateSnapshotWorkerTest {
     ErdStateSnapshotJob job = activeJob(10L, 0);
     given(jobStore.claim("job-1", "lease-token", 2_000L,
         properties.getLeaseTtl())).willReturn(Mono.just(job));
-    given(snapshotOrchestrator.getSchemaState("schema-1"))
+    given(snapshotOrchestrator.getSchemaStateForSnapshotWorker("schema-1"))
         .willReturn(Mono.delay(Duration.ofMillis(35), scheduler)
             .thenReturn(snapshot(10L)));
     given(jobStore.renewLease(job, 2_000L, properties.getLeaseTtl()))
@@ -174,7 +174,7 @@ class ErdStateSnapshotWorkerTest {
     ErdStateSnapshotJob job = activeJob(10L, 0);
     given(jobStore.claim("job-1", "lease-token", 2_000L,
         properties.getLeaseTtl())).willReturn(Mono.just(job));
-    given(snapshotOrchestrator.getSchemaState("schema-1"))
+    given(snapshotOrchestrator.getSchemaStateForSnapshotWorker("schema-1"))
         .willReturn(Mono.delay(Duration.ofMillis(35), scheduler)
             .thenReturn(snapshot(10L)));
     given(jobStore.renewLease(job, 2_000L, properties.getLeaseTtl()))
@@ -191,7 +191,7 @@ class ErdStateSnapshotWorkerTest {
     ErdStateSnapshotJob job = activeJob(10L, 0);
     given(jobStore.claim("job-1", "lease-token", 2_000L,
         properties.getLeaseTtl())).willReturn(Mono.just(job));
-    given(snapshotOrchestrator.getSchemaState("schema-1"))
+    given(snapshotOrchestrator.getSchemaStateForSnapshotWorker("schema-1"))
         .willReturn(Mono.just(snapshot(10L)));
     given(jobStore.publishIfCurrent(eq(job), eq(10L), anyString()))
         .willReturn(Mono.just(true));
@@ -209,7 +209,7 @@ class ErdStateSnapshotWorkerTest {
     AtomicInteger publishAttempts = new AtomicInteger();
     given(jobStore.claim("job-1", "lease-token", 2_000L,
         properties.getLeaseTtl())).willReturn(Mono.just(job));
-    given(snapshotOrchestrator.getSchemaState("schema-1"))
+    given(snapshotOrchestrator.getSchemaStateForSnapshotWorker("schema-1"))
         .willReturn(Mono.just(snapshot(10L)));
     given(jobStore.publishIfCurrent(eq(job), eq(10L), anyString()))
         .willAnswer(ignored -> publishAttempts.incrementAndGet() < 3
@@ -220,7 +220,7 @@ class ErdStateSnapshotWorkerTest {
     worker.process("job-1").block();
 
     assertThat(publishAttempts).hasValue(3);
-    verify(snapshotOrchestrator, times(1)).getSchemaState("schema-1");
+    verify(snapshotOrchestrator, times(1)).getSchemaStateForSnapshotWorker("schema-1");
     verify(jobStore).complete(job, 10L, 2_000L);
   }
 
@@ -230,7 +230,7 @@ class ErdStateSnapshotWorkerTest {
     AtomicInteger publishAttempts = new AtomicInteger();
     given(jobStore.claim("job-1", "lease-token", 2_000L,
         properties.getLeaseTtl())).willReturn(Mono.just(job));
-    given(snapshotOrchestrator.getSchemaState("schema-1"))
+    given(snapshotOrchestrator.getSchemaStateForSnapshotWorker("schema-1"))
         .willReturn(Mono.just(snapshot(10L)));
     // Attempt 1 fails with a transient infra error after the check already
     // passed inside the same Lua script; attempt 2 finds it superseded,
