@@ -15,7 +15,7 @@ public final class SystemActorContext {
   }
 
   public static boolean isSystemActor(ContextView contextView) {
-    return contextView.getOrDefault(SYSTEM_ACTOR_KEY, Boolean.FALSE);
+    return Boolean.TRUE.equals(contextView.getOrDefault(SYSTEM_ACTOR_KEY, Boolean.FALSE));
   }
 
 }
