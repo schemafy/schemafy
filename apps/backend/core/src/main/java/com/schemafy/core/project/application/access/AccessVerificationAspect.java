@@ -57,24 +57,34 @@ public class AccessVerificationAspect {
 
     Class<?> returnType = method.getReturnType();
     if (Mono.class.isAssignableFrom(returnType)) {
-      return Mono.defer(() -> resolveAccessRequest(
-          method,
-          joinPoint.getArgs(),
-          projectAccess,
-          workspaceAccess)
-          .flatMap(accessRequest -> Mono.defer(() -> proceedMono(joinPoint, method))
-              .contextWrite(ProjectAccessRequesterContext.withRequesterId(
-                  accessRequest.requesterId()))));
+      return Mono.deferContextual(contextView -> {
+        if (SystemActorContext.isSystemActor(contextView)) {
+          return proceedMono(joinPoint, method);
+        }
+        return resolveAccessRequest(
+            method,
+            joinPoint.getArgs(),
+            projectAccess,
+            workspaceAccess)
+            .flatMap(accessRequest -> Mono.defer(() -> proceedMono(joinPoint, method))
+                .contextWrite(ProjectAccessRequesterContext.withRequesterId(
+                    accessRequest.requesterId())));
+      });
     }
     if (Flux.class.isAssignableFrom(returnType)) {
-      return Flux.defer(() -> resolveAccessRequest(
-          method,
-          joinPoint.getArgs(),
-          projectAccess,
-          workspaceAccess)
-          .flatMapMany(accessRequest -> Flux.defer(() -> proceedFlux(joinPoint, method))
-              .contextWrite(ProjectAccessRequesterContext.withRequesterId(
-                  accessRequest.requesterId()))));
+      return Flux.deferContextual(contextView -> {
+        if (SystemActorContext.isSystemActor(contextView)) {
+          return proceedFlux(joinPoint, method);
+        }
+        return resolveAccessRequest(
+            method,
+            joinPoint.getArgs(),
+            projectAccess,
+            workspaceAccess)
+            .flatMapMany(accessRequest -> Flux.defer(() -> proceedFlux(joinPoint, method))
+                .contextWrite(ProjectAccessRequesterContext.withRequesterId(
+                    accessRequest.requesterId())));
+      });
     }
     throw new IllegalStateException(
         "Access annotations are only supported on Mono/Flux methods: "

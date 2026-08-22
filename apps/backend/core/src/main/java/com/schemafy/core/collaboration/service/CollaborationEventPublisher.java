@@ -22,15 +22,20 @@ public class CollaborationEventPublisher {
   private final JsonCodec jsonCodec;
 
   public Mono<Void> publish(String projectId, CollaborationOutbound event) {
+    return publishStrict(projectId, event)
+        .doOnError(e -> log.warn(
+            "[CollaborationEventPublisher] Failed to publish event: type={}, sessionId={}, error={}",
+            event.type(), event.sessionId(), e.getMessage()))
+        .onErrorResume(e -> Mono.empty());
+  }
+
+  public Mono<Void> publishStrict(String projectId,
+      CollaborationOutbound event) {
     String channelName = CollaborationChannel.forProject(projectId);
 
     return serializeToJson(event)
         .flatMap(eventJson -> redisTemplate.convertAndSend(channelName,
             eventJson))
-        .doOnError(e -> log.warn(
-            "[CollaborationEventPublisher] Failed to publish event: type={}, sessionId={}, error={}",
-            event.type(), event.sessionId(), e.getMessage()))
-        .onErrorResume(e -> Mono.empty())
         .then();
   }
 

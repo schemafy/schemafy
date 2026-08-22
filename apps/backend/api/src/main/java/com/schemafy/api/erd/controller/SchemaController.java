@@ -26,7 +26,7 @@ import com.schemafy.api.erd.controller.dto.response.SchemaSnapshotsResponse;
 import com.schemafy.api.erd.service.SchemaDdlExportOrchestrator;
 import com.schemafy.api.erd.service.SchemaMermaidExportOrchestrator;
 import com.schemafy.api.erd.service.SchemaSnapshotOrchestrator;
-import com.schemafy.core.erd.broadcast.ErdMutationBroadcaster;
+import com.schemafy.api.erd.service.sync.ErdStateSyncPublisher;
 import com.schemafy.core.erd.operation.domain.CommittedErdOperation;
 import com.schemafy.core.erd.schema.application.port.in.ChangeSchemaNameCommand;
 import com.schemafy.core.erd.schema.application.port.in.ChangeSchemaNameUseCase;
@@ -56,7 +56,7 @@ public class SchemaController {
   private final SchemaDdlExportOrchestrator schemaDdlExportOrchestrator;
   private final SchemaMermaidExportOrchestrator schemaMermaidExportOrchestrator;
 
-  private final ObjectProvider<ErdMutationBroadcaster> broadcasterProvider;
+  private final ObjectProvider<ErdStateSyncPublisher> publisherProvider;
 
   @PostMapping("/schemas")
   public Mono<MutationResponse<SchemaResponse>> createSchema(
@@ -132,16 +132,16 @@ public class SchemaController {
   public Mono<MutationResponse<Void>> deleteSchema(
       @PathVariable String schemaId) {
     DeleteSchemaCommand command = new DeleteSchemaCommand(schemaId);
-    ErdMutationBroadcaster broadcaster = broadcasterProvider.getIfAvailable();
-    if (broadcaster == null) {
+    ErdStateSyncPublisher publisher = publisherProvider.getIfAvailable();
+    if (publisher == null) {
       return deleteSchemaUseCase.deleteSchema(command)
           .map(result -> MutationResponse.<Void>of(null,
               result.affectedTableIds(), result.operation()));
     }
-    return broadcaster.resolveFromSchemaId(schemaId)
+    return publisher.resolveFromSchemaId(schemaId)
         .flatMap(ctx -> deleteSchemaUseCase.deleteSchema(command)
-            .flatMap(result -> broadcaster
-                .broadcastWithContext(ctx, result.affectedTableIds(),
+            .flatMap(result -> publisher
+                .publishDeletedWithContext(ctx, result.affectedTableIds(),
                     result.operation())
                 .thenReturn(result)))
         .map(result -> MutationResponse.<Void>of(null,
@@ -150,11 +150,11 @@ public class SchemaController {
 
   private Mono<Void> broadcastSchemaChange(String schemaId,
       CommittedErdOperation operation) {
-    ErdMutationBroadcaster broadcaster = broadcasterProvider.getIfAvailable();
-    if (broadcaster == null) {
+    ErdStateSyncPublisher publisher = publisherProvider.getIfAvailable();
+    if (publisher == null) {
       return Mono.empty();
     }
-    return broadcaster.broadcastSchemaChange(schemaId, operation);
+    return publisher.publishSchemaChange(schemaId, operation);
   }
 
 }

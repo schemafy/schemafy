@@ -64,6 +64,19 @@ collaboration:
     session-ttl: ${COLLABORATION_PRESENCE_SESSION_TTL:90s}
     heartbeat-interval: ${COLLABORATION_PRESENCE_HEARTBEAT_INTERVAL:30s}
     cleanup-interval: ${COLLABORATION_PRESENCE_CLEANUP_INTERVAL:30s}
+  erd-state-snapshot:
+    debounce: ${ERD_STATE_SNAPSHOT_DEBOUNCE:100ms}
+    max-wait: ${ERD_STATE_SNAPSHOT_MAX_WAIT:500ms}
+    poll-interval: ${ERD_STATE_SNAPSHOT_POLL_INTERVAL:50ms}
+    lease-ttl: ${ERD_STATE_SNAPSHOT_LEASE_TTL:30s}
+    lease-renew-interval: ${ERD_STATE_SNAPSHOT_LEASE_RENEW_INTERVAL:10s}
+    batch-size: ${ERD_STATE_SNAPSHOT_BATCH_SIZE:20}
+    worker-concurrency: ${ERD_STATE_SNAPSHOT_WORKER_CONCURRENCY:4}
+    retry-backoff: ${ERD_STATE_SNAPSHOT_RETRY_BACKOFF:100ms}
+    max-retry-backoff: ${ERD_STATE_SNAPSHOT_MAX_RETRY_BACKOFF:400ms}
+    requeue-backoff: ${ERD_STATE_SNAPSHOT_REQUEUE_BACKOFF:1s}
+    max-requeue-backoff: ${ERD_STATE_SNAPSHOT_MAX_REQUEUE_BACKOFF:30s}
+    completed-watermark-ttl: ${ERD_STATE_SNAPSHOT_COMPLETED_WATERMARK_TTL:4h}
 
 hmac:
   secret: ${HMAC_SECRET:default-hmac-secret-change-me-in-production}

@@ -26,6 +26,7 @@ import static org.mockito.Mockito.any;
 import static org.mockito.Mockito.anyString;
 import static org.mockito.Mockito.eq;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -177,6 +178,55 @@ class AccessVerificationAspectTest {
 
     verify(verifier)
         .requireProjectAccess(eq("project-id"), eq("requester-id"), eq(ProjectRole.VIEWER));
+  }
+
+  @Test
+  @DisplayName("system actor context에서는 project access 검증을 건너뛴다")
+  void systemActor_bypassesProjectAccessVerification() {
+    AccessVerifier verifier = mock(AccessVerifier.class);
+    TestService target = new TestService();
+    TestService proxy = createProxy(verifier, target);
+
+    StepVerifier.create(proxy.updateProject(new ProjectCommand("project-id", "requester-id"))
+        .contextWrite(SystemActorContext.asSystemActor()))
+        .expectNext("updated")
+        .verifyComplete();
+
+    assertThat(target.invocations.get()).isEqualTo(1);
+    verify(verifier, never())
+        .requireProjectAccess(any(), any(), any());
+  }
+
+  @Test
+  @DisplayName("system actor context에서는 requester가 없는 ERD resource access도 통과한다")
+  void systemActor_bypassesErdResourceAccessVerification() {
+    AccessVerifier verifier = mock(AccessVerifier.class);
+    TestService target = new TestService();
+    TestService proxy = createErdProxy(verifier, target);
+
+    StepVerifier.create(proxy.loadTable(new GetTableQuery("table-id"))
+        .contextWrite(SystemActorContext.asSystemActor()))
+        .expectNext("table")
+        .verifyComplete();
+
+    assertThat(target.invocations.get()).isEqualTo(1);
+    verify(verifier, never())
+        .requireProjectAccess(any(), any(), any());
+  }
+
+  @Test
+  @DisplayName("system actor context에서는 Flux 반환 메서드의 workspace access 검증도 건너뛴다")
+  void systemActor_bypassesWorkspaceAccessVerificationForFlux() {
+    AccessVerifier verifier = mock(AccessVerifier.class);
+    TestService proxy = createProxy(verifier, new TestService());
+
+    StepVerifier.create(proxy.workspaceStream(new WorkspaceCommand("workspace-id", "requester-id"))
+        .contextWrite(SystemActorContext.asSystemActor()))
+        .expectNext("workspace-1", "workspace-2")
+        .verifyComplete();
+
+    verify(verifier, never())
+        .requireWorkspaceAccess(any(), any(), any());
   }
 
   @Test

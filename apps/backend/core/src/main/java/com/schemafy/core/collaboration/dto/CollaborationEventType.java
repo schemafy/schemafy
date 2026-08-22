@@ -13,7 +13,8 @@ public enum CollaborationEventType {
   RELATIONSHIP_EXTRA_PREVIEW("RELATIONSHIP_EXTRA_PREVIEW", false),
   SCHEMA_FOCUS("SCHEMA_FOCUS", false),
   CHAT("CHAT", true),
-  ERD_MUTATED("ERD_MUTATED", false);
+  ERD_MUTATED("ERD_MUTATED", false),
+  ERD_STATE_CHANGED("ERD_STATE_CHANGED", true);
 
   private final String value;
   private final boolean includeSender;

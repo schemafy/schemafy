@@ -6,10 +6,12 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.schemafy.core.collaboration.dto.CursorPosition;
 import com.schemafy.core.collaboration.dto.event.CollaborationOutboundFactory;
 import com.schemafy.core.collaboration.dto.event.CursorEvent;
 import com.schemafy.core.collaboration.dto.event.ErdMutatedEvent;
+import com.schemafy.core.collaboration.dto.event.ErdStateChangedEvent;
 import com.schemafy.core.common.json.JsonCodec;
 import com.schemafy.core.erd.operation.domain.CommittedErdOperation;
 import com.schemafy.core.erd.operation.domain.ErdOperationDerivationKind;
@@ -27,8 +29,10 @@ class CollaborationPayloadSerializerTest {
       42L,
       ErdOperationDerivationKind.ORIGINAL);
 
+  private final ObjectMapper objectMapper = new ObjectMapper()
+      .findAndRegisterModules();
   private final CollaborationPayloadSerializer serializer = new CollaborationPayloadSerializer(
-      new JsonCodec(new ObjectMapper().findAndRegisterModules()));
+      new JsonCodec(objectMapper));
 
   @Test
   @DisplayName("JOIN 이벤트 직렬화 시 sessionId를 포함한다")
@@ -71,7 +75,9 @@ class CollaborationPayloadSerializerTest {
           assertThat(json).contains("\"type\":\"ERD_MUTATED\"");
           assertThat(json).contains("\"sessionId\":\"session-1\"");
           assertThat(json).contains("\"schemaId\":\"schema-1\"");
+          assertThat(json).contains("\"operation\":{");
           assertThat(json).contains("\"opId\":\"op-1\"");
+          assertThat(json).contains("\"committedRevision\":42");
         })
         .verifyComplete();
   }
@@ -87,6 +93,45 @@ class CollaborationPayloadSerializerTest {
           assertThat(json).contains("\"schemaId\":\"schema-1\"");
           assertThat(json).contains("\"committedRevision\":42");
           assertThat(json).doesNotContain("sessionId");
+        })
+        .verifyComplete();
+  }
+
+  @Test
+  @DisplayName("ACTIVE ERD_STATE_CHANGED는 전체 상태와 revision만 직렬화한다")
+  void serialize_active_erd_state_changed() {
+    ObjectNode schema = objectMapper.createObjectNode()
+        .put("id", "schema-1");
+    ObjectNode snapshots = objectMapper.createObjectNode()
+        .set("table-1", objectMapper.createObjectNode());
+
+    StepVerifier.create(serializer.serialize(
+        CollaborationOutboundFactory.erdStateChangedActive("schema-1", 42L,
+            schema, snapshots)))
+        .assertNext(json -> {
+          assertThat(json).contains("\"type\":\"ERD_STATE_CHANGED\"");
+          assertThat(json).contains("\"schemaId\":\"schema-1\"");
+          assertThat(json).contains("\"revision\":42");
+          assertThat(json).contains("\"state\":\"ACTIVE\"");
+          assertThat(json).contains("\"schema\":{\"id\":\"schema-1\"}");
+          assertThat(json).contains("\"snapshots\":{\"table-1\":{}}");
+          assertThat(json).doesNotContain("sessionId");
+          assertThat(json).doesNotContain("operation");
+        })
+        .verifyComplete();
+  }
+
+  @Test
+  @DisplayName("DELETED ERD_STATE_CHANGED는 null tombstone을 직렬화한다")
+  void serialize_deleted_erd_state_changed() {
+    StepVerifier.create(serializer.serialize(
+        ErdStateChangedEvent.Outbound.deleted("schema-1", 43L)))
+        .assertNext(json -> {
+          assertThat(json).contains("\"state\":\"DELETED\"");
+          assertThat(json).contains("\"revision\":43");
+          assertThat(json).contains("\"schema\":null");
+          assertThat(json).contains("\"snapshots\":null");
+          assertThat(json).doesNotContain("operation");
         })
         .verifyComplete();
   }
