@@ -1,7 +1,6 @@
 package com.schemafy.core.project.application.service;
 
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.reactive.TransactionalOperator;
 
 import com.schemafy.core.common.BaseEntity;
 import com.schemafy.core.project.application.access.RequireWorkspaceAccess;
@@ -21,7 +20,7 @@ import reactor.core.publisher.Mono;
 @RequiredArgsConstructor
 class LeaveWorkspaceService implements LeaveWorkspaceUseCase {
 
-  private final TransactionalOperator transactionalOperator;
+  private final WorkspaceMutationGuard workspaceMutationGuard;
   private final WorkspacePort workspacePort;
   private final ProjectPort projectPort;
   private final WorkspaceMemberPort workspaceMemberPort;
@@ -33,22 +32,22 @@ class LeaveWorkspaceService implements LeaveWorkspaceUseCase {
   @Override
   @RequireWorkspaceAccess(role = WorkspaceRole.MEMBER)
   public Mono<Void> leaveWorkspace(LeaveWorkspaceCommand command) {
-    return workspaceAccessHelper.findWorkspaceMember(command.requesterId(),
-        command.workspaceId())
-        .flatMap(member -> workspaceMemberPort
-            .countByWorkspaceIdAndNotDeleted(command.workspaceId())
-            .flatMap(totalMembers -> {
-              if (totalMembers == 1) {
-                return doDeleteWorkspace(command.workspaceId());
-              }
+    return workspaceMutationGuard.protectExclusive(command.workspaceId(),
+        () -> workspaceAccessHelper.findWorkspaceMember(command.requesterId(),
+            command.workspaceId())
+            .flatMap(member -> workspaceMemberPort
+                .countByWorkspaceIdAndNotDeleted(command.workspaceId())
+                .flatMap(totalMembers -> {
+                  if (totalMembers == 1) {
+                    return doDeleteWorkspace(command.workspaceId());
+                  }
 
-              return workspaceAccessHelper.modifyMemberWithAdminGuard(
-                  command.workspaceId(), member, BaseEntity::delete)
-                  .then(projectMembershipPropagationHelper.removeFromAllProjects(
-                      command.workspaceId(),
-                      command.requesterId()));
-            }))
-        .as(transactionalOperator::transactional);
+                  return workspaceAccessHelper.modifyMemberWithAdminGuard(
+                      command.workspaceId(), member, BaseEntity::delete)
+                      .then(projectMembershipPropagationHelper.removeFromAllProjects(
+                          command.workspaceId(),
+                          command.requesterId()));
+                })));
   }
 
   private Mono<Void> doDeleteWorkspace(String workspaceId) {

@@ -35,23 +35,34 @@ public class ProjectMutationGuard {
   public <T> Mono<T> protectChildCreation(
       String projectId,
       Supplier<Mono<T>> action) {
-    return Mono.defer(() -> lockProjectInShareMode(projectId)
-        .then(Mono.defer(action)))
-        .as(transactionalOperator::transactional)
-        .retryWhen(lockRetry(projectId));
+    return protect(projectId, this::lockProjectInShareMode, action);
+  }
+
+  public <T> Mono<T> protectProjectMutation(
+      String projectId,
+      Supplier<Mono<T>> action) {
+    return protect(projectId, this::lockProjectForUpdate, action);
   }
 
   public <T> Mono<T> protectProjectDeletion(
       String projectId,
       Supplier<Mono<T>> action) {
-    return projectPort.findByIdAndNotDeleted(projectId)
+    return protectProjectMutation(projectId, action);
+  }
+
+  private <T> Mono<T> protect(
+      String projectId,
+      java.util.function.Function<String, Mono<Void>> projectLock,
+      Supplier<Mono<T>> action) {
+    return Mono.defer(() -> projectPort.findByIdAndNotDeleted(projectId)
         .switchIfEmpty(Mono.error(new DomainException(
             ProjectErrorCode.NOT_FOUND)))
-        .flatMap(project -> Mono.defer(() -> lockWorkspaceInShareMode(project.getWorkspaceId())
-            .then(lockProjectForUpdate(projectId))
+        .flatMap(project -> Mono.defer(() -> lockWorkspaceInShareMode(
+            project.getWorkspaceId())
+            .then(projectLock.apply(projectId))
             .then(Mono.defer(action)))
             .as(transactionalOperator::transactional)
-            .retryWhen(lockRetry(projectId)));
+            .retryWhen(lockRetry(projectId))));
   }
 
   private Mono<Void> lockProjectInShareMode(String projectId) {

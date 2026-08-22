@@ -31,7 +31,7 @@ import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
-@DisplayName("프로젝트 변경 보호 테스트")
+@DisplayName("프로젝트 변경 잠금과 재시도")
 class ProjectMutationGuardTest {
 
   @Mock
@@ -49,7 +49,7 @@ class ProjectMutationGuardTest {
   void setUp() {
     sut = new ProjectMutationGuard(projectPort, workspacePort,
         transactionalOperator);
-    lenient().when(transactionalOperator.<Object>transactional(
+    lenient().when(transactionalOperator.transactional(
         ArgumentMatchers.<Mono<Object>>any()))
         .thenAnswer(invocation -> invocation.<Mono<Object>>getArgument(0));
   }
@@ -57,6 +57,11 @@ class ProjectMutationGuardTest {
   @Test
   @DisplayName("공유 잠금 획득 실패 시 잠금부터 전체 작업을 재시도한다")
   void protectChildCreation_retriesFromLockWhenLockCannotBeAcquired() {
+    Project project = Project.create("project-id", "workspace-id", "Project", "Description");
+    Workspace workspace = Workspace.create("workspace-id", "Workspace", "Description");
+    when(projectPort.findByIdAndNotDeleted("project-id")).thenReturn(Mono.just(project));
+    when(workspacePort.findByIdAndNotDeletedInShareMode("workspace-id"))
+        .thenReturn(Mono.just(workspace));
     when(projectPort.lockByIdAndNotDeletedInShareMode("project-id"))
         .thenReturn(Mono.error(new CannotAcquireLockException("lock timeout")))
         .thenReturn(Mono.just("project-id"));
@@ -68,12 +73,18 @@ class ProjectMutationGuardTest {
 
     verify(projectPort, times(2))
         .lockByIdAndNotDeletedInShareMode("project-id");
+    verify(projectPort).findByIdAndNotDeleted("project-id");
   }
 
   @Test
   @DisplayName("작업 중 잠금 실패 시 잠금부터 전체 작업을 재시도한다")
   void protectChildCreation_retriesActionFromLock() {
     AtomicInteger actionAttempts = new AtomicInteger();
+    Project project = Project.create("project-id", "workspace-id", "Project", "Description");
+    Workspace workspace = Workspace.create("workspace-id", "Workspace", "Description");
+    when(projectPort.findByIdAndNotDeleted("project-id")).thenReturn(Mono.just(project));
+    when(workspacePort.findByIdAndNotDeletedInShareMode("workspace-id"))
+        .thenReturn(Mono.just(workspace));
     when(projectPort.lockByIdAndNotDeletedInShareMode("project-id"))
         .thenReturn(Mono.just("project-id"));
 
@@ -87,6 +98,7 @@ class ProjectMutationGuardTest {
     assertThat(actionAttempts).hasValue(2);
     verify(projectPort, times(2))
         .lockByIdAndNotDeletedInShareMode("project-id");
+    verify(projectPort).findByIdAndNotDeleted("project-id");
   }
 
   @Test
@@ -94,6 +106,11 @@ class ProjectMutationGuardTest {
   void protectChildCreation_propagatesLastLockFailureWhenRetriesExhausted() {
     CannotAcquireLockException failure = new CannotAcquireLockException(
         "lock timeout");
+    Project project = Project.create("project-id", "workspace-id", "Project", "Description");
+    Workspace workspace = Workspace.create("workspace-id", "Workspace", "Description");
+    when(projectPort.findByIdAndNotDeleted("project-id")).thenReturn(Mono.just(project));
+    when(workspacePort.findByIdAndNotDeletedInShareMode("workspace-id"))
+        .thenReturn(Mono.just(workspace));
     when(projectPort.lockByIdAndNotDeletedInShareMode("project-id"))
         .thenReturn(Mono.error(failure));
 
@@ -149,8 +166,13 @@ class ProjectMutationGuardTest {
   }
 
   @Test
-  @DisplayName("하위 생성은 프로젝트 공유 잠금만 획득한다")
-  void protectChildCreation_locksOnlyProject() {
+  @DisplayName("하위 생성은 워크스페이스 공유 잠금 후 프로젝트 공유 잠금을 획득한다")
+  void protectChildCreation_locksWorkspaceSharedThenProjectShared() {
+    Project project = Project.create("project-id", "workspace-id", "Project", "Description");
+    Workspace workspace = Workspace.create("workspace-id", "Workspace", "Description");
+    when(projectPort.findByIdAndNotDeleted("project-id")).thenReturn(Mono.just(project));
+    when(workspacePort.findByIdAndNotDeletedInShareMode("workspace-id"))
+        .thenReturn(Mono.just(workspace));
     when(projectPort.lockByIdAndNotDeletedInShareMode("project-id"))
         .thenReturn(Mono.just("project-id"));
 
@@ -160,7 +182,32 @@ class ProjectMutationGuardTest {
         .verifyComplete();
 
     verify(projectPort).lockByIdAndNotDeletedInShareMode("project-id");
-    verifyNoInteractions(workspacePort);
+    InOrder lockOrder = inOrder(workspacePort, projectPort);
+    lockOrder.verify(workspacePort)
+        .findByIdAndNotDeletedInShareMode("workspace-id");
+    lockOrder.verify(projectPort).lockByIdAndNotDeletedInShareMode("project-id");
+  }
+
+  @Test
+  @DisplayName("일반 프로젝트 변경은 워크스페이스 공유 잠금 후 프로젝트 배타 잠금을 획득한다")
+  void protectProjectMutation_locksWorkspaceSharedThenProjectExclusive() {
+    Project project = Project.create("project-id", "workspace-id", "Project", "Description");
+    Workspace workspace = Workspace.create("workspace-id", "Workspace", "Description");
+    when(projectPort.findByIdAndNotDeleted("project-id")).thenReturn(Mono.just(project));
+    when(workspacePort.findByIdAndNotDeletedInShareMode("workspace-id"))
+        .thenReturn(Mono.just(workspace));
+    when(projectPort.lockByIdAndNotDeletedForUpdate("project-id"))
+        .thenReturn(Mono.just("project-id"));
+
+    StepVerifier.create(sut.protectProjectMutation(
+        "project-id", () -> Mono.just("done")))
+        .expectNext("done")
+        .verifyComplete();
+
+    InOrder lockOrder = inOrder(workspacePort, projectPort);
+    lockOrder.verify(workspacePort)
+        .findByIdAndNotDeletedInShareMode("workspace-id");
+    lockOrder.verify(projectPort).lockByIdAndNotDeletedForUpdate("project-id");
   }
 
 }
