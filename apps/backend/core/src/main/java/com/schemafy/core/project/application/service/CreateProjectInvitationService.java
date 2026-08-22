@@ -22,6 +22,7 @@ class CreateProjectInvitationService implements CreateProjectInvitationUseCase {
   private final UlidGeneratorPort ulidGeneratorPort;
   private final InvitationPort invitationPort;
   private final ProjectInvitationHelper projectInvitationHelper;
+  private final ProjectAccessHelper projectAccessHelper;
 
   @Override
   @RequireProjectAccess(role = ProjectRole.ADMIN)
@@ -29,22 +30,24 @@ class CreateProjectInvitationService implements CreateProjectInvitationUseCase {
       CreateProjectInvitationCommand command) {
     return Mono.fromSupplier(() -> Email.from(command.email()))
         .flatMap(email -> projectMutationGuard.protectChildCreation(
-            command.projectId(), () -> projectInvitationHelper
-                .findProjectOrThrow(command.projectId())
-                .flatMap(project -> projectInvitationHelper
-                    .checkNotAlreadyProjectMemberByEmail(command.projectId(), email)
-                    .then(projectInvitationHelper.checkDuplicatePendingInvitation(
-                        command.projectId(), email))
-                    .thenReturn(project))
-                .flatMap(project -> Mono.fromCallable(ulidGeneratorPort::generate)
-                    .flatMap(id -> invitationPort.save(
-                        Invitation.createProjectInvitation(
-                            id,
-                            command.projectId(),
-                            project.getWorkspaceId(),
-                            email.address(),
-                            command.role(),
-                            command.requesterId()))))));
+            command.projectId(), () -> projectAccessHelper
+                .findProjectAdminMember(command.requesterId(), command.projectId())
+                .then(Mono.defer(() -> projectInvitationHelper
+                    .findProjectOrThrow(command.projectId())
+                    .flatMap(project -> projectInvitationHelper
+                        .checkNotAlreadyProjectMemberByEmail(command.projectId(), email)
+                        .then(projectInvitationHelper.checkDuplicatePendingInvitation(
+                            command.projectId(), email))
+                        .thenReturn(project))
+                    .flatMap(project -> Mono.fromCallable(ulidGeneratorPort::generate)
+                        .flatMap(id -> invitationPort.save(
+                            Invitation.createProjectInvitation(
+                                id,
+                                command.projectId(),
+                                project.getWorkspaceId(),
+                                email.address(),
+                                command.role(),
+                                command.requesterId()))))))));
   }
 
 }

@@ -20,20 +20,19 @@ class UpdateProjectMemberRoleService implements UpdateProjectMemberRoleUseCase {
 
   private final ProjectMemberPort projectMemberPort;
   private final ProjectAccessHelper projectAccessHelper;
-  private final WorkspaceMutationGuard workspaceMutationGuard;
+  private final ProjectMutationGuard projectMutationGuard;
 
   @Override
   @RequireProjectAccess(role = ProjectRole.ADMIN)
   public Mono<ProjectMember> updateProjectMemberRole(
       UpdateProjectMemberRoleCommand command) {
-    return projectAccessHelper.findProjectById(command.projectId())
-        .flatMap(project -> workspaceMutationGuard.protectShared(project.getWorkspaceId(),
-            () -> Mono.zip(
-                projectAccessHelper.findProjectAdminMember(
-                    command.requesterId(), command.projectId()),
-                projectAccessHelper.findProjectMember(command.targetUserId(), command.projectId()))
-                .flatMap(tuple -> validateAndUpdateMemberRole(
-                    command, tuple.getT1(), tuple.getT2()))));
+    return projectMutationGuard.protectProjectMutation(command.projectId(),
+        () -> Mono.zip(
+            projectAccessHelper.findProjectAdminMember(
+                command.requesterId(), command.projectId()),
+            projectAccessHelper.findProjectMember(command.targetUserId(), command.projectId()))
+            .flatMap(tuple -> validateAndUpdateMemberRole(
+                command, tuple.getT1(), tuple.getT2())));
   }
 
   private Mono<ProjectMember> validateAndUpdateMemberRole(

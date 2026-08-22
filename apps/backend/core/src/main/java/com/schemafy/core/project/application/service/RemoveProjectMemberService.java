@@ -15,20 +15,19 @@ import reactor.core.publisher.Mono;
 class RemoveProjectMemberService implements RemoveProjectMemberUseCase {
 
   private final ProjectAccessHelper projectAccessHelper;
-  private final WorkspaceMutationGuard workspaceMutationGuard;
+  private final ProjectMutationGuard projectMutationGuard;
 
   @Override
   @RequireProjectAccess(role = ProjectRole.ADMIN)
   public Mono<Void> removeProjectMember(RemoveProjectMemberCommand command) {
-    return projectAccessHelper.findProjectById(command.projectId())
-        .flatMap(project -> workspaceMutationGuard.protectShared(project.getWorkspaceId(),
-            () -> projectAccessHelper.findProjectAdminMember(
-                command.requesterId(), command.projectId())
-                .then(Mono.defer(() -> projectAccessHelper.findProjectMember(
-                    command.targetUserId(), command.projectId())))
-                .flatMap(target -> projectAccessHelper
-                    .validateWorkspaceAdminGuard(command.projectId(), target)
-                    .then(projectAccessHelper.softDeleteMember(target)))));
+    return projectMutationGuard.protectProjectMutation(command.projectId(),
+        () -> projectAccessHelper.findProjectAdminMember(
+            command.requesterId(), command.projectId())
+            .then(Mono.defer(() -> projectAccessHelper.findProjectMember(
+                command.targetUserId(), command.projectId())))
+            .flatMap(target -> projectAccessHelper
+                .validateWorkspaceAdminGuard(command.projectId(), target)
+                .then(projectAccessHelper.softDeleteMember(target))));
   }
 
 }

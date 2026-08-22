@@ -12,7 +12,6 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 import com.schemafy.core.common.exception.DomainException;
 import com.schemafy.core.project.application.port.in.RemoveProjectMemberCommand;
-import com.schemafy.core.project.domain.Project;
 import com.schemafy.core.project.domain.ProjectMember;
 import com.schemafy.core.project.domain.ProjectRole;
 import com.schemafy.core.project.domain.exception.ProjectErrorCode;
@@ -33,11 +32,10 @@ import static org.mockito.Mockito.never;
 class RemoveProjectMemberServiceTest {
 
   private static final String PROJECT_ID = "project-id";
-  private static final String WORKSPACE_ID = "workspace-id";
   private static final String TARGET_ID = "target-id";
 
   @Mock
-  WorkspaceMutationGuard workspaceMutationGuard;
+  ProjectMutationGuard projectMutationGuard;
 
   @Mock
   ProjectAccessHelper projectAccessHelper;
@@ -46,15 +44,13 @@ class RemoveProjectMemberServiceTest {
   RemoveProjectMemberService sut;
 
   @Test
-  @DisplayName("워크스페이스 공유 락을 획득한 트랜잭션에서 최신 대상 멤버를 읽고 제거한다")
-  void removesCurrentMemberAfterAcquiringSharedWorkspaceLock() {
+  @DisplayName("프로젝트 변경 락을 획득한 트랜잭션에서 최신 대상 멤버를 읽고 제거한다")
+  void removesCurrentMemberAfterAcquiringProjectMutationLock() {
     var command = new RemoveProjectMemberCommand(PROJECT_ID, TARGET_ID, "requester-id");
-    var project = Project.create(PROJECT_ID, WORKSPACE_ID, "Project", "Description");
     var target = ProjectMember.create("member-id", PROJECT_ID, TARGET_ID, ProjectRole.EDITOR);
     var enteredGuard = new AtomicBoolean();
 
-    given(projectAccessHelper.findProjectById(PROJECT_ID)).willReturn(Mono.just(project));
-    given(workspaceMutationGuard.protectShared(eq(WORKSPACE_ID), any()))
+    given(projectMutationGuard.protectProjectMutation(eq(PROJECT_ID), any()))
         .willAnswer(invocation -> {
           enteredGuard.set(true);
           Supplier<Mono<Void>> action = invocation.getArgument(1);
@@ -84,18 +80,16 @@ class RemoveProjectMemberServiceTest {
 
     StepVerifier.create(sut.removeProjectMember(command)).verifyComplete();
 
-    then(workspaceMutationGuard).should().protectShared(eq(WORKSPACE_ID), any());
+    then(projectMutationGuard).should().protectProjectMutation(eq(PROJECT_ID), any());
   }
 
   @Test
   @DisplayName("조건부 삭제 결과가 0건이어도 멱등적으로 완료한다")
   void completesWhenConditionalDeleteAffectsNoRows() {
     var command = new RemoveProjectMemberCommand(PROJECT_ID, TARGET_ID, "requester-id");
-    var project = Project.create(PROJECT_ID, WORKSPACE_ID, "Project", "Description");
     var target = ProjectMember.create("member-id", PROJECT_ID, TARGET_ID, ProjectRole.EDITOR);
 
-    given(projectAccessHelper.findProjectById(PROJECT_ID)).willReturn(Mono.just(project));
-    given(workspaceMutationGuard.protectShared(eq(WORKSPACE_ID), any()))
+    given(projectMutationGuard.protectProjectMutation(eq(PROJECT_ID), any()))
         .willAnswer(invokeGuardAction());
     given(projectAccessHelper.findProjectMember(TARGET_ID, PROJECT_ID)).willReturn(Mono.just(target));
     given(projectAccessHelper.findProjectAdminMember("requester-id", PROJECT_ID))
@@ -111,10 +105,8 @@ class RemoveProjectMemberServiceTest {
   @DisplayName("워크스페이스 공유 락 대기 중 요청자가 비관리자로 변경되면 대상 멤버를 제거하지 않는다")
   void rejectsDemotedRequesterAfterAcquiringSharedWorkspaceLock() {
     var command = new RemoveProjectMemberCommand(PROJECT_ID, TARGET_ID, "requester-id");
-    var project = Project.create(PROJECT_ID, WORKSPACE_ID, "Project", "Description");
 
-    given(projectAccessHelper.findProjectById(PROJECT_ID)).willReturn(Mono.just(project));
-    given(workspaceMutationGuard.protectShared(eq(WORKSPACE_ID), any()))
+    given(projectMutationGuard.protectProjectMutation(eq(PROJECT_ID), any()))
         .willAnswer(invokeGuardAction());
     given(projectAccessHelper.findProjectAdminMember("requester-id", PROJECT_ID))
         .willReturn(Mono.error(new DomainException(ProjectErrorCode.ADMIN_REQUIRED)));
@@ -131,10 +123,8 @@ class RemoveProjectMemberServiceTest {
   @DisplayName("워크스페이스 공유 락 대기 중 요청자 멤버십이 삭제되면 대상 멤버를 제거하지 않는다")
   void rejectsRemovedRequesterAfterAcquiringSharedWorkspaceLock() {
     var command = new RemoveProjectMemberCommand(PROJECT_ID, TARGET_ID, "requester-id");
-    var project = Project.create(PROJECT_ID, WORKSPACE_ID, "Project", "Description");
 
-    given(projectAccessHelper.findProjectById(PROJECT_ID)).willReturn(Mono.just(project));
-    given(workspaceMutationGuard.protectShared(eq(WORKSPACE_ID), any()))
+    given(projectMutationGuard.protectProjectMutation(eq(PROJECT_ID), any()))
         .willAnswer(invokeGuardAction());
     given(projectAccessHelper.findProjectAdminMember("requester-id", PROJECT_ID))
         .willReturn(Mono.error(new DomainException(ProjectErrorCode.ACCESS_DENIED)));

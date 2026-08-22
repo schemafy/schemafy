@@ -83,7 +83,7 @@ class ProjectMutationConcurrencyIntegrationTest
       assertThat(mutationLocked.await(3, TimeUnit.SECONDS)).isTrue();
 
       Future<?> exclusive = executor.submit(() -> projectMutationGuard
-          .protectProjectDeletion(project.getId(), () -> Mono.fromRunnable(
+          .protectProjectMutation(project.getId(), () -> Mono.fromRunnable(
               exclusiveStarted::countDown))
           .block());
 

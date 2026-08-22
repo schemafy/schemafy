@@ -12,7 +12,6 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import com.schemafy.core.common.exception.DomainException;
 import com.schemafy.core.project.application.port.in.UpdateProjectMemberRoleCommand;
 import com.schemafy.core.project.application.port.out.ProjectMemberPort;
-import com.schemafy.core.project.domain.Project;
 import com.schemafy.core.project.domain.ProjectMember;
 import com.schemafy.core.project.domain.ProjectRole;
 import com.schemafy.core.project.domain.exception.ProjectErrorCode;
@@ -35,7 +34,7 @@ class UpdateProjectMemberRoleServiceTest {
   private static final String TARGET_ID = "target-id";
 
   @Mock
-  WorkspaceMutationGuard workspaceMutationGuard;
+  ProjectMutationGuard projectMutationGuard;
 
   @Mock
   ProjectMemberPort projectMemberPort;
@@ -55,10 +54,8 @@ class UpdateProjectMemberRoleServiceTest {
         TARGET_ID, ProjectRole.VIEWER);
     UpdateProjectMemberRoleCommand command = new UpdateProjectMemberRoleCommand(
         PROJECT_ID, TARGET_ID, ProjectRole.EDITOR, REQUESTER_ID);
-    var project = Project.create(PROJECT_ID, "workspace-id", "Project", "Description");
     var enteredGuard = new java.util.concurrent.atomic.AtomicBoolean();
-    given(projectAccessHelper.findProjectById(PROJECT_ID)).willReturn(Mono.just(project));
-    given(workspaceMutationGuard.protectShared(org.mockito.ArgumentMatchers.eq("workspace-id"),
+    given(projectMutationGuard.protectProjectMutation(org.mockito.ArgumentMatchers.eq(PROJECT_ID),
         org.mockito.ArgumentMatchers.any()))
         .willAnswer(invocation -> {
           enteredGuard.set(true);
@@ -86,8 +83,8 @@ class UpdateProjectMemberRoleServiceTest {
     then(projectMemberPort).should().updateRoleIfActive(PROJECT_ID, TARGET_ID,
         ProjectRole.EDITOR.name());
     then(projectMemberPort).should(never()).save(target);
-    then(workspaceMutationGuard).should().protectShared(
-        org.mockito.ArgumentMatchers.eq("workspace-id"), org.mockito.ArgumentMatchers.any());
+    then(projectMutationGuard).should().protectProjectMutation(
+        org.mockito.ArgumentMatchers.eq(PROJECT_ID), org.mockito.ArgumentMatchers.any());
   }
 
   @Test
@@ -99,9 +96,7 @@ class UpdateProjectMemberRoleServiceTest {
         TARGET_ID, ProjectRole.VIEWER);
     UpdateProjectMemberRoleCommand command = new UpdateProjectMemberRoleCommand(
         PROJECT_ID, TARGET_ID, ProjectRole.EDITOR, REQUESTER_ID);
-    var project = Project.create(PROJECT_ID, "workspace-id", "Project", "Description");
-    given(projectAccessHelper.findProjectById(PROJECT_ID)).willReturn(Mono.just(project));
-    given(workspaceMutationGuard.protectShared(org.mockito.ArgumentMatchers.eq("workspace-id"),
+    given(projectMutationGuard.protectProjectMutation(org.mockito.ArgumentMatchers.eq(PROJECT_ID),
         org.mockito.ArgumentMatchers.any()))
         .willAnswer(invokeGuardAction());
     given(projectAccessHelper.findProjectAdminMember(REQUESTER_ID, PROJECT_ID))
@@ -130,9 +125,7 @@ class UpdateProjectMemberRoleServiceTest {
         TARGET_ID, ProjectRole.VIEWER);
     UpdateProjectMemberRoleCommand command = new UpdateProjectMemberRoleCommand(
         PROJECT_ID, TARGET_ID, ProjectRole.EDITOR, REQUESTER_ID);
-    var project = Project.create(PROJECT_ID, "workspace-id", "Project", "Description");
-    given(projectAccessHelper.findProjectById(PROJECT_ID)).willReturn(Mono.just(project));
-    given(workspaceMutationGuard.protectShared(org.mockito.ArgumentMatchers.eq("workspace-id"),
+    given(projectMutationGuard.protectProjectMutation(org.mockito.ArgumentMatchers.eq(PROJECT_ID),
         org.mockito.ArgumentMatchers.any()))
         .willAnswer(invokeGuardAction());
     given(projectAccessHelper.findProjectAdminMember(REQUESTER_ID, PROJECT_ID))
@@ -155,9 +148,7 @@ class UpdateProjectMemberRoleServiceTest {
         TARGET_ID, ProjectRole.VIEWER);
     UpdateProjectMemberRoleCommand command = new UpdateProjectMemberRoleCommand(
         PROJECT_ID, TARGET_ID, ProjectRole.EDITOR, REQUESTER_ID);
-    var project = Project.create(PROJECT_ID, "workspace-id", "Project", "Description");
-    given(projectAccessHelper.findProjectById(PROJECT_ID)).willReturn(Mono.just(project));
-    given(workspaceMutationGuard.protectShared(org.mockito.ArgumentMatchers.eq("workspace-id"),
+    given(projectMutationGuard.protectProjectMutation(org.mockito.ArgumentMatchers.eq(PROJECT_ID),
         org.mockito.ArgumentMatchers.any()))
         .willAnswer(invokeGuardAction());
     given(projectAccessHelper.findProjectAdminMember(REQUESTER_ID, PROJECT_ID))
