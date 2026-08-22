@@ -1,6 +1,5 @@
 package com.schemafy.api.erd.service;
 
-import java.time.Instant;
 import java.util.List;
 import java.util.Map;
 
@@ -16,13 +15,9 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 import com.schemafy.api.erd.controller.dto.response.TableResponse;
 import com.schemafy.api.erd.controller.dto.response.TableSnapshotResponse;
-import com.schemafy.core.common.exception.DomainException;
-import com.schemafy.core.erd.operation.application.port.out.FindSchemaCollaborationStatePort;
-import com.schemafy.core.erd.operation.domain.SchemaCollaborationState;
 import com.schemafy.core.erd.schema.application.port.in.GetSchemaQuery;
 import com.schemafy.core.erd.schema.application.port.in.GetSchemaWithRevisionResult;
 import com.schemafy.core.erd.schema.application.port.in.GetSchemaWithRevisionUseCase;
-import com.schemafy.core.erd.schema.application.port.out.GetSchemaByIdPort;
 import com.schemafy.core.erd.schema.domain.Schema;
 import com.schemafy.core.erd.table.application.port.in.GetTablesBySchemaIdQuery;
 import com.schemafy.core.erd.table.application.port.in.GetTablesBySchemaIdUseCase;
@@ -36,11 +31,9 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyList;
 import static org.mockito.ArgumentMatchers.argThat;
-import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.then;
 import static org.mockito.Mockito.lenient;
-import static org.mockito.Mockito.never;
 
 @ExtendWith(MockitoExtension.class)
 @DisplayName("SchemaSnapshotOrchestrator")
@@ -48,12 +41,6 @@ class SchemaSnapshotOrchestratorTest {
 
   @Mock
   GetSchemaWithRevisionUseCase getSchemaWithRevisionUseCase;
-
-  @Mock
-  GetSchemaByIdPort getSchemaByIdPort;
-
-  @Mock
-  FindSchemaCollaborationStatePort findSchemaCollaborationStatePort;
 
   @Mock
   GetTablesBySchemaIdUseCase getTablesBySchemaIdUseCase;
@@ -80,8 +67,6 @@ class SchemaSnapshotOrchestratorTest {
 
     sut = new SchemaSnapshotOrchestrator(
         getSchemaWithRevisionUseCase,
-        getSchemaByIdPort,
-        findSchemaCollaborationStatePort,
         getTablesBySchemaIdUseCase,
         tableSnapshotOrchestrator,
         transactionManager);
@@ -190,75 +175,6 @@ class SchemaSnapshotOrchestratorTest {
     StepVerifier.create(sut.getSchemaSnapshots(schemaId))
         .expectErrorMessage("snapshot failed")
         .verify();
-  }
-
-  @Test
-  @DisplayName("getSchemaStateForSnapshotWorker는 access-gated use case를 거치지 않고 raw port로 직접 조회한다")
-  void snapshotWorkerLookupBypassesAccessGatedUseCase() {
-    String schemaId = "schema-1";
-    Schema schema = new Schema(schemaId, "project-1", "main_schema",
-        "utf8mb4", "utf8mb4_general_ci");
-    Table table = new Table("table-1", schemaId, "users", "utf8mb4",
-        "utf8mb4_general_ci");
-    TableSnapshotResponse snapshot = new TableSnapshotResponse(
-        new TableResponse(table.id(), schemaId, table.name(), table.charset(),
-            table.collation(), null),
-        List.of(), List.of(), List.of(), List.of());
-
-    given(getSchemaByIdPort.findSchemaById(schemaId))
-        .willReturn(Mono.just(schema));
-    given(findSchemaCollaborationStatePort.findBySchemaId(schemaId))
-        .willReturn(Mono.just(new SchemaCollaborationState(schemaId,
-            "project-1", 42L, Instant.now(), Instant.now())));
-    given(getTablesBySchemaIdUseCase.getTablesBySchemaId(any(GetTablesBySchemaIdQuery.class)))
-        .willReturn(Flux.just(table));
-    given(tableSnapshotOrchestrator.getTableSnapshotsStrict(anyList()))
-        .willReturn(Mono.just(Map.of(table.id(), snapshot)));
-
-    StepVerifier.create(sut.getSchemaStateForSnapshotWorker(schemaId))
-        .assertNext(result -> {
-          assertThat(result.schema().id()).isEqualTo(schemaId);
-          assertThat(result.revision()).isEqualTo(42L);
-          assertThat(result.snapshots()).containsEntry(table.id(), snapshot);
-        })
-        .verifyComplete();
-
-    then(getSchemaWithRevisionUseCase).should(never())
-        .getSchemaWithRevision(any(GetSchemaQuery.class));
-  }
-
-  @Test
-  @DisplayName("getSchemaStateForSnapshotWorker는 collaboration state가 없으면 revision 0으로 취급한다")
-  void snapshotWorkerLookupDefaultsToRevisionZeroWithoutCollaborationState() {
-    String schemaId = "schema-1";
-    Schema schema = new Schema(schemaId, "project-1", "main_schema",
-        "utf8mb4", "utf8mb4_general_ci");
-
-    given(getSchemaByIdPort.findSchemaById(schemaId))
-        .willReturn(Mono.just(schema));
-    given(findSchemaCollaborationStatePort.findBySchemaId(schemaId))
-        .willReturn(Mono.empty());
-    given(getTablesBySchemaIdUseCase.getTablesBySchemaId(any(GetTablesBySchemaIdQuery.class)))
-        .willReturn(Flux.empty());
-
-    StepVerifier.create(sut.getSchemaStateForSnapshotWorker(schemaId))
-        .assertNext(result -> assertThat(result.revision()).isEqualTo(0L))
-        .verifyComplete();
-  }
-
-  @Test
-  @DisplayName("getSchemaStateForSnapshotWorker는 schema가 없으면 NOT_FOUND DomainException을 던진다")
-  void snapshotWorkerLookupFailsWhenSchemaMissing() {
-    String schemaId = "schema-missing";
-    given(getSchemaByIdPort.findSchemaById(schemaId))
-        .willReturn(Mono.empty());
-
-    StepVerifier.create(sut.getSchemaStateForSnapshotWorker(schemaId))
-        .expectErrorMatches(error -> error instanceof DomainException)
-        .verify();
-
-    then(findSchemaCollaborationStatePort).should(never())
-        .findBySchemaId(eq(schemaId));
   }
 
 }

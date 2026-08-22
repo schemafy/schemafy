@@ -13,6 +13,7 @@ import com.schemafy.core.collaboration.dto.event.CollaborationOutbound;
 import com.schemafy.core.collaboration.dto.event.CollaborationOutboundFactory;
 import com.schemafy.core.common.config.ConditionalOnRedisEnabled;
 import com.schemafy.core.common.json.JsonCodec;
+import com.schemafy.core.project.application.access.SystemActorContext;
 
 import io.micrometer.core.instrument.MeterRegistry;
 import lombok.extern.slf4j.Slf4j;
@@ -114,8 +115,9 @@ public class ErdStateSnapshotWorker {
           CollaborationOutboundFactory.erdStateChangedDeleted(job.schemaId(),
               job.targetRevision())));
     }
-    return withRetry(
-        snapshotOrchestrator.getSchemaStateForSnapshotWorker(job.schemaId()),
+
+    return withRetry(snapshotOrchestrator.getSchemaState(job.schemaId())
+        .contextWrite(SystemActorContext.asSystemActor()),
         "build", job)
         .map(state -> new SnapshotCandidate(state.revision(),
             CollaborationOutboundFactory.erdStateChangedActive(job.schemaId(),
