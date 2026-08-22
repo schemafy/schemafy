@@ -171,6 +171,27 @@ class ProjectSearchPersistenceAdapterTest {
   }
 
   @Test
+  @DisplayName("삭제된 사용자는 활성 멤버십이 있어도 멤버 검색과 개수에서 제외된다")
+  void searchMembers_excludesSoftDeletedUsers() {
+    UserFixture deletedUser = saveUser("deleted@example.com", "Deleted User");
+    Workspace workspace = saveWorkspace("Deleted User Workspace");
+    Project project = saveProject(workspace, "Deleted User Project");
+    saveWorkspaceMember(workspace, deletedUser.id(), WorkspaceRole.MEMBER);
+    saveProjectMember(project, deletedUser.id(), ProjectRole.VIEWER);
+    softDeleteUser(deletedUser.id());
+
+    StepVerifier.create(sut.searchWorkspaceMembers(workspace.getId(), "deleted", 0, 5)
+        .zipWith(sut.searchProjectMembers(project.getId(), "deleted", 0, 5)))
+        .assertNext(pages -> {
+          assertThat(pages.getT1().content()).isEmpty();
+          assertThat(pages.getT1().totalElements()).isZero();
+          assertThat(pages.getT2().content()).isEmpty();
+          assertThat(pages.getT2().totalElements()).isZero();
+        })
+        .verifyComplete();
+  }
+
+  @Test
   @DisplayName("워크스페이스의 프로젝트 검색은 역할과 전체 개수를 같은 페이지 결과로 반환한다")
   void searchWorkspaceProjects_returnsProjectsWithRolesAndCount() {
     Workspace workspace = saveWorkspace("Workspace Project Search");
@@ -266,6 +287,14 @@ class ProjectSearchPersistenceAdapterTest {
     databaseClient.sql("UPDATE project_members SET joined_at = :joinedAt WHERE id = :memberId")
         .bind("joinedAt", joinedAt)
         .bind("memberId", memberId)
+        .fetch()
+        .rowsUpdated()
+        .block();
+  }
+
+  private void softDeleteUser(String userId) {
+    databaseClient.sql("UPDATE users SET deleted_at = CURRENT_TIMESTAMP WHERE id = :userId")
+        .bind("userId", userId)
         .fetch()
         .rowsUpdated()
         .block();

@@ -36,6 +36,7 @@ public interface WorkspaceMemberRepository
       INNER JOIN users u ON u.id = wm.user_id
       WHERE wm.workspace_id = :workspaceId
         AND wm.deleted_at IS NULL
+        AND u.deleted_at IS NULL
         AND (
             LOWER(u.name) LIKE :pattern ESCAPE '!'
             OR LOWER(u.email) LIKE :pattern ESCAPE '!'
@@ -56,6 +57,7 @@ public interface WorkspaceMemberRepository
       INNER JOIN users u ON u.id = wm.user_id
       WHERE wm.workspace_id = :workspaceId
         AND wm.deleted_at IS NULL
+        AND u.deleted_at IS NULL
         AND (
           LOWER(u.name) LIKE :pattern ESCAPE '!'
           OR LOWER(u.email) LIKE :pattern ESCAPE '!'

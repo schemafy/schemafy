@@ -30,6 +30,7 @@ public interface ProjectMemberRepository
       INNER JOIN users u ON u.id = pm.user_id
       WHERE pm.project_id = :projectId
         AND pm.deleted_at IS NULL
+        AND u.deleted_at IS NULL
         AND (
           LOWER(u.name) LIKE :pattern ESCAPE '!'
           OR LOWER(u.email) LIKE :pattern ESCAPE '!'
@@ -47,6 +48,7 @@ public interface ProjectMemberRepository
       INNER JOIN users u ON u.id = pm.user_id
       WHERE pm.project_id = :projectId
         AND pm.deleted_at IS NULL
+        AND u.deleted_at IS NULL
         AND (
           LOWER(u.name) LIKE :pattern ESCAPE '!'
           OR LOWER(u.email) LIKE :pattern ESCAPE '!'
