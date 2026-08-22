@@ -91,13 +91,13 @@ class ProjectUseCaseIntegrationTest extends ProjectDomainIntegrationSupport {
         .block();
 
     ProjectMember creatorMember = projectMemberRepository
-        .findByProjectIdAndUserIdAndNotDeleted(detail.project().getId(), creator.id())
+        .findByProjectIdAndUserIdAndDeletedAtIsNull(detail.project().getId(), creator.id())
         .block();
     ProjectMember memberProjectMember = projectMemberRepository
-        .findByProjectIdAndUserIdAndNotDeleted(detail.project().getId(), member.id())
+        .findByProjectIdAndUserIdAndDeletedAtIsNull(detail.project().getId(), member.id())
         .block();
     ProjectMember deletedProjectMember = projectMemberRepository
-        .findByProjectIdAndUserIdAndNotDeleted(detail.project().getId(), deletedMember.id())
+        .findByProjectIdAndUserIdAndDeletedAtIsNull(detail.project().getId(), deletedMember.id())
         .block();
 
     assertThat(detail.currentUserRole()).isEqualTo(ProjectRole.ADMIN.name());
@@ -424,7 +424,7 @@ class ProjectUseCaseIntegrationTest extends ProjectDomainIntegrationSupport {
     deleteProjectUseCase.deleteProject(new DeleteProjectCommand(project.getId(), admin.id()))
         .block();
 
-    assertThat(projectRepository.findByIdAndNotDeleted(project.getId()).block()).isNull();
+    assertThat(projectRepository.findByIdAndDeletedAtIsNull(project.getId()).block()).isNull();
     assertThat(findSchemasByProjectId(project.getId())).isEmpty();
   }
 
@@ -564,7 +564,7 @@ class ProjectUseCaseIntegrationTest extends ProjectDomainIntegrationSupport {
 
     leaveProjectUseCase.leaveProject(new LeaveProjectCommand(project.getId(), member.id())).block();
 
-    assertThat(projectRepository.findByIdAndNotDeleted(project.getId()).block()).isNull();
+    assertThat(projectRepository.findByIdAndDeletedAtIsNull(project.getId()).block()).isNull();
   }
 
   @Test
@@ -581,7 +581,7 @@ class ProjectUseCaseIntegrationTest extends ProjectDomainIntegrationSupport {
         .expectErrorMatches(DomainException.hasErrorCode(ProjectErrorCode.ACCESS_DENIED))
         .verify();
 
-    assertThat(projectRepository.findByIdAndNotDeleted(project.getId()).block()).isNotNull();
+    assertThat(projectRepository.findByIdAndDeletedAtIsNull(project.getId()).block()).isNotNull();
   }
 
   @Test
@@ -808,7 +808,7 @@ class ProjectUseCaseIntegrationTest extends ProjectDomainIntegrationSupport {
         .block();
     assertThat(deletedMember).isNotNull();
     assertThat(deletedMember.isDeleted()).isTrue();
-    assertThat(projectRepository.findByIdAndNotDeleted(project.getId()).block()).isNotNull();
+    assertThat(projectRepository.findByIdAndDeletedAtIsNull(project.getId()).block()).isNotNull();
   }
 
   private void insertDeletedDbVendor() {
