@@ -15,7 +15,8 @@ public class ErdStateSnapshotProperties {
   private Duration debounce = Duration.ofMillis(100);
   private Duration maxWait = Duration.ofMillis(500);
   private Duration pollInterval = Duration.ofMillis(50);
-  private Duration leaseTtl = Duration.ofSeconds(30);
+  private Duration pollJitter = Duration.ofMillis(20);
+  private Duration leaseTtl = Duration.ofSeconds(45);
   private Duration leaseRenewInterval = Duration.ofSeconds(10);
   private int batchSize = 20;
   private int workerConcurrency = 4;

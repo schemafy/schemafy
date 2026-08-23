@@ -1,5 +1,7 @@
 package com.schemafy.api.erd.service.sync;
 
+import java.time.Duration;
+import java.util.concurrent.ThreadLocalRandom;
 import java.util.function.LongSupplier;
 
 import org.springframework.beans.factory.annotation.Autowired;
@@ -20,33 +22,44 @@ public class ErdStateSnapshotScheduler {
   private final ErdStateSnapshotWorker worker;
   private final ErdStateSnapshotProperties properties;
   private final LongSupplier currentTimeMillis;
+  private final LongSupplier jitterMillis;
 
   @Autowired
   public ErdStateSnapshotScheduler(ErdStateSnapshotJobStore jobStore,
       ErdStateSnapshotWorker worker,
       ErdStateSnapshotProperties properties) {
-    this(jobStore, worker, properties, System::currentTimeMillis);
+    this(jobStore, worker, properties, System::currentTimeMillis,
+        () -> randomJitterMillis(properties));
   }
 
   ErdStateSnapshotScheduler(ErdStateSnapshotJobStore jobStore,
       ErdStateSnapshotWorker worker,
       ErdStateSnapshotProperties properties,
-      LongSupplier currentTimeMillis) {
+      LongSupplier currentTimeMillis,
+      LongSupplier jitterMillis) {
     this.jobStore = jobStore;
     this.worker = worker;
     this.properties = properties;
     this.currentTimeMillis = currentTimeMillis;
+    this.jitterMillis = jitterMillis;
   }
 
   @Scheduled(fixedDelayString = "${collaboration.erd-state-snapshot.poll-interval:50ms}")
   public Mono<Void> poll() {
-    return Mono.defer(() -> jobStore.findDueJobKeys(
-        currentTimeMillis.getAsLong(), properties.getBatchSize())
-        .flatMap(worker::process, properties.getWorkerConcurrency())
-        .then())
+    return Mono.delay(Duration.ofMillis(jitterMillis.getAsLong()))
+        .then(Mono.defer(() -> jobStore.findDueJobKeys(
+            currentTimeMillis.getAsLong(), properties.getBatchSize())
+            .flatMap(worker::process, properties.getWorkerConcurrency())
+            .then()))
         .doOnError(error -> log.warn(
             "[ErdStateSnapshotScheduler] poll failed: {}", error.getMessage()))
         .onErrorResume(error -> Mono.empty());
+  }
+
+  private static long randomJitterMillis(ErdStateSnapshotProperties properties) {
+    long maxJitterMillis = properties.getPollJitter().toMillis();
+    return maxJitterMillis <= 0 ? 0
+        : ThreadLocalRandom.current().nextLong(maxJitterMillis + 1);
   }
 
 }
