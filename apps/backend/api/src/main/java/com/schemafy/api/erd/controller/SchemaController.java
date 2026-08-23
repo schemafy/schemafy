@@ -1,6 +1,7 @@
 package com.schemafy.api.erd.controller;
 
 import java.util.List;
+import java.util.Optional;
 
 import jakarta.validation.Valid;
 
@@ -27,6 +28,7 @@ import com.schemafy.api.erd.service.SchemaDdlExportOrchestrator;
 import com.schemafy.api.erd.service.SchemaMermaidExportOrchestrator;
 import com.schemafy.api.erd.service.SchemaSnapshotOrchestrator;
 import com.schemafy.api.erd.service.sync.ErdStateSyncPublisher;
+import com.schemafy.core.erd.broadcast.ErdMutationBroadcaster.ResolvedContext;
 import com.schemafy.core.erd.operation.domain.CommittedErdOperation;
 import com.schemafy.core.erd.schema.application.port.in.ChangeSchemaNameCommand;
 import com.schemafy.core.erd.schema.application.port.in.ChangeSchemaNameUseCase;
@@ -138,12 +140,13 @@ public class SchemaController {
           .map(result -> MutationResponse.<Void>of(null,
               result.affectedTableIds(), result.operation()));
     }
-    return publisher.resolveFromSchemaId(schemaId)
-        .flatMap(ctx -> deleteSchemaUseCase.deleteSchema(command)
-            .flatMap(result -> publisher
-                .publishDeletedWithContext(ctx, result.affectedTableIds(),
-                    result.operation())
-                .thenReturn(result)))
+    return resolveContextBestEffort(publisher, schemaId)
+        .flatMap(ctxOpt -> deleteSchemaUseCase.deleteSchema(command)
+            .flatMap(result -> ctxOpt
+                .map(ctx -> publisher.publishDeletedWithContext(ctx,
+                    result.affectedTableIds(), result.operation())
+                    .thenReturn(result))
+                .orElseGet(() -> Mono.just(result))))
         .map(result -> MutationResponse.<Void>of(null,
             result.affectedTableIds(), result.operation()));
   }
@@ -155,6 +158,14 @@ public class SchemaController {
       return Mono.empty();
     }
     return publisher.publishSchemaChange(schemaId, operation);
+  }
+
+  private Mono<Optional<ResolvedContext>> resolveContextBestEffort(
+      ErdStateSyncPublisher publisher, String schemaId) {
+    return publisher.resolveFromSchemaId(schemaId)
+        .map(Optional::of)
+        .defaultIfEmpty(Optional.empty())
+        .onErrorReturn(Optional.empty());
   }
 
 }

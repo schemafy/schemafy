@@ -31,9 +31,11 @@ import com.schemafy.core.erd.table.application.port.in.GetTablesBySchemaIdUseCas
 import reactor.core.publisher.Mono;
 import reactor.test.StepVerifier;
 
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.then;
 import static org.mockito.Mockito.inOrder;
+import static org.mockito.Mockito.never;
 
 @ExtendWith(MockitoExtension.class)
 @DisplayName("TableController 브로드캐스트 단위 테스트")
@@ -105,6 +107,28 @@ class TableControllerBroadcastTest {
     ordered.verify(publisher)
         .publishActiveWithContext(CONTEXT, affectedTableIds, OPERATION);
     then(publisher).shouldHaveNoMoreInteractions();
+  }
+
+  @Test
+  @DisplayName("table 삭제는 context 확보가 실패해도 삭제 자체는 계속 진행한다")
+  void deleteTableStillDeletesWhenContextResolutionFails() {
+    Set<String> affectedTableIds = Set.of(TABLE_ID);
+    MutationResult<Void> result = MutationResult.<Void>of(null,
+        affectedTableIds).withOperation(OPERATION);
+    given(publisherProvider.getIfAvailable()).willReturn(publisher);
+    given(publisher.resolveFromTableId(TABLE_ID))
+        .willReturn(Mono.error(new RuntimeException("redis unavailable")));
+    given(deleteTableUseCase.deleteTable(new DeleteTableCommand(TABLE_ID)))
+        .willReturn(Mono.just(result));
+
+    StepVerifier.create(sut.deleteTable(TABLE_ID))
+        .expectNextCount(1)
+        .verifyComplete();
+
+    then(deleteTableUseCase).should()
+        .deleteTable(new DeleteTableCommand(TABLE_ID));
+    then(publisher).should(never())
+        .publishActiveWithContext(any(), any(), any());
   }
 
 }

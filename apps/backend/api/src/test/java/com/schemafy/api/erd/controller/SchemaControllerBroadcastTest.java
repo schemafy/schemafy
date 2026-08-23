@@ -30,9 +30,11 @@ import com.schemafy.core.erd.schema.application.port.in.GetSchemasByProjectIdUse
 import reactor.core.publisher.Mono;
 import reactor.test.StepVerifier;
 
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.then;
 import static org.mockito.Mockito.inOrder;
+import static org.mockito.Mockito.never;
 
 @ExtendWith(MockitoExtension.class)
 @DisplayName("SchemaController 브로드캐스트 단위 테스트")
@@ -102,6 +104,27 @@ class SchemaControllerBroadcastTest {
     ordered.verify(publisher)
         .publishDeletedWithContext(CONTEXT, Set.of(), OPERATION);
     then(publisher).shouldHaveNoMoreInteractions();
+  }
+
+  @Test
+  @DisplayName("schema 삭제는 context 확보가 실패해도 삭제 자체는 계속 진행한다")
+  void deleteSchemaStillDeletesWhenContextResolutionFails() {
+    MutationResult<Void> result = MutationResult.<Void>of(null, Set.of())
+        .withOperation(OPERATION);
+    given(publisherProvider.getIfAvailable()).willReturn(publisher);
+    given(publisher.resolveFromSchemaId(SCHEMA_ID))
+        .willReturn(Mono.error(new RuntimeException("redis unavailable")));
+    given(deleteSchemaUseCase.deleteSchema(new DeleteSchemaCommand(SCHEMA_ID)))
+        .willReturn(Mono.just(result));
+
+    StepVerifier.create(sut.deleteSchema(SCHEMA_ID))
+        .expectNextCount(1)
+        .verifyComplete();
+
+    then(deleteSchemaUseCase).should()
+        .deleteSchema(new DeleteSchemaCommand(SCHEMA_ID));
+    then(publisher).should(never())
+        .publishDeletedWithContext(any(), any(), any());
   }
 
 }

@@ -2,6 +2,7 @@ package com.schemafy.api.erd.controller;
 
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 
 import jakarta.validation.Valid;
@@ -28,6 +29,7 @@ import com.schemafy.api.erd.controller.dto.response.TableSnapshotResponse;
 import com.schemafy.api.erd.service.TableSnapshotOrchestrator;
 import com.schemafy.api.erd.service.sync.ErdStateSyncPublisher;
 import com.schemafy.api.erd.service.table.TableApiResponseMapper;
+import com.schemafy.core.erd.broadcast.ErdMutationBroadcaster.ResolvedContext;
 import com.schemafy.core.erd.operation.domain.CommittedErdOperation;
 import com.schemafy.core.erd.table.application.port.in.ChangeTableExtraCommand;
 import com.schemafy.core.erd.table.application.port.in.ChangeTableExtraUseCase;
@@ -171,12 +173,13 @@ public class TableController {
           .map(result -> MutationResponse.<Void>of(null,
               result.affectedTableIds(), result.operation()));
     }
-    return publisher.resolveFromTableId(tableId)
-        .flatMap(ctx -> deleteTableUseCase.deleteTable(command)
-            .flatMap(result -> publisher
-                .publishActiveWithContext(ctx, result.affectedTableIds(),
-                    result.operation())
-                .thenReturn(result)))
+    return resolveContextBestEffort(publisher, tableId)
+        .flatMap(ctxOpt -> deleteTableUseCase.deleteTable(command)
+            .flatMap(result -> ctxOpt
+                .map(ctx -> publisher.publishActiveWithContext(ctx,
+                    result.affectedTableIds(), result.operation())
+                    .thenReturn(result))
+                .orElseGet(() -> Mono.just(result))))
         .map(result -> MutationResponse.<Void>of(null,
             result.affectedTableIds(), result.operation()));
   }
@@ -188,6 +191,14 @@ public class TableController {
       return Mono.empty();
     }
     return publisher.publishMutation(affectedTableIds, operation);
+  }
+
+  private Mono<Optional<ResolvedContext>> resolveContextBestEffort(
+      ErdStateSyncPublisher publisher, String tableId) {
+    return publisher.resolveFromTableId(tableId)
+        .map(Optional::of)
+        .defaultIfEmpty(Optional.empty())
+        .onErrorReturn(Optional.empty());
   }
 
 }
