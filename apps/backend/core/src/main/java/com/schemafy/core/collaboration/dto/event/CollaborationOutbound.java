@@ -16,14 +16,16 @@ import com.schemafy.core.collaboration.dto.CollaborationEventType;
   @JsonSubTypes.Type(value = RelationshipExtraPreviewEvent.Outbound.class, name = "RELATIONSHIP_EXTRA_PREVIEW"),
   @JsonSubTypes.Type(value = SchemaFocusEvent.Outbound.class, name = "SCHEMA_FOCUS"),
   @JsonSubTypes.Type(value = ChatEvent.Outbound.class, name = "CHAT"),
-  @JsonSubTypes.Type(value = ErdMutatedEvent.Outbound.class, name = "ERD_MUTATED")
+  @JsonSubTypes.Type(value = ErdMutatedEvent.Outbound.class, name = "ERD_MUTATED"),
+  @JsonSubTypes.Type(value = ErdStateChangedEvent.Outbound.class, name = "ERD_STATE_CHANGED")
 })
 public sealed interface CollaborationOutbound
     permits SessionReadyEvent.Outbound, JoinEvent.Outbound,
     LeaveEvent.Outbound, CursorEvent.Outbound,
     TablePositionPreviewEvent.Outbound,
     RelationshipExtraPreviewEvent.Outbound,
-    SchemaFocusEvent.Outbound, ChatEvent.Outbound, ErdMutatedEvent.Outbound {
+    SchemaFocusEvent.Outbound, ChatEvent.Outbound, ErdMutatedEvent.Outbound,
+    ErdStateChangedEvent.Outbound {
 
   CollaborationEventType type();
 

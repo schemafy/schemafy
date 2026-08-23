@@ -12,8 +12,8 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+import com.schemafy.api.erd.service.sync.ErdStateSyncPublisher;
 import com.schemafy.core.common.MutationResult;
-import com.schemafy.core.erd.broadcast.ErdMutationBroadcaster;
 import com.schemafy.core.erd.operation.application.inverse.CreateTableInverse;
 import com.schemafy.core.erd.operation.application.inverse.StructuralSnapshot;
 import com.schemafy.core.erd.operation.application.port.in.RedoErdOperationUseCase;
@@ -42,10 +42,10 @@ class OperationControllerBroadcastTest {
   RedoErdOperationUseCase redoErdOperationUseCase;
 
   @Mock
-  ObjectProvider<ErdMutationBroadcaster> broadcasterProvider;
+  ObjectProvider<ErdStateSyncPublisher> publisherProvider;
 
   @Mock
-  ErdMutationBroadcaster broadcaster;
+  ErdStateSyncPublisher publisher;
 
   OperationController sut;
 
@@ -54,7 +54,7 @@ class OperationControllerBroadcastTest {
     sut = new OperationController(
         undoErdOperationUseCase,
         redoErdOperationUseCase,
-        broadcasterProvider);
+        publisherProvider);
   }
 
   @Test
@@ -76,12 +76,12 @@ class OperationControllerBroadcastTest {
         emptySnapshot(schemaId),
         List.of(deletedTableId));
 
-    given(broadcasterProvider.getIfAvailable()).willReturn(broadcaster);
+    given(publisherProvider.getIfAvailable()).willReturn(publisher);
     given(undoErdOperationUseCase.undo(new UndoErdOperationCommand(originalOpId)))
         .willReturn(Mono.just(MutationResult.<Void>of(null, affectedTableIds)
             .withInverse(inverse)
             .withOperation(undoOperation)));
-    given(broadcaster.broadcastSchemaMutation(schemaId, affectedTableIds,
+    given(publisher.publishSchemaMutation(schemaId, affectedTableIds,
         undoOperation))
         .willReturn(Mono.empty());
 
@@ -92,9 +92,9 @@ class OperationControllerBroadcastTest {
         })
         .verifyComplete();
 
-    then(broadcaster).should().broadcastSchemaMutation(schemaId,
+    then(publisher).should().publishSchemaMutation(schemaId,
         affectedTableIds, undoOperation);
-    then(broadcaster).should(never()).broadcast(any(), any());
+    then(publisher).should(never()).publishMutation(any(), any());
   }
 
   private static StructuralSnapshot emptySnapshot(String schemaId) {

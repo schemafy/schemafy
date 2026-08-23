@@ -68,4 +68,15 @@ public final class CollaborationOutboundFactory {
         affectedTableIds, operation);
   }
 
+  public static ErdStateChangedEvent.Outbound erdStateChangedActive(
+      String schemaId, long revision, JsonNode schema, JsonNode snapshots) {
+    return ErdStateChangedEvent.Outbound.active(schemaId, revision, schema,
+        snapshots);
+  }
+
+  public static ErdStateChangedEvent.Outbound erdStateChangedDeleted(
+      String schemaId, long revision) {
+    return ErdStateChangedEvent.Outbound.deleted(schemaId, revision);
+  }
+
 }

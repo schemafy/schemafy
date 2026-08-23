@@ -37,6 +37,11 @@ public final class JsonCodec {
     }
   }
 
+  public JsonNode toJsonNode(Object value) {
+    requireNonNull(value, "value");
+    return objectMapper.valueToTree(value);
+  }
+
   public <T> T fromJson(String rawJson, Class<T> type) {
     requireNonNull(rawJson, "rawJson");
     requireNonNull(type, "type");

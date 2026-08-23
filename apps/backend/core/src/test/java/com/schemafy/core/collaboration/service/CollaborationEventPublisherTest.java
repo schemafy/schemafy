@@ -107,4 +107,25 @@ class CollaborationEventPublisherTest {
         .verifyComplete();
   }
 
+  @Test
+  @DisplayName("strict 발행은 Redis 오류를 호출자에게 전파한다")
+  void strict_publish_propagates_redis_error() {
+    ErdMutatedEvent.Outbound event = ErdMutatedEvent.Outbound.of(
+        null,
+        "schema-1",
+        Set.of("table-1"),
+        new CommittedErdOperation(
+            "op-1",
+            "client-op-1",
+            42L,
+            ErdOperationDerivationKind.ORIGINAL));
+    given(redisTemplate.convertAndSend(eq(CHANNEL), anyString()))
+        .willReturn(Mono.error(new RuntimeException("Redis down")));
+
+    StepVerifier.create(publisher.publishStrict("project-1", event))
+        .expectErrorMatches(error -> error instanceof RuntimeException
+            && error.getMessage().equals("Redis down"))
+        .verify();
+  }
+
 }

@@ -23,7 +23,7 @@ import com.schemafy.api.erd.controller.dto.request.ChangeColumnPositionRequest;
 import com.schemafy.api.erd.controller.dto.request.ChangeColumnTypeRequest;
 import com.schemafy.api.erd.controller.dto.request.CreateColumnRequest;
 import com.schemafy.api.erd.controller.dto.response.ColumnResponse;
-import com.schemafy.core.erd.broadcast.ErdMutationBroadcaster;
+import com.schemafy.api.erd.service.sync.ErdStateSyncPublisher;
 import com.schemafy.core.erd.column.application.port.in.ChangeColumnMetaCommand;
 import com.schemafy.core.erd.column.application.port.in.ChangeColumnMetaUseCase;
 import com.schemafy.core.erd.column.application.port.in.ChangeColumnNameCommand;
@@ -61,7 +61,7 @@ public class ColumnController {
   private final ChangeColumnPositionUseCase changeColumnPositionUseCase;
   private final DeleteColumnUseCase deleteColumnUseCase;
 
-  private final ObjectProvider<ErdMutationBroadcaster> broadcasterProvider;
+  private final ObjectProvider<ErdStateSyncPublisher> publisherProvider;
 
   @PostMapping("/columns")
   public Mono<MutationResponse<ColumnResponse>> createColumn(
@@ -187,11 +187,11 @@ public class ColumnController {
 
   private Mono<Void> broadcastMutation(Set<String> affectedTableIds,
       CommittedErdOperation operation) {
-    ErdMutationBroadcaster broadcaster = broadcasterProvider.getIfAvailable();
-    if (broadcaster == null) {
+    ErdStateSyncPublisher publisher = publisherProvider.getIfAvailable();
+    if (publisher == null) {
       return Mono.empty();
     }
-    return broadcaster.broadcast(affectedTableIds, operation);
+    return publisher.publishMutation(affectedTableIds, operation);
   }
 
 }

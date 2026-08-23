@@ -26,6 +26,7 @@ import com.schemafy.core.collaboration.dto.ProjectPresenceParticipant;
 import com.schemafy.core.collaboration.dto.event.CollaborationOutboundFactory;
 import com.schemafy.core.collaboration.dto.event.CursorEvent;
 import com.schemafy.core.collaboration.dto.event.ErdMutatedEvent;
+import com.schemafy.core.collaboration.dto.event.ErdStateChangedEvent;
 import com.schemafy.core.collaboration.dto.event.LeaveEvent;
 import com.schemafy.core.collaboration.service.CollaborationEventPublisher;
 import com.schemafy.core.common.json.JsonCodec;
@@ -220,6 +221,30 @@ class CollaborationServiceTest {
     assertThat(captor.getValue().excludeSessionId()).isNull();
     assertThat(captor.getValue().message())
         .contains("\"type\":\"ERD_MUTATED\"");
+  }
+
+  @Test
+  @DisplayName("ERD_STATE_CHANGED 이벤트는 sender를 포함해 모든 세션에 브로드캐스트한다")
+  void handleRedisMessage_includes_sender_for_erd_state_changed_event()
+      throws Exception {
+    ErdStateChangedEvent.Outbound event = new ErdStateChangedEvent.Outbound(
+        "session-1", "schema-1", 42L, ErdStateChangedEvent.State.ACTIVE,
+        objectMapper.createObjectNode().put("id", "schema-1"),
+        objectMapper.createObjectNode(), 1000L);
+    String message = objectMapper.writeValueAsString(event);
+
+    StepVerifier.create(
+        collaborationService.handleRedisMessage("project-1", message))
+        .verifyComplete();
+
+    ArgumentCaptor<BroadcastMessage> captor = ArgumentCaptor.forClass(
+        BroadcastMessage.class);
+    verify(sessionRegistry).broadcast(captor.capture());
+    assertThat(captor.getValue().projectId()).isEqualTo("project-1");
+    assertThat(captor.getValue().excludeSessionId()).isNull();
+    assertThat(captor.getValue().message())
+        .contains("\"type\":\"ERD_STATE_CHANGED\"");
+    assertThat(captor.getValue().message()).doesNotContain("operation");
   }
 
   @Test

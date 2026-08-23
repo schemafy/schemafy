@@ -8,8 +8,8 @@ import org.springframework.web.bind.annotation.RestController;
 
 import com.schemafy.api.common.constant.ApiPath;
 import com.schemafy.api.common.type.MutationResponse;
+import com.schemafy.api.erd.service.sync.ErdStateSyncPublisher;
 import com.schemafy.core.common.MutationResult;
-import com.schemafy.core.erd.broadcast.ErdMutationBroadcaster;
 import com.schemafy.core.erd.operation.application.inverse.StructuralOperationInverse;
 import com.schemafy.core.erd.operation.application.port.in.RedoErdOperationCommand;
 import com.schemafy.core.erd.operation.application.port.in.RedoErdOperationUseCase;
@@ -26,7 +26,7 @@ public class OperationController {
 
   private final UndoErdOperationUseCase undoErdOperationUseCase;
   private final RedoErdOperationUseCase redoErdOperationUseCase;
-  private final ObjectProvider<ErdMutationBroadcaster> broadcasterProvider;
+  private final ObjectProvider<ErdStateSyncPublisher> publisherProvider;
 
   @PostMapping("/operations/{opId}/undo")
   public Mono<MutationResponse<Void>> undo(@PathVariable String opId) {
@@ -51,17 +51,17 @@ public class OperationController {
   }
 
   private Mono<Void> broadcast(MutationResult<Void> result) {
-    ErdMutationBroadcaster broadcaster = broadcasterProvider.getIfAvailable();
-    if (broadcaster == null) {
+    ErdStateSyncPublisher publisher = publisherProvider.getIfAvailable();
+    if (publisher == null) {
       return Mono.empty();
     }
     if (result.inversePayload() instanceof StructuralOperationInverse structuralInverse) {
-      return broadcaster.broadcastSchemaMutation(
+      return publisher.publishSchemaMutation(
           structuralInverse.schemaId(),
           result.affectedTableIds(),
           result.operation());
     }
-    return broadcaster.broadcast(result.affectedTableIds(), result.operation());
+    return publisher.publishMutation(result.affectedTableIds(), result.operation());
   }
 
 }

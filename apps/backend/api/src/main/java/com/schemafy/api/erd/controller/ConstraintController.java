@@ -27,8 +27,8 @@ import com.schemafy.api.erd.controller.dto.request.CreateConstraintRequest;
 import com.schemafy.api.erd.controller.dto.response.AddConstraintColumnResponse;
 import com.schemafy.api.erd.controller.dto.response.ConstraintColumnResponse;
 import com.schemafy.api.erd.controller.dto.response.ConstraintResponse;
+import com.schemafy.api.erd.service.sync.ErdStateSyncPublisher;
 import com.schemafy.core.common.exception.DomainException;
-import com.schemafy.core.erd.broadcast.ErdMutationBroadcaster;
 import com.schemafy.core.erd.constraint.application.port.in.AddConstraintColumnCommand;
 import com.schemafy.core.erd.constraint.application.port.in.AddConstraintColumnUseCase;
 import com.schemafy.core.erd.constraint.application.port.in.ChangeConstraintCheckExprCommand;
@@ -78,7 +78,7 @@ public class ConstraintController {
   private final GetConstraintColumnUseCase getConstraintColumnUseCase;
   private final ChangeConstraintColumnPositionUseCase changeConstraintColumnPositionUseCase;
 
-  private final ObjectProvider<ErdMutationBroadcaster> broadcasterProvider;
+  private final ObjectProvider<ErdStateSyncPublisher> publisherProvider;
 
   @PostMapping("/constraints")
   public Mono<MutationResponse<ConstraintResponse>> createConstraint(
@@ -247,11 +247,11 @@ public class ConstraintController {
 
   private Mono<Void> broadcastMutation(Set<String> affectedTableIds,
       CommittedErdOperation operation) {
-    ErdMutationBroadcaster broadcaster = broadcasterProvider.getIfAvailable();
-    if (broadcaster == null) {
+    ErdStateSyncPublisher publisher = publisherProvider.getIfAvailable();
+    if (publisher == null) {
       return Mono.empty();
     }
-    return broadcaster.broadcast(affectedTableIds, operation);
+    return publisher.publishMutation(affectedTableIds, operation);
   }
 
   private static List<CreateConstraintColumnCommand> mapConstraintColumns(
