@@ -1,6 +1,6 @@
 import { memo, useCallback, useState } from 'react';
 import { toast } from 'sonner';
-import type { TableProps } from '../../types';
+import type { TableProps, IndexCapabilities } from '../../types';
 import { ColumnRow } from '../Column';
 import { TableHeader } from '../TableHeader';
 import { IndexSection } from '../IndexSection';
@@ -37,11 +37,17 @@ const TableNodeComponent = ({ data, id }: TableProps) => {
   );
 
   const { dbVendorId } = useSelectedSchema();
-  const { data: vendorData, isError: isVendorError } = useVendor(dbVendorId);
+  const {
+    data: vendorData,
+    isPending: isVendorPending,
+    isError: isVendorError,
+  } = useVendor(dbVendorId);
   const vendorTypes = vendorData?.datatypeMappings?.types ?? [];
-  const indexCapabilities = vendorData?.capabilities?.indexes ?? {
-    supportedTypes: [],
-    sortDirectionTypes: [],
+  const indexCapabilities: IndexCapabilities = {
+    supportedTypes: vendorData?.capabilities?.indexes.supportedTypes ?? [],
+    sortDirectionTypes:
+      vendorData?.capabilities?.indexes.sortDirectionTypes ?? [],
+    status: isVendorError ? 'error' : isVendorPending ? 'loading' : 'ready',
   };
 
   const { columns, indexes, constraints } = data;
@@ -167,7 +173,6 @@ const TableNodeComponent = ({ data, id }: TableProps) => {
           tableColumns={columns.map((col) => ({ id: col.id, name: col.name }))}
           isEditMode={isColumnEditMode}
           indexCapabilities={indexCapabilities}
-          capabilitiesError={isVendorError}
           onCreateIndex={indexActions.createIndex}
           onDeleteIndex={indexActions.deleteIndex}
           onUpdateIndexName={indexActions.updateIndexName}

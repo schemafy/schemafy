@@ -41,7 +41,10 @@ export const useIndexes = ({
   );
 
   const createIndex = () => {
-    if (indexCapabilities.supportedTypes.length === 0) {
+    if (
+      indexCapabilities.status !== 'ready' ||
+      indexCapabilities.supportedTypes.length === 0
+    ) {
       return;
     }
 

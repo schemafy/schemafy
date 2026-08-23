@@ -31,7 +31,6 @@ export const IndexRow = ({
   tableColumns,
   isEditMode,
   indexCapabilities,
-  capabilitiesError,
   onDeleteIndex,
   onUpdateIndexName,
   onUpdateIndexType,
@@ -56,7 +55,6 @@ export const IndexRow = ({
           index={item}
           tableColumns={cols}
           indexCapabilities={indexCapabilities}
-          capabilitiesError={capabilitiesError}
           onDeleteIndex={onDeleteIndex}
           onUpdateIndexName={onUpdateIndexName}
           onUpdateIndexType={onUpdateIndexType}
@@ -74,11 +72,18 @@ export const ViewModeIndex = ({
   tableColumns,
   indexCapabilities,
 }: ViewModeIndexProps) => {
-  const defaultType = getDefaultIndexType(indexCapabilities);
+  const isReady = indexCapabilities.status === 'ready';
+  const supportsSortDirection =
+    isReady && indexCapabilities.sortDirectionTypes.includes(index.type);
   const columnsStr = index.columns
     .sort((a, b) => a.seqNo - b.seqNo)
-    .map((col) => `${getColumnName(tableColumns, col.columnId)} ${col.sortDir}`)
+    .map((col) =>
+      supportsSortDirection
+        ? `${getColumnName(tableColumns, col.columnId)} ${col.sortDir}`
+        : getColumnName(tableColumns, col.columnId),
+    )
     .join(', ');
+  const defaultType = getDefaultIndexType(indexCapabilities);
 
   return (
     <div className="px-3 py-2.5">
@@ -90,7 +95,7 @@ export const ViewModeIndex = ({
             (<span className="text-schemafy-dark-gray">{columnsStr}</span>)
           </>
         )}
-        {index.type !== defaultType && (
+        {isReady && index.type !== defaultType && (
           <>
             {' '}
             <span className="text-schemafy-dark-gray">USING {index.type}</span>
@@ -110,7 +115,6 @@ export const EditModeIndex = ({
   index,
   tableColumns,
   indexCapabilities,
-  capabilitiesError,
   onDeleteIndex,
   onUpdateIndexName,
   onUpdateIndexType,
@@ -118,10 +122,12 @@ export const EditModeIndex = ({
   onRemoveColumnFromIndex,
   onUpdateSortDir,
 }: EditModeIndexProps) => {
-  const canChangeType = indexCapabilities.supportedTypes.length > 0;
-  const supportsSortDirection = indexCapabilities.sortDirectionTypes.includes(
-    index.type,
-  );
+  const canChangeType =
+    indexCapabilities.status === 'ready' &&
+    indexCapabilities.supportedTypes.length > 0;
+  const supportsSortDirection =
+    indexCapabilities.status === 'ready' &&
+    indexCapabilities.sortDirectionTypes.includes(index.type);
   const availableColumns = tableColumns.filter(
     (col) => !index.columns.some((idxCol) => idxCol.columnId === col.id),
   );
@@ -134,33 +140,34 @@ export const EditModeIndex = ({
           placeholder="Index name"
           onNameChange={(newName) => onUpdateIndexName(index.id, newName)}
         />
-        <Select
-          onValueChange={(value) =>
-            onUpdateIndexType(index.id, value as IndexType)
+        <span
+          title={
+            canChangeType
+              ? undefined
+              : getCapabilitiesUnavailableMessage(indexCapabilities)
           }
-          value={index.type}
-          disabled={!canChangeType}
         >
-          <SelectTrigger
-            className="schemafy-focus-ring w-[6.5rem] rounded-lg border border-schemafy-glass-border bg-schemafy-secondary/60 px-2 py-1.5 font-mono text-xs"
-            title={
-              canChangeType
-                ? undefined
-                : getCapabilitiesUnavailableMessage(capabilitiesError)
+          <Select
+            onValueChange={(value) =>
+              onUpdateIndexType(index.id, value as IndexType)
             }
+            value={index.type}
+            disabled={!canChangeType}
           >
-            <SelectValue placeholder={index.type} />
-          </SelectTrigger>
-          <SelectContent popover="auto">
-            <SelectGroup>
-              {indexCapabilities.supportedTypes.map((type) => (
-                <SelectItem key={type} value={type}>
-                  {type}
-                </SelectItem>
-              ))}
-            </SelectGroup>
-          </SelectContent>
-        </Select>
+            <SelectTrigger className="schemafy-focus-ring w-[6.5rem] rounded-lg border border-schemafy-glass-border bg-schemafy-secondary/60 px-2 py-1.5 font-mono text-xs">
+              <SelectValue placeholder={index.type} />
+            </SelectTrigger>
+            <SelectContent popover="auto">
+              <SelectGroup>
+                {indexCapabilities.supportedTypes.map((type) => (
+                  <SelectItem key={type} value={type}>
+                    {type}
+                  </SelectItem>
+                ))}
+              </SelectGroup>
+            </SelectContent>
+          </Select>
+        </span>
 
         <DeleteButton
           onDelete={() => onDeleteIndex(index.id)}

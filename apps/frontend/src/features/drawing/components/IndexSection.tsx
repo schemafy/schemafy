@@ -8,7 +8,6 @@ export const IndexSection = ({
   tableColumns,
   isEditMode,
   indexCapabilities,
-  capabilitiesError,
   onCreateIndex,
   onDeleteIndex,
   onUpdateIndexName,
@@ -30,19 +29,23 @@ export const IndexSection = ({
           INDEXES
         </span>
         {isEditMode && (
-          <button
-            type="button"
-            onClick={onCreateIndex}
-            disabled={!canCreateIndex}
-            className="schemafy-focus-ring flex h-7 w-7 items-center justify-center rounded-lg text-schemafy-dark-gray transition-colors hover:bg-schemafy-secondary hover:text-schemafy-text disabled:pointer-events-none disabled:opacity-50"
+          <span
             title={
               canCreateIndex
-                ? 'Add Index'
-                : getCapabilitiesUnavailableMessage(capabilitiesError)
+                ? undefined
+                : getCapabilitiesUnavailableMessage(indexCapabilities)
             }
           >
-            <Plus size={14} />
-          </button>
+            <button
+              type="button"
+              onClick={onCreateIndex}
+              disabled={!canCreateIndex}
+              title={canCreateIndex ? 'Add Index' : undefined}
+              className="schemafy-focus-ring flex h-7 w-7 items-center justify-center rounded-lg text-schemafy-dark-gray transition-colors hover:bg-schemafy-secondary hover:text-schemafy-text disabled:pointer-events-none disabled:opacity-50"
+            >
+              <Plus size={14} />
+            </button>
+          </span>
         )}
       </div>
 
@@ -59,7 +62,6 @@ export const IndexSection = ({
               tableColumns={tableColumns}
               isEditMode={isEditMode}
               indexCapabilities={indexCapabilities}
-              capabilitiesError={capabilitiesError}
               onDeleteIndex={onDeleteIndex}
               onUpdateIndexName={onUpdateIndexName}
               onUpdateIndexType={onUpdateIndexType}

@@ -10,8 +10,14 @@ export const getDefaultIndexType = (
 };
 
 export const getCapabilitiesUnavailableMessage = (
-  capabilitiesError: boolean,
-): string =>
-  capabilitiesError
-    ? 'Unable to load vendor capabilities.'
-    : 'Loading vendor capabilities…';
+  capabilities: IndexCapabilities,
+): string => {
+  switch (capabilities.status) {
+    case 'loading':
+      return 'Loading vendor capabilities…';
+    case 'error':
+      return 'Unable to load vendor capabilities.';
+    default:
+      return 'This vendor does not support any index types.';
+  }
+};
