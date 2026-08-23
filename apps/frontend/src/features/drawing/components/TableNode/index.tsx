@@ -39,6 +39,10 @@ const TableNodeComponent = ({ data, id }: TableProps) => {
   const { dbVendorId } = useSelectedSchema();
   const { data: vendorData } = useVendor(dbVendorId);
   const vendorTypes = vendorData?.datatypeMappings?.types ?? [];
+  const indexCapabilities = vendorData?.capabilities.indexes ?? {
+    supportedTypes: [],
+    sortDirectionTypes: [],
+  };
 
   const { columns, indexes, constraints } = data;
 
@@ -64,6 +68,7 @@ const TableNodeComponent = ({ data, id }: TableProps) => {
     tableId: id,
     tableName: data.tableName,
     indexes,
+    indexCapabilities,
   });
 
   const constraintActions = useConstraints({
@@ -161,6 +166,7 @@ const TableNodeComponent = ({ data, id }: TableProps) => {
           indexes={indexes}
           tableColumns={columns.map((col) => ({ id: col.id, name: col.name }))}
           isEditMode={isColumnEditMode}
+          indexCapabilities={indexCapabilities}
           onCreateIndex={indexActions.createIndex}
           onDeleteIndex={indexActions.deleteIndex}
           onUpdateIndexName={indexActions.updateIndexName}

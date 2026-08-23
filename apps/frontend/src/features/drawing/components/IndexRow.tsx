@@ -5,7 +5,7 @@ import type {
   IndexType,
   IndexSortDir,
 } from '../types';
-import { INDEX_TYPES } from '../types';
+import { getDefaultIndexType } from '../utils/indexUtils';
 import {
   Select,
   SelectGroup,
@@ -27,6 +27,7 @@ export const IndexRow = ({
   index,
   tableColumns,
   isEditMode,
+  indexCapabilities,
   onDeleteIndex,
   onUpdateIndexName,
   onUpdateIndexType,
@@ -40,12 +41,17 @@ export const IndexRow = ({
       tableColumns={tableColumns}
       isEditMode={isEditMode}
       renderViewMode={(item, cols) => (
-        <ViewModeIndex index={item} tableColumns={cols} />
+        <ViewModeIndex
+          index={item}
+          tableColumns={cols}
+          indexCapabilities={indexCapabilities}
+        />
       )}
       renderEditMode={(item, cols) => (
         <EditModeIndex
           index={item}
           tableColumns={cols}
+          indexCapabilities={indexCapabilities}
           onDeleteIndex={onDeleteIndex}
           onUpdateIndexName={onUpdateIndexName}
           onUpdateIndexType={onUpdateIndexType}
@@ -58,7 +64,12 @@ export const IndexRow = ({
   );
 };
 
-export const ViewModeIndex = ({ index, tableColumns }: ViewModeIndexProps) => {
+export const ViewModeIndex = ({
+  index,
+  tableColumns,
+  indexCapabilities,
+}: ViewModeIndexProps) => {
+  const defaultType = getDefaultIndexType(indexCapabilities);
   const columnsStr = index.columns
     .sort((a, b) => a.seqNo - b.seqNo)
     .map((col) => `${getColumnName(tableColumns, col.columnId)} ${col.sortDir}`)
@@ -74,7 +85,7 @@ export const ViewModeIndex = ({ index, tableColumns }: ViewModeIndexProps) => {
             (<span className="text-schemafy-dark-gray">{columnsStr}</span>)
           </>
         )}
-        {index.type !== 'BTREE' && (
+        {index.type !== defaultType && (
           <>
             {' '}
             <span className="text-schemafy-dark-gray">USING {index.type}</span>
@@ -93,6 +104,7 @@ export const ViewModeIndex = ({ index, tableColumns }: ViewModeIndexProps) => {
 export const EditModeIndex = ({
   index,
   tableColumns,
+  indexCapabilities,
   onDeleteIndex,
   onUpdateIndexName,
   onUpdateIndexType,
@@ -100,6 +112,10 @@ export const EditModeIndex = ({
   onRemoveColumnFromIndex,
   onUpdateSortDir,
 }: EditModeIndexProps) => {
+  const canChangeType = indexCapabilities.supportedTypes.length > 0;
+  const supportsSortDirection = indexCapabilities.sortDirectionTypes.includes(
+    index.type,
+  );
   const availableColumns = tableColumns.filter(
     (col) => !index.columns.some((idxCol) => idxCol.columnId === col.id),
   );
@@ -117,13 +133,19 @@ export const EditModeIndex = ({
             onUpdateIndexType(index.id, value as IndexType)
           }
           value={index.type}
+          disabled={!canChangeType}
         >
-          <SelectTrigger className="schemafy-focus-ring w-[6.5rem] rounded-lg border border-schemafy-glass-border bg-schemafy-secondary/60 px-2 py-1.5 font-mono text-xs">
+          <SelectTrigger
+            className="schemafy-focus-ring w-[6.5rem] rounded-lg border border-schemafy-glass-border bg-schemafy-secondary/60 px-2 py-1.5 font-mono text-xs"
+            title={
+              canChangeType ? undefined : 'Loading vendor capabilities…'
+            }
+          >
             <SelectValue placeholder={index.type} />
           </SelectTrigger>
           <SelectContent popover="auto">
             <SelectGroup>
-              {INDEX_TYPES.map((type) => (
+              {indexCapabilities.supportedTypes.map((type) => (
                 <SelectItem key={type} value={type}>
                   {type}
                 </SelectItem>
@@ -147,22 +169,24 @@ export const EditModeIndex = ({
               columnName={getColumnName(tableColumns, indexColumn.columnId)}
               onRemove={() => onRemoveColumnFromIndex(indexColumn.id)}
               additionalControls={
-                <Select
-                  onValueChange={(value) =>
-                    onUpdateSortDir(indexColumn.id, value as IndexSortDir)
-                  }
-                  value={indexColumn.sortDir}
-                >
-                  <SelectTrigger className="schemafy-focus-ring w-[6.5rem] rounded-lg border border-schemafy-glass-border bg-schemafy-secondary/60 px-2 py-1.5 font-mono text-xs">
-                    <SelectValue placeholder={indexColumn.sortDir} />
-                  </SelectTrigger>
-                  <SelectContent popover="auto">
-                    <SelectGroup>
-                      <SelectItem value="ASC">ASC</SelectItem>
-                      <SelectItem value="DESC">DESC</SelectItem>
-                    </SelectGroup>
-                  </SelectContent>
-                </Select>
+                supportsSortDirection ? (
+                  <Select
+                    onValueChange={(value) =>
+                      onUpdateSortDir(indexColumn.id, value as IndexSortDir)
+                    }
+                    value={indexColumn.sortDir}
+                  >
+                    <SelectTrigger className="schemafy-focus-ring w-[6.5rem] rounded-lg border border-schemafy-glass-border bg-schemafy-secondary/60 px-2 py-1.5 font-mono text-xs">
+                      <SelectValue placeholder={indexColumn.sortDir} />
+                    </SelectTrigger>
+                    <SelectContent popover="auto">
+                      <SelectGroup>
+                        <SelectItem value="ASC">ASC</SelectItem>
+                        <SelectItem value="DESC">DESC</SelectItem>
+                      </SelectGroup>
+                    </SelectContent>
+                  </Select>
+                ) : undefined
               }
             />
           ))}

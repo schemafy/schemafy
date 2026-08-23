@@ -1,6 +1,11 @@
 export type IndexType = 'BTREE' | 'HASH' | 'FULLTEXT' | 'SPATIAL' | 'OTHER';
 export type IndexSortDir = 'ASC' | 'DESC';
 
+export type IndexCapabilities = {
+  supportedTypes: IndexType[];
+  sortDirectionTypes: IndexType[];
+};
+
 export type IndexColumnType = {
   id: string;
   indexId: string;
@@ -26,6 +31,7 @@ export interface IndexSectionProps {
   indexes: IndexDataType[];
   tableColumns: Array<{ id: string; name: string }>;
   isEditMode: boolean;
+  indexCapabilities: IndexCapabilities;
   onCreateIndex: () => void;
   onDeleteIndex: (indexId: string) => void;
   onUpdateIndexName: (indexId: string, newName: string) => void;
@@ -39,6 +45,7 @@ export interface IndexRowProps {
   index: IndexDataType;
   tableColumns: Array<{ id: string; name: string }>;
   isEditMode: boolean;
+  indexCapabilities: IndexCapabilities;
   onDeleteIndex: (indexId: string) => void;
   onUpdateIndexName: (indexId: string, newName: string) => void;
   onUpdateIndexType: (indexId: string, newType: IndexType) => void;
@@ -50,11 +57,13 @@ export interface IndexRowProps {
 export interface ViewModeIndexProps {
   index: IndexDataType;
   tableColumns: Array<{ id: string; name: string }>;
+  indexCapabilities: IndexCapabilities;
 }
 
 export interface EditModeIndexProps {
   index: IndexDataType;
   tableColumns: Array<{ id: string; name: string }>;
+  indexCapabilities: IndexCapabilities;
   onDeleteIndex: (indexId: string) => void;
   onUpdateIndexName: (indexId: string, newName: string) => void;
   onUpdateIndexType: (indexId: string, newType: IndexType) => void;
@@ -62,11 +71,3 @@ export interface EditModeIndexProps {
   onRemoveColumnFromIndex: (indexColumnId: string) => void;
   onUpdateSortDir: (indexColumnId: string, sortDir: IndexSortDir) => void;
 }
-
-export const INDEX_TYPES: IndexType[] = [
-  'BTREE',
-  'HASH',
-  'FULLTEXT',
-  'SPATIAL',
-  'OTHER',
-];

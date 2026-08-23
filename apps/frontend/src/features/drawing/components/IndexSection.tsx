@@ -6,6 +6,7 @@ export const IndexSection = ({
   indexes,
   tableColumns,
   isEditMode,
+  indexCapabilities,
   onCreateIndex,
   onDeleteIndex,
   onUpdateIndexName,
@@ -18,6 +19,8 @@ export const IndexSection = ({
     return null;
   }
 
+  const canCreateIndex = indexCapabilities.supportedTypes.length > 0;
+
   return (
     <div className="border-t border-schemafy-glass-border/55">
       <div className="flex items-center justify-between bg-schemafy-secondary/35 px-3 py-1.5">
@@ -28,8 +31,9 @@ export const IndexSection = ({
           <button
             type="button"
             onClick={onCreateIndex}
-            className="schemafy-focus-ring flex h-7 w-7 items-center justify-center rounded-lg text-schemafy-dark-gray transition-colors hover:bg-schemafy-secondary hover:text-schemafy-text"
-            title="Add Index"
+            disabled={!canCreateIndex}
+            className="schemafy-focus-ring flex h-7 w-7 items-center justify-center rounded-lg text-schemafy-dark-gray transition-colors hover:bg-schemafy-secondary hover:text-schemafy-text disabled:pointer-events-none disabled:opacity-50"
+            title={canCreateIndex ? 'Add Index' : 'Loading vendor capabilities…'}
           >
             <Plus size={14} />
           </button>
@@ -48,6 +52,7 @@ export const IndexSection = ({
               index={index}
               tableColumns={tableColumns}
               isEditMode={isEditMode}
+              indexCapabilities={indexCapabilities}
               onDeleteIndex={onDeleteIndex}
               onUpdateIndexName={onUpdateIndexName}
               onUpdateIndexType={onUpdateIndexType}

@@ -1,6 +1,7 @@
-import type { IndexType, IndexSortDir } from '../types';
+import type { IndexType, IndexSortDir, IndexCapabilities } from '../types';
 import type { Index } from '@/types';
 import { generateUniqueName } from '../utils/nameGenerator';
+import { getDefaultIndexType } from '../utils/indexUtils';
 import {
   useCreateIndex,
   useDeleteIndex,
@@ -17,6 +18,7 @@ interface UseIndexesProps {
   tableId: string;
   tableName: string;
   indexes: Index[];
+  indexCapabilities: IndexCapabilities;
 }
 
 export const useIndexes = ({
@@ -24,6 +26,7 @@ export const useIndexes = ({
   tableId,
   tableName,
   indexes,
+  indexCapabilities,
 }: UseIndexesProps) => {
   const createIndexMutation = useCreateIndex(schemaId);
   const deleteIndexMutation = useDeleteIndex(schemaId);
@@ -38,12 +41,16 @@ export const useIndexes = ({
   );
 
   const createIndex = () => {
+    if (indexCapabilities.supportedTypes.length === 0) {
+      return;
+    }
+
     const existingIndexNames = indexes.map((idx) => idx.name);
 
     createIndexMutation.mutate({
       tableId,
       name: generateUniqueName(existingIndexNames, `idx_${tableName}_`),
-      type: 'BTREE',
+      type: getDefaultIndexType(indexCapabilities),
     });
   };
 
