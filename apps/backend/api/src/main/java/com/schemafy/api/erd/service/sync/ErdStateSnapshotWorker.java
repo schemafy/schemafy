@@ -85,8 +85,9 @@ public class ErdStateSnapshotWorker {
 
   private Mono<Void> processClaimed(ErdStateSnapshotJob job) {
     return withLeaseHeartbeat(job,
-        candidate(job).flatMap(candidate -> publishIfCurrent(job, candidate)))
-        .flatMap(revision -> jobStore.complete(job, revision, now()))
+        candidate(job)
+            .flatMap(candidate -> publishIfCurrent(job, candidate))
+            .flatMap(revision -> jobStore.complete(job, revision, now())))
         .onErrorResume(SupersededJobException.class,
             error -> safeRequeue(job, Duration.ZERO,
                 ErdStateSnapshotRequeueReason.SUPERSEDED))
