@@ -72,9 +72,9 @@ export const ViewModeIndex = ({
   tableColumns,
   indexCapabilities,
 }: ViewModeIndexProps) => {
-  const isReady = indexCapabilities.status === 'ready';
   const supportsSortDirection =
-    isReady && indexCapabilities.sortDirectionTypes.includes(index.type);
+    indexCapabilities.status !== 'ready' ||
+    indexCapabilities.sortDirectionTypes.includes(index.type);
   const columnsStr = index.columns
     .sort((a, b) => a.seqNo - b.seqNo)
     .map((col) =>
@@ -95,7 +95,7 @@ export const ViewModeIndex = ({
             (<span className="text-schemafy-dark-gray">{columnsStr}</span>)
           </>
         )}
-        {isReady && index.type !== defaultType && (
+        {index.type !== defaultType && (
           <>
             {' '}
             <span className="text-schemafy-dark-gray">USING {index.type}</span>
