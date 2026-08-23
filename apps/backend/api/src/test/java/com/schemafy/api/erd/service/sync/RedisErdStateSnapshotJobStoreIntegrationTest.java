@@ -11,6 +11,7 @@ import org.springframework.data.redis.core.ReactiveStringRedisTemplate;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.testcontainers.containers.GenericContainer;
 import org.testcontainers.junit.jupiter.Container;
@@ -27,6 +28,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 @Testcontainers
+@DisplayName("RedisErdStateSnapshotJobStore 통합 테스트")
 class RedisErdStateSnapshotJobStoreIntegrationTest {
 
   private static final String DUE_KEY = "erd:state-snapshot:{coord}:due";
@@ -70,6 +72,7 @@ class RedisErdStateSnapshotJobStoreIntegrationTest {
   }
 
   @Test
+  @DisplayName("여러 인스턴스의 ACTIVE revision을 하나로 coalesce한다")
   void coalescesActiveRevisionsAcrossInstances() {
     firstStore.enqueueActive("project-1", "schema-1", 10L).block();
     secondStore.enqueueActive("project-1", "schema-1", 12L).block();
@@ -85,6 +88,7 @@ class RedisErdStateSnapshotJobStoreIntegrationTest {
   }
 
   @Test
+  @DisplayName("연속 debounce를 max wait 시점에서 제한한다")
   void capsContinuousDebounceAtMaxWait() {
     firstStore.enqueueActive("project-1", "schema-1", 1L).block();
     for (int offset = 90; offset <= 450; offset += 90) {
@@ -100,6 +104,7 @@ class RedisErdStateSnapshotJobStoreIntegrationTest {
   }
 
   @Test
+  @DisplayName("동시 claim에는 하나의 lease만 부여한다")
   void grantsOnlyOneLeaseForConcurrentClaims() {
     firstStore.enqueueActive("project-1", "schema-1", 10L).block();
     String jobKey = firstStore.findDueJobKeys(1_100L, 20).blockFirst();
@@ -114,6 +119,7 @@ class RedisErdStateSnapshotJobStoreIntegrationTest {
   }
 
   @Test
+  @DisplayName("lease가 만료되면 다른 worker가 job을 reclaim한다")
   void reclaimsAJobAfterItsLeaseExpires() {
     firstStore.enqueueActive("project-1", "schema-1", 10L).block();
     String jobKey = firstStore.findDueJobKeys(1_100L, 20).blockFirst();
@@ -131,6 +137,7 @@ class RedisErdStateSnapshotJobStoreIntegrationTest {
   }
 
   @Test
+  @DisplayName("현재 lease만 갱신하고 만료 시점을 연장한다")
   void renewalExtendsOnlyTheCurrentLease() {
     firstStore.enqueueActive("project-1", "schema-1", 10L).block();
     String jobKey = firstStore.findDueJobKeys(1_100L, 20).blockFirst();
@@ -151,6 +158,7 @@ class RedisErdStateSnapshotJobStoreIntegrationTest {
   }
 
   @Test
+  @DisplayName("새 ACTIVE revision은 이전 candidate를 발행 불가로 만든다")
   void newerActiveRevisionMakesAnOlderCandidateUnpublishable() {
     firstStore.enqueueActive("project-1", "schema-1", 10L).block();
     String jobKey = firstStore.findDueJobKeys(1_100L, 20).blockFirst();
@@ -165,6 +173,7 @@ class RedisErdStateSnapshotJobStoreIntegrationTest {
   }
 
   @Test
+  @DisplayName("사전 검증이 통과했어도 stale candidate는 발행하지 않는다")
   void publishIfCurrentNeverPublishesAStaleCandidateEvenWhenTheCheckWouldHavePassedEarlier() {
     firstStore.enqueueActive("project-1", "schema-1", 10L).block();
     String jobKey = firstStore.findDueJobKeys(1_100L, 20).blockFirst();
@@ -198,6 +207,7 @@ class RedisErdStateSnapshotJobStoreIntegrationTest {
   }
 
   @Test
+  @DisplayName("ACTIVE 전환은 이전 DELETED lease를 무효화한다")
   void activationInvalidatesAnOlderDeletedLease() {
     firstStore.enqueueDeleted("project-1", "schema-1", 10L).block();
     String jobKey = firstStore.findDueJobKeys(1_000L, 20).blockFirst();
@@ -220,6 +230,7 @@ class RedisErdStateSnapshotJobStoreIntegrationTest {
   }
 
   @Test
+  @DisplayName("삭제 전환은 이전 ACTIVE lease를 무효화한다")
   void deletionInvalidatesAnOlderActiveLease() {
     firstStore.enqueueActive("project-1", "schema-1", 10L).block();
     String jobKey = firstStore.findDueJobKeys(1_100L, 20).blockFirst();
@@ -240,6 +251,7 @@ class RedisErdStateSnapshotJobStoreIntegrationTest {
   }
 
   @Test
+  @DisplayName("stale generation의 completion과 requeue를 거절한다")
   void ignoresCompletionAndRequeueFromAStaleGeneration() {
     firstStore.enqueueActive("project-1", "schema-1", 10L).block();
     String jobKey = firstStore.findDueJobKeys(1_100L, 20).blockFirst();
@@ -264,6 +276,7 @@ class RedisErdStateSnapshotJobStoreIntegrationTest {
   }
 
   @Test
+  @DisplayName("이미 완료된 revision은 다시 enqueue하지 않는다")
   void ignoresAnAlreadyCompletedRevision() {
     firstStore.enqueueActive("project-1", "schema-1", 10L).block();
     String jobKey = firstStore.findDueJobKeys(1_100L, 20).blockFirst();
@@ -278,6 +291,7 @@ class RedisErdStateSnapshotJobStoreIntegrationTest {
   }
 
   @Test
+  @DisplayName("job hash가 없는 stale due member를 제거한다")
   void removesAStaleDueMemberWithoutAJobHash() {
     String staleJobKey = "erd:state-snapshot:{coord}:job:missing:missing";
     redisTemplate.opsForZSet().add(DUE_KEY, staleJobKey, 1_000D).block();
@@ -289,6 +303,7 @@ class RedisErdStateSnapshotJobStoreIntegrationTest {
   }
 
   @Test
+  @DisplayName("조회 limit 앞에 stale key가 있어도 ACTIVE job을 처리한다")
   void processesActiveJobsEvenIfStaleKeysPrecedeThemLimited() {
     String staleJobKey = "erd:state-snapshot:{coord}:job:missing:missing";
     redisTemplate.opsForZSet().add(DUE_KEY, staleJobKey, 1_000D).block();
@@ -302,6 +317,7 @@ class RedisErdStateSnapshotJobStoreIntegrationTest {
   }
 
   @Test
+  @DisplayName("requeue reason에 따라 failure count 증가 여부를 결정한다")
   void requeueCanConditionallyIncrementFailureCount() {
     firstStore.enqueueActive("project-1", "schema-1", 10L).block();
     String jobKey = firstStore.findDueJobKeys(1_100L, 20).blockFirst();

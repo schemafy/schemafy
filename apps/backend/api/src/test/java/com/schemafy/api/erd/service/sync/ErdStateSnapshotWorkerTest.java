@@ -6,6 +6,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
@@ -37,6 +38,7 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 
 @ExtendWith(MockitoExtension.class)
+@DisplayName("ErdStateSnapshotWorker")
 class ErdStateSnapshotWorkerTest {
 
   @Mock
@@ -65,6 +67,7 @@ class ErdStateSnapshotWorkerTest {
   }
 
   @Test
+  @DisplayName("ACTIVE snapshot을 생성하고 검증한 뒤 발행한다")
   void buildsValidatesAndPublishesAnActiveSnapshot() {
     ErdStateSnapshotJob job = activeJob(10L, 0);
     SchemaStateSnapshot snapshot = snapshot(12L);
@@ -89,6 +92,7 @@ class ErdStateSnapshotWorkerTest {
   }
 
   @Test
+  @DisplayName("trusted system actor로 ACTIVE snapshot을 생성한다")
   void buildsAnActiveSnapshotAsATrustedSystemActor() {
     ErdStateSnapshotJob job = activeJob(10L, 0);
     AtomicInteger observedAsSystemActor = new AtomicInteger();
@@ -111,6 +115,7 @@ class ErdStateSnapshotWorkerTest {
   }
 
   @Test
+  @DisplayName("snapshot을 생성하지 않고 삭제 상태를 발행한다")
   void publishesADeletionWithoutBuildingASnapshot() {
     ErdStateSnapshotJob job = deletedJob(11L);
     given(jobStore.claim("job-1", "lease-token", 2_000L,
@@ -132,6 +137,7 @@ class ErdStateSnapshotWorkerTest {
   }
 
   @Test
+  @DisplayName("candidate가 superseded되면 발행하지 않고 requeue한다")
   void requeuesWithoutPublishingWhenTheCandidateWasSuperseded() {
     ErdStateSnapshotJob job = activeJob(10L, 0);
     given(jobStore.claim("job-1", "lease-token", 2_000L,
@@ -150,6 +156,7 @@ class ErdStateSnapshotWorkerTest {
   }
 
   @Test
+  @DisplayName("snapshot 생성 재시도를 소진하면 분산 backoff로 requeue한다")
   void retriesAnExhaustedBuildThenRequeuesWithDistributedBackoff() {
     ErdStateSnapshotJob job = activeJob(10L, 2);
     AtomicInteger attempts = new AtomicInteger();
@@ -173,6 +180,7 @@ class ErdStateSnapshotWorkerTest {
   }
 
   @Test
+  @DisplayName("snapshot 생성이 진행되는 동안 lease를 갱신한다")
   void renewsTheLeaseWhileABuildIsStillRunning() {
     ErdStateSnapshotJob job = activeJob(10L, 0);
     given(jobStore.claim("job-1", "lease-token", 2_000L,
@@ -193,6 +201,7 @@ class ErdStateSnapshotWorkerTest {
   }
 
   @Test
+  @DisplayName("lease를 잃으면 invalidator가 이미 reschedule했으므로 requeue하지 않는다")
   void swallowsLeaseLossWithoutRequeueingSinceTheInvalidatorAlreadyRescheduled() {
     ErdStateSnapshotJob job = activeJob(10L, 0);
     given(jobStore.claim("job-1", "lease-token", 2_000L,
@@ -210,6 +219,7 @@ class ErdStateSnapshotWorkerTest {
   }
 
   @Test
+  @DisplayName("completion이 거절되면 invalidator가 이미 reschedule했으므로 requeue하지 않는다")
   void swallowsARejectedCompletionWithoutRequeueingSinceTheInvalidatorAlreadyRescheduled() {
     ErdStateSnapshotJob job = activeJob(10L, 0);
     given(jobStore.claim("job-1", "lease-token", 2_000L,
@@ -227,6 +237,7 @@ class ErdStateSnapshotWorkerTest {
   }
 
   @Test
+  @DisplayName("snapshot을 다시 생성하지 않고 발행만 재시도한다")
   void retriesPublishWithoutRebuildingTheSnapshot() {
     ErdStateSnapshotJob job = activeJob(10L, 0);
     AtomicInteger publishAttempts = new AtomicInteger();
@@ -248,6 +259,7 @@ class ErdStateSnapshotWorkerTest {
   }
 
   @Test
+  @DisplayName("원자적 check와 publish를 위해 재시도마다 publishability를 다시 평가한다")
   void reEvaluatesPublishabilityOnEveryRetryBecauseCheckAndPublishAreAtomic() {
     ErdStateSnapshotJob job = activeJob(10L, 0);
     AtomicInteger publishAttempts = new AtomicInteger();

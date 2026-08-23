@@ -46,11 +46,12 @@ public class ErdStateSnapshotScheduler {
 
   @Scheduled(fixedDelayString = "${collaboration.erd-state-snapshot.poll-interval:50ms}")
   public Mono<Void> poll() {
-    return Mono.delay(Duration.ofMillis(jitterMillis.getAsLong()))
+    return Mono.defer(() -> Mono.delay(
+        Duration.ofMillis(jitterMillis.getAsLong()))
         .then(Mono.defer(() -> jobStore.findDueJobKeys(
             currentTimeMillis.getAsLong(), properties.getBatchSize())
             .flatMap(worker::process, properties.getWorkerConcurrency())
-            .then()))
+            .then())))
         .doOnError(error -> log.warn(
             "[ErdStateSnapshotScheduler] poll failed: {}", error.getMessage()))
         .onErrorResume(error -> Mono.empty());

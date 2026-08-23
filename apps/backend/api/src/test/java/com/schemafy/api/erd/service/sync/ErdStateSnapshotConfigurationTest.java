@@ -8,15 +8,18 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.core.annotation.AnnotatedElementUtils;
 import org.springframework.scheduling.annotation.EnableScheduling;
 
+import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
 import com.schemafy.api.ApiApplication;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+@DisplayName("ERD state snapshot 설정 테스트")
 class ErdStateSnapshotConfigurationTest {
 
   @Test
+  @DisplayName("승인된 coalescing 기본값을 사용한다")
   void usesTheApprovedCoalescingDefaults() {
     ErdStateSnapshotProperties properties = new ErdStateSnapshotProperties();
 
@@ -25,12 +28,14 @@ class ErdStateSnapshotConfigurationTest {
   }
 
   @Test
+  @DisplayName("snapshot job polling을 활성화한다")
   void enablesSnapshotJobPolling() {
     assertThat(AnnotatedElementUtils.hasAnnotation(ApiApplication.class,
         EnableScheduling.class)).isTrue();
   }
 
   @Test
+  @DisplayName("분산 coordination 설정값을 바인딩한다")
   void bindsDistributedCoordinationProperties() {
     new ApplicationContextRunner()
         .withUserConfiguration(PropertiesConfiguration.class)
