@@ -19,10 +19,12 @@ import org.aspectj.lang.reflect.MethodSignature;
 import com.schemafy.core.erd.operation.ErdOperationContexts;
 
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 import reactor.util.context.ContextView;
 
+@Slf4j
 @Aspect
 @Component
 @Order(Ordered.HIGHEST_PRECEDENCE)
@@ -59,6 +61,7 @@ public class AccessVerificationAspect {
     if (Mono.class.isAssignableFrom(returnType)) {
       return Mono.deferContextual(contextView -> {
         if (SystemActorContext.isSystemActor(contextView)) {
+          logSystemActorBypass(method);
           return proceedMono(joinPoint, method);
         }
         return resolveAccessRequest(
@@ -74,6 +77,7 @@ public class AccessVerificationAspect {
     if (Flux.class.isAssignableFrom(returnType)) {
       return Flux.deferContextual(contextView -> {
         if (SystemActorContext.isSystemActor(contextView)) {
+          logSystemActorBypass(method);
           return proceedFlux(joinPoint, method);
         }
         return resolveAccessRequest(
@@ -89,6 +93,11 @@ public class AccessVerificationAspect {
     throw new IllegalStateException(
         "Access annotations are only supported on Mono/Flux methods: "
             + method.getDeclaringClass().getSimpleName() + "#" + method.getName());
+  }
+
+  private void logSystemActorBypass(Method method) {
+    log.debug("[AccessVerificationAspect] bypassed as system actor: {}#{}",
+        method.getDeclaringClass().getSimpleName(), method.getName());
   }
 
   private RequireProjectAccess resolveProjectAccess(Method method, Class<?> targetClass) {
