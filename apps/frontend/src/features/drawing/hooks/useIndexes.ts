@@ -1,7 +1,7 @@
 import type { IndexType, IndexSortDir, IndexCapabilities } from '../types';
 import type { Index } from '@/types';
 import { generateUniqueName } from '../utils/nameGenerator';
-import { getDefaultIndexType } from '../utils/indexUtils';
+import { getDefaultIndexType, canSelectIndexType } from '../utils/indexUtils';
 import {
   useCreateIndex,
   useDeleteIndex,
@@ -41,10 +41,7 @@ export const useIndexes = ({
   );
 
   const createIndex = () => {
-    if (
-      indexCapabilities.status !== 'ready' ||
-      indexCapabilities.supportedTypes.length === 0
-    ) {
+    if (!canSelectIndexType(indexCapabilities)) {
       return;
     }
 

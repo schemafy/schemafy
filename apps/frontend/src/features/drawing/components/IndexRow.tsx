@@ -8,6 +8,9 @@ import type {
 import {
   getDefaultIndexType,
   getCapabilitiesUnavailableMessage,
+  canSelectIndexType,
+  canEditSortDirection,
+  canDisplaySortDirection,
 } from '../utils/indexUtils';
 import {
   Select,
@@ -72,13 +75,14 @@ export const ViewModeIndex = ({
   tableColumns,
   indexCapabilities,
 }: ViewModeIndexProps) => {
-  const supportsSortDirection =
-    indexCapabilities.status !== 'ready' ||
-    indexCapabilities.sortDirectionTypes.includes(index.type);
+  const showSortDirection = canDisplaySortDirection(
+    indexCapabilities,
+    index.type,
+  );
   const columnsStr = index.columns
     .sort((a, b) => a.seqNo - b.seqNo)
     .map((col) =>
-      supportsSortDirection
+      showSortDirection
         ? `${getColumnName(tableColumns, col.columnId)} ${col.sortDir}`
         : getColumnName(tableColumns, col.columnId),
     )
@@ -122,12 +126,12 @@ export const EditModeIndex = ({
   onRemoveColumnFromIndex,
   onUpdateSortDir,
 }: EditModeIndexProps) => {
-  const canChangeType =
-    indexCapabilities.status === 'ready' &&
-    indexCapabilities.supportedTypes.length > 0;
-  const supportsSortDirection =
-    indexCapabilities.status === 'ready' &&
-    indexCapabilities.sortDirectionTypes.includes(index.type);
+  const canChangeType = canSelectIndexType(indexCapabilities);
+  const isCapabilitiesReady = indexCapabilities.status === 'ready';
+  const sortDirectionSupported = canEditSortDirection(
+    indexCapabilities,
+    index.type,
+  );
   const availableColumns = tableColumns.filter(
     (col) => !index.columns.some((idxCol) => idxCol.columnId === col.id),
   );
@@ -154,7 +158,7 @@ export const EditModeIndex = ({
             value={index.type}
             disabled={!canChangeType}
           >
-            <SelectTrigger className="schemafy-focus-ring w-[6.5rem] rounded-lg border border-schemafy-glass-border bg-schemafy-secondary/60 px-2 py-1.5 font-mono text-xs">
+            <SelectTrigger className="schemafy-focus-ring w-[6.5rem] rounded-lg border border-schemafy-glass-border bg-schemafy-secondary/60 px-2 py-1.5 font-mono text-xs disabled:pointer-events-none">
               <SelectValue placeholder={index.type} />
             </SelectTrigger>
             <SelectContent popover="auto">
@@ -184,23 +188,32 @@ export const EditModeIndex = ({
               columnName={getColumnName(tableColumns, indexColumn.columnId)}
               onRemove={() => onRemoveColumnFromIndex(indexColumn.id)}
               additionalControls={
-                supportsSortDirection ? (
-                  <Select
-                    onValueChange={(value) =>
-                      onUpdateSortDir(indexColumn.id, value as IndexSortDir)
+                !isCapabilitiesReady || sortDirectionSupported ? (
+                  <span
+                    title={
+                      isCapabilitiesReady
+                        ? undefined
+                        : getCapabilitiesUnavailableMessage(indexCapabilities)
                     }
-                    value={indexColumn.sortDir}
                   >
-                    <SelectTrigger className="schemafy-focus-ring w-[6.5rem] rounded-lg border border-schemafy-glass-border bg-schemafy-secondary/60 px-2 py-1.5 font-mono text-xs">
-                      <SelectValue placeholder={indexColumn.sortDir} />
-                    </SelectTrigger>
-                    <SelectContent popover="auto">
-                      <SelectGroup>
-                        <SelectItem value="ASC">ASC</SelectItem>
-                        <SelectItem value="DESC">DESC</SelectItem>
-                      </SelectGroup>
-                    </SelectContent>
-                  </Select>
+                    <Select
+                      onValueChange={(value) =>
+                        onUpdateSortDir(indexColumn.id, value as IndexSortDir)
+                      }
+                      value={indexColumn.sortDir}
+                      disabled={!isCapabilitiesReady}
+                    >
+                      <SelectTrigger className="schemafy-focus-ring w-[6.5rem] rounded-lg border border-schemafy-glass-border bg-schemafy-secondary/60 px-2 py-1.5 font-mono text-xs disabled:pointer-events-none">
+                        <SelectValue placeholder={indexColumn.sortDir} />
+                      </SelectTrigger>
+                      <SelectContent popover="auto">
+                        <SelectGroup>
+                          <SelectItem value="ASC">ASC</SelectItem>
+                          <SelectItem value="DESC">DESC</SelectItem>
+                        </SelectGroup>
+                      </SelectContent>
+                    </Select>
+                  </span>
                 ) : undefined
               }
             />

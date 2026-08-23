@@ -1,7 +1,10 @@
 import { Plus } from 'lucide-react';
 import { IndexRow } from './IndexRow';
 import type { IndexSectionProps } from '../types';
-import { getCapabilitiesUnavailableMessage } from '../utils/indexUtils';
+import {
+  getCapabilitiesUnavailableMessage,
+  canSelectIndexType,
+} from '../utils/indexUtils';
 
 export const IndexSection = ({
   indexes,
@@ -20,7 +23,7 @@ export const IndexSection = ({
     return null;
   }
 
-  const canCreateIndex = indexCapabilities.supportedTypes.length > 0;
+  const canCreateIndex = canSelectIndexType(indexCapabilities);
 
   return (
     <div className="border-t border-schemafy-glass-border/55">
@@ -38,6 +41,7 @@ export const IndexSection = ({
           >
             <button
               type="button"
+              data-testid="add-index-button"
               onClick={onCreateIndex}
               disabled={!canCreateIndex}
               title={canCreateIndex ? 'Add Index' : undefined}
