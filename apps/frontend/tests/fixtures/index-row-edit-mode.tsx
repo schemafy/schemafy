@@ -37,9 +37,6 @@ const loadingCapabilities: IndexCapabilities = {
   status: 'loading',
 };
 
-// Simulates TanStack Query keeping stale data after a background refetch
-// error: status is 'error' but supportedTypes still holds the last-successful
-// (non-empty) payload.
 const errorWithStaleDataCapabilities: IndexCapabilities = {
   supportedTypes: ['BTREE', 'FULLTEXT'],
   sortDirectionTypes: ['BTREE'],
