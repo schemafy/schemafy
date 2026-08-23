@@ -8,3 +8,10 @@ export const getDefaultIndexType = (
   }
   return capabilities.supportedTypes[0] ?? 'BTREE';
 };
+
+export const getCapabilitiesUnavailableMessage = (
+  capabilitiesError: boolean,
+): string =>
+  capabilitiesError
+    ? 'Unable to load vendor capabilities.'
+    : 'Loading vendor capabilities…';

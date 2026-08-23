@@ -32,6 +32,7 @@ export interface IndexSectionProps {
   tableColumns: Array<{ id: string; name: string }>;
   isEditMode: boolean;
   indexCapabilities: IndexCapabilities;
+  capabilitiesError: boolean;
   onCreateIndex: () => void;
   onDeleteIndex: (indexId: string) => void;
   onUpdateIndexName: (indexId: string, newName: string) => void;
@@ -46,6 +47,7 @@ export interface IndexRowProps {
   tableColumns: Array<{ id: string; name: string }>;
   isEditMode: boolean;
   indexCapabilities: IndexCapabilities;
+  capabilitiesError: boolean;
   onDeleteIndex: (indexId: string) => void;
   onUpdateIndexName: (indexId: string, newName: string) => void;
   onUpdateIndexType: (indexId: string, newType: IndexType) => void;
@@ -64,6 +66,7 @@ export interface EditModeIndexProps {
   index: IndexDataType;
   tableColumns: Array<{ id: string; name: string }>;
   indexCapabilities: IndexCapabilities;
+  capabilitiesError: boolean;
   onDeleteIndex: (indexId: string) => void;
   onUpdateIndexName: (indexId: string, newName: string) => void;
   onUpdateIndexType: (indexId: string, newType: IndexType) => void;

@@ -37,9 +37,9 @@ const TableNodeComponent = ({ data, id }: TableProps) => {
   );
 
   const { dbVendorId } = useSelectedSchema();
-  const { data: vendorData } = useVendor(dbVendorId);
+  const { data: vendorData, isError: isVendorError } = useVendor(dbVendorId);
   const vendorTypes = vendorData?.datatypeMappings?.types ?? [];
-  const indexCapabilities = vendorData?.capabilities.indexes ?? {
+  const indexCapabilities = vendorData?.capabilities?.indexes ?? {
     supportedTypes: [],
     sortDirectionTypes: [],
   };
@@ -167,6 +167,7 @@ const TableNodeComponent = ({ data, id }: TableProps) => {
           tableColumns={columns.map((col) => ({ id: col.id, name: col.name }))}
           isEditMode={isColumnEditMode}
           indexCapabilities={indexCapabilities}
+          capabilitiesError={isVendorError}
           onCreateIndex={indexActions.createIndex}
           onDeleteIndex={indexActions.deleteIndex}
           onUpdateIndexName={indexActions.updateIndexName}

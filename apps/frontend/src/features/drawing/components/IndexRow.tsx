@@ -5,7 +5,10 @@ import type {
   IndexType,
   IndexSortDir,
 } from '../types';
-import { getDefaultIndexType } from '../utils/indexUtils';
+import {
+  getDefaultIndexType,
+  getCapabilitiesUnavailableMessage,
+} from '../utils/indexUtils';
 import {
   Select,
   SelectGroup,
@@ -28,6 +31,7 @@ export const IndexRow = ({
   tableColumns,
   isEditMode,
   indexCapabilities,
+  capabilitiesError,
   onDeleteIndex,
   onUpdateIndexName,
   onUpdateIndexType,
@@ -52,6 +56,7 @@ export const IndexRow = ({
           index={item}
           tableColumns={cols}
           indexCapabilities={indexCapabilities}
+          capabilitiesError={capabilitiesError}
           onDeleteIndex={onDeleteIndex}
           onUpdateIndexName={onUpdateIndexName}
           onUpdateIndexType={onUpdateIndexType}
@@ -105,6 +110,7 @@ export const EditModeIndex = ({
   index,
   tableColumns,
   indexCapabilities,
+  capabilitiesError,
   onDeleteIndex,
   onUpdateIndexName,
   onUpdateIndexType,
@@ -138,7 +144,9 @@ export const EditModeIndex = ({
           <SelectTrigger
             className="schemafy-focus-ring w-[6.5rem] rounded-lg border border-schemafy-glass-border bg-schemafy-secondary/60 px-2 py-1.5 font-mono text-xs"
             title={
-              canChangeType ? undefined : 'Loading vendor capabilities…'
+              canChangeType
+                ? undefined
+                : getCapabilitiesUnavailableMessage(capabilitiesError)
             }
           >
             <SelectValue placeholder={index.type} />

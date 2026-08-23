@@ -1,12 +1,14 @@
 import { Plus } from 'lucide-react';
 import { IndexRow } from './IndexRow';
 import type { IndexSectionProps } from '../types';
+import { getCapabilitiesUnavailableMessage } from '../utils/indexUtils';
 
 export const IndexSection = ({
   indexes,
   tableColumns,
   isEditMode,
   indexCapabilities,
+  capabilitiesError,
   onCreateIndex,
   onDeleteIndex,
   onUpdateIndexName,
@@ -33,7 +35,11 @@ export const IndexSection = ({
             onClick={onCreateIndex}
             disabled={!canCreateIndex}
             className="schemafy-focus-ring flex h-7 w-7 items-center justify-center rounded-lg text-schemafy-dark-gray transition-colors hover:bg-schemafy-secondary hover:text-schemafy-text disabled:pointer-events-none disabled:opacity-50"
-            title={canCreateIndex ? 'Add Index' : 'Loading vendor capabilities…'}
+            title={
+              canCreateIndex
+                ? 'Add Index'
+                : getCapabilitiesUnavailableMessage(capabilitiesError)
+            }
           >
             <Plus size={14} />
           </button>
@@ -53,6 +59,7 @@ export const IndexSection = ({
               tableColumns={tableColumns}
               isEditMode={isEditMode}
               indexCapabilities={indexCapabilities}
+              capabilitiesError={capabilitiesError}
               onDeleteIndex={onDeleteIndex}
               onUpdateIndexName={onUpdateIndexName}
               onUpdateIndexType={onUpdateIndexType}
