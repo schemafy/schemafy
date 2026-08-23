@@ -8,6 +8,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Range;
 import org.springframework.data.redis.connection.Limit;
 import org.springframework.data.redis.core.ReactiveStringRedisTemplate;
+import org.springframework.data.redis.core.script.RedisScript;
 import org.springframework.stereotype.Service;
 
 import com.schemafy.core.collaboration.CollaborationChannel;
@@ -102,53 +103,61 @@ public class RedisErdStateSnapshotJobStore implements ErdStateSnapshotJobStore {
   @Override
   public Mono<Boolean> publishIfCurrent(ErdStateSnapshotJob job,
       long candidateRevision, String payload) {
-    return redisTemplate.execute(ErdStateSnapshotRedisScripts.PUBLISH_IF_CURRENT,
+    return executeBooleanScript(ErdStateSnapshotRedisScripts.PUBLISH_IF_CURRENT,
         List.of(job.jobKey()),
         List.of(CollaborationChannel.forProject(job.projectId()),
             job.leaseToken(), Long.toString(job.generation()),
-            job.kind().name(), Long.toString(candidateRevision), payload))
-        .next()
-        .map(result -> result == 1L)
-        .defaultIfEmpty(false);
+            job.kind().name(), Long.toString(candidateRevision), payload));
   }
 
   @Override
   public Mono<Boolean> renewLease(ErdStateSnapshotJob job,
       long nowEpochMillis, Duration leaseTtl) {
-    return redisTemplate.execute(ErdStateSnapshotRedisScripts.RENEW_LEASE,
+    return executeBooleanScript(ErdStateSnapshotRedisScripts.RENEW_LEASE,
         List.of(DUE_KEY, job.jobKey()),
         List.of(job.leaseToken(), Long.toString(job.generation()),
             Long.toString(nowEpochMillis), Long.toString(leaseTtl.toMillis()),
-            Long.toString(properties.getCompletedWatermarkTtl().toMillis())))
-        .next()
-        .map(result -> result == 1L)
-        .defaultIfEmpty(false);
+            Long.toString(properties.getCompletedWatermarkTtl().toMillis())));
   }
 
   @Override
   public Mono<Void> complete(ErdStateSnapshotJob job, long publishedRevision,
       long nowEpochMillis) {
-    return redisTemplate.execute(ErdStateSnapshotRedisScripts.COMPLETE,
+    return executeAppliedScript(ErdStateSnapshotRedisScripts.COMPLETE,
         List.of(DUE_KEY, job.jobKey()),
         List.of(job.leaseToken(), Long.toString(job.generation()),
             job.kind().name(), Long.toString(publishedRevision),
             Long.toString(nowEpochMillis),
-            Long.toString(properties.getCompletedWatermarkTtl().toMillis())))
-        .next()
-        .flatMap(applied -> requireApplied(applied, job, "complete"));
+            Long.toString(properties.getCompletedWatermarkTtl().toMillis())),
+        job, "complete");
   }
 
   @Override
   public Mono<Void> requeue(ErdStateSnapshotJob job, long nowEpochMillis,
       Duration delay, ErdStateSnapshotRequeueReason reason) {
-    return redisTemplate.execute(ErdStateSnapshotRedisScripts.REQUEUE,
+    return executeAppliedScript(ErdStateSnapshotRedisScripts.REQUEUE,
         List.of(DUE_KEY, job.jobKey()),
         List.of(job.leaseToken(), Long.toString(job.generation()),
             Long.toString(nowEpochMillis), Long.toString(delay.toMillis()),
             Long.toString(properties.getCompletedWatermarkTtl().toMillis()),
-            Boolean.toString(reason.incrementFailureCount())))
+            Boolean.toString(reason.incrementFailureCount())),
+        job, "requeue");
+  }
+
+  private Mono<Boolean> executeBooleanScript(RedisScript<Long> script,
+      List<String> keys, List<String> argv) {
+    return redisTemplate.execute(script, keys, argv)
         .next()
-        .flatMap(applied -> requireApplied(applied, job, "requeue"));
+        .map(result -> result == 1L)
+        .defaultIfEmpty(false);
+  }
+
+  private Mono<Void> executeAppliedScript(RedisScript<Long> script,
+      List<String> keys, List<String> argv, ErdStateSnapshotJob job,
+      String operation) {
+    return redisTemplate.execute(script, keys, argv)
+        .next()
+        .flatMap(applied -> requireApplied(applied, job, operation));
   }
 
   private Mono<Void> requireApplied(Long applied, ErdStateSnapshotJob job,
@@ -162,11 +171,10 @@ public class RedisErdStateSnapshotJobStore implements ErdStateSnapshotJobStore {
   }
 
   private Mono<String> removeIfStale(String jobKey) {
-    return redisTemplate.hasKey(jobKey)
-        .flatMap(exists -> exists
-            ? Mono.just(jobKey)
-            : redisTemplate.opsForZSet().remove(DUE_KEY, jobKey)
-                .then(Mono.empty()));
+    return redisTemplate.execute(ErdStateSnapshotRedisScripts.REMOVE_IF_STALE,
+        List.of(DUE_KEY, jobKey), List.of())
+        .next()
+        .flatMap(exists -> exists == 1L ? Mono.just(jobKey) : Mono.empty());
   }
 
   private List<String> keys(String projectId, String schemaId) {

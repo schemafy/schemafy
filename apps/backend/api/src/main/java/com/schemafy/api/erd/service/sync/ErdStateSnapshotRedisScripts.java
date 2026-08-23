@@ -14,6 +14,7 @@ final class ErdStateSnapshotRedisScripts {
   static final RedisScript<Long> RENEW_LEASE = longScript("renew-lease.lua");
   static final RedisScript<Long> COMPLETE = longScript("complete.lua");
   static final RedisScript<Long> REQUEUE = longScript("requeue.lua");
+  static final RedisScript<Long> REMOVE_IF_STALE = longScript("remove-if-stale.lua");
 
   private ErdStateSnapshotRedisScripts() {}
 
