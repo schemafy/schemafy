@@ -40,7 +40,7 @@ public class PublicShareLinkApiSnippets extends RestDocsSnippets {
                 .description("프로젝트 설명").optional()));
   }
 
-  /** 비활성 또는 존재하지 않는 공유 링크 접근 오류 응답 */
+  /** 비활성 공유 링크 접근 오류 응답 */
   public static Snippet accessByLinkErrorResponse() {
     return createResponseFieldsSnippet(errorResponseFields());
   }

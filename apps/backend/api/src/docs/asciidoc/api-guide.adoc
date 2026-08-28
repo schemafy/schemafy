@@ -1132,7 +1132,7 @@ PATCH /api/v1.0/projects/{projectId}/share-link
 GET /public/api/v1.0/share/{shareLinkId}
 ----
 
-공개 URL의 `{shareLinkId}`는 관리 API 응답의 `id`입니다. 활성 상태인 링크만 성공하며, 존재하지 않거나 비활성 또는 삭제된 링크는 `400`과 `INVALID_LINK` 오류를 반환합니다. 인증은 필요하지 않습니다.
+공개 URL의 `{shareLinkId}`는 관리 API 응답의 `id`입니다. 활성 상태인 링크만 성공하며, 존재하지 않거나 삭제된 링크는 `404`와 `SHARE_LINK_NOT_FOUND`, 비활성 링크는 `400`과 `SHARE_LINK_INVALID_LINK` 오류를 반환합니다. 인증은 필요하지 않습니다.
 
 [discrete]
 ==== 성공 응답
@@ -1141,7 +1141,7 @@ include::{snippets}/public-share-link-access/http-response.adoc[]
 include::{snippets}/public-share-link-access/response-body.adoc[]
 
 [discrete]
-==== 오류 응답 (`INVALID_LINK`)
+==== 오류 응답 (`SHARE_LINK_INVALID_LINK`)
 
 include::{snippets}/public-share-link-access-invalid-link/http-response.adoc[]
 include::{snippets}/public-share-link-access-invalid-link/response-body.adoc[]
