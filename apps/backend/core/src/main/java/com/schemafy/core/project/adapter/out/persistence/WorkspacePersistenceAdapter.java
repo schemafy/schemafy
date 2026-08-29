@@ -49,7 +49,7 @@ public class WorkspacePersistenceAdapter
       String workspaceId,
       String userId) {
     return workspaceMemberRepository
-        .findByWorkspaceIdAndUserIdAndNotDeleted(workspaceId, userId);
+        .findByWorkspaceIdAndUserIdAndDeletedAtIsNull(workspaceId, userId);
   }
 
   @Override
@@ -64,13 +64,13 @@ public class WorkspacePersistenceAdapter
   @Override
   public Flux<WorkspaceMember> findAllByWorkspaceIdAndNotDeleted(
       String workspaceId) {
-    return workspaceMemberRepository.findAllByWorkspaceIdAndNotDeleted(
-        workspaceId);
+    return workspaceMemberRepository
+        .findAllByWorkspaceIdAndDeletedAtIsNullOrderByCreatedAtAsc(workspaceId);
   }
 
   @Override
   public Mono<Long> countByWorkspaceIdAndNotDeleted(String workspaceId) {
-    return workspaceMemberRepository.countByWorkspaceIdAndNotDeleted(
+    return workspaceMemberRepository.countByWorkspaceIdAndDeletedAtIsNull(
         workspaceId);
   }
 
@@ -83,14 +83,15 @@ public class WorkspacePersistenceAdapter
   public Mono<Boolean> existsByWorkspaceIdAndUserIdAndNotDeleted(
       String workspaceId,
       String userId) {
-    return workspaceMemberRepository.existsByWorkspaceIdAndUserIdAndNotDeleted(
-        workspaceId, userId);
+    return workspaceMemberRepository
+        .existsByWorkspaceIdAndUserIdAndDeletedAtIsNull(
+            workspaceId, userId);
   }
 
   @Override
   public Mono<Long> countByWorkspaceIdAndRoleAndNotDeleted(String workspaceId,
       String role) {
-    return workspaceMemberRepository.countByWorkspaceIdAndRoleAndNotDeleted(
+    return workspaceMemberRepository.countByWorkspaceIdAndRoleAndDeletedAtIsNull(
         workspaceId, role);
   }
 
@@ -98,8 +99,8 @@ public class WorkspacePersistenceAdapter
   public Mono<WorkspaceMember> findLatestByWorkspaceIdAndUserId(
       String workspaceId,
       String userId) {
-    return workspaceMemberRepository.findLatestByWorkspaceIdAndUserId(
-        workspaceId, userId);
+    return workspaceMemberRepository
+        .findFirstByWorkspaceIdAndUserIdOrderByCreatedAtDesc(workspaceId, userId);
   }
 
 }

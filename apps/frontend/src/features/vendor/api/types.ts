@@ -20,25 +20,41 @@ export type VendorCapabilities = {
 };
 
 export type DatatypeParameter = {
-  name: string;
+  name: 'length' | 'precision' | 'scale' | 'values';
   label: string;
   valueType: 'integer' | 'string_array';
   required: boolean;
   order: number;
+  minValue: number | null;
+  maxValue: number | null;
+  minItems: number | null;
+  maxItems: number | null;
+  minItemLength: number | null;
+  maxItemLength: number | null;
+};
+
+export type DatatypeProperties = {
+  autoIncrementAllowed: boolean;
+  charsetCollationAllowed: boolean;
+  indexTypes: IndexType[];
+  foreignKeyGroup: string | null;
 };
 
 export type VendorDatatype = {
   sqlType: string;
+  aliases: string[];
   displayName: string;
   category: string;
-  sqlDeclarationTemplate?: string;
   parameters: DatatypeParameter[];
+  sqlDeclarationTemplate: string;
+  properties: DatatypeProperties;
 };
 
-export type DatatypeMappings = {
-  schemaVersion: number;
+export type DatatypePolicy = {
+  schemaVersion: 2;
   vendor: string;
-  versionRange: string;
+  version: string | null;
+  versionRange: string | null;
   types: VendorDatatype[];
 };
 
@@ -47,6 +63,6 @@ export type DbVendorDetail = {
   displayName: string;
   name: string;
   version: string;
-  datatypeMappings: DatatypeMappings;
+  datatypeMappings: DatatypePolicy;
   capabilities: VendorCapabilities;
 };

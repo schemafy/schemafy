@@ -2,6 +2,7 @@ package com.schemafy.api.project.controller.dto.response;
 
 import java.time.Instant;
 
+import com.schemafy.core.project.application.port.in.ProjectSearchResult;
 import com.schemafy.core.project.application.port.in.ProjectSummary;
 import com.schemafy.core.project.domain.Project;
 import com.schemafy.core.project.domain.ProjectRole;
@@ -24,6 +25,18 @@ public record ProjectSummaryResponse(String id, String workspaceId, Integer dbVe
 
   public static ProjectSummaryResponse from(ProjectSummary detail) {
     return of(detail.project(), detail.role());
+  }
+
+  public static ProjectSummaryResponse from(ProjectSearchResult result) {
+    return new ProjectSummaryResponse(
+        result.id(),
+        result.workspaceId(),
+        result.dbVendorId(),
+        result.name(),
+        result.description(),
+        result.requesterRole(),
+        result.createdAt(),
+        result.updatedAt());
   }
 
 }

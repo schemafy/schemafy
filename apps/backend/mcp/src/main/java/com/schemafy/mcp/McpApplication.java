@@ -10,7 +10,7 @@ import org.springframework.context.annotation.FilterType;
 @ComponentScan(basePackages = {
   "com.schemafy.mcp",
   "com.schemafy.core",
-}, excludeFilters = @ComponentScan.Filter(type = FilterType.REGEX, pattern = "com\\.schemafy\\.core\\.user\\.application\\.service\\.(LoginUserService|SignUpUserService)"))
+}, excludeFilters = @ComponentScan.Filter(type = FilterType.REGEX, pattern = "com\\.schemafy\\.core\\.user\\.application\\.service\\.(LoginUserService|SignUpUserService|SendSignUpEmailCodeService|VerifySignUpEmailService)"))
 @ConfigurationPropertiesScan(basePackages = {
   "com.schemafy.mcp",
   "com.schemafy.core",

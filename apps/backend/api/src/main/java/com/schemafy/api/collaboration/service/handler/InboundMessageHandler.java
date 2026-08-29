@@ -1,7 +1,7 @@
 package com.schemafy.api.collaboration.service.handler;
 
-import com.schemafy.api.collaboration.dto.CollaborationEventType;
-import com.schemafy.api.collaboration.dto.event.CollaborationInbound;
+import com.schemafy.core.collaboration.dto.CollaborationEventType;
+import com.schemafy.core.collaboration.dto.event.CollaborationInbound;
 
 import reactor.core.publisher.Mono;
 

@@ -7,6 +7,7 @@ import java.nio.file.Path;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.reactive.AutoConfigureWebTestClient;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.context.annotation.Import;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.test.context.ActiveProfiles;
@@ -20,6 +21,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 @ActiveProfiles("dev")
 @SpringBootTest(properties = "schemafy.openapi.resource-locations=file:build/test-openapi-spec/security/")
 @AutoConfigureWebTestClient
+@Import(TestSecurityConfig.class)
 class SecurityConfigTest {
 
   private static final Path TEST_SPEC_PATH = Path.of(

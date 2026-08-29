@@ -6,6 +6,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.restdocs.AutoConfigureRestDocs;
 import org.springframework.boot.test.autoconfigure.web.reactive.AutoConfigureWebTestClient;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.restdocs.payload.JsonFieldType;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.reactive.server.WebTestClient;
@@ -15,6 +16,7 @@ import org.junit.jupiter.api.Test;
 
 import com.schemafy.api.common.constant.ApiPath;
 import com.schemafy.api.common.security.WithMockCustomUser;
+import com.schemafy.api.erd.fixture.DbVendorApiFixture;
 import com.schemafy.core.erd.index.domain.policy.IndexCapabilities;
 import com.schemafy.core.erd.index.domain.type.IndexType;
 import com.schemafy.core.erd.vendor.application.port.in.GetDbVendorQuery;
@@ -98,7 +100,7 @@ class DbVendorControllerTest {
     var vendor = new DbVendor(
         DB_VENDOR_ID,
         "MySQL 8.0", "mysql", "8.0",
-        "{\"schemaVersion\":1,\"vendor\":\"mysql\",\"types\":[]}",
+        DbVendorApiFixture.mysqlDatatypePolicy(),
         mysqlCapabilities());
 
     given(getDbVendorUseCase.getDbVendor(any(GetDbVendorQuery.class)))
@@ -114,7 +116,16 @@ class DbVendorControllerTest {
         .jsonPath("$.displayName").isEqualTo("MySQL 8.0")
         .jsonPath("$.name").isEqualTo("mysql")
         .jsonPath("$.version").isEqualTo("8.0")
-        .jsonPath("$.datatypeMappings.schemaVersion").isEqualTo(1)
+        .jsonPath("$.datatypeMappings.schemaVersion").isEqualTo(2)
+        .jsonPath("$.datatypeMappings.vendor").isEqualTo("mysql")
+        .jsonPath("$.datatypeMappings.versionRange").isEqualTo(">= 8.0 < 9.0")
+        .jsonPath("$.datatypeMappings.types[0].aliases[0]").isEqualTo("INTEGER")
+        .jsonPath("$.datatypeMappings.types[0].sqlDeclarationTemplate").isEqualTo("INT")
+        .jsonPath("$.datatypeMappings.types[0].properties.autoIncrementAllowed").isEqualTo(true)
+        .jsonPath("$.datatypeMappings.types[1].parameters[0].name").isEqualTo("length")
+        .jsonPath("$.datatypeMappings.types[1].parameters[0].minValue").isEqualTo(0)
+        .jsonPath("$.datatypeMappings.types[1].parameters[0].maxValue").isEqualTo(65535)
+        .jsonPath("$.datatypeMappings.types[1].properties.charsetCollationAllowed").isEqualTo(true)
         .jsonPath("$.capabilities.schemaVersion").isEqualTo(2)
         .jsonPath("$.capabilities.indexes.supportedTypes").isArray()
         .jsonPath("$.capabilities.indexes.sortDirectionTypes[0]").isEqualTo("BTREE")
@@ -140,8 +151,65 @@ class DbVendorControllerTest {
                     .description("스키마 버전"),
                 fieldWithPath("datatypeMappings.vendor")
                     .description("벤더 식별자"),
+                fieldWithPath("datatypeMappings.version")
+                    .type(JsonFieldType.STRING).optional()
+                    .description("정확한 벤더 버전"),
+                fieldWithPath("datatypeMappings.versionRange")
+                    .type(JsonFieldType.STRING).optional()
+                    .description("지원 벤더 버전 범위"),
                 fieldWithPath("datatypeMappings.types")
                     .description("데이터타입 목록"),
+                fieldWithPath("datatypeMappings.types[].sqlType")
+                    .description("canonical SQL 타입"),
+                fieldWithPath("datatypeMappings.types[].aliases")
+                    .description("허용 SQL 타입 별칭"),
+                fieldWithPath("datatypeMappings.types[].displayName")
+                    .description("표시 이름"),
+                fieldWithPath("datatypeMappings.types[].category")
+                    .description("타입 카테고리"),
+                fieldWithPath("datatypeMappings.types[].parameters")
+                    .description("타입 인자 정의"),
+                fieldWithPath("datatypeMappings.types[].parameters[].name")
+                    .description("타입 인자 이름"),
+                fieldWithPath("datatypeMappings.types[].parameters[].label")
+                    .description("타입 인자 표시 이름"),
+                fieldWithPath("datatypeMappings.types[].parameters[].valueType")
+                    .description("타입 인자 값 종류"),
+                fieldWithPath("datatypeMappings.types[].parameters[].required")
+                    .description("필수 여부"),
+                fieldWithPath("datatypeMappings.types[].parameters[].order")
+                    .description("표시 및 렌더링 순서"),
+                fieldWithPath("datatypeMappings.types[].parameters[].minValue")
+                    .type(JsonFieldType.NUMBER).optional()
+                    .description("정수 최솟값"),
+                fieldWithPath("datatypeMappings.types[].parameters[].maxValue")
+                    .type(JsonFieldType.NUMBER).optional()
+                    .description("정수 최댓값"),
+                fieldWithPath("datatypeMappings.types[].parameters[].minItems")
+                    .type(JsonFieldType.NUMBER).optional()
+                    .description("배열 최소 항목 수"),
+                fieldWithPath("datatypeMappings.types[].parameters[].maxItems")
+                    .type(JsonFieldType.NUMBER).optional()
+                    .description("배열 최대 항목 수"),
+                fieldWithPath("datatypeMappings.types[].parameters[].minItemLength")
+                    .type(JsonFieldType.NUMBER).optional()
+                    .description("배열 항목 최소 길이"),
+                fieldWithPath("datatypeMappings.types[].parameters[].maxItemLength")
+                    .type(JsonFieldType.NUMBER).optional()
+                    .description("배열 항목 최대 길이"),
+                fieldWithPath("datatypeMappings.types[].sqlDeclarationTemplate")
+                    .description("SQL 선언 렌더링 템플릿"),
+                fieldWithPath("datatypeMappings.types[].properties")
+                    .description("타입별 기능 속성"),
+                fieldWithPath("datatypeMappings.types[].properties.autoIncrementAllowed")
+                    .description("AUTO_INCREMENT 허용 여부"),
+                fieldWithPath("datatypeMappings.types[].properties.charsetCollationAllowed")
+                    .description("charset/collation 허용 여부"),
+                fieldWithPath("datatypeMappings.types[].properties.indexTypes")
+                    .description("허용 인덱스 타입"),
+                fieldWithPath("datatypeMappings.types[].properties.foreignKeyGroup")
+                    .type(JsonFieldType.STRING).optional()
+                    .description("FK 호환 그룹"),
                 fieldWithPath("capabilities")
                     .description("벤더 기능 정보"),
                 fieldWithPath("capabilities.schemaVersion")

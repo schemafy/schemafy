@@ -1,6 +1,7 @@
 export type {
-  DatatypeMappings,
+  DatatypePolicy,
   DatatypeParameter,
+  DatatypeProperties,
   DbVendorDetail,
   DbVendorSummary,
   VendorDatatype,

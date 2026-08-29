@@ -89,7 +89,7 @@ class WorkspaceUseCaseIntegrationTest extends ProjectDomainIntegrationSupport {
     assertThat(detail.currentUserRole()).isEqualTo(WorkspaceRole.ADMIN.name());
 
     WorkspaceMember member = workspaceMemberRepository
-        .findByWorkspaceIdAndUserIdAndNotDeleted(detail.workspace().getId(), admin.id())
+        .findByWorkspaceIdAndUserIdAndDeletedAtIsNull(detail.workspace().getId(), admin.id())
         .block();
     assertThat(member).isNotNull();
     assertThat(member.getRoleAsEnum()).isEqualTo(WorkspaceRole.ADMIN);
@@ -121,8 +121,8 @@ class WorkspaceUseCaseIntegrationTest extends ProjectDomainIntegrationSupport {
         admin.id())).block();
 
     assertThat(workspaceRepository.findByIdAndNotDeleted(workspace.getId()).block()).isNull();
-    assertThat(projectRepository.findByIdAndNotDeleted(project.getId()).block()).isNull();
-    assertThat(projectRepository.findByIdAndNotDeleted(secondProject.getId()).block()).isNull();
+    assertThat(projectRepository.findByIdAndDeletedAtIsNull(project.getId()).block()).isNull();
+    assertThat(projectRepository.findByIdAndDeletedAtIsNull(secondProject.getId()).block()).isNull();
     assertThat(findSchemasByProjectId(project.getId())).isEmpty();
     assertThat(findSchemasByProjectId(secondProject.getId())).isEmpty();
 
@@ -253,7 +253,7 @@ class WorkspaceUseCaseIntegrationTest extends ProjectDomainIntegrationSupport {
         .block();
 
     ProjectMember restoredProjectMember = projectMemberRepository
-        .findByProjectIdAndUserIdAndNotDeleted(project.getId(), target.id())
+        .findByProjectIdAndUserIdAndDeletedAtIsNull(project.getId(), target.id())
         .block();
 
     assertThat(restoredMember.getId()).isEqualTo(deletedWorkspaceMember.getId());
@@ -281,10 +281,10 @@ class WorkspaceUseCaseIntegrationTest extends ProjectDomainIntegrationSupport {
         .block();
 
     ProjectMember upgradedProjectMember = projectMemberRepository
-        .findByProjectIdAndUserIdAndNotDeleted(joinedProject.getId(), target.id())
+        .findByProjectIdAndUserIdAndDeletedAtIsNull(joinedProject.getId(), target.id())
         .block();
     ProjectMember createdProjectMember = projectMemberRepository
-        .findByProjectIdAndUserIdAndNotDeleted(missingProject.getId(), target.id())
+        .findByProjectIdAndUserIdAndDeletedAtIsNull(missingProject.getId(), target.id())
         .block();
 
     assertThat(addedMember).isNotNull();
@@ -424,7 +424,7 @@ class WorkspaceUseCaseIntegrationTest extends ProjectDomainIntegrationSupport {
     ProjectMember restoredProjectMember = projectMemberRepository.findById(deletedProjectMember.getId())
         .block();
     ProjectMember createdProjectMember = projectMemberRepository
-        .findByProjectIdAndUserIdAndNotDeleted(missingProject.getId(), target.id())
+        .findByProjectIdAndUserIdAndDeletedAtIsNull(missingProject.getId(), target.id())
         .block();
 
     assertThat(updatedMember.getId()).isEqualTo(targetWorkspaceMember.getId());
@@ -563,9 +563,9 @@ class WorkspaceUseCaseIntegrationTest extends ProjectDomainIntegrationSupport {
         admin.id())).block();
 
     assertThat(workspaceRepository.findByIdAndNotDeleted(workspace.getId()).block()).isNull();
-    assertThat(projectRepository.findByIdAndNotDeleted(project.getId()).block()).isNull();
+    assertThat(projectRepository.findByIdAndDeletedAtIsNull(project.getId()).block()).isNull();
     assertThat(projectMemberRepository
-        .findByProjectIdAndUserIdAndNotDeleted(project.getId(), outsider.id())
+        .findByProjectIdAndUserIdAndDeletedAtIsNull(project.getId(), outsider.id())
         .block()).isNull();
     assertThat(findSchemasByProjectId(project.getId())).isEmpty();
   }

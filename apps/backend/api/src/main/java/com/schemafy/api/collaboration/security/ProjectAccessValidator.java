@@ -2,7 +2,7 @@ package com.schemafy.api.collaboration.security;
 
 import org.springframework.stereotype.Component;
 
-import com.schemafy.api.common.config.ConditionalOnRedisEnabled;
+import com.schemafy.core.common.config.ConditionalOnRedisEnabled;
 import com.schemafy.core.common.exception.DomainException;
 import com.schemafy.core.project.application.access.AccessVerifier;
 import com.schemafy.core.project.application.port.out.ProjectPort;

@@ -5,7 +5,8 @@ import com.schemafy.core.user.domain.Email;
 import com.schemafy.core.user.domain.UserPolicy;
 import com.schemafy.core.user.domain.exception.UserErrorCode;
 
-public record SignUpUserCommand(String email, String name, String password) {
+public record SignUpUserCommand(String email, String name, String password,
+    String signupVerificationToken) {
 
   public SignUpUserCommand {
     email = Email.from(email).address();

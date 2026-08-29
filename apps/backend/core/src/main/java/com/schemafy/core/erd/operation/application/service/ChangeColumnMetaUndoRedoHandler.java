@@ -14,14 +14,19 @@ import com.schemafy.core.common.exception.DomainException;
 import com.schemafy.core.common.json.JsonCodec;
 import com.schemafy.core.erd.column.application.port.out.ChangeColumnMetaPort;
 import com.schemafy.core.erd.column.application.port.out.GetColumnByIdPort;
+import com.schemafy.core.erd.column.application.service.DatatypePolicyColumnValidator;
 import com.schemafy.core.erd.column.domain.Column;
 import com.schemafy.core.erd.column.domain.exception.ColumnErrorCode;
 import com.schemafy.core.erd.operation.application.inverse.ChangeColumnMetaInverse;
 import com.schemafy.core.erd.operation.application.inverse.ChangeColumnMetaInverse.FkColumnMetaRevert;
 import com.schemafy.core.erd.operation.domain.ErdOperationType;
+import com.schemafy.core.erd.vendor.application.service.DatatypePolicyResolver;
+import com.schemafy.core.erd.vendor.domain.datatype.DatatypePolicy;
 
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
+
+import static com.schemafy.core.project.application.access.ProjectAccessResourceType.COLUMN;
 
 @Component
 class ChangeColumnMetaUndoRedoHandler
@@ -29,15 +34,18 @@ class ChangeColumnMetaUndoRedoHandler
 
   private final ChangeColumnMetaPort changeColumnMetaPort;
   private final GetColumnByIdPort getColumnByIdPort;
+  private final DatatypePolicyResolver datatypePolicyResolver;
 
   ChangeColumnMetaUndoRedoHandler(
       JsonCodec jsonCodec,
       ErdMutationCoordinator erdMutationCoordinator,
       ChangeColumnMetaPort changeColumnMetaPort,
-      GetColumnByIdPort getColumnByIdPort) {
+      GetColumnByIdPort getColumnByIdPort,
+      DatatypePolicyResolver datatypePolicyResolver) {
     super(ErdOperationType.CHANGE_COLUMN_META, ChangeColumnMetaInverse.class, jsonCodec, erdMutationCoordinator);
     this.changeColumnMetaPort = changeColumnMetaPort;
     this.getColumnByIdPort = getColumnByIdPort;
+    this.datatypePolicyResolver = datatypePolicyResolver;
   }
 
   @Override
@@ -48,30 +56,36 @@ class ChangeColumnMetaUndoRedoHandler
         .switchIfEmpty(Mono.error(new DomainException(
             ColumnErrorCode.NOT_FOUND,
             "Column not found: " + inversePayload.columnId())))
-        .flatMap(column -> captureFkForwardSnapshot(inversePayload)
-            .flatMap(fkSnapshot -> {
-              Set<String> affectedTableIds = new HashSet<>(fkSnapshot.affectedTableIds());
-              affectedTableIds.add(column.tableId());
-              ChangeColumnMetaInverse forwardSnapshot = new ChangeColumnMetaInverse(
-                  column.id(),
-                  inversePayload.oldAutoIncrement() == null
-                      ? null
-                      : column.autoIncrement(),
-                  inversePayload.oldCharset() == null
-                      ? null
-                      : Objects.toString(column.charset(), ""),
-                  inversePayload.oldCollation() == null
-                      ? null
-                      : Objects.toString(column.collation(), ""),
-                  inversePayload.oldComment() == null
-                      ? null
-                      : Objects.toString(column.comment(), ""),
-                  fkSnapshot.revertList());
-              return coordinate(resolved, inversePayload,
-                  () -> applyColumnMetaInverse(inversePayload)
-                      .thenReturn(MutationResult.<Void>of(null, affectedTableIds)
-                          .withInverse(forwardSnapshot)));
-            }));
+        .flatMap(column -> datatypePolicyResolver.resolve(COLUMN, column.id())
+            .flatMap(datatypePolicy -> captureFkForwardSnapshot(inversePayload)
+                .flatMap(fkSnapshot -> {
+                  validateInverse(
+                      datatypePolicy,
+                      column,
+                      inversePayload,
+                      fkSnapshot.columns());
+                  Set<String> affectedTableIds = new HashSet<>(fkSnapshot.affectedTableIds());
+                  affectedTableIds.add(column.tableId());
+                  ChangeColumnMetaInverse forwardSnapshot = new ChangeColumnMetaInverse(
+                      column.id(),
+                      inversePayload.oldAutoIncrement() == null
+                          ? null
+                          : column.autoIncrement(),
+                      inversePayload.oldCharset() == null
+                          ? null
+                          : Objects.toString(column.charset(), ""),
+                      inversePayload.oldCollation() == null
+                          ? null
+                          : Objects.toString(column.collation(), ""),
+                      inversePayload.oldComment() == null
+                          ? null
+                          : Objects.toString(column.comment(), ""),
+                      fkSnapshot.revertList());
+                  return coordinate(resolved, inversePayload,
+                      () -> applyColumnMetaInverse(inversePayload)
+                          .thenReturn(MutationResult.<Void>of(null, affectedTableIds)
+                              .withInverse(forwardSnapshot)));
+                })));
   }
 
   private Mono<FkForwardSnapshot> captureFkForwardSnapshot(ChangeColumnMetaInverse inversePayload) {
@@ -82,6 +96,7 @@ class ChangeColumnMetaUndoRedoHandler
                 "Column not found: " + revert.columnId()))))
         .collectList()
         .map(columns -> new FkForwardSnapshot(
+            columns,
             toForwardRevertList(inversePayload.fkRevertList(), columns),
             columns.stream()
                 .map(Column::tableId)
@@ -111,6 +126,49 @@ class ChangeColumnMetaUndoRedoHandler
         .toList();
   }
 
+  private void validateInverse(
+      DatatypePolicy datatypePolicy,
+      Column directColumn,
+      ChangeColumnMetaInverse inversePayload,
+      List<Column> fkColumns) {
+    DatatypePolicyColumnValidator.validate(
+        datatypePolicy,
+        directColumn.dataType(),
+        directColumn.typeArguments(),
+        inversePayload.oldAutoIncrement() == null
+            ? directColumn.autoIncrement()
+            : inversePayload.oldAutoIncrement(),
+        inversePayload.oldCharset() == null
+            ? directColumn.charset()
+            : normalizeMetaValue(inversePayload.oldCharset()),
+        inversePayload.oldCollation() == null
+            ? directColumn.collation()
+            : normalizeMetaValue(inversePayload.oldCollation()));
+
+    java.util.stream.IntStream.range(0, inversePayload.fkRevertList().size())
+        .forEach(index -> validateFkTarget(
+            datatypePolicy,
+            fkColumns.get(index),
+            inversePayload.fkRevertList().get(index)));
+  }
+
+  private void validateFkTarget(
+      DatatypePolicy datatypePolicy,
+      Column currentColumn,
+      FkColumnMetaRevert revert) {
+    DatatypePolicyColumnValidator.validate(
+        datatypePolicy,
+        currentColumn.dataType(),
+        currentColumn.typeArguments(),
+        currentColumn.autoIncrement(),
+        revert.oldCharset() == null
+            ? currentColumn.charset()
+            : normalizeMetaValue(revert.oldCharset()),
+        revert.oldCollation() == null
+            ? currentColumn.collation()
+            : normalizeMetaValue(revert.oldCollation()));
+  }
+
   private Mono<Void> applyColumnMetaInverse(ChangeColumnMetaInverse inversePayload) {
     return changeColumnMetaPort.changeColumnMeta(
         inversePayload.columnId(),
@@ -128,7 +186,12 @@ class ChangeColumnMetaUndoRedoHandler
             .then());
   }
 
+  private static String normalizeMetaValue(String value) {
+    return value == null || value.isBlank() ? null : value.trim();
+  }
+
   private record FkForwardSnapshot(
+      List<Column> columns,
       List<FkColumnMetaRevert> revertList,
       Set<String> affectedTableIds) {
 

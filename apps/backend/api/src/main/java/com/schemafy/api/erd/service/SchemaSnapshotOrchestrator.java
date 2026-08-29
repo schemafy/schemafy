@@ -8,6 +8,7 @@ import org.springframework.transaction.TransactionDefinition;
 import org.springframework.transaction.reactive.TransactionalOperator;
 import org.springframework.transaction.support.DefaultTransactionDefinition;
 
+import com.schemafy.api.erd.controller.dto.response.SchemaResponse;
 import com.schemafy.api.erd.controller.dto.response.SchemaSnapshotsResponse;
 import com.schemafy.api.erd.controller.dto.response.TableSnapshotResponse;
 import com.schemafy.core.erd.schema.application.port.in.GetSchemaQuery;
@@ -38,6 +39,12 @@ public class SchemaSnapshotOrchestrator {
   }
 
   public Mono<SchemaSnapshotsResponse> getSchemaSnapshots(String schemaId) {
+    return getSchemaState(schemaId)
+        .map(state -> new SchemaSnapshotsResponse(state.revision(),
+            state.snapshots()));
+  }
+
+  public Mono<SchemaStateSnapshot> getSchemaState(String schemaId) {
     return Mono.defer(() -> getSchemaWithRevisionUseCase
         .getSchemaWithRevision(new GetSchemaQuery(schemaId))
         .flatMap(result -> {
@@ -49,8 +56,8 @@ public class SchemaSnapshotOrchestrator {
                   ? Mono.just(Map.<String, TableSnapshotResponse>of())
                   : tableSnapshotOrchestrator.getTableSnapshotsStrict(tableIds));
 
-          return snapshotsMono.map(snapshots -> new SchemaSnapshotsResponse(
-              result.currentRevision(),
+          return snapshotsMono.map(snapshots -> new SchemaStateSnapshot(
+              SchemaResponse.from(result.schema()), result.currentRevision(),
               snapshots));
         }))
         .as(transactionalOperator::transactional);

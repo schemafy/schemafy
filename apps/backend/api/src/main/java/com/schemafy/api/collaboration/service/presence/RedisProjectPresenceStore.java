@@ -7,7 +7,7 @@ import org.springframework.data.domain.Range;
 import org.springframework.data.redis.core.ReactiveStringRedisTemplate;
 import org.springframework.stereotype.Service;
 
-import com.schemafy.api.common.config.ConditionalOnRedisEnabled;
+import com.schemafy.core.common.config.ConditionalOnRedisEnabled;
 import com.schemafy.core.common.json.JsonCodec;
 
 import lombok.RequiredArgsConstructor;

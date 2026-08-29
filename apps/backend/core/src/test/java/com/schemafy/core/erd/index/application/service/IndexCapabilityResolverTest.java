@@ -8,10 +8,9 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import com.schemafy.core.common.exception.DomainException;
-import com.schemafy.core.erd.vendor.application.port.in.GetProjectDbVendorQuery;
-import com.schemafy.core.erd.vendor.application.port.in.GetProjectDbVendorUseCase;
+import com.schemafy.core.erd.vendor.application.service.ProjectDbVendorResolver;
 import com.schemafy.core.erd.vendor.fixture.DbVendorFixture;
-import com.schemafy.core.project.application.access.GetProjectIdByAccessResourcePort;
+import com.schemafy.core.project.domain.exception.ProjectErrorCode;
 
 import reactor.core.publisher.Mono;
 import reactor.test.StepVerifier;
@@ -25,10 +24,7 @@ import static org.mockito.BDDMockito.then;
 class IndexCapabilityResolverTest {
 
   @Mock
-  GetProjectIdByAccessResourcePort getProjectIdByAccessResourcePort;
-
-  @Mock
-  GetProjectDbVendorUseCase getProjectDbVendorUseCase;
+  ProjectDbVendorResolver projectDbVendorResolver;
 
   @InjectMocks
   IndexCapabilityResolver sut;
@@ -36,31 +32,27 @@ class IndexCapabilityResolverTest {
   @Test
   @DisplayName("리소스의 projectId로 선택된 벤더 capability를 조회한다")
   void resolvesCapabilitiesByExactProjectId() {
-    given(getProjectIdByAccessResourcePort.findProjectId(INDEX, "index-1"))
-        .willReturn(Mono.just("project-1"));
-    given(getProjectDbVendorUseCase.getProjectDbVendor(
-        new GetProjectDbVendorQuery("project-1")))
+    given(projectDbVendorResolver.resolve(INDEX, "index-1"))
         .willReturn(Mono.just(DbVendorFixture.defaultDbVendor()));
 
     StepVerifier.create(sut.resolve(INDEX, "index-1"))
         .expectNext(DbVendorFixture.defaultCapabilities().indexes())
         .verifyComplete();
 
-    then(getProjectDbVendorUseCase).should()
-        .getProjectDbVendor(new GetProjectDbVendorQuery("project-1"));
+    then(projectDbVendorResolver).should().resolve(INDEX, "index-1");
   }
 
   @Test
   @DisplayName("리소스의 projectId를 찾지 못하면 벤더를 조회하지 않는다")
   void failsWhenProjectIdIsMissing() {
-    given(getProjectIdByAccessResourcePort.findProjectId(INDEX, "missing"))
-        .willReturn(Mono.empty());
+    given(projectDbVendorResolver.resolve(INDEX, "missing"))
+        .willReturn(Mono.error(new DomainException(ProjectErrorCode.NOT_FOUND)));
 
     StepVerifier.create(sut.resolve(INDEX, "missing"))
         .expectError(DomainException.class)
         .verify();
 
-    then(getProjectDbVendorUseCase).shouldHaveNoInteractions();
+    then(projectDbVendorResolver).should().resolve(INDEX, "missing");
   }
 
 }

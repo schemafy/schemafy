@@ -17,7 +17,6 @@ import org.springframework.web.bind.annotation.RestController;
 
 import com.schemafy.api.common.constant.ApiPath;
 import com.schemafy.api.common.type.MutationResponse;
-import com.schemafy.api.erd.broadcast.ErdMutationBroadcaster;
 import com.schemafy.api.erd.controller.dto.request.AddIndexColumnRequest;
 import com.schemafy.api.erd.controller.dto.request.ChangeIndexColumnPositionRequest;
 import com.schemafy.api.erd.controller.dto.request.ChangeIndexColumnSortDirectionRequest;
@@ -28,6 +27,7 @@ import com.schemafy.api.erd.controller.dto.request.CreateIndexRequest;
 import com.schemafy.api.erd.controller.dto.response.AddIndexColumnResponse;
 import com.schemafy.api.erd.controller.dto.response.IndexColumnResponse;
 import com.schemafy.api.erd.controller.dto.response.IndexResponse;
+import com.schemafy.api.erd.service.sync.ErdStateSyncPublisher;
 import com.schemafy.core.erd.index.application.port.in.AddIndexColumnCommand;
 import com.schemafy.core.erd.index.application.port.in.AddIndexColumnUseCase;
 import com.schemafy.core.erd.index.application.port.in.ChangeIndexColumnPositionCommand;
@@ -76,7 +76,7 @@ public class IndexController {
   private final ChangeIndexColumnPositionUseCase changeIndexColumnPositionUseCase;
   private final ChangeIndexColumnSortDirectionUseCase changeIndexColumnSortDirectionUseCase;
 
-  private final ObjectProvider<ErdMutationBroadcaster> broadcasterProvider;
+  private final ObjectProvider<ErdStateSyncPublisher> publisherProvider;
 
   @PostMapping("/indexes")
   public Mono<MutationResponse<IndexResponse>> createIndex(
@@ -237,11 +237,11 @@ public class IndexController {
 
   private Mono<Void> broadcastMutation(Set<String> affectedTableIds,
       CommittedErdOperation operation) {
-    ErdMutationBroadcaster broadcaster = broadcasterProvider.getIfAvailable();
-    if (broadcaster == null) {
+    ErdStateSyncPublisher publisher = publisherProvider.getIfAvailable();
+    if (publisher == null) {
       return Mono.empty();
     }
-    return broadcaster.broadcast(affectedTableIds, operation);
+    return publisher.publishMutation(affectedTableIds, operation);
   }
 
   private static List<CreateIndexColumnCommand> mapIndexColumns(

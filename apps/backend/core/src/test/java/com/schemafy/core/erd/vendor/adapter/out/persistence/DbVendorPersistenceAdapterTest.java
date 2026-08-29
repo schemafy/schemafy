@@ -101,8 +101,8 @@ class DbVendorPersistenceAdapterTest {
             assertThat(vendor.displayName()).isEqualTo("MySQL 8.0");
             assertThat(vendor.name()).isEqualTo("mysql");
             assertThat(vendor.version()).isEqualTo("8.0");
-            assertThat(vendor.datatypeMappings()).contains("schemaVersion");
-            assertThat(vendor.datatypeMappings()).contains("TINYINT");
+            assertThat(vendor.datatypeMappings().schemaVersion()).isEqualTo(2);
+            assertThat(vendor.datatypeMappings().find("TINYINT")).isPresent();
             assertThat(vendor.capabilities().schemaVersion()).isEqualTo(2);
             assertThat(vendor.capabilities().indexes().supportedTypes())
                 .containsExactlyInAnyOrder(

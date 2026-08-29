@@ -26,7 +26,7 @@ class DbVendorTest {
       assertThat(vendor.displayName()).isEqualTo(DbVendorFixture.DEFAULT_DISPLAY_NAME);
       assertThat(vendor.name()).isEqualTo(DbVendorFixture.DEFAULT_NAME);
       assertThat(vendor.version()).isEqualTo(DbVendorFixture.DEFAULT_VERSION);
-      assertThat(vendor.datatypeMappings()).isEqualTo(DbVendorFixture.DEFAULT_DATATYPE_MAPPINGS);
+      assertThat(vendor.datatypeMappings()).isEqualTo(DbVendorFixture.defaultDatatypePolicy());
       assertThat(vendor.capabilities()).isEqualTo(DbVendorFixture.defaultCapabilities());
     }
 
@@ -34,7 +34,8 @@ class DbVendorTest {
     @DisplayName("id가 null이면 예외를 발생시킨다")
     void throwsWhenIdIsNull() {
       assertThatThrownBy(() -> new DbVendor(
-          null, "MySQL 8.0", "mysql", "8.0", "{}", DbVendorFixture.defaultCapabilities()))
+          null, "MySQL 8.0", "mysql", "8.0", DbVendorFixture.defaultDatatypePolicy(),
+          DbVendorFixture.defaultCapabilities()))
           .isInstanceOf(DomainException.class);
     }
 
@@ -42,7 +43,8 @@ class DbVendorTest {
     @DisplayName("id가 양수가 아니면 예외를 발생시킨다")
     void throwsWhenIdIsNotPositive() {
       assertThatThrownBy(() -> new DbVendor(
-          0, "MySQL 8.0", "mysql", "8.0", "{}", DbVendorFixture.defaultCapabilities()))
+          0, "MySQL 8.0", "mysql", "8.0", DbVendorFixture.defaultDatatypePolicy(),
+          DbVendorFixture.defaultCapabilities()))
           .isInstanceOf(DomainException.class);
     }
 
@@ -50,7 +52,7 @@ class DbVendorTest {
     @DisplayName("displayName이 null이면 예외를 발생시킨다")
     void throwsWhenDisplayNameIsNull() {
       assertThatThrownBy(() -> new DbVendor(
-          DbVendorFixture.DEFAULT_ID, null, "mysql", "8.0", "{}",
+          DbVendorFixture.DEFAULT_ID, null, "mysql", "8.0", DbVendorFixture.defaultDatatypePolicy(),
           DbVendorFixture.defaultCapabilities()))
           .isInstanceOf(DomainException.class);
     }
@@ -59,7 +61,7 @@ class DbVendorTest {
     @DisplayName("displayName이 공백이면 예외를 발생시킨다")
     void throwsWhenDisplayNameIsBlank() {
       assertThatThrownBy(() -> new DbVendor(
-          DbVendorFixture.DEFAULT_ID, "  ", "mysql", "8.0", "{}",
+          DbVendorFixture.DEFAULT_ID, "  ", "mysql", "8.0", DbVendorFixture.defaultDatatypePolicy(),
           DbVendorFixture.defaultCapabilities()))
           .isInstanceOf(DomainException.class);
     }
@@ -68,7 +70,7 @@ class DbVendorTest {
     @DisplayName("name이 null이면 예외를 발생시킨다")
     void throwsWhenNameIsNull() {
       assertThatThrownBy(() -> new DbVendor(
-          DbVendorFixture.DEFAULT_ID, "MySQL 8.0", null, "8.0", "{}",
+          DbVendorFixture.DEFAULT_ID, "MySQL 8.0", null, "8.0", DbVendorFixture.defaultDatatypePolicy(),
           DbVendorFixture.defaultCapabilities()))
           .isInstanceOf(DomainException.class);
     }
@@ -77,7 +79,7 @@ class DbVendorTest {
     @DisplayName("version이 null이면 예외를 발생시킨다")
     void throwsWhenVersionIsNull() {
       assertThatThrownBy(() -> new DbVendor(
-          DbVendorFixture.DEFAULT_ID, "MySQL 8.0", "mysql", null, "{}",
+          DbVendorFixture.DEFAULT_ID, "MySQL 8.0", "mysql", null, DbVendorFixture.defaultDatatypePolicy(),
           DbVendorFixture.defaultCapabilities()))
           .isInstanceOf(DomainException.class);
     }
@@ -95,7 +97,8 @@ class DbVendorTest {
     @DisplayName("capabilities가 null이면 예외를 발생시킨다")
     void throwsWhenCapabilitiesIsNull() {
       assertThatThrownBy(() -> new DbVendor(
-          DbVendorFixture.DEFAULT_ID, "MySQL 8.0", "mysql", "8.0", "{}", null))
+          DbVendorFixture.DEFAULT_ID, "MySQL 8.0", "mysql", "8.0",
+          DbVendorFixture.defaultDatatypePolicy(), null))
           .isInstanceOf(DomainException.class);
     }
 

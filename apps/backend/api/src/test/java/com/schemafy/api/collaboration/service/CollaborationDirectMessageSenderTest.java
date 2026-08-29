@@ -10,8 +10,8 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.schemafy.api.collaboration.dto.ProjectPresenceParticipant;
 import com.schemafy.api.collaboration.service.model.SessionEntry;
+import com.schemafy.core.collaboration.dto.ProjectPresenceParticipant;
 import com.schemafy.core.common.json.JsonCodec;
 
 import reactor.core.publisher.Sinks;
