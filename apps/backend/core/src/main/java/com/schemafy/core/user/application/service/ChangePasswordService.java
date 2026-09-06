@@ -45,8 +45,7 @@ class ChangePasswordService implements ChangePasswordUseCase {
           return passwordHashPort.matches(command.currentPassword(), user.password())
               .filter(Boolean::booleanValue)
               .switchIfEmpty(Mono.error(new DomainException(UserErrorCode.CURRENT_PASSWORD_INVALID)))
-              .then(Mono.defer(() -> passwordHashPort.hash(command.newPassword())))
-              .flatMap(hash -> updateUserPasswordPort.updateUserPassword(userId, hash));
+              .then(hashAndUpdatePassword(userId, command.newPassword()));
         });
   }
 
@@ -58,8 +57,12 @@ class ChangePasswordService implements ChangePasswordUseCase {
     return authTokenPort.consume(AuthTokenType.PASSWORD_RESET, token.userId(), token.rawToken())
         .filter(result -> result == AuthTokenConsumeResult.CONSUMED)
         .switchIfEmpty(Mono.error(new DomainException(UserErrorCode.PASSWORD_RESET_TOKEN_INVALID)))
-        .then(Mono.defer(() -> passwordHashPort.hash(command.newPassword())))
-        .flatMap(hash -> updateUserPasswordPort.updateUserPassword(token.userId(), hash));
+        .then(hashAndUpdatePassword(token.userId(), command.newPassword()));
+  }
+
+  private Mono<Void> hashAndUpdatePassword(String userId, String newPassword) {
+    return Mono.defer(() -> passwordHashPort.hash(newPassword))
+        .flatMap(hash -> updateUserPasswordPort.updateUserPassword(userId, hash));
   }
 
 }
