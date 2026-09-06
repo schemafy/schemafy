@@ -2,6 +2,7 @@ package com.schemafy.core.project.integration;
 
 import java.time.Instant;
 import java.util.List;
+import java.util.UUID;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -214,7 +215,8 @@ abstract class ProjectDomainIntegrationSupport {
 
   protected ShareLink saveShareLink(Project project) {
     return shareLinkRepository.save(ShareLink.create(
-        UlidGenerator.generate(), project.getId())).block();
+        UlidGenerator.generate(), project.getId(),
+        UUID.randomUUID().toString().replace("-", ""))).block();
   }
 
   protected CreateSchemaResult createSchema(Project project, String name) {

@@ -80,13 +80,16 @@ class UpdateProjectShareLinkServiceTest {
 
     assertThat(returned).hasSize(2);
     assertThat(returned).extracting(ShareLink::getId).containsOnly(stored.get().getId());
+    assertThat(returned).extracting(ShareLink::getCode).containsOnly(stored.get().getCode());
+    assertThat(stored.get().getCode()).matches("[0-9a-f]{32}");
     assertThat(reads.get()).isEqualTo(3);
   }
 
   @Test
   @DisplayName("같은 활성 상태 요청은 저장하지 않고 현재 링크를 반환한다")
   void sameActivationStateDoesNotSave() {
-    ShareLink activeLink = ShareLink.create("existing-link", PROJECT_ID);
+    ShareLink activeLink = ShareLink.create(
+        "existing-link", PROJECT_ID, "0123456789abcdef0123456789abcdef");
     UpdateProjectShareLinkService sut = service();
 
     given(shareLinkHelper.findProjectById(PROJECT_ID)).willReturn(Mono.just(project()));

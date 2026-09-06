@@ -17,6 +17,7 @@ import com.schemafy.api.project.docs.PublicShareLinkApiSnippets;
 import com.schemafy.api.testsupport.project.ProjectHttpTestSupport;
 import com.schemafy.core.project.domain.Project;
 import com.schemafy.core.project.domain.ProjectRole;
+import com.schemafy.core.project.domain.ShareLink;
 import com.schemafy.core.project.domain.Workspace;
 import com.schemafy.core.project.domain.WorkspaceRole;
 import com.schemafy.core.project.domain.exception.ShareLinkErrorCode;
@@ -56,27 +57,39 @@ class PublicShareLinkControllerTest extends ProjectHttpTestSupport {
   @DisplayName("활성화한 공유 링크로 프로젝트에 접근할 수 있다")
   void accessByActivatedLink() {
     updateActivation(true);
-    String shareLinkId = shareLinkRepository.findByProjectIdAndNotDeleted(testProject.getId())
-        .block().getId();
+    ShareLink shareLink = shareLinkRepository.findByProjectIdAndNotDeleted(testProject.getId())
+        .block();
 
-    webTestClient.get().uri(PUBLIC_API_PATH + "/{shareLinkId}", shareLinkId).exchange()
+    webTestClient.get().uri(PUBLIC_API_PATH + "/{code}", shareLink.getCode()).exchange()
         .expectStatus().isOk().expectBody()
         .consumeWith(document("public-share-link-access",
             PublicShareLinkApiSnippets.accessByLinkPathParameters(),
             PublicShareLinkApiSnippets.accessByLinkResponseHeaders(),
             PublicShareLinkApiSnippets.accessByLinkResponse()))
         .jsonPath("$.projectId").isEqualTo(testProject.getId());
+
+    webTestClient.get().uri(PUBLIC_API_PATH + "/{code}", shareLink.getId()).exchange()
+        .expectStatus().isNotFound().expectBody()
+        .jsonPath("$.reason").isEqualTo(ShareLinkErrorCode.NOT_FOUND.code());
+
+    webTestClient.get().uri(PUBLIC_API_PATH + "/{code}", "not-a-valid-code").exchange()
+        .expectStatus().isNotFound().expectBody()
+        .consumeWith(document("public-share-link-access-not-found",
+            PublicShareLinkApiSnippets.accessByLinkPathParameters(),
+            PublicShareLinkApiSnippets.accessByLinkResponseHeaders(),
+            PublicShareLinkApiSnippets.accessByLinkErrorResponse()))
+        .jsonPath("$.reason").isEqualTo(ShareLinkErrorCode.NOT_FOUND.code());
   }
 
   @Test
   @DisplayName("활성화했던 공유 링크를 비활성화하면 프로젝트에 접근할 수 없다")
   void accessByDeactivatedLinkFails() {
     updateActivation(true);
-    String shareLinkId = shareLinkRepository.findByProjectIdAndNotDeleted(testProject.getId())
-        .block().getId();
+    String shareLinkCode = shareLinkRepository.findByProjectIdAndNotDeleted(testProject.getId())
+        .block().getCode();
     updateActivation(false);
 
-    webTestClient.get().uri(PUBLIC_API_PATH + "/{shareLinkId}", shareLinkId).exchange()
+    webTestClient.get().uri(PUBLIC_API_PATH + "/{code}", shareLinkCode).exchange()
         .expectStatus().isBadRequest().expectBody()
         .consumeWith(document("public-share-link-access-invalid-link",
             PublicShareLinkApiSnippets.accessByLinkPathParameters(),

@@ -40,7 +40,7 @@ class ShareLinkUseCaseIntegrationTest extends ProjectDomainIntegrationSupport {
   private UpdateProjectShareLinkUseCase updateProjectShareLinkUseCase;
 
   @Test
-  @DisplayName("활성화는 링크를 한 번 생성하고 반복 호출해도 같은 링크를 활성 상태로 반환한다")
+  @DisplayName("활성화는 링크를 한 번 생성하고 반복 호출해도 같은 id와 code를 반환한다")
   void activateCreatesOneStableLinkIdempotently() {
     Fixture fixture = fixture("activate");
 
@@ -52,6 +52,8 @@ class ShareLinkUseCaseIntegrationTest extends ProjectDomainIntegrationSupport {
             fixture.admin().id())).block();
 
     assertThat(repeated.getId()).isEqualTo(first.getId());
+    assertThat(repeated.getCode()).isEqualTo(first.getCode());
+    assertThat(repeated.getCode()).matches("[0-9a-f]{32}");
     assertThat(repeated.isActive()).isTrue();
     assertThat(shareLinkRepository.findByProjectIdAndNotDeleted(
         fixture.project().getId()).block()).isNotNull();
@@ -76,6 +78,7 @@ class ShareLinkUseCaseIntegrationTest extends ProjectDomainIntegrationSupport {
         fixture.project().getId()).block();
     assertThat(links).hasSize(2);
     assertThat(links).extracting(ShareLink::getId).containsOnly(stored.getId());
+    assertThat(links).extracting(ShareLink::getCode).containsOnly(stored.getCode());
   }
 
   @Test
@@ -94,9 +97,16 @@ class ShareLinkUseCaseIntegrationTest extends ProjectDomainIntegrationSupport {
     ShareLink deactivated = updateProjectShareLinkUseCase.updateProjectShareLink(
         new UpdateProjectShareLinkCommand(fixture.project().getId(), false,
             fixture.admin().id())).block();
+    ShareLink reactivated = updateProjectShareLinkUseCase.updateProjectShareLink(
+        new UpdateProjectShareLinkCommand(fixture.project().getId(), true,
+            fixture.admin().id())).block();
 
     assertThat(deactivated.getId()).isEqualTo(created.getId());
+    assertThat(deactivated.getCode()).isEqualTo(created.getCode());
     assertThat(deactivated.isActive()).isFalse();
+    assertThat(reactivated.getId()).isEqualTo(created.getId());
+    assertThat(reactivated.getCode()).isEqualTo(created.getCode());
+    assertThat(reactivated.isActive()).isTrue();
   }
 
   @Test
@@ -161,15 +171,20 @@ class ShareLinkUseCaseIntegrationTest extends ProjectDomainIntegrationSupport {
         new UpdateProjectShareLinkCommand(fixture.project().getId(), true,
             fixture.admin().id())).block();
 
+    StepVerifier.create(accessShareLinkUseCase.accessShareLink(
+        new AccessShareLinkQuery(link.getId(), null, null, null)))
+        .expectErrorMatches(DomainException.hasErrorCode(ShareLinkErrorCode.NOT_FOUND))
+        .verify();
+
     Project accessed = accessShareLinkUseCase.accessShareLink(
-        new AccessShareLinkQuery(link.getId(), null, null, null)).block();
+        new AccessShareLinkQuery(link.getCode(), null, null, null)).block();
     assertThat(accessed.getId()).isEqualTo(fixture.project().getId());
 
     updateProjectShareLinkUseCase.updateProjectShareLink(
         new UpdateProjectShareLinkCommand(fixture.project().getId(), false,
             fixture.admin().id())).block();
     StepVerifier.create(accessShareLinkUseCase.accessShareLink(
-        new AccessShareLinkQuery(link.getId(), null, null, null)))
+        new AccessShareLinkQuery(link.getCode(), null, null, null)))
         .expectErrorMatches(DomainException.hasErrorCode(ShareLinkErrorCode.INVALID_LINK))
         .verify();
   }

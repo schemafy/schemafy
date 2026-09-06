@@ -1,5 +1,7 @@
 package com.schemafy.core.project.application.service;
 
+import java.util.UUID;
+
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
 
@@ -33,7 +35,8 @@ class UpdateProjectShareLinkService implements UpdateProjectShareLinkUseCase {
 
   private Mono<ShareLink> create(String projectId) {
     return Mono.fromCallable(ulidGeneratorPort::generate)
-        .map(id -> ShareLink.create(id, projectId))
+        .map(id -> ShareLink.create(
+            id, projectId, UUID.randomUUID().toString().replace("-", "")))
         .flatMap(shareLinkPort::save)
         .onErrorResume(DataIntegrityViolationException.class, error -> shareLinkPort.findByProjectIdAndNotDeleted(
             projectId)

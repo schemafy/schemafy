@@ -431,8 +431,8 @@ public class ProjectApiSnippets extends RestDocsSnippets {
 
   public static Snippet projectShareLinkResponse() {
     return createResponseFieldsSnippet(successResponseFields(
-        fieldWithPath("id").type(JsonFieldType.STRING)
-            .description("공유 링크 ID").optional(),
+        fieldWithPath("code").type(JsonFieldType.STRING)
+            .description("공개 공유 링크 식별자").optional(),
         fieldWithPath("url").type(JsonFieldType.STRING)
             .description("공개 접근 URL").optional(),
         fieldWithPath("isActive").type(JsonFieldType.BOOLEAN)

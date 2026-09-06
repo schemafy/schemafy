@@ -8,7 +8,7 @@ public interface ShareLinkPort {
 
   Mono<ShareLink> save(ShareLink shareLink);
 
-  Mono<ShareLink> findByIdAndNotDeleted(String id);
+  Mono<ShareLink> findByCodeAndNotDeleted(String code);
 
   Mono<ShareLink> findByProjectIdAndNotDeleted(String projectId);
 

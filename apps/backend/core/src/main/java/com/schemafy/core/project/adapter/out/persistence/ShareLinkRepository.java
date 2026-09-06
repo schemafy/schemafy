@@ -10,8 +10,8 @@ import reactor.core.publisher.Mono;
 public interface ShareLinkRepository
     extends ReactiveCrudRepository<ShareLink, String> {
 
-  @Query("SELECT * FROM share_links WHERE id = :id AND deleted_at IS NULL")
-  Mono<ShareLink> findByIdAndNotDeleted(String id);
+  @Query("SELECT * FROM share_links WHERE code = :code AND deleted_at IS NULL")
+  Mono<ShareLink> findByCodeAndNotDeleted(String code);
 
   @Query("SELECT * FROM share_links WHERE project_id = :projectId AND deleted_at IS NULL")
   Mono<ShareLink> findByProjectIdAndNotDeleted(String projectId);

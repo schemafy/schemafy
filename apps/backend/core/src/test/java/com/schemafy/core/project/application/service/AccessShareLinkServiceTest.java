@@ -8,11 +8,13 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.slf4j.LoggerFactory;
 
+import com.schemafy.core.common.exception.DomainException;
 import com.schemafy.core.project.application.port.in.AccessShareLinkQuery;
 import com.schemafy.core.project.application.port.out.ProjectPort;
 import com.schemafy.core.project.application.port.out.ShareLinkPort;
 import com.schemafy.core.project.domain.Project;
 import com.schemafy.core.project.domain.ShareLink;
+import com.schemafy.core.project.domain.exception.ShareLinkErrorCode;
 
 import ch.qos.logback.classic.Logger;
 import ch.qos.logback.classic.spi.ILoggingEvent;
@@ -22,6 +24,7 @@ import reactor.test.StepVerifier;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.BDDMockito.given;
+import static org.mockito.BDDMockito.then;
 
 @ExtendWith(MockitoExtension.class)
 @DisplayName("AccessShareLinkService")
@@ -29,6 +32,9 @@ class AccessShareLinkServiceTest {
 
   private static final String PROJECT_ID = "project-id";
   private static final String SHARE_LINK_ID = "share-link-id";
+  private static final String SHARE_LINK_CODE = "0123456789abcdef0123456789abcdef";
+  private static final String INACTIVE_SHARE_LINK_CODE = "11111111111111111111111111111111";
+  private static final String MISSING_PROJECT_SHARE_LINK_CODE = "22222222222222222222222222222222";
 
   @Mock
   private ProjectPort projectPort;
@@ -47,7 +53,7 @@ class AccessShareLinkServiceTest {
   @Test
   @DisplayName("프로젝트 조회 성공 후에만 공유 링크 접근 이벤트를 한 번 기록한다")
   void logsAccessOnceAfterProjectLookupSucceeds() {
-    given(shareLinkPort.findByIdAndNotDeleted(SHARE_LINK_ID))
+    given(shareLinkPort.findByCodeAndNotDeleted(SHARE_LINK_CODE))
         .willReturn(Mono.just(shareLink(true)));
     given(projectPort.findByIdAndNotDeleted(PROJECT_ID)).willAnswer(invocation -> {
       assertThat(accessLogs()).isEmpty();
@@ -55,7 +61,7 @@ class AccessShareLinkServiceTest {
     });
     attachLogAppender();
 
-    StepVerifier.create(service().accessShareLink(query(SHARE_LINK_ID)))
+    StepVerifier.create(service().accessShareLink(query(SHARE_LINK_CODE)))
         .expectNextMatches(project -> PROJECT_ID.equals(project.getId()))
         .verifyComplete();
 
@@ -65,7 +71,7 @@ class AccessShareLinkServiceTest {
       assertThat(event.getArgumentArray())
           .containsExactly(PROJECT_ID, SHARE_LINK_ID, "127.0.0.1", "test-agent");
       assertThat(event.getFormattedMessage())
-          .doesNotContain("user-id", "actorId", "reason");
+          .doesNotContain("user-id", "actorId", "reason", SHARE_LINK_CODE, "/share/");
     });
   }
 
@@ -73,22 +79,32 @@ class AccessShareLinkServiceTest {
   @DisplayName("비활성 또는 프로젝트 없는 공유 링크에는 접근 이벤트를 기록하지 않는다")
   void doesNotLogAccessForInactiveLinkOrMissingProject() {
     attachLogAppender();
-    given(shareLinkPort.findByIdAndNotDeleted("inactive-link-id"))
+    given(shareLinkPort.findByCodeAndNotDeleted(INACTIVE_SHARE_LINK_CODE))
         .willReturn(Mono.just(shareLink(false)));
 
-    StepVerifier.create(service().accessShareLink(query("inactive-link-id")))
+    StepVerifier.create(service().accessShareLink(query(INACTIVE_SHARE_LINK_CODE)))
         .expectError()
         .verify();
 
-    given(shareLinkPort.findByIdAndNotDeleted("missing-project-link-id"))
+    given(shareLinkPort.findByCodeAndNotDeleted(MISSING_PROJECT_SHARE_LINK_CODE))
         .willReturn(Mono.just(shareLink(true)));
     given(projectPort.findByIdAndNotDeleted(PROJECT_ID)).willReturn(Mono.empty());
 
-    StepVerifier.create(service().accessShareLink(query("missing-project-link-id")))
+    StepVerifier.create(service().accessShareLink(query(MISSING_PROJECT_SHARE_LINK_CODE)))
         .expectError()
         .verify();
 
     assertThat(accessLogs()).isEmpty();
+  }
+
+  @Test
+  @DisplayName("잘못된 code 형식은 저장소 조회 없이 찾을 수 없음으로 처리한다")
+  void rejectsMalformedCodeBeforeLookup() {
+    StepVerifier.create(service().accessShareLink(query("NOT-A-VALID-CODE")))
+        .expectErrorMatches(DomainException.hasErrorCode(ShareLinkErrorCode.NOT_FOUND))
+        .verify();
+
+    then(shareLinkPort).shouldHaveNoInteractions();
   }
 
   private AccessShareLinkService service() {
@@ -106,12 +122,12 @@ class AccessShareLinkServiceTest {
         .toList();
   }
 
-  private AccessShareLinkQuery query(String shareLinkId) {
-    return new AccessShareLinkQuery(shareLinkId, "user-id", "127.0.0.1", "test-agent");
+  private AccessShareLinkQuery query(String code) {
+    return new AccessShareLinkQuery(code, "user-id", "127.0.0.1", "test-agent");
   }
 
   private ShareLink shareLink(boolean active) {
-    ShareLink shareLink = ShareLink.create(SHARE_LINK_ID, PROJECT_ID);
+    ShareLink shareLink = ShareLink.create(SHARE_LINK_ID, PROJECT_ID, SHARE_LINK_CODE);
     if (active) {
       shareLink.activate();
     } else {

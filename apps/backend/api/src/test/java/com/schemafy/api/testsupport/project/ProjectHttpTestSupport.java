@@ -18,7 +18,6 @@ import com.schemafy.core.project.domain.Invitation;
 import com.schemafy.core.project.domain.Project;
 import com.schemafy.core.project.domain.ProjectMember;
 import com.schemafy.core.project.domain.ProjectRole;
-import com.schemafy.core.project.domain.ShareLink;
 import com.schemafy.core.project.domain.Workspace;
 import com.schemafy.core.project.domain.WorkspaceMember;
 import com.schemafy.core.project.domain.WorkspaceRole;
@@ -192,14 +191,6 @@ public abstract class ProjectHttpTestSupport extends UserHttpTestSupport {
         .fetch()
         .rowsUpdated()
         .block();
-  }
-
-  protected ShareLink saveShareLink(String projectId) {
-    return shareLinkRepository.save(ShareLink.create(nextId(), projectId)).block();
-  }
-
-  protected ShareLink saveShareLink(ShareLink shareLink) {
-    return shareLinkRepository.save(shareLink).block();
   }
 
   protected void assertInvalidPagination(

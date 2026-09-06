@@ -1,5 +1,7 @@
 package com.schemafy.core.project.domain;
 
+import java.util.regex.Pattern;
+
 import org.springframework.data.relational.core.mapping.Table;
 
 import com.schemafy.core.common.BaseEntity;
@@ -17,14 +19,24 @@ import lombok.NoArgsConstructor;
 @Table("share_links")
 public class ShareLink extends BaseEntity {
 
+  private static final Pattern CODE_PATTERN = Pattern.compile("[0-9a-f]{32}");
+
   private String projectId;
+  private String code;
   private Boolean isActive;
 
-  public static ShareLink create(String id, String projectId) {
+  public static boolean isValidCode(String code) {
+    return code != null && CODE_PATTERN.matcher(code).matches();
+  }
+
+  public static ShareLink create(String id, String projectId, String code) {
     if (projectId == null || projectId.isBlank()) {
       throw new DomainException(ShareLinkErrorCode.INVALID_PROJECT_ID);
     }
-    ShareLink shareLink = new ShareLink(projectId, true);
+    if (!isValidCode(code)) {
+      throw new DomainException(ShareLinkErrorCode.INVALID_LINK);
+    }
+    ShareLink shareLink = new ShareLink(projectId, code, true);
     shareLink.setId(id);
     return shareLink;
   }

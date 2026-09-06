@@ -19,8 +19,8 @@ public class ShareLinkPersistenceAdapter implements ShareLinkPort {
   }
 
   @Override
-  public Mono<ShareLink> findByIdAndNotDeleted(String id) {
-    return shareLinkRepository.findByIdAndNotDeleted(id);
+  public Mono<ShareLink> findByCodeAndNotDeleted(String code) {
+    return shareLinkRepository.findByCodeAndNotDeleted(code);
   }
 
   @Override

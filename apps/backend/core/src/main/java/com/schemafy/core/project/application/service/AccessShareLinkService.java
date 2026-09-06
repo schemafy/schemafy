@@ -10,6 +10,7 @@ import com.schemafy.core.project.application.port.in.AccessShareLinkQuery;
 import com.schemafy.core.project.application.port.in.AccessShareLinkUseCase;
 import com.schemafy.core.project.application.port.out.ShareLinkPort;
 import com.schemafy.core.project.domain.Project;
+import com.schemafy.core.project.domain.ShareLink;
 import com.schemafy.core.project.domain.exception.ProjectErrorCode;
 import com.schemafy.core.project.domain.exception.ShareLinkErrorCode;
 
@@ -28,7 +29,10 @@ class AccessShareLinkService implements AccessShareLinkUseCase {
 
   @Override
   public Mono<Project> accessShareLink(AccessShareLinkQuery query) {
-    return shareLinkPort.findByIdAndNotDeleted(query.shareLinkId())
+    if (!ShareLink.isValidCode(query.code())) {
+      return Mono.error(new DomainException(ShareLinkErrorCode.NOT_FOUND));
+    }
+    return shareLinkPort.findByCodeAndNotDeleted(query.code())
         .switchIfEmpty(Mono.error(
             new DomainException(ShareLinkErrorCode.NOT_FOUND)))
         .flatMap(shareLinkHelper::validateShareLinkAccessible)

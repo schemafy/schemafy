@@ -850,7 +850,8 @@ class ProjectControllerTest extends ProjectHttpTestSupport {
             ProjectApiSnippets.projectShareLinkRequestHeaders(),
             ProjectApiSnippets.projectShareLinkResponseHeaders(),
             ProjectApiSnippets.projectShareLinkResponse()))
-        .jsonPath("$.id").isEqualTo(null)
+        .jsonPath("$.id").doesNotExist()
+        .jsonPath("$.code").isEqualTo(null)
         .jsonPath("$.url").isEqualTo(null)
         .jsonPath("$.isActive").isEqualTo(false);
 
@@ -864,21 +865,39 @@ class ProjectControllerTest extends ProjectHttpTestSupport {
             ProjectApiSnippets.updateProjectShareLinkRequest(),
             ProjectApiSnippets.projectShareLinkResponseHeaders(),
             ProjectApiSnippets.projectShareLinkResponse()))
-        .jsonPath("$.id").isNotEmpty()
+        .jsonPath("$.id").doesNotExist()
+        .jsonPath("$.code").isNotEmpty()
         .jsonPath("$.url").value(url -> assertThat(url.toString()).contains(PUBLIC_API_PREFIX + "/share/"))
         .jsonPath("$.isActive").isEqualTo(true);
+
+    var shareLink = shareLinkRepository.findByProjectIdAndNotDeleted(project.getId()).block();
+    assertThat(shareLink.getCode()).matches("[0-9a-f]{32}");
+    assertThat(shareLink.getId()).isNotEqualTo(shareLink.getCode());
 
     webTestClient.get().uri(projectBasePath + "/{projectId}/share-link", project.getId())
         .header("Authorization", "Bearer " + accessToken).exchange()
         .expectStatus().isOk().expectBody()
-        .jsonPath("$.id").isNotEmpty()
-        .jsonPath("$.url").value(url -> assertThat(url.toString()).contains(PUBLIC_API_PREFIX + "/share/"))
+        .jsonPath("$.id").doesNotExist()
+        .jsonPath("$.code").isEqualTo(shareLink.getCode())
+        .jsonPath("$.url").value(url -> assertThat(url.toString())
+            .endsWith("/" + shareLink.getCode())
+            .doesNotContain(shareLink.getId()))
         .jsonPath("$.isActive").isEqualTo(true);
 
     webTestClient.patch().uri(projectBasePath + "/{projectId}/share-link", project.getId())
         .header("Authorization", "Bearer " + accessToken)
         .contentType(MediaType.APPLICATION_JSON).bodyValue("{\"isActive\":false}")
         .exchange().expectStatus().isOk().expectBody()
+        .consumeWith(document("project-share-link-deactivate",
+            ProjectApiSnippets.projectShareLinkPathParameters(),
+            ProjectApiSnippets.projectShareLinkRequestHeaders(),
+            ProjectApiSnippets.updateProjectShareLinkRequest(),
+            ProjectApiSnippets.projectShareLinkResponseHeaders(),
+            ProjectApiSnippets.projectShareLinkResponse()))
+        .jsonPath("$.id").doesNotExist()
+        .jsonPath("$.code").isEqualTo(shareLink.getCode())
+        .jsonPath("$.url").value(url -> assertThat(url.toString())
+            .endsWith("/" + shareLink.getCode()))
         .jsonPath("$.isActive").isEqualTo(false);
   }
 
