@@ -6,17 +6,41 @@ import {
 } from '@tanstack/react-router';
 import type { QueryClient } from '@tanstack/react-query';
 import { Layout } from '@/components';
-import {
-  CanvasPage,
-  LandingPage,
-  NotFoundPage,
-  OAuthCallbackPage,
-  SignInPage,
-  SignUpPage,
-  WorkspacePage,
-} from '@/pages';
+import { NotFoundPage } from '@/pages/NotFoundPage';
 import type { AuthStore } from '@/store/auth.store';
 import { ensureAuthInitialized } from '@/features/auth/lib/auth-bootstrap';
+import { lazy } from 'react';
+
+const LandingPage = lazy(() =>
+  import('@/pages/LandingPage').then((module) => ({
+    default: module.LandingPage,
+  })),
+);
+const SignInPage = lazy(() =>
+  import('@/pages/SignInPage').then((module) => ({
+    default: module.SignInPage,
+  })),
+);
+const SignUpPage = lazy(() =>
+  import('@/pages/SignUpPage').then((module) => ({
+    default: module.SignUpPage,
+  })),
+);
+const OAuthCallbackPage = lazy(() =>
+  import('@/pages/OAuthCallbackPage').then((module) => ({
+    default: module.OAuthCallbackPage,
+  })),
+);
+const WorkspacePage = lazy(() =>
+  import('@/pages/WorkspacePage').then((module) => ({
+    default: module.WorkspacePage,
+  })),
+);
+const CanvasPage = lazy(() =>
+  import('@/pages/CanvasPage').then((module) => ({
+    default: module.CanvasPage,
+  })),
+);
 
 export interface RouterContext {
   queryClient: QueryClient;

@@ -13,6 +13,7 @@ import { MemoProvider } from '@/features/memo/context';
 import { ChatInput, RemoteCursors } from '@/features/collaboration/components';
 import { observer } from 'mobx-react-lite';
 import { useNavigate, useParams } from '@tanstack/react-router';
+import { ReactFlowProvider } from '@xyflow/react';
 import { useEffect } from 'react';
 import axios from 'axios';
 import { NotFoundPage } from './NotFoundPage';
@@ -146,13 +147,15 @@ export const CanvasPage = () => {
   if (isProjectError || !project) return <NotFoundPage />;
 
   return (
-    <SelectedSchemaProvider
-      projectId={projectId}
-      dbVendorId={project.dbVendorId}
-    >
-      <MemoProvider>
-        <CanvasContent />
-      </MemoProvider>
-    </SelectedSchemaProvider>
+    <ReactFlowProvider>
+      <SelectedSchemaProvider
+        projectId={projectId}
+        dbVendorId={project.dbVendorId}
+      >
+        <MemoProvider>
+          <CanvasContent />
+        </MemoProvider>
+      </SelectedSchemaProvider>
+    </ReactFlowProvider>
   );
 };

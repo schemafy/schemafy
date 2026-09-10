@@ -1,13 +1,12 @@
 import { queryClient, ThemeProvider } from '@/lib';
 import { QueryClientProvider } from '@tanstack/react-query';
 import { RouterProvider } from '@tanstack/react-router';
-import { ReactFlowProvider } from '@xyflow/react';
-import { Toaster, TooltipProvider } from '@/components';
+import { LoadingState, Toaster, TooltipProvider } from '@/components';
 import { useAuthBootstrap } from '@/features/auth';
 import { authStore } from '@/store/auth.store';
 import { router } from '@/router';
 import { reaction } from 'mobx';
-import { useEffect } from 'react';
+import { Suspense, useEffect } from 'react';
 
 const isProtectedPath = (pathname: string) => {
   return pathname === '/workspace' || pathname.startsWith('/project/');
@@ -48,13 +47,13 @@ function App() {
     <QueryClientProvider client={queryClient}>
       <ThemeProvider defaultTheme="system" storageKey="schemafy-theme">
         <TooltipProvider>
-          <ReactFlowProvider>
+          <Suspense fallback={<LoadingState label="Loading page..." />}>
             <RouterProvider
               router={router}
               context={{ queryClient, auth: authStore }}
             />
-            <Toaster />
-          </ReactFlowProvider>
+          </Suspense>
+          <Toaster />
         </TooltipProvider>
       </ThemeProvider>
     </QueryClientProvider>
