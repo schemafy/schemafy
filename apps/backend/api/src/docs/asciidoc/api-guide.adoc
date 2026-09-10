@@ -1186,184 +1186,74 @@ include::{snippets}/search-members-workspace/response-fields.adoc[]
 
 == ShareLink API
 
-=== ShareLink 생성
+프로젝트별 공개 링크는 하나이며, 프로젝트 관리자만 조회하거나 활성 상태를 변경할 수 있습니다.
 
-공유 링크를 생성합니다.
-
-[source]
-----
-POST /api/v1.0/projects/{projectId}/share-links
-----
-
-[discrete]
-==== 요청
-
-include::{snippets}/share-link-create/http-request.adoc[]
-include::{snippets}/share-link-create/request-headers.adoc[]
-include::{snippets}/share-link-create/path-parameters.adoc[]
-include::{snippets}/share-link-create/curl-request.adoc[]
-
-[discrete]
-==== 응답
-
-include::{snippets}/share-link-create/response-headers.adoc[]
-include::{snippets}/share-link-create/response-body.adoc[]
-include::{snippets}/share-link-create/http-response.adoc[]
-
-[discrete]
-==== 응답 필드
-
-include::{snippets}/share-link-create/response-fields.adoc[]
-
----
-
-=== ShareLink 목록 조회
-
-프로젝트의 공유 링크 목록을 조회합니다.
+=== 프로젝트 공유 링크 조회
 
 [source]
 ----
-GET /api/v1.0/projects/{projectId}/share-links
+GET /api/v1.0/projects/{projectId}/share-link
 ----
 
-[discrete]
-==== 요청
-
-include::{snippets}/share-link-list/http-request.adoc[]
-include::{snippets}/share-link-list/request-headers.adoc[]
-include::{snippets}/share-link-list/path-parameters.adoc[]
-include::{snippets}/share-link-list/query-parameters.adoc[]
-include::{snippets}/share-link-list/curl-request.adoc[]
+링크가 없으면 `code`와 `url`은 null이고 `isActive`는 false입니다.
 
 [discrete]
-==== 응답
+==== 응답 예시
 
-include::{snippets}/share-link-list/response-headers.adoc[]
-include::{snippets}/share-link-list/response-body.adoc[]
-include::{snippets}/share-link-list/http-response.adoc[]
+[source,json]
+----
+{"code":"9f1c2a7b4d6e8f001122334455667788","url":"https://api.schemafy.com/public/api/v1.0/share/9f1c2a7b4d6e8f001122334455667788","isActive":true}
+----
 
-[discrete]
-==== 응답 필드
+`code`는 하이픈이 없는 32자리 소문자 hexadecimal 공개 식별자이며 공개 URL의 마지막 경로 세그먼트와 동일합니다. 내부 링크 `id`는 응답과 URL에 포함되지 않습니다. 조회는 링크를 새로 만들지 않으며, 인증되지 않았거나 프로젝트 관리자가 아니면 실패합니다.
 
-include::{snippets}/share-link-list/response-fields.adoc[]
-
----
-
-=== ShareLink 상세 조회
-
-공유 링크 상세 정보를 조회합니다.
+=== 프로젝트 공유 링크 활성 상태 변경
 
 [source]
 ----
-GET /api/v1.0/projects/{projectId}/share-links/{shareLinkId}
+PATCH /api/v1.0/projects/{projectId}/share-link
 ----
 
-[discrete]
-==== 요청
+요청 본문은 필수 boolean 필드 `isActive`를 포함합니다. `true`는 링크를 생성하거나 기존 링크를 활성화하고, `false`는 기존 링크를 비활성화합니다.
 
-include::{snippets}/share-link-get/http-request.adoc[]
-include::{snippets}/share-link-get/request-headers.adoc[]
-include::{snippets}/share-link-get/path-parameters.adoc[]
-include::{snippets}/share-link-get/curl-request.adoc[]
+같은 `isActive` 값으로 반복 요청해도 링크 code와 URL은 유지됩니다. 최초 `true`만 링크를 생성합니다. 관리자 권한이 없으면 실패하고, `isActive`가 없거나 boolean이 아니면 `400`입니다.
 
 [discrete]
-==== 응답
+==== 비활성화 응답
 
-include::{snippets}/share-link-get/response-headers.adoc[]
-include::{snippets}/share-link-get/response-body.adoc[]
-include::{snippets}/share-link-get/http-response.adoc[]
+비활성화해도 발급된 code와 URL은 유지되고 `isActive`만 `false`가 됩니다.
 
-[discrete]
-==== 응답 필드
-
-include::{snippets}/share-link-get/response-fields.adoc[]
-
----
-
-=== ShareLink 비활성화
-
-공유 링크를 비활성화합니다.
-
-[source]
-----
-PATCH /api/v1.0/projects/{projectId}/share-links/{shareLinkId}/revoke
-----
-
-[discrete]
-==== 요청
-
-include::{snippets}/share-link-revoke/http-request.adoc[]
-include::{snippets}/share-link-revoke/request-headers.adoc[]
-include::{snippets}/share-link-revoke/path-parameters.adoc[]
-include::{snippets}/share-link-revoke/curl-request.adoc[]
-
-[discrete]
-==== 응답
-
-include::{snippets}/share-link-revoke/response-headers.adoc[]
-include::{snippets}/share-link-revoke/response-body.adoc[]
-include::{snippets}/share-link-revoke/http-response.adoc[]
-
-[discrete]
-==== 응답 필드
-
-include::{snippets}/share-link-revoke/response-fields.adoc[]
-
----
-
-=== ShareLink 삭제
-
-공유 링크를 삭제합니다.
-
-[source]
-----
-DELETE /api/v1.0/projects/{projectId}/share-links/{shareLinkId}
-----
-
-[discrete]
-==== 요청
-
-include::{snippets}/share-link-delete/http-request.adoc[]
-include::{snippets}/share-link-delete/request-headers.adoc[]
-include::{snippets}/share-link-delete/path-parameters.adoc[]
-include::{snippets}/share-link-delete/curl-request.adoc[]
-
-[discrete]
-==== 응답
-
-include::{snippets}/share-link-delete/http-response.adoc[]
-
----
+include::{snippets}/project-share-link-deactivate/http-response.adoc[]
+include::{snippets}/project-share-link-deactivate/response-body.adoc[]
 
 === ShareLink 공개 접근
 
-토큰을 사용하여 공유 링크에 접근합니다. 인증 없이 접근 가능하며, 익명 사용자는 viewer 권한만 부여됩니다.
+활성 링크만 다음 공개 경로로 접근할 수 있습니다.
 
 [source]
 ----
-GET /public/api/v1.0/share/{token}
+GET /public/api/v1.0/share/{code}
 ----
 
-[discrete]
-==== 요청
-
-include::{snippets}/share-link-public-access/http-request.adoc[]
-include::{snippets}/share-link-public-access/path-parameters.adoc[]
-include::{snippets}/share-link-public-access/curl-request.adoc[]
+공개 URL의 `{code}`는 관리 API 응답의 `code`입니다. 내부 ShareLink `id`를 경로에 제출해도 조회되지 않습니다. 활성 상태인 링크만 성공하며, 존재하지 않거나 삭제된 링크는 `404`와 `SHARE_LINK_NOT_FOUND`, 비활성 링크는 `400`과 `SHARE_LINK_INVALID_LINK` 오류를 반환합니다. 인증은 필요하지 않습니다.
 
 [discrete]
-==== 응답
+==== 성공 응답
 
-include::{snippets}/share-link-public-access/response-headers.adoc[]
-include::{snippets}/share-link-public-access/response-body.adoc[]
-include::{snippets}/share-link-public-access/http-response.adoc[]
+include::{snippets}/public-share-link-access/http-response.adoc[]
+include::{snippets}/public-share-link-access/response-body.adoc[]
 
 [discrete]
-==== 응답 필드
+==== 오류 응답 (`SHARE_LINK_INVALID_LINK`)
 
-include::{snippets}/share-link-public-access/response-fields.adoc[]
+include::{snippets}/public-share-link-access-invalid-link/http-response.adoc[]
+include::{snippets}/public-share-link-access-invalid-link/response-body.adoc[]
 
----
+[discrete]
+==== 오류 응답 (`SHARE_LINK_NOT_FOUND`)
+
+include::{snippets}/public-share-link-access-not-found/http-response.adoc[]
+include::{snippets}/public-share-link-access-not-found/response-body.adoc[]
 
 == Memo API
 

@@ -4,8 +4,8 @@ import com.schemafy.core.project.domain.ShareLink;
 
 import reactor.core.publisher.Mono;
 
-public interface CreateShareLinkUseCase {
+public interface UpdateProjectShareLinkUseCase {
 
-  Mono<ShareLink> createShareLink(CreateShareLinkCommand command);
+  Mono<ShareLink> updateProjectShareLink(UpdateProjectShareLinkCommand command);
 
 }
