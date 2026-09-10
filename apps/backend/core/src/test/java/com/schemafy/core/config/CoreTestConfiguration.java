@@ -10,7 +10,6 @@ import org.springframework.context.annotation.Bean;
 import com.schemafy.core.user.application.port.out.AuthMailPolicyPort;
 import com.schemafy.core.user.application.port.out.AuthTokenPort;
 import com.schemafy.core.user.application.port.out.PasswordHashPort;
-import com.schemafy.core.user.application.port.out.SendEmailVerificationPort;
 import com.schemafy.core.user.application.security.SignupVerificationTokenGenerator;
 import com.schemafy.core.user.application.security.VerificationCodeGenerator;
 import com.schemafy.core.user.domain.AuthToken;
@@ -20,7 +19,7 @@ import com.schemafy.core.user.domain.AuthTokenType;
 import reactor.core.publisher.Mono;
 
 @TestConfiguration
-public class PasswordHashTestConfiguration {
+public class CoreTestConfiguration {
 
   private static final String TEST_PREFIX = "{test}";
 
@@ -68,11 +67,6 @@ public class PasswordHashTestConfiguration {
       }
 
     };
-  }
-
-  @Bean
-  public SendEmailVerificationPort sendEmailVerificationPort() {
-    return (email, code, expiresAt) -> Mono.empty();
   }
 
   @Bean
