@@ -79,6 +79,11 @@ export interface EdgeData extends Record<string, unknown> {
     controlPoint1: Point,
     controlPoint2?: Point,
   ) => void;
+  onControlPointDrag?: (
+    id: string,
+    controlPoint1: Point,
+    controlPoint2?: Point,
+  ) => void;
 }
 
 export type ValidationSuccess = {
