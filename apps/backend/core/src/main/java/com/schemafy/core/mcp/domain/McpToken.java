@@ -1,6 +1,7 @@
 package com.schemafy.core.mcp.domain;
 
 import java.time.Instant;
+import java.util.Set;
 
 import org.springframework.data.relational.core.mapping.Table;
 
@@ -46,7 +47,11 @@ public class McpToken extends BaseEntity {
   }
 
   public boolean hasScope(String scope) {
-    return this.scope != null && this.scope.equals(scope);
+    return scopes().contains(scope);
+  }
+
+  public Set<String> scopes() {
+    return McpTokenClaimSupport.scopesFromStoredValue(scope);
   }
 
   public boolean isExpiredAt(Instant now) {

@@ -35,6 +35,20 @@ public final class McpTokenClaimSupport {
     return scopes;
   }
 
+  public static String canonicalScopeValue(Set<String> scopes) {
+    Objects.requireNonNull(scopes, "scopes must not be null");
+    return scopes.stream()
+        .filter(Objects::nonNull)
+        .map(String::trim)
+        .filter(scope -> !scope.isBlank())
+        .sorted()
+        .collect(java.util.stream.Collectors.joining(" "));
+  }
+
+  public static Set<String> scopesFromStoredValue(String scope) {
+    return Set.copyOf(scopesFrom(scope));
+  }
+
   private static void addScopes(Set<String> scopes, Object value) {
     if (value == null) {
       return;
