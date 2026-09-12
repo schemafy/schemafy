@@ -141,6 +141,9 @@ class SchemafyResourceIntegrationTest {
         .contains("schemafy_list_schemas")
         .contains("Use after schemafy_list_schemas when a schemaId is known to enumerate ERD tables")
         .contains("schemafy_get_schema")
+        .contains("schemafy_create_workspace")
+        .contains("schemafy_create_column")
+        .contains("schemafy_update_memo_comment")
         .contains("Zero-based page number. Defaults to 0.")
         .contains("Page size from 1 to 100. Defaults to 100.")
         .contains("readOnlyHint")
@@ -223,6 +226,12 @@ class SchemafyResourceIntegrationTest {
         .doesNotContain("\"isError\":true");
     assertThat(readUseCases.lastWorkspacesQuery.get().page()).isEqualTo(1);
     assertThat(readUseCases.lastWorkspacesQuery.get().size()).isEqualTo(30);
+
+    String deniedWrite = callTool(sessionId, token, "schemafy_create_workspace",
+        Map.of("name", "Denied workspace"));
+    assertThat(deniedWrite)
+        .contains("\"isError\":true")
+        .contains("MCP token scope is insufficient");
 
     String projects = callTool(sessionId, token, "schemafy_list_projects",
         Map.of("workspaceId", "workspace-1", "page", 4, "size", 15));

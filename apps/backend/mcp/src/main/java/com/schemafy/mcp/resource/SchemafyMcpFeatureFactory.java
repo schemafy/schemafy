@@ -69,6 +69,26 @@ final class SchemafyMcpFeatureFactory {
         .build();
   }
 
+  static McpServerFeatures.AsyncToolSpecification writeTool(
+      String name,
+      String title,
+      String description,
+      Map<String, Object> properties,
+      List<String> required,
+      Function<McpSchema.CallToolRequest, Mono<McpSchema.CallToolResult>> callHandler) {
+    McpSchema.Tool tool = McpSchema.Tool.builder()
+        .name(name)
+        .title(title)
+        .description(description)
+        .inputSchema(objectSchema(properties, required))
+        .annotations(writeToolAnnotations(title))
+        .build();
+    return McpServerFeatures.AsyncToolSpecification.builder()
+        .tool(tool)
+        .callHandler((exchange, request) -> callHandler.apply(request))
+        .build();
+  }
+
   static Map<String, Object> idArgument(
       String name,
       String description) {
@@ -108,6 +128,10 @@ final class SchemafyMcpFeatureFactory {
 
   private static McpSchema.ToolAnnotations readOnlyToolAnnotations(String title) {
     return new McpSchema.ToolAnnotations(title, true, false, true, false, false);
+  }
+
+  private static McpSchema.ToolAnnotations writeToolAnnotations(String title) {
+    return new McpSchema.ToolAnnotations(title, false, false, false, false, false);
   }
 
 }
