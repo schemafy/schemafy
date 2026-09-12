@@ -11,7 +11,7 @@ export const useProjectMembers = (projectId: string, page = 0, size = 5) => {
   const membersQuery = useQuery({
     queryKey: projectKeys.members(projectId, page, size),
     queryFn: () => getMembers(projectId, page, size),
-    enabled: !!projectId,
+    enabled: Boolean(projectId),
   });
   const removeMemberMutation = useRemoveMemberMutation(projectId);
   const updateMemberRoleMutation = useUpdateMemberRoleMutation(projectId);

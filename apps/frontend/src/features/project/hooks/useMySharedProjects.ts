@@ -18,6 +18,7 @@ export const useMySharedProjects = (page = 0, size = 5) => {
   return {
     projects: projectsQuery.data?.content ?? [],
     projectsData: projectsQuery.data,
+    isLoadingProjects: projectsQuery.isLoading,
     leaveProject,
   };
 };

@@ -6,7 +6,7 @@ export const useProject = (projectId: string) => {
   const projectQuery = useQuery({
     queryKey: projectKeys.detail(projectId),
     queryFn: () => getProject(projectId),
-    enabled: !!projectId,
+    enabled: Boolean(projectId),
   });
 
   return {

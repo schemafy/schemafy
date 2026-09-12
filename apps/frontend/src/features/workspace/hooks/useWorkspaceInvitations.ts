@@ -19,7 +19,7 @@ export const useWorkspaceInvitations = (
   const invitationsQuery = useQuery({
     queryKey: workspaceKeys.invitations(workspaceId, page, size),
     queryFn: () => getInvitations(workspaceId, page, size),
-    enabled: !!workspaceId && enabled,
+    enabled: Boolean(workspaceId) && enabled,
   });
   const createInvitationMutation = useCreateInvitationMutation(workspaceId);
 
