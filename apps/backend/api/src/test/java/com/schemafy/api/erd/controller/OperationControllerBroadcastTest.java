@@ -12,7 +12,6 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
-import com.schemafy.api.erd.service.sync.ErdStateSyncPublisher;
 import com.schemafy.core.common.MutationResult;
 import com.schemafy.core.erd.operation.application.inverse.CreateTableInverse;
 import com.schemafy.core.erd.operation.application.inverse.StructuralSnapshot;
@@ -21,6 +20,7 @@ import com.schemafy.core.erd.operation.application.port.in.UndoErdOperationComma
 import com.schemafy.core.erd.operation.application.port.in.UndoErdOperationUseCase;
 import com.schemafy.core.erd.operation.domain.CommittedErdOperation;
 import com.schemafy.core.erd.operation.domain.ErdOperationDerivationKind;
+import com.schemafy.core.erd.sync.ErdStateSyncPublisher;
 
 import reactor.core.publisher.Mono;
 import reactor.test.StepVerifier;

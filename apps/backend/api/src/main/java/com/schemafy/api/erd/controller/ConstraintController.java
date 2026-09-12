@@ -27,7 +27,6 @@ import com.schemafy.api.erd.controller.dto.request.CreateConstraintRequest;
 import com.schemafy.api.erd.controller.dto.response.AddConstraintColumnResponse;
 import com.schemafy.api.erd.controller.dto.response.ConstraintColumnResponse;
 import com.schemafy.api.erd.controller.dto.response.ConstraintResponse;
-import com.schemafy.api.erd.service.sync.ErdStateSyncPublisher;
 import com.schemafy.core.common.exception.DomainException;
 import com.schemafy.core.erd.constraint.application.port.in.AddConstraintColumnCommand;
 import com.schemafy.core.erd.constraint.application.port.in.AddConstraintColumnUseCase;
@@ -56,6 +55,7 @@ import com.schemafy.core.erd.constraint.application.port.in.RemoveConstraintColu
 import com.schemafy.core.erd.constraint.application.port.in.RemoveConstraintColumnUseCase;
 import com.schemafy.core.erd.constraint.domain.exception.ConstraintErrorCode;
 import com.schemafy.core.erd.operation.domain.CommittedErdOperation;
+import com.schemafy.core.erd.sync.ErdStateSyncPublisher;
 
 import lombok.RequiredArgsConstructor;
 import reactor.core.publisher.Mono;
