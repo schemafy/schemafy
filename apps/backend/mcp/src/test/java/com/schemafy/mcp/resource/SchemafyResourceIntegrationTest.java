@@ -5,6 +5,7 @@ import java.time.Instant;
 import java.util.Date;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.atomic.AtomicReference;
 import javax.crypto.SecretKey;
 
@@ -54,6 +55,8 @@ import com.schemafy.core.erd.memo.application.port.in.GetMemosBySchemaIdUseCase;
 import com.schemafy.core.erd.memo.domain.Memo;
 import com.schemafy.core.erd.memo.domain.MemoComment;
 import com.schemafy.core.erd.memo.domain.MemoDetail;
+import com.schemafy.core.erd.operation.domain.CommittedErdOperation;
+import com.schemafy.core.erd.operation.domain.ErdOperationDerivationKind;
 import com.schemafy.core.erd.relationship.application.port.in.GetRelationshipsByTableIdQuery;
 import com.schemafy.core.erd.relationship.application.port.in.GetRelationshipsByTableIdUseCase;
 import com.schemafy.core.erd.relationship.domain.Relationship;
@@ -64,6 +67,7 @@ import com.schemafy.core.erd.schema.application.port.in.GetSchemaUseCase;
 import com.schemafy.core.erd.schema.application.port.in.GetSchemasByProjectIdQuery;
 import com.schemafy.core.erd.schema.application.port.in.GetSchemasByProjectIdUseCase;
 import com.schemafy.core.erd.schema.domain.Schema;
+import com.schemafy.core.erd.sync.ErdStateSyncPublisher;
 import com.schemafy.core.erd.table.application.port.in.GetTableQuery;
 import com.schemafy.core.erd.table.application.port.in.GetTableUseCase;
 import com.schemafy.core.erd.table.application.port.in.GetTablesBySchemaIdQuery;
@@ -139,6 +143,9 @@ class SchemafyResourceIntegrationTest {
 
   @MockitoBean
   CreateColumnUseCase createColumnUseCase;
+
+  @MockitoBean
+  ErdStateSyncPublisher stateSyncPublisher;
 
   @MockitoBean
   CreateMemoCommentUseCase createMemoCommentUseCase;
@@ -344,9 +351,12 @@ class SchemafyResourceIntegrationTest {
   @DisplayName("ERD write scope는 column JSON 입력을 core command로 변환한다")
   void callsErdWriteToolWithValidatedColumnArguments() {
     String token = tokenFactory.tokenWithScopes(McpScope.ERD_WRITE.value());
-    given(createColumnUseCase.createColumn(any())).willReturn(Mono.just(MutationResult.empty(
+    CommittedErdOperation operation = new CommittedErdOperation(
+        "operation-created", "client-operation-created", 3L, ErdOperationDerivationKind.ORIGINAL);
+    given(createColumnUseCase.createColumn(any())).willReturn(Mono.just(new MutationResult<>(
         new CreateColumnResult("column-created", "code", "VARCHAR", null, 1, false,
-            null, null, "MCP column"))));
+            null, null, "MCP column"), Set.of("table-1"), operation, null, false)));
+    given(stateSyncPublisher.publishMutation(any(), any())).willReturn(Mono.empty());
     String sessionId = initialize(token);
 
     String response = callTool(sessionId, token, "schemafy_create_column", Map.of(
@@ -363,6 +373,7 @@ class SchemafyResourceIntegrationTest {
             CreateColumnCommand::dataType, CreateColumnCommand::length,
             CreateColumnCommand::comment, CreateColumnCommand::values)
         .containsExactly("table-1", "code", "VARCHAR", 32, "MCP column", List.of("A", "B"));
+    then(stateSyncPublisher).should().publishMutation(Set.of("table-1"), operation);
   }
 
   @Test
