@@ -24,6 +24,8 @@ import org.springframework.test.web.reactive.server.WebTestClient;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.parallel.Execution;
+import org.junit.jupiter.api.parallel.ExecutionMode;
 import org.mockito.ArgumentCaptor;
 
 import com.schemafy.core.common.MutationResult;
@@ -59,11 +61,14 @@ import com.schemafy.core.erd.relationship.application.port.in.GetRelationshipsBy
 import com.schemafy.core.erd.relationship.domain.Relationship;
 import com.schemafy.core.erd.relationship.domain.type.Cardinality;
 import com.schemafy.core.erd.relationship.domain.type.RelationshipKind;
+import com.schemafy.core.erd.schema.application.port.in.DeleteSchemaUseCase;
 import com.schemafy.core.erd.schema.application.port.in.GetSchemaQuery;
 import com.schemafy.core.erd.schema.application.port.in.GetSchemaUseCase;
 import com.schemafy.core.erd.schema.application.port.in.GetSchemasByProjectIdQuery;
 import com.schemafy.core.erd.schema.application.port.in.GetSchemasByProjectIdUseCase;
 import com.schemafy.core.erd.schema.domain.Schema;
+import com.schemafy.core.erd.sync.ErdStateSyncPublisher;
+import com.schemafy.core.erd.table.application.port.in.DeleteTableUseCase;
 import com.schemafy.core.erd.table.application.port.in.GetTableQuery;
 import com.schemafy.core.erd.table.application.port.in.GetTableUseCase;
 import com.schemafy.core.erd.table.application.port.in.GetTablesBySchemaIdQuery;
@@ -117,11 +122,13 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.then;
+import static org.mockito.Mockito.never;
 
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT, properties = "spring.main.allow-bean-definition-overriding=true")
 @AutoConfigureWebTestClient
 @ActiveProfiles("test")
 @Import(SchemafyResourceIntegrationTest.TestResourceConfiguration.class)
+@Execution(ExecutionMode.SAME_THREAD)
 class SchemafyResourceIntegrationTest {
 
   @Autowired
@@ -154,6 +161,15 @@ class SchemafyResourceIntegrationTest {
   @MockitoBean
   GetShareLinkUseCase getShareLinkUseCase;
 
+  @MockitoBean
+  ErdStateSyncPublisher stateSyncPublisher;
+
+  @MockitoBean
+  DeleteSchemaUseCase deleteSchemaUseCase;
+
+  @MockitoBean
+  DeleteTableUseCase deleteTableUseCase;
+
   TestTokenFactory tokenFactory;
 
   @BeforeEach
@@ -164,6 +180,7 @@ class SchemafyResourceIntegrationTest {
       return Mono.just(McpToken.issue("token-1", "user-1", tokenFactory.lastScope(),
           now.minusSeconds(60), now.plusSeconds(3600)));
     });
+    given(stateSyncPublisher.publishMutation(any(), any())).willReturn(Mono.empty());
     readUseCases.reset();
   }
 
@@ -486,6 +503,80 @@ class SchemafyResourceIntegrationTest {
         .contains("projectId is required");
     then(getShareLinksUseCase).shouldHaveNoInteractions();
     then(getShareLinkUseCase).shouldHaveNoInteractions();
+  }
+
+  @Test
+  @DisplayName("ERD context 조회 오류가 발생해도 schema 삭제는 수행하고 이벤트는 생략한다")
+  void deletesSchemaWhenErdContextResolutionFails() {
+    String token = tokenFactory.tokenWithScopes(McpScope.ERD_WRITE.value());
+    String sessionId = initialize(token);
+    given(stateSyncPublisher.resolveFromSchemaId("schema-1"))
+        .willReturn(Mono.error(new IllegalStateException("redis unavailable")));
+    given(deleteSchemaUseCase.deleteSchema(any()))
+        .willReturn(Mono.just(MutationResult.empty(null)));
+
+    String response = callTool(sessionId, token, "schemafy_delete_schema", Map.of(
+        "schemaId", "schema-1", "confirmed", true));
+
+    assertThat(response)
+        .doesNotContain("\"isError\":true");
+    then(deleteSchemaUseCase).should().deleteSchema(any());
+    then(stateSyncPublisher).should().resolveFromSchemaId("schema-1");
+    then(stateSyncPublisher).should(never()).publishDeletedWithContext(any(), any(), any());
+  }
+
+  @Test
+  @DisplayName("schema context가 비어 있으면 schema 삭제를 NOT_FOUND로 거부한다")
+  void rejectsSchemaDeleteWhenErdContextIsMissing() {
+    String token = tokenFactory.tokenWithScopes(McpScope.ERD_WRITE.value());
+    String sessionId = initialize(token);
+    given(stateSyncPublisher.resolveFromSchemaId("schema-1"))
+        .willReturn(Mono.empty());
+
+    String response = callTool(sessionId, token, "schemafy_delete_schema", Map.of(
+        "schemaId", "schema-1", "confirmed", true));
+
+    assertThat(response)
+        .contains("\"isError\":true")
+        .contains("Schema not found: schema-1");
+    then(deleteSchemaUseCase).shouldHaveNoInteractions();
+  }
+
+  @Test
+  @DisplayName("ERD context 조회 오류가 발생해도 table 삭제는 수행하고 이벤트는 생략한다")
+  void deletesTableWhenErdContextResolutionFails() {
+    String token = tokenFactory.tokenWithScopes(McpScope.ERD_WRITE.value());
+    String sessionId = initialize(token);
+    given(stateSyncPublisher.resolveFromTableId("table-1"))
+        .willReturn(Mono.error(new IllegalStateException("redis unavailable")));
+    given(deleteTableUseCase.deleteTable(any()))
+        .willReturn(Mono.just(MutationResult.empty(null)));
+
+    String response = callTool(sessionId, token, "schemafy_delete_table", Map.of(
+        "tableId", "table-1", "confirmed", true));
+
+    assertThat(response)
+        .doesNotContain("\"isError\":true");
+    then(deleteTableUseCase).should().deleteTable(any());
+    then(stateSyncPublisher).should().resolveFromTableId("table-1");
+    then(stateSyncPublisher).should(never()).publishActiveWithContext(any(), any(), any());
+  }
+
+  @Test
+  @DisplayName("table context가 비어 있으면 table 삭제를 NOT_FOUND로 거부한다")
+  void rejectsTableDeleteWhenErdContextIsMissing() {
+    String token = tokenFactory.tokenWithScopes(McpScope.ERD_WRITE.value());
+    String sessionId = initialize(token);
+    given(stateSyncPublisher.resolveFromTableId("table-1"))
+        .willReturn(Mono.empty());
+
+    String response = callTool(sessionId, token, "schemafy_delete_table", Map.of(
+        "tableId", "table-1", "confirmed", true));
+
+    assertThat(response)
+        .contains("\"isError\":true")
+        .contains("Table not found: table-1");
+    then(deleteTableUseCase).shouldHaveNoInteractions();
   }
 
   @Test

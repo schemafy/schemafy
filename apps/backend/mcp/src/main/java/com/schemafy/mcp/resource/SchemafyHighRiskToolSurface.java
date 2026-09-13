@@ -342,17 +342,20 @@ final class SchemafyHighRiskToolSurface {
     return executeMutation(request, "schemafy_delete_schema", "schemaId", actor -> {
       String schemaId = required(request, "schemaId");
       ErdStateSyncPublisher publisher = publisherProvider.getIfAvailable();
-      Mono<MutationResult<Void>> deletion = deleteSchemaUseCase.deleteSchema(
-          new DeleteSchemaCommand(schemaId));
+      Mono<MutationResult<Void>> deletion = Mono.defer(() -> deleteSchemaUseCase.deleteSchema(
+          new DeleteSchemaCommand(schemaId)));
       if (publisher == null) {
         return deletion.map(this::mutation);
       }
       return publisher.resolveFromSchemaId(schemaId)
+          .onErrorMap(ErdContextResolutionException::new)
           .switchIfEmpty(Mono.error(new DomainException(SchemaErrorCode.NOT_FOUND,
               "Schema not found: " + schemaId)))
           .flatMap(context -> deletion.flatMap(result -> publisher
               .publishDeletedWithContext(context, result.affectedTableIds(), result.operation())
-              .thenReturn(mutation(result))));
+              .thenReturn(mutation(result))))
+          .onErrorResume(ErdContextResolutionException.class,
+              error -> deletion.map(this::mutation));
     });
   }
 
@@ -360,17 +363,20 @@ final class SchemafyHighRiskToolSurface {
     return executeMutation(request, "schemafy_delete_table", "tableId", actor -> {
       String tableId = required(request, "tableId");
       ErdStateSyncPublisher publisher = publisherProvider.getIfAvailable();
-      Mono<MutationResult<Void>> deletion = deleteTableUseCase.deleteTable(
-          new DeleteTableCommand(tableId));
+      Mono<MutationResult<Void>> deletion = Mono.defer(() -> deleteTableUseCase.deleteTable(
+          new DeleteTableCommand(tableId)));
       if (publisher == null) {
         return deletion.map(this::mutation);
       }
       return publisher.resolveFromTableId(tableId)
+          .onErrorMap(ErdContextResolutionException::new)
           .switchIfEmpty(Mono.error(new DomainException(TableErrorCode.NOT_FOUND,
               "Table not found: " + tableId)))
           .flatMap(context -> deletion.flatMap(result -> publisher
               .publishActiveWithContext(context, result.affectedTableIds(), result.operation())
-              .thenReturn(mutation(result))));
+              .thenReturn(mutation(result))))
+          .onErrorResume(ErdContextResolutionException.class,
+              error -> deletion.map(this::mutation));
     });
   }
 
@@ -565,6 +571,16 @@ final class SchemafyHighRiskToolSurface {
 
   private static Map<String, Object> integerProperty(int defaultValue, int minimum, int maximum) {
     return Map.of("type", "integer", "minimum", minimum, "maximum", maximum, "default", defaultValue);
+  }
+
+  private static final class ErdContextResolutionException extends RuntimeException {
+
+    private static final long serialVersionUID = 1L;
+
+    private ErdContextResolutionException(Throwable cause) {
+      super(cause);
+    }
+
   }
 
 }
