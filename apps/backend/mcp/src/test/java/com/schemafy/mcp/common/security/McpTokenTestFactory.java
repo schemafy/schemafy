@@ -10,6 +10,7 @@ import javax.crypto.SecretKey;
 
 import com.schemafy.core.mcp.domain.McpTokenClaimSupport;
 
+import io.jsonwebtoken.JwtBuilder;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.security.Keys;
 
@@ -78,7 +79,7 @@ final class McpTokenTestFactory {
         McpTokenClaimSupport.canonicalScopeValue(scopes)));
   }
 
-  private io.jsonwebtoken.JwtBuilder builder() {
+  private JwtBuilder builder() {
     Instant now = clock.instant();
     return Jwts.builder()
         .id(DEFAULT_TOKEN_ID)
@@ -93,7 +94,7 @@ final class McpTokenTestFactory {
             "schema:read")));
   }
 
-  private String token(io.jsonwebtoken.JwtBuilder builder) {
+  private String token(JwtBuilder builder) {
     return builder.signWith(secretKey).compact();
   }
 
