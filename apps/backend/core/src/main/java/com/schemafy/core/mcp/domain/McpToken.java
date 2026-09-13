@@ -46,10 +46,6 @@ public class McpToken extends BaseEntity {
     return this.userId != null && this.userId.equals(userId);
   }
 
-  public boolean hasScope(String scope) {
-    return scopes().contains(scope);
-  }
-
   public Set<String> scopes() {
     return McpTokenClaimSupport.scopesFromStoredValue(scope);
   }
