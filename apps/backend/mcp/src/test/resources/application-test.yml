@@ -21,8 +21,10 @@ spring:
           projects, schemas, ERD tables, columns, indexes, constraints,
           relationships, memos, and database vendors. It also exposes narrowly
           scoped write tools for workspace/project management, ERD structural
-          changes, and memos. A write tool requires its corresponding MCP write
-          scope and the same domain access rules as the API. If an ID is unknown,
+          changes, invitations, memberships, share links, and memos. A write
+          tool requires its corresponding MCP scope, confirmed=true for state
+          changing high-risk tools, and the same domain access rules as the API.
+          If an ID is unknown,
           start with schemafy_list_workspaces, then schemafy_list_projects,
           schemafy_list_schemas, schemafy_list_tables, and table-detail tools.
         protocol: STREAMABLE
@@ -46,6 +48,14 @@ spring:
 
 server:
   port: 0
+
+collaboration:
+  presence:
+    session-ttl: 90s
+
+app:
+  base-url: http://localhost:8080
+  api-version: v1
 
 mcp:
   security:
