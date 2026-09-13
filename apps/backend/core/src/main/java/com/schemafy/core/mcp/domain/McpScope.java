@@ -9,7 +9,12 @@ public enum McpScope {
   MCP("mcp"),
   WORKSPACE_WRITE("mcp:workspace:write"),
   ERD_WRITE("mcp:erd:write"),
-  MEMO_WRITE("mcp:memo:write");
+  MEMO_WRITE("mcp:memo:write"),
+  MEMBERSHIP_ADMIN("mcp:membership:admin"),
+  INVITATION_WRITE("mcp:invitation:write"),
+  SHARE_LINK_READ("mcp:share-link:read"),
+  SHARE_LINK_WRITE("mcp:share-link:write"),
+  COLLABORATION_READ("mcp:collaboration:read");
 
   private static final Set<String> ISSUABLE_VALUES = Arrays.stream(values())
       .map(McpScope::value)
