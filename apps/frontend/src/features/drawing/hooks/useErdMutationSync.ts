@@ -41,8 +41,9 @@ export const useErdMutationSync = (schemaId: string, projectId: string) => {
       timerRef.current = window.setTimeout(flush, DEBOUNCE_MS);
     };
 
-    const unsubscribe = collaborationStore.onErdMutated((event) => {
+    const unsubscribe = collaborationStore.onErdMutated((event, syncStatus) => {
       if (event.schemaId !== schemaId) return;
+      if (syncStatus === 'stale') return;
 
       if (event.affectedTableIds.length > 0) {
         event.affectedTableIds.forEach((id) => pendingTableIds.current.add(id));

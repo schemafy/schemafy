@@ -73,7 +73,7 @@ class RelationshipCyclicReferenceIntegrationTest extends ErdProjectIntegrationSu
     String projectId = createActiveProjectId("relationship_cyclic");
 
     var createSchemaCommand = new CreateSchemaCommand(
-        projectId, "MySQL", schemaName,
+        projectId, schemaName,
         "utf8mb4", "utf8mb4_general_ci");
     var schemaResult = createSchemaUseCase.createSchema(createSchemaCommand).block().result();
     schemaId = schemaResult.id();

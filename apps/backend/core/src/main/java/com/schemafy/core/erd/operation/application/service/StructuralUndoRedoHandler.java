@@ -90,8 +90,8 @@ class StructuralUndoRedoHandler implements UndoRedoErdOperationHandler {
           "Inverse payload is missing for operation: " + executionBase.opId());
     }
 
-    InversePayload payload = jsonCodec.parse(
-        jsonCodec.normalizePersistedJson(inversePayloadJson), InversePayload.class);
+    InversePayload payload = jsonCodec.fromPersistedJson(inversePayloadJson,
+        InversePayload.class);
     if (payload instanceof StructuralOperationInverse structuralPayload) {
       return structuralPayload;
     }

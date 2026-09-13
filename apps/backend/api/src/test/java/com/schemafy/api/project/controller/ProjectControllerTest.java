@@ -32,8 +32,8 @@ import com.schemafy.core.project.domain.WorkspaceMember;
 import com.schemafy.core.project.domain.WorkspaceRole;
 import com.schemafy.core.user.domain.User;
 
+import static com.epages.restdocs.apispec.WebTestClientRestDocumentationWrapper.document;
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.springframework.restdocs.webtestclient.WebTestClientRestDocumentation.document;
 
 @ActiveProfiles("test")
 @SpringBootTest
@@ -88,7 +88,7 @@ class ProjectControllerTest extends ProjectHttpTestSupport {
   @DisplayName("프로젝트 생성에 성공한다")
   void createProjectSuccess() {
     CreateProjectRequest request = new CreateProjectRequest("My Project",
-        "Test Description");
+        "Test Description", DB_VENDOR_ID);
 
     webTestClient.post()
         .uri(ApiPath.API.replace("{version}", "v1.0")
@@ -103,6 +103,7 @@ class ProjectControllerTest extends ProjectHttpTestSupport {
             ProjectApiSnippets.createProjectResponseHeaders(),
             ProjectApiSnippets.createProjectResponse()))
         .jsonPath("$.name").isEqualTo("My Project")
+        .jsonPath("$.dbVendorId").isEqualTo(DB_VENDOR_ID)
         .jsonPath("$.workspaceId").isEqualTo(testWorkspaceId);
 
     projectMemberRepository.findRolesByWorkspaceIdAndUserIdWithPaging(testWorkspaceId, testUserId, 100, 0)
@@ -112,7 +113,29 @@ class ProjectControllerTest extends ProjectHttpTestSupport {
   @Test
   @DisplayName("프로젝트 생성 시 이름이 없으면 실패한다")
   void createProjectFailWithoutName() {
-    CreateProjectRequest request = new CreateProjectRequest("", null);
+    CreateProjectRequest request = new CreateProjectRequest("", null, DB_VENDOR_ID);
+
+    webTestClient.post().uri(workspaceProjectBasePath)
+        .header("Authorization", "Bearer " + accessToken)
+        .contentType(MediaType.APPLICATION_JSON).bodyValue(request)
+        .exchange().expectStatus().isBadRequest();
+  }
+
+  @Test
+  @DisplayName("프로젝트 생성 시 DB 벤더 프로필 ID가 없으면 실패한다")
+  void createProjectFailWithoutDbVendorId() {
+    CreateProjectRequest request = new CreateProjectRequest("Project", null, null);
+
+    webTestClient.post().uri(workspaceProjectBasePath)
+        .header("Authorization", "Bearer " + accessToken)
+        .contentType(MediaType.APPLICATION_JSON).bodyValue(request)
+        .exchange().expectStatus().isBadRequest();
+  }
+
+  @Test
+  @DisplayName("프로젝트 생성 시 DB 벤더 프로필 ID가 양수가 아니면 실패한다")
+  void createProjectFailWithNonPositiveDbVendorId() {
+    CreateProjectRequest request = new CreateProjectRequest("Project", null, 0);
 
     webTestClient.post().uri(workspaceProjectBasePath)
         .header("Authorization", "Bearer " + accessToken)
@@ -123,12 +146,12 @@ class ProjectControllerTest extends ProjectHttpTestSupport {
   @Test
   @DisplayName("워크스페이스 멤버가 아닌 사용자는 프로젝트를 생성할 수 없다")
   void createProjectFailWhenNotWorkspaceMember() {
-    // Remove user2 from workspace
-    workspaceMemberRepository.findByWorkspaceIdAndUserIdAndNotDeleted(testWorkspaceId, testUser2Id)
+    workspaceMemberRepository
+        .findByWorkspaceIdAndUserIdAndDeletedAtIsNull(testWorkspaceId, testUser2Id)
         .flatMap(workspaceMemberRepository::delete).block();
 
     CreateProjectRequest request = new CreateProjectRequest("My Project",
-        "Description");
+        "Description", DB_VENDOR_ID);
 
     webTestClient.post().uri(workspaceProjectBasePath)
         .header("Authorization", "Bearer " + accessToken2)
@@ -156,6 +179,7 @@ class ProjectControllerTest extends ProjectHttpTestSupport {
             ProjectApiSnippets.getProjectsResponseHeaders(),
             ProjectApiSnippets.getProjectsResponse()))
         .jsonPath("$.content[0].name").isEqualTo("Test Project")
+        .jsonPath("$.content[0].dbVendorId").isEqualTo(DB_VENDOR_ID)
         .jsonPath("$.totalElements").isEqualTo(1);
   }
 
@@ -182,7 +206,8 @@ class ProjectControllerTest extends ProjectHttpTestSupport {
 
     ProjectMember member = addProjectMember(project.getId(), testUser2Id, ProjectRole.VIEWER);
 
-    workspaceMemberRepository.findByWorkspaceIdAndUserIdAndNotDeleted(testWorkspaceId, testUser2Id)
+    workspaceMemberRepository
+        .findByWorkspaceIdAndUserIdAndDeletedAtIsNull(testWorkspaceId, testUser2Id)
         .flatMap(workspaceMemberRepository::delete)
         .block();
 
@@ -301,7 +326,8 @@ class ProjectControllerTest extends ProjectHttpTestSupport {
             ProjectApiSnippets.getProjectResponse()))
         .jsonPath("$.id")
         .isEqualTo(project.getId()).jsonPath("$.name")
-        .isEqualTo("Test Project");
+        .isEqualTo("Test Project")
+        .jsonPath("$.dbVendorId").isEqualTo(DB_VENDOR_ID);
   }
 
   @Test
@@ -339,6 +365,9 @@ class ProjectControllerTest extends ProjectHttpTestSupport {
             ProjectApiSnippets.updateProjectResponseHeaders(),
             ProjectApiSnippets.updateProjectResponse()))
         .jsonPath("$.name").isEqualTo("Updated Project");
+
+    assertThat(projectRepository.findById(project.getId()).block().getDbVendorId())
+        .isEqualTo(DB_VENDOR_ID);
   }
 
   @Test
@@ -636,7 +665,7 @@ class ProjectControllerTest extends ProjectHttpTestSupport {
     addProjectMember(project.getId(), testUser2Id, ProjectRole.ADMIN);
 
     WorkspaceMember targetWorkspaceMember = workspaceMemberRepository
-        .findByWorkspaceIdAndUserIdAndNotDeleted(testWorkspaceId, testUser2Id)
+        .findByWorkspaceIdAndUserIdAndDeletedAtIsNull(testWorkspaceId, testUser2Id)
         .block();
     targetWorkspaceMember.updateRole(WorkspaceRole.ADMIN);
     workspaceMemberRepository.save(targetWorkspaceMember).block();
@@ -658,7 +687,7 @@ class ProjectControllerTest extends ProjectHttpTestSupport {
     addProjectMember(project.getId(), testUser2Id, ProjectRole.ADMIN);
 
     WorkspaceMember targetWorkspaceMember = workspaceMemberRepository
-        .findByWorkspaceIdAndUserIdAndNotDeleted(testWorkspaceId, testUser2Id)
+        .findByWorkspaceIdAndUserIdAndDeletedAtIsNull(testWorkspaceId, testUser2Id)
         .block();
     targetWorkspaceMember.updateRole(WorkspaceRole.ADMIN);
     workspaceMemberRepository.save(targetWorkspaceMember).block();
@@ -727,7 +756,7 @@ class ProjectControllerTest extends ProjectHttpTestSupport {
             ProjectApiSnippets.leaveProjectRequestHeaders()));
 
     ProjectMember deletedMember = projectMemberRepository
-        .findByProjectIdAndUserIdAndNotDeleted(project.getId(),
+        .findByProjectIdAndUserIdAndDeletedAtIsNull(project.getId(),
             testUser2Id)
         .block();
     assertThat(deletedMember).isNull();
@@ -749,7 +778,7 @@ class ProjectControllerTest extends ProjectHttpTestSupport {
         .expectStatus().isNoContent();
 
     Project deletedProject = projectRepository
-        .findByIdAndNotDeleted(project.getId()).block();
+        .findByIdAndDeletedAtIsNull(project.getId()).block();
     assertThat(deletedProject).isNull();
   }
 
@@ -777,11 +806,11 @@ class ProjectControllerTest extends ProjectHttpTestSupport {
     assertThat(deletedProjectAdmin.isDeleted()).isTrue();
 
     ProjectMember remainedProjectViewer = projectMemberRepository
-        .findByProjectIdAndUserIdAndNotDeleted(project.getId(), testUserId)
+        .findByProjectIdAndUserIdAndDeletedAtIsNull(project.getId(), testUserId)
         .block();
     assertThat(remainedProjectViewer).isNotNull();
 
-    Project remainedProject = projectRepository.findByIdAndNotDeleted(project.getId()).block();
+    Project remainedProject = projectRepository.findByIdAndDeletedAtIsNull(project.getId()).block();
     assertThat(remainedProject).isNotNull();
   }
 

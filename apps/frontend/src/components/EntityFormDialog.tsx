@@ -64,7 +64,7 @@ export const EntityFormDialog = ({
               value={name}
               onChange={(e) => setName(e.target.value)}
               placeholder={namePlaceholder}
-              className="w-full px-4 py-3 border border-schemafy-light-gray rounded-[12px] font-body-sm placeholder-schemafy-dark-gray bg-schemafy-bg focus:outline-none"
+              className="schemafy-input w-full px-4 py-3 font-body-sm"
             />
           </div>
           <div className="flex flex-col gap-1.5">
@@ -76,7 +76,7 @@ export const EntityFormDialog = ({
               value={description}
               onChange={(e) => setDescription(e.target.value)}
               placeholder={descriptionPlaceholder}
-              className="w-full px-4 py-3 border border-schemafy-light-gray rounded-[12px] font-body-sm placeholder-schemafy-dark-gray bg-schemafy-bg focus:outline-none"
+              className="schemafy-input w-full px-4 py-3 font-body-sm"
             />
           </div>
         </div>

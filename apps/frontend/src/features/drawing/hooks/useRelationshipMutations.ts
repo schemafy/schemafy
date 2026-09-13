@@ -19,25 +19,23 @@ import type {
   AddRelationshipColumnRequest,
   ChangeRelationshipColumnPositionRequest,
 } from '../api';
-import { syncCommittedRevision } from '../api/mutation-request';
 import { useErdCache } from './useErdCache';
 
 export const useCreateRelationshipWithExtra = (schemaId: string) => {
-  const { updateAffectedTables } = useErdCache(schemaId);
+  const { syncAffectedTables } = useErdCache(schemaId);
   return useMutation({
     mutationFn: (data: {
       request: CreateRelationshipRequest;
       extra: NonNullable<CreateRelationshipRequest['extra']>;
     }) => createRelationship({ ...data.request, extra: data.extra }, schemaId),
     onSuccess: (result) => {
-      syncCommittedRevision(schemaId, result);
-      updateAffectedTables(result.affectedTableIds);
+      syncAffectedTables(result);
     },
   });
 };
 
 export const useChangeRelationshipName = (schemaId: string) => {
-  const { updateAffectedTables } = useErdCache(schemaId);
+  const { syncAffectedTables } = useErdCache(schemaId);
   return useMutation({
     mutationFn: ({
       relationshipId,
@@ -47,14 +45,13 @@ export const useChangeRelationshipName = (schemaId: string) => {
       data: ChangeRelationshipNameRequest;
     }) => changeRelationshipName(relationshipId, data, schemaId),
     onSuccess: (result) => {
-      syncCommittedRevision(schemaId, result);
-      updateAffectedTables(result.affectedTableIds);
+      syncAffectedTables(result);
     },
   });
 };
 
 export const useChangeRelationshipKind = (schemaId: string) => {
-  const { updateAffectedTables } = useErdCache(schemaId);
+  const { syncAffectedTables } = useErdCache(schemaId);
   return useMutation({
     mutationFn: ({
       relationshipId,
@@ -64,14 +61,13 @@ export const useChangeRelationshipKind = (schemaId: string) => {
       data: ChangeRelationshipKindRequest;
     }) => changeRelationshipKind(relationshipId, data, schemaId),
     onSuccess: (result) => {
-      syncCommittedRevision(schemaId, result);
-      updateAffectedTables(result.affectedTableIds);
+      syncAffectedTables(result);
     },
   });
 };
 
 export const useChangeRelationshipCardinality = (schemaId: string) => {
-  const { updateAffectedTables } = useErdCache(schemaId);
+  const { syncAffectedTables } = useErdCache(schemaId);
   return useMutation({
     mutationFn: ({
       relationshipId,
@@ -81,14 +77,13 @@ export const useChangeRelationshipCardinality = (schemaId: string) => {
       data: ChangeRelationshipCardinalityRequest;
     }) => changeRelationshipCardinality(relationshipId, data, schemaId),
     onSuccess: (result) => {
-      syncCommittedRevision(schemaId, result);
-      updateAffectedTables(result.affectedTableIds);
+      syncAffectedTables(result);
     },
   });
 };
 
 export const useChangeRelationshipExtra = (schemaId: string) => {
-  const { updateAffectedTables } = useErdCache(schemaId);
+  const { syncAffectedTables } = useErdCache(schemaId);
   return useMutation({
     mutationFn: ({
       relationshipId,
@@ -98,26 +93,24 @@ export const useChangeRelationshipExtra = (schemaId: string) => {
       data: ChangeRelationshipExtraRequest;
     }) => changeRelationshipExtra(relationshipId, data, schemaId),
     onSuccess: (result) => {
-      syncCommittedRevision(schemaId, result);
-      updateAffectedTables(result.affectedTableIds);
+      syncAffectedTables(result);
     },
   });
 };
 
 export const useDeleteRelationship = (schemaId: string) => {
-  const { updateAffectedTables } = useErdCache(schemaId);
+  const { syncAffectedTables } = useErdCache(schemaId);
   return useMutation({
     mutationFn: (relationshipId: string) =>
       deleteRelationship(relationshipId, schemaId),
     onSuccess: (result) => {
-      syncCommittedRevision(schemaId, result);
-      updateAffectedTables(result.affectedTableIds);
+      syncAffectedTables(result);
     },
   });
 };
 
 export const useAddRelationshipColumn = (schemaId: string) => {
-  const { updateAffectedTables } = useErdCache(schemaId);
+  const { syncAffectedTables } = useErdCache(schemaId);
   return useMutation({
     mutationFn: ({
       relationshipId,
@@ -127,26 +120,24 @@ export const useAddRelationshipColumn = (schemaId: string) => {
       data: AddRelationshipColumnRequest;
     }) => addRelationshipColumn(relationshipId, data, schemaId),
     onSuccess: (result) => {
-      syncCommittedRevision(schemaId, result);
-      updateAffectedTables(result.affectedTableIds);
+      syncAffectedTables(result);
     },
   });
 };
 
 export const useRemoveRelationshipColumn = (schemaId: string) => {
-  const { updateAffectedTables } = useErdCache(schemaId);
+  const { syncAffectedTables } = useErdCache(schemaId);
   return useMutation({
     mutationFn: (relationshipColumnId: string) =>
       removeRelationshipColumn(relationshipColumnId, schemaId),
     onSuccess: (result) => {
-      syncCommittedRevision(schemaId, result);
-      updateAffectedTables(result.affectedTableIds);
+      syncAffectedTables(result);
     },
   });
 };
 
 export const useChangeRelationshipColumnPosition = (schemaId: string) => {
-  const { updateAffectedTables } = useErdCache(schemaId);
+  const { syncAffectedTables } = useErdCache(schemaId);
   return useMutation({
     mutationFn: ({
       relationshipColumnId,
@@ -157,8 +148,7 @@ export const useChangeRelationshipColumnPosition = (schemaId: string) => {
     }) =>
       changeRelationshipColumnPosition(relationshipColumnId, data, schemaId),
     onSuccess: (result) => {
-      syncCommittedRevision(schemaId, result);
-      updateAffectedTables(result.affectedTableIds);
+      syncAffectedTables(result);
     },
   });
 };

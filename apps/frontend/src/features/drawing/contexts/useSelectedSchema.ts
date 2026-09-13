@@ -2,8 +2,9 @@ import { createContext, useContext } from 'react';
 
 interface SelectedSchemaContextType {
   projectId: string;
+  dbVendorId: number;
   selectedSchemaId: string;
-  setSelectedSchemaId: (schemaId: string) => void;
+  setSelectedSchemaId: (schemaId: string | null) => void;
 }
 
 export const SelectedSchemaContext = createContext<

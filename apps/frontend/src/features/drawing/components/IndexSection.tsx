@@ -19,13 +19,16 @@ export const IndexSection = ({
   }
 
   return (
-    <div className="border-t-2 border-schemafy-table-header-bg">
-      <div className="bg-schemafy-dark-gray-40 p-2 flex items-center justify-between">
-        <span className="text-xs font-medium text-schemafy-text">INDEXES</span>
+    <div className="border-t border-schemafy-glass-border/55">
+      <div className="flex items-center justify-between bg-schemafy-secondary/35 px-3 py-1.5">
+        <span className="font-overline-xs text-schemafy-dark-gray">
+          INDEXES
+        </span>
         {isEditMode && (
           <button
+            type="button"
             onClick={onCreateIndex}
-            className="p-0.5 text-schemafy-text hover:bg-schemafy-dark-gray-40 rounded transition-colors"
+            className="schemafy-focus-ring flex h-7 w-7 items-center justify-center rounded-lg text-schemafy-dark-gray transition-colors hover:bg-schemafy-secondary hover:text-schemafy-text"
             title="Add Index"
           >
             <Plus size={14} />
@@ -35,7 +38,7 @@ export const IndexSection = ({
 
       <div>
         {indexes.length === 0 ? (
-          <div className="p-2 text-center text-schemafy-dark-gray text-xs">
+          <div className="px-3 py-2.5 text-center text-xs text-schemafy-dark-gray">
             No indexes defined
           </div>
         ) : (

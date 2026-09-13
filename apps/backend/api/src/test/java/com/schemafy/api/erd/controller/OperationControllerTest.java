@@ -27,19 +27,19 @@ import com.schemafy.core.erd.operation.domain.exception.OperationErrorCode;
 
 import reactor.core.publisher.Mono;
 
+import static com.epages.restdocs.apispec.WebTestClientRestDocumentationWrapper.document;
 import static com.schemafy.api.erd.controller.ErdOperationFixtures.OP_ID;
 import static com.schemafy.api.erd.controller.ErdOperationFixtures.committedOperation;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.then;
-import static org.springframework.restdocs.webtestclient.WebTestClientRestDocumentation.document;
 
 @ActiveProfiles("test")
 @SpringBootTest
 @AutoConfigureWebTestClient
 @AutoConfigureRestDocs
 @DisplayName("OperationController 통합 테스트")
-@WithMockCustomUser(roles = "EDITOR")
+@WithMockCustomUser
 class OperationControllerTest {
 
   private static final String API_BASE_PATH = ApiPath.API

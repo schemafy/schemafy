@@ -30,6 +30,10 @@ spring:
       initial-size: 5
       max-size: 20
 
+  mail:
+    host: localhost
+    port: 25
+
   security:
     user:
       name: test
@@ -58,6 +62,13 @@ oauth:
 hmac:
   enabled: false
 
+auth:
+  token:
+    secret: test-auth-token-secret
+  mail:
+    enabled: true
+    from: no-reply@test.schemafy.com
+
 cors:
   allowed-origins: http://localhost:3000
 
@@ -72,6 +83,17 @@ cache:
 
 sharelink:
   pepper: test-pepper-value
+
+mcp:
+  security:
+    token:
+      secret: test-schemafy-mcp-secret-minimum-256-bit-key-value
+      issuer: schemafy-mcp-test
+      audience: schemafy-mcp-test
+      token-type: MCP
+      required-scope: mcp
+      revocation-key-prefix: "mcp:token:revoked:"
+      expires-in: 7d
 
 logging:
   level:

@@ -1,0 +1,88 @@
+spring:
+  config:
+    import:
+      - "optional:file:.env[.properties]"
+
+  profiles:
+    active: local
+
+  application:
+    name: schemafy-mcp
+
+  data:
+    redis:
+      enabled: ${REDIS_ENABLED:true}
+      host: ${REDIS_HOST:localhost}
+      port: ${REDIS_PORT:6379}
+
+  ai:
+    mcp:
+      server:
+        name: schemafy-mcp
+        version: 0.0.1
+        instructions: >
+          Schemafy MCP exposes read-only access to the authenticated user's
+          Schemafy workspaces, projects, schemas, ERD tables, columns, indexes,
+          constraints, relationships, memos, and database vendors. Use these
+          tools whenever the user asks about current Schemafy
+          workspace/project/ERD/schema/database structure or permissions. If an
+          ID is unknown, start with schemafy_list_workspaces, then
+          schemafy_list_projects, schemafy_list_schemas, schemafy_list_tables,
+          and table-detail tools. Do not mutate data.
+        protocol: STREAMABLE
+        type: ASYNC
+        annotation-scanner:
+          enabled: true
+
+  r2dbc:
+    url: r2dbc:mariadb://${DB_HOST:localhost}:${DB_PORT:3306}/${DB_NAME:schemafy}
+    username: ${DB_USER:schemafy}
+    password: ${DB_PASSWORD:schemafy}
+    pool:
+      enabled: true
+      initial-size: 5
+      max-size: 20
+
+  output:
+    ansi:
+      enabled: always
+
+  sql:
+    init:
+      mode: always
+      schema-locations: classpath:ddl/mariadb/**/*.sql
+
+server:
+  port: ${MCP_SERVER_PORT:8081}
+
+mcp:
+  security:
+    token:
+      secret: ${MCP_TOKEN_SECRET:schemafy-mcp-local-secret-minimum-256-bit-key-value}
+      issuer: ${MCP_TOKEN_ISSUER:schemafy-mcp}
+      audience: ${MCP_TOKEN_AUDIENCE:schemafy-mcp}
+      token-type: ${MCP_TOKEN_TYPE:MCP}
+      required-scope: ${MCP_TOKEN_REQUIRED_SCOPE:mcp}
+      revocation-key-prefix: ${MCP_TOKEN_REVOCATION_KEY_PREFIX:mcp:token:revoked:}
+    rate-limit:
+      enabled: ${MCP_RATE_LIMIT_ENABLED:true}
+      requests: ${MCP_RATE_LIMIT_REQUESTS:120}
+      key-prefix: ${MCP_RATE_LIMIT_KEY_PREFIX:mcp:rate-limit:user:}
+      window: ${MCP_RATE_LIMIT_WINDOW:1m}
+
+problem:
+  type-base-uri: about:blank
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include:
+          - health
+          - info
+  endpoint:
+    health:
+      probes:
+        enabled: true
+      show-details: always
+      show-components: always

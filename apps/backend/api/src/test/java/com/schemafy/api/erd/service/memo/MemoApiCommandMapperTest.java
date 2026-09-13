@@ -9,7 +9,6 @@ import com.schemafy.api.erd.controller.dto.request.CreateMemoCommentRequest;
 import com.schemafy.api.erd.controller.dto.request.CreateMemoRequest;
 import com.schemafy.api.erd.controller.dto.request.UpdateMemoCommentRequest;
 import com.schemafy.api.erd.controller.dto.request.UpdateMemoRequest;
-import com.schemafy.core.common.json.JsonCodec;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -19,8 +18,7 @@ class MemoApiCommandMapperTest {
   private static final ObjectMapper objectMapper = new ObjectMapper()
       .findAndRegisterModules();
 
-  private final MemoApiCommandMapper sut = new MemoApiCommandMapper(
-      new JsonCodec(objectMapper));
+  private final MemoApiCommandMapper sut = new MemoApiCommandMapper();
 
   @Test
   @DisplayName("createMemo: request/user를 도메인 커맨드로 매핑한다")
@@ -34,7 +32,7 @@ class MemoApiCommandMapperTest {
     var command = sut.toCreateMemoCommand(request, user);
 
     assertThat(command.schemaId()).isEqualTo("schema-1");
-    assertThat(command.positions()).isEqualTo("{\"x\":0,\"y\":0}");
+    assertThat(command.positions()).isEqualTo(request.positions());
     assertThat(command.body()).isEqualTo("body");
     assertThat(command.authorId()).isEqualTo("user-1");
   }
@@ -81,7 +79,8 @@ class MemoApiCommandMapperTest {
         user);
 
     assertThat(memoCommand.memoId()).isEqualTo("memo-1");
-    assertThat(memoCommand.positions()).isEqualTo("{\"x\":10,\"y\":0}");
+    assertThat(memoCommand.positions()).isEqualTo(
+        objectMapper.readTree("{\"x\":10,\"y\":0}"));
     assertThat(commentCommand.commentId()).isEqualTo("comment-1");
     assertThat(commentCommand.body()).isEqualTo("updated");
     assertThat(createCommentCommand.body()).isEqualTo("new");

@@ -53,7 +53,7 @@ export const TempMemoPreview = ({
   return (
     <div
       ref={containerRef}
-      className="absolute z-[1000] flex gap-4 items-center text-schemafy-text"
+      className="absolute z-[1000] flex items-center gap-3 text-schemafy-text"
       style={{
         left: `${position.x}px`,
         top: `${position.y}px`,
@@ -61,7 +61,7 @@ export const TempMemoPreview = ({
       }}
       onKeyDown={handleKeyDown}
     >
-      <div className="memo-icon w-[32px] h-[32px] rounded-t-full rounded-br-full bg-schemafy-bg flex justify-center items-center shadow-md">
+      <div className="memo-icon schemafy-canvas-panel flex h-9 w-9 items-center justify-center rounded-t-full rounded-br-full">
         <Avatar
           size={'dropdown'}
           src="https://picsum.photos/200/300?random=1"
@@ -74,12 +74,12 @@ export const TempMemoPreview = ({
         onChange={(e) => setContent(e.target.value)}
         placeholder="Add a Memo"
         autoFocus
-        className="px-4 py-2 placeholder:text-schemafy-dark-gray text-schemafy-text font-body-sm rounded-lg outline-none focus:outline-none shadow-md bg-schemafy-bg"
+        className="schemafy-input px-4 py-2 font-body-sm shadow-md"
       />
 
       <button
         onClick={handleCreate}
-        className="w-8 h-8 flex justify-center items-center bg-schemafy-button-bg rounded-full shadow-md"
+        className="schemafy-focus-ring flex h-8 w-8 items-center justify-center rounded-full bg-schemafy-button-bg shadow-md transition-colors duration-200"
       >
         <MoveUp size={14} color="var(--color-schemafy-button-text)" />
       </button>

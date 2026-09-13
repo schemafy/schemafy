@@ -73,10 +73,10 @@ class SchemaSnapshotOrchestratorTest {
   }
 
   @Test
-  @DisplayName("schema revision과 strict table snapshots를 함께 반환한다")
-  void returnsRevisionAndSnapshots() {
+  @DisplayName("schema metadata, revision과 strict table snapshots를 함께 반환한다")
+  void returnsCompleteSchemaState() {
     String schemaId = "schema-1";
-    Schema schema = new Schema(schemaId, "project-1", "mariadb", "main_schema",
+    Schema schema = new Schema(schemaId, "project-1", "main_schema",
         "utf8mb4", "utf8mb4_general_ci");
     Table table1 = new Table("table-1", schemaId, "users", "utf8mb4",
         "utf8mb4_general_ci");
@@ -110,9 +110,16 @@ class SchemaSnapshotOrchestratorTest {
               table2.id(), snapshot2));
         });
 
-    StepVerifier.create(sut.getSchemaSnapshots(schemaId))
+    StepVerifier.create(sut.getSchemaState(schemaId))
         .assertNext(result -> {
-          assertThat(result.currentRevision()).isEqualTo(42L);
+          assertThat(result.schema().id()).isEqualTo(schemaId);
+          assertThat(result.schema().projectId()).isEqualTo("project-1");
+          assertThat(result.schema().name()).isEqualTo("main_schema");
+          assertThat(result.schema().charset()).isEqualTo("utf8mb4");
+          assertThat(result.schema().collation())
+              .isEqualTo("utf8mb4_general_ci");
+          assertThat(result.schema().currentRevision()).isNull();
+          assertThat(result.revision()).isEqualTo(42L);
           assertThat(result.snapshots()).containsEntry(table1.id(), snapshot1);
           assertThat(result.snapshots()).containsEntry(table2.id(), snapshot2);
         })
@@ -131,7 +138,7 @@ class SchemaSnapshotOrchestratorTest {
   @DisplayName("테이블이 없으면 빈 snapshots를 반환한다")
   void returnsEmptySnapshotsWhenSchemaHasNoTables() {
     String schemaId = "schema-1";
-    Schema schema = new Schema(schemaId, "project-1", "mariadb", "main_schema",
+    Schema schema = new Schema(schemaId, "project-1", "main_schema",
         "utf8mb4", "utf8mb4_general_ci");
 
     given(getSchemaWithRevisionUseCase.getSchemaWithRevision(any(GetSchemaQuery.class)))
@@ -153,7 +160,7 @@ class SchemaSnapshotOrchestratorTest {
   @DisplayName("strict snapshot 조회 실패는 그대로 전파한다")
   void propagatesStrictSnapshotFailure() {
     String schemaId = "schema-1";
-    Schema schema = new Schema(schemaId, "project-1", "mariadb", "main_schema",
+    Schema schema = new Schema(schemaId, "project-1", "main_schema",
         "utf8mb4", "utf8mb4_general_ci");
     Table table = new Table("table-1", schemaId, "users", "utf8mb4",
         "utf8mb4_general_ci");

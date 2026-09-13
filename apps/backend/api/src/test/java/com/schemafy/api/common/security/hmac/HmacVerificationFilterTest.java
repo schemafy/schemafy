@@ -107,6 +107,14 @@ class HmacVerificationFilterTest {
 
     StepVerifier.create(filter.filter(exchange, filterChain))
         .verifyComplete();
+
+    MockServerHttpRequest hmacSwaggerRequest = MockServerHttpRequest
+        .get("/swagger-ui-hmac.html").build();
+    MockServerWebExchange hmacSwaggerExchange = MockServerWebExchange
+        .from(hmacSwaggerRequest);
+
+    StepVerifier.create(filter.filter(hmacSwaggerExchange, filterChain))
+        .verifyComplete();
   }
 
   @Test
@@ -207,6 +215,14 @@ class HmacVerificationFilterTest {
 
     StepVerifier.create(filter.filter(exchange, filterChain))
         .verifyComplete();
+
+    MockServerHttpRequest staticSpecRequest = MockServerHttpRequest
+        .get("/openapi/openapi3.json").build();
+    MockServerWebExchange staticSpecExchange = MockServerWebExchange
+        .from(staticSpecRequest);
+
+    StepVerifier.create(filter.filter(staticSpecExchange, filterChain))
+        .verifyComplete();
   }
 
   @Test
@@ -216,6 +232,20 @@ class HmacVerificationFilterTest {
 
     MockServerHttpRequest request = MockServerHttpRequest
         .get("/ws/collaboration?projectId=test-project-id").build();
+    MockServerWebExchange exchange = MockServerWebExchange
+        .from(request);
+
+    StepVerifier.create(filter.filter(exchange, filterChain))
+        .verifyComplete();
+  }
+
+  @Test
+  @DisplayName("OpenAPI 문서 경로는 HMAC 검증을 스킵한다")
+  void openApiDocsPathSkipsHmac() {
+    given(filterChain.filter(any())).willReturn(Mono.empty());
+
+    MockServerHttpRequest request = MockServerHttpRequest
+        .get("/v3/api-docs").build();
     MockServerWebExchange exchange = MockServerWebExchange
         .from(request);
 

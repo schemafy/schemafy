@@ -1,0 +1,23 @@
+spring:
+  config:
+    activate:
+      on-profile: server
+
+mcp:
+  security:
+    token:
+      secret: ${MCP_TOKEN_SECRET}
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include:
+          - health
+          - info
+  endpoint:
+    health:
+      probes:
+        enabled: true
+      show-details: never
+      show-components: never

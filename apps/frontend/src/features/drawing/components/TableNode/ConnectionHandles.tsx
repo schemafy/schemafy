@@ -6,6 +6,14 @@ interface ConnectionHandlesProps {
 }
 
 export const ConnectionHandles = ({ nodeId }: ConnectionHandlesProps) => {
+  const getHandleStyle = (position: Position) => ({
+    ...HANDLE_STYLE,
+    ...(position === Position.Top ? { top: 5 } : {}),
+    ...(position === Position.Bottom ? { bottom: 5 } : {}),
+    ...(position === Position.Left ? { left: 5 } : {}),
+    ...(position === Position.Right ? { right: 5 } : {}),
+  });
+
   const handles = [
     {
       position: Position.Top,
@@ -33,8 +41,8 @@ export const ConnectionHandles = ({ nodeId }: ConnectionHandlesProps) => {
           type={'source'}
           position={position}
           id={id}
-          style={HANDLE_STYLE}
-          className="group-hover:!opacity-100"
+          style={getHandleStyle(position)}
+          className="schemafy-connection-handle !z-20 group-hover:!opacity-100"
         />
       ))}
     </>

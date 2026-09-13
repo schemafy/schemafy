@@ -27,7 +27,10 @@ export type WorkspaceMemberResponse = {
 
 export type WorkspaceInvitationResponse = {
   id: string;
-  workspaceId: string;
+  type: string;
+  targetId: string;
+  targetName: string;
+  targetDescription?: string;
   invitedEmail: string;
   invitedRole: string;
   invitedBy: string;

@@ -1,5 +1,8 @@
 package com.schemafy.core.erd.relationship.fixture;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.schemafy.core.erd.relationship.application.port.in.AddRelationshipColumnCommand;
 import com.schemafy.core.erd.relationship.application.port.in.ChangeRelationshipCardinalityCommand;
 import com.schemafy.core.erd.relationship.application.port.in.ChangeRelationshipExtraCommand;
@@ -20,6 +23,9 @@ import com.schemafy.core.erd.relationship.domain.type.Cardinality;
 import com.schemafy.core.erd.relationship.domain.type.RelationshipKind;
 
 public class RelationshipFixture {
+
+  private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper()
+      .findAndRegisterModules();
 
   public static final String DEFAULT_ID = "01ARZ3NDEKTSV4RRFFQ69G5REL";
   public static final String DEFAULT_PK_TABLE_ID = "01ARZ3NDEKTSV4RRFFQ69G5PKT";
@@ -253,6 +259,15 @@ public class RelationshipFixture {
         DEFAULT_CARDINALITY, null);
   }
 
+  public static CreateRelationshipCommand createCommandWithExtra(JsonNode extra) {
+    return new CreateRelationshipCommand(
+        DEFAULT_FK_TABLE_ID,
+        DEFAULT_PK_TABLE_ID,
+        DEFAULT_KIND,
+        DEFAULT_CARDINALITY,
+        extra);
+  }
+
   public static ChangeRelationshipNameCommand changeNameCommand(String newName) {
     return new ChangeRelationshipNameCommand(DEFAULT_ID, newName);
   }
@@ -276,8 +291,16 @@ public class RelationshipFixture {
     return new ChangeRelationshipCardinalityCommand(DEFAULT_ID, cardinality);
   }
 
-  public static ChangeRelationshipExtraCommand changeExtraCommand(String extra) {
+  public static ChangeRelationshipExtraCommand changeExtraCommand(JsonNode extra) {
     return new ChangeRelationshipExtraCommand(DEFAULT_ID, extra);
+  }
+
+  public static JsonNode jsonObject(String rawJson) {
+    try {
+      return OBJECT_MAPPER.readTree(rawJson);
+    } catch (JsonProcessingException e) {
+      throw new IllegalArgumentException("Invalid test JSON", e);
+    }
   }
 
   public static AddRelationshipColumnCommand addColumnCommand() {

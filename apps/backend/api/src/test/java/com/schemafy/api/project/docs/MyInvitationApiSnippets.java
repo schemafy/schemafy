@@ -29,7 +29,7 @@ public class MyInvitationApiSnippets extends RestDocsSnippets {
       fieldWithPath(prefix + "invitedRole").type(JsonFieldType.STRING)
           .description("초대된 역할"),
       fieldWithPath(prefix + "invitedBy").type(JsonFieldType.STRING)
-          .description("초대한 사용자 ID"),
+          .description("초대한 사용자 이름"),
       fieldWithPath(prefix + "status").type(JsonFieldType.STRING)
           .description("초대 상태 (PENDING만 반환)"),
       fieldWithPath(prefix + "expiresAt").type(JsonFieldType.STRING)

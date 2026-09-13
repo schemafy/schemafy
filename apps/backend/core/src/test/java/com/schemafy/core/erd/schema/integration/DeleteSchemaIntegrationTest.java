@@ -60,7 +60,7 @@ class DeleteSchemaIntegrationTest extends ErdProjectIntegrationSupport {
       void setUp() {
         String projectId = createActiveProjectId("delete_schema");
         var createSchemaCommand = new CreateSchemaCommand(
-            projectId, "MySQL", "integration_test_schema",
+            projectId, "integration_test_schema",
             "utf8mb4", "utf8mb4_general_ci");
 
         var schemaResult = createSchemaUseCase.createSchema(createSchemaCommand).block().result();

@@ -17,6 +17,8 @@ import com.schemafy.core.erd.operation.application.service.ErdMutationCoordinato
 import com.schemafy.core.erd.operation.domain.ErdOperationType;
 import com.schemafy.core.erd.table.application.port.out.GetTableByIdPort;
 import com.schemafy.core.erd.table.domain.exception.TableErrorCode;
+import com.schemafy.core.erd.vendor.application.service.IdentifierCapabilityResolver;
+import com.schemafy.core.erd.vendor.domain.validator.IdentifierValidator;
 import com.schemafy.core.project.application.access.AccessTarget;
 import com.schemafy.core.project.application.access.RequireProjectAccess;
 import com.schemafy.core.project.domain.ProjectRole;
@@ -35,6 +37,7 @@ public class ChangeConstraintNameService implements ChangeConstraintNameUseCase 
   private final ConstraintExistsPort constraintExistsPort;
   private final GetConstraintByIdPort getConstraintByIdPort;
   private final GetTableByIdPort getTableByIdPort;
+  private final IdentifierCapabilityResolver identifierCapabilityResolver;
   private ErdMutationCoordinator erdMutationCoordinator = ErdMutationCoordinator.noop();
 
   @Autowired
@@ -44,31 +47,54 @@ public class ChangeConstraintNameService implements ChangeConstraintNameUseCase 
 
   @Override
   public Mono<MutationResult<Void>> changeConstraintName(ChangeConstraintNameCommand command) {
-    return erdMutationCoordinator.coordinate(ErdOperationType.CHANGE_CONSTRAINT_NAME, command,
-        () -> Mono.defer(() -> {
-          String normalizedName = normalizeName(command.newName());
-          ConstraintValidator.validateName(normalizedName);
-          return getConstraintByIdPort.findConstraintById(command.constraintId())
-              .switchIfEmpty(Mono.error(new DomainException(ConstraintErrorCode.NOT_FOUND, "Constraint not found")))
-              .flatMap(constraint -> getTableByIdPort.findTableById(constraint.tableId())
-                  .switchIfEmpty(Mono.error(new DomainException(TableErrorCode.NOT_FOUND, "Table not found")))
-                  .flatMap(table -> constraintExistsPort.existsBySchemaIdAndNameExcludingId(
-                      table.schemaId(),
-                      normalizedName,
-                      constraint.id())
-                      .flatMap(exists -> {
-                        if (exists) {
-                          return Mono.error(new DomainException(ConstraintErrorCode.NAME_DUPLICATE,
-                              "Constraint name '%s' already exists in schema".formatted(normalizedName)));
-                        }
-                        return changeConstraintNamePort
-                            .changeConstraintName(constraint.id(), normalizedName)
-                            .thenReturn(MutationResult.<Void>of(null, constraint.tableId())
-                                .withInverse(new ChangeConstraintNameInverse(
-                                    constraint.id(),
-                                    constraint.name())));
-                      })));
-        }));
+    return Mono.defer(() -> {
+      String normalizedName = normalizeName(command.newName());
+      ConstraintValidator.validateName(normalizedName);
+      return getConstraintByIdPort.findConstraintById(command.constraintId())
+          .switchIfEmpty(Mono.error(new DomainException(ConstraintErrorCode.NOT_FOUND, "Constraint not found")))
+          .flatMap(constraint -> {
+            if (normalizedName.equals(constraint.name())) {
+              return Mono.just(MutationResult.<Void>noop(null, constraint.tableId()));
+            }
+            return erdMutationCoordinator.coordinate(ErdOperationType.CHANGE_CONSTRAINT_NAME, command,
+                () -> getConstraintByIdPort.findConstraintById(command.constraintId())
+                    .switchIfEmpty(Mono.error(new DomainException(
+                        ConstraintErrorCode.NOT_FOUND,
+                        "Constraint not found")))
+                    .flatMap(lockedConstraint -> {
+                      if (normalizedName.equals(lockedConstraint.name())) {
+                        return Mono.just(MutationResult.<Void>noop(null, lockedConstraint.tableId()));
+                      }
+                      return identifierCapabilityResolver.resolve(CONSTRAINT, lockedConstraint.id())
+                          .flatMap(identifierCapabilities -> {
+                            IdentifierValidator.validateLength(
+                                identifierCapabilities,
+                                normalizedName,
+                                ConstraintErrorCode.NAME_INVALID,
+                                "Constraint name");
+                            return getTableByIdPort.findTableById(lockedConstraint.tableId())
+                                .switchIfEmpty(Mono.error(
+                                    new DomainException(TableErrorCode.NOT_FOUND, "Table not found")))
+                                .flatMap(table -> constraintExistsPort.existsBySchemaIdAndNameExcludingId(
+                                    table.schemaId(),
+                                    normalizedName,
+                                    lockedConstraint.id())
+                                    .flatMap(exists -> {
+                                      if (exists) {
+                                        return Mono.error(new DomainException(ConstraintErrorCode.NAME_DUPLICATE,
+                                            "Constraint name '%s' already exists in schema".formatted(normalizedName)));
+                                      }
+                                      return changeConstraintNamePort
+                                          .changeConstraintName(lockedConstraint.id(), normalizedName)
+                                          .thenReturn(MutationResult.<Void>of(null, lockedConstraint.tableId())
+                                              .withInverse(new ChangeConstraintNameInverse(
+                                                  lockedConstraint.id(),
+                                                  lockedConstraint.name())));
+                                    }));
+                          });
+                    }));
+          });
+    });
   }
 
   private static String normalizeName(String name) {

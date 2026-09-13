@@ -6,6 +6,7 @@ plugins {
 	id 'com.github.spotbugs' version '6.0.26'
 	id 'org.ec4j.editorconfig' version '0.1.0'
 	id 'com.diffplug.spotless' version '6.25.0'
+	id 'com.epages.restdocs-api-spec' version '0.19.4'
 }
 
 group = 'com.schemafy'
@@ -43,6 +44,9 @@ dependencies {
 	// redis
 	implementation 'org.springframework.boot:spring-boot-starter-data-redis-reactive'
 
+	// mail
+	implementation 'org.springframework.boot:spring-boot-starter-mail'
+
 	// db
 	implementation 'org.springframework.boot:spring-boot-starter-data-r2dbc'
 	runtimeOnly "io.r2dbc:r2dbc-h2"
@@ -57,6 +61,8 @@ dependencies {
 	// test
 	testImplementation 'org.springframework.boot:spring-boot-starter-test'
 	testImplementation 'io.projectreactor:reactor-test'
+	testImplementation 'org.testcontainers:junit-jupiter'
+	testImplementation 'org.testcontainers:testcontainers'
 	testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
 
 	// actuator
@@ -67,6 +73,15 @@ dependencies {
 
 	testImplementation 'org.springframework.security:spring-security-test'
 	testImplementation 'org.springframework.restdocs:spring-restdocs-webtestclient'
+	testImplementation('com.epages:restdocs-api-spec:0.19.4') {
+		transitive = false
+	}
+	testImplementation('com.epages:restdocs-api-spec-webtestclient:0.19.4') {
+		transitive = false
+	}
+	testImplementation 'org.jetbrains.kotlin:kotlin-stdlib-jdk8:1.7.22'
+	testRuntimeOnly 'org.jetbrains.kotlin:kotlin-reflect:1.7.22'
+	testRuntimeOnly 'com.fasterxml.jackson.module:jackson-module-kotlin'
 
 	testImplementation 'org.mockito:mockito-core:5.2.0'
 	testImplementation 'org.mockito:mockito-junit-jupiter:5.2.0'
@@ -84,7 +99,7 @@ dependencies {
 	implementation 'org.openapitools:jackson-databind-nullable:0.2.6'
 
 	// doc
-	implementation 'org.springdoc:springdoc-openapi-starter-webflux-api:2.8.13'
+	implementation 'org.springdoc:springdoc-openapi-starter-webflux-ui:2.8.13'
 
 	// spotbugs
 	spotbugs 'com.github.spotbugs:spotbugs:4.8.6'
@@ -106,6 +121,8 @@ tasks.named('asciidoctor') {
 
 	attributes 'snippets': snippetsDir
 }
+
+apply from: 'gradle/openapi-spec.gradle'
 
 // Production 빌드: DDL 포함 X
 tasks.named('bootJar') {

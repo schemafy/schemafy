@@ -65,7 +65,11 @@ class ColumnMapper {
     if (typeArguments.values() != null) {
       node.putPOJO("values", typeArguments.values());
     }
-    return jsonCodec.canonicalize(node);
+    return jsonCodec.toJson(node);
+  }
+
+  String normalizeTypeArgumentsJson(String rawJson) {
+    return jsonCodec.normalizePersistedJson(rawJson);
   }
 
   private ColumnTypeArguments toTypeArguments(String rawJson) {
@@ -73,7 +77,7 @@ class ColumnMapper {
       return null;
     }
 
-    JsonNode node = jsonCodec.parsePersistedNode(rawJson);
+    JsonNode node = jsonCodec.fromPersistedJson(rawJson, JsonNode.class);
     Integer length = intOrNull(node.get("length"));
     Integer precision = intOrNull(node.get("precision"));
     Integer scale = intOrNull(node.get("scale"));
@@ -99,7 +103,7 @@ class ColumnMapper {
     if (!node.isArray()) {
       throw new IllegalArgumentException("JSON field must be an array");
     }
-    String[] values = jsonCodec.parse(jsonCodec.canonicalize(node),
+    String[] values = jsonCodec.fromJson(jsonCodec.toJson(node),
         String[].class);
     return List.of(values);
   }

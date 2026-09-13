@@ -37,7 +37,7 @@ export function EditableRowBase<T extends BaseItem>({
   renderEditMode,
 }: EditableRowBaseProps<T>) {
   return (
-    <div className="border-b border-schemafy-light-gray last:border-b-0">
+    <div className="border-b border-schemafy-glass-border/60 last:border-b-0">
       {isEditMode
         ? renderEditMode(item, tableColumns)
         : renderViewMode(item, tableColumns)}
@@ -72,7 +72,7 @@ export const EditableNameInput = ({
       type="text"
       value={localName}
       onChange={(e) => handleChange(e.target.value)}
-      className="flex-1 px-2 py-1 text-sm border border-schemafy-light-gray rounded focus:outline-none"
+      className="schemafy-focus-ring flex-1 rounded-lg border border-schemafy-glass-border bg-schemafy-secondary/60 px-2.5 py-1.5 text-sm text-schemafy-text placeholder:text-schemafy-dark-gray"
       placeholder={placeholder}
     />
   );
@@ -86,8 +86,9 @@ interface DeleteButtonProps {
 export const DeleteButton = ({ onDelete, title }: DeleteButtonProps) => {
   return (
     <button
+      type="button"
       onClick={onDelete}
-      className="p-1 rounded flex-shrink-0 text-schemafy-destructive hover:bg-red-100"
+      className="schemafy-focus-ring flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-lg text-schemafy-destructive transition-colors hover:bg-schemafy-destructive/10"
       title={title}
     >
       <Trash2 size={12} />
@@ -107,12 +108,13 @@ export const ColumnItem = ({
   additionalControls,
 }: ColumnItemProps) => {
   return (
-    <div className="flex items-center gap-2 text-xs">
-      <span className="text-schemafy-blue font-medium">{columnName}</span>
+    <div className="flex flex-wrap items-center gap-2 rounded-lg border border-schemafy-glass-border/70 bg-schemafy-secondary/45 px-2.5 py-1.5 text-xs">
+      <span className="font-medium text-schemafy-blue">{columnName}</span>
       {additionalControls}
       <button
+        type="button"
         onClick={onRemove}
-        className="p-0.5 rounded"
+        className="schemafy-focus-ring flex h-6 w-6 items-center justify-center rounded-md text-schemafy-dark-gray transition-colors hover:bg-schemafy-destructive/10 hover:text-schemafy-destructive"
         title="Remove column"
       >
         <X size={12} />
@@ -142,7 +144,7 @@ export const AddColumnSelector = ({
         }}
         value=""
       >
-        <SelectTrigger className="w-[8rem] text-xs font-mono py-1 px-1.5 border border-schemafy-light-gray rounded focus:outline-none">
+        <SelectTrigger className="schemafy-focus-ring w-[8.5rem] rounded-lg border border-schemafy-glass-border bg-schemafy-secondary/60 px-2 py-1.5 font-mono text-xs">
           <SelectValue placeholder="+ Add column" />
         </SelectTrigger>
         <SelectContent popover="auto">

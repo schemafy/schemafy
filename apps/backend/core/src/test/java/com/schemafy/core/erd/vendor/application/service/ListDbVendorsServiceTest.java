@@ -42,6 +42,7 @@ class ListDbVendorsServiceTest {
 
       StepVerifier.create(sut.listDbVendors())
           .assertNext(result -> {
+            assertThat(result.id()).isEqualTo(DbVendorFixture.DEFAULT_ID);
             assertThat(result.displayName()).isEqualTo(DbVendorFixture.DEFAULT_DISPLAY_NAME);
             assertThat(result.name()).isEqualTo(DbVendorFixture.DEFAULT_NAME);
           })

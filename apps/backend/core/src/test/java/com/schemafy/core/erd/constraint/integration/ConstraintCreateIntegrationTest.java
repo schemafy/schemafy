@@ -96,7 +96,7 @@ class ConstraintCreateIntegrationTest extends ErdProjectIntegrationSupport {
     String projectId = createActiveProjectId("constraint_create");
 
     var createSchemaCommand = new CreateSchemaCommand(
-        projectId, "MySQL", schemaName,
+        projectId, schemaName,
         "utf8mb4", "utf8mb4_general_ci");
     var schemaResult = createSchemaUseCase.createSchema(createSchemaCommand).block().result();
     schemaId = schemaResult.id();

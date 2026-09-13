@@ -46,20 +46,41 @@ public class ChangeRelationshipCardinalityService implements ChangeRelationshipC
       return Mono.error(new DomainException(RelationshipErrorCode.INVALID_VALUE,
           "Relationship cardinality is required"));
     }
-    return erdMutationCoordinator.coordinate(ErdOperationType.CHANGE_RELATIONSHIP_CARDINALITY, command,
-        () -> getRelationshipByIdPort.findRelationshipById(command.relationshipId())
-            .switchIfEmpty(Mono.error(new DomainException(RelationshipErrorCode.NOT_FOUND, "Relationship not found")))
-            .flatMap(relationship -> {
-              Set<String> affectedTableIds = new HashSet<>();
-              affectedTableIds.add(relationship.fkTableId());
-              affectedTableIds.add(relationship.pkTableId());
-              return changeRelationshipCardinalityPort
-                  .changeRelationshipCardinality(relationship.id(), command.cardinality())
-                  .thenReturn(MutationResult.<Void>of(null, affectedTableIds)
-                      .withInverse(new ChangeRelationshipCardinalityInverse(
-                          relationship.id(),
-                          relationship.cardinality())));
-            }));
+    return getRelationshipByIdPort.findRelationshipById(command.relationshipId())
+        .switchIfEmpty(Mono.error(new DomainException(RelationshipErrorCode.NOT_FOUND, "Relationship not found")))
+        .flatMap(relationship -> {
+          Set<String> affectedTableIds = new HashSet<>();
+          affectedTableIds.add(relationship.fkTableId());
+          affectedTableIds.add(relationship.pkTableId());
+          if (relationship.cardinality() == command.cardinality()) {
+            return Mono.just(MutationResult.<Void>noop(null, affectedTableIds));
+          }
+          return erdMutationCoordinator.coordinate(ErdOperationType.CHANGE_RELATIONSHIP_CARDINALITY, command,
+              () -> getRelationshipByIdPort.findRelationshipById(command.relationshipId())
+                  .switchIfEmpty(Mono.error(new DomainException(
+                      RelationshipErrorCode.NOT_FOUND,
+                      "Relationship not found")))
+                  .flatMap(lockedRelationship -> {
+                    Set<String> lockedAffectedTableIds = affectedTableIds(lockedRelationship.fkTableId(),
+                        lockedRelationship.pkTableId());
+                    if (lockedRelationship.cardinality() == command.cardinality()) {
+                      return Mono.just(MutationResult.<Void>noop(null, lockedAffectedTableIds));
+                    }
+                    return changeRelationshipCardinalityPort
+                        .changeRelationshipCardinality(lockedRelationship.id(), command.cardinality())
+                        .thenReturn(MutationResult.<Void>of(null, lockedAffectedTableIds)
+                            .withInverse(new ChangeRelationshipCardinalityInverse(
+                                lockedRelationship.id(),
+                                lockedRelationship.cardinality())));
+                  }));
+        });
+  }
+
+  private static Set<String> affectedTableIds(String fkTableId, String pkTableId) {
+    Set<String> affectedTableIds = new HashSet<>();
+    affectedTableIds.add(fkTableId);
+    affectedTableIds.add(pkTableId);
+    return affectedTableIds;
   }
 
 }

@@ -17,6 +17,8 @@ import com.schemafy.core.erd.constraint.application.port.out.GetConstraintColumn
 import com.schemafy.core.erd.constraint.application.port.out.GetConstraintColumnsByConstraintIdPort;
 import com.schemafy.core.erd.constraint.domain.ConstraintColumn;
 import com.schemafy.core.erd.constraint.domain.exception.ConstraintErrorCode;
+import com.schemafy.core.erd.operation.application.inverse.ChangeConstraintColumnPositionInverse;
+import com.schemafy.core.erd.operation.application.inverse.ReorderPositions;
 import com.schemafy.core.erd.operation.application.service.ErdMutationCoordinator;
 import com.schemafy.core.erd.operation.domain.ErdOperationType;
 import com.schemafy.core.project.application.access.AccessTarget;
@@ -48,66 +50,98 @@ public class ChangeConstraintColumnPositionService implements ChangeConstraintCo
   @Override
   public Mono<MutationResult<Void>> changeConstraintColumnPosition(
       ChangeConstraintColumnPositionCommand command) {
-    return erdMutationCoordinator.coordinate(ErdOperationType.CHANGE_CONSTRAINT_COLUMN_POSITION, command,
-        () -> getConstraintColumnByIdPort
-            .findConstraintColumnById(command.constraintColumnId())
+    return getConstraintColumnByIdPort
+        .findConstraintColumnById(command.constraintColumnId())
+        .switchIfEmpty(Mono.error(new DomainException(
+            ConstraintErrorCode.COLUMN_NOT_FOUND,
+            "Constraint column not found")))
+        .flatMap(constraintColumn -> getConstraintByIdPort
+            .findConstraintById(constraintColumn.constraintId())
             .switchIfEmpty(Mono.error(new DomainException(
-                ConstraintErrorCode.COLUMN_NOT_FOUND,
-                "Constraint column not found")))
-            .flatMap(constraintColumn -> getConstraintByIdPort
-                .findConstraintById(constraintColumn.constraintId())
-                .switchIfEmpty(Mono.error(new DomainException(
-                    ConstraintErrorCode.NOT_FOUND,
-                    "Constraint not found")))
-                .flatMap(constraint -> getConstraintColumnsByConstraintIdPort
-                    .findConstraintColumnsByConstraintId(
-                        constraintColumn.constraintId())
-                    .defaultIfEmpty(List.of())
-                    .flatMap(columns -> reorderColumns(
-                        constraintColumn,
-                        columns,
-                        command.seqNo()))
-                    .thenReturn(MutationResult.<Void>of(null,
-                        constraint.tableId())))))
+                ConstraintErrorCode.NOT_FOUND,
+                "Constraint not found")))
+            .flatMap(constraint -> getConstraintColumnsByConstraintIdPort
+                .findConstraintColumnsByConstraintId(
+                    constraintColumn.constraintId())
+                .defaultIfEmpty(List.of())
+                .flatMap(columns -> {
+                  int currentPosition = resolveCurrentPosition(constraintColumn, columns);
+                  int normalizedPosition = Math.clamp(command.seqNo(), 0, columns.size() - 1);
+                  if (currentPosition == normalizedPosition) {
+                    return Mono.just(MutationResult.<Void>noop(null,
+                        constraint.tableId()));
+                  }
+                  return erdMutationCoordinator.coordinate(
+                      ErdOperationType.CHANGE_CONSTRAINT_COLUMN_POSITION,
+                      command,
+                      () -> getConstraintColumnsByConstraintIdPort
+                          .findConstraintColumnsByConstraintId(
+                              constraintColumn.constraintId())
+                          .defaultIfEmpty(List.of())
+                          .flatMap(lockedColumns -> {
+                            int lockedCurrentPosition = resolveCurrentPosition(
+                                constraintColumn,
+                                lockedColumns);
+                            int lockedNormalizedPosition = Math.clamp(
+                                command.seqNo(),
+                                0,
+                                lockedColumns.size() - 1);
+                            if (lockedCurrentPosition == lockedNormalizedPosition) {
+                              return Mono.just(MutationResult.<Void>noop(null,
+                                  constraint.tableId()));
+                            }
+                            List<ConstraintColumn> reordered = reorderColumns(
+                                lockedColumns,
+                                lockedCurrentPosition,
+                                lockedNormalizedPosition);
+                            return changeConstraintColumnPositionPort
+                                .changeConstraintColumnPositions(
+                                    constraintColumn.constraintId(), reordered)
+                                .thenReturn(MutationResult.<Void>of(null,
+                                    constraint.tableId())
+                                    .withInverse(new ChangeConstraintColumnPositionInverse(
+                                        constraintColumn.id(),
+                                        ReorderPositions.capture(
+                                            lockedColumns,
+                                            ConstraintColumn::id,
+                                            ConstraintColumn::seqNo))));
+                          }));
+                })))
         .as(transactionalOperator::transactional);
   }
 
-  private Mono<Void> reorderColumns(
+  private int resolveCurrentPosition(
       ConstraintColumn constraintColumn,
-      List<ConstraintColumn> columns,
-      int nextPosition) {
+      List<ConstraintColumn> columns) {
     if (columns.isEmpty()) {
-      return Mono.error(new DomainException(
+      throw new DomainException(
           ConstraintErrorCode.COLUMN_NOT_FOUND,
-          "Constraint column not found"));
+          "Constraint column not found");
     }
+    int currentPosition = findIndex(columns, constraintColumn.id());
+    if (currentPosition < 0) {
+      throw new DomainException(
+          ConstraintErrorCode.COLUMN_NOT_FOUND,
+          "Constraint column not found");
+    }
+    return currentPosition;
+  }
 
+  private List<ConstraintColumn> reorderColumns(
+      List<ConstraintColumn> columns,
+      int currentIndex,
+      int normalizedPosition) {
     List<ConstraintColumn> reordered = new ArrayList<>(columns);
-    int currentIndex = findIndex(reordered, constraintColumn.id());
-    if (currentIndex < 0) {
-      return Mono.error(new DomainException(
-          ConstraintErrorCode.COLUMN_NOT_FOUND,
-          "Constraint column not found"));
-    }
-
     ConstraintColumn movingColumn = reordered.remove(currentIndex);
-    int normalizedPosition = Math.clamp(nextPosition, 0,
-        columns.size() - 1);
     reordered.add(normalizedPosition, movingColumn);
 
     List<ConstraintColumn> updated = new ArrayList<>(reordered.size());
     for (int index = 0; index < reordered.size(); index++) {
       ConstraintColumn column = reordered.get(index);
-      updated.add(new ConstraintColumn(
-          column.id(),
-          column.constraintId(),
-          column.columnId(),
-          index));
+      updated.add(column.withSeqNo(index));
     }
 
-    return changeConstraintColumnPositionPort
-        .changeConstraintColumnPositions(
-            constraintColumn.constraintId(), updated);
+    return updated;
   }
 
   private static int findIndex(List<ConstraintColumn> columns,

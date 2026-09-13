@@ -36,7 +36,6 @@ class CreateSchemaIntegrationTest extends ErdProjectIntegrationSupport {
 
     StepVerifier.create(createSchemaUseCase.createSchema(new CreateSchemaCommand(
         projectId,
-        "MySQL",
         schemaName,
         "utf8mb4",
         "utf8mb4_general_ci")))
@@ -54,7 +53,6 @@ class CreateSchemaIntegrationTest extends ErdProjectIntegrationSupport {
 
     StepVerifier.create(createSchemaUseCase.createSchema(new CreateSchemaCommand(
         missingProjectId,
-        "MySQL",
         "missing_project_schema",
         "utf8mb4",
         "utf8mb4_general_ci")))
@@ -70,7 +68,6 @@ class CreateSchemaIntegrationTest extends ErdProjectIntegrationSupport {
 
     StepVerifier.create(createSchemaUseCase.createSchema(new CreateSchemaCommand(
         projectId,
-        "MySQL",
         "deleted_project_schema",
         "utf8mb4",
         "utf8mb4_general_ci")))

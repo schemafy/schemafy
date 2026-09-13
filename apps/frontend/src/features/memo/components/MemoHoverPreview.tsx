@@ -12,7 +12,7 @@ export const MemoHoverPreview = ({
   comments,
 }: MemoHoverPreviewProps) => {
   return (
-    <div className="absolute left-full top-0 ml-2 bg-schemafy-bg rounded-lg shadow-lg p-3 min-w-[200px] max-w-[280px] pointer-events-none z-10 animate-in fade-in duration-150">
+    <div className="schemafy-canvas-panel pointer-events-none absolute left-full top-0 z-10 ml-2 min-w-[220px] max-w-[300px] animate-in rounded-2xl p-3 fade-in duration-150">
       <div className="flex gap-2">
         <Avatar
           size={'dropdown'}
@@ -33,7 +33,9 @@ export const MemoHoverPreview = ({
               )}
             </span>
           </div>
-          <p className="font-body-sm mt-1 line-clamp-2">{firstComment.body}</p>
+          <p className="mt-1 line-clamp-2 font-body-sm text-schemafy-text">
+            {firstComment.body}
+          </p>
         </div>
       </div>
       {comments.length > 1 && (

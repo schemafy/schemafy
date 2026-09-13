@@ -19,7 +19,7 @@ export const TablePreview = () => {
   return (
     <div
       ref={divRef}
-      className="bg-schemafy-table-header-bg rounded-lg"
+      className="rounded-xl border border-schemafy-soft-blue/45 bg-schemafy-soft-blue/12"
       style={{
         display: 'none',
         position: 'absolute',

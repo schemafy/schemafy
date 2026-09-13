@@ -8,4 +8,14 @@ public record IndexColumn(
     String columnId,
     int seqNo,
     SortDirection sortDirection) {
+
+  public IndexColumn withSeqNo(int nextSeqNo) {
+    return new IndexColumn(
+        id,
+        indexId,
+        columnId,
+        nextSeqNo,
+        sortDirection);
+  }
+
 }

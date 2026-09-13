@@ -15,6 +15,8 @@ import com.schemafy.core.erd.index.domain.validator.IndexValidator;
 import com.schemafy.core.erd.operation.application.inverse.ChangeIndexNameInverse;
 import com.schemafy.core.erd.operation.application.service.ErdMutationCoordinator;
 import com.schemafy.core.erd.operation.domain.ErdOperationType;
+import com.schemafy.core.erd.vendor.application.service.IdentifierCapabilityResolver;
+import com.schemafy.core.erd.vendor.domain.validator.IdentifierValidator;
 import com.schemafy.core.project.application.access.AccessTarget;
 import com.schemafy.core.project.application.access.RequireProjectAccess;
 import com.schemafy.core.project.domain.ProjectRole;
@@ -32,6 +34,7 @@ public class ChangeIndexNameService implements ChangeIndexNameUseCase {
   private final ChangeIndexNamePort changeIndexNamePort;
   private final IndexExistsPort indexExistsPort;
   private final GetIndexByIdPort getIndexByIdPort;
+  private final IdentifierCapabilityResolver identifierCapabilityResolver;
   private ErdMutationCoordinator erdMutationCoordinator = ErdMutationCoordinator.noop();
 
   @Autowired
@@ -41,27 +44,50 @@ public class ChangeIndexNameService implements ChangeIndexNameUseCase {
 
   @Override
   public Mono<MutationResult<Void>> changeIndexName(ChangeIndexNameCommand command) {
-    return erdMutationCoordinator.coordinate(ErdOperationType.CHANGE_INDEX_NAME, command, () -> Mono.defer(() -> {
+    return Mono.defer(() -> {
       String normalizedName = normalizeName(command.newName());
       IndexValidator.validateName(normalizedName);
       return getIndexByIdPort.findIndexById(command.indexId())
           .switchIfEmpty(Mono.error(new DomainException(IndexErrorCode.NOT_FOUND, "Index not found")))
-          .flatMap(index -> indexExistsPort.existsByTableIdAndNameExcludingId(
-              index.tableId(),
-              normalizedName,
-              index.id())
-              .flatMap(exists -> {
-                if (exists) {
-                  return Mono.error(new DomainException(
-                      IndexErrorCode.NAME_DUPLICATE,
-                      "Index name '%s' already exists in table".formatted(normalizedName)));
-                }
-                return changeIndexNamePort
-                    .changeIndexName(index.id(), normalizedName)
-                    .thenReturn(MutationResult.<Void>of(null, index.tableId())
-                        .withInverse(new ChangeIndexNameInverse(index.id(), index.name())));
-              }));
-    }));
+          .flatMap(index -> {
+            if (normalizedName.equals(index.name())) {
+              return Mono.just(MutationResult.<Void>noop(null, index.tableId()));
+            }
+            return erdMutationCoordinator.coordinate(ErdOperationType.CHANGE_INDEX_NAME, command,
+                () -> getIndexByIdPort.findIndexById(command.indexId())
+                    .switchIfEmpty(Mono.error(new DomainException(IndexErrorCode.NOT_FOUND, "Index not found")))
+                    .flatMap(lockedIndex -> {
+                      if (normalizedName.equals(lockedIndex.name())) {
+                        return Mono.just(MutationResult.<Void>noop(null, lockedIndex.tableId()));
+                      }
+                      return identifierCapabilityResolver.resolve(INDEX, lockedIndex.id())
+                          .flatMap(identifierCapabilities -> {
+                            IdentifierValidator.validateLength(
+                                identifierCapabilities,
+                                normalizedName,
+                                IndexErrorCode.NAME_INVALID,
+                                "Index name");
+                            return indexExistsPort.existsByTableIdAndNameExcludingId(
+                                lockedIndex.tableId(),
+                                normalizedName,
+                                lockedIndex.id())
+                                .flatMap(exists -> {
+                                  if (exists) {
+                                    return Mono.error(new DomainException(
+                                        IndexErrorCode.NAME_DUPLICATE,
+                                        "Index name '%s' already exists in table".formatted(normalizedName)));
+                                  }
+                                  return changeIndexNamePort
+                                      .changeIndexName(lockedIndex.id(), normalizedName)
+                                      .thenReturn(MutationResult.<Void>of(null, lockedIndex.tableId())
+                                          .withInverse(new ChangeIndexNameInverse(
+                                              lockedIndex.id(),
+                                              lockedIndex.name())));
+                                });
+                          });
+                    }));
+          });
+    });
   }
 
   private static String normalizeName(String name) {

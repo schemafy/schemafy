@@ -179,7 +179,7 @@ class RelationshipAutoCreateIntegrationTest extends ErdProjectIntegrationSupport
     String uniqueSuffix = UUID.randomUUID().toString().substring(0, 8);
     String projectId = createActiveProjectId(prefix);
     var createSchemaCommand = new CreateSchemaCommand(
-        projectId, "MySQL", prefix + "_" + uniqueSuffix,
+        projectId, prefix + "_" + uniqueSuffix,
         "utf8mb4", "utf8mb4_general_ci");
     var schemaResult = createSchemaUseCase.createSchema(createSchemaCommand).block().result();
     return schemaResult.id();

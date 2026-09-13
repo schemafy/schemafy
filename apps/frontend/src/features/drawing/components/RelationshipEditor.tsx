@@ -109,7 +109,7 @@ export const RelationshipEditor = ({
   };
 
   return (
-    <div className="absolute top-4 left-4 z-10 bg-schemafy-bg p-3 rounded-lg shadow-md border border-schemafy-light-gray space-y-3">
+    <div className="schemafy-canvas-panel absolute top-6 left-6 z-10 space-y-3 rounded-2xl p-4">
       <div className="text-sm font-medium text-schemafy-text">
         Edit Relationship
       </div>
@@ -120,7 +120,7 @@ export const RelationshipEditor = ({
           type="text"
           value={localName}
           onChange={(e) => setLocalName(e.target.value)}
-          className="w-full px-2 py-1 text-sm bg-schemafy-secondary border border-schemafy-light-gray rounded text-schemafy-text focus:outline-none focus:ring-1 focus:ring-schemafy-text"
+          className="schemafy-focus-ring w-full rounded-lg border border-schemafy-glass-border bg-schemafy-secondary/70 px-3 py-2 text-sm text-schemafy-text"
           placeholder="Relationship name"
         />
       </div>

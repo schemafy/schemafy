@@ -20,7 +20,7 @@ import com.schemafy.core.erd.column.application.port.in.DeleteColumnCommand;
 import com.schemafy.core.erd.column.application.port.in.DeleteColumnUseCase;
 import com.schemafy.core.erd.column.application.port.out.GetColumnsByTableIdPort;
 import com.schemafy.core.erd.column.fixture.ColumnFixture;
-import com.schemafy.core.erd.operation.ErdOperationContexts;
+import com.schemafy.core.erd.operation.application.service.NestedErdMutations;
 import com.schemafy.core.erd.operation.application.service.StructuralSnapshotService;
 import com.schemafy.core.erd.relationship.application.port.in.DeleteRelationshipCommand;
 import com.schemafy.core.erd.relationship.application.port.in.DeleteRelationshipUseCase;
@@ -160,7 +160,7 @@ class DeleteTableServiceTest {
       }
 
       @Test
-      @DisplayName("nested mutation suppress context에서는 snapshot 없이 테이블을 삭제한다")
+      @DisplayName("nested mutation runner로 실행하면 snapshot 없이 테이블을 삭제한다")
       void skipsSnapshotsWhenNestedMutationSuppressed() {
         var command = TableFixture.deleteCommand();
 
@@ -175,8 +175,7 @@ class DeleteTableServiceTest {
         given(transactionalOperator.transactional(any(Mono.class)))
             .willAnswer(invocation -> invocation.getArgument(0));
 
-        StepVerifier.create(sut.deleteTable(command)
-            .contextWrite(ErdOperationContexts.suppressNestedMutation()))
+        StepVerifier.create(NestedErdMutations.run(sut.deleteTable(command)))
             .expectNextCount(1)
             .verifyComplete();
 

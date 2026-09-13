@@ -20,7 +20,7 @@ export const createWorkspace = async (
 
 export const getWorkspaces = async (
   page = 0,
-  size = 5,
+  size = 10,
 ): Promise<PageResponse<WorkspaceSummaryResponse>> => {
   const response = await apiClient.get<PageResponse<WorkspaceSummaryResponse>>(
     '/workspaces',

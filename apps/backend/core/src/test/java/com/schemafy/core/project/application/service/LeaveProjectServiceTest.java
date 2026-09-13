@@ -30,6 +30,7 @@ class LeaveProjectServiceTest {
 
   private static final String PROJECT_ID = "project-id";
   private static final String WORKSPACE_ID = "workspace-id";
+  private static final Integer DB_VENDOR_ID = 1;
   private static final String USER_ID = "user-id";
 
   @Mock
@@ -55,7 +56,8 @@ class LeaveProjectServiceTest {
   void leaveProject_lastMemberSkipsFallbackWhenProjectExists() {
     LeaveProjectCommand command = new LeaveProjectCommand(PROJECT_ID, USER_ID);
     ProjectMember member = ProjectMember.create("member-id", PROJECT_ID, USER_ID, ProjectRole.VIEWER);
-    Project project = Project.create(PROJECT_ID, WORKSPACE_ID, "Project", "Description");
+    Project project = Project.create(PROJECT_ID, WORKSPACE_ID, DB_VENDOR_ID, "Project",
+        "Description");
 
     given(projectAccessHelper.findProjectMember(USER_ID, PROJECT_ID))
         .willReturn(Mono.just(member));

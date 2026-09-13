@@ -7,7 +7,7 @@ import {
 
 export const LandingPage = () => {
   return (
-    <div className="flex-col">
+    <div className="flex w-full flex-col px-4 sm:px-6 lg:px-8">
       <Description />
       <Features />
       <Benefits />

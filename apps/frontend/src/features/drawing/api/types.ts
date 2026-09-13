@@ -8,7 +8,8 @@ export type ErdOperation = {
 export type MutationResponse<T = null> = {
   data: T;
   affectedTableIds: string[];
-  operation: ErdOperation;
+  operation?: ErdOperation | null;
+  requestClientOperationId?: string | null;
 };
 
 export type JsonPrimitive = string | number | boolean | null;
@@ -20,7 +21,6 @@ export type JsonObject = {
 export type SchemaResponse = {
   id: string;
   projectId: string;
-  dbVendorName: string;
   name: string;
   charset: string;
   collation: string;
@@ -29,10 +29,9 @@ export type SchemaResponse = {
 
 export type CreateSchemaRequest = {
   projectId: string;
-  dbVendorName: string;
   name: string;
-  charset: string;
-  collation: string;
+  charset?: string;
+  collation?: string;
 };
 
 export type ChangeSchemaNameRequest = {
@@ -338,40 +337,4 @@ export type TableSnapshotResponse = {
 export type SchemaSnapshotsResponse = {
   currentRevision: number;
   snapshots: Record<string, TableSnapshotResponse>;
-};
-
-export type DbVendorSummary = {
-  displayName: string;
-  name: string;
-  version: string;
-};
-
-export type DatatypeParameter = {
-  name: string;
-  label: string;
-  valueType: 'integer' | 'string_array';
-  required: boolean;
-  order: number;
-};
-
-export type VendorDatatype = {
-  sqlType: string;
-  displayName: string;
-  category: string;
-  sqlDeclarationTemplate?: string;
-  parameters: DatatypeParameter[];
-};
-
-export type DatatypeMappings = {
-  schemaVersion: number;
-  vendor: string;
-  versionRange: string;
-  types: VendorDatatype[];
-};
-
-export type DbVendorDetail = {
-  displayName: string;
-  name: string;
-  version: string;
-  datatypeMappings: DatatypeMappings;
 };

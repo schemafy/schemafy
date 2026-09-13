@@ -11,4 +11,19 @@ public record Column(
     String charset,
     String collation,
     String comment) {
+
+  public Column withSeqNo(int nextSeqNo) {
+    return new Column(
+        id,
+        tableId,
+        name,
+        dataType,
+        typeArguments,
+        nextSeqNo,
+        autoIncrement,
+        charset,
+        collation,
+        comment);
+  }
+
 }

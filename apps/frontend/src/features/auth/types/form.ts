@@ -17,6 +17,11 @@ export interface SignUpFormValues {
   [key: string]: string;
 }
 
+export interface SignUpVerificationFormValues {
+  code: string;
+  [key: string]: string;
+}
+
 export interface SignInFormValues {
   email: string;
   password: string;

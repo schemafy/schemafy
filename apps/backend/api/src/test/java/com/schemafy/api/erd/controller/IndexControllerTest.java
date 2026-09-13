@@ -59,18 +59,19 @@ import com.schemafy.core.erd.index.domain.type.SortDirection;
 
 import reactor.core.publisher.Mono;
 
+import static com.epages.restdocs.apispec.WebTestClientRestDocumentationWrapper.document;
 import static com.schemafy.api.erd.controller.ErdOperationFixtures.OP_ID;
 import static com.schemafy.api.erd.controller.ErdOperationFixtures.committedOperation;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
-import static org.springframework.restdocs.webtestclient.WebTestClientRestDocumentation.document;
+import static org.mockito.BDDMockito.then;
 
 @ActiveProfiles("test")
 @SpringBootTest
 @AutoConfigureWebTestClient
 @AutoConfigureRestDocs
 @DisplayName("IndexController 통합 테스트")
-@WithMockCustomUser(roles = "EDITOR")
+@WithMockCustomUser
 class IndexControllerTest {
 
   private static final ObjectMapper objectMapper = new ObjectMapper()
@@ -156,6 +157,28 @@ class IndexControllerTest {
             IndexApiSnippets.createIndexRequest(),
             IndexApiSnippets.createIndexResponseHeaders(),
             IndexApiSnippets.createIndexResponse()));
+  }
+
+  @Test
+  @DisplayName("인덱스 생성 컬럼의 정렬 방향이 없으면 요청을 거부한다")
+  void rejectsCreateIndexWhenNestedSortDirectionIsMissing() throws Exception {
+    CreateIndexRequest request = new CreateIndexRequest(
+        "06D6W2BAHD51T5NJPK29Q6BCR9",
+        "idx_users_email",
+        IndexType.BTREE,
+        List.of(new CreateIndexColumnRequest(
+            "06D6W3CAHD51T5NJPK29Q6BCRA",
+            0,
+            null)));
+
+    webTestClient.post()
+        .uri(API_BASE_PATH + "/indexes")
+        .contentType(MediaType.APPLICATION_JSON)
+        .bodyValue(objectMapper.writeValueAsString(request))
+        .exchange()
+        .expectStatus().isBadRequest();
+
+    then(createIndexUseCase).shouldHaveNoInteractions();
   }
 
   @Test
@@ -274,7 +297,6 @@ class IndexControllerTest {
   }
 
   @Test
-  @WithMockCustomUser(roles = "ADMIN")
   @DisplayName("인덱스 삭제 API 문서화")
   void deleteIndex() {
     String indexId = "06D6W6CAHD51T5NJPK29Q6BCRG";

@@ -3,6 +3,8 @@ export const workspaceKeys = {
   lists: () => [...workspaceKeys.all, 'list'] as const,
   list: (page: number, size: number) =>
     [...workspaceKeys.lists(), { page, size }] as const,
+  infiniteList: (size: number) =>
+    [...workspaceKeys.lists(), 'infinite', { size }] as const,
   detail: (id: string) => [...workspaceKeys.all, 'detail', id] as const,
   membersAll: (workspaceId: string) =>
     [...workspaceKeys.all, 'members', workspaceId] as const,

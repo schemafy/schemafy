@@ -5,6 +5,7 @@ import java.util.concurrent.atomic.AtomicReference;
 import org.springframework.http.HttpHeaders;
 import org.springframework.mock.http.server.reactive.MockServerHttpRequest;
 import org.springframework.mock.web.server.MockServerWebExchange;
+import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.ReactiveSecurityContextHolder;
 import org.springframework.web.server.WebFilterChain;
 
@@ -12,6 +13,8 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
@@ -21,6 +24,7 @@ import com.schemafy.api.common.exception.ProblemProperties;
 import com.schemafy.api.common.security.jwt.JwtAuthenticationFilter;
 import com.schemafy.api.common.security.jwt.JwtProvider;
 import com.schemafy.api.common.security.jwt.WebExchangeErrorWriter;
+import com.schemafy.api.common.security.principal.AuthenticatedUser;
 import com.schemafy.core.common.json.JsonCodec;
 import com.schemafy.core.erd.operation.ErdOperationContexts;
 import com.schemafy.core.erd.operation.ErdOperationMetadata;
@@ -31,6 +35,8 @@ import reactor.test.StepVerifier;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
@@ -56,32 +62,38 @@ class JwtAuthenticationFilterTest {
   }
 
   @Test
-  @DisplayName("유효한 JWT 토큰으로 인증에 성공한다")
-  void authenticateValidToken() {
+  @DisplayName("유효한 JWT 토큰은 authority 없이 인증에 성공한다")
+  void authenticateValidTokenWithoutAuthorities() {
     String token = "valid-token";
     String userId = "user123";
+    String userName = "tester";
     MockServerHttpRequest request = MockServerHttpRequest
         .get("/api/test")
         .header(HttpHeaders.AUTHORIZATION, "Bearer " + token)
         .build();
     MockServerWebExchange exchange = MockServerWebExchange.from(request);
+    AtomicReference<Authentication> authenticationRef = new AtomicReference<>();
 
     when(jwtProvider.extractUserId(token)).thenReturn(userId);
     when(jwtProvider.getTokenType(token))
         .thenReturn(JwtProvider.ACCESS_TOKEN);
     when(jwtProvider.validateToken(token, userId)).thenReturn(true);
-    when(filterChain.filter(any())).thenReturn(Mono.empty());
+    when(jwtProvider.<String>extractClaim(eq(token), any())).thenReturn(userName);
+    when(filterChain.filter(any())).thenReturn(
+        ReactiveSecurityContextHolder.getContext()
+            .doOnNext(context -> authenticationRef.set(
+                context.getAuthentication()))
+            .then());
 
-    StepVerifier
-        .create(jwtAuthenticationFilter.filter(exchange, filterChain)
-            .contextWrite(ctx -> {
-              return ctx;
-            })
-            .then(Mono.deferContextual(Mono::just))
-            .flatMap(ctx -> ReactiveSecurityContextHolder
-                .getContext()))
-        .expectNextCount(0)
+    StepVerifier.create(jwtAuthenticationFilter.filter(exchange, filterChain))
         .verifyComplete();
+
+    assertThat(authenticationRef.get()).isNotNull();
+    assertThat(authenticationRef.get().isAuthenticated()).isTrue();
+    assertThat(authenticationRef.get().getName()).isEqualTo(userId);
+    assertThat(authenticationRef.get().getPrincipal())
+        .isEqualTo(AuthenticatedUser.of(userId, userName));
+    assertThat(authenticationRef.get().getAuthorities()).isEmpty();
   }
 
   @Test
@@ -228,6 +240,36 @@ class JwtAuthenticationFilterTest {
     StepVerifier
         .create(jwtAuthenticationFilter.filter(exchange, filterChain))
         .verifyComplete();
+  }
+
+  @ParameterizedTest
+  @ValueSource(strings = {
+    "/v3/api-docs",
+    "/openapi/openapi3.json",
+    "/swagger-ui.html",
+    "/swagger-ui-hmac.html",
+    "/swagger-ui-hmac/swagger-ui-hmac.js",
+    "/swagger-ui/swagger-ui-bundle.js",
+    "/webjars/swagger-ui/swagger-ui-bundle.js" })
+  @DisplayName("문서 공개 경로는 낡은 Bearer 토큰이 있어도 통과한다")
+  void openApiDocsPathPassesWithInvalidBearerToken(String path) {
+    String token = "stale-token";
+    MockServerHttpRequest request = MockServerHttpRequest
+        .get(path)
+        .header(HttpHeaders.AUTHORIZATION, "Bearer " + token)
+        .build();
+    MockServerWebExchange exchange = MockServerWebExchange.from(request);
+
+    when(jwtProvider.extractUserId(token))
+        .thenThrow(new RuntimeException("Invalid token"));
+    when(filterChain.filter(any())).thenReturn(Mono.empty());
+
+    StepVerifier
+        .create(jwtAuthenticationFilter.filter(exchange, filterChain))
+        .verifyComplete();
+
+    verify(filterChain).filter(any());
+    assertThat(exchange.getResponse().getStatusCode()).isNull();
   }
 
   @Test

@@ -8,6 +8,7 @@ interface WorkspaceFormDialogProps {
   workspaceId?: string;
   initialName?: string;
   initialDescription?: string;
+  onCreated?: (workspaceId: string) => void;
 }
 
 export const WorkspaceFormDialog = ({
@@ -17,6 +18,7 @@ export const WorkspaceFormDialog = ({
   workspaceId = '',
   initialName = '',
   initialDescription = '',
+  onCreated,
 }: WorkspaceFormDialogProps) => {
   const {
     createWorkspace,
@@ -27,7 +29,12 @@ export const WorkspaceFormDialog = ({
 
   const handleSubmit = (data: { name: string; description: string }) => {
     if (mode === 'create') {
-      createWorkspace(data, { onSuccess: () => onOpenChange(false) });
+      createWorkspace(data, {
+        onSuccess: (response) => {
+          onOpenChange(false);
+          onCreated?.(response.id);
+        },
+      });
     } else {
       updateWorkspace(workspaceId, data, {
         onSuccess: () => onOpenChange(false),

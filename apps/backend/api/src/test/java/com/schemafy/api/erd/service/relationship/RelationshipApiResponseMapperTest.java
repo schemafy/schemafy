@@ -5,6 +5,7 @@ import org.junit.jupiter.api.Test;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.schemafy.core.common.json.JsonCodec;
+import com.schemafy.core.common.json.JsonObjectMetadataConverter;
 import com.schemafy.core.erd.relationship.domain.Relationship;
 import com.schemafy.core.erd.relationship.domain.type.Cardinality;
 import com.schemafy.core.erd.relationship.domain.type.RelationshipKind;
@@ -15,7 +16,8 @@ import static org.assertj.core.api.Assertions.assertThat;
 class RelationshipApiResponseMapperTest {
 
   private final RelationshipApiResponseMapper sut = new RelationshipApiResponseMapper(
-      new JsonCodec(new ObjectMapper().findAndRegisterModules()));
+      new JsonObjectMetadataConverter(
+          new JsonCodec(new ObjectMapper().findAndRegisterModules())));
 
   @Test
   @DisplayName("relationship extra 문자열을 JSON 객체로 변환한다")

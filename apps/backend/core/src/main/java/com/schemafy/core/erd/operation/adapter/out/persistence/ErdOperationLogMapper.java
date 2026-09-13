@@ -11,24 +11,22 @@ import com.schemafy.core.erd.operation.domain.ErdOperationType;
 class ErdOperationLogMapper {
 
   ErdOperationLogEntity toEntity(ErdOperationLog erdOperationLog) {
-    return ErdOperationLogEntity.builder()
-        .opId(erdOperationLog.opId())
-        .projectId(erdOperationLog.projectId())
-        .schemaId(erdOperationLog.schemaId())
-        .opType(erdOperationLog.opType().name())
-        .committedRevision(erdOperationLog.committedRevision())
-        .baseSchemaRevision(erdOperationLog.baseSchemaRevision())
-        .clientOperationId(erdOperationLog.clientOperationId())
-        .collabSessionId(erdOperationLog.collabSessionId())
-        .actorUserId(erdOperationLog.actorUserId())
-        .derivationKind(erdOperationLog.derivationKind().name())
-        .derivedFromOpId(erdOperationLog.derivedFromOpId())
-        .lifecycleState(erdOperationLog.lifecycleState().name())
-        .payloadJson(erdOperationLog.payloadJson())
-        .inversePayloadJson(erdOperationLog.inversePayloadJson())
-        .touchedEntitiesJson(erdOperationLog.touchedEntitiesJson())
-        .affectedTableIdsJson(erdOperationLog.affectedTableIdsJson())
-        .build();
+    return new ErdOperationLogEntity(
+        erdOperationLog.opId(),
+        erdOperationLog.projectId(),
+        erdOperationLog.schemaId(),
+        erdOperationLog.opType().name(),
+        erdOperationLog.committedRevision(),
+        erdOperationLog.baseSchemaRevision(),
+        erdOperationLog.clientOperationId(),
+        erdOperationLog.collabSessionId(),
+        erdOperationLog.actorUserId(),
+        erdOperationLog.derivationKind().name(),
+        erdOperationLog.derivedFromOpId(),
+        erdOperationLog.lifecycleState().name(),
+        erdOperationLog.payloadJson(),
+        erdOperationLog.inversePayloadJson(),
+        erdOperationLog.affectedTableIdsJson());
   }
 
   ErdOperationLog toDomain(ErdOperationLogEntity entity) {
@@ -47,7 +45,6 @@ class ErdOperationLogMapper {
         ErdOperationLifecycleState.valueOf(entity.getLifecycleState()),
         entity.getPayloadJson(),
         entity.getInversePayloadJson(),
-        entity.getTouchedEntitiesJson(),
         entity.getAffectedTableIdsJson());
   }
 

@@ -9,11 +9,16 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
+import org.mockito.Spy;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.schemafy.core.common.exception.DomainException;
+import com.schemafy.core.common.json.JsonCodec;
+import com.schemafy.core.common.json.JsonObjectMetadataConverter;
 import com.schemafy.core.erd.column.application.port.out.CreateColumnPort;
 import com.schemafy.core.erd.column.application.port.out.GetColumnsByTableIdPort;
 import com.schemafy.core.erd.column.domain.Column;
@@ -35,19 +40,24 @@ import com.schemafy.core.erd.relationship.domain.RelationshipColumn;
 import com.schemafy.core.erd.relationship.domain.exception.RelationshipErrorCode;
 import com.schemafy.core.erd.relationship.domain.type.Cardinality;
 import com.schemafy.core.erd.relationship.domain.type.RelationshipKind;
+import com.schemafy.core.erd.relationship.fixture.RelationshipFixture;
 import com.schemafy.core.erd.table.application.port.out.GetTableByIdPort;
 import com.schemafy.core.erd.table.domain.Table;
+import com.schemafy.core.erd.vendor.application.service.IdentifierCapabilityResolver;
+import com.schemafy.core.erd.vendor.domain.IdentifierCapabilities;
 import com.schemafy.core.ulid.application.port.out.UlidGeneratorPort;
 
 import reactor.core.publisher.Mono;
 import reactor.test.StepVerifier;
 
 import static com.schemafy.core.erd.operation.application.service.StructuralSnapshotServiceTestSupport.stubEmptySnapshots;
+import static com.schemafy.core.project.application.access.ProjectAccessResourceType.TABLE;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.then;
+import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.never;
 
 @ExtendWith(MockitoExtension.class)
@@ -93,6 +103,9 @@ class CreateRelationshipServiceTest {
   GetConstraintColumnsByConstraintIdPort getConstraintColumnsByConstraintIdPort;
 
   @Mock
+  IdentifierCapabilityResolver identifierCapabilityResolver;
+
+  @Mock
   PkCascadeHelper pkCascadeHelper;
 
   @Mock
@@ -101,6 +114,10 @@ class CreateRelationshipServiceTest {
   @Mock
   StructuralSnapshotService structuralSnapshotService;
 
+  @Spy
+  JsonObjectMetadataConverter jsonObjectMetadataConverter = new JsonObjectMetadataConverter(
+      new JsonCodec(new ObjectMapper().findAndRegisterModules()));
+
   @InjectMocks
   CreateRelationshipService sut;
 
@@ -108,6 +125,8 @@ class CreateRelationshipServiceTest {
   void setUpTransaction() {
     given(transactionalOperator.transactional(any(Mono.class)))
         .willAnswer(invocation -> invocation.getArgument(0));
+    lenient().when(identifierCapabilityResolver.resolve(any(), any()))
+        .thenReturn(Mono.just(IdentifierCapabilities.codePoints(64)));
     stubEmptySnapshots(structuralSnapshotService);
   }
 
@@ -121,7 +140,8 @@ class CreateRelationshipServiceTest {
       var command = new CreateRelationshipCommand(FK_TABLE_ID,
           PK_TABLE_ID,
           RelationshipKind.NON_IDENTIFYING,
-          Cardinality.ONE_TO_MANY, null);
+          Cardinality.ONE_TO_MANY,
+          RelationshipFixture.jsonObject("{\"line\": {\"style\": \"solid\"}}"));
       var fkTable = createTable(FK_TABLE_ID, SCHEMA_ID, "fk_table");
       var pkTable = createTable(PK_TABLE_ID, SCHEMA_ID, "pk_table");
       var pkColumn = ColumnFixture.columnWithId(PK_COLUMN_ID);
@@ -170,6 +190,7 @@ class CreateRelationshipServiceTest {
             assertThat(payload.name()).isEqualTo("rel_fk_table_to_pk_table");
             assertThat(payload.kind()).isEqualTo(RelationshipKind.NON_IDENTIFYING);
             assertThat(payload.cardinality()).isEqualTo(Cardinality.ONE_TO_MANY);
+            assertThat(payload.extra()).isEqualTo("{\"line\":{\"style\":\"solid\"}}");
           })
           .verifyComplete();
 
@@ -289,6 +310,80 @@ class CreateRelationshipServiceTest {
       StepVerifier.create(sut.createRelationship(command))
           .assertNext(result -> assertThat(result.result().name()).isEqualTo("rel_fk_table_to_pk_table_1"))
           .verifyComplete();
+    }
+
+    @Test
+    @DisplayName("긴 관계 이름의 두 자리 suffix 공간을 확보해 자동 생성한다")
+    void fitsTwoDigitSuffixWithinIdentifierLimit() {
+      var command = new CreateRelationshipCommand(FK_TABLE_ID,
+          PK_TABLE_ID,
+          RelationshipKind.NON_IDENTIFYING,
+          Cardinality.ONE_TO_MANY, null);
+      var fkTable = createTable(FK_TABLE_ID, SCHEMA_ID, "f".repeat(40));
+      var pkTable = createTable(PK_TABLE_ID, SCHEMA_ID, "p".repeat(40));
+      var pkColumn = ColumnFixture.columnWithId(PK_COLUMN_ID);
+      stubSuccessfulRelationshipCreation(fkTable, pkTable, pkColumn, List.of());
+      given(relationshipExistsPort.existsByFkTableIdAndName(eq(FK_TABLE_ID), any()))
+          .willAnswer(invocation -> {
+            String candidate = invocation.getArgument(1);
+            return Mono.just(!candidate.endsWith("_10"));
+          });
+
+      StepVerifier.create(sut.createRelationship(command))
+          .assertNext(result -> {
+            String relationshipName = result.result().name();
+            assertThat(relationshipName).hasSize(64).endsWith("_10");
+          })
+          .verifyComplete();
+
+      then(identifierCapabilityResolver).should().resolve(TABLE, FK_TABLE_ID);
+    }
+
+    @Test
+    @DisplayName("40자 PK 컬럼 이름이 충돌하면 suffix 공간을 확보해 FK 컬럼을 자동 생성한다")
+    void fitsFkColumnSuffixWithinLocalColumnLimit() {
+      String sourceName = "p".repeat(40);
+      var command = new CreateRelationshipCommand(FK_TABLE_ID,
+          PK_TABLE_ID,
+          RelationshipKind.NON_IDENTIFYING,
+          Cardinality.ONE_TO_MANY, null);
+      var fkTable = createTable(FK_TABLE_ID, SCHEMA_ID, "fk_table");
+      var pkTable = createTable(PK_TABLE_ID, SCHEMA_ID, "pk_table");
+      var pkColumn = new Column(
+          PK_COLUMN_ID,
+          PK_TABLE_ID,
+          sourceName,
+          "INT",
+          null,
+          0,
+          false,
+          null,
+          null,
+          null);
+      var existingFkColumn = new Column(
+          "existing-fk-column",
+          FK_TABLE_ID,
+          sourceName,
+          "INT",
+          null,
+          0,
+          false,
+          null,
+          null,
+          null);
+      stubSuccessfulRelationshipCreation(fkTable, pkTable, pkColumn, List.of(existingFkColumn));
+      given(relationshipExistsPort.existsByFkTableIdAndName(eq(FK_TABLE_ID), any()))
+          .willReturn(Mono.just(false));
+
+      StepVerifier.create(sut.createRelationship(command))
+          .expectNextCount(1)
+          .verifyComplete();
+
+      ArgumentCaptor<Column> columnCaptor = ArgumentCaptor.forClass(Column.class);
+      then(createColumnPort).should().createColumn(columnCaptor.capture());
+      assertThat(columnCaptor.getValue().name())
+          .isEqualTo("p".repeat(38) + "_1")
+          .hasSize(40);
     }
 
     @Test
@@ -433,6 +528,48 @@ class CreateRelationshipServiceTest {
           .verify();
     }
 
+  }
+
+  private void stubSuccessfulRelationshipCreation(
+      Table fkTable,
+      Table pkTable,
+      Column pkColumn,
+      List<Column> existingFkColumns) {
+    var pkConstraint = new Constraint(
+        "pk-constraint",
+        PK_TABLE_ID,
+        "pk_pk_table",
+        ConstraintKind.PRIMARY_KEY,
+        null,
+        null);
+    var pkConstraintColumn = new ConstraintColumn(
+        "pk-cc1",
+        "pk-constraint",
+        PK_COLUMN_ID,
+        0);
+
+    given(getTableByIdPort.findTableById(FK_TABLE_ID))
+        .willReturn(Mono.just(fkTable));
+    given(getTableByIdPort.findTableById(PK_TABLE_ID))
+        .willReturn(Mono.just(pkTable));
+    given(getConstraintsByTableIdPort.findConstraintsByTableId(PK_TABLE_ID))
+        .willReturn(Mono.just(List.of(pkConstraint)));
+    given(getConstraintColumnsByConstraintIdPort.findConstraintColumnsByConstraintId("pk-constraint"))
+        .willReturn(Mono.just(List.of(pkConstraintColumn)));
+    given(getColumnsByTableIdPort.findColumnsByTableId(PK_TABLE_ID))
+        .willReturn(Mono.just(List.of(pkColumn)));
+    given(getColumnsByTableIdPort.findColumnsByTableId(FK_TABLE_ID))
+        .willReturn(Mono.just(existingFkColumns));
+    given(getRelationshipsBySchemaIdPort.findRelationshipsBySchemaId(SCHEMA_ID))
+        .willReturn(Mono.just(List.of()));
+    given(ulidGeneratorPort.generate())
+        .willReturn(REL_ID, "fk-col-1", "rel-col-1");
+    given(createRelationshipPort.createRelationship(any(Relationship.class)))
+        .willAnswer(invocation -> Mono.just(invocation.getArgument(0)));
+    given(createColumnPort.createColumn(any(Column.class)))
+        .willAnswer(invocation -> Mono.just(invocation.getArgument(0)));
+    given(createRelationshipColumnPort.createRelationshipColumn(any(RelationshipColumn.class)))
+        .willAnswer(invocation -> Mono.just(invocation.getArgument(0)));
   }
 
   private Table createTable(String tableId, String schemaId, String name) {

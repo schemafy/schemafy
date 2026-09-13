@@ -33,6 +33,13 @@ export default tseslint.config([
         },
       ],
       'no-empty': ['error', { allowEmptyCatch: true }],
+      'no-console': 'error',
+    },
+  },
+  {
+    files: ['tests/perf-audit*.spec.ts'],
+    rules: {
+      'no-console': ['error', { allow: ['log'] }],
     },
   },
 ])

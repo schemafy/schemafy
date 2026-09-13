@@ -2,7 +2,7 @@ import { observer } from 'mobx-react-lite';
 import { useReactFlow, useViewport } from '@xyflow/react';
 import { collaborationStore } from '@/store/collaboration.store';
 import { useChatMessages } from '@/hooks';
-import { CURSOR_TRANSITION_MS, getCursorColor } from '../utils';
+import { CURSOR_TRANSITION_MS, getRandomColor } from '../utils';
 import { CursorLabel } from './CursorLabel';
 import { CursorPointer } from './CursorPointer';
 import { ChatBubble } from './ChatBubble';
@@ -17,10 +17,10 @@ const RemoteCursor = observer(({ sessionId }: RemoteCursorProps) => {
     collaborationStore.activeChatMessages.get(sessionId) ?? [];
   const { flowToScreenPosition } = useReactFlow();
   useViewport();
-  const color = getCursorColor(sessionId);
 
   if (!cursor) return null;
 
+  const color = getRandomColor(cursor.userId);
   const screenPos = flowToScreenPosition({ x: cursor.x, y: cursor.y });
 
   return (

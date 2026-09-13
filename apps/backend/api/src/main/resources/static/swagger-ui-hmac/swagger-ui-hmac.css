@@ -1,0 +1,87 @@
+body {
+  margin: 0;
+}
+
+.schemafy-hmac-toolbar {
+  align-items: center;
+  background: #17202a;
+  border-bottom: 1px solid #2b3a48;
+  box-sizing: border-box;
+  color: #f5f7fa;
+  display: flex;
+  flex-wrap: wrap;
+  font-family: sans-serif;
+  gap: 10px;
+  min-height: 48px;
+  padding: 8px 18px;
+}
+
+.schemafy-hmac-toolbar strong {
+  font-size: 14px;
+  font-weight: 700;
+  margin-right: 4px;
+}
+
+.schemafy-hmac-toolbar label {
+  align-items: center;
+  display: inline-flex;
+  font-size: 13px;
+  gap: 6px;
+  white-space: nowrap;
+}
+
+.schemafy-hmac-toolbar input[type="checkbox"] {
+  height: 16px;
+  margin: 0;
+  width: 16px;
+}
+
+.schemafy-hmac-toolbar input[type="password"] {
+  background: #ffffff;
+  border: 1px solid #9aa6b2;
+  border-radius: 4px;
+  box-sizing: border-box;
+  color: #17202a;
+  font-size: 13px;
+  height: 32px;
+  min-width: min(360px, 100%);
+  padding: 0 10px;
+}
+
+.schemafy-hmac-toolbar button {
+  background: #eef2f6;
+  border: 1px solid #b8c2cc;
+  border-radius: 4px;
+  color: #17202a;
+  cursor: pointer;
+  font-size: 13px;
+  height: 32px;
+  padding: 0 12px;
+}
+
+.schemafy-hmac-toolbar button:hover {
+  background: #ffffff;
+}
+
+.schemafy-hmac-status {
+  color: #cbd5df;
+  font-size: 12px;
+}
+
+@media (max-width: 720px) {
+  .schemafy-hmac-toolbar {
+    align-items: stretch;
+    flex-direction: column;
+    gap: 8px;
+    padding: 10px 12px;
+  }
+
+  .schemafy-hmac-toolbar label {
+    justify-content: flex-start;
+  }
+
+  .schemafy-hmac-toolbar input[type="password"] {
+    min-width: 0;
+    width: 100%;
+  }
+}

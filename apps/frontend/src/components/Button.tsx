@@ -11,20 +11,23 @@ import { Link, type LinkProps } from '@tanstack/react-router';
 
 const buttonVariants = cva(
   `inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-lg transition-all duration-200 
-  disabled:pointer-events-none disabled:opacity-50 active:scale-95 font-heading-xs focus:outline-none`,
+  disabled:pointer-events-none disabled:opacity-50 font-heading-xs schemafy-focus-ring`,
   {
     variants: {
       variant: {
-        default: 'bg-schemafy-button-bg text-schemafy-button-text',
-        secondary: 'bg-schemafy-secondary text-schemafy-text',
+        default:
+          'bg-schemafy-button-bg text-schemafy-button-text shadow-sm hover:shadow-md',
+        secondary:
+          'border border-schemafy-glass-border bg-schemafy-panel text-schemafy-text shadow-sm hover:bg-schemafy-secondary',
         destructive: 'bg-schemafy-destructive text-white',
-        outline: 'border border-schemafy-text text-schemafy-text',
-        none: 'text-schemafy-text font-overline-sm',
+        outline:
+          'border border-schemafy-glass-border bg-transparent text-schemafy-text hover:bg-schemafy-secondary',
+        none: 'text-schemafy-text font-overline-sm hover:text-schemafy-text',
       },
       size: {
-        dropdown: 'py-2 font-overline-xs min-w-[5rem]',
+        dropdown: 'h-9 px-3 font-overline-xs min-w-[5rem]',
         default: 'px-4 h-10',
-        sm: 'py-0.3 px-3 font-overline-xs min-w-[4rem]',
+        sm: 'h-9 px-3 font-overline-xs min-w-[4rem]',
         none: '',
       },
       fullWidth: {

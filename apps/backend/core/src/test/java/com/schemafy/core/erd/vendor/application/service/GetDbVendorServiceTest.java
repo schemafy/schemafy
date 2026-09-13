@@ -10,7 +10,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 import com.schemafy.core.common.exception.DomainException;
 import com.schemafy.core.erd.vendor.application.port.in.GetDbVendorQuery;
-import com.schemafy.core.erd.vendor.application.port.out.GetDbVendorByDisplayNamePort;
+import com.schemafy.core.erd.vendor.application.port.out.GetDbVendorByIdPort;
 import com.schemafy.core.erd.vendor.domain.exception.VendorErrorCode;
 import com.schemafy.core.erd.vendor.fixture.DbVendorFixture;
 
@@ -27,7 +27,7 @@ import static org.mockito.BDDMockito.then;
 class GetDbVendorServiceTest {
 
   @Mock
-  GetDbVendorByDisplayNamePort getDbVendorByDisplayNamePort;
+  GetDbVendorByIdPort getDbVendorByIdPort;
 
   @InjectMocks
   GetDbVendorService sut;
@@ -46,17 +46,17 @@ class GetDbVendorServiceTest {
         var query = DbVendorFixture.getQuery();
         var vendor = DbVendorFixture.defaultDbVendor();
 
-        given(getDbVendorByDisplayNamePort.findByDisplayName(any()))
+        given(getDbVendorByIdPort.findActiveById(any()))
             .willReturn(Mono.just(vendor));
 
         StepVerifier.create(sut.getDbVendor(query))
             .assertNext(result -> {
-              assertThat(result.displayName()).isEqualTo(query.displayName());
+              assertThat(result.id()).isEqualTo(query.id());
               assertThat(result.name()).isEqualTo(DbVendorFixture.DEFAULT_NAME);
             })
             .verifyComplete();
 
-        then(getDbVendorByDisplayNamePort).should().findByDisplayName(query.displayName());
+        then(getDbVendorByIdPort).should().findActiveById(query.id());
       }
 
     }
@@ -68,16 +68,16 @@ class GetDbVendorServiceTest {
       @Test
       @DisplayName("DbVendorNotExistException을 발생시킨다")
       void throwsDbVendorNotExistException() {
-        var query = new GetDbVendorQuery("NonExistent 1.0");
+        var query = new GetDbVendorQuery(999);
 
-        given(getDbVendorByDisplayNamePort.findByDisplayName(any()))
+        given(getDbVendorByIdPort.findActiveById(any()))
             .willReturn(Mono.empty());
 
         StepVerifier.create(sut.getDbVendor(query))
             .expectErrorMatches(DomainException.hasErrorCode(VendorErrorCode.NOT_FOUND))
             .verify();
 
-        then(getDbVendorByDisplayNamePort).should().findByDisplayName(query.displayName());
+        then(getDbVendorByIdPort).should().findActiveById(query.id());
       }
 
     }

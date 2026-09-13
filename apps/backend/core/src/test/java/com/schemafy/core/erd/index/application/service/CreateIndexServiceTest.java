@@ -34,14 +34,20 @@ import com.schemafy.core.erd.operation.application.service.StructuralSnapshotSer
 import com.schemafy.core.erd.table.application.port.out.GetTableByIdPort;
 import com.schemafy.core.erd.table.domain.Table;
 import com.schemafy.core.erd.table.domain.exception.TableErrorCode;
+import com.schemafy.core.erd.vendor.application.service.IdentifierCapabilityResolver;
+import com.schemafy.core.erd.vendor.domain.IdentifierCapabilities;
+import com.schemafy.core.erd.vendor.fixture.DbVendorFixture;
 import com.schemafy.core.ulid.application.port.out.UlidGeneratorPort;
 
 import reactor.core.publisher.Mono;
 import reactor.test.StepVerifier;
 
 import static com.schemafy.core.erd.operation.application.service.StructuralSnapshotServiceTestSupport.stubEmptySnapshots;
+import static com.schemafy.core.project.application.access.ProjectAccessResourceType.TABLE;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.then;
 
@@ -79,6 +85,12 @@ class CreateIndexServiceTest {
   @Mock
   StructuralSnapshotService structuralSnapshotService;
 
+  @Mock
+  IndexCapabilityResolver indexCapabilityResolver;
+
+  @Mock
+  IdentifierCapabilityResolver identifierCapabilityResolver;
+
   @InjectMocks
   CreateIndexService sut;
 
@@ -86,6 +98,12 @@ class CreateIndexServiceTest {
   void setUpTransaction() {
     given(transactionalOperator.transactional(any(Mono.class)))
         .willAnswer(invocation -> invocation.getArgument(0));
+    org.mockito.Mockito.lenient()
+        .when(indexCapabilityResolver.resolve(any(), anyString()))
+        .thenReturn(Mono.just(DbVendorFixture.defaultCapabilities().indexes()));
+    org.mockito.Mockito.lenient()
+        .when(identifierCapabilityResolver.resolve(any(), anyString()))
+        .thenReturn(Mono.just(IdentifierCapabilities.codePoints(64)));
     stubEmptySnapshots(structuralSnapshotService);
   }
 
@@ -129,15 +147,16 @@ class CreateIndexServiceTest {
     }
 
     @Test
-    @DisplayName("유효한 HASH 인덱스를 생성한다")
-    void createsHashIndex() {
-      var command = IndexFixture.createHashCommand();
+    @DisplayName("DB vendor 제한과 같은 64 코드 포인트 이름을 생성한다")
+    void createsIndexWithNameAtVendorLimit() {
+      String name = "😀".repeat(64);
+      var command = IndexFixture.createCommandWithName(name);
       var table = createTable("table1", "schema1");
       var tableColumns = List.of(ColumnFixture.columnWithId(IndexFixture.DEFAULT_COLUMN_ID));
 
       given(getTableByIdPort.findTableById(command.tableId()))
           .willReturn(Mono.just(table));
-      given(indexExistsPort.existsByTableIdAndName(table.id(), "idx_hash"))
+      given(indexExistsPort.existsByTableIdAndName(table.id(), name))
           .willReturn(Mono.just(false));
       given(getColumnsByTableIdPort.findColumnsByTableId(table.id()))
           .willReturn(Mono.just(tableColumns));
@@ -151,10 +170,45 @@ class CreateIndexServiceTest {
           .willAnswer(invocation -> Mono.just(invocation.getArgument(0)));
 
       StepVerifier.create(sut.createIndex(command))
-          .assertNext(result -> {
-            assertThat(result.result().type()).isEqualTo(IndexType.HASH);
-          })
+          .assertNext(result -> assertThat(result.result().name()).isEqualTo(name))
           .verifyComplete();
+
+      then(identifierCapabilityResolver).should().resolve(TABLE, command.tableId());
+    }
+
+    @Test
+    @DisplayName("DB vendor 제한을 넘는 65 코드 포인트 이름을 거부한다")
+    void rejectsIndexNameOverVendorLimit() {
+      String name = "😀".repeat(65);
+      var command = IndexFixture.createCommandWithName(name);
+      var table = createTable("table1", "schema1");
+
+      given(getTableByIdPort.findTableById(command.tableId()))
+          .willReturn(Mono.just(table));
+
+      StepVerifier.create(sut.createIndex(command))
+          .expectErrorMatches(DomainException.hasErrorCode(IndexErrorCode.NAME_INVALID))
+          .verify();
+
+      then(identifierCapabilityResolver).should().resolve(TABLE, command.tableId());
+      then(indexExistsPort).shouldHaveNoInteractions();
+      then(createIndexPort).shouldHaveNoInteractions();
+    }
+
+    @Test
+    @DisplayName("지원하지 않는 HASH 인덱스 생성을 거부한다")
+    void rejectsHashIndex() {
+      var command = IndexFixture.createHashCommand();
+      var table = createTable("table1", "schema1");
+
+      given(getTableByIdPort.findTableById(command.tableId()))
+          .willReturn(Mono.just(table));
+
+      StepVerifier.create(sut.createIndex(command))
+          .expectErrorMatches(DomainException.hasErrorCode(IndexErrorCode.TYPE_INVALID))
+          .verify();
+
+      then(createIndexPort).shouldHaveNoInteractions();
     }
 
     @Test
@@ -381,6 +435,38 @@ class CreateIndexServiceTest {
     }
 
     @Test
+    @DisplayName("긴 자동 생성 이름은 두 자리 suffix 공간을 남겨 64 코드 포인트로 맞춘다")
+    void truncatesAutoGeneratedNameForTwoDigitSuffix() {
+      var command = IndexFixture.createCommandWithName(null);
+      var table = new Table("table1", "schema1", "t".repeat(64), null, null);
+      var tableColumns = List.of(ColumnFixture.columnWithId(IndexFixture.DEFAULT_COLUMN_ID));
+      String expectedName = "idx_" + "t".repeat(57) + "_10";
+
+      given(getTableByIdPort.findTableById(command.tableId()))
+          .willReturn(Mono.just(table));
+      given(indexExistsPort.existsByTableIdAndName(eq(table.id()), anyString()))
+          .willAnswer(invocation -> Mono.just(!expectedName.equals(invocation.getArgument(1))));
+      given(getColumnsByTableIdPort.findColumnsByTableId(table.id()))
+          .willReturn(Mono.just(tableColumns));
+      given(getIndexesByTableIdPort.findIndexesByTableId(table.id()))
+          .willReturn(Mono.just(List.of()));
+      given(ulidGeneratorPort.generate())
+          .willReturn("new-index-id", "new-column-id");
+      given(createIndexPort.createIndex(any(Index.class)))
+          .willAnswer(invocation -> Mono.just(invocation.getArgument(0)));
+      given(createIndexColumnPort.createIndexColumn(any(IndexColumn.class)))
+          .willAnswer(invocation -> Mono.just(invocation.getArgument(0)));
+
+      StepVerifier.create(sut.createIndex(command))
+          .assertNext(result -> {
+            assertThat(result.result().name()).isEqualTo(expectedName);
+            assertThat(result.result().name().codePointCount(0, result.result().name().length()))
+                .isEqualTo(64);
+          })
+          .verifyComplete();
+    }
+
+    @Test
     @DisplayName("타입이 null이면 예외가 발생한다")
     void throwsWhenTypeIsNull() {
       var command = IndexFixture.createCommandWithType(null);
@@ -557,7 +643,7 @@ class CreateIndexServiceTest {
     @Test
     @DisplayName("다른 타입이면 같은 컬럼 조합도 생성 가능하다")
     void allowsSameColumnsWithDifferentType() {
-      var command = IndexFixture.createHashCommand();
+      var command = IndexFixture.createFulltextCommand();
       var table = createTable("table1", "schema1");
       var tableColumns = List.of(ColumnFixture.columnWithId(IndexFixture.DEFAULT_COLUMN_ID));
       var existingIndex = IndexFixture.index("existing-idx", table.id(), "existing_idx", IndexType.BTREE);
@@ -566,7 +652,7 @@ class CreateIndexServiceTest {
 
       given(getTableByIdPort.findTableById(command.tableId()))
           .willReturn(Mono.just(table));
-      given(indexExistsPort.existsByTableIdAndName(table.id(), "idx_hash"))
+      given(indexExistsPort.existsByTableIdAndName(table.id(), "idx_fulltext"))
           .willReturn(Mono.just(false));
       given(getColumnsByTableIdPort.findColumnsByTableId(table.id()))
           .willReturn(Mono.just(tableColumns));
@@ -583,7 +669,7 @@ class CreateIndexServiceTest {
 
       StepVerifier.create(sut.createIndex(command))
           .assertNext(result -> {
-            assertThat(result.result().type()).isEqualTo(IndexType.HASH);
+            assertThat(result.result().type()).isEqualTo(IndexType.FULLTEXT);
           })
           .verifyComplete();
     }

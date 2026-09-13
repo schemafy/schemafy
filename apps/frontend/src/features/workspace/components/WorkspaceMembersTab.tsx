@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { MoreHorizontal, Search } from 'lucide-react';
+import { MoreHorizontal, Search, UsersRound } from 'lucide-react';
 import {
   Button,
   DropdownMenu,
@@ -79,37 +79,83 @@ export const WorkspaceMembersTab = ({
 
   return (
     <div className="flex flex-col gap-4">
-      <div className="relative">
-        <Search
-          size={16}
-          className="absolute left-4 top-1/2 -translate-y-1/2 text-schemafy-dark-gray pointer-events-none"
-        />
-        <input
-          type="text"
-          placeholder="Search member"
-          value={searchQuery}
-          onChange={(e) => setSearchQuery(e.target.value)}
-          className="w-full pl-10 pr-4 py-3 border border-schemafy-light-gray rounded-[12px] font-body-sm placeholder-schemafy-dark-gray bg-schemafy-bg focus:outline-none"
-        />
+      <div>
+        <div className="relative">
+          <Search
+            size={16}
+            className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-schemafy-dark-gray"
+          />
+          <input
+            type="text"
+            placeholder="Search member"
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            className="schemafy-input h-11 w-full pl-10 pr-4 font-body-sm"
+          />
+        </div>
       </div>
 
-      <div className="border border-schemafy-light-gray rounded-[12px] overflow-hidden">
-        <table className="w-full">
+      <div className="grid gap-3 md:hidden">
+        {isLoadingMembers ? (
+          <div className="schemafy-subtle-card px-4 py-8 text-center font-body-sm text-schemafy-dark-gray">
+            Loading...
+          </div>
+        ) : (
+          members.map((member) => (
+            <article
+              key={member.userId}
+              className="schemafy-subtle-card flex flex-col gap-4 p-4"
+            >
+              <div className="flex items-start justify-between gap-3">
+                <div className="flex min-w-0 items-start gap-3">
+                  <MemberAvatar name={member.userName} />
+                  <div className="min-w-0">
+                    <h3 className="truncate font-heading-sm text-schemafy-text">
+                      {member.userName}
+                    </h3>
+                    <p className="mt-1 truncate font-caption-md text-schemafy-dark-gray">
+                      {member.userEmail}
+                    </p>
+                  </div>
+                </div>
+                {currentUserRole === 'ADMIN' && user?.id !== member.userId && (
+                  <MemberActions
+                    handleOpenRoleChange={handleOpenRoleChange}
+                    onRemoveClick={setRemoveTarget}
+                    member={member}
+                  />
+                )}
+              </div>
+              <div className="flex flex-wrap items-center gap-2">
+                <span className="schemafy-badge px-3 py-1 font-caption-md">
+                  {toCapitalized(member.role)}
+                </span>
+                <span className="font-caption-md text-schemafy-dark-gray">
+                  Joined {formatDate(new Date(member.joinedAt))}
+                </span>
+              </div>
+            </article>
+          ))
+        )}
+      </div>
+
+      <div className="schemafy-table-shell schemafy-scrollbar hidden overflow-x-auto md:block">
+        <table className="w-full min-w-[720px]">
           <thead>
-            <tr className="border-b border-schemafy-light-gray">
-              <th className="text-left px-6 py-4 font-overline-sm text-schemafy-text w-[35%]">
+            <tr className="border-b border-schemafy-glass-border bg-schemafy-secondary/50">
+              <th className="w-[35%] px-5 py-3 text-left font-overline-sm text-schemafy-text">
                 Name
               </th>
-              <th className="text-left px-6 py-4 font-overline-sm text-schemafy-text">
+              <th className="px-5 py-3 text-left font-overline-sm text-schemafy-text">
                 Email
               </th>
-              <th className="text-left px-6 py-4 font-overline-sm text-schemafy-text">
+              <th className="px-5 py-3 text-left font-overline-sm text-schemafy-text">
                 Role
               </th>
-              <th className="text-left px-6 py-4 font-overline-sm text-schemafy-text">
+              <th className="px-5 py-3 text-left font-overline-sm text-schemafy-text">
                 Joined
               </th>
-              {currentUserRole === 'ADMIN' && <th className="px-6 py-4 w-10" />}
+              {currentUserRole === 'ADMIN' && <th className="w-10 px-5 py-3" />}
             </tr>
           </thead>
           <tbody>
@@ -117,29 +163,43 @@ export const WorkspaceMembersTab = ({
               <tr>
                 <td
                   colSpan={5}
-                  className="px-6 py-8 text-center font-body-sm text-schemafy-dark-gray"
+                  className="px-5 py-8 text-center font-body-sm text-schemafy-dark-gray"
                 >
                   Loading...
+                </td>
+              </tr>
+            ) : members.length === 0 ? (
+              <tr>
+                <td
+                  colSpan={5}
+                  className="px-5 py-10 text-center font-body-sm text-schemafy-dark-gray"
+                >
+                  No members match your search.
                 </td>
               </tr>
             ) : (
               members.map((member) => (
                 <tr
                   key={member.userId}
-                  className="border-b border-schemafy-light-gray last:border-b-0 hover:bg-schemafy-secondary transition-colors"
+                  className="border-b border-schemafy-glass-border transition-colors last:border-b-0 hover:bg-schemafy-secondary/40"
                 >
-                  <td className="px-6 py-4 font-body-sm text-schemafy-text">
-                    {member.userName}
+                  <td className="px-5 py-4">
+                    <div className="flex min-w-0 items-center gap-3">
+                      <MemberAvatar name={member.userName} />
+                      <span className="truncate font-body-sm text-schemafy-text">
+                        {member.userName}
+                      </span>
+                    </div>
                   </td>
-                  <td className="px-6 py-4 font-body-sm text-schemafy-dark-gray">
+                  <td className="px-5 py-4 font-body-sm text-schemafy-dark-gray">
                     {member.userEmail}
                   </td>
-                  <td className="px-6 py-4">
-                    <span className="px-3 py-1 bg-schemafy-secondary text-schemafy-dark-gray font-caption-md rounded-full">
+                  <td className="px-5 py-4">
+                    <span className="schemafy-badge px-3 py-1 font-caption-md">
                       {toCapitalized(member.role)}
                     </span>
                   </td>
-                  <td className="px-6 py-4 font-body-sm text-schemafy-dark-gray text-nowrap">
+                  <td className="text-nowrap px-5 py-4 font-body-sm text-schemafy-dark-gray">
                     {formatDate(new Date(member.joinedAt))}
                   </td>
                   {currentUserRole === 'ADMIN' &&
@@ -150,24 +210,21 @@ export const WorkspaceMembersTab = ({
                         member={member}
                       />
                     ) : (
-                      <td className="px-6 py-4" />
+                      <td className="px-5 py-4" />
                     ))}
                 </tr>
               ))
             )}
-            <tr>
-              <td colSpan={5} className="py-2">
-                <div className="flex justify-center">
-                  <Pagination
-                    currentPage={currentPage}
-                    totalPages={totalPages}
-                    onPageChange={setCurrentPage}
-                  />
-                </div>
-              </td>
-            </tr>
           </tbody>
         </table>
+      </div>
+
+      <div className="flex justify-center">
+        <Pagination
+          currentPage={currentPage}
+          totalPages={totalPages}
+          onPageChange={setCurrentPage}
+        />
       </div>
 
       <ChangeRoleDialog
@@ -192,6 +249,21 @@ export const WorkspaceMembersTab = ({
   );
 };
 
+const MemberAvatar = ({ name }: { name: string }) => {
+  const initials = name
+    .split(' ')
+    .map((part) => part[0])
+    .join('')
+    .slice(0, 2)
+    .toUpperCase();
+
+  return (
+    <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border border-schemafy-glass-border bg-schemafy-secondary font-caption-md text-schemafy-text">
+      {initials || <UsersRound className="h-4 w-4 text-schemafy-soft-blue" />}
+    </span>
+  );
+};
+
 const MemberOptions = ({
   handleOpenRoleChange,
   onRemoveClick,
@@ -202,38 +274,59 @@ const MemberOptions = ({
   member: WorkspaceMemberResponse;
 }) => {
   return (
-    <td className="px-6 py-4">
-      <DropdownMenu>
-        <DropdownMenuTrigger asChild>
-          <button className="text-schemafy-dark-gray hover:text-schemafy-text transition-colors">
-            <MoreHorizontal size={16} />
-          </button>
-        </DropdownMenuTrigger>
-        <DropdownMenuContent
-          sideOffset={4}
-          align="end"
-          className="!p-1.5 !min-w-0 flex flex-col gap-0.5"
-        >
-          <Button
-            variant="none"
-            size="none"
-            className="font-caption-md px-2 py-1 whitespace-nowrap text-left"
-            onClick={() => {
-              handleOpenRoleChange(member.userId, member.role);
-            }}
-          >
-            Change Role
-          </Button>
-          <Button
-            variant="none"
-            size="none"
-            className="text-schemafy-destructive font-caption-md px-2 py-1 whitespace-nowrap text-left"
-            onClick={() => onRemoveClick(member)}
-          >
-            Delete
-          </Button>
-        </DropdownMenuContent>
-      </DropdownMenu>
+    <td className="px-5 py-4">
+      <MemberActions
+        handleOpenRoleChange={handleOpenRoleChange}
+        onRemoveClick={onRemoveClick}
+        member={member}
+      />
     </td>
+  );
+};
+
+const MemberActions = ({
+  handleOpenRoleChange,
+  onRemoveClick,
+  member,
+}: {
+  handleOpenRoleChange: (userId: string, currentRole: string) => void;
+  onRemoveClick: (member: WorkspaceMemberResponse) => void;
+  member: WorkspaceMemberResponse;
+}) => {
+  return (
+    <DropdownMenu>
+      <DropdownMenuTrigger asChild>
+        <button
+          type="button"
+          className="schemafy-icon-button schemafy-focus-ring flex h-8 w-8 items-center justify-center"
+        >
+          <MoreHorizontal size={16} />
+        </button>
+      </DropdownMenuTrigger>
+      <DropdownMenuContent
+        sideOffset={4}
+        align="end"
+        className="!min-w-0 flex flex-col gap-0.5 !p-1.5"
+      >
+        <Button
+          variant="none"
+          size="none"
+          className="schemafy-menu-button whitespace-nowrap px-3 py-2 text-left font-caption-md"
+          onClick={() => {
+            handleOpenRoleChange(member.userId, member.role);
+          }}
+        >
+          Change Role
+        </Button>
+        <Button
+          variant="none"
+          size="none"
+          className="schemafy-menu-button whitespace-nowrap px-3 py-2 text-left font-caption-md text-schemafy-destructive"
+          onClick={() => onRemoveClick(member)}
+        >
+          Delete
+        </Button>
+      </DropdownMenuContent>
+    </DropdownMenu>
   );
 };

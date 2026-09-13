@@ -30,7 +30,7 @@ public class WebExchangeErrorWriter {
         errorCode, errorMessage);
 
     try {
-      byte[] responseBytes = jsonCodec.serializeBytes(problemDetail);
+      byte[] responseBytes = jsonCodec.toJsonBytes(problemDetail);
       DataBuffer buffer = exchange.getResponse().bufferFactory()
           .wrap(responseBytes);
       return exchange.getResponse().writeWith(Mono.just(buffer));

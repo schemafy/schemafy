@@ -6,7 +6,6 @@ import {
   type EdgeProps,
   type Edge,
 } from '@xyflow/react';
-import { Move } from 'lucide-react';
 import type { Point, EdgeData } from '../types';
 import { useControlPointDrag } from '../hooks/useControlPointDrag';
 import {
@@ -31,6 +30,7 @@ export const CustomSmoothStepEdge = memo(
     label,
     labelStyle,
     data,
+    selected,
   }: EdgeProps<Edge<EdgeData>>) => {
     const sourceNode = useInternalNode(source);
     const targetNode = useInternalNode(target);
@@ -65,6 +65,7 @@ export const CustomSmoothStepEdge = memo(
 
     const renderHandle = (position: Point, handleIndex: number) => {
       const isActive = draggingHandle === handleIndex;
+      const isVisible = selected || isActive;
 
       return (
         <EdgeLabelRenderer key={handleIndex}>
@@ -72,30 +73,32 @@ export const CustomSmoothStepEdge = memo(
             style={{
               position: 'absolute',
               transform: `translate(-50%, -50%) translate(${position.x}px, ${position.y}px)`,
-              pointerEvents: 'all',
+              pointerEvents: isVisible ? 'all' : 'none',
               cursor: isActive ? 'grabbing' : 'grab',
               zIndex: 1000,
+              opacity: isVisible ? 1 : 0,
             }}
             className="nodrag nopan"
             onMouseDown={handleMouseDown(handleIndex)}
           >
             <div
               className={`
-              bg-schemafy-bg border-2 rounded-full shadow-lg transition-all
-              ${isActive ? 'scale-125 border-schemafy-blue' : 'border-schemafy-dark-gray hover:border-schemafy-blue'}
+              schemafy-edge-control schemafy-canvas-panel rounded-full transition-all
+              ${isActive ? 'scale-110 border-schemafy-soft-blue text-schemafy-soft-blue' : 'text-schemafy-dark-gray hover:border-schemafy-soft-blue hover:text-schemafy-soft-blue'}
             `}
               style={{
-                width: 20,
-                height: 20,
+                width: 16,
+                height: 16,
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
               }}
             >
-              <Move
-                size={10}
+              <span
                 className={
-                  isActive ? 'text-schemafy-blue' : 'text-schemafy-dark-gray'
+                  isActive
+                    ? 'h-1.5 w-1.5 rounded-full bg-schemafy-soft-blue'
+                    : 'h-1.5 w-1.5 rounded-full bg-schemafy-dark-gray'
                 }
               />
             </div>
@@ -113,14 +116,22 @@ export const CustomSmoothStepEdge = memo(
             style={{
               position: 'absolute',
               transform: `translate(-50%, -50%) translate(${labelPosition.x}px, ${labelPosition.y}px)`,
-              fontSize: labelStyle?.fontSize || 12,
-              fontWeight: labelStyle?.fontWeight || 'bold',
+              fontSize: labelStyle?.fontSize || 11,
+              fontWeight: labelStyle?.fontWeight || 600,
               color: labelStyle?.color || 'var(--color-schemafy-dark-gray)',
               pointerEvents: 'none',
-              background: 'var(--color-schemafy-bg)',
-              padding: '2px 6px',
-              borderRadius: '4px',
+              background: 'hsl(var(--schemafy-panel))',
+              border: '1px solid hsl(var(--schemafy-glass-border))',
+              boxShadow: 'none',
+              backdropFilter: 'none',
+              padding: '2px 7px',
+              borderRadius: '999px',
+              lineHeight: 1.35,
               marginTop: '-25px',
+              maxWidth: 140,
+              overflow: 'hidden',
+              textOverflow: 'ellipsis',
+              whiteSpace: 'nowrap',
             }}
           >
             {label}

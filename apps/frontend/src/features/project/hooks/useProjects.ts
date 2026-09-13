@@ -35,18 +35,14 @@ export const useProjects = (workspaceId: string, page = 0, size = 5) => {
     updateProjectMutation.mutate({ projectId, data }, options);
   };
 
-  const deleteProject = (
-    projectId: string,
-    options?: Parameters<typeof deleteProjectMutation.mutate>[1],
-  ) => {
-    deleteProjectMutation.mutate(projectId, options);
+  const leaveProject = async (projectId: string) => {
+    await leaveProjectMutation.mutateAsync(projectId);
+    return projectsQuery.refetch();
   };
 
-  const leaveProject = (
-    projectId: string,
-    options?: Parameters<typeof leaveProjectMutation.mutate>[1],
-  ) => {
-    leaveProjectMutation.mutate(projectId, options);
+  const deleteProject = async (projectId: string) => {
+    await deleteProjectMutation.mutateAsync(projectId);
+    return projectsQuery.refetch();
   };
 
   return {

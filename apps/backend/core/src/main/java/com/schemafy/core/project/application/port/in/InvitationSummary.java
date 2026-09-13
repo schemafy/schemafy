@@ -13,5 +13,6 @@ public record InvitationSummary(
     String invitedBy,
     String status,
     Instant expiresAt,
+    Instant resolvedAt,
     Instant createdAt) {
 }

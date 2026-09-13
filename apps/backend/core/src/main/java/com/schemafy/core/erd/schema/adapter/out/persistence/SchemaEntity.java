@@ -11,7 +11,6 @@ import org.springframework.data.relational.core.mapping.Column;
 import org.springframework.data.relational.core.mapping.Table;
 
 import lombok.AccessLevel;
-import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
@@ -27,9 +26,6 @@ public class SchemaEntity implements Persistable<String> {
 
   @Column("project_id")
   private String projectId;
-
-  @Column("db_vendor_name")
-  private String dbVendorName;
 
   @Column("name")
   private String name;
@@ -49,12 +45,10 @@ public class SchemaEntity implements Persistable<String> {
   @Version
   private Long version;
 
-  @Builder
-  private SchemaEntity(String id, String projectId, String dbVendorName,
-      String name, String charset, String collation) {
+  SchemaEntity(String id, String projectId, String name, String charset,
+      String collation) {
     this.id = id;
     this.projectId = projectId;
-    this.dbVendorName = dbVendorName;
     this.name = name;
     this.charset = charset;
     this.collation = collation;

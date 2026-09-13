@@ -1,9 +1,15 @@
 package com.schemafy.core.user.application.port.in;
 
-public record SignUpUserCommand(String email, String name, String password) {
+import com.schemafy.core.user.domain.Email;
+import com.schemafy.core.user.domain.UserPolicy;
 
-  public SignUpUserCommand withEmail(String email) {
-    return new SignUpUserCommand(email, name, password);
+public record SignUpUserCommand(String email, String name, String password,
+    String signupVerificationToken) {
+
+  public SignUpUserCommand {
+    email = Email.from(email).address();
+    UserPolicy.validateName(name);
+    UserPolicy.validatePassword(password);
   }
 
 }

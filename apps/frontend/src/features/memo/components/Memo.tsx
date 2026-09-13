@@ -28,8 +28,8 @@ export const Memo = ({ id, data }: MemoProps) => {
       <div className="relative">
         <div
           className={cn(
-            'memo-icon w-[32px] h-[32px] rounded-t-full rounded-br-full bg-schemafy-bg flex justify-center items-center shadow-md cursor-pointer',
-            showThread && 'ring-2 ring-schemafy-blue',
+            'memo-icon schemafy-canvas-panel flex h-9 w-9 cursor-pointer items-center justify-center rounded-t-full rounded-br-full transition-all duration-200',
+            showThread && 'ring-2 ring-schemafy-soft-blue',
           )}
           onClick={handleIconClick}
           onMouseEnter={() => setIsHovered(true)}

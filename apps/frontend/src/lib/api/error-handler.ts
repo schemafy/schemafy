@@ -2,6 +2,15 @@ import { isAxiosError } from 'axios';
 import { toast } from 'sonner';
 import { ErrorCategory, type ApiError, type ErrorResponseData } from './types';
 import { getErrorMessage } from './error-messages';
+import { reportError } from '@/lib';
+
+type HandledAxiosError = {
+  __handledByApiError?: boolean;
+};
+
+interface HandleApiErrorOptions {
+  suppressToast?: boolean;
+}
 
 const isApiError = (data: ErrorResponseData): data is ApiError =>
   'category' in data && typeof data.category === 'string';
@@ -28,16 +37,32 @@ const notifyAutoHandledError = (code: string | undefined, message: string) => {
   toast.info(message);
 };
 
-export const handleApiError = (error: unknown): Promise<never> => {
+export const handleApiError = (
+  error: unknown,
+  options: HandleApiErrorOptions = {},
+): Promise<never> => {
+  const { suppressToast = false } = options;
+
   if (!isAxiosError<ErrorResponseData>(error)) {
     return Promise.reject(error);
   }
+
+  if ((error as HandledAxiosError).__handledByApiError) {
+    return Promise.reject(error);
+  }
+
+  (error as HandledAxiosError).__handledByApiError = true;
 
   const errorData = error.response?.data;
 
   if (!errorData) {
     const { message } = getErrorMessage('NETWORK_ERROR');
-    toast.error(message);
+    reportError(error, {
+      context: '[Network API Error]',
+    });
+    if (!suppressToast) {
+      toast.error(message);
+    }
     return Promise.reject(error);
   }
 
@@ -50,19 +75,27 @@ export const handleApiError = (error: unknown): Promise<never> => {
 
   switch (category) {
     case ErrorCategory.SILENT:
-      console.error('[Silent Error]', errorData);
+      reportError(error, {
+        context: '[Silent API Error]',
+      });
       break;
 
     case ErrorCategory.USER_FEEDBACK:
-      toast.error(message);
+      if (!suppressToast) {
+        toast.error(message);
+      }
       break;
 
     case ErrorCategory.AUTO_HANDLE:
-      notifyAutoHandledError(code, message);
+      if (!suppressToast) {
+        notifyAutoHandledError(code, message);
+      }
       break;
 
     default:
-      toast.error(message);
+      if (!suppressToast) {
+        toast.error(message);
+      }
   }
 
   return Promise.reject(error);

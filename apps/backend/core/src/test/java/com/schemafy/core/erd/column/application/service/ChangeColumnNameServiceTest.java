@@ -23,6 +23,12 @@ import com.schemafy.core.erd.schema.application.port.out.GetSchemaByIdPort;
 import com.schemafy.core.erd.schema.fixture.SchemaFixture;
 import com.schemafy.core.erd.table.application.port.out.GetTableByIdPort;
 import com.schemafy.core.erd.table.fixture.TableFixture;
+import com.schemafy.core.erd.vendor.application.port.in.GetProjectDbVendorQuery;
+import com.schemafy.core.erd.vendor.application.port.in.GetProjectDbVendorUseCase;
+import com.schemafy.core.erd.vendor.domain.DbVendor;
+import com.schemafy.core.erd.vendor.domain.IdentifierCapabilities;
+import com.schemafy.core.erd.vendor.domain.VendorCapabilities;
+import com.schemafy.core.erd.vendor.fixture.DbVendorFixture;
 
 import reactor.core.publisher.Mono;
 import reactor.test.StepVerifier;
@@ -30,6 +36,7 @@ import reactor.test.StepVerifier;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.then;
+import static org.mockito.Mockito.lenient;
 
 @ExtendWith(MockitoExtension.class)
 @DisplayName("ChangeColumnNameService")
@@ -51,6 +58,9 @@ class ChangeColumnNameServiceTest {
   GetSchemaByIdPort getSchemaByIdPort;
 
   @Mock
+  GetProjectDbVendorUseCase getProjectDbVendorUseCase;
+
+  @Mock
   TransactionalOperator transactionalOperator;
 
   @InjectMocks
@@ -60,6 +70,8 @@ class ChangeColumnNameServiceTest {
   void setUpTransaction() {
     given(transactionalOperator.transactional(any(Mono.class)))
         .willAnswer(invocation -> invocation.getArgument(0));
+    lenient().when(getProjectDbVendorUseCase.getProjectDbVendor(any()))
+        .thenReturn(Mono.just(DbVendorFixture.defaultDbVendor()));
   }
 
   @Nested
@@ -96,6 +108,28 @@ class ChangeColumnNameServiceTest {
 
         then(changeColumnNamePort).should()
             .changeColumnName(command.columnId(), newName);
+        then(getProjectDbVendorUseCase).should()
+            .getProjectDbVendor(new GetProjectDbVendorQuery(SchemaFixture.DEFAULT_PROJECT_ID));
+      }
+
+      @Test
+      @DisplayName("현재 이름과 같으면 주변 context 조회 없이 변경 없이 성공한다")
+      void succeedsWithoutContextLookupWhenNameIsSame() {
+        var command = ColumnFixture.changeNameCommand(ColumnFixture.DEFAULT_NAME);
+        var column = ColumnFixture.defaultColumn();
+
+        given(getColumnByIdPort.findColumnById(command.columnId()))
+            .willReturn(Mono.just(column));
+
+        StepVerifier.create(sut.changeColumnName(command))
+            .expectNextMatches(result -> result.operation() == null)
+            .verifyComplete();
+
+        then(getTableByIdPort).shouldHaveNoInteractions();
+        then(getSchemaByIdPort).shouldHaveNoInteractions();
+        then(getColumnsByTableIdPort).shouldHaveNoInteractions();
+        then(getProjectDbVendorUseCase).shouldHaveNoInteractions();
+        then(changeColumnNamePort).shouldHaveNoInteractions();
       }
 
     }
@@ -114,6 +148,37 @@ class ChangeColumnNameServiceTest {
 
         StepVerifier.create(sut.changeColumnName(command))
             .expectErrorMatches(DomainException.hasErrorCode(ColumnErrorCode.NOT_FOUND))
+            .verify();
+
+        then(changeColumnNamePort).shouldHaveNoInteractions();
+      }
+
+    }
+
+    @Nested
+    @DisplayName("vendor identifier 제한을 넘으면")
+    class WhenNameExceedsVendorIdentifierLimit {
+
+      @Test
+      @DisplayName("컬럼 이름 변경을 거부한다")
+      void rejectsNameThatExceedsVendorLimit() {
+        var command = ColumnFixture.changeNameCommand("a".repeat(11));
+        var column = ColumnFixture.defaultColumn();
+
+        given(getColumnByIdPort.findColumnById(any()))
+            .willReturn(Mono.just(column));
+        given(getTableByIdPort.findTableById(any()))
+            .willReturn(Mono.just(TableFixture.defaultTable()));
+        given(getSchemaByIdPort.findSchemaById(any()))
+            .willReturn(Mono.just(SchemaFixture.defaultSchema()));
+        given(getColumnsByTableIdPort.findColumnsByTableId(any()))
+            .willReturn(Mono.just(List.of(column)));
+        given(getProjectDbVendorUseCase.getProjectDbVendor(
+            new GetProjectDbVendorQuery(SchemaFixture.DEFAULT_PROJECT_ID)))
+            .willReturn(Mono.just(dbVendorWithIdentifierMax(10)));
+
+        StepVerifier.create(sut.changeColumnName(command))
+            .expectErrorMatches(DomainException.hasErrorCode(ColumnErrorCode.NAME_INVALID))
             .verify();
 
         then(changeColumnNamePort).shouldHaveNoInteractions();
@@ -192,18 +257,6 @@ class ChangeColumnNameServiceTest {
       @DisplayName("ColumnNameInvalidException이 발생한다")
       void throwsColumnNameInvalidException() {
         var command = ColumnFixture.changeNameCommand("123invalid");
-        var column = ColumnFixture.defaultColumn();
-        var table = TableFixture.defaultTable();
-        var schema = SchemaFixture.defaultSchema();
-
-        given(getColumnByIdPort.findColumnById(any()))
-            .willReturn(Mono.just(column));
-        given(getTableByIdPort.findTableById(any()))
-            .willReturn(Mono.just(table));
-        given(getSchemaByIdPort.findSchemaById(any()))
-            .willReturn(Mono.just(schema));
-        given(getColumnsByTableIdPort.findColumnsByTableId(any()))
-            .willReturn(Mono.just(List.of(column)));
 
         StepVerifier.create(sut.changeColumnName(command))
             .expectErrorMatches(DomainException.hasErrorCode(ColumnErrorCode.NAME_INVALID))
@@ -214,6 +267,21 @@ class ChangeColumnNameServiceTest {
 
     }
 
+  }
+
+  private static DbVendor dbVendorWithIdentifierMax(int maxLength) {
+    DbVendor vendor = DbVendorFixture.defaultDbVendor();
+    VendorCapabilities capabilities = vendor.capabilities();
+    return new DbVendor(
+        vendor.id(),
+        vendor.displayName(),
+        vendor.name(),
+        vendor.version(),
+        vendor.datatypeMappings(),
+        new VendorCapabilities(
+            capabilities.schemaVersion(),
+            capabilities.indexes(),
+            IdentifierCapabilities.codePoints(maxLength)));
   }
 
 }

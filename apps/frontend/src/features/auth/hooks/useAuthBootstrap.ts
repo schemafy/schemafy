@@ -1,5 +1,5 @@
 import { useEffect } from 'react';
-import { ensureAuthInitialized } from '@/features/auth/lib/auth-bootstrap';
+import { ensureAuthInitialized } from '../lib/auth-bootstrap';
 
 export const useAuthBootstrap = () => {
   useEffect(() => {

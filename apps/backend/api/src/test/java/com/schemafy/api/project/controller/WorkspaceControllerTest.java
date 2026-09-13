@@ -29,8 +29,8 @@ import com.schemafy.core.project.domain.WorkspaceMember;
 import com.schemafy.core.project.domain.WorkspaceRole;
 import com.schemafy.core.user.domain.User;
 
+import static com.epages.restdocs.apispec.WebTestClientRestDocumentationWrapper.document;
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.springframework.restdocs.webtestclient.WebTestClientRestDocumentation.document;
 
 @ActiveProfiles("test")
 @SpringBootTest
@@ -473,11 +473,11 @@ class WorkspaceControllerTest extends ProjectHttpTestSupport {
     assertThat(deletedWorkspace).isNull();
 
     Project deletedProject = projectRepository
-        .findByIdAndNotDeleted(project.getId()).block();
+        .findByIdAndDeletedAtIsNull(project.getId()).block();
     assertThat(deletedProject).isNull();
 
     ProjectMember activeProjectMember = projectMemberRepository
-        .findByProjectIdAndUserIdAndNotDeleted(project.getId(), testUser2Id).block();
+        .findByProjectIdAndUserIdAndDeletedAtIsNull(project.getId(), testUser2Id).block();
     assertThat(activeProjectMember).isNull();
   }
 

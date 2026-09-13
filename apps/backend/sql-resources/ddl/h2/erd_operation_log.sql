@@ -13,7 +13,6 @@ CREATE TABLE IF NOT EXISTS erd_operation_log (
     lifecycle_state         VARCHAR(32)  NOT NULL,
     payload_json            JSON         NOT NULL,
     inverse_payload_json    JSON         NULL,
-    touched_entities_json   JSON         NOT NULL,
     affected_table_ids_json JSON         NOT NULL,
     created_at              TIMESTAMP    NOT NULL DEFAULT CURRENT_TIMESTAMP,
     CONSTRAINT pk_erd_operation_log PRIMARY KEY (op_id),
@@ -22,3 +21,6 @@ CREATE TABLE IF NOT EXISTS erd_operation_log (
 
 CREATE UNIQUE INDEX IF NOT EXISTS uq_erd_operation_log_derived_from_op
     ON erd_operation_log (derived_from_op_id);
+
+ALTER TABLE erd_operation_log
+    DROP COLUMN IF EXISTS touched_entities_json;

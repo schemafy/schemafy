@@ -12,25 +12,23 @@ import type {
   ChangeTableMetaRequest,
   ChangeTableExtraRequest,
 } from '../api';
-import { syncCommittedRevision } from '../api/mutation-request';
 import { useErdCache } from './useErdCache';
 
 export const useCreateTableWithExtra = (schemaId: string) => {
-  const { updateAffectedTables } = useErdCache(schemaId);
+  const { syncAffectedTables } = useErdCache(schemaId);
   return useMutation({
     mutationFn: (data: {
       request: CreateTableRequest;
       extra: NonNullable<CreateTableRequest['extra']>;
     }) => createTable({ ...data.request, extra: data.extra }),
     onSuccess: (result) => {
-      syncCommittedRevision(schemaId, result);
-      updateAffectedTables(result.affectedTableIds);
+      syncAffectedTables(result);
     },
   });
 };
 
 export const useChangeTableName = (schemaId: string) => {
-  const { updateAffectedTables } = useErdCache(schemaId);
+  const { syncAffectedTables } = useErdCache(schemaId);
   return useMutation({
     mutationFn: ({
       tableId,
@@ -40,14 +38,13 @@ export const useChangeTableName = (schemaId: string) => {
       data: ChangeTableNameRequest;
     }) => changeTableName(tableId, data, schemaId),
     onSuccess: (result) => {
-      syncCommittedRevision(schemaId, result);
-      updateAffectedTables(result.affectedTableIds);
+      syncAffectedTables(result);
     },
   });
 };
 
 export const useChangeTableMeta = (schemaId: string) => {
-  const { updateAffectedTables } = useErdCache(schemaId);
+  const { syncAffectedTables } = useErdCache(schemaId);
   return useMutation({
     mutationFn: ({
       tableId,
@@ -57,14 +54,13 @@ export const useChangeTableMeta = (schemaId: string) => {
       data: ChangeTableMetaRequest;
     }) => changeTableMeta(tableId, data, schemaId),
     onSuccess: (result) => {
-      syncCommittedRevision(schemaId, result);
-      updateAffectedTables(result.affectedTableIds);
+      syncAffectedTables(result);
     },
   });
 };
 
 export const useChangeTableExtra = (schemaId: string) => {
-  const { updateAffectedTables } = useErdCache(schemaId);
+  const { syncAffectedTables } = useErdCache(schemaId);
   return useMutation({
     mutationFn: ({
       tableId,
@@ -74,19 +70,17 @@ export const useChangeTableExtra = (schemaId: string) => {
       data: ChangeTableExtraRequest;
     }) => changeTableExtra(tableId, data, schemaId),
     onSuccess: (result) => {
-      syncCommittedRevision(schemaId, result);
-      updateAffectedTables(result.affectedTableIds);
+      syncAffectedTables(result);
     },
   });
 };
 
 export const useDeleteTable = (schemaId: string) => {
-  const { removeAndUpdate } = useErdCache(schemaId);
+  const { syncRemovedTable } = useErdCache(schemaId);
   return useMutation({
     mutationFn: (tableId: string) => deleteTable(tableId, schemaId),
     onSuccess: (result, tableId) => {
-      syncCommittedRevision(schemaId, result);
-      removeAndUpdate(tableId, result.affectedTableIds);
+      syncRemovedTable(tableId, result);
     },
   });
 };
