@@ -15,7 +15,7 @@ test.describe('Login Flow', () => {
 
     await page.click('button[type="submit"]');
 
-    await expect(page).toHaveURL('http://localhost:3001/');
+    await expect(page).toHaveURL('http://localhost:3000/');
 
     await expect(page.getByRole('button', { name: 'Sign In' })).not.toBeVisible();
   });
