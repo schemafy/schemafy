@@ -173,9 +173,6 @@ class SchemafyResourceIntegrationTest {
   GetShareLinkUseCase getShareLinkUseCase;
 
   @MockitoBean
-  ErdStateSyncPublisher stateSyncPublisher;
-
-  @MockitoBean
   DeleteSchemaUseCase deleteSchemaUseCase;
 
   @MockitoBean
