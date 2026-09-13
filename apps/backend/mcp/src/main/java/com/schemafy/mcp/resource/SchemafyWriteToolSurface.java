@@ -395,7 +395,7 @@ final class SchemafyWriteToolSurface {
       Map<String, Object> property = new LinkedHashMap<>();
       property.put("type", "string");
       property.put("description", values[index + 1]);
-      if ("name".equals(name) || "newName".equals(name)) {
+      if ("name".equals(name)) {
         property.put("maxLength", 255);
       } else if ("description".equals(name)) {
         property.put("maxLength", 1000);

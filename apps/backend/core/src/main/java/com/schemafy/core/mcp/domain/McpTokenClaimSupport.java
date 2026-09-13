@@ -5,6 +5,7 @@ import java.util.LinkedHashSet;
 import java.util.Objects;
 import java.util.Set;
 import java.util.function.Function;
+import java.util.stream.Collectors;
 
 public final class McpTokenClaimSupport {
 
@@ -42,7 +43,7 @@ public final class McpTokenClaimSupport {
         .map(String::trim)
         .filter(scope -> !scope.isBlank())
         .sorted()
-        .collect(java.util.stream.Collectors.joining(" "));
+        .collect(Collectors.joining(" "));
   }
 
   public static Set<String> scopesFromStoredValue(String scope) {
