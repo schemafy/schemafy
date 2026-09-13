@@ -109,6 +109,26 @@ class McpTokenServiceTest {
   }
 
   @Test
+  @DisplayName("고위험 MCP 도구용 scope를 명시적으로 발급한다")
+  void issuesRequestedDestructiveScopes() {
+    Set<String> requestedScopes = Set.of(
+        McpScope.WORKSPACE_DESTRUCTIVE.value(),
+        McpScope.ERD_DESTRUCTIVE.value(),
+        McpScope.MEMO_DESTRUCTIVE.value());
+
+    McpTokenIssueResult result = tokenService.issue("user-1", requestedScopes).block();
+
+    assertThat(result.scopes()).containsExactlyInAnyOrder(
+        McpScope.MCP.value(),
+        McpScope.WORKSPACE_DESTRUCTIVE.value(),
+        McpScope.ERD_DESTRUCTIVE.value(),
+        McpScope.MEMO_DESTRUCTIVE.value());
+    assertThat(mcpTokenUseCase.savedTokens()).singleElement()
+        .extracting(McpToken::getScope)
+        .isEqualTo(McpTokenClaimSupport.canonicalScopeValue(result.scopes()));
+  }
+
+  @Test
   @DisplayName("사용자 자신의 MCP 토큰을 revoke하면 DB와 Redis cache에 폐기 상태를 저장한다")
   void revokesOwnMcpToken() {
     McpTokenIssueResult result = tokenService.issue("user-1").block();

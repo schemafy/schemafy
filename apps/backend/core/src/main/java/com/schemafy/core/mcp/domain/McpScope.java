@@ -8,8 +8,11 @@ public enum McpScope {
 
   MCP("mcp"),
   WORKSPACE_WRITE("mcp:workspace:write"),
+  WORKSPACE_DESTRUCTIVE("mcp:workspace:destructive"),
   ERD_WRITE("mcp:erd:write"),
+  ERD_DESTRUCTIVE("mcp:erd:destructive"),
   MEMO_WRITE("mcp:memo:write"),
+  MEMO_DESTRUCTIVE("mcp:memo:destructive"),
   MEMBERSHIP_ADMIN("mcp:membership:admin"),
   INVITATION_WRITE("mcp:invitation:write"),
   SHARE_LINK_READ("mcp:share-link:read"),
