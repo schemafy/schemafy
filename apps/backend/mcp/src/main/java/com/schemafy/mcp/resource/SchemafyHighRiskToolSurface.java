@@ -326,9 +326,19 @@ final class SchemafyHighRiskToolSurface {
   }
 
   private Mono<McpSchema.CallToolResult> deleteTable(McpSchema.CallToolRequest request) {
-    return executeMutation(request, "schemafy_delete_table", "tableId", actor -> deleteTableUseCase.deleteTable(
-        new DeleteTableCommand(required(request, "tableId")))
-        .flatMap(result -> publishActive(result).thenReturn(mutation(result))));
+    return executeMutation(request, "schemafy_delete_table", "tableId", actor -> {
+      String tableId = required(request, "tableId");
+      ErdStateSyncPublisher publisher = publisherProvider.getIfAvailable();
+      Mono<MutationResult<Void>> deletion = deleteTableUseCase.deleteTable(
+          new DeleteTableCommand(tableId));
+      if (publisher == null) {
+        return deletion.map(this::mutation);
+      }
+      return publisher.resolveFromTableId(tableId)
+          .flatMap(context -> deletion.flatMap(result -> publisher
+              .publishActiveWithContext(context, result.affectedTableIds(), result.operation())
+              .thenReturn(mutation(result))));
+    });
   }
 
   private Mono<McpSchema.CallToolResult> deleteColumn(McpSchema.CallToolRequest request) {
