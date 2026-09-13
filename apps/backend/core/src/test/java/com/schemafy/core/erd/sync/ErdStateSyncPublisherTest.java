@@ -19,6 +19,7 @@ import reactor.test.StepVerifier;
 
 import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.then;
+import static org.mockito.Mockito.times;
 
 @ExtendWith(MockitoExtension.class)
 class ErdStateSyncPublisherTest {
@@ -80,7 +81,7 @@ class ErdStateSyncPublisherTest {
         .verifyComplete();
 
     then(mutationBroadcaster).should().broadcastWithContext(CONTEXT, AFFECTED_TABLE_IDS, OPERATION);
-    then(snapshotEnqueuer).should().enqueueActive("project-1", "schema-1", 7L);
+    then(snapshotEnqueuer).should(times(3)).enqueueActive("project-1", "schema-1", 7L);
   }
 
 }

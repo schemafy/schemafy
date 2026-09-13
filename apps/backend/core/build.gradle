@@ -123,11 +123,6 @@ test {
 }
 
 sourceSets {
-    main {
-        resources {
-            srcDir '../sql-resources'
-        }
-    }
     test {
         resources {
             srcDir 'src/test/resources'

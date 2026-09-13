@@ -52,6 +52,14 @@ spring:
       mode: always
       schema-locations: classpath:ddl/mariadb/**/*.sql
 
+collaboration:
+  erd-state-snapshot:
+    debounce: ${ERD_STATE_SNAPSHOT_DEBOUNCE:100ms}
+    max-wait: ${ERD_STATE_SNAPSHOT_MAX_WAIT:500ms}
+    retry-backoff: ${ERD_STATE_SNAPSHOT_RETRY_BACKOFF:100ms}
+    max-retry-backoff: ${ERD_STATE_SNAPSHOT_MAX_RETRY_BACKOFF:400ms}
+    completed-watermark-ttl: ${ERD_STATE_SNAPSHOT_COMPLETED_WATERMARK_TTL:4h}
+
 server:
   port: ${MCP_SERVER_PORT:8081}
 

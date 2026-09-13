@@ -16,7 +16,7 @@ import reactor.core.scheduler.Schedulers;
 import reactor.util.retry.Retry;
 
 @Slf4j
-@Service("coreErdStateSyncPublisher")
+@Service
 @RequiredArgsConstructor
 @ConditionalOnRedisEnabled
 public class ErdStateSyncPublisher {
@@ -75,12 +75,13 @@ public class ErdStateSyncPublisher {
       return Mono.empty();
     }
     Set<String> tableIds = affectedTableIds == null ? Set.of() : affectedTableIds;
-    Mono<Void> compatibilityEvent = mutationBroadcaster.broadcastWithContext(context, tableIds, operation);
+    Mono<Void> compatibilityEvent = Mono.defer(
+        () -> mutationBroadcaster.broadcastWithContext(context, tableIds, operation));
     Mono<Void> snapshotEvent = deleted
-        ? enqueueWithRetry("deleted", snapshotEnqueuer.enqueueDeleted(
-            context.projectId(), context.schemaId(), operation.committedRevision()))
-        : enqueueWithRetry("active", snapshotEnqueuer.enqueueActive(
-            context.projectId(), context.schemaId(), operation.committedRevision()));
+        ? enqueueWithRetry("deleted", Mono.defer(() -> snapshotEnqueuer.enqueueDeleted(
+            context.projectId(), context.schemaId(), operation.committedRevision())))
+        : enqueueWithRetry("active", Mono.defer(() -> snapshotEnqueuer.enqueueActive(
+            context.projectId(), context.schemaId(), operation.committedRevision())));
     return suppressFailure(deleted ? "deleted" : "active", Mono.whenDelayError(compatibilityEvent, snapshotEvent));
   }
 
@@ -89,7 +90,7 @@ public class ErdStateSyncPublisher {
         .maxBackoff(properties.getMaxRetryBackoff())
         .jitter(0D)
         .scheduler(Schedulers.parallel())
-        .doBeforeRetry(signal -> log.warn("mcp_erd_snapshot_enqueue_retry kind={} retry={}", kind,
+        .doBeforeRetry(signal -> log.warn("erd_state_snapshot_enqueue_retry kind={} retry={}", kind,
             signal.totalRetries() + 1)));
   }
 
