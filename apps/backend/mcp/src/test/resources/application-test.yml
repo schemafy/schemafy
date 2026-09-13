@@ -55,7 +55,7 @@ collaboration:
 
 app:
   base-url: http://localhost:8080
-  api-version: v1
+  api-version: v1.0
 
 mcp:
   security:
