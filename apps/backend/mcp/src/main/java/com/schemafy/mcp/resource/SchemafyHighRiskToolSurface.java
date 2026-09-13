@@ -90,6 +90,8 @@ import static com.schemafy.mcp.resource.SchemafyMcpFeatureFactory.updateTool;
 @RequiredArgsConstructor
 final class SchemafyHighRiskToolSurface {
 
+  private static final int MAX_SHARE_LINK_PAGE_SIZE = 100;
+
   private final McpWriteExecutor writeExecutor;
   private final McpResponseWriter responseWriter;
   private final ObjectProvider<ErdStateSyncPublisher> publisherProvider;
@@ -163,7 +165,7 @@ final class SchemafyHighRiskToolSurface {
             List.of("projectId", "targetUserId", "confirmed"), this::removeProjectMember),
         tool("schemafy_list_share_links", "List share links", "List share links without exposing their codes or URLs.",
             Map.of("projectId", stringProperty("Project ID."), "page", integerProperty(0), "size", integerProperty(
-                100)),
+                100, 1, MAX_SHARE_LINK_PAGE_SIZE)),
             List.of("projectId"), this::listShareLinks),
         tool("schemafy_get_share_link", "Get share link", "Get share-link metadata without exposing its code or URL.",
             ids("projectId", "shareLinkId"), List.of("projectId", "shareLinkId"), this::getShareLink),
@@ -283,16 +285,24 @@ final class SchemafyHighRiskToolSurface {
 
   private Mono<McpSchema.CallToolResult> listShareLinks(McpSchema.CallToolRequest request) {
     return readScope(request, "schemafy_list_share_links", McpScope.SHARE_LINK_READ, actor -> responseWriter
-        .toolPayload(
-            getShareLinksUseCase.getShareLinks(new GetShareLinksQuery(required(request, "projectId"), actor.userId(),
-                integer(request, "page", 0), integer(request, "size", 100))).map(result -> result.map(
-                    this::redactedShareLink))));
+        .toolPayload(Mono.defer(() -> {
+          int page = integer(request, "page", 0);
+          int size = integer(request, "size", MAX_SHARE_LINK_PAGE_SIZE);
+          if (size < 1 || size > MAX_SHARE_LINK_PAGE_SIZE) {
+            throw new IllegalArgumentException("size must be an integer between 1 and "
+                + MAX_SHARE_LINK_PAGE_SIZE);
+          }
+          return getShareLinksUseCase.getShareLinks(new GetShareLinksQuery(required(request, "projectId"), actor
+              .userId(),
+              page, size)).map(result -> result.map(this::redactedShareLink));
+        })));
   }
 
   private Mono<McpSchema.CallToolResult> getShareLink(McpSchema.CallToolRequest request) {
-    return readScope(request, "schemafy_get_share_link", McpScope.SHARE_LINK_READ, actor -> responseWriter.toolPayload(
-        getShareLinkUseCase.getShareLink(new GetShareLinkQuery(required(request, "projectId"), required(request,
-            "shareLinkId"), actor.userId())).map(this::redactedShareLink)));
+    return readScope(request, "schemafy_get_share_link", McpScope.SHARE_LINK_READ, actor -> responseWriter
+        .toolPayload(Mono.defer(() -> getShareLinkUseCase.getShareLink(new GetShareLinkQuery(
+            required(request, "projectId"), required(request, "shareLinkId"), actor.userId()))
+            .map(this::redactedShareLink))));
   }
 
   private Mono<McpSchema.CallToolResult> createShareLink(McpSchema.CallToolRequest request) {
@@ -433,9 +443,9 @@ final class SchemafyHighRiskToolSurface {
   private Mono<McpSchema.CallToolResult> readScope(
       McpSchema.CallToolRequest request, String tool, McpScope scope,
       Function<McpAuthenticatedPrincipal, Mono<McpSchema.CallToolResult>> action) {
-    return writeExecutor.principal().flatMap(actor -> actor.scopes().contains(scope.value())
-        ? action.apply(actor)
-        : Mono.just(responseWriter.toolError("MCP token scope is insufficient")));
+    return responseWriter.toolResult(writeExecutor.principal().flatMap(actor -> actor.scopes().contains(scope.value())
+        ? Mono.defer(() -> action.apply(actor))
+        : Mono.just(responseWriter.toolError("MCP token scope is insufficient"))));
   }
 
   private Mono<Void> publishActive(MutationResult<?> result) {
@@ -507,8 +517,12 @@ final class SchemafyHighRiskToolSurface {
     if (value == null) {
       return defaultValue;
     }
-    if (value instanceof Number number && number.intValue() >= 0) {
-      return number.intValue();
+    if (value instanceof Number number) {
+      double decimalValue = number.doubleValue();
+      int integerValue = number.intValue();
+      if (Double.isFinite(decimalValue) && decimalValue == integerValue && integerValue >= 0) {
+        return integerValue;
+      }
     }
     throw new IllegalArgumentException(name + " must be a non-negative integer");
   }
@@ -547,6 +561,10 @@ final class SchemafyHighRiskToolSurface {
 
   private static Map<String, Object> integerProperty(int defaultValue) {
     return Map.of("type", "integer", "minimum", 0, "default", defaultValue);
+  }
+
+  private static Map<String, Object> integerProperty(int defaultValue, int minimum, int maximum) {
+    return Map.of("type", "integer", "minimum", minimum, "maximum", maximum, "default", defaultValue);
   }
 
 }
