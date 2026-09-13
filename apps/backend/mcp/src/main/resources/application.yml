@@ -70,7 +70,7 @@ server:
 
 app:
   base-url: ${APP_BASE_URL:http://localhost:8080}
-  api-version: ${APP_API_VERSION:v1}
+  api-version: ${APP_API_VERSION:v1.0}
 
 mcp:
   security:

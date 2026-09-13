@@ -126,7 +126,7 @@ final class SchemafyHighRiskToolSurface {
   @Value("${app.base-url:http://localhost:8080}")
   private String baseUrl;
 
-  @Value("${app.api-version:v1}")
+  @Value("${app.api-version:v1.0}")
   private String apiVersion;
 
   List<McpServerFeatures.AsyncToolSpecification> specifications() {
@@ -327,13 +327,13 @@ final class SchemafyHighRiskToolSurface {
   }
 
   private Mono<McpSchema.CallToolResult> deleteWorkspace(McpSchema.CallToolRequest request) {
-    return executeVoid(request, "schemafy_delete_workspace", McpScope.WORKSPACE_DESTRUCTIVE, "workspaceId",
+    return executeVoid(request, "schemafy_delete_workspace", McpScope.WORKSPACE_WRITE, "workspaceId",
         actor -> deleteWorkspaceUseCase.deleteWorkspace(new DeleteWorkspaceCommand(required(request, "workspaceId"),
             actor.userId())));
   }
 
   private Mono<McpSchema.CallToolResult> deleteProject(McpSchema.CallToolRequest request) {
-    return executeVoid(request, "schemafy_delete_project", McpScope.WORKSPACE_DESTRUCTIVE, "projectId",
+    return executeVoid(request, "schemafy_delete_project", McpScope.WORKSPACE_WRITE, "projectId",
         actor -> deleteProjectUseCase.deleteProject(new DeleteProjectCommand(required(request, "projectId"), actor
             .userId())));
   }
@@ -405,12 +405,12 @@ final class SchemafyHighRiskToolSurface {
   }
 
   private Mono<McpSchema.CallToolResult> deleteMemo(McpSchema.CallToolRequest request) {
-    return executeVoid(request, "schemafy_delete_memo", McpScope.MEMO_DESTRUCTIVE, "memoId", actor -> deleteMemoUseCase
+    return executeVoid(request, "schemafy_delete_memo", McpScope.MEMO_WRITE, "memoId", actor -> deleteMemoUseCase
         .deleteMemo(new DeleteMemoCommand(required(request, "memoId"), actor.userId())));
   }
 
   private Mono<McpSchema.CallToolResult> deleteMemoComment(McpSchema.CallToolRequest request) {
-    return executeVoid(request, "schemafy_delete_memo_comment", McpScope.MEMO_DESTRUCTIVE, "commentId",
+    return executeVoid(request, "schemafy_delete_memo_comment", McpScope.MEMO_WRITE, "commentId",
         actor -> deleteMemoCommentUseCase.deleteMemoComment(new DeleteMemoCommentCommand(required(request, "commentId"),
             actor.userId())));
   }
@@ -443,7 +443,7 @@ final class SchemafyHighRiskToolSurface {
   private Mono<McpSchema.CallToolResult> executeMutation(
       McpSchema.CallToolRequest request, String tool, String target,
       Function<McpAuthenticatedPrincipal, Mono<Map<String, Object>>> action) {
-    return execute(request, tool, McpScope.ERD_DESTRUCTIVE, target, action::apply);
+    return execute(request, tool, McpScope.ERD_WRITE, target, action::apply);
   }
 
   private Mono<McpSchema.CallToolResult> readScope(
