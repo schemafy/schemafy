@@ -1,7 +1,6 @@
 package com.schemafy.core.project.application.service;
 
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.reactive.TransactionalOperator;
 
 import com.schemafy.core.project.application.access.RequireWorkspaceAccess;
 import com.schemafy.core.project.application.port.in.CreateWorkspaceInvitationCommand;
@@ -20,32 +19,34 @@ import reactor.core.publisher.Mono;
 class CreateWorkspaceInvitationService
     implements CreateWorkspaceInvitationUseCase {
 
-  private final TransactionalOperator transactionalOperator;
+  private final WorkspaceMutationGuard workspaceMutationGuard;
   private final UlidGeneratorPort ulidGeneratorPort;
   private final InvitationPort invitationPort;
   private final WorkspaceInvitationHelper workspaceInvitationHelper;
+  private final WorkspaceAccessHelper workspaceAccessHelper;
 
   @Override
   @RequireWorkspaceAccess(role = WorkspaceRole.ADMIN)
   public Mono<Invitation> createWorkspaceInvitation(
       CreateWorkspaceInvitationCommand command) {
     return Mono.fromSupplier(() -> Email.from(command.email()))
-        .flatMap(email -> workspaceInvitationHelper
-            .findWorkspaceOrThrow(command.workspaceId())
-            .flatMap(workspace -> workspaceInvitationHelper
-                .checkNotAlreadyMemberByEmail(command.workspaceId(), email)
-                .then(workspaceInvitationHelper.checkDuplicatePendingInvitation(
-                    command.workspaceId(), email))
-                .thenReturn(workspace))
-            .flatMap(workspace -> Mono.fromCallable(ulidGeneratorPort::generate)
-                .flatMap(id -> invitationPort.save(
-                    Invitation.createWorkspaceInvitation(
-                        id,
-                        command.workspaceId(),
-                        email.address(),
-                        command.role(),
-                        command.requesterId())))))
-        .as(transactionalOperator::transactional);
+        .flatMap(email -> workspaceMutationGuard.protectShared(
+            command.workspaceId(), () -> workspaceAccessHelper
+                .findWorkspaceAdminMember(command.requesterId(), command.workspaceId())
+                .then(Mono.defer(() -> workspaceInvitationHelper
+                    .findWorkspaceOrThrow(command.workspaceId())
+                    .then(workspaceInvitationHelper
+                        .checkNotAlreadyMemberByEmail(command.workspaceId(), email)
+                        .then(workspaceInvitationHelper.checkDuplicatePendingInvitation(
+                            command.workspaceId(), email)))
+                    .then(Mono.fromCallable(ulidGeneratorPort::generate)
+                        .flatMap(id -> invitationPort.save(
+                            Invitation.createWorkspaceInvitation(
+                                id,
+                                command.workspaceId(),
+                                email.address(),
+                                command.role(),
+                                command.requesterId()))))))));
   }
 
 }

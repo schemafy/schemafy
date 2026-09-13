@@ -45,6 +45,16 @@ class ProjectAccessHelper {
             ProjectErrorCode.MEMBER_NOT_FOUND)));
   }
 
+  Mono<ProjectMember> findProjectAdminMember(String userId, String projectId) {
+    return projectMemberPort
+        .findByProjectIdAndUserIdAndNotDeleted(projectId, userId)
+        .switchIfEmpty(Mono.error(new DomainException(
+            ProjectErrorCode.ACCESS_DENIED)))
+        .flatMap(member -> member.isAdmin()
+            ? Mono.just(member)
+            : Mono.error(new DomainException(ProjectErrorCode.ADMIN_REQUIRED)));
+  }
+
   Mono<Void> softDeleteMember(ProjectMember member) {
     return projectMemberPort.softDeleteByProjectIdAndUserId(member.getProjectId(),
         member.getUserId()).then();

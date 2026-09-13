@@ -15,6 +15,8 @@ public interface WorkspacePort {
 
   Mono<Workspace> findByIdAndNotDeletedForUpdate(String workspaceId);
 
+  Mono<Long> updateIfActive(String workspaceId, String name, String description);
+
   Flux<Workspace> findByUserIdWithPaging(String userId, int limit, int offset);
 
   Mono<Long> countByUserId(String userId);

@@ -1,7 +1,6 @@
 package com.schemafy.core.project.application.service;
 
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.reactive.TransactionalOperator;
 
 import com.schemafy.core.project.application.access.RequireProjectAccess;
 import com.schemafy.core.project.application.port.in.CreateProjectInvitationCommand;
@@ -19,33 +18,36 @@ import reactor.core.publisher.Mono;
 @RequiredArgsConstructor
 class CreateProjectInvitationService implements CreateProjectInvitationUseCase {
 
-  private final TransactionalOperator transactionalOperator;
+  private final ProjectMutationGuard projectMutationGuard;
   private final UlidGeneratorPort ulidGeneratorPort;
   private final InvitationPort invitationPort;
   private final ProjectInvitationHelper projectInvitationHelper;
+  private final ProjectAccessHelper projectAccessHelper;
 
   @Override
   @RequireProjectAccess(role = ProjectRole.ADMIN)
   public Mono<Invitation> createProjectInvitation(
       CreateProjectInvitationCommand command) {
     return Mono.fromSupplier(() -> Email.from(command.email()))
-        .flatMap(email -> projectInvitationHelper
-            .findProjectOrThrow(command.projectId())
-            .flatMap(project -> projectInvitationHelper
-                .checkNotAlreadyProjectMemberByEmail(command.projectId(), email)
-                .then(projectInvitationHelper.checkDuplicatePendingInvitation(
-                    command.projectId(), email))
-                .thenReturn(project))
-            .flatMap(project -> Mono.fromCallable(ulidGeneratorPort::generate)
-                .flatMap(id -> invitationPort.save(
-                    Invitation.createProjectInvitation(
-                        id,
-                        command.projectId(),
-                        project.getWorkspaceId(),
-                        email.address(),
-                        command.role(),
-                        command.requesterId())))))
-        .as(transactionalOperator::transactional);
+        .flatMap(email -> projectMutationGuard.protectChildCreation(
+            command.projectId(), () -> projectAccessHelper
+                .findProjectAdminMember(command.requesterId(), command.projectId())
+                .then(Mono.defer(() -> projectInvitationHelper
+                    .findProjectOrThrow(command.projectId())
+                    .flatMap(project -> projectInvitationHelper
+                        .checkNotAlreadyProjectMemberByEmail(command.projectId(), email)
+                        .then(projectInvitationHelper.checkDuplicatePendingInvitation(
+                            command.projectId(), email))
+                        .thenReturn(project))
+                    .flatMap(project -> Mono.fromCallable(ulidGeneratorPort::generate)
+                        .flatMap(id -> invitationPort.save(
+                            Invitation.createProjectInvitation(
+                                id,
+                                command.projectId(),
+                                project.getWorkspaceId(),
+                                email.address(),
+                                command.role(),
+                                command.requesterId()))))))));
   }
 
 }

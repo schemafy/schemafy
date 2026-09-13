@@ -3,7 +3,6 @@ package com.schemafy.core.project.application.service;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.dao.OptimisticLockingFailureException;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.reactive.TransactionalOperator;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -16,6 +15,7 @@ import com.schemafy.core.project.domain.InvitationStatus;
 import com.schemafy.core.project.domain.ProjectMember;
 import com.schemafy.core.project.domain.exception.ProjectErrorCode;
 import com.schemafy.core.user.application.port.out.FindUserByIdPort;
+import com.schemafy.core.user.domain.User;
 import com.schemafy.core.user.domain.exception.UserErrorCode;
 
 import lombok.RequiredArgsConstructor;
@@ -29,7 +29,7 @@ class AcceptProjectInvitationService implements AcceptProjectInvitationUseCase {
   private static final Logger log = LoggerFactory.getLogger(
       AcceptProjectInvitationService.class);
 
-  private final TransactionalOperator transactionalOperator;
+  private final ProjectMutationGuard projectMutationGuard;
   private final InvitationPort invitationPort;
   private final ProjectInvitationHelper projectInvitationHelper;
   private final FindUserByIdPort findUserByIdPort;
@@ -47,47 +47,57 @@ class AcceptProjectInvitationService implements AcceptProjectInvitationUseCase {
                 return Mono.error(new DomainException(
                     ProjectErrorCode.INVITATION_TYPE_MISMATCH));
               }
-
-              invitation.validateInvitedEmailMatches(user.email());
-              return projectInvitationHelper.findProjectOrThrow(
-                  invitation.getProjectId())
-                  .then(projectInvitationHelper.checkNotAlreadyProjectMember(
-                      invitation.getProjectId(),
-                      command.requesterId()))
-                  .then(Mono.defer(() -> {
-                    invitation.accept();
-
-                    return invitationPort.save(invitation)
-                        .then(invitationPort.updateStatusByTargetAndEmail(
-                            invitation.getTargetType(),
-                            invitation.getTargetId(),
-                            invitation.getInvitedEmail(),
-                            InvitationStatus.CANCELLED.name(),
-                            InvitationStatus.PENDING.name(),
-                            invitation.getId()))
-                        .then(projectInvitationHelper.saveOrRestoreProjectMember(
-                            invitation.getProjectId(),
-                            command.requesterId(),
-                            invitation.getProjectRole()))
-                        .onErrorResume(DataIntegrityViolationException.class,
-                            error -> {
-                              log.warn(
-                                  "Concurrent member creation on invitation accept: invitationId={}",
-                                  command.invitationId());
-                              return Mono.error(new DomainException(
-                                  ProjectErrorCode.INVITATION_DUPLICATE_MEMBERSHIP_PROJECT));
-                            });
-                  }));
+              return projectMutationGuard.protectChildCreation(
+                  invitation.getProjectId(), () -> acceptLockedInvitation(command, user));
             }))
-        .as(transactionalOperator::transactional)
         .retryWhen(Retry.max(3)
             .filter(OptimisticLockingFailureException.class::isInstance)
             .doBeforeRetry(signal -> log.warn(
                 "Retrying due to concurrent modification: invitationId={}",
-                command.invitationId())))
+                command.invitationId()))
+            .onRetryExhaustedThrow((spec, signal) -> signal.failure()))
         .onErrorMap(OptimisticLockingFailureException.class,
             error -> new DomainException(
                 ProjectErrorCode.INVITATION_CONCURRENT_PROCESSED));
+  }
+
+  private Mono<ProjectMember> acceptLockedInvitation(
+      AcceptProjectInvitationCommand command,
+      User user) {
+    return projectInvitationHelper.findInvitationOrThrow(command.invitationId())
+        .flatMap(invitation -> {
+          if (!invitation.getTargetTypeAsEnum().isProject()) {
+            return Mono.error(new DomainException(
+                ProjectErrorCode.INVITATION_TYPE_MISMATCH));
+          }
+
+          invitation.validateInvitedEmailMatches(user.email());
+          return projectInvitationHelper.findProjectOrThrow(invitation.getProjectId())
+              .then(projectInvitationHelper.checkNotAlreadyProjectMember(
+                  invitation.getProjectId(), command.requesterId()))
+              .then(Mono.defer(() -> {
+                invitation.accept();
+                return invitationPort.save(invitation)
+                    .then(invitationPort.updateStatusByTargetAndEmail(
+                        invitation.getTargetType(),
+                        invitation.getTargetId(),
+                        invitation.getInvitedEmail(),
+                        InvitationStatus.CANCELLED.name(),
+                        InvitationStatus.PENDING.name(),
+                        invitation.getId()))
+                    .then(projectInvitationHelper.saveOrRestoreProjectMember(
+                        invitation.getProjectId(),
+                        command.requesterId(),
+                        invitation.getProjectRole()))
+                    .onErrorResume(DataIntegrityViolationException.class, error -> {
+                      log.warn(
+                          "Concurrent member creation on invitation accept: invitationId={}",
+                          command.invitationId());
+                      return Mono.error(new DomainException(
+                          ProjectErrorCode.INVITATION_DUPLICATE_MEMBERSHIP_PROJECT));
+                    });
+              }));
+        });
   }
 
 }
