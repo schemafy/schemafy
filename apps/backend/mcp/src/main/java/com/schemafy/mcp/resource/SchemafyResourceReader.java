@@ -30,10 +30,13 @@ import com.schemafy.core.erd.table.application.port.in.GetTableUseCase;
 import com.schemafy.core.erd.table.application.port.in.GetTablesBySchemaIdQuery;
 import com.schemafy.core.erd.table.application.port.in.GetTablesBySchemaIdUseCase;
 import com.schemafy.core.erd.vendor.application.port.in.ListDbVendorsUseCase;
+import com.schemafy.core.mcp.domain.McpScope;
 import com.schemafy.core.project.application.port.in.GetMySharedProjectsQuery;
 import com.schemafy.core.project.application.port.in.GetMySharedProjectsUseCase;
 import com.schemafy.core.project.application.port.in.GetProjectMembersQuery;
 import com.schemafy.core.project.application.port.in.GetProjectMembersUseCase;
+import com.schemafy.core.project.application.port.in.GetProjectPresenceQuery;
+import com.schemafy.core.project.application.port.in.GetProjectPresenceUseCase;
 import com.schemafy.core.project.application.port.in.GetProjectQuery;
 import com.schemafy.core.project.application.port.in.GetProjectUseCase;
 import com.schemafy.core.project.application.port.in.GetProjectsQuery;
@@ -69,6 +72,7 @@ final class SchemafyResourceReader {
   private final GetProjectsUseCase getProjectsUseCase;
   private final GetProjectUseCase getProjectUseCase;
   private final GetProjectMembersUseCase getProjectMembersUseCase;
+  private final GetProjectPresenceUseCase getProjectPresenceUseCase;
   private final GetMySharedProjectsUseCase getMySharedProjectsUseCase;
   private final ListDbVendorsUseCase listDbVendorsUseCase;
   private final GetSchemasByProjectIdUseCase getSchemasByProjectIdUseCase;
@@ -259,6 +263,16 @@ final class SchemafyResourceReader {
         .collectList());
   }
 
+  Mono<McpSchema.ReadResourceResult> projectPresence(
+      McpSchema.ReadResourceRequest request,
+      String template) {
+    String projectId = variable(request, template, "projectId");
+    return responseWriter.resourcePayload(request.uri(), currentPrincipal()
+        .flatMap(principal -> requireScope(principal, McpScope.COLLABORATION_READ))
+        .flatMap(principal -> getProjectPresenceUseCase.getProjectPresence(
+            new GetProjectPresenceQuery(projectId, principal.userId()))));
+  }
+
   Mono<McpSchema.CallToolResult> databaseVendorsTool() {
     return responseWriter.toolPayload(listDbVendorsUseCase.listDbVendors()
         .collectList());
@@ -401,6 +415,23 @@ final class SchemafyResourceReader {
         memoId -> responseWriter.toolPayload(getMemoCommentsUseCase
             .getMemoComments(new GetMemoCommentsQuery(memoId))
             .collectList()));
+  }
+
+  Mono<McpSchema.CallToolResult> projectPresenceTool(
+      McpSchema.CallToolRequest request) {
+    return withRequiredArgument(request, "projectId", projectId -> responseWriter.toolPayload(
+        currentPrincipal()
+            .flatMap(principal -> requireScope(principal, McpScope.COLLABORATION_READ))
+            .flatMap(principal -> getProjectPresenceUseCase.getProjectPresence(
+                new GetProjectPresenceQuery(projectId, principal.userId())))));
+  }
+
+  private Mono<McpAuthenticatedPrincipal> requireScope(
+      McpAuthenticatedPrincipal principal,
+      McpScope scope) {
+    return principal.scopes().contains(scope.value())
+        ? Mono.just(principal)
+        : Mono.error(new AccessDeniedException("MCP token scope is insufficient"));
   }
 
   private Mono<McpAuthenticatedPrincipal> currentPrincipal() {

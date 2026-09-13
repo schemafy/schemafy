@@ -223,6 +223,14 @@ class SchemafyResourceIntegrationTest {
     assertThat(destructiveHint(tools, "schemafy_rename_column")).isTrue();
     assertThat(destructiveHint(tools, "schemafy_move_memo")).isTrue();
     assertThat(destructiveHint(tools, "schemafy_update_memo_comment")).isTrue();
+    assertThat(tools)
+        .contains("schemafy_delete_schema")
+        .contains("schemafy_create_workspace_invitation")
+        .contains("schemafy_update_project_member_role")
+        .contains("schemafy_create_share_link")
+        .contains("schemafy_list_project_presence")
+        .contains("confirmed")
+        .contains("Must be true to confirm this high-risk operation.");
   }
 
   @Test
@@ -312,6 +320,21 @@ class SchemafyResourceIntegrationTest {
         .contains("schema-1")
         .contains("commerce")
         .doesNotContain("\"isError\":true");
+  }
+
+  @Test
+  @DisplayName("고위험 MCP 도구는 confirmed=true 없이는 Core UseCase를 호출하지 않는다")
+  void rejectsHighRiskToolWithoutConfirmation() {
+    String token = tokenFactory.tokenWithScopes(McpScope.WORKSPACE_WRITE.value());
+    String sessionId = initialize(token);
+
+    String response = callTool(sessionId, token, "schemafy_delete_project",
+        Map.of("projectId", "project-1"));
+
+    assertThat(response)
+        .contains("\"isError\":true")
+        .contains("confirmed must be true")
+        .doesNotContain("Schemafy MCP tool call failed");
   }
 
   @Test
