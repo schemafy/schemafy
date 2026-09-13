@@ -9,7 +9,10 @@ import org.springframework.scheduling.annotation.EnableScheduling;
   "com.schemafy.api",
   "com.schemafy.core",
 })
-@ConfigurationPropertiesScan
+@ConfigurationPropertiesScan(basePackages = {
+  "com.schemafy.api",
+  "com.schemafy.core",
+})
 @EnableScheduling
 public class ApiApplication {
 

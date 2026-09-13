@@ -1,7 +1,6 @@
 package com.schemafy.mcp.resource;
 
 import java.nio.charset.StandardCharsets;
-import java.time.Clock;
 import java.time.Instant;
 import java.util.Date;
 import java.util.List;
@@ -18,15 +17,21 @@ import org.springframework.context.annotation.Primary;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.test.context.ActiveProfiles;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.reactive.server.EntityExchangeResult;
 import org.springframework.test.web.reactive.server.WebTestClient;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
+import org.mockito.ArgumentCaptor;
 
+import com.schemafy.core.common.MutationResult;
 import com.schemafy.core.common.PageResult;
 import com.schemafy.core.common.exception.DomainException;
+import com.schemafy.core.erd.column.application.port.in.CreateColumnCommand;
+import com.schemafy.core.erd.column.application.port.in.CreateColumnResult;
+import com.schemafy.core.erd.column.application.port.in.CreateColumnUseCase;
 import com.schemafy.core.erd.column.application.port.in.GetColumnsByTableIdQuery;
 import com.schemafy.core.erd.column.application.port.in.GetColumnsByTableIdUseCase;
 import com.schemafy.core.erd.column.domain.Column;
@@ -38,6 +43,8 @@ import com.schemafy.core.erd.index.application.port.in.GetIndexesByTableIdQuery;
 import com.schemafy.core.erd.index.application.port.in.GetIndexesByTableIdUseCase;
 import com.schemafy.core.erd.index.domain.Index;
 import com.schemafy.core.erd.index.domain.type.IndexType;
+import com.schemafy.core.erd.memo.application.port.in.CreateMemoCommentCommand;
+import com.schemafy.core.erd.memo.application.port.in.CreateMemoCommentUseCase;
 import com.schemafy.core.erd.memo.application.port.in.GetMemoCommentsQuery;
 import com.schemafy.core.erd.memo.application.port.in.GetMemoCommentsUseCase;
 import com.schemafy.core.erd.memo.application.port.in.GetMemoQuery;
@@ -65,8 +72,12 @@ import com.schemafy.core.erd.table.domain.Table;
 import com.schemafy.core.erd.vendor.application.port.in.ListDbVendorsUseCase;
 import com.schemafy.core.erd.vendor.domain.DbVendorSummary;
 import com.schemafy.core.mcp.application.port.in.GetMcpTokenUseCase;
+import com.schemafy.core.mcp.domain.McpScope;
 import com.schemafy.core.mcp.domain.McpToken;
 import com.schemafy.core.mcp.domain.McpTokenClaimSupport;
+import com.schemafy.core.project.application.port.in.CreateProjectUseCase;
+import com.schemafy.core.project.application.port.in.CreateWorkspaceCommand;
+import com.schemafy.core.project.application.port.in.CreateWorkspaceUseCase;
 import com.schemafy.core.project.application.port.in.GetMySharedProjectsQuery;
 import com.schemafy.core.project.application.port.in.GetMySharedProjectsUseCase;
 import com.schemafy.core.project.application.port.in.GetProjectMembersQuery;
@@ -101,6 +112,9 @@ import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.BDDMockito.given;
+import static org.mockito.BDDMockito.then;
 
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT, properties = "spring.main.allow-bean-definition-overriding=true")
 @AutoConfigureWebTestClient
@@ -117,11 +131,31 @@ class SchemafyResourceIntegrationTest {
   @Autowired
   TestReadUseCases readUseCases;
 
+  @MockitoBean
+  CreateWorkspaceUseCase createWorkspaceUseCase;
+
+  @MockitoBean
+  CreateProjectUseCase createProjectUseCase;
+
+  @MockitoBean
+  CreateColumnUseCase createColumnUseCase;
+
+  @MockitoBean
+  CreateMemoCommentUseCase createMemoCommentUseCase;
+
+  @MockitoBean
+  GetMcpTokenUseCase getMcpTokenUseCase;
+
   TestTokenFactory tokenFactory;
 
   @BeforeEach
   void setUp() {
     tokenFactory = new TestTokenFactory(properties);
+    given(getMcpTokenUseCase.getMcpToken(any())).willAnswer(invocation -> {
+      Instant now = Instant.now();
+      return Mono.just(McpToken.issue("token-1", "user-1", TestTokenFactory.scope.get(),
+          now.minusSeconds(60), now.plusSeconds(3600)));
+    });
     readUseCases.reset();
   }
 
@@ -260,6 +294,94 @@ class SchemafyResourceIntegrationTest {
   }
 
   @Test
+  @DisplayName("workspace write scope는 인증된 requester를 command에 전달해 management mutation을 수행한다")
+  void callsWorkspaceWriteToolWithAuthenticatedRequester() {
+    String token = tokenFactory.tokenWithScopes(McpScope.WORKSPACE_WRITE.value());
+    WorkspaceDetail result = new WorkspaceDetail(
+        Workspace.create("workspace-created", "Created workspace", "Created by MCP"), 1L,
+        WorkspaceRole.ADMIN.name());
+    given(createWorkspaceUseCase.createWorkspace(any())).willReturn(Mono.just(result));
+    String sessionId = initialize(token);
+
+    String response = callTool(sessionId, token, "schemafy_create_workspace",
+        Map.of("name", "Created workspace", "description", "Created by MCP"));
+
+    assertThat(response)
+        .contains("workspace-created")
+        .doesNotContain("\"isError\":true");
+    ArgumentCaptor<CreateWorkspaceCommand> command = ArgumentCaptor.forClass(CreateWorkspaceCommand.class);
+    then(createWorkspaceUseCase).should().createWorkspace(command.capture());
+    assertThat(command.getValue())
+        .extracting(CreateWorkspaceCommand::name, CreateWorkspaceCommand::description,
+            CreateWorkspaceCommand::requesterId)
+        .containsExactly("Created workspace", "Created by MCP", "user-1");
+  }
+
+  @Test
+  @DisplayName("ERD write scope는 column JSON 입력을 core command로 변환한다")
+  void callsErdWriteToolWithValidatedColumnArguments() {
+    String token = tokenFactory.tokenWithScopes(McpScope.ERD_WRITE.value());
+    given(createColumnUseCase.createColumn(any())).willReturn(Mono.just(MutationResult.empty(
+        new CreateColumnResult("column-created", "code", "VARCHAR", null, 1, false,
+            null, null, "MCP column"))));
+    String sessionId = initialize(token);
+
+    String response = callTool(sessionId, token, "schemafy_create_column", Map.of(
+        "tableId", "table-1", "name", "code", "dataType", "VARCHAR", "length", 32,
+        "comment", "MCP column", "values", List.of("A", "B")));
+
+    assertThat(response)
+        .contains("column-created")
+        .doesNotContain("\"isError\":true");
+    ArgumentCaptor<CreateColumnCommand> command = ArgumentCaptor.forClass(CreateColumnCommand.class);
+    then(createColumnUseCase).should().createColumn(command.capture());
+    assertThat(command.getValue())
+        .extracting(CreateColumnCommand::tableId, CreateColumnCommand::name,
+            CreateColumnCommand::dataType, CreateColumnCommand::length,
+            CreateColumnCommand::comment, CreateColumnCommand::values)
+        .containsExactly("table-1", "code", "VARCHAR", 32, "MCP column", List.of("A", "B"));
+  }
+
+  @Test
+  @DisplayName("memo write scope는 JSON actor 없이 인증된 사용자를 comment author로 사용한다")
+  void callsMemoWriteToolWithAuthenticatedAuthor() {
+    String token = tokenFactory.tokenWithScopes(McpScope.MEMO_WRITE.value());
+    Instant now = Instant.parse("2026-01-01T00:00:00Z");
+    given(createMemoCommentUseCase.createMemoComment(any())).willReturn(Mono.just(
+        new MemoComment("memo-comment-created", "memo-1", "user-1", "MCP note", now, now, null)));
+    String sessionId = initialize(token);
+
+    String response = callTool(sessionId, token, "schemafy_create_memo_comment",
+        Map.of("memoId", "memo-1", "body", "MCP note"));
+
+    assertThat(response)
+        .contains("memo-comment-created")
+        .doesNotContain("\"isError\":true");
+    ArgumentCaptor<CreateMemoCommentCommand> command = ArgumentCaptor.forClass(
+        CreateMemoCommentCommand.class);
+    then(createMemoCommentUseCase).should().createMemoComment(command.capture());
+    assertThat(command.getValue())
+        .extracting(CreateMemoCommentCommand::memoId, CreateMemoCommentCommand::body,
+            CreateMemoCommentCommand::authorId)
+        .containsExactly("memo-1", "MCP note", "user-1");
+  }
+
+  @Test
+  @DisplayName("invalid numeric write argument은 core use case 호출 전에 MCP tool error로 반환한다")
+  void rejectsInvalidWriteArgumentBeforeCallingUseCase() {
+    String token = tokenFactory.tokenWithScopes(McpScope.WORKSPACE_WRITE.value());
+    String sessionId = initialize(token);
+
+    String response = callTool(sessionId, token, "schemafy_create_project", Map.of(
+        "workspaceId", "workspace-1", "dbVendorId", 0, "name", "Invalid project"));
+
+    assertThat(response)
+        .contains("\"isError\":true")
+        .contains("dbVendorId must be a positive integer");
+    then(createProjectUseCase).shouldHaveNoInteractions();
+  }
+
+  @Test
   @DisplayName("project membership 거부는 MCP resources/read 오류로 반환된다")
   void deniesProjectReadWhenMembershipFails() {
     String token = tokenFactory.validToken();
@@ -342,7 +464,7 @@ class SchemafyResourceIntegrationTest {
         .returnResult();
 
     assertThat(new String(result.getResponseBody(), StandardCharsets.UTF_8))
-        .contains("Schemafy MCP exposes read-only access")
+        .contains("Schemafy MCP exposes authenticated read access")
         .contains("schemafy_list_workspaces");
 
     return result.getResponseHeaders().getFirst("Mcp-Session-Id");
@@ -394,22 +516,6 @@ class SchemafyResourceIntegrationTest {
     @Primary
     McpTokenRevocationCache tokenRevocationCache() {
       return tokenId -> Mono.just(false);
-    }
-
-    @Bean
-    @Primary
-    GetMcpTokenUseCase getMcpTokenUseCase(
-        McpSecurityProperties properties,
-        Clock clock) {
-      McpToken token = McpToken.issue(
-          "token-1",
-          "user-1",
-          properties.getToken().getRequiredScope(),
-          clock.instant().minusSeconds(60),
-          clock.instant().plusSeconds(3600));
-      return query -> token.getId().equals(query.tokenId())
-          ? Mono.just(token)
-          : Mono.empty();
     }
 
     @Bean
@@ -609,6 +715,8 @@ class SchemafyResourceIntegrationTest {
 
   static class TestTokenFactory {
 
+    private static final AtomicReference<String> scope = new AtomicReference<>();
+
     private final McpSecurityProperties properties;
     private final SecretKey secretKey;
 
@@ -622,11 +730,16 @@ class SchemafyResourceIntegrationTest {
       return token(properties.getToken().getRequiredScope());
     }
 
+    String tokenWithScopes(String... scopes) {
+      return token(properties.getToken().getRequiredScope() + " " + String.join(" ", scopes));
+    }
+
     String tokenWithoutRequiredScope() {
       return token("schema:read");
     }
 
     private String token(String scope) {
+      TestTokenFactory.scope.set(scope);
       Instant now = Instant.now();
       return Jwts.builder()
           .id("token-1")
