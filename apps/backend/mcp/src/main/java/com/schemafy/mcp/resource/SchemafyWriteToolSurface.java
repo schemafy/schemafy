@@ -84,15 +84,16 @@ final class SchemafyWriteToolSurface {
   List<McpServerFeatures.AsyncToolSpecification> specifications() {
     return List.of(
         createTool("schemafy_create_workspace", "Create workspace", "Create a workspace.",
-            strings("name", "Workspace name.", "description", "Optional description."), List.of("name"),
+            textProperties("name", "Workspace name.", "description", "Optional description."), List.of("name"),
             this::createWorkspace),
         updateTool("schemafy_update_workspace", "Update workspace", "Update a workspace.",
-            strings("workspaceId", "Workspace ID.", "name", "Workspace name.", "description", "Optional description."),
+            textProperties("workspaceId", "Workspace ID.", "name", "Workspace name.", "description",
+                "Optional description."),
             List.of("workspaceId", "name"), this::updateWorkspace),
         createTool("schemafy_create_project", "Create project", "Create a project in a workspace.",
             projectProperties(), List.of("workspaceId", "dbVendorId", "name"), this::createProject),
         updateTool("schemafy_update_project", "Update project", "Update a project.",
-            strings("projectId", "Project ID.", "name", "Project name.", "description", "Optional description."),
+            textProperties("projectId", "Project ID.", "name", "Project name.", "description", "Optional description."),
             List.of("projectId", "name"), this::updateProject),
         createTool("schemafy_create_schema", "Create schema", "Create a schema in a project.",
             strings("projectId", "Project ID.", "name", "Schema name.", "charset", "Optional charset.", "collation",
@@ -387,8 +388,25 @@ final class SchemafyWriteToolSurface {
     return properties;
   }
 
+  private static Map<String, Object> textProperties(String... values) {
+    Map<String, Object> properties = new LinkedHashMap<>();
+    for (int index = 0; index < values.length; index += 2) {
+      String name = values[index];
+      Map<String, Object> property = new LinkedHashMap<>();
+      property.put("type", "string");
+      property.put("description", values[index + 1]);
+      if ("name".equals(name) || "newName".equals(name)) {
+        property.put("maxLength", 255);
+      } else if ("description".equals(name)) {
+        property.put("maxLength", 1000);
+      }
+      properties.put(name, property);
+    }
+    return properties;
+  }
+
   private static Map<String, Object> projectProperties() {
-    Map<String, Object> properties = strings("workspaceId", "Workspace ID.", "name", "Project name.",
+    Map<String, Object> properties = textProperties("workspaceId", "Workspace ID.", "name", "Project name.",
         "description", "Optional description.");
     properties.put("dbVendorId", Map.of("type", "integer", "minimum", 1, "description", "Database vendor ID."));
     return properties;

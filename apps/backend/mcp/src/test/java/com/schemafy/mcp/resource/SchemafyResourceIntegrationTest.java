@@ -178,6 +178,8 @@ class SchemafyResourceIntegrationTest {
         .contains("schemafy_create_workspace")
         .contains("schemafy_create_column")
         .contains("schemafy_update_memo_comment")
+        .contains("\"maxLength\":255")
+        .contains("\"maxLength\":1000")
         .contains("Zero-based page number. Defaults to 0.")
         .contains("Page size from 1 to 100. Defaults to 100.")
         .contains("readOnlyHint")
