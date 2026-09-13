@@ -45,6 +45,7 @@ import com.schemafy.core.project.application.port.in.UpdateProjectCommand;
 import com.schemafy.core.project.application.port.in.UpdateProjectUseCase;
 import com.schemafy.core.project.application.port.in.UpdateWorkspaceCommand;
 import com.schemafy.core.project.application.port.in.UpdateWorkspaceUseCase;
+import com.schemafy.core.project.application.port.in.WorkspaceDetail;
 import com.schemafy.mcp.common.McpResponseWriter;
 import com.schemafy.mcp.common.security.McpAuthenticatedPrincipal;
 import com.schemafy.mcp.common.security.McpSecurityAuditLogger;
@@ -54,7 +55,8 @@ import io.modelcontextprotocol.spec.McpSchema;
 import lombok.RequiredArgsConstructor;
 import reactor.core.publisher.Mono;
 
-import static com.schemafy.mcp.resource.SchemafyMcpFeatureFactory.writeTool;
+import static com.schemafy.mcp.resource.SchemafyMcpFeatureFactory.createTool;
+import static com.schemafy.mcp.resource.SchemafyMcpFeatureFactory.updateTool;
 
 @Component
 @RequiredArgsConstructor
@@ -81,48 +83,49 @@ final class SchemafyWriteToolSurface {
 
   List<McpServerFeatures.AsyncToolSpecification> specifications() {
     return List.of(
-        writeTool("schemafy_create_workspace", "Create workspace", "Create a workspace.",
+        createTool("schemafy_create_workspace", "Create workspace", "Create a workspace.",
             strings("name", "Workspace name.", "description", "Optional description."), List.of("name"),
             this::createWorkspace),
-        writeTool("schemafy_update_workspace", "Update workspace", "Update a workspace.",
+        updateTool("schemafy_update_workspace", "Update workspace", "Update a workspace.",
             strings("workspaceId", "Workspace ID.", "name", "Workspace name.", "description", "Optional description."),
             List.of("workspaceId", "name"), this::updateWorkspace),
-        writeTool("schemafy_create_project", "Create project", "Create a project in a workspace.",
+        createTool("schemafy_create_project", "Create project", "Create a project in a workspace.",
             projectProperties(), List.of("workspaceId", "dbVendorId", "name"), this::createProject),
-        writeTool("schemafy_update_project", "Update project", "Update a project.",
+        updateTool("schemafy_update_project", "Update project", "Update a project.",
             strings("projectId", "Project ID.", "name", "Project name.", "description", "Optional description."),
             List.of("projectId", "name"), this::updateProject),
-        writeTool("schemafy_create_schema", "Create schema", "Create a schema in a project.",
+        createTool("schemafy_create_schema", "Create schema", "Create a schema in a project.",
             strings("projectId", "Project ID.", "name", "Schema name.", "charset", "Optional charset.", "collation",
                 "Optional collation."),
             List.of("projectId", "name"), this::createSchema),
-        writeTool("schemafy_rename_schema", "Rename schema", "Rename a schema.",
+        updateTool("schemafy_rename_schema", "Rename schema", "Rename a schema.",
             strings("schemaId", "Schema ID.", "newName", "New schema name."), List.of("schemaId", "newName"),
             this::renameSchema),
-        writeTool("schemafy_create_table", "Create table", "Create a table in a schema.",
+        createTool("schemafy_create_table", "Create table", "Create a table in a schema.",
             tableProperties(), List.of("schemaId", "name"), this::createTable),
-        writeTool("schemafy_rename_table", "Rename table", "Rename a table.",
+        updateTool("schemafy_rename_table", "Rename table", "Rename a table.",
             strings("tableId", "Table ID.", "newName", "New table name."), List.of("tableId", "newName"),
             this::renameTable),
-        writeTool("schemafy_create_column", "Create column", "Create a column in a table.",
+        createTool("schemafy_create_column", "Create column", "Create a column in a table.",
             columnProperties(), List.of("tableId", "name", "dataType"), this::createColumn),
-        writeTool("schemafy_rename_column", "Rename column", "Rename a column.",
+        updateTool("schemafy_rename_column", "Rename column", "Rename a column.",
             strings("columnId", "Column ID.", "newName", "New column name."), List.of("columnId", "newName"),
             this::renameColumn),
-        writeTool("schemafy_create_memo", "Create memo", "Create a memo and its initial comment.",
-            memoProperties("schemaId", "Schema ID."), List.of("schemaId", "positions", "body"), this::createMemo),
-        writeTool("schemafy_move_memo", "Move memo", "Update a memo position.",
-            memoProperties("memoId", "Memo ID."), List.of("memoId", "positions"), this::moveMemo),
-        writeTool("schemafy_create_memo_comment", "Create memo comment", "Add a comment to a memo.",
+        createTool("schemafy_create_memo", "Create memo", "Create a memo and its initial comment.",
+            createMemoProperties(), List.of("schemaId", "positions", "body"), this::createMemo),
+        updateTool("schemafy_move_memo", "Move memo", "Update a memo position.",
+            moveMemoProperties(), List.of("memoId", "positions"), this::moveMemo),
+        createTool("schemafy_create_memo_comment", "Create memo comment", "Add a comment to a memo.",
             strings("memoId", "Memo ID.", "body", "Comment body."), List.of("memoId", "body"),
             this::createMemoComment),
-        writeTool("schemafy_update_memo_comment", "Update memo comment", "Update your memo comment.",
+        updateTool("schemafy_update_memo_comment", "Update memo comment", "Update your memo comment.",
             strings("commentId", "Memo comment ID.", "body", "Comment body."), List.of("commentId", "body"),
             this::updateMemoComment));
   }
 
   private Mono<McpSchema.CallToolResult> createWorkspace(McpSchema.CallToolRequest request) {
-    return execute("schemafy_create_workspace", McpScope.WORKSPACE_WRITE, request, "workspace",
+    return execute("schemafy_create_workspace", McpScope.WORKSPACE_WRITE, null,
+        result -> result instanceof WorkspaceDetail detail ? detail.workspace().getId() : null,
         actor -> createWorkspaceUseCase.createWorkspace(new CreateWorkspaceCommand(
             required(request, "name"), optional(request, "description"), actor.userId())));
   }
@@ -217,18 +220,23 @@ final class SchemafyWriteToolSurface {
 
   private Mono<McpSchema.CallToolResult> execute(String tool, McpScope scope, McpSchema.CallToolRequest request,
       String targetArgument, Function<Actor, Mono<?>> action) {
-    String targetId = stringArgument(request, targetArgument);
-    return actor().flatMap(actor -> {
+    return execute(tool, scope, stringArgument(request, targetArgument), result -> null, action);
+  }
+
+  private Mono<McpSchema.CallToolResult> execute(String tool, McpScope scope, String targetId,
+      Function<Object, String> createdTargetId, Function<Actor, Mono<?>> action) {
+    return responseWriter.toolResult(actor().flatMap(actor -> {
       if (!actor.principal().scopes().contains(scope.value())) {
         AccessDeniedException error = new AccessDeniedException("MCP token scope is insufficient");
         auditLogger.writeToolFailed(actor.principal(), tool, targetId, error);
         return Mono.just(responseWriter.toolError(error.getMessage()));
       }
       return responseWriter.toolPayload(Mono.defer(() -> action.apply(actor))
-          .doOnSuccess(result -> auditLogger.writeToolSucceeded(actor.principal(), tool, targetId,
+          .doOnSuccess(result -> auditLogger.writeToolSucceeded(actor.principal(), tool,
+              targetId != null ? targetId : createdTargetId.apply(result),
               result instanceof Map<?, ?> map && Boolean.TRUE.equals(map.get("noOp"))))
           .doOnError(error -> auditLogger.writeToolFailed(actor.principal(), tool, targetId, error)));
-    });
+    }));
   }
 
   private Mono<Actor> actor() {
@@ -406,8 +414,14 @@ final class SchemafyWriteToolSurface {
     return properties;
   }
 
-  private static Map<String, Object> memoProperties(String idName, String idDescription) {
-    Map<String, Object> properties = strings(idName, idDescription, "body", "Initial memo body.");
+  private static Map<String, Object> createMemoProperties() {
+    Map<String, Object> properties = strings("schemaId", "Schema ID.", "body", "Initial memo body.");
+    properties.put("positions", Map.of("type", "object", "description", "Memo positions metadata."));
+    return properties;
+  }
+
+  private static Map<String, Object> moveMemoProperties() {
+    Map<String, Object> properties = strings("memoId", "Memo ID.");
     properties.put("positions", Map.of("type", "object", "description", "Memo positions metadata."));
     return properties;
   }

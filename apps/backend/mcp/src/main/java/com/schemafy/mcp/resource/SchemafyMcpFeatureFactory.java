@@ -69,19 +69,40 @@ final class SchemafyMcpFeatureFactory {
         .build();
   }
 
-  static McpServerFeatures.AsyncToolSpecification writeTool(
+  static McpServerFeatures.AsyncToolSpecification createTool(
       String name,
       String title,
       String description,
       Map<String, Object> properties,
       List<String> required,
       Function<McpSchema.CallToolRequest, Mono<McpSchema.CallToolResult>> callHandler) {
+    return writeTool(name, title, description, properties, required, callHandler, false);
+  }
+
+  static McpServerFeatures.AsyncToolSpecification updateTool(
+      String name,
+      String title,
+      String description,
+      Map<String, Object> properties,
+      List<String> required,
+      Function<McpSchema.CallToolRequest, Mono<McpSchema.CallToolResult>> callHandler) {
+    return writeTool(name, title, description, properties, required, callHandler, true);
+  }
+
+  private static McpServerFeatures.AsyncToolSpecification writeTool(
+      String name,
+      String title,
+      String description,
+      Map<String, Object> properties,
+      List<String> required,
+      Function<McpSchema.CallToolRequest, Mono<McpSchema.CallToolResult>> callHandler,
+      boolean overwrites) {
     McpSchema.Tool tool = McpSchema.Tool.builder()
         .name(name)
         .title(title)
         .description(description)
         .inputSchema(objectSchema(properties, required))
-        .annotations(writeToolAnnotations(title))
+        .annotations(writeToolAnnotations(title, overwrites))
         .build();
     return McpServerFeatures.AsyncToolSpecification.builder()
         .tool(tool)
@@ -130,8 +151,8 @@ final class SchemafyMcpFeatureFactory {
     return new McpSchema.ToolAnnotations(title, true, false, true, false, false);
   }
 
-  private static McpSchema.ToolAnnotations writeToolAnnotations(String title) {
-    return new McpSchema.ToolAnnotations(title, false, false, false, false, false);
+  private static McpSchema.ToolAnnotations writeToolAnnotations(String title, boolean overwrites) {
+    return new McpSchema.ToolAnnotations(title, false, overwrites, overwrites, false, false);
   }
 
 }

@@ -153,7 +153,7 @@ class SchemafyResourceIntegrationTest {
     tokenFactory = new TestTokenFactory(properties);
     given(getMcpTokenUseCase.getMcpToken(any())).willAnswer(invocation -> {
       Instant now = Instant.now();
-      return Mono.just(McpToken.issue("token-1", "user-1", TestTokenFactory.scope.get(),
+      return Mono.just(McpToken.issue("token-1", "user-1", tokenFactory.lastScope(),
           now.minusSeconds(60), now.plusSeconds(3600)));
     });
     readUseCases.reset();
@@ -202,6 +202,27 @@ class SchemafyResourceIntegrationTest {
         .contains("schemafy://memos/{memoId}/comments")
         .doesNotContain("schemafy://schemas/{schemaId}/snapshot")
         .doesNotContain("schemafy://tables/{tableId}/snapshot");
+  }
+
+  @Test
+  @DisplayName("tools/list는 기존 값을 덮어쓰는 write tool만 destructive로 표기한다")
+  void marksOverwritingWriteToolsAsDestructive() {
+    String token = tokenFactory.validToken();
+    String sessionId = initialize(token);
+
+    String tools = mcp(sessionId, token, "tools-2", "tools/list", Map.of());
+
+    assertThat(destructiveHint(tools, "schemafy_list_workspaces")).isFalse();
+    assertThat(destructiveHint(tools, "schemafy_create_workspace")).isFalse();
+    assertThat(destructiveHint(tools, "schemafy_create_memo")).isFalse();
+    assertThat(destructiveHint(tools, "schemafy_create_memo_comment")).isFalse();
+    assertThat(destructiveHint(tools, "schemafy_update_workspace")).isTrue();
+    assertThat(destructiveHint(tools, "schemafy_update_project")).isTrue();
+    assertThat(destructiveHint(tools, "schemafy_rename_schema")).isTrue();
+    assertThat(destructiveHint(tools, "schemafy_rename_table")).isTrue();
+    assertThat(destructiveHint(tools, "schemafy_rename_column")).isTrue();
+    assertThat(destructiveHint(tools, "schemafy_move_memo")).isTrue();
+    assertThat(destructiveHint(tools, "schemafy_update_memo_comment")).isTrue();
   }
 
   @Test
@@ -486,6 +507,14 @@ class SchemafyResourceIntegrationTest {
             "arguments", arguments));
   }
 
+  private boolean destructiveHint(String toolsResponse, String toolName) {
+    int toolIndex = toolsResponse.indexOf("\"name\":\"" + toolName + "\"");
+    assertThat(toolIndex).as("tool %s is listed", toolName).isNotNegative();
+    int hintIndex = toolsResponse.indexOf("\"destructiveHint\":", toolIndex);
+    assertThat(hintIndex).as("tool %s exposes destructiveHint", toolName).isNotNegative();
+    return toolsResponse.startsWith("\"destructiveHint\":true", hintIndex);
+  }
+
   private String mcp(
       String sessionId,
       String token,
@@ -715,7 +744,7 @@ class SchemafyResourceIntegrationTest {
 
   static class TestTokenFactory {
 
-    private static final AtomicReference<String> scope = new AtomicReference<>();
+    private final AtomicReference<String> lastScope = new AtomicReference<>();
 
     private final McpSecurityProperties properties;
     private final SecretKey secretKey;
@@ -738,8 +767,12 @@ class SchemafyResourceIntegrationTest {
       return token("schema:read");
     }
 
+    String lastScope() {
+      return lastScope.get();
+    }
+
     private String token(String scope) {
-      TestTokenFactory.scope.set(scope);
+      lastScope.set(scope);
       Instant now = Instant.now();
       return Jwts.builder()
           .id("token-1")

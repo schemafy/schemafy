@@ -11,6 +11,10 @@ public enum McpScope {
   ERD_WRITE("mcp:erd:write"),
   MEMO_WRITE("mcp:memo:write");
 
+  private static final Set<String> ISSUABLE_VALUES = Arrays.stream(values())
+      .map(McpScope::value)
+      .collect(Collectors.toUnmodifiableSet());
+
   private final String value;
 
   McpScope(String value) {
@@ -22,9 +26,7 @@ public enum McpScope {
   }
 
   public static Set<String> issuableValues() {
-    return Arrays.stream(values())
-        .map(McpScope::value)
-        .collect(Collectors.toUnmodifiableSet());
+    return ISSUABLE_VALUES;
   }
 
 }

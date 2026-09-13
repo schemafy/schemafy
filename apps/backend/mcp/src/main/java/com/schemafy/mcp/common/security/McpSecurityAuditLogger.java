@@ -34,7 +34,7 @@ public class McpSecurityAuditLogger {
 
   public void writeToolFailed(McpAuthenticatedPrincipal principal, String tool,
       String targetId, Throwable error) {
-    log.info("mcp_write_tool outcome=FAILURE tool={} userId={} tokenId={} targetId={} error={}",
+    log.warn("mcp_write_tool outcome=FAILURE tool={} userId={} tokenId={} targetId={} error={}",
         tool, principal.userId(), principal.tokenId(), targetId,
         error.getClass().getSimpleName());
   }
