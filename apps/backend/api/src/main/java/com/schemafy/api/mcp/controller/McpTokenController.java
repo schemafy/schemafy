@@ -11,6 +11,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 import com.schemafy.api.common.constant.ApiPath;
 import com.schemafy.api.common.security.principal.AuthenticatedUser;
+import com.schemafy.api.mcp.controller.dto.request.McpTokenIssueRequest;
 import com.schemafy.api.mcp.controller.dto.request.McpTokenRevokeRequest;
 import com.schemafy.api.mcp.controller.dto.response.McpTokenIssueResponse;
 import com.schemafy.api.mcp.service.McpTokenService;
@@ -27,8 +28,9 @@ public class McpTokenController {
 
   @PostMapping("/mcp/tokens")
   public Mono<ResponseEntity<McpTokenIssueResponse>> issue(
-      @AuthenticationPrincipal AuthenticatedUser user) {
-    return mcpTokenService.issue(user.userId())
+      @AuthenticationPrincipal AuthenticatedUser user,
+      @RequestBody(required = false) McpTokenIssueRequest request) {
+    return mcpTokenService.issue(user.userId(), request == null ? null : request.scopes())
         .map(McpTokenIssueResponse::from)
         .map(ResponseEntity::ok);
   }

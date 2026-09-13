@@ -21,14 +21,14 @@ spring:
         name: schemafy-mcp
         version: 0.0.1
         instructions: >
-          Schemafy MCP exposes read-only access to the authenticated user's
-          Schemafy workspaces, projects, schemas, ERD tables, columns, indexes,
-          constraints, relationships, memos, and database vendors. Use these
-          tools whenever the user asks about current Schemafy
-          workspace/project/ERD/schema/database structure or permissions. If an
-          ID is unknown, start with schemafy_list_workspaces, then
-          schemafy_list_projects, schemafy_list_schemas, schemafy_list_tables,
-          and table-detail tools. Do not mutate data.
+          Schemafy MCP exposes authenticated read access to Schemafy workspaces,
+          projects, schemas, ERD tables, columns, indexes, constraints,
+          relationships, memos, and database vendors. It also exposes narrowly
+          scoped write tools for workspace/project management, ERD structural
+          changes, and memos. A write tool requires its corresponding MCP write
+          scope and the same domain access rules as the API. If an ID is unknown,
+          start with schemafy_list_workspaces, then schemafy_list_projects,
+          schemafy_list_schemas, schemafy_list_tables, and table-detail tools.
         protocol: STREAMABLE
         type: ASYNC
         annotation-scanner:
@@ -51,6 +51,14 @@ spring:
     init:
       mode: always
       schema-locations: classpath:ddl/mariadb/**/*.sql
+
+collaboration:
+  erd-state-snapshot:
+    debounce: ${ERD_STATE_SNAPSHOT_DEBOUNCE:100ms}
+    max-wait: ${ERD_STATE_SNAPSHOT_MAX_WAIT:500ms}
+    retry-backoff: ${ERD_STATE_SNAPSHOT_RETRY_BACKOFF:100ms}
+    max-retry-backoff: ${ERD_STATE_SNAPSHOT_MAX_RETRY_BACKOFF:400ms}
+    completed-watermark-ttl: ${ERD_STATE_SNAPSHOT_COMPLETED_WATERMARK_TTL:4h}
 
 server:
   port: ${MCP_SERVER_PORT:8081}

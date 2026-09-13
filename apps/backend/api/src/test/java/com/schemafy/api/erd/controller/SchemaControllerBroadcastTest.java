@@ -15,7 +15,6 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import com.schemafy.api.erd.service.SchemaDdlExportOrchestrator;
 import com.schemafy.api.erd.service.SchemaMermaidExportOrchestrator;
 import com.schemafy.api.erd.service.SchemaSnapshotOrchestrator;
-import com.schemafy.api.erd.service.sync.ErdStateSyncPublisher;
 import com.schemafy.core.common.MutationResult;
 import com.schemafy.core.erd.broadcast.ErdMutationBroadcaster.ResolvedContext;
 import com.schemafy.core.erd.operation.domain.CommittedErdOperation;
@@ -26,6 +25,7 @@ import com.schemafy.core.erd.schema.application.port.in.DeleteSchemaCommand;
 import com.schemafy.core.erd.schema.application.port.in.DeleteSchemaUseCase;
 import com.schemafy.core.erd.schema.application.port.in.GetSchemaWithRevisionUseCase;
 import com.schemafy.core.erd.schema.application.port.in.GetSchemasByProjectIdUseCase;
+import com.schemafy.core.erd.sync.ErdStateSyncPublisher;
 
 import reactor.core.publisher.Mono;
 import reactor.test.StepVerifier;

@@ -26,6 +26,19 @@ public class McpSecurityAuditLogger {
         path(exchange), claims.userId());
   }
 
+  public void writeToolSucceeded(McpAuthenticatedPrincipal principal, String tool,
+      String targetId, boolean noOp) {
+    log.info("mcp_write_tool outcome=SUCCESS tool={} userId={} tokenId={} targetId={} noOp={}",
+        tool, principal.userId(), principal.tokenId(), targetId, noOp);
+  }
+
+  public void writeToolFailed(McpAuthenticatedPrincipal principal, String tool,
+      String targetId, Throwable error) {
+    log.warn("mcp_write_tool outcome=FAILURE tool={} userId={} tokenId={} targetId={} error={}",
+        tool, principal.userId(), principal.tokenId(), targetId,
+        error.getClass().getSimpleName());
+  }
+
   private String path(ServerWebExchange exchange) {
     return exchange.getRequest().getPath().pathWithinApplication().value();
   }
