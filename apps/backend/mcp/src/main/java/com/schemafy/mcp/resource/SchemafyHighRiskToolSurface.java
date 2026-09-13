@@ -70,6 +70,7 @@ import com.schemafy.core.project.application.port.in.UpdateProjectMemberRoleComm
 import com.schemafy.core.project.application.port.in.UpdateProjectMemberRoleUseCase;
 import com.schemafy.core.project.application.port.in.UpdateWorkspaceMemberRoleCommand;
 import com.schemafy.core.project.application.port.in.UpdateWorkspaceMemberRoleUseCase;
+import com.schemafy.core.project.domain.Invitation;
 import com.schemafy.core.project.domain.ProjectRole;
 import com.schemafy.core.project.domain.ShareLink;
 import com.schemafy.core.project.domain.WorkspaceRole;
@@ -205,14 +206,29 @@ final class SchemafyHighRiskToolSurface {
     return execute(request, "schemafy_create_workspace_invitation", McpScope.INVITATION_WRITE, "workspaceId",
         actor -> createWorkspaceInvitationUseCase.createWorkspaceInvitation(new CreateWorkspaceInvitationCommand(
             required(request, "workspaceId"), required(request, "email"), WorkspaceRole.fromString(required(request,
-                "role")), actor.userId())));
+                "role")), actor.userId())).map(this::invitationResponse));
   }
 
   private Mono<McpSchema.CallToolResult> createProjectInvitation(McpSchema.CallToolRequest request) {
     return execute(request, "schemafy_create_project_invitation", McpScope.INVITATION_WRITE, "projectId",
         actor -> createProjectInvitationUseCase.createProjectInvitation(new CreateProjectInvitationCommand(
             required(request, "projectId"), required(request, "email"), ProjectRole.fromString(required(request,
-                "role")), actor.userId())));
+                "role")), actor.userId())).map(this::invitationResponse));
+  }
+
+  private Map<String, Object> invitationResponse(Invitation invitation) {
+    Map<String, Object> response = new LinkedHashMap<>();
+    response.put("invitationId", invitation.getId());
+    response.put("targetType", invitation.getTargetType());
+    response.put("targetId", invitation.getTargetId());
+    response.put("parentId", invitation.getParentId());
+    response.put("invitedEmail", invitation.getInvitedEmail());
+    response.put("invitedRole", invitation.getInvitedRole());
+    response.put("invitedBy", invitation.getInvitedBy());
+    response.put("status", invitation.getStatus());
+    response.put("expiresAt", invitation.getExpiresAt());
+    response.put("resolvedAt", invitation.getResolvedAt());
+    return response;
   }
 
   private Mono<McpSchema.CallToolResult> acceptWorkspaceInvitation(McpSchema.CallToolRequest request) {
