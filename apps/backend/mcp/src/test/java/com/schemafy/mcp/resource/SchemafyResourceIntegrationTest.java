@@ -90,6 +90,8 @@ import com.schemafy.core.project.application.port.in.GetProjectQuery;
 import com.schemafy.core.project.application.port.in.GetProjectUseCase;
 import com.schemafy.core.project.application.port.in.GetProjectsQuery;
 import com.schemafy.core.project.application.port.in.GetProjectsUseCase;
+import com.schemafy.core.project.application.port.in.GetShareLinkUseCase;
+import com.schemafy.core.project.application.port.in.GetShareLinksUseCase;
 import com.schemafy.core.project.application.port.in.GetWorkspaceMembersQuery;
 import com.schemafy.core.project.application.port.in.GetWorkspaceMembersUseCase;
 import com.schemafy.core.project.application.port.in.GetWorkspaceQuery;
@@ -152,6 +154,12 @@ class SchemafyResourceIntegrationTest {
 
   @MockitoBean
   GetMcpTokenUseCase getMcpTokenUseCase;
+
+  @MockitoBean
+  GetShareLinksUseCase getShareLinksUseCase;
+
+  @MockitoBean
+  GetShareLinkUseCase getShareLinkUseCase;
 
   TestTokenFactory tokenFactory;
 
@@ -232,6 +240,14 @@ class SchemafyResourceIntegrationTest {
     assertThat(destructiveHint(tools, "schemafy_rename_column")).isTrue();
     assertThat(destructiveHint(tools, "schemafy_move_memo")).isTrue();
     assertThat(destructiveHint(tools, "schemafy_update_memo_comment")).isTrue();
+    assertThat(tools)
+        .contains("schemafy_delete_schema")
+        .contains("schemafy_create_workspace_invitation")
+        .contains("schemafy_update_project_member_role")
+        .contains("schemafy_create_share_link")
+        .contains("schemafy_list_project_presence")
+        .contains("confirmed")
+        .contains("Must be true to confirm this high-risk operation.");
   }
 
   @Test
@@ -324,6 +340,21 @@ class SchemafyResourceIntegrationTest {
   }
 
   @Test
+  @DisplayName("고위험 MCP 도구는 confirmed=true 없이는 Core UseCase를 호출하지 않는다")
+  void rejectsHighRiskToolWithoutConfirmation() {
+    String token = tokenFactory.tokenWithScopes(McpScope.WORKSPACE_WRITE.value());
+    String sessionId = initialize(token);
+
+    String response = callTool(sessionId, token, "schemafy_delete_project",
+        Map.of("projectId", "project-1"));
+
+    assertThat(response)
+        .contains("\"isError\":true")
+        .contains("confirmed must be true")
+        .doesNotContain("Schemafy MCP tool call failed");
+  }
+
+  @Test
   @DisplayName("workspace write scope는 인증된 requester를 command에 전달해 management mutation을 수행한다")
   void callsWorkspaceWriteToolWithAuthenticatedRequester() {
     String token = tokenFactory.tokenWithScopes(McpScope.WORKSPACE_WRITE.value());
@@ -413,6 +444,61 @@ class SchemafyResourceIntegrationTest {
         .contains("\"isError\":true")
         .contains("dbVendorId must be a positive integer");
     then(createProjectUseCase).shouldHaveNoInteractions();
+  }
+
+  @Test
+  @DisplayName("share-link pagination은 정수와 허용 범위를 벗어나면 MCP tool error로 반환한다")
+  void rejectsInvalidShareLinkPagination() {
+    String token = tokenFactory.tokenWithScopes(McpScope.SHARE_LINK_READ.value());
+    String sessionId = initialize(token);
+
+    String negativePage = callTool(sessionId, token, "schemafy_list_share_links", Map.of(
+        "projectId", "project-1", "page", -1));
+    String zeroSize = callTool(sessionId, token, "schemafy_list_share_links", Map.of(
+        "projectId", "project-1", "size", 0));
+    String oversized = callTool(sessionId, token, "schemafy_list_share_links", Map.of(
+        "projectId", "project-1", "size", 101));
+    String fractionalSize = callTool(sessionId, token, "schemafy_list_share_links", Map.of(
+        "projectId", "project-1", "size", 10.5));
+
+    assertThat(negativePage)
+        .contains("\"isError\":true")
+        .contains("page must be a non-negative integer");
+    assertThat(zeroSize)
+        .contains("\"isError\":true")
+        .contains("size must be an integer between 1 and 100");
+    assertThat(oversized)
+        .contains("\"isError\":true")
+        .contains("size must be an integer between 1 and 100");
+    assertThat(fractionalSize)
+        .contains("\"isError\":true")
+        .contains("size must be a non-negative integer");
+    then(getShareLinksUseCase).shouldHaveNoInteractions();
+  }
+
+  @Test
+  @DisplayName("share-link read의 필수 인자 오류는 구조화된 MCP tool error로 반환한다")
+  void returnsStructuredErrorsForMalformedShareLinkReadArguments() {
+    String token = tokenFactory.tokenWithScopes(McpScope.SHARE_LINK_READ.value());
+    String sessionId = initialize(token);
+
+    String missingProjectId = callTool(sessionId, token, "schemafy_list_share_links", Map.of());
+    String missingShareLinkId = callTool(sessionId, token, "schemafy_get_share_link", Map.of(
+        "projectId", "project-1"));
+    String wrongProjectIdType = callTool(sessionId, token, "schemafy_get_share_link", Map.of(
+        "projectId", 123, "shareLinkId", "share-link-1"));
+
+    assertThat(missingProjectId)
+        .contains("\"isError\":true")
+        .contains("projectId is required");
+    assertThat(missingShareLinkId)
+        .contains("\"isError\":true")
+        .contains("shareLinkId is required");
+    assertThat(wrongProjectIdType)
+        .contains("\"isError\":true")
+        .contains("projectId is required");
+    then(getShareLinksUseCase).shouldHaveNoInteractions();
+    then(getShareLinkUseCase).shouldHaveNoInteractions();
   }
 
   @Test
