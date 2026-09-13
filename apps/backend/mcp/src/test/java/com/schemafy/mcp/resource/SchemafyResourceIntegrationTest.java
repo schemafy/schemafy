@@ -47,6 +47,7 @@ import com.schemafy.core.erd.index.domain.Index;
 import com.schemafy.core.erd.index.domain.type.IndexType;
 import com.schemafy.core.erd.memo.application.port.in.CreateMemoCommentCommand;
 import com.schemafy.core.erd.memo.application.port.in.CreateMemoCommentUseCase;
+import com.schemafy.core.erd.memo.application.port.in.DeleteMemoUseCase;
 import com.schemafy.core.erd.memo.application.port.in.GetMemoCommentsQuery;
 import com.schemafy.core.erd.memo.application.port.in.GetMemoCommentsUseCase;
 import com.schemafy.core.erd.memo.application.port.in.GetMemoQuery;
@@ -83,6 +84,7 @@ import com.schemafy.core.mcp.domain.McpTokenClaimSupport;
 import com.schemafy.core.project.application.port.in.CreateProjectUseCase;
 import com.schemafy.core.project.application.port.in.CreateWorkspaceCommand;
 import com.schemafy.core.project.application.port.in.CreateWorkspaceUseCase;
+import com.schemafy.core.project.application.port.in.DeleteProjectUseCase;
 import com.schemafy.core.project.application.port.in.GetMySharedProjectsQuery;
 import com.schemafy.core.project.application.port.in.GetMySharedProjectsUseCase;
 import com.schemafy.core.project.application.port.in.GetProjectMembersQuery;
@@ -169,6 +171,12 @@ class SchemafyResourceIntegrationTest {
 
   @MockitoBean
   DeleteTableUseCase deleteTableUseCase;
+
+  @MockitoBean
+  DeleteProjectUseCase deleteProjectUseCase;
+
+  @MockitoBean
+  DeleteMemoUseCase deleteMemoUseCase;
 
   TestTokenFactory tokenFactory;
 
@@ -350,7 +358,7 @@ class SchemafyResourceIntegrationTest {
   @Test
   @DisplayName("고위험 MCP 도구는 confirmed=true 없이는 Core UseCase를 호출하지 않는다")
   void rejectsHighRiskToolWithoutConfirmation() {
-    String token = tokenFactory.tokenWithScopes(McpScope.WORKSPACE_WRITE.value());
+    String token = tokenFactory.tokenWithScopes(McpScope.WORKSPACE_DESTRUCTIVE.value());
     String sessionId = initialize(token);
 
     String response = callTool(sessionId, token, "schemafy_delete_project",
@@ -360,6 +368,34 @@ class SchemafyResourceIntegrationTest {
         .contains("\"isError\":true")
         .contains("confirmed must be true")
         .doesNotContain("Schemafy MCP tool call failed");
+  }
+
+  @Test
+  @DisplayName("저위험 write scope는 confirmed=true여도 고위험 MCP 도구를 호출할 수 없다")
+  void rejectsHighRiskToolsWithLowRiskScopes() {
+    String token = tokenFactory.tokenWithScopes(
+        McpScope.WORKSPACE_WRITE.value(), McpScope.ERD_WRITE.value(), McpScope.MEMO_WRITE.value());
+    String sessionId = initialize(token);
+
+    String workspaceResponse = callTool(sessionId, token, "schemafy_delete_project",
+        Map.of("projectId", "project-1", "confirmed", true));
+    String erdResponse = callTool(sessionId, token, "schemafy_delete_schema",
+        Map.of("schemaId", "schema-1", "confirmed", true));
+    String memoResponse = callTool(sessionId, token, "schemafy_delete_memo",
+        Map.of("memoId", "memo-1", "confirmed", true));
+
+    assertThat(workspaceResponse)
+        .contains("\"isError\":true")
+        .contains("MCP token scope is insufficient");
+    assertThat(erdResponse)
+        .contains("\"isError\":true")
+        .contains("MCP token scope is insufficient");
+    assertThat(memoResponse)
+        .contains("\"isError\":true")
+        .contains("MCP token scope is insufficient");
+    then(deleteProjectUseCase).shouldHaveNoInteractions();
+    then(deleteSchemaUseCase).shouldHaveNoInteractions();
+    then(deleteMemoUseCase).shouldHaveNoInteractions();
   }
 
   @Test
@@ -508,7 +544,7 @@ class SchemafyResourceIntegrationTest {
   @Test
   @DisplayName("ERD context 조회 오류가 발생해도 schema 삭제는 수행하고 이벤트는 생략한다")
   void deletesSchemaWhenErdContextResolutionFails() {
-    String token = tokenFactory.tokenWithScopes(McpScope.ERD_WRITE.value());
+    String token = tokenFactory.tokenWithScopes(McpScope.ERD_DESTRUCTIVE.value());
     String sessionId = initialize(token);
     given(stateSyncPublisher.resolveFromSchemaId("schema-1"))
         .willReturn(Mono.error(new IllegalStateException("redis unavailable")));
@@ -528,7 +564,7 @@ class SchemafyResourceIntegrationTest {
   @Test
   @DisplayName("schema context가 비어 있으면 schema 삭제를 NOT_FOUND로 거부한다")
   void rejectsSchemaDeleteWhenErdContextIsMissing() {
-    String token = tokenFactory.tokenWithScopes(McpScope.ERD_WRITE.value());
+    String token = tokenFactory.tokenWithScopes(McpScope.ERD_DESTRUCTIVE.value());
     String sessionId = initialize(token);
     given(stateSyncPublisher.resolveFromSchemaId("schema-1"))
         .willReturn(Mono.empty());
@@ -545,7 +581,7 @@ class SchemafyResourceIntegrationTest {
   @Test
   @DisplayName("ERD context 조회 오류가 발생해도 table 삭제는 수행하고 이벤트는 생략한다")
   void deletesTableWhenErdContextResolutionFails() {
-    String token = tokenFactory.tokenWithScopes(McpScope.ERD_WRITE.value());
+    String token = tokenFactory.tokenWithScopes(McpScope.ERD_DESTRUCTIVE.value());
     String sessionId = initialize(token);
     given(stateSyncPublisher.resolveFromTableId("table-1"))
         .willReturn(Mono.error(new IllegalStateException("redis unavailable")));
@@ -565,7 +601,7 @@ class SchemafyResourceIntegrationTest {
   @Test
   @DisplayName("table context가 비어 있으면 table 삭제를 NOT_FOUND로 거부한다")
   void rejectsTableDeleteWhenErdContextIsMissing() {
-    String token = tokenFactory.tokenWithScopes(McpScope.ERD_WRITE.value());
+    String token = tokenFactory.tokenWithScopes(McpScope.ERD_DESTRUCTIVE.value());
     String sessionId = initialize(token);
     given(stateSyncPublisher.resolveFromTableId("table-1"))
         .willReturn(Mono.empty());
