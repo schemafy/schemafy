@@ -10,6 +10,7 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
 import com.schemafy.core.common.MutationResult;
+import com.schemafy.core.common.exception.DomainException;
 import com.schemafy.core.erd.column.application.port.in.DeleteColumnCommand;
 import com.schemafy.core.erd.column.application.port.in.DeleteColumnUseCase;
 import com.schemafy.core.erd.constraint.application.port.in.DeleteConstraintCommand;
@@ -29,9 +30,11 @@ import com.schemafy.core.erd.relationship.application.port.in.DeleteRelationship
 import com.schemafy.core.erd.relationship.application.port.in.DeleteRelationshipUseCase;
 import com.schemafy.core.erd.schema.application.port.in.DeleteSchemaCommand;
 import com.schemafy.core.erd.schema.application.port.in.DeleteSchemaUseCase;
+import com.schemafy.core.erd.schema.domain.exception.SchemaErrorCode;
 import com.schemafy.core.erd.sync.ErdStateSyncPublisher;
 import com.schemafy.core.erd.table.application.port.in.DeleteTableCommand;
 import com.schemafy.core.erd.table.application.port.in.DeleteTableUseCase;
+import com.schemafy.core.erd.table.domain.exception.TableErrorCode;
 import com.schemafy.core.mcp.domain.McpScope;
 import com.schemafy.core.project.application.port.in.AcceptProjectInvitationCommand;
 import com.schemafy.core.project.application.port.in.AcceptProjectInvitationUseCase;
@@ -319,6 +322,8 @@ final class SchemafyHighRiskToolSurface {
         return deletion.map(this::mutation);
       }
       return publisher.resolveFromSchemaId(schemaId)
+          .switchIfEmpty(Mono.error(new DomainException(SchemaErrorCode.NOT_FOUND,
+              "Schema not found: " + schemaId)))
           .flatMap(context -> deletion.flatMap(result -> publisher
               .publishDeletedWithContext(context, result.affectedTableIds(), result.operation())
               .thenReturn(mutation(result))));
@@ -335,6 +340,8 @@ final class SchemafyHighRiskToolSurface {
         return deletion.map(this::mutation);
       }
       return publisher.resolveFromTableId(tableId)
+          .switchIfEmpty(Mono.error(new DomainException(TableErrorCode.NOT_FOUND,
+              "Table not found: " + tableId)))
           .flatMap(context -> deletion.flatMap(result -> publisher
               .publishActiveWithContext(context, result.affectedTableIds(), result.operation())
               .thenReturn(mutation(result))));
