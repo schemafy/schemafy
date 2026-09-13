@@ -18,6 +18,7 @@ import com.schemafy.core.project.domain.ShareLink;
 import reactor.core.publisher.Mono;
 import reactor.test.StepVerifier;
 
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.then;
 import static org.mockito.Mockito.lenient;
@@ -44,11 +45,9 @@ class ShareLinkMutationServiceTest {
 
   @BeforeEach
   void setUp() {
-    lenient().when(transactionalOperator.<Void>transactional(
-        org.mockito.ArgumentMatchers.<Mono<Void>>any()))
+    lenient().when(transactionalOperator.<Void>transactional(any(Mono.class)))
         .thenAnswer(invocation -> invocation.getArgument(0));
-    lenient().when(transactionalOperator.<ShareLink>transactional(
-        org.mockito.ArgumentMatchers.<Mono<ShareLink>>any()))
+    lenient().when(transactionalOperator.<ShareLink>transactional(any(Mono.class)))
         .thenAnswer(invocation -> invocation.getArgument(0));
   }
 

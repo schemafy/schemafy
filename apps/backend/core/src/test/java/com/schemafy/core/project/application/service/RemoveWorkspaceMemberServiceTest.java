@@ -1,5 +1,6 @@
 package com.schemafy.core.project.application.service;
 
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Supplier;
 
 import org.junit.jupiter.api.DisplayName;
@@ -9,6 +10,7 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+import com.schemafy.core.common.exception.DomainException;
 import com.schemafy.core.project.application.port.in.RemoveWorkspaceMemberCommand;
 import com.schemafy.core.project.domain.WorkspaceMember;
 import com.schemafy.core.project.domain.WorkspaceRole;
@@ -22,6 +24,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.then;
+import static org.mockito.Mockito.never;
 
 @ExtendWith(MockitoExtension.class)
 @DisplayName("워크스페이스 멤버 제거 서비스")
@@ -49,7 +52,7 @@ class RemoveWorkspaceMemberServiceTest {
         WORKSPACE_ID, TARGET_USER_ID, "requester-id");
     var targetMember = WorkspaceMember.create(
         "member-id", WORKSPACE_ID, TARGET_USER_ID, WorkspaceRole.MEMBER);
-    var enteredGuard = new java.util.concurrent.atomic.AtomicBoolean();
+    var enteredGuard = new AtomicBoolean();
 
     given(workspaceMutationGuard.protectExclusive(eq(WORKSPACE_ID), any()))
         .willAnswer(invocation -> {
@@ -84,7 +87,7 @@ class RemoveWorkspaceMemberServiceTest {
   @DisplayName("잠금 획득 뒤 요청자가 관리자가 아니면 대상 멤버를 조회하거나 제거하지 않는다")
   void rejectsNonAdminRequesterAfterAcquiringExclusiveWorkspaceLock() {
     var command = new RemoveWorkspaceMemberCommand(WORKSPACE_ID, TARGET_USER_ID, "requester-id");
-    var requesterWasDemoted = new java.util.concurrent.atomic.AtomicBoolean();
+    var requesterWasDemoted = new AtomicBoolean();
 
     given(workspaceMutationGuard.protectExclusive(eq(WORKSPACE_ID), any()))
         .willAnswer(invocation -> {
@@ -96,17 +99,17 @@ class RemoveWorkspaceMemberServiceTest {
         });
     given(workspaceAccessHelper.findWorkspaceAdminMember("requester-id", WORKSPACE_ID))
         .willAnswer(invocation -> requesterWasDemoted.get()
-            ? Mono.error(new com.schemafy.core.common.exception.DomainException(
+            ? Mono.error(new DomainException(
                 WorkspaceErrorCode.ADMIN_REQUIRED))
             : Mono.just(WorkspaceMember.create("requester-member-id", WORKSPACE_ID,
                 "requester-id", WorkspaceRole.ADMIN)));
 
     StepVerifier.create(sut.removeWorkspaceMember(command))
-        .expectErrorMatches(com.schemafy.core.common.exception.DomainException
+        .expectErrorMatches(DomainException
             .hasErrorCode(WorkspaceErrorCode.ADMIN_REQUIRED))
         .verify();
 
-    then(workspaceAccessHelper).should(org.mockito.Mockito.never())
+    then(workspaceAccessHelper).should(never())
         .findWorkspaceMember(any(), any());
     then(projectMembershipPropagationHelper).shouldHaveNoInteractions();
   }

@@ -18,6 +18,7 @@ import com.schemafy.core.common.exception.DomainException;
 import com.schemafy.core.project.application.port.in.AcceptWorkspaceInvitationCommand;
 import com.schemafy.core.project.application.port.out.InvitationPort;
 import com.schemafy.core.project.domain.Invitation;
+import com.schemafy.core.project.domain.ProjectRole;
 import com.schemafy.core.project.domain.Workspace;
 import com.schemafy.core.project.domain.WorkspaceMember;
 import com.schemafy.core.project.domain.WorkspaceRole;
@@ -34,6 +35,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.then;
+import static org.mockito.Mockito.times;
 
 @ExtendWith(MockitoExtension.class)
 @DisplayName("워크스페이스 초대 수락 서비스")
@@ -109,7 +111,7 @@ class AcceptWorkspaceInvitationServiceTest {
         .verifyComplete();
 
     then(workspaceMutationGuard).should().protectExclusive(eq(WORKSPACE_ID), any());
-    then(workspaceInvitationHelper).should(org.mockito.Mockito.times(2))
+    then(workspaceInvitationHelper).should(times(2))
         .findInvitationOrThrow(INVITATION_ID);
   }
 
@@ -120,7 +122,7 @@ class AcceptWorkspaceInvitationServiceTest {
     var user = User.signUp(USER_ID, "invitee@test.com", "Invitee", "password");
     var projectInvitation = Invitation.createProjectInvitation(
         INVITATION_ID, "project-id", WORKSPACE_ID, "invitee@test.com",
-        com.schemafy.core.project.domain.ProjectRole.EDITOR, "admin-id");
+        ProjectRole.EDITOR, "admin-id");
 
     given(findUserByIdPort.findUserById(USER_ID)).willReturn(Mono.just(user));
     given(workspaceInvitationHelper.findInvitationOrThrow(INVITATION_ID))

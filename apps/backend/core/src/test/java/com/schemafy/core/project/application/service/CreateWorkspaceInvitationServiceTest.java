@@ -10,6 +10,7 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+import com.schemafy.core.common.exception.DomainException;
 import com.schemafy.core.project.application.port.in.CreateWorkspaceInvitationCommand;
 import com.schemafy.core.project.application.port.out.InvitationPort;
 import com.schemafy.core.project.domain.Invitation;
@@ -114,13 +115,13 @@ class CreateWorkspaceInvitationServiceTest {
         });
     given(workspaceAccessHelper.findWorkspaceAdminMember("requester-id", WORKSPACE_ID))
         .willAnswer(invocation -> requesterWasDemoted.get()
-            ? Mono.error(new com.schemafy.core.common.exception.DomainException(
+            ? Mono.error(new DomainException(
                 WorkspaceErrorCode.ADMIN_REQUIRED))
             : Mono.just(WorkspaceMember.create("requester-member-id", WORKSPACE_ID,
                 "requester-id", WorkspaceRole.ADMIN)));
 
     StepVerifier.create(sut.createWorkspaceInvitation(command))
-        .expectErrorMatches(com.schemafy.core.common.exception.DomainException
+        .expectErrorMatches(DomainException
             .hasErrorCode(WorkspaceErrorCode.ADMIN_REQUIRED))
         .verify();
 

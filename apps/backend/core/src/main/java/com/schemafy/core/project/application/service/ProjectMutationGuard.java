@@ -1,6 +1,7 @@
 package com.schemafy.core.project.application.service;
 
 import java.time.Duration;
+import java.util.function.Function;
 import java.util.function.Supplier;
 
 import org.springframework.dao.PessimisticLockingFailureException;
@@ -52,7 +53,7 @@ public class ProjectMutationGuard {
 
   private <T> Mono<T> protect(
       String projectId,
-      java.util.function.Function<String, Mono<Void>> projectLock,
+      Function<String, Mono<Void>> projectLock,
       Supplier<Mono<T>> action) {
     return Mono.defer(() -> projectPort.findByIdAndNotDeleted(projectId)
         .switchIfEmpty(Mono.error(new DomainException(

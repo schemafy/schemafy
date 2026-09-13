@@ -18,6 +18,7 @@ import reactor.core.publisher.Mono;
 import reactor.test.StepVerifier;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.then;
 import static org.mockito.Mockito.never;
@@ -76,8 +77,7 @@ class UpdateWorkspaceServiceTest {
 
     then(workspaceAccessHelper).should(never()).findWorkspaceOrThrow("workspace-id");
     then(workspaceAccessHelper).should(never())
-        .buildWorkspaceDetail(org.mockito.ArgumentMatchers.any(),
-            org.mockito.ArgumentMatchers.any());
+        .buildWorkspaceDetail(any(), any());
   }
 
 }

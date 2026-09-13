@@ -1,5 +1,6 @@
 package com.schemafy.core.project.application.service;
 
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Supplier;
 
 import org.junit.jupiter.api.DisplayName;
@@ -21,6 +22,8 @@ import reactor.test.StepVerifier;
 
 import static com.schemafy.core.project.application.service.MutationGuardTestSupport.invokeGuardAction;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.then;
 import static org.mockito.Mockito.never;
@@ -54,9 +57,8 @@ class UpdateProjectMemberRoleServiceTest {
         TARGET_ID, ProjectRole.VIEWER);
     UpdateProjectMemberRoleCommand command = new UpdateProjectMemberRoleCommand(
         PROJECT_ID, TARGET_ID, ProjectRole.EDITOR, REQUESTER_ID);
-    var enteredGuard = new java.util.concurrent.atomic.AtomicBoolean();
-    given(projectMutationGuard.protectProjectMutation(org.mockito.ArgumentMatchers.eq(PROJECT_ID),
-        org.mockito.ArgumentMatchers.any()))
+    var enteredGuard = new AtomicBoolean();
+    given(projectMutationGuard.protectProjectMutation(eq(PROJECT_ID), any()))
         .willAnswer(invocation -> {
           enteredGuard.set(true);
           Supplier<Mono<ProjectMember>> action = invocation.getArgument(1);
@@ -84,7 +86,7 @@ class UpdateProjectMemberRoleServiceTest {
         ProjectRole.EDITOR.name());
     then(projectMemberPort).should(never()).save(target);
     then(projectMutationGuard).should().protectProjectMutation(
-        org.mockito.ArgumentMatchers.eq(PROJECT_ID), org.mockito.ArgumentMatchers.any());
+        eq(PROJECT_ID), any());
   }
 
   @Test
@@ -96,8 +98,7 @@ class UpdateProjectMemberRoleServiceTest {
         TARGET_ID, ProjectRole.VIEWER);
     UpdateProjectMemberRoleCommand command = new UpdateProjectMemberRoleCommand(
         PROJECT_ID, TARGET_ID, ProjectRole.EDITOR, REQUESTER_ID);
-    given(projectMutationGuard.protectProjectMutation(org.mockito.ArgumentMatchers.eq(PROJECT_ID),
-        org.mockito.ArgumentMatchers.any()))
+    given(projectMutationGuard.protectProjectMutation(eq(PROJECT_ID), any()))
         .willAnswer(invokeGuardAction());
     given(projectAccessHelper.findProjectAdminMember(REQUESTER_ID, PROJECT_ID))
         .willReturn(Mono.just(requester));
@@ -125,8 +126,7 @@ class UpdateProjectMemberRoleServiceTest {
         TARGET_ID, ProjectRole.VIEWER);
     UpdateProjectMemberRoleCommand command = new UpdateProjectMemberRoleCommand(
         PROJECT_ID, TARGET_ID, ProjectRole.EDITOR, REQUESTER_ID);
-    given(projectMutationGuard.protectProjectMutation(org.mockito.ArgumentMatchers.eq(PROJECT_ID),
-        org.mockito.ArgumentMatchers.any()))
+    given(projectMutationGuard.protectProjectMutation(eq(PROJECT_ID), any()))
         .willAnswer(invokeGuardAction());
     given(projectAccessHelper.findProjectAdminMember(REQUESTER_ID, PROJECT_ID))
         .willReturn(Mono.error(new DomainException(ProjectErrorCode.ADMIN_REQUIRED)));
@@ -148,8 +148,7 @@ class UpdateProjectMemberRoleServiceTest {
         TARGET_ID, ProjectRole.VIEWER);
     UpdateProjectMemberRoleCommand command = new UpdateProjectMemberRoleCommand(
         PROJECT_ID, TARGET_ID, ProjectRole.EDITOR, REQUESTER_ID);
-    given(projectMutationGuard.protectProjectMutation(org.mockito.ArgumentMatchers.eq(PROJECT_ID),
-        org.mockito.ArgumentMatchers.any()))
+    given(projectMutationGuard.protectProjectMutation(eq(PROJECT_ID), any()))
         .willAnswer(invokeGuardAction());
     given(projectAccessHelper.findProjectAdminMember(REQUESTER_ID, PROJECT_ID))
         .willReturn(Mono.error(new DomainException(ProjectErrorCode.ACCESS_DENIED)));

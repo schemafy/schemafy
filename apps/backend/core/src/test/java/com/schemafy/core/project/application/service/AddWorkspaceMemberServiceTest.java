@@ -1,5 +1,6 @@
 package com.schemafy.core.project.application.service;
 
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Supplier;
 
 import org.junit.jupiter.api.DisplayName;
@@ -9,6 +10,7 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+import com.schemafy.core.common.exception.DomainException;
 import com.schemafy.core.project.application.port.in.AddWorkspaceMemberCommand;
 import com.schemafy.core.project.application.port.out.WorkspaceMemberPort;
 import com.schemafy.core.project.domain.WorkspaceMember;
@@ -25,6 +27,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.then;
+import static org.mockito.Mockito.never;
 
 @ExtendWith(MockitoExtension.class)
 @DisplayName("워크스페이스 멤버 추가 서비스")
@@ -57,7 +60,7 @@ class AddWorkspaceMemberServiceTest {
     var command = new AddWorkspaceMemberCommand(
         WORKSPACE_ID, "target@test.com", WorkspaceRole.MEMBER, "requester-id");
     var targetUser = User.signUp(USER_ID, command.email(), "Target", "password");
-    var enteredGuard = new java.util.concurrent.atomic.AtomicBoolean();
+    var enteredGuard = new AtomicBoolean();
 
     given(workspaceAccessHelper.findUserByEmailOrThrow(any()))
         .willReturn(Mono.just(targetUser));
@@ -98,7 +101,7 @@ class AddWorkspaceMemberServiceTest {
   void rejectsRemovedRequesterAfterAcquiringExclusiveWorkspaceLock() {
     var command = new AddWorkspaceMemberCommand(
         WORKSPACE_ID, "target@test.com", WorkspaceRole.MEMBER, "requester-id");
-    var requesterWasRemoved = new java.util.concurrent.atomic.AtomicBoolean();
+    var requesterWasRemoved = new AtomicBoolean();
 
     given(workspaceMutationGuard.protectExclusive(eq(WORKSPACE_ID), any()))
         .willAnswer(invocation -> {
@@ -110,17 +113,17 @@ class AddWorkspaceMemberServiceTest {
         });
     given(workspaceAccessHelper.findWorkspaceAdminMember("requester-id", WORKSPACE_ID))
         .willAnswer(invocation -> requesterWasRemoved.get()
-            ? Mono.error(new com.schemafy.core.common.exception.DomainException(
+            ? Mono.error(new DomainException(
                 WorkspaceErrorCode.ACCESS_DENIED))
             : Mono.just(WorkspaceMember.create("requester-member-id", WORKSPACE_ID,
                 "requester-id", WorkspaceRole.ADMIN)));
 
     StepVerifier.create(sut.addWorkspaceMember(command))
-        .expectErrorMatches(com.schemafy.core.common.exception.DomainException
+        .expectErrorMatches(DomainException
             .hasErrorCode(WorkspaceErrorCode.ACCESS_DENIED))
         .verify();
 
-    then(workspaceAccessHelper).should(org.mockito.Mockito.never())
+    then(workspaceAccessHelper).should(never())
         .findUserByEmailOrThrow(any());
     then(workspaceMemberPort).shouldHaveNoInteractions();
     then(ulidGeneratorPort).shouldHaveNoInteractions();
