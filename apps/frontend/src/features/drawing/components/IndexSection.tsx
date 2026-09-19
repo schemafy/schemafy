@@ -1,11 +1,16 @@
 import { Plus } from 'lucide-react';
 import { IndexRow } from './IndexRow';
 import type { IndexSectionProps } from '../types';
+import {
+  getCapabilitiesUnavailableMessage,
+  canSelectIndexType,
+} from '../utils/indexUtils';
 
 export const IndexSection = ({
   indexes,
   tableColumns,
   isEditMode,
+  indexCapabilities,
   onCreateIndex,
   onDeleteIndex,
   onUpdateIndexName,
@@ -18,6 +23,8 @@ export const IndexSection = ({
     return null;
   }
 
+  const canCreateIndex = canSelectIndexType(indexCapabilities);
+
   return (
     <div className="border-t border-schemafy-glass-border/55">
       <div className="flex items-center justify-between bg-schemafy-secondary/35 px-3 py-1.5">
@@ -25,14 +32,24 @@ export const IndexSection = ({
           INDEXES
         </span>
         {isEditMode && (
-          <button
-            type="button"
-            onClick={onCreateIndex}
-            className="schemafy-focus-ring flex h-7 w-7 items-center justify-center rounded-lg text-schemafy-dark-gray transition-colors hover:bg-schemafy-secondary hover:text-schemafy-text"
-            title="Add Index"
+          <span
+            title={
+              canCreateIndex
+                ? undefined
+                : getCapabilitiesUnavailableMessage(indexCapabilities)
+            }
           >
-            <Plus size={14} />
-          </button>
+            <button
+              type="button"
+              data-testid="add-index-button"
+              onClick={onCreateIndex}
+              disabled={!canCreateIndex}
+              title={canCreateIndex ? 'Add Index' : undefined}
+              className="schemafy-focus-ring flex h-7 w-7 items-center justify-center rounded-lg text-schemafy-dark-gray transition-colors hover:bg-schemafy-secondary hover:text-schemafy-text disabled:pointer-events-none disabled:opacity-50"
+            >
+              <Plus size={14} />
+            </button>
+          </span>
         )}
       </div>
 
@@ -48,6 +65,7 @@ export const IndexSection = ({
               index={index}
               tableColumns={tableColumns}
               isEditMode={isEditMode}
+              indexCapabilities={indexCapabilities}
               onDeleteIndex={onDeleteIndex}
               onUpdateIndexName={onUpdateIndexName}
               onUpdateIndexType={onUpdateIndexType}
