@@ -28,7 +28,6 @@ import com.schemafy.api.erd.controller.dto.response.AddRelationshipColumnRespons
 import com.schemafy.api.erd.controller.dto.response.RelationshipColumnResponse;
 import com.schemafy.api.erd.controller.dto.response.RelationshipResponse;
 import com.schemafy.api.erd.service.relationship.RelationshipApiResponseMapper;
-import com.schemafy.api.erd.service.sync.ErdStateSyncPublisher;
 import com.schemafy.core.erd.operation.domain.CommittedErdOperation;
 import com.schemafy.core.erd.relationship.application.port.in.AddRelationshipColumnCommand;
 import com.schemafy.core.erd.relationship.application.port.in.AddRelationshipColumnUseCase;
@@ -56,6 +55,7 @@ import com.schemafy.core.erd.relationship.application.port.in.GetRelationshipsBy
 import com.schemafy.core.erd.relationship.application.port.in.GetRelationshipsByTableIdUseCase;
 import com.schemafy.core.erd.relationship.application.port.in.RemoveRelationshipColumnCommand;
 import com.schemafy.core.erd.relationship.application.port.in.RemoveRelationshipColumnUseCase;
+import com.schemafy.core.erd.sync.ErdStateSyncPublisher;
 
 import lombok.RequiredArgsConstructor;
 import reactor.core.publisher.Mono;

@@ -5,6 +5,7 @@ import java.util.LinkedHashSet;
 import java.util.Objects;
 import java.util.Set;
 import java.util.function.Function;
+import java.util.stream.Collectors;
 
 public final class McpTokenClaimSupport {
 
@@ -33,6 +34,20 @@ public final class McpTokenClaimSupport {
       addScopes(scopes, value);
     }
     return scopes;
+  }
+
+  public static String canonicalScopeValue(Set<String> scopes) {
+    Objects.requireNonNull(scopes, "scopes must not be null");
+    return scopes.stream()
+        .filter(Objects::nonNull)
+        .map(String::trim)
+        .filter(scope -> !scope.isBlank())
+        .sorted()
+        .collect(Collectors.joining(" "));
+  }
+
+  public static Set<String> scopesFromStoredValue(String scope) {
+    return Set.copyOf(scopesFrom(scope));
   }
 
   private static void addScopes(Set<String> scopes, Object value) {

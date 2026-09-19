@@ -4,6 +4,7 @@ import java.time.Clock;
 import java.util.Date;
 import java.util.Objects;
 import java.util.Set;
+import java.util.stream.Collectors;
 import javax.crypto.SecretKey;
 
 import org.springframework.beans.factory.annotation.Qualifier;
@@ -12,6 +13,7 @@ import org.springframework.util.StringUtils;
 
 import com.schemafy.core.mcp.application.port.in.GetMcpTokenQuery;
 import com.schemafy.core.mcp.application.port.in.GetMcpTokenUseCase;
+import com.schemafy.core.mcp.domain.McpScope;
 import com.schemafy.core.mcp.domain.McpToken;
 import com.schemafy.core.mcp.domain.McpTokenClaimSupport;
 
@@ -113,7 +115,7 @@ public class McpTokenValidator {
       McpTokenClaims claims,
       McpToken token) {
     if (!token.belongsTo(claims.userId())
-        || !claims.hasScope(token.getScope())
+        || !managedScopes(claims.scopes()).equals(managedScopes(token.scopes()))
         || token.isDeleted()
         || token.isExpiredAt(clock.instant())) {
       return McpTokenValidationResult.failure(McpSecurityError.TOKEN_INVALID);
@@ -122,6 +124,12 @@ public class McpTokenValidator {
       return McpTokenValidationResult.failure(McpSecurityError.TOKEN_REVOKED);
     }
     return McpTokenValidationResult.success(claims);
+  }
+
+  private Set<String> managedScopes(Set<String> scopes) {
+    return scopes.stream()
+        .filter(McpScope.issuableValues()::contains)
+        .collect(Collectors.toUnmodifiableSet());
   }
 
 }

@@ -41,6 +41,10 @@ public class McpResponseWriter {
         .onErrorResume(error -> Mono.just(toolError(toolErrorMessage(error))));
   }
 
+  public Mono<McpSchema.CallToolResult> toolResult(Mono<McpSchema.CallToolResult> result) {
+    return result.onErrorResume(error -> Mono.just(toolError(toolErrorMessage(error))));
+  }
+
   public Mono<McpSchema.CallToolResult> toolJson(Object payload) {
     return Mono.fromCallable(() -> toolText(json(payload, "tool"), false));
   }

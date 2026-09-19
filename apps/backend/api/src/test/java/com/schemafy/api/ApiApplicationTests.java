@@ -8,7 +8,6 @@ import org.springframework.test.context.ActiveProfiles;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
-import com.schemafy.api.erd.service.sync.ErdStateSnapshotProducer;
 import com.schemafy.api.erd.service.sync.ErdStateSnapshotScheduler;
 import com.schemafy.api.erd.service.sync.ErdStateSnapshotWorker;
 import com.schemafy.api.erd.service.sync.RedisErdStateSnapshotJobStore;
@@ -32,8 +31,6 @@ class ApiApplicationTests {
   void redisDisabledDoesNotCreateSnapshotCoordinationBeans() {
     assertThat(applicationContext.getBeansOfType(
         RedisErdStateSnapshotJobStore.class)).isEmpty();
-    assertThat(applicationContext.getBeansOfType(
-        ErdStateSnapshotProducer.class)).isEmpty();
     assertThat(applicationContext.getBeansOfType(
         ErdStateSnapshotWorker.class)).isEmpty();
     assertThat(applicationContext.getBeansOfType(

@@ -2,6 +2,7 @@ package com.schemafy.mcp.resource;
 
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Stream;
 
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -18,8 +19,9 @@ public class SchemafyReadToolSurfaceConfiguration {
 
   @Bean
   List<McpServerFeatures.AsyncToolSpecification> schemafyToolSpecifications(
-      SchemafyResourceReader reader) {
-    return List.of(
+      SchemafyResourceReader reader,
+      SchemafyWriteToolSurface writeToolSurface) {
+    return Stream.concat(Stream.of(
         tool("schemafy_list_database_vendors", "List database vendors",
             "Use when the user asks which database vendors Schemafy supports or needs a valid dbVendorName for schema creation or ERD interpretation.",
             Map.of(), List.of(), request -> reader.databaseVendorsTool()),
@@ -108,7 +110,8 @@ public class SchemafyReadToolSurfaceConfiguration {
             "Use after a memoId is known when the user asks for discussion or comments on a Schemafy ERD memo.",
             idArgument("memoId", "Schemafy memo ID."),
             List.of("memoId"),
-            reader::memoCommentsTool));
+            reader::memoCommentsTool)), writeToolSurface.specifications().stream())
+        .toList();
   }
 
 }
