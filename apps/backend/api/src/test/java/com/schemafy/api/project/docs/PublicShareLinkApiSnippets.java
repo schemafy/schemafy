@@ -17,7 +17,8 @@ public class PublicShareLinkApiSnippets extends RestDocsSnippets {
   /** 공유 링크 접근 경로 파라미터 */
   public static Snippet accessByLinkPathParameters() {
     return pathParameters(
-        parameterWithName("code").description("공유 링크 코드"));
+        parameterWithName("code")
+            .description("공개 공유 링크 식별자 (하이픈 없는 32자리 소문자 hexadecimal)"));
   }
 
   /** 공유 링크 접근 응답 헤더 */
@@ -38,6 +39,11 @@ public class PublicShareLinkApiSnippets extends RestDocsSnippets {
             fieldWithPath("description")
                 .type(JsonFieldType.STRING)
                 .description("프로젝트 설명").optional()));
+  }
+
+  /** 비활성 공유 링크 접근 오류 응답 */
+  public static Snippet accessByLinkErrorResponse() {
+    return createResponseFieldsSnippet(errorResponseFields());
   }
 
 }
