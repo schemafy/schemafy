@@ -451,7 +451,7 @@ class WorkspaceInvitationControllerTest extends ProjectHttpTestSupport {
       assertThat(updated.getStatusAsEnum()).isEqualTo(InvitationStatus.ACCEPTED);
 
       boolean memberExists = workspaceMemberRepository
-          .existsByWorkspaceIdAndUserIdAndNotDeleted(testWorkspace.getId(), invitedUserId)
+          .existsByWorkspaceIdAndUserIdAndDeletedAtIsNull(testWorkspace.getId(), invitedUserId)
           .block();
       assertThat(memberExists).isTrue();
     }

@@ -45,6 +45,7 @@ export const useChangeColumnName = (schemaId: string) => {
 export const useChangeColumnType = (schemaId: string) => {
   const { syncAffectedTables } = useErdCache(schemaId);
   return useMutation({
+    scope: { id: `change-column-type:${schemaId}` },
     mutationFn: ({
       columnId,
       data,

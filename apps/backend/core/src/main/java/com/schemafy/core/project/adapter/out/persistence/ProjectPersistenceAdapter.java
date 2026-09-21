@@ -36,24 +36,24 @@ public class ProjectPersistenceAdapter
 
   @Override
   public Mono<Project> findByIdAndNotDeleted(String projectId) {
-    return projectRepository.findByIdAndNotDeleted(projectId);
+    return projectRepository.findByIdAndDeletedAtIsNull(projectId);
   }
 
   @Override
   public Mono<Boolean> existsActiveProjectById(String projectId) {
-    return projectRepository.findByIdAndNotDeleted(projectId)
+    return projectRepository.findByIdAndDeletedAtIsNull(projectId)
         .hasElement();
   }
 
   @Override
   public Mono<Integer> findDbVendorIdByProjectId(String projectId) {
-    return projectRepository.findByIdAndNotDeleted(projectId)
+    return projectRepository.findByIdAndDeletedAtIsNull(projectId)
         .map(Project::getDbVendorId);
   }
 
   @Override
   public Flux<Project> findByWorkspaceIdAndNotDeleted(String workspaceId) {
-    return projectRepository.findByWorkspaceIdAndNotDeleted(workspaceId);
+    return projectRepository.findByWorkspaceIdAndDeletedAtIsNull(workspaceId);
   }
 
   @Override
@@ -63,7 +63,7 @@ public class ProjectPersistenceAdapter
 
   @Override
   public Mono<Long> countByWorkspaceIdAndNotDeleted(String workspaceId) {
-    return projectRepository.countByWorkspaceIdAndNotDeleted(workspaceId);
+    return projectRepository.countByWorkspaceIdAndDeletedAtIsNull(workspaceId);
   }
 
   @Override
@@ -89,7 +89,7 @@ public class ProjectPersistenceAdapter
   public Mono<ProjectMember> findByProjectIdAndUserIdAndNotDeleted(
       String projectId,
       String userId) {
-    return projectMemberRepository.findByProjectIdAndUserIdAndNotDeleted(
+    return projectMemberRepository.findByProjectIdAndUserIdAndDeletedAtIsNull(
         projectId, userId);
   }
 
@@ -102,14 +102,14 @@ public class ProjectPersistenceAdapter
 
   @Override
   public Mono<Long> countByProjectIdAndNotDeleted(String projectId) {
-    return projectMemberRepository.countByProjectIdAndNotDeleted(projectId);
+    return projectMemberRepository.countByProjectIdAndDeletedAtIsNull(projectId);
   }
 
   @Override
   public Mono<Boolean> existsByProjectIdAndUserIdAndNotDeleted(
       String projectId,
       String userId) {
-    return projectMemberRepository.existsByProjectIdAndUserIdAndNotDeleted(
+    return projectMemberRepository.existsByProjectIdAndUserIdAndDeletedAtIsNull(
         projectId, userId);
   }
 
@@ -121,15 +121,15 @@ public class ProjectPersistenceAdapter
   @Override
   public Mono<Long> countByProjectIdAndRoleAndNotDeleted(String projectId,
       String role) {
-    return projectMemberRepository.countByProjectIdAndRoleAndNotDeleted(
+    return projectMemberRepository.countByProjectIdAndRoleAndDeletedAtIsNull(
         projectId, role);
   }
 
   @Override
   public Mono<ProjectMember> findLatestByProjectIdAndUserId(String projectId,
       String userId) {
-    return projectMemberRepository.findLatestByProjectIdAndUserId(projectId,
-        userId);
+    return projectMemberRepository
+        .findFirstByProjectIdAndUserIdOrderByCreatedAtDesc(projectId, userId);
   }
 
   @Override

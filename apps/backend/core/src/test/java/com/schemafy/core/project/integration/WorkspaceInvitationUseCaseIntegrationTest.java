@@ -206,7 +206,7 @@ class WorkspaceInvitationUseCaseIntegrationTest
         .block();
 
     ProjectMember restoredProjectMember = projectMemberRepository
-        .findByProjectIdAndUserIdAndNotDeleted(project.getId(), invitee.id())
+        .findByProjectIdAndUserIdAndDeletedAtIsNull(project.getId(), invitee.id())
         .block();
     Invitation cancelledSibling = invitationRepository.findById(siblingInvitation.getId()).block();
 

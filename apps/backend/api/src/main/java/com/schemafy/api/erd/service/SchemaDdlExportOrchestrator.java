@@ -32,6 +32,7 @@ public class SchemaDdlExportOrchestrator {
                 .generateSchemaDdl(new GenerateSchemaDdlCommand(
                     result.snapshot(),
                     exportVendor,
+                    result.datatypePolicy(),
                     result.indexCapabilities(),
                     result.identifierCapabilities()))
                 .map(ddl -> new SchemaDdlExportResponse(

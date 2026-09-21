@@ -30,6 +30,19 @@ class UserPolicyTest {
   }
 
   @Test
+  @DisplayName("password 정책을 검증한다")
+  void validatesPassword() {
+    assertThat(UserPolicy.isValidPassword("password")).isTrue();
+    assertThat(UserPolicy.isValidPassword("a".repeat(72))).isTrue();
+    assertThat(UserPolicy.isValidPassword("a".repeat(73))).isFalse();
+    assertThat(UserPolicy.isValidPassword("가".repeat(24))).isTrue();
+    assertThat(UserPolicy.isValidPassword("가".repeat(25))).isFalse();
+    assertThat(UserPolicy.isValidPassword(null)).isFalse();
+    assertThat(UserPolicy.isValidPassword(" ")).isFalse();
+    assertThat(UserPolicy.isValidPassword("passwrd")).isFalse();
+  }
+
+  @Test
   @DisplayName("name을 정책 최대 길이로 자른다")
   void truncatesName() {
     assertThat(UserPolicy.truncateName(null)).isNull();

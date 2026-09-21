@@ -35,20 +35,14 @@ import com.schemafy.core.erd.export.domain.SchemaExportSnapshot.SchemaSnapshot;
 import com.schemafy.core.erd.export.domain.SchemaExportSnapshot.Table;
 import com.schemafy.core.erd.export.domain.SchemaExportSnapshot.TableSnapshot;
 import com.schemafy.core.erd.index.domain.type.IndexType;
+import com.schemafy.core.erd.vendor.domain.datatype.DatatypeDefinition;
+import com.schemafy.core.erd.vendor.domain.datatype.DatatypePolicy;
+import com.schemafy.core.erd.vendor.domain.datatype.DatatypeValidationErrorCodes;
 
 @Component
 public class MySqlDdlGenerator implements DdlGenerator {
 
   private static final int MAX_COLUMN_COMMENT_LENGTH = 1024;
-  private static final int MAX_BIT_LENGTH = 64;
-  private static final int MAX_CHAR_LENGTH = 255;
-  private static final int MAX_VARCHAR_LENGTH = 65_535;
-  private static final int MAX_TEMPORAL_FSP = 6;
-  private static final int MAX_INTEGER_DISPLAY_WIDTH = 255;
-  private static final int MAX_FLOAT_PRECISION_BITS = 53;
-  private static final int MAX_ENUM_VALUES = 65_535;
-  private static final int MAX_SET_VALUES = 64;
-  private static final int MAX_ENUM_SET_VALUE_LENGTH = 255;
 
   // MySQL parses SET DEFAULT, but InnoDB rejects it for foreign keys.
   private static final Set<String> VALID_REFERENTIAL_ACTIONS = Set.of(
@@ -59,65 +53,21 @@ public class MySqlDdlGenerator implements DdlGenerator {
   private static final Set<IndexType> VALID_INDEX_TYPES = Set.of(
       IndexType.BTREE, IndexType.FULLTEXT, IndexType.SPATIAL);
 
-  private static final Set<String> SUPPORTED_DATA_TYPES = Set.of(
-      "TINYINT", "SMALLINT", "MEDIUMINT", "INT", "INTEGER", "BIGINT",
-      "FLOAT", "DOUBLE", "REAL", "DECIMAL", "NUMERIC", "BIT", "BOOL",
-      "BOOLEAN", "CHAR", "VARCHAR", "TINYTEXT", "TEXT", "MEDIUMTEXT",
-      "LONGTEXT", "BINARY", "VARBINARY", "BLOB", "TINYBLOB",
-      "MEDIUMBLOB", "LONGBLOB", "ENUM", "SET", "DATE", "TIME",
-      "DATETIME", "TIMESTAMP", "YEAR", "GEOMETRY", "POINT",
-      "LINESTRING", "POLYGON", "MULTIPOINT", "MULTILINESTRING",
-      "MULTIPOLYGON", "GEOMETRYCOLLECTION", "JSON");
-
-  private static final Set<String> INTEGER_TYPES = Set.of(
-      "TINYINT", "SMALLINT", "MEDIUMINT", "INT", "INTEGER", "BIGINT");
-
-  private static final Set<String> REQUIRED_LENGTH_TYPES = Set.of(
-      "VARCHAR", "VARBINARY");
-
-  private static final Set<String> OPTIONAL_LENGTH_TYPES = Set.of(
-      "TINYINT", "SMALLINT", "MEDIUMINT", "INT", "INTEGER", "BIGINT",
-      "BIT", "CHAR", "BINARY", "FLOAT", "TIME", "DATETIME", "TIMESTAMP",
-      "YEAR");
-
-  private static final Set<String> TEMPORAL_FSP_TYPES = Set.of(
-      "TIME", "DATETIME", "TIMESTAMP");
-
-  private static final Set<String> PRECISION_SCALE_TYPES = Set.of(
-      "DECIMAL", "NUMERIC", "FLOAT", "DOUBLE", "REAL");
-
-  private static final Set<String> CHARACTER_STRING_TYPES = Set.of(
-      "CHAR", "VARCHAR", "TINYTEXT", "TEXT", "MEDIUMTEXT", "LONGTEXT",
-      "ENUM", "SET");
-
-  private static final Set<String> BINARY_STRING_TYPES = Set.of(
-      "BINARY", "VARBINARY");
-
-  private static final Set<String> TEXT_OR_BLOB_TYPES = Set.of(
-      "TINYTEXT", "TEXT", "MEDIUMTEXT", "LONGTEXT", "TINYBLOB", "BLOB",
-      "MEDIUMBLOB", "LONGBLOB");
-
-  private static final Set<String> FULLTEXT_TYPES = Set.of(
-      "CHAR", "VARCHAR", "TINYTEXT", "TEXT", "MEDIUMTEXT", "LONGTEXT");
-
-  private static final Set<String> SPATIAL_TYPES = Set.of(
-      "GEOMETRY", "POINT", "LINESTRING", "POLYGON", "MULTIPOINT",
-      "MULTILINESTRING", "MULTIPOLYGON", "GEOMETRYCOLLECTION");
-
-  private static final Set<String> VALUE_LIST_TYPES = Set.of("ENUM", "SET");
-
   @Override
   public DdlExportVendor exportVendor() {
     return DdlExportVendor.MYSQL;
   }
 
   @Override
-  public String generate(SchemaExportSnapshot snapshot) {
+  public String generate(
+      SchemaExportSnapshot snapshot,
+      DatatypePolicy datatypePolicy) {
     requireSnapshot(snapshot);
     requireMysqlCompatible(snapshot.schema().dbVendorName());
+    requireDatatypePolicy(datatypePolicy);
 
     List<TableSnapshot> tables = normalizeTables(snapshot.tables());
-    DdlContext context = DdlContext.from(tables);
+    DdlContext context = DdlContext.from(tables, datatypePolicy);
 
     StringBuilder ddl = new StringBuilder();
     ddl.append(generateHeader(snapshot.schema()));
@@ -180,7 +130,7 @@ public class MySqlDdlGenerator implements DdlGenerator {
     List<String> clauses = new ArrayList<>();
     ColumnRules columnRules = ColumnRules.from(snapshot, context);
     for (Column column : sortColumns(snapshot.columns())) {
-      clauses.add(generateColumnDefinition(column, columnRules));
+      clauses.add(generateColumnDefinition(column, columnRules, context));
     }
 
     primaryKeyClause(snapshot, context)
@@ -196,15 +146,16 @@ public class MySqlDdlGenerator implements DdlGenerator {
   }
 
   private String generateColumnDefinition(Column column,
-      ColumnRules columnRules) {
+      ColumnRules columnRules,
+      DdlContext context) {
     requireColumn(column);
-    String dataType = sanitizeDataType(column.dataType());
-    validateColumnDefinition(column, dataType, columnRules);
+    DatatypeDefinition datatype = resolveDatatype(column, context);
+    validateColumnDefinition(column, columnRules);
 
     StringBuilder ddl = new StringBuilder("  ");
     ddl.append(quoteIdentifier(column.name()))
         .append(" ")
-        .append(formatDataType(dataType, column.typeArguments()));
+        .append(datatype.render(column.typeArguments(), MySqlDdlGenerator::escapeString));
 
     sanitizeOptionalIdentifier(column.charset(), "Column charset")
         .ifPresent(charset -> ddl.append(" CHARACTER SET ").append(charset));
@@ -241,27 +192,6 @@ public class MySqlDdlGenerator implements DdlGenerator {
     }
 
     return ddl.toString();
-  }
-
-  private String formatDataType(String dataType,
-      ColumnTypeArguments arguments) {
-    if (arguments == null || arguments.isEmpty()) {
-      return dataType;
-    }
-    if (arguments.hasLength()) {
-      return dataType + "(" + arguments.length() + ")";
-    }
-    if (arguments.hasPrecisionScale()) {
-      return dataType + "(" + arguments.precision() + ","
-          + arguments.scale() + ")";
-    }
-    if (arguments.hasValues()) {
-      String values = arguments.values().stream()
-          .map(value -> "'" + escapeString(value) + "'")
-          .collect(Collectors.joining(", "));
-      return dataType + "(" + values + ")";
-    }
-    return dataType;
   }
 
   private Optional<String> primaryKeyClause(TableSnapshot snapshot,
@@ -513,22 +443,11 @@ public class MySqlDdlGenerator implements DdlGenerator {
     return ddl.toString();
   }
 
-  private static void validateColumnDefinition(Column column, String dataType,
+  private static void validateColumnDefinition(
+      Column column,
       ColumnRules columnRules) {
-    validateTypeArguments(dataType, column.typeArguments());
-
-    if ((hasText(column.charset()) || hasText(column.collation()))
-        && !CHARACTER_STRING_TYPES.contains(dataType)) {
-      throw invalid("Charset or collation is only allowed for character string type: "
-          + dataType);
-    }
-
     if (!column.autoIncrement()) {
       return;
-    }
-    if (!INTEGER_TYPES.contains(dataType)) {
-      throw invalid("AUTO_INCREMENT is only allowed for integer types: "
-          + dataType);
     }
     if (!columnRules.leftmostKeyColumnIds().contains(column.id())) {
       throw invalid("AUTO_INCREMENT column '%s' must be the first column of a key"
@@ -540,107 +459,14 @@ public class MySqlDdlGenerator implements DdlGenerator {
     }
   }
 
-  private static void validateTypeArguments(String dataType,
-      ColumnTypeArguments arguments) {
-    if (arguments == null || arguments.isEmpty()) {
-      if (REQUIRED_LENGTH_TYPES.contains(dataType)) {
-        throw invalid("Length is required for MySQL type: " + dataType);
-      }
-      if (VALUE_LIST_TYPES.contains(dataType)) {
-        throw invalid("Values are required for MySQL " + dataType + " type");
-      }
-      return;
-    }
-
-    if (arguments.hasValues()) {
-      validateValueListArguments(dataType, arguments.values());
-      return;
-    }
-
-    if (arguments.hasLength()) {
-      validateLengthArgument(dataType, arguments.length());
-      return;
-    }
-
-    if (arguments.hasPrecisionScale()) {
-      if (!PRECISION_SCALE_TYPES.contains(dataType)) {
-        throw invalid("Precision/scale is not allowed for MySQL type: "
-            + dataType);
-      }
-      if (arguments.scale() > arguments.precision()) {
-        throw invalid("Scale must not be greater than precision");
-      }
-      return;
-    }
-  }
-
-  private static void validateLengthArgument(String dataType, int length) {
-    if (!REQUIRED_LENGTH_TYPES.contains(dataType)
-        && !OPTIONAL_LENGTH_TYPES.contains(dataType)) {
-      throw invalid("Length is not allowed for MySQL type: " + dataType);
-    }
-
-    if ("BIT".equals(dataType) && length > MAX_BIT_LENGTH) {
-      throw invalid("BIT length must be at most " + MAX_BIT_LENGTH);
-    }
-    if (Set.of("CHAR", "BINARY").contains(dataType)
-        && length > MAX_CHAR_LENGTH) {
-      throw invalid(dataType + " length must be at most " + MAX_CHAR_LENGTH);
-    }
-    if (REQUIRED_LENGTH_TYPES.contains(dataType)
-        && length > MAX_VARCHAR_LENGTH) {
-      throw invalid(dataType + " length must be at most "
-          + MAX_VARCHAR_LENGTH);
-    }
-    if (TEMPORAL_FSP_TYPES.contains(dataType)
-        && length > MAX_TEMPORAL_FSP) {
-      throw invalid(dataType + " fractional seconds precision must be at most "
-          + MAX_TEMPORAL_FSP);
-    }
-    if ("YEAR".equals(dataType) && length != 4) {
-      throw invalid("YEAR length must be 4");
-    }
-    if (INTEGER_TYPES.contains(dataType)
-        && length > MAX_INTEGER_DISPLAY_WIDTH) {
-      throw invalid(dataType + " display width must be at most "
-          + MAX_INTEGER_DISPLAY_WIDTH);
-    }
-    if ("FLOAT".equals(dataType) && length > MAX_FLOAT_PRECISION_BITS) {
-      throw invalid("FLOAT precision must be at most "
-          + MAX_FLOAT_PRECISION_BITS);
-    }
-  }
-
-  private static void validateValueListArguments(String dataType,
-      List<String> values) {
-    if (!VALUE_LIST_TYPES.contains(dataType)) {
-      throw invalid("Values are only allowed for MySQL ENUM/SET types");
-    }
-    int maxValues = "SET".equals(dataType) ? MAX_SET_VALUES : MAX_ENUM_VALUES;
-    if (values.size() > maxValues) {
-      throw invalid(dataType + " values must contain at most "
-          + maxValues + " items");
-    }
-    for (String value : values) {
-      if (value.length() > MAX_ENUM_SET_VALUE_LENGTH) {
-        throw invalid(dataType + " value must be at most "
-            + MAX_ENUM_SET_VALUE_LENGTH + " characters");
-      }
-      escapeString(value);
-    }
-  }
-
   private static void validateKeyColumns(Table table, List<String> columnIds,
       DdlContext context, String keyName) {
     for (String columnId : columnIds) {
       Column column = columnInTable(context, table.id(), columnId);
-      String dataType = sanitizeDataType(column.dataType());
-      if (TEXT_OR_BLOB_TYPES.contains(dataType) || "JSON".equals(dataType)) {
-        throw invalid(keyName + " cannot use MySQL " + dataType
-            + " column without a prefix length");
-      }
-      if (SPATIAL_TYPES.contains(dataType)) {
-        throw invalid(keyName + " cannot be defined on a MySQL spatial column");
+      DatatypeDefinition datatype = resolveDatatype(column, context);
+      if (!datatype.properties().indexTypes().contains(IndexType.BTREE)) {
+        throw invalid(keyName + " cannot use MySQL " + datatype.sqlType()
+            + " column as a BTREE key");
       }
     }
   }
@@ -662,16 +488,10 @@ public class MySqlDdlGenerator implements DdlGenerator {
     for (IndexColumn indexColumn : columns) {
       Column column = columnInTable(context, table.id(),
           indexColumn.columnId());
-      String dataType = sanitizeDataType(column.dataType());
-      if (type == IndexType.FULLTEXT) {
-        if (!FULLTEXT_TYPES.contains(dataType)) {
-          throw invalid("FULLTEXT index can only use MySQL character string columns");
-        }
-        continue;
-      }
-      if (TEXT_OR_BLOB_TYPES.contains(dataType) || "JSON".equals(dataType)) {
-        throw invalid("Index '%s' cannot use MySQL %s column without a prefix length"
-            .formatted(snapshot.index().name(), dataType));
+      DatatypeDefinition datatype = resolveDatatype(column, context);
+      if (!datatype.properties().indexTypes().contains(type)) {
+        throw invalid("Index '%s' cannot use MySQL %s column as %s"
+            .formatted(snapshot.index().name(), datatype.sqlType(), type));
       }
     }
   }
@@ -685,8 +505,8 @@ public class MySqlDdlGenerator implements DdlGenerator {
     Table table = requireTable(tableSnapshot);
     IndexColumn indexColumn = columns.getFirst();
     Column column = columnInTable(context, table.id(), indexColumn.columnId());
-    String dataType = sanitizeDataType(column.dataType());
-    if (!SPATIAL_TYPES.contains(dataType)) {
+    DatatypeDefinition datatype = resolveDatatype(column, context);
+    if (!datatype.properties().indexTypes().contains(IndexType.SPATIAL)) {
       throw invalid("SPATIAL index can only use MySQL spatial columns");
     }
     if (!notNullColumnIds(tableSnapshot).contains(column.id())) {
@@ -727,27 +547,27 @@ public class MySqlDdlGenerator implements DdlGenerator {
             + fkColumn.name());
       }
       validateForeignKeyColumnCompatibility(fkColumn, fkTable, pkColumn,
-          pkTable);
+          pkTable, context);
     }
   }
 
   private static void validateForeignKeyColumnCompatibility(Column fkColumn,
       Table fkTable,
       Column pkColumn,
-      Table pkTable) {
-    String fkType = canonicalDataType(sanitizeDataType(fkColumn.dataType()));
-    String pkType = canonicalDataType(sanitizeDataType(pkColumn.dataType()));
-
-    if (TEXT_OR_BLOB_TYPES.contains(fkType) || TEXT_OR_BLOB_TYPES.contains(pkType)
-        || SPATIAL_TYPES.contains(fkType) || SPATIAL_TYPES.contains(pkType)
-        || "JSON".equals(fkType) || "JSON".equals(pkType)) {
-      throw invalid("Foreign key columns cannot use MySQL TEXT, BLOB, JSON, or spatial types");
+      Table pkTable,
+      DdlContext context) {
+    DatatypeDefinition fkDatatype = resolveDatatype(fkColumn, context);
+    DatatypeDefinition pkDatatype = resolveDatatype(pkColumn, context);
+    String fkGroup = fkDatatype.properties().foreignKeyGroup();
+    String pkGroup = pkDatatype.properties().foreignKeyGroup();
+    if (fkGroup == null || !fkGroup.equals(pkGroup)) {
+      throw invalid("Foreign key columns must have similar MySQL data types");
     }
 
-    if (CHARACTER_STRING_TYPES.contains(fkType)
-        || CHARACTER_STRING_TYPES.contains(pkType)) {
-      if (!CHARACTER_STRING_TYPES.contains(fkType)
-          || !CHARACTER_STRING_TYPES.contains(pkType)) {
+    if (fkDatatype.properties().charsetCollationAllowed()
+        || pkDatatype.properties().charsetCollationAllowed()) {
+      if (!fkDatatype.properties().charsetCollationAllowed()
+          || !pkDatatype.properties().charsetCollationAllowed()) {
         throw invalid("Foreign key columns must have similar MySQL data types");
       }
       if (!normalizedNullable(effectiveCharset(fkColumn, fkTable))
@@ -759,22 +579,7 @@ public class MySqlDdlGenerator implements DdlGenerator {
       return;
     }
 
-    if (BINARY_STRING_TYPES.contains(fkType)
-        || BINARY_STRING_TYPES.contains(pkType)) {
-      if (!BINARY_STRING_TYPES.contains(fkType)
-          || !BINARY_STRING_TYPES.contains(pkType)) {
-        throw invalid("Foreign key columns must have similar MySQL data types");
-      }
-      return;
-    }
-
-    if (!fkType.equals(pkType)) {
-      throw invalid("Foreign key columns must have similar MySQL data types");
-    }
-
-    if (PRECISION_SCALE_TYPES.contains(fkType)
-        && !samePrecisionScale(fkColumn.typeArguments(),
-            pkColumn.typeArguments())) {
+    if (!samePrecisionScale(fkColumn.typeArguments(), pkColumn.typeArguments())) {
       throw invalid("Foreign key fixed precision columns must have the same precision and scale");
     }
   }
@@ -832,26 +637,14 @@ public class MySqlDdlGenerator implements DdlGenerator {
     return columnIds;
   }
 
-  private static String canonicalDataType(String dataType) {
-    return switch (dataType) {
-    case "INTEGER" -> "INT";
-    case "BOOL", "BOOLEAN" -> "TINYINT";
-    case "NUMERIC" -> "DECIMAL";
-    case "REAL" -> "DOUBLE";
-    default -> dataType;
-    };
-  }
-
   private static boolean samePrecisionScale(ColumnTypeArguments left,
       ColumnTypeArguments right) {
-    return numberOrNull(left == null ? null : left.precision())
-        .equals(numberOrNull(right == null ? null : right.precision()))
-        && numberOrNull(left == null ? null : left.scale())
-            .equals(numberOrNull(right == null ? null : right.scale()));
-  }
-
-  private static Integer numberOrNull(Integer value) {
-    return value;
+    return java.util.Objects.equals(
+        left == null ? null : left.precision(),
+        right == null ? null : right.precision())
+        && java.util.Objects.equals(
+            left == null ? null : left.scale(),
+            right == null ? null : right.scale());
   }
 
   private static String effectiveCharset(Column column, Table table) {
@@ -880,10 +673,29 @@ public class MySqlDdlGenerator implements DdlGenerator {
 
   private static void requireMysqlCompatible(String dbVendorName) {
     String normalized = dbVendorName.trim().toLowerCase(Locale.ROOT);
-    if (!"mysql".equals(normalized) && !"mariadb".equals(normalized)) {
+    if (!"mysql".equals(normalized)) {
       throw new DomainException(DdlErrorCode.UNSUPPORTED_VENDOR,
           "Unsupported DDL export vendor: " + dbVendorName);
     }
+  }
+
+  private static void requireDatatypePolicy(DatatypePolicy datatypePolicy) {
+    if (datatypePolicy == null || !"mysql".equals(datatypePolicy.vendor())) {
+      throw invalid("MySQL datatype policy is required for DDL generation");
+    }
+  }
+
+  private static DatatypeDefinition resolveDatatype(
+      Column column,
+      DdlContext context) {
+    String sanitizedDataType = sanitizeDataType(column.dataType());
+    return context.datatypePolicy().validate(
+        sanitizedDataType,
+        column.typeArguments(),
+        column.autoIncrement(),
+        column.charset(),
+        column.collation(),
+        DatatypeValidationErrorCodes.all(DdlErrorCode.INVALID_VALUE));
   }
 
   private static Table requireTable(TableSnapshot snapshot) {
@@ -1052,9 +864,6 @@ public class MySqlDdlGenerator implements DdlGenerator {
       if (!valid) {
         throw invalid("Column data type contains an invalid character");
       }
-    }
-    if (!SUPPORTED_DATA_TYPES.contains(normalized)) {
-      throw invalid("Unsupported MySQL data type: " + dataType);
     }
     return normalized;
   }
@@ -1296,9 +1105,12 @@ public class MySqlDdlGenerator implements DdlGenerator {
   private record DdlContext(
       Map<String, Table> tableById,
       Map<String, TableSnapshot> tableSnapshotById,
-      Map<String, Column> columnById) {
+      Map<String, Column> columnById,
+      DatatypePolicy datatypePolicy) {
 
-    private static DdlContext from(List<TableSnapshot> tables) {
+    private static DdlContext from(
+        List<TableSnapshot> tables,
+        DatatypePolicy datatypePolicy) {
       Map<String, Table> tableById = new HashMap<>();
       Map<String, TableSnapshot> tableSnapshotById = new HashMap<>();
       Map<String, Column> columnById = new HashMap<>();
@@ -1333,7 +1145,8 @@ public class MySqlDdlGenerator implements DdlGenerator {
       return new DdlContext(
           Map.copyOf(tableById),
           Map.copyOf(tableSnapshotById),
-          Map.copyOf(columnById));
+          Map.copyOf(columnById),
+          datatypePolicy);
     }
 
   }

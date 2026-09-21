@@ -9,7 +9,16 @@ import {
   SelectLabel,
   SelectTrigger,
 } from '@/components';
-import { parseTypeArguments, CATEGORY_LABELS } from './utils';
+import {
+  CATEGORY_LABELS,
+  editDatatypeParameterDraft,
+  parseTypeArguments,
+  serializeDatatypeParameterValues,
+} from './utils';
+import type {
+  DatatypeParameterInputState,
+  DatatypeParameterValue,
+} from './utils';
 
 const getCategoryGroup = (category: string): string => {
   const prefix = category.split('_')[0];
@@ -30,6 +39,12 @@ const groupTypesByCategory = (
   return groups;
 };
 
+const parseDraftValues = (
+  typeArguments: string,
+): Record<string, DatatypeParameterValue> => ({
+  ...parseTypeArguments(typeArguments),
+});
+
 export const TypeSelector = ({
   value,
   typeArguments,
@@ -38,27 +53,65 @@ export const TypeSelector = ({
   onChange,
   onPendingChange,
 }: TypeSelectorProps) => {
-  const parsed = parseTypeArguments(typeArguments);
-  const [pendingType, setPendingType] = useState<string | null>(null);
-  const [pendingParams, setPendingParams] = useState<
-    Record<string, number | string[] | null>
-  >({});
+  const incomingValues = useMemo(
+    () => parseDraftValues(typeArguments),
+    [typeArguments],
+  );
+  const incomingSignature = useMemo(
+    () => serializeDatatypeParameterValues(incomingValues),
+    [incomingValues],
+  );
+  const [draftType, setDraftType] = useState(value);
+  const [draftState, setDraftState] = useState<DatatypeParameterInputState>(
+    () => ({
+      values: parseDraftValues(typeArguments),
+      invalidNames: new Set(),
+    }),
+  );
+  const [hasLocalEdits, setHasLocalEdits] = useState(false);
 
-  const displayType = pendingType ?? value;
+  const displayType = draftType;
   const displayTypeConfig = vendorTypes.find((t) => t.sqlType === displayType);
   const params: DatatypeParameter[] = displayTypeConfig?.parameters ?? [];
-  const displayParams: Record<string, number | string[] | null> = pendingType
-    ? pendingParams
-    : parsed;
+  const sortedParams = [...params].sort((a, b) => a.order - b.order);
+  const draftSignature = serializeDatatypeParameterValues(draftState.values);
 
-  const pendingTypeRef = useRef(pendingType);
-  pendingTypeRef.current = pendingType;
+  const pendingRef = useRef(false);
   const onPendingChangeRef = useRef(onPendingChange);
   onPendingChangeRef.current = onPendingChange;
 
+  const notifyPendingChange = (isPending: boolean) => {
+    pendingRef.current = isPending;
+    onPendingChange?.(isPending);
+  };
+
+  useEffect(() => {
+    if (hasLocalEdits) {
+      // Ignore stale mutation snapshots until the server reflects the full draft.
+      if (
+        draftState.invalidNames.size === 0 &&
+        value === draftType &&
+        incomingSignature === draftSignature
+      ) {
+        setHasLocalEdits(false);
+      }
+      return;
+    }
+    setDraftType(value);
+    setDraftState({ values: incomingValues, invalidNames: new Set() });
+  }, [
+    draftSignature,
+    draftState.invalidNames.size,
+    draftType,
+    hasLocalEdits,
+    incomingSignature,
+    incomingValues,
+    value,
+  ]);
+
   useEffect(() => {
     return () => {
-      if (pendingTypeRef.current) onPendingChangeRef.current?.(false);
+      if (pendingRef.current) onPendingChangeRef.current?.(false);
     };
   }, []);
 
@@ -71,58 +124,35 @@ export const TypeSelector = ({
     const newTypeConfig = vendorTypes.find((t) => t.sqlType === newType);
     const hasRequiredParams =
       newTypeConfig?.parameters.some((p) => p.required) ?? false;
+    const nextState = { values: {}, invalidNames: new Set<string>() };
 
+    setDraftType(newType);
+    setDraftState(nextState);
+    setHasLocalEdits(true);
+    notifyPendingChange(hasRequiredParams);
     if (!hasRequiredParams) {
-      setPendingType(null);
-      setPendingParams({});
-      onPendingChange?.(false);
       onChange(newType, '{}');
-    } else {
-      setPendingType(newType);
-      setPendingParams({});
-      onPendingChange?.(true);
     }
-  };
-
-  const parseParamValue = (paramValue: string, valueType: string) => {
-    const trimmed = paramValue.trim();
-    if (!trimmed) return null;
-
-    if (valueType === 'string_array') {
-      return trimmed
-        .split(',')
-        .map((s) => s.trim())
-        .filter(Boolean);
-    }
-
-    const num = Number(trimmed);
-    return !isNaN(num) ? num : null;
   };
 
   const handleParamBlur = (
-    paramName: string,
+    parameter: DatatypeParameter,
     paramValue: string,
-    valueType: string,
   ) => {
-    const paramVal = parseParamValue(paramValue, valueType);
-
-    if (pendingType) {
-      const updated = { ...pendingParams, [paramName]: paramVal };
-      setPendingParams(updated);
-
-      const allRequiredFilled = params
-        .filter((p) => p.required)
-        .every((p) => updated[p.name] != null);
-
-      if (allRequiredFilled) {
-        setPendingType(null);
-        setPendingParams({});
-        onPendingChange?.(false);
-        onChange(pendingType, JSON.stringify(updated));
-      }
-    } else {
-      const updated = { ...parsed, [paramName]: paramVal };
-      onChange(value, JSON.stringify(updated));
+    const updated = editDatatypeParameterDraft(
+      draftState,
+      params,
+      parameter,
+      paramValue,
+    );
+    setDraftState(updated.state);
+    setHasLocalEdits(true);
+    notifyPendingChange(updated.isPending);
+    if (!updated.isPending) {
+      onChange(
+        draftType,
+        serializeDatatypeParameterValues(updated.state.values),
+      );
     }
   };
 
@@ -146,49 +176,54 @@ export const TypeSelector = ({
             {params.length > 0 && (
               <>
                 <span>(</span>
-                {[...params]
-                  .sort((a, b) => a.order - b.order)
-                  .map((param, i) => {
-                    const isStringArray = param.valueType === 'string_array';
-                    const defaultVal = displayParams[param.name];
-                    const displayVal = isStringArray
-                      ? Array.isArray(defaultVal)
-                        ? defaultVal.join(', ')
-                        : ''
-                      : (defaultVal ?? '');
+                {sortedParams.map((param, i) => {
+                  const isStringArray = param.valueType === 'string_array';
+                  const defaultVal = draftState.values[param.name];
+                  const displayVal = isStringArray
+                    ? Array.isArray(defaultVal)
+                      ? defaultVal.join(', ')
+                      : ''
+                    : (defaultVal ?? '');
 
-                    return (
-                      <Fragment key={param.name}>
-                        {i > 0 && <span>,</span>}
-                        <input
-                          key={`${displayType}-${param.name}`}
-                          type={isStringArray ? 'text' : 'number'}
-                          defaultValue={displayVal}
-                          placeholder={
-                            isStringArray ? 'e.g. a, b, c' : param.label
-                          }
-                          onPointerDown={(e) => e.stopPropagation()}
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            e.preventDefault();
-                          }}
-                          onMouseDown={(e) => e.stopPropagation()}
-                          onKeyDown={(e) => {
-                            e.stopPropagation();
-                            if (e.key === 'Enter') e.currentTarget.blur();
-                          }}
-                          onBlur={(e) =>
-                            handleParamBlur(
-                              param.name,
-                              e.target.value,
-                              param.valueType,
-                            )
-                          }
-                          className={`${isStringArray ? 'w-28' : 'w-8'} border-b border-schemafy-dark-gray bg-transparent text-center focus:border-schemafy-soft-blue focus:outline-none [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none`}
-                        />
-                      </Fragment>
-                    );
-                  })}
+                  return (
+                    <Fragment key={param.name}>
+                      {i > 0 && <span>,</span>}
+                      <input
+                        key={`${displayType}-${param.name}`}
+                        type={isStringArray ? 'text' : 'number'}
+                        min={
+                          isStringArray
+                            ? undefined
+                            : (param.minValue ?? undefined)
+                        }
+                        max={
+                          isStringArray
+                            ? undefined
+                            : (param.maxValue ?? undefined)
+                        }
+                        defaultValue={displayVal}
+                        aria-label={`${displayType} ${param.label}`}
+                        aria-invalid={draftState.invalidNames.has(param.name)}
+                        data-testid={`datatype-parameter-${param.name}`}
+                        placeholder={
+                          isStringArray ? 'e.g. a, b, c' : param.label
+                        }
+                        onPointerDown={(e) => e.stopPropagation()}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          e.preventDefault();
+                        }}
+                        onMouseDown={(e) => e.stopPropagation()}
+                        onKeyDown={(e) => {
+                          e.stopPropagation();
+                          if (e.key === 'Enter') e.currentTarget.blur();
+                        }}
+                        onBlur={(e) => handleParamBlur(param, e.target.value)}
+                        className={`${isStringArray ? 'w-28' : 'w-8'} border-b ${draftState.invalidNames.has(param.name) ? 'border-schemafy-destructive' : 'border-schemafy-dark-gray'} bg-transparent text-center focus:border-schemafy-soft-blue focus:outline-none [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none`}
+                      />
+                    </Fragment>
+                  );
+                })}
                 <span>)</span>
               </>
             )}

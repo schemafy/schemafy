@@ -82,6 +82,8 @@ class InversePayloadJsonTest {
         "column-1",
         "VARCHAR",
         new ColumnTypeArguments(255, null, null),
+        "utf8mb4",
+        "utf8mb4_general_ci",
         List.of(new ChangeColumnTypeInverse.FkColumnTypeRevert(
             "fk-column-1",
             "VARCHAR",
@@ -192,6 +194,8 @@ class InversePayloadJsonTest {
             "values": null,
             "empty": false
           },
+          "oldCharset": "utf8mb4",
+          "oldCollation": "utf8mb4_general_ci",
           "fkRevertList": []
         }
         """;
@@ -202,6 +206,8 @@ class InversePayloadJsonTest {
         "column-1",
         "VARCHAR",
         new ColumnTypeArguments(255, null, null),
+        "utf8mb4",
+        "utf8mb4_general_ci",
         List.of()));
   }
 

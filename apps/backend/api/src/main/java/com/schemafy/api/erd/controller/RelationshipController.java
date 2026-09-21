@@ -17,7 +17,6 @@ import org.springframework.web.bind.annotation.RestController;
 
 import com.schemafy.api.common.constant.ApiPath;
 import com.schemafy.api.common.type.MutationResponse;
-import com.schemafy.api.erd.broadcast.ErdMutationBroadcaster;
 import com.schemafy.api.erd.controller.dto.request.AddRelationshipColumnRequest;
 import com.schemafy.api.erd.controller.dto.request.ChangeRelationshipCardinalityRequest;
 import com.schemafy.api.erd.controller.dto.request.ChangeRelationshipColumnPositionRequest;
@@ -29,6 +28,7 @@ import com.schemafy.api.erd.controller.dto.response.AddRelationshipColumnRespons
 import com.schemafy.api.erd.controller.dto.response.RelationshipColumnResponse;
 import com.schemafy.api.erd.controller.dto.response.RelationshipResponse;
 import com.schemafy.api.erd.service.relationship.RelationshipApiResponseMapper;
+import com.schemafy.api.erd.service.sync.ErdStateSyncPublisher;
 import com.schemafy.core.erd.operation.domain.CommittedErdOperation;
 import com.schemafy.core.erd.relationship.application.port.in.AddRelationshipColumnCommand;
 import com.schemafy.core.erd.relationship.application.port.in.AddRelationshipColumnUseCase;
@@ -80,7 +80,7 @@ public class RelationshipController {
   private final ChangeRelationshipColumnPositionUseCase changeRelationshipColumnPositionUseCase;
   private final RelationshipApiResponseMapper relationshipResponseMapper;
 
-  private final ObjectProvider<ErdMutationBroadcaster> broadcasterProvider;
+  private final ObjectProvider<ErdStateSyncPublisher> publisherProvider;
 
   @PostMapping("/relationships")
   public Mono<MutationResponse<RelationshipResponse>> createRelationship(
@@ -260,11 +260,11 @@ public class RelationshipController {
 
   private Mono<Void> broadcastMutation(Set<String> affectedTableIds,
       CommittedErdOperation operation) {
-    ErdMutationBroadcaster broadcaster = broadcasterProvider.getIfAvailable();
-    if (broadcaster == null) {
+    ErdStateSyncPublisher publisher = publisherProvider.getIfAvailable();
+    if (publisher == null) {
       return Mono.empty();
     }
-    return broadcaster.broadcast(affectedTableIds, operation);
+    return publisher.publishMutation(affectedTableIds, operation);
   }
 
 }

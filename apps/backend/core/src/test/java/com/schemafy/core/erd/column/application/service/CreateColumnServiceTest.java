@@ -157,6 +157,26 @@ class CreateColumnServiceTest {
       }
 
       @Test
+      @DisplayName("alias로 요청한 타입을 canonical 타입으로 저장한다")
+      void storesCanonicalTypeForAlias() {
+        var command = ColumnFixture.createCommandWithDataType("INTEGER", null, null, null);
+
+        given(getTableByIdPort.findTableById(any()))
+            .willReturn(Mono.just(createTable()));
+        given(getSchemaByIdPort.findSchemaById(any()))
+            .willReturn(Mono.just(createSchema()));
+        given(getColumnsByTableIdPort.findColumnsByTableId(any()))
+            .willReturn(Mono.just(List.of()));
+        given(ulidGeneratorPort.generate()).willReturn(ColumnFixture.DEFAULT_ID);
+        given(createColumnPort.createColumn(any(Column.class)))
+            .willAnswer(invocation -> Mono.just(invocation.getArgument(0)));
+
+        StepVerifier.create(sut.createColumn(command))
+            .assertNext(result -> assertThat(result.result().dataType()).isEqualTo("INT"))
+            .verifyComplete();
+      }
+
+      @Test
       @DisplayName("DECIMAL 컬럼을 생성한다")
       void createsDecimalColumn() {
         var command = ColumnFixture.createDecimalCommand();
@@ -467,12 +487,12 @@ class CreateColumnServiceTest {
     }
 
     @Nested
-    @DisplayName("DECIMAL에 precision이 없으면")
-    class WhenDecimalWithoutPrecision {
+    @DisplayName("DECIMAL에 인자가 없으면")
+    class WhenDecimalWithoutArguments {
 
       @Test
-      @DisplayName("ColumnPrecisionRequiredException이 발생한다")
-      void throwsColumnPrecisionRequiredException() {
+      @DisplayName("MySQL 기본 precision과 scale을 사용해 생성한다")
+      void createsWithMysqlDefaults() {
         var command = ColumnFixture.createCommandWithDataType("DECIMAL", null, null, null);
         var table = createTable();
         var schema = createSchema();
@@ -483,9 +503,38 @@ class CreateColumnServiceTest {
             .willReturn(Mono.just(schema));
         given(getColumnsByTableIdPort.findColumnsByTableId(any()))
             .willReturn(Mono.just(List.of()));
+        given(ulidGeneratorPort.generate()).willReturn(ColumnFixture.DEFAULT_ID);
+        given(createColumnPort.createColumn(any(Column.class)))
+            .willAnswer(invocation -> Mono.just(invocation.getArgument(0)));
 
         StepVerifier.create(sut.createColumn(command))
-            .expectErrorMatches(DomainException.hasErrorCode(ColumnErrorCode.PRECISION_REQUIRED))
+            .assertNext(result -> {
+              assertThat(result.result().dataType()).isEqualTo("DECIMAL");
+              assertThat(result.result().typeArguments()).isNull();
+            })
+            .verifyComplete();
+      }
+
+    }
+
+    @Nested
+    @DisplayName("datatype 인자가 MySQL policy 범위를 벗어나면")
+    class WhenDatatypeArgumentIsOutOfRange {
+
+      @Test
+      @DisplayName("컬럼 생성을 거부한다")
+      void rejectsOutOfRangeArgument() {
+        var command = ColumnFixture.createCommandWithDataType("BIT", 65, null, null);
+
+        given(getTableByIdPort.findTableById(any()))
+            .willReturn(Mono.just(createTable()));
+        given(getSchemaByIdPort.findSchemaById(any()))
+            .willReturn(Mono.just(createSchema()));
+        given(getColumnsByTableIdPort.findColumnsByTableId(any()))
+            .willReturn(Mono.just(List.of()));
+
+        StepVerifier.create(sut.createColumn(command))
+            .expectErrorMatches(DomainException.hasErrorCode(ColumnErrorCode.INVALID_VALUE))
             .verify();
 
         then(createColumnPort).shouldHaveNoInteractions();

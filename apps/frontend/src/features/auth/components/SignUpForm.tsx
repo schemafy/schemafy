@@ -1,23 +1,17 @@
 import { Button, InputField } from '@/components';
-import { useFormState } from '../hooks';
 import { useState } from 'react';
-import { useNavigate } from '@tanstack/react-router';
-import { signUp } from '@/features/auth/api';
-import { authStore } from '@/store/auth.store';
-import type { ValidationRules, SignUpFormValues } from '../types';
-import { reportUnexpectedError } from '@/lib';
+import {
+  useFormState,
+  useSignUpEmailVerification,
+  useSignUpSubmission,
+} from '../hooks';
+import type { SignUpFormValues, ValidationRules } from '../types';
 
 const formFields = [
   {
     label: 'Name',
     type: 'text' as const,
     name: 'name' as const,
-    required: true,
-  },
-  {
-    label: 'Email',
-    type: 'email' as const,
-    name: 'email' as const,
     required: true,
   },
   {
@@ -40,6 +34,8 @@ const initialForm: SignUpFormValues = {
   password: '',
   confirmPassword: '',
 };
+
+const emailVerificationRequired = import.meta.env.SMTP_ENABLED !== 'false';
 
 const validationRules: ValidationRules<SignUpFormValues> = {
   name: (value: string) => {
@@ -76,35 +72,37 @@ export const SignUpForm = () => {
     runAllValidations,
     resetForm,
   } = useFormState(initialForm, validationRules);
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const navigate = useNavigate();
 
-  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
-    e.preventDefault();
+  const [formError, setFormError] = useState('');
+  const clearFormError = () => setFormError('');
+  const emailError = validationRules.email?.(form.email, form) ?? '';
 
-    if (!runAllValidations(form)) {
-      return;
-    }
+  const emailVerification = useSignUpEmailVerification({
+    emailError,
+    setFormError,
+    clearFormError,
+  });
 
-    setIsSubmitting(true);
-
-    try {
-      const user = await signUp({
-        email: form.email,
-        name: form.name,
-        password: form.password,
-      });
-
-      authStore.setUser(user);
+  const { handleSubmit, isSubmitting } = useSignUpSubmission({
+    form,
+    runAllValidations,
+    emailVerificationRequired,
+    signupVerificationToken: emailVerification.signupVerificationToken,
+    setFormError,
+    onSuccess: () => {
       resetForm();
-      navigate({ to: '/' });
-    } catch (error) {
-      reportUnexpectedError(error, {
-        context: 'Unexpected sign-up form failure.',
-      });
-    } finally {
-      setIsSubmitting(false);
+      emailVerification.resetVerification();
+    },
+  });
+
+  const isVerificationDisabled =
+    isSubmitting || emailVerification.isVerificationPending;
+  const handleFormChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    clearFormError();
+    if (event.target.name === 'email') {
+      emailVerification.resetVerification();
     }
+    handleChange(event);
   };
 
   return (
@@ -113,6 +111,64 @@ export const SignUpForm = () => {
       className="flex w-full max-w-[480px] flex-col gap-2"
       onSubmit={handleSubmit}
     >
+      <div className="flex items-start gap-2">
+        <InputField
+          label="Email"
+          type="email"
+          name="email"
+          placeholder="Email"
+          required
+          disabled={isVerificationDisabled}
+          value={form.email}
+          error={errors.email}
+          onChange={handleFormChange}
+          onBlur={handleBlur}
+        />
+        {emailVerificationRequired && (
+          <div className="flex shrink-0 flex-col gap-1.5 py-2.5 pr-4">
+            <span aria-hidden="true" className="invisible font-overline-xs">
+              Action
+            </span>
+            <Button
+              type="button"
+              disabled={isVerificationDisabled}
+              className="h-[51px] min-w-[88px]"
+              onClick={() => emailVerification.handleSendCode(form.email)}
+            >
+              {emailVerification.isSendingCode ? 'Sending...' : 'Send'}
+            </Button>
+          </div>
+        )}
+      </div>
+      {emailVerificationRequired && (
+        <div className="flex items-start gap-2">
+          <InputField
+            label="Verification Code"
+            type="text"
+            name="code"
+            placeholder="000000"
+            required
+            disabled={!emailVerification.sentEmail || isVerificationDisabled}
+            value={emailVerification.verificationForm.code}
+            error={emailVerification.verificationErrors.code}
+            onChange={emailVerification.handleVerificationCodeChange}
+            onBlur={emailVerification.handleVerificationBlur}
+          />
+          <div className="flex shrink-0 flex-col gap-1.5 py-2.5 pr-4">
+            <span aria-hidden="true" className="invisible font-overline-xs">
+              Action
+            </span>
+            <Button
+              type="button"
+              disabled={!emailVerification.sentEmail || isVerificationDisabled}
+              className="h-[51px] min-w-[88px]"
+              onClick={emailVerification.handleVerifyCode}
+            >
+              {emailVerification.isVerifyingCode ? 'Verifying...' : 'Verify'}
+            </Button>
+          </div>
+        </div>
+      )}
       {formFields.map((field) => (
         <InputField
           key={field.name}
@@ -120,18 +176,31 @@ export const SignUpForm = () => {
           type={field.type}
           name={field.name}
           placeholder={field.label}
+          required={field.required}
           disabled={isSubmitting}
           value={form[field.name]}
           error={errors[field.name]}
-          onChange={handleChange}
+          onChange={handleFormChange}
           onBlur={handleBlur}
         />
       ))}
-      <div className="pt-3">
-        <Button type="submit" disabled={isSubmitting} round fullWidth>
-          {isSubmitting ? 'Creating...' : 'Create Account'}
-        </Button>
-      </div>
+      {emailVerificationRequired &&
+        emailVerification.signupVerificationToken && (
+          <p className="px-4 font-caption-md text-schemafy-primary">
+            Email verified.
+          </p>
+        )}
+      {formError && (
+        <p
+          className="px-4 text-schemafy-destructive font-caption-md"
+          role="alert"
+        >
+          {formError}
+        </p>
+      )}
+      <Button type="submit" disabled={isSubmitting} className="my-4" round>
+        {isSubmitting ? 'Creating...' : 'Create Account'}
+      </Button>
     </form>
   );
 };

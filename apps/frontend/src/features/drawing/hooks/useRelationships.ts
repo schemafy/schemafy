@@ -24,10 +24,22 @@ import type {
   RelationshipSnapshotResponse,
   TableSnapshotResponse,
 } from '../api';
+import { collaborationStore } from '@/store/collaboration.store';
+import { previewStore } from '@/store/preview.store';
+import type { PreviewEntry, RelationshipExtraPreviewEntry } from '@/store';
+import { useThrottledCallback } from '@/hooks/useThrottledCallback';
+
+const RELATIONSHIP_EXTRA_PREVIEW_THROTTLE_MS = 50;
+const RELATIONSHIP_EXTRA_PREVIEW_CLEAR_DELAY_MS = 500;
 
 const attachControlPointHandler = (
   edge: Edge,
   onControlPointDragEnd: (
+    relationshipId: string,
+    controlPoint1: Point,
+    controlPoint2?: Point,
+  ) => void,
+  onControlPointDrag: (
     relationshipId: string,
     controlPoint1: Point,
     controlPoint2?: Point,
@@ -38,8 +50,49 @@ const attachControlPointHandler = (
     data: {
       ...edge.data,
       onControlPointDragEnd,
+      onControlPointDrag,
     },
   }) as Edge;
+
+const isRelationshipExtraPreview = (
+  entry: PreviewEntry,
+): entry is RelationshipExtraPreviewEntry =>
+  entry.kind === 'RELATIONSHIP_EXTRA';
+
+const getRelationshipExtraPreviewMap = (schemaId: string) => {
+  const previewExtras = new Map<string, RelationshipExtra>();
+
+  for (const entry of previewStore.previews.values()) {
+    if (isRelationshipExtraPreview(entry) && entry.schemaId === schemaId) {
+      previewExtras.set(entry.relationshipId, entry.extra);
+    }
+  }
+
+  return previewExtras;
+};
+
+const applyRelationshipExtraPreviews = (
+  edges: Edge[],
+  previewExtras: Map<string, RelationshipExtra>,
+) => {
+  if (previewExtras.size === 0) return edges;
+
+  return edges.map((edge) => {
+    const extra = previewExtras.get(edge.id);
+    if (!extra) return edge;
+
+    return {
+      ...edge,
+      sourceHandle: extra.fkHandle,
+      targetHandle: extra.pkHandle,
+      data: {
+        ...edge.data,
+        controlPoint1: extra.controlPoint1,
+        controlPoint2: extra.controlPoint2,
+      },
+    } as Edge;
+  });
+};
 
 const collectRelationshipSnapshots = (
   snapshots: Record<string, TableSnapshotResponse>,
@@ -69,6 +122,16 @@ export const useRelationships = (relationshipConfig: RelationshipConfig) => {
   const { selectedSchemaId } = useSelectedSchema();
   const { data: schemaSnapshots } = useSchemaSnapshots(selectedSchemaId);
   const snapshotsData = schemaSnapshots.snapshots;
+  const relationshipExtraPreviewEntries = [
+    ...previewStore.previews.values(),
+  ].filter(
+    (entry): entry is RelationshipExtraPreviewEntry =>
+      isRelationshipExtraPreview(entry) && entry.schemaId === selectedSchemaId,
+  );
+  const relationshipExtraPreviewKey = relationshipExtraPreviewEntries
+    .map((entry) => `${entry.relationshipId}:${JSON.stringify(entry.extra)}`)
+    .sort()
+    .join('|');
   const snapshotsRef = useLatest(snapshotsData);
   const relationshipConfigRef = useLatest(relationshipConfig);
   const previousSnapshotsRef = useRef<Record<
@@ -94,6 +157,15 @@ export const useRelationships = (relationshipConfig: RelationshipConfig) => {
     string | null
   >(null);
   const justFinishedControlPointDrag = useRef(false);
+  const clearPreviewTimerRef = useRef<number | null>(null);
+
+  useEffect(() => {
+    return () => {
+      if (clearPreviewTimerRef.current !== null) {
+        window.clearTimeout(clearPreviewTimerRef.current);
+      }
+    };
+  }, []);
 
   const updateExtra = useCallback(
     (
@@ -117,6 +189,12 @@ export const useRelationships = (relationshipConfig: RelationshipConfig) => {
 
   const updateRelationshipControlPoint = useCallback(
     (relationshipId: string, controlPoint1: Point, controlPoint2?: Point) => {
+      const snapshot = findRelationshipById(
+        snapshotsRef.current,
+        relationshipId,
+      );
+      if (!snapshot) return;
+
       justFinishedControlPointDrag.current = true;
       requestAnimationFrame(() => {
         justFinishedControlPointDrag.current = false;
@@ -127,13 +205,65 @@ export const useRelationships = (relationshipConfig: RelationshipConfig) => {
         controlPoint1,
         controlPoint2: controlPoint2 ?? undefined,
       }));
+
+      collaborationStore.sendRelationshipExtraPreview(
+        selectedSchemaId,
+        relationshipId,
+        {
+          ...parseRelationshipExtra(snapshot.relationship.extra),
+          controlPoint1,
+          controlPoint2: controlPoint2 ?? undefined,
+        },
+      );
+
+      if (clearPreviewTimerRef.current !== null) {
+        window.clearTimeout(clearPreviewTimerRef.current);
+      }
+      clearPreviewTimerRef.current = window.setTimeout(() => {
+        collaborationStore.sendRelationshipExtraPreview(
+          selectedSchemaId,
+          relationshipId,
+          null,
+        );
+        clearPreviewTimerRef.current = null;
+      }, RELATIONSHIP_EXTRA_PREVIEW_CLEAR_DELAY_MS);
     },
-    [updateExtra],
+    [selectedSchemaId, snapshotsRef, updateExtra],
+  );
+
+  const sendRelationshipExtraPreview = useThrottledCallback(
+    (relationshipId: string, controlPoint1: Point, controlPoint2?: Point) => {
+      const snapshot = findRelationshipById(
+        snapshotsRef.current,
+        relationshipId,
+      );
+      if (!snapshot) return;
+
+      const currentExtra = parseRelationshipExtra(snapshot.relationship.extra);
+
+      collaborationStore.sendRelationshipExtraPreview(
+        selectedSchemaId,
+        relationshipId,
+        {
+          ...currentExtra,
+          controlPoint1,
+          controlPoint2: controlPoint2 ?? undefined,
+        },
+      );
+    },
+    RELATIONSHIP_EXTRA_PREVIEW_THROTTLE_MS,
   );
 
   const [relationships, setRelationships] = useState<Edge[]>(() =>
-    convertSnapshotsToEdges(snapshotsData).map((edge) =>
-      attachControlPointHandler(edge, updateRelationshipControlPoint),
+    applyRelationshipExtraPreviews(
+      convertSnapshotsToEdges(snapshotsData).map((edge) =>
+        attachControlPointHandler(
+          edge,
+          updateRelationshipControlPoint,
+          sendRelationshipExtraPreview,
+        ),
+      ),
+      getRelationshipExtraPreviewMap(selectedSchemaId),
     ),
   );
 
@@ -143,11 +273,20 @@ export const useRelationships = (relationshipConfig: RelationshipConfig) => {
 
     previousSnapshotsRef.current = snapshotsData;
     previousSchemaIdRef.current = selectedSchemaId;
+    const relationshipExtraPreviewMap =
+      getRelationshipExtraPreviewMap(selectedSchemaId);
 
     setRelationships((previousRelationships) => {
       if (!previousSnapshots || schemaChanged) {
-        return convertSnapshotsToEdges(snapshotsData).map((edge) =>
-          attachControlPointHandler(edge, updateRelationshipControlPoint),
+        return applyRelationshipExtraPreviews(
+          convertSnapshotsToEdges(snapshotsData).map((edge) =>
+            attachControlPointHandler(
+              edge,
+              updateRelationshipControlPoint,
+              sendRelationshipExtraPreview,
+            ),
+          ),
+          relationshipExtraPreviewMap,
         );
       }
 
@@ -184,6 +323,7 @@ export const useRelationships = (relationshipConfig: RelationshipConfig) => {
                 attachControlPointHandler(
                   nextEdge,
                   updateRelationshipControlPoint,
+                  sendRelationshipExtraPreview,
                 ),
               );
             }
@@ -191,11 +331,20 @@ export const useRelationships = (relationshipConfig: RelationshipConfig) => {
         },
       );
 
-      return Array.from(nextRelationshipSnapshots.keys()).map(
-        (relationshipId) => previousEdgesById.get(relationshipId)!,
+      return applyRelationshipExtraPreviews(
+        Array.from(nextRelationshipSnapshots.keys()).map(
+          (relationshipId) => previousEdgesById.get(relationshipId)!,
+        ),
+        relationshipExtraPreviewMap,
       );
     });
-  }, [snapshotsData, selectedSchemaId, updateRelationshipControlPoint]);
+  }, [
+    snapshotsData,
+    selectedSchemaId,
+    updateRelationshipControlPoint,
+    sendRelationshipExtraPreview,
+    relationshipExtraPreviewKey,
+  ]);
 
   useEffect(() => {
     setSelectedRelationship((currentSelectedRelationship) => {

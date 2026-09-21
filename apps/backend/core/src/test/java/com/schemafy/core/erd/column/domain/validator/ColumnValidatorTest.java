@@ -11,11 +11,9 @@ import org.junit.jupiter.params.provider.ValueSource;
 
 import com.schemafy.core.common.exception.DomainException;
 import com.schemafy.core.erd.column.domain.Column;
-import com.schemafy.core.erd.column.domain.ColumnTypeArguments;
 import com.schemafy.core.erd.column.domain.exception.ColumnErrorCode;
 import com.schemafy.core.erd.column.fixture.ColumnFixture;
 
-import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatCode;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
@@ -194,163 +192,8 @@ class ColumnValidatorTest {
   }
 
   @Nested
-  @DisplayName("validateDataType 메서드는")
-  class ValidateDataType {
-
-    @ParameterizedTest
-    @ValueSource(strings = { "INT", "VARCHAR", "TEXT", "DECIMAL", "BOOLEAN", "DATE", "DATETIME", "JSON" })
-    @DisplayName("지원하는 타입이면 통과한다")
-    void passesForSupportedTypes(String dataType) {
-      assertThatCode(() -> ColumnValidator.validateDataType(dataType))
-          .doesNotThrowAnyException();
-    }
-
-    @ParameterizedTest
-    @ValueSource(strings = { "int", "varchar", "decimal" })
-    @DisplayName("소문자 타입도 통과한다")
-    void passesForLowercaseTypes(String dataType) {
-      assertThatCode(() -> ColumnValidator.validateDataType(dataType))
-          .doesNotThrowAnyException();
-    }
-
-    @ParameterizedTest
-    @ValueSource(strings = { "UNSUPPORTED", "CUSTOM_TYPE", "NUMBER" })
-    @DisplayName("지원하지 않는 타입이면 예외가 발생한다")
-    void throwsForUnsupportedTypes(String dataType) {
-      assertThatThrownBy(() -> ColumnValidator.validateDataType(dataType))
-          .matches(DomainException.hasErrorCode(ColumnErrorCode.DATA_TYPE_INVALID))
-          .hasMessageContaining("Unsupported");
-    }
-
-    @ParameterizedTest
-    @NullAndEmptySource
-    @ValueSource(strings = { "  ", "\t" })
-    @DisplayName("blank면 예외가 발생한다")
-    void throwsWhenBlank(String dataType) {
-      assertThatThrownBy(() -> ColumnValidator.validateDataType(dataType))
-          .matches(DomainException.hasErrorCode(ColumnErrorCode.DATA_TYPE_INVALID))
-          .hasMessageContaining("blank");
-    }
-
-  }
-
-  @Nested
-  @DisplayName("validateTypeArguments 메서드는")
-  class ValidateTypeArguments {
-
-    @ParameterizedTest
-    @ValueSource(strings = { "VARCHAR", "CHAR" })
-    @DisplayName("VARCHAR/CHAR는 length가 필수이다")
-    void requiresLengthForVarcharAndChar(String dataType) {
-      assertThatThrownBy(() -> ColumnValidator.validateTypeArguments(dataType, null))
-          .matches(DomainException.hasErrorCode(ColumnErrorCode.LENGTH_REQUIRED))
-          .hasMessageContaining("Length is required");
-
-      var noLength = new ColumnTypeArguments(null, 10, 2);
-      assertThatThrownBy(() -> ColumnValidator.validateTypeArguments(dataType, noLength))
-          .matches(DomainException.hasErrorCode(ColumnErrorCode.LENGTH_REQUIRED));
-    }
-
-    @ParameterizedTest
-    @ValueSource(strings = { "VARCHAR", "CHAR" })
-    @DisplayName("VARCHAR/CHAR에 length가 있으면 통과한다")
-    void passesWhenLengthProvidedForVarcharAndChar(String dataType) {
-      var withLength = new ColumnTypeArguments(255, null, null);
-
-      assertThatCode(() -> ColumnValidator.validateTypeArguments(dataType, withLength))
-          .doesNotThrowAnyException();
-    }
-
-    @ParameterizedTest
-    @ValueSource(strings = { "DECIMAL", "NUMERIC" })
-    @DisplayName("DECIMAL/NUMERIC은 precision/scale이 필수이다")
-    void requiresPrecisionScaleForDecimalAndNumeric(String dataType) {
-      assertThatThrownBy(() -> ColumnValidator.validateTypeArguments(dataType, null))
-          .matches(DomainException.hasErrorCode(ColumnErrorCode.PRECISION_REQUIRED))
-          .hasMessageContaining("Precision and scale are required");
-
-      var noScale = new ColumnTypeArguments(255, null, null);
-      assertThatThrownBy(() -> ColumnValidator.validateTypeArguments(dataType, noScale))
-          .matches(DomainException.hasErrorCode(ColumnErrorCode.PRECISION_REQUIRED));
-    }
-
-    @ParameterizedTest
-    @ValueSource(strings = { "DECIMAL", "NUMERIC" })
-    @DisplayName("DECIMAL/NUMERIC에 precision/scale이 있으면 통과한다")
-    void passesWhenPrecisionScaleProvidedForDecimalAndNumeric(String dataType) {
-      var withPrecisionScale = new ColumnTypeArguments(null, 10, 2);
-
-      assertThatCode(() -> ColumnValidator.validateTypeArguments(dataType, withPrecisionScale))
-          .doesNotThrowAnyException();
-    }
-
-    @ParameterizedTest
-    @ValueSource(strings = { "INT", "TEXT", "DATE", "BOOLEAN" })
-    @DisplayName("다른 타입은 length/precision 없어도 통과한다")
-    void passesWithoutLengthForOtherTypes(String dataType) {
-      assertThatCode(() -> ColumnValidator.validateTypeArguments(dataType, null))
-          .doesNotThrowAnyException();
-    }
-
-    @ParameterizedTest
-    @ValueSource(strings = { "ENUM", "SET" })
-    @DisplayName("ENUM/SET은 values가 필수이다")
-    void requiresValuesForEnumAndSet(String dataType) {
-      assertThatThrownBy(() -> ColumnValidator.validateTypeArguments(dataType, null))
-          .matches(DomainException.hasErrorCode(ColumnErrorCode.INVALID_VALUE))
-          .hasMessageContaining("Values are required");
-    }
-
-    @ParameterizedTest
-    @ValueSource(strings = { "ENUM", "SET" })
-    @DisplayName("ENUM/SET에 values가 있으면 통과한다")
-    void passesWhenValuesProvidedForEnumAndSet(String dataType) {
-      var withValues = new ColumnTypeArguments(null, null, null, List.of("A", "B"));
-
-      assertThatCode(() -> ColumnValidator.validateTypeArguments(dataType, withValues))
-          .doesNotThrowAnyException();
-    }
-
-    @ParameterizedTest
-    @ValueSource(strings = { "INT", "VARCHAR", "DECIMAL", "TEXT" })
-    @DisplayName("ENUM/SET 외 타입에 values가 있으면 예외가 발생한다")
-    void throwsWhenValuesProvidedForNonEnumSet(String dataType) {
-      var withValues = new ColumnTypeArguments(null, null, null, List.of("A", "B"));
-
-      assertThatThrownBy(() -> ColumnValidator.validateTypeArguments(dataType, withValues))
-          .matches(DomainException.hasErrorCode(ColumnErrorCode.INVALID_VALUE))
-          .hasMessageContaining("only allowed");
-    }
-
-  }
-
-  @Nested
-  @DisplayName("validateAutoIncrement 메서드는")
-  class ValidateAutoIncrement {
-
-    @ParameterizedTest
-    @ValueSource(strings = { "TINYINT", "SMALLINT", "MEDIUMINT", "INT", "INTEGER", "BIGINT" })
-    @DisplayName("정수 타입이면 autoIncrement가 허용된다")
-    void allowsAutoIncrementForIntegerTypes(String dataType) {
-      assertThatCode(() -> ColumnValidator.validateAutoIncrement(dataType, true, List.of(), null))
-          .doesNotThrowAnyException();
-    }
-
-    @ParameterizedTest
-    @ValueSource(strings = { "VARCHAR", "TEXT", "DECIMAL", "FLOAT", "DATE", "BOOLEAN" })
-    @DisplayName("비정수 타입이면 autoIncrement가 허용되지 않는다")
-    void disallowsAutoIncrementForNonIntegerTypes(String dataType) {
-      assertThatThrownBy(() -> ColumnValidator.validateAutoIncrement(dataType, true, List.of(), null))
-          .matches(DomainException.hasErrorCode(ColumnErrorCode.AUTO_INCREMENT_NOT_ALLOWED))
-          .hasMessageContaining("only allowed for integer types");
-    }
-
-    @Test
-    @DisplayName("autoIncrement가 false면 어떤 타입이든 통과한다")
-    void passesWhenAutoIncrementIsFalse() {
-      assertThatCode(() -> ColumnValidator.validateAutoIncrement("VARCHAR", false, List.of(), null))
-          .doesNotThrowAnyException();
-    }
+  @DisplayName("validateAutoIncrementUniqueness 메서드는")
+  class ValidateAutoIncrementUniqueness {
 
     @Test
     @DisplayName("이미 autoIncrement 컬럼이 있으면 예외가 발생한다")
@@ -358,7 +201,7 @@ class ColumnValidatorTest {
       var existingAutoIncrement = ColumnFixture.intColumnWithAutoIncrement();
       List<Column> columns = List.of(existingAutoIncrement);
 
-      assertThatThrownBy(() -> ColumnValidator.validateAutoIncrement("INT", true, columns, null))
+      assertThatThrownBy(() -> ColumnValidator.validateAutoIncrementUniqueness(true, columns, null))
           .matches(DomainException.hasErrorCode(ColumnErrorCode.MULTIPLE_AUTO_INCREMENT))
           .hasMessageContaining("Only one auto-increment column");
     }
@@ -369,45 +212,8 @@ class ColumnValidatorTest {
       var existingAutoIncrement = ColumnFixture.intColumnWithAutoIncrement();
       List<Column> columns = List.of(existingAutoIncrement);
 
-      assertThatCode(() -> ColumnValidator.validateAutoIncrement(
-          "INT", true, columns, existingAutoIncrement.id()))
-          .doesNotThrowAnyException();
-    }
-
-  }
-
-  @Nested
-  @DisplayName("validateCharsetAndCollation 메서드는")
-  class ValidateCharsetAndCollation {
-
-    @ParameterizedTest
-    @ValueSource(strings = { "CHAR", "VARCHAR", "TINYTEXT", "TEXT", "MEDIUMTEXT", "LONGTEXT", "ENUM", "SET" })
-    @DisplayName("텍스트 타입이면 charset/collation이 허용된다")
-    void allowsCharsetForTextTypes(String dataType) {
-      assertThatCode(() -> ColumnValidator.validateCharsetAndCollation(dataType, "utf8mb4", "utf8mb4_general_ci"))
-          .doesNotThrowAnyException();
-    }
-
-    @ParameterizedTest
-    @ValueSource(strings = { "INT", "DECIMAL", "DATE", "BOOLEAN", "BLOB", "JSON" })
-    @DisplayName("비텍스트 타입이면 charset/collation이 허용되지 않는다")
-    void disallowsCharsetForNonTextTypes(String dataType) {
-      assertThatThrownBy(() -> ColumnValidator.validateCharsetAndCollation(dataType, "utf8mb4", null))
-          .matches(DomainException.hasErrorCode(ColumnErrorCode.CHARSET_NOT_ALLOWED))
-          .hasMessageContaining("only allowed for text types");
-    }
-
-    @Test
-    @DisplayName("charset/collation이 모두 null이면 어떤 타입이든 통과한다")
-    void passesWhenBothNull() {
-      assertThatCode(() -> ColumnValidator.validateCharsetAndCollation("INT", null, null))
-          .doesNotThrowAnyException();
-    }
-
-    @Test
-    @DisplayName("charset/collation이 모두 blank면 통과한다")
-    void passesWhenBothBlank() {
-      assertThatCode(() -> ColumnValidator.validateCharsetAndCollation("INT", "  ", "  "))
+      assertThatCode(() -> ColumnValidator.validateAutoIncrementUniqueness(
+          true, columns, existingAutoIncrement.id()))
           .doesNotThrowAnyException();
     }
 
@@ -434,78 +240,6 @@ class ColumnValidatorTest {
       assertThatThrownBy(() -> ColumnValidator.validatePosition(-1))
           .matches(DomainException.hasErrorCode(ColumnErrorCode.POSITION_INVALID))
           .hasMessageContaining("zero or positive");
-    }
-
-  }
-
-  @Nested
-  @DisplayName("normalizeDataType 메서드는")
-  class NormalizeDataType {
-
-    @ParameterizedTest
-    @ValueSource(strings = { "int", "INT", "Int" })
-    @DisplayName("대문자로 정규화한다")
-    void normalizesToUppercase(String dataType) {
-      var result = ColumnValidator.normalizeDataType(dataType);
-
-      assertThat(result).isEqualTo("INT");
-    }
-
-    @Test
-    @DisplayName("공백을 제거한다")
-    void trimsWhitespace() {
-      var result = ColumnValidator.normalizeDataType("  varchar  ");
-
-      assertThat(result).isEqualTo("VARCHAR");
-    }
-
-  }
-
-  @Nested
-  @DisplayName("isTextType 메서드는")
-  class IsTextType {
-
-    @ParameterizedTest
-    @ValueSource(strings = { "CHAR", "VARCHAR", "TINYTEXT", "TEXT", "MEDIUMTEXT", "LONGTEXT", "ENUM", "SET" })
-    @DisplayName("텍스트 타입이면 true를 반환한다")
-    void returnsTrueForTextTypes(String dataType) {
-      assertThat(ColumnValidator.isTextType(dataType)).isTrue();
-    }
-
-    @ParameterizedTest
-    @ValueSource(strings = { "char", "varchar", "text", "enum" })
-    @DisplayName("소문자 텍스트 타입도 true를 반환한다")
-    void returnsTrueForLowercaseTextTypes(String dataType) {
-      assertThat(ColumnValidator.isTextType(dataType)).isTrue();
-    }
-
-    @ParameterizedTest
-    @ValueSource(strings = { "INT", "BIGINT", "DECIMAL", "FLOAT", "DOUBLE", "DATE", "DATETIME", "BOOLEAN", "BLOB",
-      "JSON" })
-    @DisplayName("비텍스트 타입이면 false를 반환한다")
-    void returnsFalseForNonTextTypes(String dataType) {
-      assertThat(ColumnValidator.isTextType(dataType)).isFalse();
-    }
-
-    @Test
-    @DisplayName("null이면 false를 반환한다")
-    void returnsFalseForNull() {
-      assertThat(ColumnValidator.isTextType(null)).isFalse();
-    }
-
-    @ParameterizedTest
-    @NullAndEmptySource
-    @ValueSource(strings = { "  ", "\t" })
-    @DisplayName("blank면 false를 반환한다")
-    void returnsFalseForBlank(String dataType) {
-      assertThat(ColumnValidator.isTextType(dataType)).isFalse();
-    }
-
-    @Test
-    @DisplayName("공백이 있는 타입명은 trim 후 검사한다")
-    void trimsWhitespace() {
-      assertThat(ColumnValidator.isTextType("  VARCHAR  ")).isTrue();
-      assertThat(ColumnValidator.isTextType("  INT  ")).isFalse();
     }
 
   }

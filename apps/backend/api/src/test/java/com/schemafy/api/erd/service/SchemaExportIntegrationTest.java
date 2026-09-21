@@ -140,7 +140,7 @@ class SchemaExportIntegrationTest extends ProjectHttpTestSupport {
         "CREATE TABLE `users`",
         "`email` VARCHAR(255)",
         "`status` ENUM('READY', 'PAID')",
-        "`total` DECIMAL(10,2)",
+        "`total` DECIMAL(10, 2)",
         "PRIMARY KEY (`user_id`)",
         "PRIMARY KEY (`order_id`)",
         "ALTER TABLE `users` ADD UNIQUE KEY `uk_users_email` (`email`);",

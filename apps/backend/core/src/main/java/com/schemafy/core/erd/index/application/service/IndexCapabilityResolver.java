@@ -2,15 +2,11 @@ package com.schemafy.core.erd.index.application.service;
 
 import org.springframework.stereotype.Component;
 
-import com.schemafy.core.common.exception.DomainException;
 import com.schemafy.core.erd.index.domain.policy.IndexCapabilities;
-import com.schemafy.core.erd.vendor.application.port.in.GetProjectDbVendorQuery;
-import com.schemafy.core.erd.vendor.application.port.in.GetProjectDbVendorUseCase;
+import com.schemafy.core.erd.vendor.application.service.ProjectDbVendorResolver;
 import com.schemafy.core.erd.vendor.domain.DbVendor;
 import com.schemafy.core.erd.vendor.domain.VendorCapabilities;
-import com.schemafy.core.project.application.access.GetProjectIdByAccessResourcePort;
 import com.schemafy.core.project.application.access.ProjectAccessResourceType;
-import com.schemafy.core.project.domain.exception.ProjectErrorCode;
 
 import lombok.RequiredArgsConstructor;
 import reactor.core.publisher.Mono;
@@ -19,18 +15,12 @@ import reactor.core.publisher.Mono;
 @RequiredArgsConstructor
 public class IndexCapabilityResolver {
 
-  private final GetProjectIdByAccessResourcePort getProjectIdByAccessResourcePort;
-  private final GetProjectDbVendorUseCase getProjectDbVendorUseCase;
+  private final ProjectDbVendorResolver projectDbVendorResolver;
 
   public Mono<IndexCapabilities> resolve(
       ProjectAccessResourceType resourceType,
       String resourceId) {
-    return getProjectIdByAccessResourcePort.findProjectId(resourceType, resourceId)
-        .switchIfEmpty(Mono.error(new DomainException(
-            ProjectErrorCode.NOT_FOUND,
-            "Project not found for %s: %s".formatted(resourceType, resourceId))))
-        .flatMap(projectId -> getProjectDbVendorUseCase.getProjectDbVendor(
-            new GetProjectDbVendorQuery(projectId)))
+    return projectDbVendorResolver.resolve(resourceType, resourceId)
         .map(DbVendor::capabilities)
         .map(VendorCapabilities::indexes);
   }
