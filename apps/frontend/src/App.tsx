@@ -19,11 +19,14 @@ const App = observer(() => {
 
   useEffect(() => {
     const dispose = reaction(
-      () => ({
-        isInitialized: authStore.isInitialized,
-        isAuthLoading: authStore.isAuthLoading,
-        isAuthenticated: Boolean(authStore.accessToken && authStore.user),
-      }),
+      () => {
+        const hasAuthSession = Boolean(authStore.accessToken && authStore.user);
+        return {
+          isInitialized: authStore.isInitialized,
+          isAuthLoading: authStore.isAuthLoading,
+          isAuthenticated: hasAuthSession,
+        };
+      },
       async ({ isInitialized, isAuthLoading, isAuthenticated }) => {
         if (!isInitialized || isAuthLoading || isAuthenticated) {
           return;

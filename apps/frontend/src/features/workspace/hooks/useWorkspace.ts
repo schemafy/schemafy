@@ -3,10 +3,11 @@ import { getWorkspace } from '../api';
 import { workspaceKeys } from './query-keys';
 
 export const useWorkspace = (id: string) => {
+  const hasWorkspaceId = Boolean(id);
   const workspaceQuery = useQuery({
     queryKey: workspaceKeys.detail(id),
     queryFn: () => getWorkspace(id),
-    enabled: Boolean(id),
+    enabled: hasWorkspaceId,
   });
 
   return {

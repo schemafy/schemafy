@@ -148,9 +148,9 @@ export const CanvasPage = () => {
     useProject(projectId);
   const isForbidden =
     axios.isAxiosError(projectError) && projectError.response?.status === 403;
+  const hasProject = project !== undefined;
   const canEditProject =
-    !!project &&
-    getRoleLevel(project.currentUserRole) <= getRoleLevel('EDITOR');
+    hasProject && getRoleLevel(project.currentUserRole) <= getRoleLevel('EDITOR');
 
   useEffect(() => {
     if (!isProjectError || !isForbidden) return;
@@ -165,6 +165,7 @@ export const CanvasPage = () => {
   if (isForbidden) {
     return <LoadingState className='min-h-screen' label='Redirecting...' />;
   }
+  if (!hasProject) return <NotFoundPage />;
 
   return (
     <SelectedSchemaProvider

@@ -26,6 +26,8 @@ export const ListItem = ({
     onDelete?.();
   };
 
+  const hasDescription = Boolean(description);
+
   return (
     <li className="schemafy-subtle-card flex w-full flex-col items-center gap-2 px-4 py-3">
       <div className="flex w-full items-start justify-between gap-4">
@@ -50,7 +52,7 @@ export const ListItem = ({
             </button>
           </div>
         </div>
-        <Tag count={count} isEntity={Boolean(description)} />
+        <Tag count={count} isEntity={hasDescription} />
       </div>
       <div className="flex w-full flex-wrap items-center justify-between gap-x-4 gap-y-1 font-body-xs text-schemafy-dark-gray">
         <p className="min-w-0 break-words">{description}</p>

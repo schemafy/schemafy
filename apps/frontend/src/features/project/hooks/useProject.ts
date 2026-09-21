@@ -3,10 +3,11 @@ import { getProject } from '../api';
 import { projectKeys } from './query-keys';
 
 export const useProject = (projectId: string) => {
+  const hasProjectId = Boolean(projectId);
   const projectQuery = useQuery({
     queryKey: projectKeys.detail(projectId),
     queryFn: () => getProject(projectId),
-    enabled: Boolean(projectId),
+    enabled: hasProjectId,
   });
 
   return {

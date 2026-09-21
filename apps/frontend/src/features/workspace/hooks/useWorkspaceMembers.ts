@@ -12,10 +12,11 @@ export const useWorkspaceMembers = (
   page = 0,
   size = 5,
 ) => {
+  const hasWorkspaceId = Boolean(workspaceId);
   const membersQuery = useQuery({
     queryKey: workspaceKeys.members(workspaceId, page, size),
     queryFn: () => getMembers(workspaceId, page, size),
-    enabled: Boolean(workspaceId),
+    enabled: hasWorkspaceId,
   });
   const removeMemberMutation = useRemoveMemberMutation(workspaceId);
   const updateMemberRoleMutation = useUpdateMemberRoleMutation(workspaceId);
