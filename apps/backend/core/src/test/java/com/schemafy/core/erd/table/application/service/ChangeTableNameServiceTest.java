@@ -32,6 +32,9 @@ import com.schemafy.core.erd.table.application.port.out.TableExistsPort;
 import com.schemafy.core.erd.table.domain.Table;
 import com.schemafy.core.erd.table.domain.exception.TableErrorCode;
 import com.schemafy.core.erd.table.fixture.TableFixture;
+import com.schemafy.core.erd.vendor.application.service.IdentifierCapabilityResolver;
+import com.schemafy.core.erd.vendor.domain.IdentifierCapabilities;
+import com.schemafy.core.erd.vendor.fixture.DbVendorFixture;
 
 import reactor.core.publisher.Mono;
 import reactor.test.StepVerifier;
@@ -77,6 +80,9 @@ class ChangeTableNameServiceTest {
   @Mock
   TransactionalOperator transactionalOperator;
 
+  @Mock
+  IdentifierCapabilityResolver identifierCapabilityResolver;
+
   @InjectMocks
   ChangeTableNameService sut;
 
@@ -84,6 +90,8 @@ class ChangeTableNameServiceTest {
   void setUpTransaction() {
     given(transactionalOperator.transactional(any(Mono.class)))
         .willAnswer(invocation -> invocation.getArgument(0));
+    given(identifierCapabilityResolver.resolve(any(), any()))
+        .willReturn(Mono.just(DbVendorFixture.defaultCapabilities().identifiers()));
   }
 
   @Nested
@@ -116,6 +124,30 @@ class ChangeTableNameServiceTest {
 
         then(tableExistsPort).should()
             .existsBySchemaIdAndName(TableFixture.DEFAULT_SCHEMA_ID, command.newName());
+        then(changeTableNamePort).should()
+            .changeTableName(command.tableId(), command.newName());
+      }
+
+      @Test
+      @DisplayName("DB Vendor identifier 최대 길이로 이름을 변경한다")
+      void changesTableNameAtIdentifierLimit() {
+        var command = TableFixture.changeNameCommand("t".repeat(64));
+
+        given(tableExistsPort.existsBySchemaIdAndName(any(), any()))
+            .willReturn(Mono.just(false));
+        given(getTableByIdPort.findTableById(any()))
+            .willReturn(Mono.just(TableFixture.defaultTable()));
+        given(changeTableNamePort.changeTableName(any(), any()))
+            .willReturn(Mono.empty());
+        given(getConstraintsByTableIdPort.findConstraintsByTableId(any()))
+            .willReturn(Mono.just(List.of()));
+        given(getRelationshipsByTableIdPort.findRelationshipsByTableId(any()))
+            .willReturn(Mono.just(List.of()));
+
+        StepVerifier.create(sut.changeTableName(command))
+            .expectNextCount(1)
+            .verifyComplete();
+
         then(changeTableNamePort).should()
             .changeTableName(command.tableId(), command.newName());
       }
@@ -199,6 +231,30 @@ class ChangeTableNameServiceTest {
     }
 
     @Nested
+    @DisplayName("DB Vendor identifier 최대 길이를 초과하면")
+    class WithTooLongName {
+
+      @Test
+      @DisplayName("TableInvalidValueException을 발생시킨다")
+      void rejectsTableNameOverIdentifierLimit() {
+        var command = TableFixture.changeNameCommand("t".repeat(65));
+
+        given(getTableByIdPort.findTableById(command.tableId()))
+            .willReturn(Mono.just(TableFixture.defaultTable()));
+
+        StepVerifier.create(sut.changeTableName(command))
+            .expectErrorMatches(DomainException.hasErrorCode(TableErrorCode.INVALID_VALUE))
+            .verify();
+
+        then(tableExistsPort).shouldHaveNoInteractions();
+        then(changeTableNamePort).shouldHaveNoInteractions();
+        then(getConstraintsByTableIdPort).shouldHaveNoInteractions();
+        then(getRelationshipsByTableIdPort).shouldHaveNoInteractions();
+      }
+
+    }
+
+    @Nested
     @DisplayName("자동 생성된 제약조건 이름이 있으면")
     class WithAutoConstraintNames {
 
@@ -260,6 +316,75 @@ class ChangeTableNameServiceTest {
             .changeConstraintName("nn-1", "nn_accounts");
         then(changeConstraintNamePort).should(never())
             .changeConstraintName(eq("manual-1"), any());
+      }
+
+      @Test
+      @DisplayName("잘린 자동 이름의 suffix를 보존하고 충돌 시 다음 suffix를 사용한다")
+      void preservesSuffixesForTruncatedAutoConstraintNames() {
+        IdentifierCapabilities identifiers = DbVendorFixture.defaultCapabilities().identifiers();
+        String oldTableName = "o".repeat(64);
+        String newTableName = "n".repeat(64);
+        var oldTable = new Table(
+            "table-1",
+            "schema-1",
+            oldTableName,
+            TableFixture.DEFAULT_CHARSET,
+            TableFixture.DEFAULT_COLLATION);
+        var constraints = List.of(
+            constraint(
+                "pk-1",
+                oldTable.id(),
+                identifiers.fitGeneratedName("pk_" + oldTableName, ""),
+                ConstraintKind.PRIMARY_KEY),
+            constraint(
+                "uq-1",
+                oldTable.id(),
+                identifiers.fitGeneratedName("uq_" + oldTableName, "_1"),
+                ConstraintKind.UNIQUE),
+            constraint(
+                "ck-10",
+                oldTable.id(),
+                identifiers.fitGeneratedName("ck_" + oldTableName, "_10"),
+                ConstraintKind.CHECK));
+        var command = new ChangeTableNameCommand(oldTable.id(), newTableName);
+        String expectedPk = identifiers.fitGeneratedName("pk_" + newTableName, "");
+        String expectedPkWithSuffix = identifiers.fitGeneratedName("pk_" + newTableName, "_1");
+        String expectedUq = identifiers.fitGeneratedName("uq_" + newTableName, "_1");
+        String expectedCk = identifiers.fitGeneratedName("ck_" + newTableName, "_10");
+
+        given(tableExistsPort.existsBySchemaIdAndName(oldTable.schemaId(), command.newName()))
+            .willReturn(Mono.just(false));
+        given(getTableByIdPort.findTableById(oldTable.id()))
+            .willReturn(Mono.just(oldTable));
+        given(changeTableNamePort.changeTableName(oldTable.id(), command.newName()))
+            .willReturn(Mono.empty());
+        given(getConstraintsByTableIdPort.findConstraintsByTableId(oldTable.id()))
+            .willReturn(Mono.just(constraints));
+        given(getRelationshipsByTableIdPort.findRelationshipsByTableId(oldTable.id()))
+            .willReturn(Mono.just(List.of()));
+        given(constraintExistsPort.existsBySchemaIdAndNameExcludingId(
+            oldTable.schemaId(),
+            expectedPk,
+            "pk-1"))
+            .willReturn(Mono.just(true));
+        givenConstraintNameAvailable(oldTable.schemaId(), expectedPkWithSuffix, "pk-1");
+        givenConstraintNameAvailable(oldTable.schemaId(), expectedUq, "uq-1");
+        givenConstraintNameAvailable(oldTable.schemaId(), expectedCk, "ck-10");
+        given(changeConstraintNamePort.changeConstraintName(any(), any()))
+            .willReturn(Mono.empty());
+
+        StepVerifier.create(sut.changeTableName(command))
+            .expectNextCount(1)
+            .verifyComplete();
+
+        then(changeConstraintNamePort).should()
+            .changeConstraintName("pk-1", expectedPkWithSuffix);
+        then(changeConstraintNamePort).should()
+            .changeConstraintName("uq-1", expectedUq);
+        then(changeConstraintNamePort).should()
+            .changeConstraintName("ck-10", expectedCk);
+        assertThat(List.of(expectedPkWithSuffix, expectedUq, expectedCk))
+            .allMatch(name -> name.codePointCount(0, name.length()) <= identifiers.maxLength());
       }
 
       private void givenConstraintNameAvailable(
@@ -341,6 +466,68 @@ class ChangeTableNameServiceTest {
 
         then(changeRelationshipNamePort).should()
             .changeRelationshipName(relationship.id(), "rel_orders_v2_to_users");
+      }
+
+      @Test
+      @DisplayName("잘린 자동 관계 이름의 suffix를 보존해 갱신한다")
+      void updatesTruncatedAutoRelationshipNameWithoutSkipping() {
+        IdentifierCapabilities identifiers = DbVendorFixture.defaultCapabilities().identifiers();
+        String oldTableName = "o".repeat(64);
+        String newTableName = "n".repeat(64);
+        String pkTableName = "p".repeat(64);
+        var oldTable = new Table(
+            "table-1",
+            "schema-1",
+            oldTableName,
+            TableFixture.DEFAULT_CHARSET,
+            TableFixture.DEFAULT_COLLATION);
+        var pkTable = new Table(
+            "table-2",
+            "schema-1",
+            pkTableName,
+            TableFixture.DEFAULT_CHARSET,
+            TableFixture.DEFAULT_COLLATION);
+        String oldBaseName = "rel_" + oldTableName + "_to_" + pkTableName;
+        String newBaseName = "rel_" + newTableName + "_to_" + pkTableName;
+        var relationship = new Relationship(
+            "rel-1",
+            pkTable.id(),
+            oldTable.id(),
+            identifiers.fitGeneratedName(oldBaseName, "_10"),
+            RelationshipKind.NON_IDENTIFYING,
+            Cardinality.ONE_TO_MANY,
+            null);
+        var command = new ChangeTableNameCommand(oldTable.id(), newTableName);
+        String expectedName = identifiers.fitGeneratedName(newBaseName, "_10");
+
+        given(tableExistsPort.existsBySchemaIdAndName(oldTable.schemaId(), command.newName()))
+            .willReturn(Mono.just(false));
+        given(getTableByIdPort.findTableById(oldTable.id()))
+            .willReturn(Mono.just(oldTable));
+        given(getTableByIdPort.findTableById(pkTable.id()))
+            .willReturn(Mono.just(pkTable));
+        given(changeTableNamePort.changeTableName(oldTable.id(), command.newName()))
+            .willReturn(Mono.empty());
+        given(getConstraintsByTableIdPort.findConstraintsByTableId(oldTable.id()))
+            .willReturn(Mono.just(List.of()));
+        given(getRelationshipsByTableIdPort.findRelationshipsByTableId(oldTable.id()))
+            .willReturn(Mono.just(List.of(relationship)));
+        given(relationshipExistsPort.existsByFkTableIdAndNameExcludingId(
+            relationship.fkTableId(),
+            expectedName,
+            relationship.id()))
+            .willReturn(Mono.just(false));
+        given(changeRelationshipNamePort.changeRelationshipName(any(), any()))
+            .willReturn(Mono.empty());
+
+        StepVerifier.create(sut.changeTableName(command))
+            .expectNextCount(1)
+            .verifyComplete();
+
+        then(changeRelationshipNamePort).should()
+            .changeRelationshipName(relationship.id(), expectedName);
+        assertThat(expectedName.codePointCount(0, expectedName.length()))
+            .isEqualTo(identifiers.maxLength());
       }
 
     }

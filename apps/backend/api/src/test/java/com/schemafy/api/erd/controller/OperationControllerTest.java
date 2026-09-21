@@ -39,7 +39,7 @@ import static org.mockito.BDDMockito.then;
 @AutoConfigureWebTestClient
 @AutoConfigureRestDocs
 @DisplayName("OperationController 통합 테스트")
-@WithMockCustomUser(roles = "EDITOR")
+@WithMockCustomUser
 class OperationControllerTest {
 
   private static final String API_BASE_PATH = ApiPath.API

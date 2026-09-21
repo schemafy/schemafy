@@ -22,8 +22,13 @@ import axios from 'axios';
 import { LoadingState } from '@/components';
 import { NotFoundPage } from './NotFoundPage';
 import { useProject } from '@/features/project/hooks/useProject';
+import { getRoleLevel } from '@/features/project/utils/role';
 
-const CanvasContent = observer(() => {
+interface CanvasContentProps {
+  canEditProject: boolean;
+}
+
+const CanvasContent = observer(({ canEditProject }: CanvasContentProps) => {
   const {
     state: {
       relationshipConfig,
@@ -43,6 +48,7 @@ const CanvasContent = observer(() => {
     data: { tables, memos, relationships },
     handlers: {
       onTableDragStop,
+      onTableDrag,
       onTablesDelete,
       onMemosChange,
       onRelationshipsChange,
@@ -59,11 +65,11 @@ const CanvasContent = observer(() => {
       handlePaneClick,
       handleMouseMove,
     },
-  } = useCanvasController();
+  } = useCanvasController(canEditProject);
 
   return (
     <>
-      <div className="flex flex-1 overflow-hidden bg-schemafy-canvas">
+      <div className='flex flex-1 overflow-hidden bg-schemafy-canvas'>
         <Toolbar
           setActiveTool={setActiveTool}
           activeTool={activeTool}
@@ -71,8 +77,8 @@ const CanvasContent = observer(() => {
           onRelationshipConfigChange={setRelationshipConfig}
         />
 
-        <div className="relative flex-1 overflow-hidden">
-          <div className="absolute right-6 top-6 z-10">
+        <div className='relative flex-1 overflow-hidden'>
+          <div className='absolute right-6 top-6 z-10'>
             <SchemaSelector />
           </div>
 
@@ -82,6 +88,7 @@ const CanvasContent = observer(() => {
             relationships={relationships}
             activeTool={activeTool}
             onTableDragStop={onTableDragStop}
+            onTableDrag={onTableDrag}
             onTablesDelete={onTablesDelete}
             onMemosChange={onMemosChange}
             onRelationshipsChange={onRelationshipsChange}
@@ -90,6 +97,7 @@ const CanvasContent = observer(() => {
             handleMoveEnd={handleMoveEnd}
             handlePaneClick={handlePaneClick}
             handleMouseMove={handleMouseMove}
+            canEditProject={canEditProject}
           />
 
           {selectedRelationship && (
@@ -140,6 +148,9 @@ export const CanvasPage = () => {
     useProject(projectId);
   const isForbidden =
     axios.isAxiosError(projectError) && projectError.response?.status === 403;
+  const canEditProject =
+    !!project &&
+    getRoleLevel(project.currentUserRole) <= getRoleLevel('EDITOR');
 
   useEffect(() => {
     if (!isProjectError || !isForbidden) return;
@@ -149,10 +160,10 @@ export const CanvasPage = () => {
 
   if (isProjectError && !isForbidden) return <NotFoundPage />;
   if (isLoadingProject) {
-    return <LoadingState className="min-h-screen" label="Loading project..." />;
+    return <LoadingState className='min-h-screen' label='Loading project...' />;
   }
   if (isForbidden) {
-    return <LoadingState className="min-h-screen" label="Redirecting..." />;
+    return <LoadingState className='min-h-screen' label='Redirecting...' />;
   }
 
   return (
@@ -161,8 +172,8 @@ export const CanvasPage = () => {
       dbVendorId={project.dbVendorId}
     >
       <MemoProvider>
-        <CanvasContent />
-        <div className="fixed bottom-4 right-4 z-50">
+        <CanvasContent canEditProject={canEditProject} />
+        <div className='fixed bottom-4 right-4 z-50'>
           <ConnectionStatusIndicator />
         </div>
       </MemoProvider>

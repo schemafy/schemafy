@@ -68,6 +68,10 @@ class ColumnMapper {
     return jsonCodec.toJson(node);
   }
 
+  String normalizeTypeArgumentsJson(String rawJson) {
+    return jsonCodec.normalizePersistedJson(rawJson);
+  }
+
   private ColumnTypeArguments toTypeArguments(String rawJson) {
     if (rawJson == null || rawJson.isBlank()) {
       return null;

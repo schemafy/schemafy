@@ -7,7 +7,10 @@ import com.schemafy.core.erd.index.domain.type.IndexType;
 import com.schemafy.core.erd.vendor.application.port.in.GetDbVendorQuery;
 import com.schemafy.core.erd.vendor.domain.DbVendor;
 import com.schemafy.core.erd.vendor.domain.DbVendorSummary;
+import com.schemafy.core.erd.vendor.domain.IdentifierCapabilities;
 import com.schemafy.core.erd.vendor.domain.VendorCapabilities;
+import com.schemafy.core.erd.vendor.domain.datatype.DatatypePolicy;
+import com.schemafy.core.erd.vendor.domain.datatype.DatatypePolicyFixture;
 
 public class DbVendorFixture {
 
@@ -15,8 +18,10 @@ public class DbVendorFixture {
   public static final String DEFAULT_DISPLAY_NAME = "MySQL 8.0";
   public static final String DEFAULT_NAME = "mysql";
   public static final String DEFAULT_VERSION = "8.0";
-  public static final String DEFAULT_DATATYPE_MAPPINGS = """
-      {"schemaVersion":1,"vendor":"mysql","types":[{"sqlType":"INT","displayName":"INT","category":"numeric_integer","parameters":[]}]}""";
+
+  public static DatatypePolicy defaultDatatypePolicy() {
+    return DatatypePolicyFixture.mysqlPolicy();
+  }
 
   public static DbVendor defaultDbVendor() {
     return new DbVendor(
@@ -24,16 +29,17 @@ public class DbVendorFixture {
         DEFAULT_DISPLAY_NAME,
         DEFAULT_NAME,
         DEFAULT_VERSION,
-        DEFAULT_DATATYPE_MAPPINGS,
+        defaultDatatypePolicy(),
         defaultCapabilities());
   }
 
   public static VendorCapabilities defaultCapabilities() {
     return new VendorCapabilities(
-        1,
+        2,
         new IndexCapabilities(
             Set.of(IndexType.BTREE, IndexType.FULLTEXT, IndexType.SPATIAL),
-            Set.of(IndexType.BTREE)));
+            Set.of(IndexType.BTREE)),
+        IdentifierCapabilities.codePoints(64));
   }
 
   public static DbVendorSummary defaultDbVendorSummary() {

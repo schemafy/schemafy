@@ -20,11 +20,14 @@ import com.schemafy.core.erd.operation.application.service.StructuralSnapshotSer
 import com.schemafy.core.erd.schema.application.port.out.GetSchemaByIdPort;
 import com.schemafy.core.erd.schema.domain.exception.SchemaErrorCode;
 import com.schemafy.core.erd.schema.fixture.SchemaFixture;
+import com.schemafy.core.erd.table.application.port.in.CreateTableCommand;
 import com.schemafy.core.erd.table.application.port.out.CreateTablePort;
 import com.schemafy.core.erd.table.application.port.out.TableExistsPort;
 import com.schemafy.core.erd.table.domain.Table;
 import com.schemafy.core.erd.table.domain.exception.TableErrorCode;
 import com.schemafy.core.erd.table.fixture.TableFixture;
+import com.schemafy.core.erd.vendor.application.service.IdentifierCapabilityResolver;
+import com.schemafy.core.erd.vendor.fixture.DbVendorFixture;
 import com.schemafy.core.ulid.application.port.out.UlidGeneratorPort;
 
 import reactor.core.publisher.Mono;
@@ -58,6 +61,9 @@ class CreateTableServiceTest {
   @Mock
   StructuralSnapshotService structuralSnapshotService;
 
+  @Mock
+  IdentifierCapabilityResolver identifierCapabilityResolver;
+
   @Spy
   JsonObjectMetadataConverter jsonObjectMetadataConverter = new JsonObjectMetadataConverter(
       new JsonCodec(new ObjectMapper().findAndRegisterModules()));
@@ -70,6 +76,8 @@ class CreateTableServiceTest {
     given(transactionalOperator.transactional(any(Mono.class)))
         .willAnswer(invocation -> invocation.getArgument(0));
     stubEmptySnapshots(structuralSnapshotService);
+    given(identifierCapabilityResolver.resolve(any(), any()))
+        .willReturn(Mono.just(DbVendorFixture.defaultCapabilities().identifiers()));
   }
 
   @Nested
@@ -113,6 +121,32 @@ class CreateTableServiceTest {
       }
 
       @Test
+      @DisplayName("DB Vendor identifier 최대 길이의 테이블을 생성한다")
+      void createsTableAtIdentifierLimit() {
+        var baseCommand = TableFixture.createCommand();
+        var command = new CreateTableCommand(
+            baseCommand.schemaId(),
+            "t".repeat(64),
+            baseCommand.charset(),
+            baseCommand.collation(),
+            baseCommand.extra());
+        var schema = SchemaFixture.defaultSchema();
+
+        given(tableExistsPort.existsBySchemaIdAndName(any(), any()))
+            .willReturn(Mono.just(false));
+        given(getSchemaByIdPort.findSchemaById(any()))
+            .willReturn(Mono.just(schema));
+        given(ulidGeneratorPort.generate())
+            .willReturn(TableFixture.DEFAULT_ID);
+        given(createTablePort.createTable(any(Table.class)))
+            .willAnswer(invocation -> Mono.just(invocation.getArgument(0)));
+
+        StepVerifier.create(sut.createTable(command))
+            .assertNext(result -> assertThat(result.result().name()).isEqualTo(command.name()))
+            .verifyComplete();
+      }
+
+      @Test
       @DisplayName("extra JSON object를 core 경계에서 canonical 문자열로 저장한다")
       void canonicalizesExtraBeforePersisting() {
         var command = TableFixture.createCommandWithExtra(
@@ -132,6 +166,32 @@ class CreateTableServiceTest {
             .assertNext(result -> assertThat(result.result().extra())
                 .isEqualTo("{\"ui\":{\"x\":100,\"y\":200}}"))
             .verifyComplete();
+      }
+
+    }
+
+    @Nested
+    @DisplayName("DB Vendor identifier 최대 길이를 초과하면")
+    class WithTooLongName {
+
+      @Test
+      @DisplayName("TableInvalidValueException을 발생시킨다")
+      void rejectsTableOverIdentifierLimit() {
+        var baseCommand = TableFixture.createCommand();
+        var command = new CreateTableCommand(
+            baseCommand.schemaId(),
+            "t".repeat(65),
+            baseCommand.charset(),
+            baseCommand.collation(),
+            baseCommand.extra());
+
+        StepVerifier.create(sut.createTable(command))
+            .expectErrorMatches(DomainException.hasErrorCode(TableErrorCode.INVALID_VALUE))
+            .verify();
+
+        then(tableExistsPort).shouldHaveNoInteractions();
+        then(getSchemaByIdPort).shouldHaveNoInteractions();
+        then(createTablePort).shouldHaveNoInteractions();
       }
 
     }

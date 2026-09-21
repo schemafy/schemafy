@@ -10,6 +10,7 @@ import org.springframework.stereotype.Service;
 import com.schemafy.core.common.MutationResult;
 import com.schemafy.core.common.exception.DomainException;
 import com.schemafy.core.common.json.JsonObjectMetadataConverter;
+import com.schemafy.core.erd.operation.application.inverse.ChangeRelationshipExtraInverse;
 import com.schemafy.core.erd.operation.application.service.ErdMutationCoordinator;
 import com.schemafy.core.erd.operation.domain.ErdOperationType;
 import com.schemafy.core.erd.relationship.application.port.in.ChangeRelationshipExtraCommand;
@@ -67,7 +68,10 @@ public class ChangeRelationshipExtraService implements ChangeRelationshipExtraUs
                       }
                       return changeRelationshipExtraPort
                           .changeRelationshipExtra(lockedRelationship.id(), canonicalExtra)
-                          .thenReturn(MutationResult.<Void>of(null, lockedAffectedTableIds));
+                          .thenReturn(MutationResult.<Void>of(null, lockedAffectedTableIds)
+                              .withInverse(new ChangeRelationshipExtraInverse(
+                                  lockedRelationship.id(),
+                                  lockedRelationship.extra())));
                     }));
           });
     });

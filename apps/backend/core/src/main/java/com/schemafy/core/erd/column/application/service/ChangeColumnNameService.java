@@ -27,6 +27,8 @@ import com.schemafy.core.erd.table.domain.Table;
 import com.schemafy.core.erd.table.domain.exception.TableErrorCode;
 import com.schemafy.core.erd.vendor.application.port.in.GetProjectDbVendorQuery;
 import com.schemafy.core.erd.vendor.application.port.in.GetProjectDbVendorUseCase;
+import com.schemafy.core.erd.vendor.domain.IdentifierCapabilities;
+import com.schemafy.core.erd.vendor.domain.validator.IdentifierValidator;
 import com.schemafy.core.project.application.access.AccessTarget;
 import com.schemafy.core.project.application.access.RequireProjectAccess;
 import com.schemafy.core.project.domain.ProjectRole;
@@ -80,6 +82,7 @@ public class ChangeColumnNameService implements ChangeColumnNameUseCase {
                                   tuple.getT2().projectId()))
                               .flatMap(dbVendor -> {
                                 validateNameChange(tuple, dbVendor.name(),
+                                    dbVendor.capabilities().identifiers(),
                                     normalizedName, lockedColumn.id());
                                 return changeColumnNamePort
                                     .changeColumnName(lockedColumn.id(), normalizedName)
@@ -110,10 +113,16 @@ public class ChangeColumnNameService implements ChangeColumnNameUseCase {
   private void validateNameChange(
       Tuple3<Table, Schema, List<Column>> tuple,
       String dbVendorName,
+      IdentifierCapabilities identifierCapabilities,
       String normalizedName,
       String columnId) {
     List<Column> columns = tuple.getT3();
 
+    IdentifierValidator.validateLength(
+        identifierCapabilities,
+        normalizedName,
+        ColumnErrorCode.NAME_INVALID,
+        "Column name");
     ColumnValidator.validateReservedKeyword(dbVendorName, normalizedName);
     ColumnValidator.validateNameUniqueness(columns, normalizedName, columnId);
   }

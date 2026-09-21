@@ -9,6 +9,7 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import com.schemafy.core.common.PatchField;
+import com.schemafy.core.erd.operation.application.inverse.ChangeTableMetaInverse;
 import com.schemafy.core.erd.table.application.port.out.ChangeTableMetaPort;
 import com.schemafy.core.erd.table.application.port.out.GetTableByIdPort;
 import com.schemafy.core.erd.table.fixture.TableFixture;
@@ -16,6 +17,7 @@ import com.schemafy.core.erd.table.fixture.TableFixture;
 import reactor.core.publisher.Mono;
 import reactor.test.StepVerifier;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.ArgumentMatchers.isNull;
@@ -55,7 +57,11 @@ class ChangeTableMetaServiceTest {
             .willReturn(Mono.empty());
 
         StepVerifier.create(sut.changeTableMeta(command))
-            .expectNextCount(1)
+            .assertNext(result -> assertThat(result.inversePayload()).isEqualTo(
+                new ChangeTableMetaInverse(
+                    command.tableId(),
+                    TableFixture.DEFAULT_CHARSET,
+                    TableFixture.DEFAULT_COLLATION)))
             .verifyComplete();
 
         then(changeTableMetaPort).should()

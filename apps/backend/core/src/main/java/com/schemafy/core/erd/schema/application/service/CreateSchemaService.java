@@ -17,6 +17,7 @@ import com.schemafy.core.erd.schema.domain.Schema;
 import com.schemafy.core.erd.schema.domain.exception.SchemaErrorCode;
 import com.schemafy.core.erd.vendor.application.port.in.GetProjectDbVendorQuery;
 import com.schemafy.core.erd.vendor.application.port.in.GetProjectDbVendorUseCase;
+import com.schemafy.core.erd.vendor.domain.validator.IdentifierValidator;
 import com.schemafy.core.project.application.access.AccessTarget;
 import com.schemafy.core.project.application.access.RequireProjectAccess;
 import com.schemafy.core.project.domain.ProjectRole;
@@ -49,34 +50,41 @@ class CreateSchemaService implements CreateSchemaUseCase {
     return erdMutationCoordinator.coordinate(ErdOperationType.CREATE_SCHEMA, command,
         () -> getProjectDbVendorUseCase
             .getProjectDbVendor(new GetProjectDbVendorQuery(command.projectId()))
-            .flatMap(dbVendor -> schemaExistsPort
-                .existsActiveByProjectIdAndName(command.projectId(), command.name())
-                .flatMap(exists -> {
-                  if (exists) {
-                    return Mono.error(new DomainException(SchemaErrorCode.NAME_DUPLICATE,
-                        "Schema name '%s' already exists in project".formatted(command.name())));
-                  }
+            .flatMap(dbVendor -> {
+              IdentifierValidator.validateLength(
+                  dbVendor.capabilities().identifiers(),
+                  command.name(),
+                  SchemaErrorCode.INVALID_VALUE,
+                  "Schema name");
+              return schemaExistsPort
+                  .existsActiveByProjectIdAndName(command.projectId(), command.name())
+                  .flatMap(exists -> {
+                    if (exists) {
+                      return Mono.error(new DomainException(SchemaErrorCode.NAME_DUPLICATE,
+                          "Schema name '%s' already exists in project".formatted(command.name())));
+                    }
 
-                  return Mono.fromCallable(ulidGeneratorPort::generate)
-                      .flatMap(id -> {
-                        Schema schema = Schema.create(
-                            id,
-                            command.projectId(),
-                            dbVendor.name(),
-                            command.name(),
-                            command.charset(),
-                            command.collation());
+                    return Mono.fromCallable(ulidGeneratorPort::generate)
+                        .flatMap(id -> {
+                          Schema schema = Schema.create(
+                              id,
+                              command.projectId(),
+                              dbVendor.name(),
+                              command.name(),
+                              command.charset(),
+                              command.collation());
 
-                        return createSchemaPort.createSchema(schema)
-                            .map(savedSchema -> new CreateSchemaResult(
-                                savedSchema.id(),
-                                savedSchema.projectId(),
-                                savedSchema.name(),
-                                savedSchema.charset(),
-                                savedSchema.collation()))
-                            .map(MutationResult::empty);
-                      });
-                })))
+                          return createSchemaPort.createSchema(schema)
+                              .map(savedSchema -> new CreateSchemaResult(
+                                  savedSchema.id(),
+                                  savedSchema.projectId(),
+                                  savedSchema.name(),
+                                  savedSchema.charset(),
+                                  savedSchema.collation()))
+                              .map(MutationResult::empty);
+                        });
+                  });
+            }))
         .as(transactionalOperator::transactional);
   }
 

@@ -8,6 +8,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.r2dbc.core.DatabaseClient;
 import org.springframework.test.context.ActiveProfiles;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
 
 import org.junit.jupiter.api.BeforeEach;
 
@@ -33,8 +34,10 @@ import com.schemafy.core.project.domain.Workspace;
 import com.schemafy.core.project.domain.WorkspaceMember;
 import com.schemafy.core.project.domain.WorkspaceRole;
 import com.schemafy.core.ulid.application.service.UlidGenerator;
-import com.schemafy.core.user.application.port.in.SignUpUserCommand;
-import com.schemafy.core.user.application.port.in.SignUpUserUseCase;
+import com.schemafy.core.user.application.port.out.CreateUserPort;
+import com.schemafy.core.user.application.port.out.PasswordHashPort;
+import com.schemafy.core.user.application.port.out.SendEmailVerificationPort;
+import com.schemafy.core.user.application.port.out.SendPasswordResetEmailPort;
 import com.schemafy.core.user.domain.User;
 
 import reactor.core.publisher.Mono;
@@ -49,7 +52,16 @@ abstract class ProjectDomainIntegrationSupport {
   protected DatabaseClient databaseClient;
 
   @Autowired
-  protected SignUpUserUseCase signUpUserUseCase;
+  protected CreateUserPort createUserPort;
+
+  @Autowired
+  protected PasswordHashPort passwordHashPort;
+
+  @MockitoBean
+  protected SendEmailVerificationPort sendEmailVerificationPort;
+
+  @MockitoBean
+  protected SendPasswordResetEmailPort sendPasswordResetEmailPort;
 
   @Autowired
   protected WorkspaceRepository workspaceRepository;
@@ -91,10 +103,13 @@ abstract class ProjectDomainIntegrationSupport {
   }
 
   protected User signUpUser(String email, String name) {
-    return signUpUserUseCase.signUpUser(new SignUpUserCommand(
-        email,
-        name,
-        "password"))
+    return passwordHashPort.hash("password")
+        .map(encodedPassword -> User.signUp(
+            UlidGenerator.generate(),
+            email,
+            name,
+            encodedPassword))
+        .flatMap(createUserPort::createUser)
         .block();
   }
 
@@ -208,15 +223,9 @@ abstract class ProjectDomainIntegrationSupport {
   }
 
   protected ShareLink saveShareLink(Project project) {
-    return saveShareLink(project, Instant.now().plusSeconds(86400));
-  }
-
-  protected ShareLink saveShareLink(Project project, Instant expiresAt) {
     return shareLinkRepository.save(ShareLink.create(
-        UlidGenerator.generate(),
-        project.getId(),
-        UUID.randomUUID().toString().replace("-", ""),
-        expiresAt)).block();
+        UlidGenerator.generate(), project.getId(),
+        UUID.randomUUID().toString().replace("-", ""))).block();
   }
 
   protected CreateSchemaResult createSchema(Project project, String name) {
@@ -259,19 +268,6 @@ abstract class ProjectDomainIntegrationSupport {
   protected void softDeleteProjectMember(String memberId) {
     update("UPDATE project_members SET deleted_at = CURRENT_TIMESTAMP WHERE id = :id",
         memberId);
-  }
-
-  protected void revokeShareLink(String shareLinkId) {
-    update("UPDATE share_links SET is_revoked = TRUE WHERE id = :id", shareLinkId);
-  }
-
-  protected void updateShareLinkExpiration(String shareLinkId, Instant expiresAt) {
-    databaseClient.sql("UPDATE share_links SET expires_at = :expiresAt WHERE id = :id")
-        .bind("expiresAt", expiresAt)
-        .bind("id", shareLinkId)
-        .fetch()
-        .rowsUpdated()
-        .block();
   }
 
   private Mono<Long> deleteAll(String table) {

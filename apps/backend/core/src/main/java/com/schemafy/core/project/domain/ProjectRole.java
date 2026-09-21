@@ -20,10 +20,6 @@ public enum ProjectRole {
     return this.level >= EDITOR.level;
   }
 
-  public String asAuthority() {
-    return "ROLE_" + this.name();
-  }
-
   public static ProjectRole fromString(String value) {
     for (ProjectRole role : ProjectRole.values()) {
       if (role.name().equalsIgnoreCase(value)) {

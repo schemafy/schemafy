@@ -11,7 +11,7 @@ import org.springframework.web.reactive.socket.WebSocketHandler;
 import org.springframework.web.reactive.socket.server.support.WebSocketHandlerAdapter;
 
 import com.schemafy.api.collaboration.handler.CollaborationWebSocketHandler;
-import com.schemafy.api.common.config.ConditionalOnRedisEnabled;
+import com.schemafy.core.common.config.ConditionalOnRedisEnabled;
 
 @Configuration
 @ConditionalOnRedisEnabled

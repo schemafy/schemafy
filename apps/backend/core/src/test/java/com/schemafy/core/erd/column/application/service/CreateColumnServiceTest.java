@@ -29,6 +29,9 @@ import com.schemafy.core.erd.table.domain.Table;
 import com.schemafy.core.erd.table.domain.exception.TableErrorCode;
 import com.schemafy.core.erd.vendor.application.port.in.GetProjectDbVendorQuery;
 import com.schemafy.core.erd.vendor.application.port.in.GetProjectDbVendorUseCase;
+import com.schemafy.core.erd.vendor.domain.DbVendor;
+import com.schemafy.core.erd.vendor.domain.IdentifierCapabilities;
+import com.schemafy.core.erd.vendor.domain.VendorCapabilities;
 import com.schemafy.core.erd.vendor.fixture.DbVendorFixture;
 import com.schemafy.core.ulid.application.port.out.UlidGeneratorPort;
 
@@ -150,6 +153,26 @@ class CreateColumnServiceTest {
               assertThat(payload.dataType()).isEqualTo("INT");
               assertThat(payload.typeArguments()).isNull();
             })
+            .verifyComplete();
+      }
+
+      @Test
+      @DisplayName("alias로 요청한 타입을 canonical 타입으로 저장한다")
+      void storesCanonicalTypeForAlias() {
+        var command = ColumnFixture.createCommandWithDataType("INTEGER", null, null, null);
+
+        given(getTableByIdPort.findTableById(any()))
+            .willReturn(Mono.just(createTable()));
+        given(getSchemaByIdPort.findSchemaById(any()))
+            .willReturn(Mono.just(createSchema()));
+        given(getColumnsByTableIdPort.findColumnsByTableId(any()))
+            .willReturn(Mono.just(List.of()));
+        given(ulidGeneratorPort.generate()).willReturn(ColumnFixture.DEFAULT_ID);
+        given(createColumnPort.createColumn(any(Column.class)))
+            .willAnswer(invocation -> Mono.just(invocation.getArgument(0)));
+
+        StepVerifier.create(sut.createColumn(command))
+            .assertNext(result -> assertThat(result.result().dataType()).isEqualTo("INT"))
             .verifyComplete();
       }
 
@@ -397,6 +420,46 @@ class CreateColumnServiceTest {
     }
 
     @Nested
+    @DisplayName("vendor identifier 제한을 넘으면")
+    class WhenNameExceedsVendorIdentifierLimit {
+
+      @Test
+      @DisplayName("컬럼 생성을 거부한다")
+      void rejectsNameThatExceedsVendorLimit() {
+        CreateColumnCommand defaultCommand = ColumnFixture.createCommand();
+        var command = new CreateColumnCommand(
+            defaultCommand.tableId(),
+            "a".repeat(11),
+            defaultCommand.dataType(),
+            defaultCommand.length(),
+            defaultCommand.precision(),
+            defaultCommand.scale(),
+            defaultCommand.autoIncrement(),
+            defaultCommand.charset(),
+            defaultCommand.collation(),
+            defaultCommand.comment(),
+            defaultCommand.values());
+
+        given(getTableByIdPort.findTableById(any()))
+            .willReturn(Mono.just(createTable()));
+        given(getSchemaByIdPort.findSchemaById(any()))
+            .willReturn(Mono.just(createSchema()));
+        given(getColumnsByTableIdPort.findColumnsByTableId(any()))
+            .willReturn(Mono.just(List.of()));
+        given(getProjectDbVendorUseCase.getProjectDbVendor(
+            new GetProjectDbVendorQuery(PROJECT_ID)))
+            .willReturn(Mono.just(dbVendorWithIdentifierMax(10)));
+
+        StepVerifier.create(sut.createColumn(command))
+            .expectErrorMatches(DomainException.hasErrorCode(ColumnErrorCode.NAME_INVALID))
+            .verify();
+
+        then(createColumnPort).shouldHaveNoInteractions();
+      }
+
+    }
+
+    @Nested
     @DisplayName("VARCHAR에 length가 없으면")
     class WhenVarcharWithoutLength {
 
@@ -424,12 +487,12 @@ class CreateColumnServiceTest {
     }
 
     @Nested
-    @DisplayName("DECIMAL에 precision이 없으면")
-    class WhenDecimalWithoutPrecision {
+    @DisplayName("DECIMAL에 인자가 없으면")
+    class WhenDecimalWithoutArguments {
 
       @Test
-      @DisplayName("ColumnPrecisionRequiredException이 발생한다")
-      void throwsColumnPrecisionRequiredException() {
+      @DisplayName("MySQL 기본 precision과 scale을 사용해 생성한다")
+      void createsWithMysqlDefaults() {
         var command = ColumnFixture.createCommandWithDataType("DECIMAL", null, null, null);
         var table = createTable();
         var schema = createSchema();
@@ -440,9 +503,38 @@ class CreateColumnServiceTest {
             .willReturn(Mono.just(schema));
         given(getColumnsByTableIdPort.findColumnsByTableId(any()))
             .willReturn(Mono.just(List.of()));
+        given(ulidGeneratorPort.generate()).willReturn(ColumnFixture.DEFAULT_ID);
+        given(createColumnPort.createColumn(any(Column.class)))
+            .willAnswer(invocation -> Mono.just(invocation.getArgument(0)));
 
         StepVerifier.create(sut.createColumn(command))
-            .expectErrorMatches(DomainException.hasErrorCode(ColumnErrorCode.PRECISION_REQUIRED))
+            .assertNext(result -> {
+              assertThat(result.result().dataType()).isEqualTo("DECIMAL");
+              assertThat(result.result().typeArguments()).isNull();
+            })
+            .verifyComplete();
+      }
+
+    }
+
+    @Nested
+    @DisplayName("datatype 인자가 MySQL policy 범위를 벗어나면")
+    class WhenDatatypeArgumentIsOutOfRange {
+
+      @Test
+      @DisplayName("컬럼 생성을 거부한다")
+      void rejectsOutOfRangeArgument() {
+        var command = ColumnFixture.createCommandWithDataType("BIT", 65, null, null);
+
+        given(getTableByIdPort.findTableById(any()))
+            .willReturn(Mono.just(createTable()));
+        given(getSchemaByIdPort.findSchemaById(any()))
+            .willReturn(Mono.just(createSchema()));
+        given(getColumnsByTableIdPort.findColumnsByTableId(any()))
+            .willReturn(Mono.just(List.of()));
+
+        StepVerifier.create(sut.createColumn(command))
+            .expectErrorMatches(DomainException.hasErrorCode(ColumnErrorCode.INVALID_VALUE))
             .verify();
 
         then(createColumnPort).shouldHaveNoInteractions();
@@ -573,6 +665,21 @@ class CreateColumnServiceTest {
         "test_schema",
         "utf8mb4",
         "utf8mb4_general_ci");
+  }
+
+  private static DbVendor dbVendorWithIdentifierMax(int maxLength) {
+    DbVendor vendor = DbVendorFixture.defaultDbVendor();
+    VendorCapabilities capabilities = vendor.capabilities();
+    return new DbVendor(
+        vendor.id(),
+        vendor.displayName(),
+        vendor.name(),
+        vendor.version(),
+        vendor.datatypeMappings(),
+        new VendorCapabilities(
+            capabilities.schemaVersion(),
+            capabilities.indexes(),
+            IdentifierCapabilities.codePoints(maxLength)));
   }
 
 }

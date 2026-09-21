@@ -45,10 +45,14 @@ import com.schemafy.core.erd.schema.fixture.SchemaFixture;
 import com.schemafy.core.erd.table.application.port.out.GetTableByIdPort;
 import com.schemafy.core.erd.table.domain.Table;
 import com.schemafy.core.erd.table.fixture.TableFixture;
+import com.schemafy.core.erd.vendor.application.service.DatatypePolicyResolver;
+import com.schemafy.core.erd.vendor.fixture.DbVendorFixture;
 
 import reactor.core.publisher.Mono;
 import reactor.test.StepVerifier;
 
+import static com.schemafy.core.project.application.access.ProjectAccessResourceType.COLUMN;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.given;
@@ -95,6 +99,9 @@ class ChangeColumnTypeServiceTest {
   GetSchemaByIdPort getSchemaByIdPort;
 
   @Mock
+  DatatypePolicyResolver datatypePolicyResolver;
+
+  @Mock
   TransactionalOperator transactionalOperator;
 
   @InjectMocks
@@ -104,6 +111,8 @@ class ChangeColumnTypeServiceTest {
   void setUpTransaction() {
     given(transactionalOperator.transactional(any(Mono.class)))
         .willAnswer(invocation -> invocation.getArgument(0));
+    lenient().when(datatypePolicyResolver.resolve(COLUMN, ColumnFixture.DEFAULT_ID))
+        .thenReturn(Mono.just(DbVendorFixture.defaultDatatypePolicy()));
   }
 
   @Nested
@@ -142,6 +151,28 @@ class ChangeColumnTypeServiceTest {
 
         then(changeColumnTypePort).should()
             .changeColumnType(eq(command.columnId()), eq("BIGINT"), any());
+      }
+
+      @Test
+      @DisplayName("alias 타입을 canonical 타입으로 변경한다")
+      void changesAliasToCanonicalType() {
+        var command = ColumnFixture.changeTypeCommand("INTEGER", null, null, null);
+        var column = ColumnFixture.columnWithDataType("BIGINT", null);
+
+        given(getColumnByIdPort.findColumnById(any())).willReturn(Mono.just(column));
+        given(getColumnsByTableIdPort.findColumnsByTableId(any()))
+            .willReturn(Mono.just(List.of(column)));
+        given(changeColumnTypePort.changeColumnType(any(), any(), any()))
+            .willReturn(Mono.empty());
+        given(getConstraintColumnsByColumnIdPort.findConstraintColumnsByColumnId(any()))
+            .willReturn(Mono.just(List.of()));
+
+        StepVerifier.create(sut.changeColumnType(command))
+            .expectNextCount(1)
+            .verifyComplete();
+
+        then(changeColumnTypePort).should()
+            .changeColumnType(eq(command.columnId()), eq("INT"), any());
       }
 
       @Test
@@ -332,23 +363,30 @@ class ChangeColumnTypeServiceTest {
     }
 
     @Nested
-    @DisplayName("INT에서 DECIMAL로 변경할 때 precision이 없으면")
-    class WhenIntToDecimalWithoutPrecision {
+    @DisplayName("INT에서 인자 없는 DECIMAL로 변경하면")
+    class WhenIntToDecimalWithoutArguments {
 
       @Test
-      @DisplayName("ColumnPrecisionRequiredException이 발생한다")
-      void throwsColumnPrecisionRequiredException() {
+      @DisplayName("MySQL 기본 precision과 scale을 사용한다")
+      void changesUsingMysqlDefaults() {
         var command = ColumnFixture.changeTypeCommand("DECIMAL", null, null, null);
         var column = ColumnFixture.intColumn();
 
         given(getColumnByIdPort.findColumnById(any()))
             .willReturn(Mono.just(column));
+        given(getColumnsByTableIdPort.findColumnsByTableId(any()))
+            .willReturn(Mono.just(List.of(column)));
+        given(changeColumnTypePort.changeColumnType(any(), any(), any()))
+            .willReturn(Mono.empty());
+        given(getConstraintColumnsByColumnIdPort.findConstraintColumnsByColumnId(any()))
+            .willReturn(Mono.just(List.of()));
 
         StepVerifier.create(sut.changeColumnType(command))
-            .expectErrorMatches(DomainException.hasErrorCode(ColumnErrorCode.PRECISION_REQUIRED))
-            .verify();
+            .expectNextCount(1)
+            .verifyComplete();
 
-        then(changeColumnTypePort).shouldHaveNoInteractions();
+        then(changeColumnTypePort).should()
+            .changeColumnType(eq(command.columnId()), eq("DECIMAL"), any());
       }
 
     }
@@ -429,7 +467,9 @@ class ChangeColumnTypeServiceTest {
             .willReturn(Mono.just(List.of()));
 
         StepVerifier.create(sut.changeColumnType(command))
-            .expectNextCount(1)
+            .assertNext(result -> assertThat(result.inversePayload())
+                .extracting("oldCharset", "oldCollation")
+                .containsExactly("utf8mb4", "utf8mb4_general_ci"))
             .verifyComplete();
 
         then(changeColumnTypePort).should()
@@ -467,7 +507,9 @@ class ChangeColumnTypeServiceTest {
             .willReturn(Mono.just(List.of()));
 
         StepVerifier.create(sut.changeColumnType(command))
-            .expectNextCount(1)
+            .assertNext(result -> assertThat(result.inversePayload())
+                .extracting("oldCharset", "oldCollation")
+                .containsExactly(null, null))
             .verifyComplete();
 
         then(changeColumnTypePort).should()
@@ -543,6 +585,63 @@ class ChangeColumnTypeServiceTest {
             .changeColumnType(eq(pkColumn.id()), eq("BIGINT"), any());
         then(changeColumnTypePort).should()
             .changeColumnType(eq(fkColumnId), eq("BIGINT"), any());
+        then(changeColumnMetaPort).shouldHaveNoInteractions();
+      }
+
+      @Test
+      @DisplayName("FK 대상 상태가 datatype policy에 어긋나면 쓰기 전에 거부한다")
+      void rejectsInvalidFkTargetBeforeAnyWrite() {
+        var command = ColumnFixture.changeTypeCommand("VARCHAR", 255, null, null);
+        var pkColumn = ColumnFixture.intColumn();
+        var fkColumn = new Column(
+            "fk-column-1",
+            "fk-table-1",
+            "fk_name",
+            "INT",
+            null,
+            0,
+            true,
+            null,
+            null,
+            null);
+        var table = new Table(pkColumn.tableId(), TableFixture.DEFAULT_SCHEMA_ID,
+            "test_table", null, null);
+        var constraintColumn = new ConstraintColumn(
+            "cc-1", "constraint-1", pkColumn.id(), 0);
+        var constraint = new Constraint(
+            "constraint-1", pkColumn.tableId(), "pk_constraint",
+            ConstraintKind.PRIMARY_KEY, null, null);
+        var relationship = new Relationship(
+            "relationship-1", pkColumn.tableId(), fkColumn.tableId(),
+            "rel_name", RelationshipKind.NON_IDENTIFYING, Cardinality.ONE_TO_MANY, null);
+        var relationshipColumn = new RelationshipColumn(
+            "rc-1", relationship.id(), pkColumn.id(), fkColumn.id(), 0);
+
+        given(getColumnByIdPort.findColumnById(pkColumn.id()))
+            .willReturn(Mono.just(pkColumn));
+        given(getColumnByIdPort.findColumnById(fkColumn.id()))
+            .willReturn(Mono.just(fkColumn));
+        given(getColumnsByTableIdPort.findColumnsByTableId(pkColumn.tableId()))
+            .willReturn(Mono.just(List.of(pkColumn)));
+        given(getTableByIdPort.findTableById(pkColumn.tableId()))
+            .willReturn(Mono.just(table));
+        given(getSchemaByIdPort.findSchemaById(table.schemaId()))
+            .willReturn(Mono.just(SchemaFixture.defaultSchema()));
+        given(getConstraintColumnsByColumnIdPort.findConstraintColumnsByColumnId(pkColumn.id()))
+            .willReturn(Mono.just(List.of(constraintColumn)));
+        given(getConstraintByIdPort.findConstraintById(constraint.id()))
+            .willReturn(Mono.just(constraint));
+        given(getRelationshipsByPkTableIdPort.findRelationshipsByPkTableId(pkColumn.tableId()))
+            .willReturn(Mono.just(List.of(relationship)));
+        given(getRelationshipColumnsByRelationshipIdPort
+            .findRelationshipColumnsByRelationshipId(relationship.id()))
+            .willReturn(Mono.just(List.of(relationshipColumn)));
+        StepVerifier.create(sut.changeColumnType(command))
+            .expectErrorMatches(DomainException.hasErrorCode(
+                ColumnErrorCode.AUTO_INCREMENT_NOT_ALLOWED))
+            .verify();
+
+        then(changeColumnTypePort).shouldHaveNoInteractions();
         then(changeColumnMetaPort).shouldHaveNoInteractions();
       }
 
