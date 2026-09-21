@@ -12,7 +12,7 @@ async function bootstrap() {
   const logger = new Logger('Bootstrap');
 
   app.enableCors({
-    origin: process.env.FRONTEND_URL || 'http://localhost:3001',
+    origin: process.env.FRONTEND_URL || 'http://localhost:3000',
     credentials: true,
     allowedHeaders: [
       'Content-Type',
