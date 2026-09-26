@@ -1,5 +1,7 @@
 package com.schemafy.core.project.application.service;
 
+import java.util.List;
+
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -116,7 +118,7 @@ class AccessShareLinkServiceTest {
     logger.addAppender(logAppender);
   }
 
-  private java.util.List<ILoggingEvent> accessLogs() {
+  private List<ILoggingEvent> accessLogs() {
     return logAppender.list.stream()
         .filter(event -> event.getMessage().startsWith("event=share_link_access"))
         .toList();

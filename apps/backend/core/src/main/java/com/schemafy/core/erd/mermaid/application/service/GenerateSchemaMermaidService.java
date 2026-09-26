@@ -15,6 +15,7 @@ import java.util.stream.Collectors;
 
 import org.springframework.stereotype.Service;
 
+import com.schemafy.core.common.exception.DomainErrorCode;
 import com.schemafy.core.common.exception.DomainException;
 import com.schemafy.core.erd.column.domain.ColumnTypeArguments;
 import com.schemafy.core.erd.column.domain.exception.ColumnErrorCode;
@@ -355,7 +356,7 @@ public class GenerateSchemaMermaidService implements
   }
 
   private static String requireText(String value,
-      com.schemafy.core.common.exception.DomainErrorCode errorCode,
+      DomainErrorCode errorCode,
       String message) {
     if (value == null || value.isBlank()) {
       throw new DomainException(errorCode, message);

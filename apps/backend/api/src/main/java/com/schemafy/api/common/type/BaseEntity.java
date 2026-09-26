@@ -9,18 +9,19 @@ import org.springframework.data.domain.Persistable;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 
+import lombok.AccessLevel;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 
 @Getter
-@AllArgsConstructor(access = lombok.AccessLevel.PROTECTED)
-@NoArgsConstructor(access = lombok.AccessLevel.PROTECTED)
+@AllArgsConstructor(access = AccessLevel.PROTECTED)
+@NoArgsConstructor(access = AccessLevel.PROTECTED)
 public abstract class BaseEntity implements Persistable<String> {
 
   @Id
-  @Setter(lombok.AccessLevel.PROTECTED)
+  @Setter(AccessLevel.PROTECTED)
   protected String id;
 
   @CreatedDate

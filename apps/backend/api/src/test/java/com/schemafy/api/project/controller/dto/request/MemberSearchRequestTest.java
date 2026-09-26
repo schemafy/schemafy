@@ -1,5 +1,6 @@
 package com.schemafy.api.project.controller.dto.request;
 
+import org.assertj.core.api.ThrowableAssert.ThrowingCallable;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -81,7 +82,7 @@ class MemberSearchRequestTest {
   }
 
   private void assertInvalidParameter(
-      org.assertj.core.api.ThrowableAssert.ThrowingCallable action,
+      ThrowingCallable action,
       String message) {
     assertThatThrownBy(action)
         .isInstanceOf(DomainException.class)
