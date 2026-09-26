@@ -1,5 +1,6 @@
 package com.schemafy.core.project.application.service;
 
+import org.assertj.core.groups.Tuple;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -84,9 +85,9 @@ class ProjectMembershipPropagationHelperTest {
     assertThat(savedMemberCaptor.getAllValues())
         .extracting(ProjectMember::getProjectId, ProjectMember::getUserId, ProjectMember::getRole)
         .containsExactlyInAnyOrder(
-            org.assertj.core.groups.Tuple.tuple(joinedProject.getId(), USER_ID,
+            Tuple.tuple(joinedProject.getId(), USER_ID,
                 ProjectRole.ADMIN.name()),
-            org.assertj.core.groups.Tuple.tuple(newProject.getId(), USER_ID,
+            Tuple.tuple(newProject.getId(), USER_ID,
                 ProjectRole.ADMIN.name()));
   }
 

@@ -1,5 +1,8 @@
 package com.schemafy.api.erd.controller;
 
+import java.util.List;
+import java.util.Map;
+
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.restdocs.AutoConfigureRestDocs;
 import org.springframework.boot.test.autoconfigure.web.reactive.AutoConfigureWebTestClient;
@@ -10,6 +13,7 @@ import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.reactive.server.WebTestClient;
 
+import org.hamcrest.Matchers;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
@@ -252,13 +256,13 @@ class SchemaControllerTest {
             "utf8mb4",
             "utf8mb4_general_ci",
             null),
-        java.util.List.of(),
-        java.util.List.of(),
-        java.util.List.of(),
-        java.util.List.of());
+        List.of(),
+        List.of(),
+        List.of(),
+        List.of());
     SchemaSnapshotsResponse response = new SchemaSnapshotsResponse(
         42L,
-        java.util.Map.of(snapshot.table().id(), snapshot));
+        Map.of(snapshot.table().id(), snapshot));
 
     given(schemaSnapshotOrchestrator.getSchemaSnapshots(schemaId))
         .willReturn(Mono.just(response));
@@ -318,7 +322,7 @@ class SchemaControllerTest {
         .jsonPath("$.schemaId").isEqualTo(schemaId)
         .jsonPath("$.currentRevision").isEqualTo(42)
         .jsonPath("$.targetDbVendor").isEqualTo("mysql")
-        .jsonPath("$.ddl").value(org.hamcrest.Matchers.containsString(
+        .jsonPath("$.ddl").value(Matchers.containsString(
             "CREATE TABLE `users`"))
         .consumeWith(document("schema-ddl-export",
             pathParameters(
@@ -381,7 +385,7 @@ class SchemaControllerTest {
         .expectBody()
         .jsonPath("$.schemaId").isEqualTo(schemaId)
         .jsonPath("$.currentRevision").isEqualTo(42)
-        .jsonPath("$.mermaid").value(org.hamcrest.Matchers.containsString(
+        .jsonPath("$.mermaid").value(Matchers.containsString(
             "erDiagram"))
         .consumeWith(document("schema-mermaid-export",
             pathParameters(

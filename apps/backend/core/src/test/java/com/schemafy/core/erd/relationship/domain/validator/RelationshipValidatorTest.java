@@ -2,6 +2,7 @@ package com.schemafy.core.erd.relationship.domain.validator;
 
 import java.util.List;
 
+import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -413,7 +414,7 @@ class RelationshipValidatorTest {
         RelationshipValidator.IdentifyingCycle cycle = RelationshipValidator.detectIdentifyingCycle(List.of(ab, ba),
             null, null);
 
-        org.assertj.core.api.Assertions.assertThat(cycle).isNotNull();
+        Assertions.assertThat(cycle).isNotNull();
       }
 
       @Test
@@ -429,7 +430,7 @@ class RelationshipValidatorTest {
         RelationshipValidator.IdentifyingCycle cycle = RelationshipValidator.detectIdentifyingCycle(List.of(ab, bc),
             null, null);
 
-        org.assertj.core.api.Assertions.assertThat(cycle).isNull();
+        Assertions.assertThat(cycle).isNull();
       }
 
       @Test
@@ -438,7 +439,7 @@ class RelationshipValidatorTest {
         RelationshipValidator.IdentifyingCycle cycle = RelationshipValidator.detectIdentifyingCycle(List.of(), null,
             null);
 
-        org.assertj.core.api.Assertions.assertThat(cycle).isNull();
+        Assertions.assertThat(cycle).isNull();
       }
 
     }
