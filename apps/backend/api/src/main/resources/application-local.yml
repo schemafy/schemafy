@@ -17,10 +17,10 @@ oauth:
     client-id: ${GITHUB_CLIENT_ID:}
     client-secret: ${GITHUB_CLIENT_SECRET:}
     redirect-uri: http://localhost:8080/public/api/v1.0/oauth/github/callback
-    frontend-callback-url: http://localhost:3001/oauth/callback
+    frontend-callback-url: http://localhost:3000/oauth/callback
 
 cors:
-  allowed-origins: http://localhost:3001
+  allowed-origins: http://localhost:3000
 
 auth:
   mail:

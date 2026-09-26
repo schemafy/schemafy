@@ -1,15 +1,19 @@
 import { memo, type ComponentType, useState } from 'react';
+import { observer } from 'mobx-react-lite';
 import { RelationshipSelector } from './RelationshipSelector';
 import { SearchEntitiesDialog } from './SearchEntitiesDialog';
 import type { RelationshipConfig } from '../types';
+import { useUndoRedo } from '../hooks/useUndoRedo';
 import { Button, Tooltip, TooltipContent, TooltipTrigger } from '@/components';
 import {
   Hand,
   MessageCircleMore,
   MousePointer2,
+  Redo2,
   Search,
   Spline,
   Table,
+  Undo2,
 } from 'lucide-react';
 
 interface ToolbarProps {
@@ -39,7 +43,7 @@ const TOOLS = [
   { id: 'search', name: 'Search', icon: Search },
 ];
 
-export const Toolbar = memo(
+const ToolbarComponent = observer(
   ({
     setActiveTool,
     activeTool,
@@ -47,6 +51,7 @@ export const Toolbar = memo(
     onRelationshipConfigChange,
   }: ToolbarProps) => {
     const [isSearchDialogOpen, setIsSearchDialogOpen] = useState(false);
+    const { handleUndo, handleRedo, canUndo, canRedo } = useUndoRedo();
 
     const handleToolClick = (toolId: string) => {
       if (toolId === 'search') {
@@ -75,6 +80,21 @@ export const Toolbar = memo(
             />
           ))}
 
+          <div className="mx-1 h-5 w-px bg-schemafy-glass-border" />
+
+          <UndoRedoButton
+            icon={Undo2}
+            name="Undo"
+            disabled={!canUndo}
+            onClick={handleUndo}
+          />
+          <UndoRedoButton
+            icon={Redo2}
+            name="Redo"
+            disabled={!canRedo}
+            onClick={handleRedo}
+          />
+
           {activeTool &&
             TOOLS.find((t) => t.id === activeTool)?.isRelationship && (
               <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2">
@@ -94,6 +114,47 @@ export const Toolbar = memo(
     );
   },
 );
+
+export const Toolbar = memo(ToolbarComponent);
+
+const UndoRedoButton = ({
+  onClick,
+  icon: Icon,
+  name,
+  disabled,
+}: {
+  onClick: () => void;
+  icon: ComponentType<{ size: number; color: string }>;
+  name: string;
+  disabled: boolean;
+}) => {
+  const color = disabled
+    ? 'var(--color-schemafy-tools)'
+    : 'var(--color-schemafy-soft-blue)';
+
+  return (
+    <Tooltip>
+      <TooltipTrigger asChild>
+        <Button
+          onClick={onClick}
+          disabled={disabled}
+          variant={'none'}
+          size={'none'}
+          className={`
+        h-9 w-9 rounded-xl transition-all duration-200
+        hover:bg-schemafy-secondary
+        ${disabled ? 'cursor-not-allowed opacity-30' : ''}
+      `}
+        >
+          <Icon size={16} color={color} />
+        </Button>
+      </TooltipTrigger>
+      <TooltipContent>
+        <span>{name}</span>
+      </TooltipContent>
+    </Tooltip>
+  );
+};
 
 const Tool = ({
   onClick,

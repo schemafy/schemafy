@@ -3,9 +3,15 @@ import {
   MessageCircle,
   MessageCircleMore,
   MousePointer2,
+  Redo2,
   Table,
+  Undo2,
   X,
 } from 'lucide-react';
+
+const isMacOS =
+  typeof navigator !== 'undefined' &&
+  /Mac|iPhone|iPod|iPad/i.test(navigator.userAgent);
 
 const SHORTCUTS = [
   { icon: MousePointer2, name: 'Pointer', key: 'p' },
@@ -13,6 +19,16 @@ const SHORTCUTS = [
   { icon: Table, name: 'Add Entity', key: 'e' },
   { icon: MessageCircleMore, name: 'Add Memo', key: 'm' },
   { icon: MessageCircle, name: 'Chat message', key: '/' },
+  {
+    icon: Undo2,
+    name: 'Undo',
+    key: isMacOS ? '⌘Z' : 'Ctrl+Z',
+  },
+  {
+    icon: Redo2,
+    name: 'Redo',
+    key: isMacOS ? '⇧⌘Z / ⌘Y' : 'Ctrl+Shift+Z / Ctrl+Y',
+  },
 ];
 
 interface ShortcutPanelProps {
@@ -47,7 +63,7 @@ export const ShortcutPanel = ({ onClose }: ShortcutPanelProps) => {
                 <Icon size={14} color="var(--color-schemafy-dark-gray)" />
                 <span className="font-body-sm text-schemafy-text">{name}</span>
               </div>
-              <kbd className="rounded-md border border-schemafy-glass-border bg-schemafy-secondary/80 px-2 py-0.5 font-mono text-xs text-schemafy-dark-gray">
+              <kbd className="rounded-md border border-schemafy-glass-border bg-schemafy-secondary/80 px-2.5 py-0.5 font-sans text-sm text-schemafy-dark-gray leading-none">
                 {key}
               </kbd>
             </div>
