@@ -1,7 +1,6 @@
 package com.schemafy.core.project.application.service;
 
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.reactive.TransactionalOperator;
 
 import com.schemafy.core.project.application.access.RequireWorkspaceAccess;
 import com.schemafy.core.project.application.port.in.DeleteWorkspaceCommand;
@@ -20,7 +19,7 @@ import reactor.core.publisher.Mono;
 @RequiredArgsConstructor
 class DeleteWorkspaceService implements DeleteWorkspaceUseCase {
 
-  private final TransactionalOperator transactionalOperator;
+  private final WorkspaceMutationGuard workspaceMutationGuard;
   private final WorkspacePort workspacePort;
   private final ProjectPort projectPort;
   private final WorkspaceMemberPort workspaceMemberPort;
@@ -31,8 +30,10 @@ class DeleteWorkspaceService implements DeleteWorkspaceUseCase {
   @Override
   @RequireWorkspaceAccess(role = WorkspaceRole.ADMIN)
   public Mono<Void> deleteWorkspace(DeleteWorkspaceCommand command) {
-    return doDeleteWorkspace(command.workspaceId())
-        .as(transactionalOperator::transactional);
+    return workspaceMutationGuard.protectExclusive(command.workspaceId(),
+        () -> workspaceAccessHelper
+            .findWorkspaceAdminMember(command.requesterId(), command.workspaceId())
+            .then(Mono.defer(() -> doDeleteWorkspace(command.workspaceId()))));
   }
 
   private Mono<Void> doDeleteWorkspace(String workspaceId) {

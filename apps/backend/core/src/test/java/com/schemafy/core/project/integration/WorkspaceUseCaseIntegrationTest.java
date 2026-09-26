@@ -120,7 +120,7 @@ class WorkspaceUseCaseIntegrationTest extends ProjectDomainIntegrationSupport {
         workspace.getId(),
         admin.id())).block();
 
-    assertThat(workspaceRepository.findByIdAndNotDeleted(workspace.getId()).block()).isNull();
+    assertThat(workspaceRepository.findByIdAndDeletedAtIsNull(workspace.getId()).block()).isNull();
     assertThat(projectRepository.findByIdAndNotDeleted(project.getId()).block()).isNull();
     assertThat(projectRepository.findByIdAndNotDeleted(secondProject.getId()).block()).isNull();
     assertThat(findSchemasByProjectId(project.getId())).isEmpty();
@@ -562,7 +562,7 @@ class WorkspaceUseCaseIntegrationTest extends ProjectDomainIntegrationSupport {
         workspace.getId(),
         admin.id())).block();
 
-    assertThat(workspaceRepository.findByIdAndNotDeleted(workspace.getId()).block()).isNull();
+    assertThat(workspaceRepository.findByIdAndDeletedAtIsNull(workspace.getId()).block()).isNull();
     assertThat(projectRepository.findByIdAndNotDeleted(project.getId()).block()).isNull();
     assertThat(projectMemberRepository
         .findByProjectIdAndUserIdAndNotDeleted(project.getId(), outsider.id())
@@ -634,7 +634,7 @@ class WorkspaceUseCaseIntegrationTest extends ProjectDomainIntegrationSupport {
         .expectErrorMatches(DomainException.hasErrorCode(WorkspaceErrorCode.ACCESS_DENIED))
         .verify();
 
-    assertThat(workspaceRepository.findByIdAndNotDeleted(workspace.getId()).block()).isNotNull();
+    assertThat(workspaceRepository.findByIdAndDeletedAtIsNull(workspace.getId()).block()).isNotNull();
   }
 
 }

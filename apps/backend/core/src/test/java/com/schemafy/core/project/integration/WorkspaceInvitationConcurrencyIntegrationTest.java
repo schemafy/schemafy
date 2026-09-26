@@ -4,6 +4,7 @@ import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import org.springframework.beans.factory.annotation.Autowired;
@@ -23,7 +24,7 @@ import com.schemafy.core.user.domain.User;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.fail;
 
-@DisplayName("Workspace invitation concurrency integration")
+@DisplayName("워크스페이스 초대 동시성 통합 테스트")
 class WorkspaceInvitationConcurrencyIntegrationTest
     extends ProjectDomainIntegrationSupport {
 
@@ -31,8 +32,8 @@ class WorkspaceInvitationConcurrencyIntegrationTest
   private AcceptWorkspaceInvitationUseCase acceptWorkspaceInvitationUseCase;
 
   @Test
-  @DisplayName("concurrent workspace invitation accept succeeds exactly once")
-  void concurrentAccept_onlyOneSucceeds() throws InterruptedException {
+  @DisplayName("동시에 워크스페이스 초대를 수락해도 정확히 한 번만 성공한다")
+  void concurrentAcceptSucceedsExactlyOnce() throws InterruptedException {
     User admin = signUpUser("admin-wic@test.com", "Admin");
     User invitee = signUpUser("invitee-wic@test.com", "Invitee");
     var workspace = saveWorkspace("Concurrency WS", "Description");
@@ -47,7 +48,8 @@ class WorkspaceInvitationConcurrencyIntegrationTest
     CountDownLatch doneLatch = new CountDownLatch(5);
     ConcurrentLinkedQueue<Throwable> unexpectedErrors = new ConcurrentLinkedQueue<>();
 
-    try (ExecutorService executor = Executors.newFixedThreadPool(5)) {
+    ExecutorService executor = Executors.newFixedThreadPool(5);
+    try {
       for (int i = 0; i < 5; i++) {
         executor.submit(() -> {
           readyLatch.countDown();
@@ -74,9 +76,13 @@ class WorkspaceInvitationConcurrencyIntegrationTest
         });
       }
 
-      readyLatch.await();
+      assertThat(readyLatch.await(3, TimeUnit.SECONDS)).isTrue();
       startLatch.countDown();
-      doneLatch.await();
+      assertThat(doneLatch.await(10, TimeUnit.SECONDS)).isTrue();
+    } finally {
+      startLatch.countDown();
+      executor.shutdownNow();
+      assertThat(executor.awaitTermination(3, TimeUnit.SECONDS)).isTrue();
     }
 
     Invitation updatedInvitation = invitationRepository.findById(invitation.getId()).block();

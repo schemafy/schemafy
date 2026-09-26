@@ -469,7 +469,7 @@ class WorkspaceControllerTest extends ProjectHttpTestSupport {
         .expectStatus().isNoContent();
 
     Workspace deletedWorkspace = workspaceRepository
-        .findByIdAndNotDeleted(workspace.getId()).block();
+        .findByIdAndDeletedAtIsNull(workspace.getId()).block();
     assertThat(deletedWorkspace).isNull();
 
     Project deletedProject = projectRepository
