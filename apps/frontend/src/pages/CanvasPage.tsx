@@ -10,11 +10,16 @@ import {
   useCanvasController,
 } from '@/features/drawing';
 import { MemoProvider } from '@/features/memo/context';
-import { ChatInput, RemoteCursors } from '@/features/collaboration/components';
+import {
+  ChatInput,
+  ConnectionStatusIndicator,
+  RemoteCursors,
+} from '@/features/collaboration/components';
 import { observer } from 'mobx-react-lite';
 import { useNavigate, useParams } from '@tanstack/react-router';
 import { useEffect } from 'react';
 import axios from 'axios';
+import { LoadingState } from '@/components';
 import { NotFoundPage } from './NotFoundPage';
 import { useProject } from '@/features/project/hooks/useProject';
 import { getRoleLevel } from '@/features/project/utils/role';
@@ -143,8 +148,9 @@ export const CanvasPage = () => {
     useProject(projectId);
   const isForbidden =
     axios.isAxiosError(projectError) && projectError.response?.status === 403;
+  const hasProject = project !== undefined;
   const canEditProject =
-    !!project &&
+    hasProject &&
     getRoleLevel(project.currentUserRole) <= getRoleLevel('EDITOR');
 
   useEffect(() => {
@@ -153,8 +159,14 @@ export const CanvasPage = () => {
     void navigate({ to: '/workspace', replace: true });
   }, [isProjectError, isForbidden, navigate]);
 
-  if (isLoadingProject || isForbidden) return null;
-  if (isProjectError || !project) return <NotFoundPage />;
+  if (isProjectError && !isForbidden) return <NotFoundPage />;
+  if (isLoadingProject) {
+    return <LoadingState className="min-h-screen" label="Loading project..." />;
+  }
+  if (isForbidden) {
+    return <LoadingState className="min-h-screen" label="Redirecting..." />;
+  }
+  if (!hasProject) return <NotFoundPage />;
 
   return (
     <SelectedSchemaProvider
@@ -163,6 +175,9 @@ export const CanvasPage = () => {
     >
       <MemoProvider>
         <CanvasContent canEditProject={canEditProject} />
+        <div className="fixed bottom-4 right-4 z-50">
+          <ConnectionStatusIndicator />
+        </div>
       </MemoProvider>
     </SelectedSchemaProvider>
   );

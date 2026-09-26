@@ -15,11 +15,12 @@ export const useWorkspaceInvitations = (
   options: UseWorkspaceInvitationsOptions = {},
 ) => {
   const { page = 0, size = 10, enabled = true } = options;
+  const hasWorkspaceId = Boolean(workspaceId);
 
   const invitationsQuery = useQuery({
     queryKey: workspaceKeys.invitations(workspaceId, page, size),
     queryFn: () => getInvitations(workspaceId, page, size),
-    enabled: !!workspaceId && enabled,
+    enabled: hasWorkspaceId && enabled,
   });
   const createInvitationMutation = useCreateInvitationMutation(workspaceId);
 

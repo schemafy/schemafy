@@ -212,7 +212,7 @@ export const ShareContents = ({ projectId }: { projectId: string }) => {
         />
 
         <ConfirmMemberRemoveDialog
-          open={!!removeTarget}
+          open={removeTarget !== null}
           onOpenChange={(open) => !open && setRemoveTarget(null)}
           member={removeTarget}
           onConfirm={() => {

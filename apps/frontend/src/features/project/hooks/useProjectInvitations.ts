@@ -15,11 +15,12 @@ export const useProjectInvitations = (
   options: UseProjectInvitationsOptions = {},
 ) => {
   const { page = 0, size = 10, enabled = true } = options;
+  const hasProjectId = Boolean(projectId);
 
   const invitationsQuery = useQuery({
     queryKey: projectKeys.invitations(projectId, page, size),
     queryFn: () => getInvitations(projectId, page, size),
-    enabled: !!projectId && enabled,
+    enabled: hasProjectId && enabled,
   });
   const createInvitationMutation = useCreateInvitationMutation(projectId);
 
