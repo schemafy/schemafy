@@ -43,79 +43,79 @@ const TOOLS = [
   { id: 'search', name: 'Search', icon: Search },
 ];
 
-export const Toolbar = memo(
-  observer(
-    ({
-      setActiveTool,
-      activeTool,
-      relationshipConfig,
-      onRelationshipConfigChange,
-    }: ToolbarProps) => {
-      const [isSearchDialogOpen, setIsSearchDialogOpen] = useState(false);
-      const { handleUndo, handleRedo, canUndo, canRedo } = useUndoRedo();
+const ToolbarComponent = observer(
+  ({
+    setActiveTool,
+    activeTool,
+    relationshipConfig,
+    onRelationshipConfigChange,
+  }: ToolbarProps) => {
+    const [isSearchDialogOpen, setIsSearchDialogOpen] = useState(false);
+    const { handleUndo, handleRedo, canUndo, canRedo } = useUndoRedo();
 
-      const handleToolClick = (toolId: string) => {
-        if (toolId === 'search') {
-          setIsSearchDialogOpen(true);
-          return;
-        }
-        if (activeTool === toolId) {
-          setActiveTool('pointer');
-        } else {
-          setActiveTool(toolId);
-        }
-      };
+    const handleToolClick = (toolId: string) => {
+      if (toolId === 'search') {
+        setIsSearchDialogOpen(true);
+        return;
+      }
+      if (activeTool === toolId) {
+        setActiveTool('pointer');
+      } else {
+        setActiveTool(toolId);
+      }
+    };
 
-      return (
-        <>
-          <div className="schemafy-canvas-panel absolute bottom-4 left-1/2 z-20 flex h-12 -translate-x-1/2 items-center gap-1 rounded-2xl px-2 sm:bottom-6 sm:gap-1">
-            {TOOLS.map((tool) => (
-              <Tool
-                key={tool.id}
-                id={tool.id}
-                onClick={() => handleToolClick(tool.id)}
-                Icon={tool.icon}
-                name={tool.name}
-                shortcut={tool.shortcut}
-                isActive={activeTool === tool.id}
-              />
-            ))}
-
-            <div className="mx-1 h-5 w-px bg-schemafy-glass-border" />
-
-            <UndoRedoButton
-              icon={Undo2}
-              name="Undo"
-              disabled={!canUndo}
-              onClick={handleUndo}
+    return (
+      <>
+        <div className="schemafy-canvas-panel absolute bottom-4 left-1/2 z-20 flex h-12 -translate-x-1/2 items-center gap-1 rounded-2xl px-2 sm:bottom-6 sm:gap-1">
+          {TOOLS.map((tool) => (
+            <Tool
+              key={tool.id}
+              id={tool.id}
+              onClick={() => handleToolClick(tool.id)}
+              Icon={tool.icon}
+              name={tool.name}
+              shortcut={tool.shortcut}
+              isActive={activeTool === tool.id}
             />
-            <UndoRedoButton
-              icon={Redo2}
-              name="Redo"
-              disabled={!canRedo}
-              onClick={handleRedo}
-            />
+          ))}
 
-            {activeTool &&
-              TOOLS.find((t) => t.id === activeTool)?.isRelationship && (
-                <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2">
-                  <RelationshipSelector
-                    config={relationshipConfig}
-                    onChange={onRelationshipConfigChange}
-                  />
-                </div>
-              )}
-          </div>
+          <div className="mx-1 h-5 w-px bg-schemafy-glass-border" />
 
-          <SearchEntitiesDialog
-            open={isSearchDialogOpen}
-            onOpenChange={setIsSearchDialogOpen}
+          <UndoRedoButton
+            icon={Undo2}
+            name="Undo"
+            disabled={!canUndo}
+            onClick={handleUndo}
           />
-        </>
-      );
-    },
-  ),
+          <UndoRedoButton
+            icon={Redo2}
+            name="Redo"
+            disabled={!canRedo}
+            onClick={handleRedo}
+          />
+
+          {activeTool &&
+            TOOLS.find((t) => t.id === activeTool)?.isRelationship && (
+              <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2">
+                <RelationshipSelector
+                  config={relationshipConfig}
+                  onChange={onRelationshipConfigChange}
+                />
+              </div>
+            )}
+        </div>
+
+        <SearchEntitiesDialog
+          open={isSearchDialogOpen}
+          onOpenChange={setIsSearchDialogOpen}
+        />
+      </>
+    );
+  },
 );
+
+export const Toolbar = memo(ToolbarComponent);
 
 const UndoRedoButton = ({
   onClick,
