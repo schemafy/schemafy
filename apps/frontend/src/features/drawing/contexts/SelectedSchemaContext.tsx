@@ -1,18 +1,22 @@
 import {
   useState,
   useEffect,
-  useRef,
   useCallback,
   useMemo,
   Suspense,
   type ReactNode,
 } from 'react';
 import { TriangleAlert, RotateCcw } from 'lucide-react';
-import { QueryErrorResetBoundary } from '@tanstack/react-query';
+import {
+  QueryErrorResetBoundary,
+  useIsMutating,
+  useQueryClient,
+} from '@tanstack/react-query';
 import { ErrorBoundary, LoadingState } from '@/components';
 import { SelectedSchemaContext } from './useSelectedSchema';
 import { useSchemas } from '../hooks/useSchemas';
 import { useCreateSchema } from '../hooks/useSchemaMutations';
+import { erdKeys } from '../hooks/query-keys';
 import { reportUnexpectedError } from '@/lib';
 
 const getStorageKey = (projectId: string) => `selectedSchemaId_${projectId}`;
@@ -51,7 +55,10 @@ export const SelectedSchemaProvider = ({
   dbVendorId,
 }: SelectedSchemaProviderProps) => {
   const storageKey = getStorageKey(projectId);
-  const initializationAttempted = useRef(false);
+  const queryClient = useQueryClient();
+  const pendingSchemaCreations = useIsMutating({
+    mutationKey: erdKeys.schemas(projectId),
+  });
 
   const [selectedSchemaId, setSelectedSchemaIdState] = useState<string | null>(
     () => {
@@ -73,8 +80,13 @@ export const SelectedSchemaProvider = ({
     isError: isSchemasError,
     refetch: refetchSchemas,
   } = useSchemas(projectId);
-  const { mutate: createSchema, isError: isCreateSchemaError } =
-    useCreateSchema(projectId);
+  const {
+    mutate: createSchema,
+    isError: isCreateSchemaError,
+    isIdle: isCreateSchemaIdle,
+    isPending: isCreateSchemaPending,
+    reset: resetCreateSchema,
+  } = useCreateSchema(projectId);
 
   const setSelectedSchemaId = useCallback(
     (schemaId: string | null) => {
@@ -95,6 +107,11 @@ export const SelectedSchemaProvider = ({
   );
 
   const createInitialSchema = useCallback(() => {
+    // Read the live request state: effect replay can precede the next render.
+    if (queryClient.isMutating({ mutationKey: erdKeys.schemas(projectId) })) {
+      return;
+    }
+
     createSchema(
       {
         projectId,
@@ -108,7 +125,7 @@ export const SelectedSchemaProvider = ({
         },
       },
     );
-  }, [createSchema, projectId, setSelectedSchemaId]);
+  }, [queryClient, createSchema, projectId, setSelectedSchemaId]);
 
   const activeSchemaId = useMemo(() => {
     if (!schemas || schemas.length === 0) return null;
@@ -126,14 +143,22 @@ export const SelectedSchemaProvider = ({
       if (selectedSchemaId !== null) {
         setSelectedSchemaId(null);
       }
-      if (!initializationAttempted.current) {
-        initializationAttempted.current = true;
-        createInitialSchema();
+      if (isCreateSchemaIdle && pendingSchemaCreations === 0) {
+        // Cancel queued initialization if this effect is cleaned up first.
+        let cancelled = false;
+        queueMicrotask(() => {
+          if (!cancelled) createInitialSchema();
+        });
+        return () => {
+          cancelled = true;
+        };
       }
       return;
     }
 
-    initializationAttempted.current = false;
+    if (!isCreateSchemaIdle && !isCreateSchemaPending) {
+      resetCreateSchema();
+    }
 
     if (activeSchemaId && selectedSchemaId !== activeSchemaId) {
       setSelectedSchemaId(activeSchemaId);
@@ -143,6 +168,10 @@ export const SelectedSchemaProvider = ({
     selectedSchemaId,
     schemas,
     isSchemasLoading,
+    isCreateSchemaIdle,
+    isCreateSchemaPending,
+    pendingSchemaCreations,
+    resetCreateSchema,
     createInitialSchema,
     setSelectedSchemaId,
   ]);
