@@ -42,20 +42,14 @@ import com.schemafy.core.project.application.port.in.AcceptWorkspaceInvitationCo
 import com.schemafy.core.project.application.port.in.AcceptWorkspaceInvitationUseCase;
 import com.schemafy.core.project.application.port.in.CreateProjectInvitationCommand;
 import com.schemafy.core.project.application.port.in.CreateProjectInvitationUseCase;
-import com.schemafy.core.project.application.port.in.CreateShareLinkCommand;
-import com.schemafy.core.project.application.port.in.CreateShareLinkUseCase;
 import com.schemafy.core.project.application.port.in.CreateWorkspaceInvitationCommand;
 import com.schemafy.core.project.application.port.in.CreateWorkspaceInvitationUseCase;
 import com.schemafy.core.project.application.port.in.DeleteProjectCommand;
 import com.schemafy.core.project.application.port.in.DeleteProjectUseCase;
-import com.schemafy.core.project.application.port.in.DeleteShareLinkCommand;
-import com.schemafy.core.project.application.port.in.DeleteShareLinkUseCase;
 import com.schemafy.core.project.application.port.in.DeleteWorkspaceCommand;
 import com.schemafy.core.project.application.port.in.DeleteWorkspaceUseCase;
-import com.schemafy.core.project.application.port.in.GetShareLinkQuery;
-import com.schemafy.core.project.application.port.in.GetShareLinkUseCase;
-import com.schemafy.core.project.application.port.in.GetShareLinksQuery;
-import com.schemafy.core.project.application.port.in.GetShareLinksUseCase;
+import com.schemafy.core.project.application.port.in.GetProjectShareLinkQuery;
+import com.schemafy.core.project.application.port.in.GetProjectShareLinkUseCase;
 import com.schemafy.core.project.application.port.in.RejectProjectInvitationCommand;
 import com.schemafy.core.project.application.port.in.RejectProjectInvitationUseCase;
 import com.schemafy.core.project.application.port.in.RejectWorkspaceInvitationCommand;
@@ -64,10 +58,10 @@ import com.schemafy.core.project.application.port.in.RemoveProjectMemberCommand;
 import com.schemafy.core.project.application.port.in.RemoveProjectMemberUseCase;
 import com.schemafy.core.project.application.port.in.RemoveWorkspaceMemberCommand;
 import com.schemafy.core.project.application.port.in.RemoveWorkspaceMemberUseCase;
-import com.schemafy.core.project.application.port.in.RevokeShareLinkCommand;
-import com.schemafy.core.project.application.port.in.RevokeShareLinkUseCase;
 import com.schemafy.core.project.application.port.in.UpdateProjectMemberRoleCommand;
 import com.schemafy.core.project.application.port.in.UpdateProjectMemberRoleUseCase;
+import com.schemafy.core.project.application.port.in.UpdateProjectShareLinkCommand;
+import com.schemafy.core.project.application.port.in.UpdateProjectShareLinkUseCase;
 import com.schemafy.core.project.application.port.in.UpdateWorkspaceMemberRoleCommand;
 import com.schemafy.core.project.application.port.in.UpdateWorkspaceMemberRoleUseCase;
 import com.schemafy.core.project.domain.Invitation;
@@ -90,8 +84,6 @@ import static com.schemafy.mcp.resource.SchemafyMcpFeatureFactory.updateTool;
 @RequiredArgsConstructor
 final class SchemafyHighRiskToolSurface {
 
-  private static final int MAX_SHARE_LINK_PAGE_SIZE = 100;
-
   private final McpWriteExecutor writeExecutor;
   private final McpResponseWriter responseWriter;
   private final ObjectProvider<ErdStateSyncPublisher> publisherProvider;
@@ -105,11 +97,8 @@ final class SchemafyHighRiskToolSurface {
   private final UpdateProjectMemberRoleUseCase updateProjectMemberRoleUseCase;
   private final RemoveWorkspaceMemberUseCase removeWorkspaceMemberUseCase;
   private final RemoveProjectMemberUseCase removeProjectMemberUseCase;
-  private final CreateShareLinkUseCase createShareLinkUseCase;
-  private final GetShareLinksUseCase getShareLinksUseCase;
-  private final GetShareLinkUseCase getShareLinkUseCase;
-  private final RevokeShareLinkUseCase revokeShareLinkUseCase;
-  private final DeleteShareLinkUseCase deleteShareLinkUseCase;
+  private final GetProjectShareLinkUseCase getProjectShareLinkUseCase;
+  private final UpdateProjectShareLinkUseCase updateProjectShareLinkUseCase;
   private final DeleteWorkspaceUseCase deleteWorkspaceUseCase;
   private final DeleteProjectUseCase deleteProjectUseCase;
   private final DeleteSchemaUseCase deleteSchemaUseCase;
@@ -163,21 +152,13 @@ final class SchemafyHighRiskToolSurface {
         updateTool("schemafy_remove_project_member", "Remove project member",
             "Remove a project member.", confirmed(ids("projectId", "targetUserId")),
             List.of("projectId", "targetUserId", "confirmed"), this::removeProjectMember),
-        tool("schemafy_list_share_links", "List share links", "List share links without exposing their codes or URLs.",
-            Map.of("projectId", stringProperty("Project ID."), "page", integerProperty(0), "size", integerProperty(
-                100, 1, MAX_SHARE_LINK_PAGE_SIZE)),
-            List.of("projectId"), this::listShareLinks),
-        tool("schemafy_get_share_link", "Get share link", "Get share-link metadata without exposing its code or URL.",
-            ids("projectId", "shareLinkId"), List.of("projectId", "shareLinkId"), this::getShareLink),
-        updateTool("schemafy_create_share_link", "Create share link",
-            "Create a share link. The raw public URL is returned only by this successful operation.",
-            confirmed(ids("projectId")), List.of("projectId", "confirmed"), this::createShareLink),
-        updateTool("schemafy_revoke_share_link", "Revoke share link", "Revoke a share link.",
-            confirmed(ids("projectId", "shareLinkId")), List.of("projectId", "shareLinkId", "confirmed"),
-            this::revokeShareLink),
-        updateTool("schemafy_delete_share_link", "Delete share link", "Delete a share link.",
-            confirmed(ids("projectId", "shareLinkId")), List.of("projectId", "shareLinkId", "confirmed"),
-            this::deleteShareLink),
+        tool("schemafy_get_project_share_link", "Get project share link",
+            "Get the project's fixed share-link status without exposing its code or URL.",
+            ids("projectId"), List.of("projectId"), this::getProjectShareLink),
+        updateTool("schemafy_update_project_share_link", "Update project share link",
+            "Enable or disable the project's fixed share link. Enabling returns its public URL.",
+            confirmed(shareLinkProperties()), List.of("projectId", "isActive", "confirmed"),
+            this::updateProjectShareLink),
         updateTool("schemafy_delete_workspace", "Delete workspace", "Delete a workspace and its projects.",
             confirmed(ids("workspaceId")), List.of("workspaceId", "confirmed"), this::deleteWorkspace),
         updateTool("schemafy_delete_project", "Delete project", "Delete a project and its ERD data.",
@@ -283,47 +264,23 @@ final class SchemafyHighRiskToolSurface {
             required(request, "projectId"), required(request, "targetUserId"), actor.userId())));
   }
 
-  private Mono<McpSchema.CallToolResult> listShareLinks(McpSchema.CallToolRequest request) {
-    return readScope(request, "schemafy_list_share_links", McpScope.SHARE_LINK_READ, actor -> responseWriter
-        .toolPayload(Mono.defer(() -> {
-          int page = integer(request, "page", 0);
-          int size = integer(request, "size", MAX_SHARE_LINK_PAGE_SIZE);
-          if (size < 1 || size > MAX_SHARE_LINK_PAGE_SIZE) {
-            throw new IllegalArgumentException("size must be an integer between 1 and "
-                + MAX_SHARE_LINK_PAGE_SIZE);
-          }
-          return getShareLinksUseCase.getShareLinks(new GetShareLinksQuery(required(request, "projectId"), actor
-              .userId(),
-              page, size)).map(result -> result.map(this::redactedShareLink));
-        })));
+  private Mono<McpSchema.CallToolResult> getProjectShareLink(McpSchema.CallToolRequest request) {
+    return readScope(request, "schemafy_get_project_share_link", McpScope.SHARE_LINK_READ, actor -> responseWriter
+        .toolPayload(Mono.defer(() -> getProjectShareLinkUseCase.getProjectShareLink(new GetProjectShareLinkQuery(
+            required(request, "projectId"), actor.userId()))
+            .map(this::redactedShareLink)
+            .defaultIfEmpty(Map.of("isActive", false)))));
   }
 
-  private Mono<McpSchema.CallToolResult> getShareLink(McpSchema.CallToolRequest request) {
-    return readScope(request, "schemafy_get_share_link", McpScope.SHARE_LINK_READ, actor -> responseWriter
-        .toolPayload(Mono.defer(() -> getShareLinkUseCase.getShareLink(new GetShareLinkQuery(
-            required(request, "projectId"), required(request, "shareLinkId"), actor.userId()))
-            .map(this::redactedShareLink))));
-  }
-
-  private Mono<McpSchema.CallToolResult> createShareLink(McpSchema.CallToolRequest request) {
-    return execute(request, "schemafy_create_share_link", McpScope.SHARE_LINK_WRITE, "projectId",
-        actor -> createShareLinkUseCase.createShareLink(new CreateShareLinkCommand(required(request, "projectId"), actor
-            .userId()))
-            .map(link -> rawShareLink(link)));
-  }
-
-  private Mono<McpSchema.CallToolResult> revokeShareLink(McpSchema.CallToolRequest request) {
-    return execute(request, "schemafy_revoke_share_link", McpScope.SHARE_LINK_WRITE, "shareLinkId",
-        actor -> revokeShareLinkUseCase.revokeShareLink(new RevokeShareLinkCommand(required(request, "projectId"),
-            required(
-                request, "shareLinkId"), actor.userId())).map(this::redactedShareLink));
-  }
-
-  private Mono<McpSchema.CallToolResult> deleteShareLink(McpSchema.CallToolRequest request) {
-    return executeVoid(request, "schemafy_delete_share_link", McpScope.SHARE_LINK_WRITE, "shareLinkId",
-        actor -> deleteShareLinkUseCase.deleteShareLink(new DeleteShareLinkCommand(required(request, "projectId"),
-            required(
-                request, "shareLinkId"), actor.userId())));
+  private Mono<McpSchema.CallToolResult> updateProjectShareLink(McpSchema.CallToolRequest request) {
+    return execute(request, "schemafy_update_project_share_link", McpScope.SHARE_LINK_WRITE, "projectId",
+        actor -> {
+          boolean active = requiredBoolean(request, "isActive");
+          return updateProjectShareLinkUseCase.updateProjectShareLink(new UpdateProjectShareLinkCommand(
+              required(request, "projectId"), active, actor.userId()))
+              .map(link -> active ? rawShareLink(link) : redactedShareLink(link))
+              .defaultIfEmpty(Map.of("isActive", false));
+        });
   }
 
   private Mono<McpSchema.CallToolResult> deleteWorkspace(McpSchema.CallToolRequest request) {
@@ -481,19 +438,11 @@ final class SchemafyHighRiskToolSurface {
 
   private Map<String, Object> rawShareLink(ShareLink link) {
     return Map.of("id", link.getId(), "projectId", link.getProjectId(), "code", link.getCode(),
-        "publicUrl", publicUrl(link.getCode()), "expiresAt", link.getExpiresAt(), "isRevoked", link.getIsRevoked());
+        "publicUrl", publicUrl(link.getCode()), "isActive", link.isActive());
   }
 
   private Map<String, Object> redactedShareLink(ShareLink link) {
-    Map<String, Object> result = new LinkedHashMap<>();
-    result.put("id", link.getId());
-    result.put("projectId", link.getProjectId());
-    result.put("expiresAt", link.getExpiresAt());
-    result.put("isRevoked", link.getIsRevoked());
-    result.put("lastAccessedAt", link.getLastAccessedAt());
-    result.put("accessCount", link.getAccessCount());
-    result.put("createdAt", link.getCreatedAt());
-    return result;
+    return Map.of("id", link.getId(), "projectId", link.getProjectId(), "isActive", link.isActive());
   }
 
   private String publicUrl(String code) {
@@ -518,19 +467,18 @@ final class SchemafyHighRiskToolSurface {
     return value instanceof String text ? text : null;
   }
 
-  private int integer(McpSchema.CallToolRequest request, String name, int defaultValue) {
+  private boolean requiredBoolean(McpSchema.CallToolRequest request, String name) {
     Object value = request.arguments() == null ? null : request.arguments().get(name);
-    if (value == null) {
-      return defaultValue;
+    if (value instanceof Boolean booleanValue) {
+      return booleanValue;
     }
-    if (value instanceof Number number) {
-      double decimalValue = number.doubleValue();
-      int integerValue = number.intValue();
-      if (Double.isFinite(decimalValue) && decimalValue == integerValue && integerValue >= 0) {
-        return integerValue;
-      }
-    }
-    throw new IllegalArgumentException(name + " must be a non-negative integer");
+    throw new IllegalArgumentException(name + " must be a boolean");
+  }
+
+  private static Map<String, Object> shareLinkProperties() {
+    Map<String, Object> properties = ids("projectId");
+    properties.put("isActive", Map.of("type", "boolean", "description", "Whether public sharing is enabled."));
+    return properties;
   }
 
   private static Map<String, Object> ids(String... names) {
@@ -563,14 +511,6 @@ final class SchemafyHighRiskToolSurface {
 
   private static Map<String, Object> stringProperty(String description) {
     return Map.of("type", "string", "description", description);
-  }
-
-  private static Map<String, Object> integerProperty(int defaultValue) {
-    return Map.of("type", "integer", "minimum", 0, "default", defaultValue);
-  }
-
-  private static Map<String, Object> integerProperty(int defaultValue, int minimum, int maximum) {
-    return Map.of("type", "integer", "minimum", minimum, "maximum", maximum, "default", defaultValue);
   }
 
   private static final class ErdContextResolutionException extends RuntimeException {

@@ -85,7 +85,6 @@ import com.schemafy.core.mcp.domain.McpScope;
 import com.schemafy.core.mcp.domain.McpToken;
 import com.schemafy.core.mcp.domain.McpTokenClaimSupport;
 import com.schemafy.core.project.application.port.in.CreateProjectUseCase;
-import com.schemafy.core.project.application.port.in.CreateShareLinkUseCase;
 import com.schemafy.core.project.application.port.in.CreateWorkspaceCommand;
 import com.schemafy.core.project.application.port.in.CreateWorkspaceUseCase;
 import com.schemafy.core.project.application.port.in.GetMySharedProjectsQuery;
@@ -93,11 +92,11 @@ import com.schemafy.core.project.application.port.in.GetMySharedProjectsUseCase;
 import com.schemafy.core.project.application.port.in.GetProjectMembersQuery;
 import com.schemafy.core.project.application.port.in.GetProjectMembersUseCase;
 import com.schemafy.core.project.application.port.in.GetProjectQuery;
+import com.schemafy.core.project.application.port.in.GetProjectShareLinkQuery;
+import com.schemafy.core.project.application.port.in.GetProjectShareLinkUseCase;
 import com.schemafy.core.project.application.port.in.GetProjectUseCase;
 import com.schemafy.core.project.application.port.in.GetProjectsQuery;
 import com.schemafy.core.project.application.port.in.GetProjectsUseCase;
-import com.schemafy.core.project.application.port.in.GetShareLinkUseCase;
-import com.schemafy.core.project.application.port.in.GetShareLinksUseCase;
 import com.schemafy.core.project.application.port.in.GetWorkspaceMembersQuery;
 import com.schemafy.core.project.application.port.in.GetWorkspaceMembersUseCase;
 import com.schemafy.core.project.application.port.in.GetWorkspaceQuery;
@@ -106,6 +105,8 @@ import com.schemafy.core.project.application.port.in.GetWorkspacesQuery;
 import com.schemafy.core.project.application.port.in.GetWorkspacesUseCase;
 import com.schemafy.core.project.application.port.in.ProjectDetail;
 import com.schemafy.core.project.application.port.in.ProjectSummary;
+import com.schemafy.core.project.application.port.in.UpdateProjectShareLinkCommand;
+import com.schemafy.core.project.application.port.in.UpdateProjectShareLinkUseCase;
 import com.schemafy.core.project.application.port.in.WorkspaceDetail;
 import com.schemafy.core.project.domain.Project;
 import com.schemafy.core.project.domain.ProjectMember;
@@ -170,16 +171,13 @@ class SchemafyResourceIntegrationTest {
   CreateMemoCommentUseCase createMemoCommentUseCase;
 
   @MockitoBean
-  CreateShareLinkUseCase createShareLinkUseCase;
+  UpdateProjectShareLinkUseCase updateProjectShareLinkUseCase;
 
   @MockitoBean
   GetMcpTokenUseCase getMcpTokenUseCase;
 
   @MockitoBean
-  GetShareLinksUseCase getShareLinksUseCase;
-
-  @MockitoBean
-  GetShareLinkUseCase getShareLinkUseCase;
+  GetProjectShareLinkUseCase getProjectShareLinkUseCase;
 
   @MockitoBean
   DeleteSchemaUseCase deleteSchemaUseCase;
@@ -271,7 +269,10 @@ class SchemafyResourceIntegrationTest {
         .contains("schemafy_delete_schema")
         .contains("schemafy_create_workspace_invitation")
         .contains("schemafy_update_project_member_role")
-        .contains("schemafy_create_share_link")
+        .contains("schemafy_update_project_share_link")
+        .contains("schemafy_get_project_share_link")
+        .doesNotContain("schemafy_create_share_link", "schemafy_list_share_links",
+            "schemafy_get_share_link", "schemafy_revoke_share_link", "schemafy_delete_share_link")
         .contains("schemafy_list_project_presence")
         .contains("confirmed")
         .contains("Must be true to confirm this high-risk operation.");
@@ -477,20 +478,96 @@ class SchemafyResourceIntegrationTest {
   }
 
   @Test
-  @DisplayName("share-link 생성 URL은 API가 사용하는 기본 v1.0 경로를 사용한다")
-  void createsShareLinkWithDefaultApiVersion() {
+  @DisplayName("share-link 활성화 URL은 API가 사용하는 기본 v1.0 경로를 사용한다")
+  void enablesShareLinkWithDefaultApiVersion() {
     String token = tokenFactory.tokenWithScopes(McpScope.SHARE_LINK_WRITE.value());
-    given(createShareLinkUseCase.createShareLink(any()))
-        .willReturn(Mono.just(ShareLink.create("share-link-1", "project-1", "share-code")));
+    given(updateProjectShareLinkUseCase.updateProjectShareLink(any()))
+        .willReturn(Mono.just(ShareLink.create("share-link-1", "project-1", "0123456789abcdef0123456789abcdef")));
     String sessionId = initialize(token);
 
-    String response = callTool(sessionId, token, "schemafy_create_share_link",
-        Map.of("projectId", "project-1", "confirmed", true));
+    String response = callTool(sessionId, token, "schemafy_update_project_share_link",
+        Map.of("projectId", "project-1", "isActive", true, "confirmed", true));
 
     assertThat(response)
-        .contains("/public/api/v1.0/share/share-code")
-        .doesNotContain("/public/api/v1/share/share-code")
+        .contains("/public/api/v1.0/share/0123456789abcdef0123456789abcdef")
+        .doesNotContain("/public/api/v1/share/0123456789abcdef0123456789abcdef")
         .doesNotContain("\"isError\":true");
+  }
+
+  @Test
+  @DisplayName("share-link 조회는 인증된 사용자로 호출하고 code와 URL을 숨긴다")
+  void readsShareLinkWithoutExposingUrl() {
+    String token = tokenFactory.tokenWithScopes(McpScope.SHARE_LINK_READ.value());
+    given(getProjectShareLinkUseCase.getProjectShareLink(any())).willReturn(Mono.just(
+        ShareLink.create("share-link-1", "project-1", "0123456789abcdef0123456789abcdef")));
+
+    String response = callTool(initialize(token), token, "schemafy_get_project_share_link",
+        Map.of("projectId", "project-1", "userId", "forged-user"));
+
+    assertThat(response).contains("isActive", "share-link-1")
+        .doesNotContain("0123456789abcdef0123456789abcdef", "publicUrl", "\"isError\":true");
+    then(getProjectShareLinkUseCase).should().getProjectShareLink(new GetProjectShareLinkQuery("project-1", "user-1"));
+  }
+
+  @Test
+  @DisplayName("share-link 비활성화는 인증된 사용자로 호출하고 URL을 숨긴다")
+  void disablesShareLinkWithoutExposingUrl() {
+    String token = tokenFactory.tokenWithScopes(McpScope.SHARE_LINK_WRITE.value());
+    ShareLink link = ShareLink.create("share-link-1", "project-1", "0123456789abcdef0123456789abcdef");
+    link.deactivate();
+    given(updateProjectShareLinkUseCase.updateProjectShareLink(any())).willReturn(Mono.just(link));
+
+    String response = callTool(initialize(token), token, "schemafy_update_project_share_link",
+        Map.of("projectId", "project-1", "isActive", false, "confirmed", true, "userId", "forged-user"));
+
+    assertThat(response).contains("isActive", "false")
+        .doesNotContain("0123456789abcdef0123456789abcdef", "publicUrl", "\"isError\":true");
+    then(updateProjectShareLinkUseCase).should().updateProjectShareLink(
+        new UpdateProjectShareLinkCommand("project-1", false, "user-1"));
+  }
+
+  @Test
+  @DisplayName("share-link 미생성 상태의 조회와 OFF 요청은 비활성 응답을 반환한다")
+  void returnsInactiveWhenShareLinkDoesNotExist() {
+    String token = tokenFactory.tokenWithScopes(McpScope.SHARE_LINK_READ.value(), McpScope.SHARE_LINK_WRITE.value());
+    given(getProjectShareLinkUseCase.getProjectShareLink(any())).willReturn(Mono.empty());
+    given(updateProjectShareLinkUseCase.updateProjectShareLink(any())).willReturn(Mono.empty());
+    String session = initialize(token);
+
+    String read = callTool(session, token, "schemafy_get_project_share_link", Map.of("projectId", "project-1"));
+    String update = callTool(session, token, "schemafy_update_project_share_link",
+        Map.of("projectId", "project-1", "isActive", false, "confirmed", true));
+
+    for (String response : List.of(read, update)) {
+      assertThat(response).contains("isActive", "false").doesNotContain("publicUrl", "\"isError\":true");
+    }
+  }
+
+  @Test
+  @DisplayName("share-link 변경은 boolean isActive와 명시적인 확인을 요구한다")
+  void rejectsInvalidShareLinkUpdateArguments() {
+    String token = tokenFactory.tokenWithScopes(McpScope.SHARE_LINK_WRITE.value());
+    String session = initialize(token);
+    for (Map<String, Object> arguments : List.<Map<String, Object>>of(
+        Map.of("projectId", "project-1", "confirmed", true),
+        Map.of("projectId", "project-1", "isActive", "false", "confirmed", true),
+        Map.of("projectId", "project-1", "isActive", true),
+        Map.of("projectId", "project-1", "isActive", true, "confirmed", false))) {
+      assertThat(callTool(session, token, "schemafy_update_project_share_link", arguments))
+          .contains("\"isError\":true");
+    }
+    then(updateProjectShareLinkUseCase).shouldHaveNoInteractions();
+  }
+
+  @Test
+  @DisplayName("share-link read scope로는 공개 링크를 활성화할 수 없다")
+  void rejectsShareLinkUpdateWithReadScope() {
+    String token = tokenFactory.tokenWithScopes(McpScope.SHARE_LINK_READ.value());
+    String response = callTool(initialize(token), token, "schemafy_update_project_share_link",
+        Map.of("projectId", "project-1", "isActive", true, "confirmed", true));
+
+    assertThat(response).contains("\"isError\":true");
+    then(updateProjectShareLinkUseCase).shouldHaveNoInteractions();
   }
 
   @Test
@@ -509,58 +586,22 @@ class SchemafyResourceIntegrationTest {
   }
 
   @Test
-  @DisplayName("share-link pagination은 정수와 허용 범위를 벗어나면 MCP tool error로 반환한다")
-  void rejectsInvalidShareLinkPagination() {
-    String token = tokenFactory.tokenWithScopes(McpScope.SHARE_LINK_READ.value());
-    String sessionId = initialize(token);
-
-    String negativePage = callTool(sessionId, token, "schemafy_list_share_links", Map.of(
-        "projectId", "project-1", "page", -1));
-    String zeroSize = callTool(sessionId, token, "schemafy_list_share_links", Map.of(
-        "projectId", "project-1", "size", 0));
-    String oversized = callTool(sessionId, token, "schemafy_list_share_links", Map.of(
-        "projectId", "project-1", "size", 101));
-    String fractionalSize = callTool(sessionId, token, "schemafy_list_share_links", Map.of(
-        "projectId", "project-1", "size", 10.5));
-
-    assertThat(negativePage)
-        .contains("\"isError\":true")
-        .contains("page must be a non-negative integer");
-    assertThat(zeroSize)
-        .contains("\"isError\":true")
-        .contains("size must be an integer between 1 and 100");
-    assertThat(oversized)
-        .contains("\"isError\":true")
-        .contains("size must be an integer between 1 and 100");
-    assertThat(fractionalSize)
-        .contains("\"isError\":true")
-        .contains("size must be a non-negative integer");
-    then(getShareLinksUseCase).shouldHaveNoInteractions();
-  }
-
-  @Test
   @DisplayName("share-link read의 필수 인자 오류는 구조화된 MCP tool error로 반환한다")
   void returnsStructuredErrorsForMalformedShareLinkReadArguments() {
     String token = tokenFactory.tokenWithScopes(McpScope.SHARE_LINK_READ.value());
     String sessionId = initialize(token);
 
-    String missingProjectId = callTool(sessionId, token, "schemafy_list_share_links", Map.of());
-    String missingShareLinkId = callTool(sessionId, token, "schemafy_get_share_link", Map.of(
-        "projectId", "project-1"));
-    String wrongProjectIdType = callTool(sessionId, token, "schemafy_get_share_link", Map.of(
-        "projectId", 123, "shareLinkId", "share-link-1"));
+    String missingProjectId = callTool(sessionId, token, "schemafy_get_project_share_link", Map.of());
+    String wrongProjectIdType = callTool(sessionId, token, "schemafy_get_project_share_link", Map.of(
+        "projectId", 123));
 
     assertThat(missingProjectId)
         .contains("\"isError\":true")
         .contains("projectId is required");
-    assertThat(missingShareLinkId)
-        .contains("\"isError\":true")
-        .contains("shareLinkId is required");
     assertThat(wrongProjectIdType)
         .contains("\"isError\":true")
         .contains("projectId is required");
-    then(getShareLinksUseCase).shouldHaveNoInteractions();
-    then(getShareLinkUseCase).shouldHaveNoInteractions();
+    then(getProjectShareLinkUseCase).shouldHaveNoInteractions();
   }
 
   @Test
