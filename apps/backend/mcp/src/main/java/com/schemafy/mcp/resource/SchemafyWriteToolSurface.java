@@ -151,14 +151,15 @@ final class SchemafyWriteToolSurface {
   }
 
   private Mono<McpSchema.CallToolResult> createSchema(McpSchema.CallToolRequest request) {
-    return execute("schemafy_create_schema", McpScope.ERD_WRITE, request, "projectId", actor -> createSchemaUseCase
-        .createSchema(new CreateSchemaCommand(required(request, "projectId"), required(request, "name"),
-            optional(request, "charset"), optional(request, "collation")))
-        .flatMap(result -> publishSchema(result.result().id(), result).thenReturn(mutationPayload(result))));
+    return executeMutation("schemafy_create_schema", McpScope.ERD_WRITE, request, "projectId",
+        actor -> createSchemaUseCase
+            .createSchema(new CreateSchemaCommand(required(request, "projectId"), required(request, "name"),
+                optional(request, "charset"), optional(request, "collation")))
+            .flatMap(result -> publishSchema(result.result().id(), result).thenReturn(mutationPayload(result))));
   }
 
   private Mono<McpSchema.CallToolResult> renameSchema(McpSchema.CallToolRequest request) {
-    return execute("schemafy_rename_schema", McpScope.ERD_WRITE, request, "schemaId", actor -> {
+    return executeMutation("schemafy_rename_schema", McpScope.ERD_WRITE, request, "schemaId", actor -> {
       String schemaId = required(request, "schemaId");
       return changeSchemaNameUseCase.changeSchemaName(new ChangeSchemaNameCommand(schemaId, required(request,
           "newName")))
@@ -167,32 +168,35 @@ final class SchemafyWriteToolSurface {
   }
 
   private Mono<McpSchema.CallToolResult> createTable(McpSchema.CallToolRequest request) {
-    return execute("schemafy_create_table", McpScope.ERD_WRITE, request, "schemaId", actor -> createTableUseCase
+    return executeMutation("schemafy_create_table", McpScope.ERD_WRITE, request, "schemaId", actor -> createTableUseCase
         .createTable(new CreateTableCommand(required(request, "schemaId"), required(request, "name"),
             optional(request, "charset"), optional(request, "collation"), optionalObject(request, "extra")))
         .flatMap(result -> publishMutation(result).thenReturn(mutationPayload(result))));
   }
 
   private Mono<McpSchema.CallToolResult> renameTable(McpSchema.CallToolRequest request) {
-    return execute("schemafy_rename_table", McpScope.ERD_WRITE, request, "tableId", actor -> changeTableNameUseCase
-        .changeTableName(new ChangeTableNameCommand(required(request, "tableId"), required(request, "newName")))
-        .flatMap(result -> publishMutation(result).thenReturn(mutationPayload(result))));
+    return executeMutation("schemafy_rename_table", McpScope.ERD_WRITE, request, "tableId",
+        actor -> changeTableNameUseCase
+            .changeTableName(new ChangeTableNameCommand(required(request, "tableId"), required(request, "newName")))
+            .flatMap(result -> publishMutation(result).thenReturn(mutationPayload(result))));
   }
 
   private Mono<McpSchema.CallToolResult> createColumn(McpSchema.CallToolRequest request) {
-    return execute("schemafy_create_column", McpScope.ERD_WRITE, request, "tableId", actor -> createColumnUseCase
-        .createColumn(new CreateColumnCommand(required(request, "tableId"), required(request, "name"),
-            required(request, "dataType"), optionalInt(request, "length"), optionalInt(request, "precision"),
-            optionalInt(request, "scale"), optionalBoolean(request, "autoIncrement", false), optional(request,
-                "charset"),
-            optional(request, "collation"), optional(request, "comment"), optionalStringList(request, "values")))
-        .flatMap(result -> publishMutation(result).thenReturn(mutationPayload(result))));
+    return executeMutation("schemafy_create_column", McpScope.ERD_WRITE, request, "tableId",
+        actor -> createColumnUseCase
+            .createColumn(new CreateColumnCommand(required(request, "tableId"), required(request, "name"),
+                required(request, "dataType"), optionalInt(request, "length"), optionalInt(request, "precision"),
+                optionalInt(request, "scale"), optionalBoolean(request, "autoIncrement", false), optional(request,
+                    "charset"),
+                optional(request, "collation"), optional(request, "comment"), optionalStringList(request, "values")))
+            .flatMap(result -> publishMutation(result).thenReturn(mutationPayload(result))));
   }
 
   private Mono<McpSchema.CallToolResult> renameColumn(McpSchema.CallToolRequest request) {
-    return execute("schemafy_rename_column", McpScope.ERD_WRITE, request, "columnId", actor -> changeColumnNameUseCase
-        .changeColumnName(new ChangeColumnNameCommand(required(request, "columnId"), required(request, "newName")))
-        .flatMap(result -> publishMutation(result).thenReturn(mutationPayload(result))));
+    return executeMutation("schemafy_rename_column", McpScope.ERD_WRITE, request, "columnId",
+        actor -> changeColumnNameUseCase
+            .changeColumnName(new ChangeColumnNameCommand(required(request, "columnId"), required(request, "newName")))
+            .flatMap(result -> publishMutation(result).thenReturn(mutationPayload(result))));
   }
 
   private Mono<McpSchema.CallToolResult> createMemo(McpSchema.CallToolRequest request) {
@@ -226,6 +230,18 @@ final class SchemafyWriteToolSurface {
 
   private Mono<McpSchema.CallToolResult> execute(String tool, McpScope scope, String targetId,
       Function<Object, String> createdTargetId, Function<Actor, Mono<?>> action) {
+    // These use cases do not report a Core no-op; false does not assert that input values changed.
+    return executeResult(tool, scope, targetId, createdTargetId,
+        actor -> action.apply(actor).map(payload -> new WriteResult(payload, false)));
+  }
+
+  private Mono<McpSchema.CallToolResult> executeMutation(String tool, McpScope scope,
+      McpSchema.CallToolRequest request, String targetArgument, Function<Actor, Mono<WriteResult>> action) {
+    return executeResult(tool, scope, stringArgument(request, targetArgument), result -> null, action);
+  }
+
+  private Mono<McpSchema.CallToolResult> executeResult(String tool, McpScope scope, String targetId,
+      Function<Object, String> createdTargetId, Function<Actor, Mono<WriteResult>> action) {
     return responseWriter.toolResult(actor().flatMap(actor -> {
       if (!actor.principal().scopes().contains(scope.value())) {
         AccessDeniedException error = new AccessDeniedException("MCP token scope is insufficient");
@@ -233,10 +249,10 @@ final class SchemafyWriteToolSurface {
         return Mono.just(responseWriter.toolError(error.getMessage()));
       }
       return responseWriter.toolPayload(Mono.defer(() -> action.apply(actor))
-          .doOnSuccess(result -> auditLogger.writeToolSucceeded(actor.principal(), tool,
-              targetId != null ? targetId : createdTargetId.apply(result),
-              result instanceof Map<?, ?> map && Boolean.TRUE.equals(map.get("noOp"))))
-          .doOnError(error -> auditLogger.writeToolFailed(actor.principal(), tool, targetId, error)));
+          .doOnNext(result -> auditLogger.writeToolSucceeded(actor.principal(), tool,
+              targetId != null ? targetId : createdTargetId.apply(result.payload()), result.noOp()))
+          .doOnError(error -> auditLogger.writeToolFailed(actor.principal(), tool, targetId, error))
+          .map(WriteResult::payload));
     }));
   }
 
@@ -264,13 +280,16 @@ final class SchemafyWriteToolSurface {
     return publisher == null ? Mono.empty() : publisher.publishMutation(result.affectedTableIds(), result.operation());
   }
 
-  private Map<String, Object> mutationPayload(MutationResult<?> result) {
+  private WriteResult mutationPayload(MutationResult<?> result) {
     Map<String, Object> payload = new LinkedHashMap<>();
     payload.put("result", result.result());
     payload.put("affectedTableIds", result.affectedTableIds());
     payload.put("operation", result.operation());
     payload.put("noOp", result.noOp());
-    return payload;
+    return new WriteResult(payload, result.noOp());
+  }
+
+  private record WriteResult(Object payload, boolean noOp) {
   }
 
   private String required(McpSchema.CallToolRequest request, String name) {

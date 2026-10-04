@@ -30,6 +30,7 @@ import org.mockito.ArgumentCaptor;
 import com.schemafy.core.common.MutationResult;
 import com.schemafy.core.common.PageResult;
 import com.schemafy.core.common.exception.DomainException;
+import com.schemafy.core.erd.column.application.port.in.ChangeColumnNameUseCase;
 import com.schemafy.core.erd.column.application.port.in.CreateColumnCommand;
 import com.schemafy.core.erd.column.application.port.in.CreateColumnResult;
 import com.schemafy.core.erd.column.application.port.in.CreateColumnUseCase;
@@ -107,6 +108,7 @@ import com.schemafy.core.project.domain.WorkspaceMember;
 import com.schemafy.core.project.domain.WorkspaceRole;
 import com.schemafy.core.project.domain.exception.ProjectErrorCode;
 import com.schemafy.mcp.common.security.McpRateLimiter;
+import com.schemafy.mcp.common.security.McpSecurityAuditLogger;
 import com.schemafy.mcp.common.security.McpSecurityProperties;
 import com.schemafy.mcp.common.security.McpTokenRevocationCache;
 
@@ -117,6 +119,7 @@ import reactor.core.publisher.Mono;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.then;
 
@@ -125,6 +128,12 @@ import static org.mockito.BDDMockito.then;
 @ActiveProfiles("test")
 @Import(SchemafyResourceIntegrationTest.TestResourceConfiguration.class)
 class SchemafyResourceIntegrationTest {
+
+  @MockitoBean
+  McpSecurityAuditLogger auditLogger;
+
+  @MockitoBean
+  ChangeColumnNameUseCase changeColumnNameUseCase;
 
   @Autowired
   WebTestClient webTestClient;
@@ -341,6 +350,8 @@ class SchemafyResourceIntegrationTest {
         .doesNotContain("\"isError\":true");
     ArgumentCaptor<CreateWorkspaceCommand> command = ArgumentCaptor.forClass(CreateWorkspaceCommand.class);
     then(createWorkspaceUseCase).should().createWorkspace(command.capture());
+    then(auditLogger).should().writeToolSucceeded(any(), eq("schemafy_create_workspace"), eq("workspace-created"), eq(
+        false));
     assertThat(command.getValue())
         .extracting(CreateWorkspaceCommand::name, CreateWorkspaceCommand::description,
             CreateWorkspaceCommand::requesterId)
@@ -374,6 +385,21 @@ class SchemafyResourceIntegrationTest {
             CreateColumnCommand::comment, CreateColumnCommand::values)
         .containsExactly("table-1", "code", "VARCHAR", 32, "MCP column", List.of("A", "B"));
     then(stateSyncPublisher).should().publishMutation(Set.of("table-1"), operation);
+    then(auditLogger).should().writeToolSucceeded(any(), eq("schemafy_create_column"), eq("table-1"), eq(false));
+  }
+
+  @Test
+  @DisplayName("ERD no-op은 응답과 감사 로그에 유지된다")
+  void auditsErdNoOp() {
+    String token = tokenFactory.tokenWithScopes(McpScope.ERD_WRITE.value());
+    given(changeColumnNameUseCase.changeColumnName(any())).willReturn(Mono.just(MutationResult.<Void>noop(null)));
+    given(stateSyncPublisher.publishMutation(any(), any())).willReturn(Mono.empty());
+
+    String response = callTool(initialize(token), token, "schemafy_rename_column",
+        Map.of("columnId", "column-1", "newName", "code"));
+
+    assertThat(response).contains("noOp").doesNotContain("\"isError\":true");
+    then(auditLogger).should().writeToolSucceeded(any(), eq("schemafy_rename_column"), eq("column-1"), eq(true));
   }
 
   @Test
@@ -394,6 +420,7 @@ class SchemafyResourceIntegrationTest {
     ArgumentCaptor<CreateMemoCommentCommand> command = ArgumentCaptor.forClass(
         CreateMemoCommentCommand.class);
     then(createMemoCommentUseCase).should().createMemoComment(command.capture());
+    then(auditLogger).should().writeToolSucceeded(any(), eq("schemafy_create_memo_comment"), eq("memo-1"), eq(false));
     assertThat(command.getValue())
         .extracting(CreateMemoCommentCommand::memoId, CreateMemoCommentCommand::body,
             CreateMemoCommentCommand::authorId)
