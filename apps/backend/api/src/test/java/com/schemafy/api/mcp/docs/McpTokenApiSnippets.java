@@ -26,7 +26,9 @@ public class McpTokenApiSnippets extends RestDocsSnippets {
         fieldWithPath("tokenType").type(JsonFieldType.STRING)
             .description("토큰 타입 (고정값: Bearer)"),
         fieldWithPath("expiresInSeconds").type(JsonFieldType.NUMBER)
-            .description("토큰 만료까지 남은 시간(초)"));
+            .description("토큰 만료까지 남은 시간(초)"),
+        fieldWithPath("scopes").type(JsonFieldType.ARRAY)
+            .description("발급된 MCP 권한 scope 목록"));
   }
 
   public static Snippet revokeMcpTokenRequestHeaders() {

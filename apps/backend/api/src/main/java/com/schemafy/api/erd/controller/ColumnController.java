@@ -23,7 +23,6 @@ import com.schemafy.api.erd.controller.dto.request.ChangeColumnPositionRequest;
 import com.schemafy.api.erd.controller.dto.request.ChangeColumnTypeRequest;
 import com.schemafy.api.erd.controller.dto.request.CreateColumnRequest;
 import com.schemafy.api.erd.controller.dto.response.ColumnResponse;
-import com.schemafy.api.erd.service.sync.ErdStateSyncPublisher;
 import com.schemafy.core.erd.column.application.port.in.ChangeColumnMetaCommand;
 import com.schemafy.core.erd.column.application.port.in.ChangeColumnMetaUseCase;
 import com.schemafy.core.erd.column.application.port.in.ChangeColumnNameCommand;
@@ -41,6 +40,7 @@ import com.schemafy.core.erd.column.application.port.in.GetColumnUseCase;
 import com.schemafy.core.erd.column.application.port.in.GetColumnsByTableIdQuery;
 import com.schemafy.core.erd.column.application.port.in.GetColumnsByTableIdUseCase;
 import com.schemafy.core.erd.operation.domain.CommittedErdOperation;
+import com.schemafy.core.erd.sync.ErdStateSyncPublisher;
 
 import lombok.RequiredArgsConstructor;
 import reactor.core.publisher.Mono;

@@ -5,6 +5,7 @@ import java.time.Duration;
 import java.time.Instant;
 import java.util.Date;
 import java.util.Objects;
+import java.util.Set;
 import java.util.function.Predicate;
 import javax.crypto.SecretKey;
 
@@ -19,6 +20,7 @@ import com.schemafy.core.mcp.application.port.in.RegisterMcpTokenCommand;
 import com.schemafy.core.mcp.application.port.in.RegisterMcpTokenUseCase;
 import com.schemafy.core.mcp.application.port.in.RevokeMcpTokenCommand;
 import com.schemafy.core.mcp.application.port.in.RevokeMcpTokenUseCase;
+import com.schemafy.core.mcp.domain.McpScope;
 import com.schemafy.core.mcp.domain.McpTokenClaimSupport;
 import com.schemafy.core.ulid.application.service.UlidGenerator;
 
@@ -57,10 +59,15 @@ public class McpTokenService {
   }
 
   public Mono<McpTokenIssueResult> issue(String userId) {
+    return issue(userId, null);
+  }
+
+  public Mono<McpTokenIssueResult> issue(String userId, Set<String> requestedScopes) {
     Instant issuedAt = clock.instant();
     Instant expiresAt = issuedAt.plus(properties.getExpiresIn());
     String tokenId = UlidGenerator.generate();
-    String scope = properties.getRequiredScope();
+    Set<String> scopes = resolveScopes(requestedScopes);
+    String scope = McpTokenClaimSupport.canonicalScopeValue(scopes);
 
     String token = Jwts.builder()
         .id(tokenId)
@@ -77,7 +84,7 @@ public class McpTokenService {
     McpTokenIssueResult result = new McpTokenIssueResult(
         token,
         tokenId,
-        scope,
+        scopes,
         issuedAt,
         expiresAt,
         properties.getExpiresIn().toSeconds());
@@ -170,6 +177,16 @@ public class McpTokenService {
 
   private Predicate<Throwable> notDomainException() {
     return error -> !(error instanceof DomainException);
+  }
+
+  private Set<String> resolveScopes(Set<String> requestedScopes) {
+    Set<String> scopes = McpTokenClaimSupport.scopesFrom(requestedScopes);
+    if (!McpScope.issuableValues().containsAll(scopes)) {
+      throw new DomainException(McpTokenErrorCode.INVALID_SCOPE,
+          "MCP token contains an unsupported scope");
+    }
+    scopes.add(properties.getRequiredScope());
+    return Set.copyOf(scopes);
   }
 
 }
