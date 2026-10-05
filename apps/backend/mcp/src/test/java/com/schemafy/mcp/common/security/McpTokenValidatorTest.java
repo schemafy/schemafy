@@ -15,7 +15,9 @@ import org.junit.jupiter.api.Test;
 
 import com.schemafy.core.mcp.application.port.in.GetMcpTokenQuery;
 import com.schemafy.core.mcp.application.port.in.GetMcpTokenUseCase;
+import com.schemafy.core.mcp.domain.McpScope;
 import com.schemafy.core.mcp.domain.McpToken;
+import com.schemafy.core.mcp.domain.McpTokenClaimSupport;
 
 import io.jsonwebtoken.security.Keys;
 import reactor.core.publisher.Mono;
@@ -103,6 +105,28 @@ class McpTokenValidatorTest {
   void rejectsMissingScope() {
     expectFailure(validator.validate(tokenFactory.tokenWithoutRequiredScope()),
         McpSecurityError.INSUFFICIENT_SCOPE);
+  }
+
+  @Test
+  @DisplayName("등록된 write scope와 JWT write scope가 일치하면 token을 검증한다")
+  void validatesMatchingWriteScopes() {
+    Set<String> scopes = Set.of(McpScope.MCP.value(), McpScope.ERD_WRITE.value());
+    getMcpTokenUseCase.replaceScope(McpTokenClaimSupport.canonicalScopeValue(scopes));
+
+    StepVerifier.create(validator.validate(tokenFactory.tokenWithScopes(scopes)))
+        .assertNext(result -> {
+          assertThat(result.valid()).isTrue();
+          assertThat(result.claims().scopes()).containsExactlyInAnyOrderElementsOf(scopes);
+        })
+        .verifyComplete();
+  }
+
+  @Test
+  @DisplayName("등록되지 않은 write scope가 JWT에 추가되면 token을 거부한다")
+  void rejectsWriteScopeMismatch() {
+    Set<String> scopes = Set.of(McpScope.MCP.value(), McpScope.ERD_WRITE.value());
+
+    expectFailure(validator.validate(tokenFactory.tokenWithScopes(scopes)), McpSecurityError.TOKEN_INVALID);
   }
 
   @Test
@@ -220,6 +244,11 @@ class McpTokenValidatorTest {
 
     void fail() {
       this.fail = true;
+    }
+
+    void replaceScope(String scope) {
+      tokens.put("token-1", McpToken.issue("token-1", "user-1", scope,
+          clock.instant().minusSeconds(60), clock.instant().plusSeconds(3600)));
     }
 
   }

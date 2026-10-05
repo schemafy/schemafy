@@ -64,7 +64,7 @@ tasks.register('enrichOpenApiSpec') {
 			if (path.startsWith('/public/api/v1.0/share/')) {
 				return 'Public Share'
 			}
-			if (path.contains('/share-links')) {
+			if (path.endsWith('/share-link')) {
 				return 'Share Link'
 			}
 			if (path.contains('/tables')) {

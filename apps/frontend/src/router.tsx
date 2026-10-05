@@ -6,7 +6,16 @@ import {
 } from '@tanstack/react-router';
 import type { QueryClient } from '@tanstack/react-query';
 import { Layout } from '@/components';
-import { NotFoundPage } from '@/pages/NotFoundPage';
+import {
+  CanvasPage,
+  LandingPage,
+  NotFoundPage,
+  OAuthCallbackPage,
+  SettingsPage,
+  SignInPage,
+  SignUpPage,
+  WorkspacePage,
+} from '@/pages';
 import type { AuthStore } from '@/store/auth.store';
 import { ensureAuthInitialized } from '@/features/auth/lib/auth-bootstrap';
 import { lazy } from 'react';
@@ -111,6 +120,13 @@ const workspaceRoute = createRoute({
   component: WorkspacePage,
 });
 
+const settingsRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: '/settings',
+  beforeLoad: requireAuth,
+  component: SettingsPage,
+});
+
 const projectRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: '/project/$projectId',
@@ -124,6 +140,7 @@ const routeTree = rootRoute.addChildren([
   signupRoute,
   oauthCallbackRoute,
   workspaceRoute,
+  settingsRoute,
   projectRoute,
 ]);
 

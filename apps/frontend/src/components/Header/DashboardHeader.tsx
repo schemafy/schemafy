@@ -21,7 +21,8 @@ export const DashboardHeader = () => {
           <FolderKanban className="h-4 w-4 sm:hidden" />
           <span className="hidden sm:inline">Projects</span>
         </ButtonLink>
-        <Button
+        <ButtonLink
+          to="/settings"
           variant={'none'}
           size={'none'}
           className="schemafy-menu-button schemafy-header-button flex h-9 w-9 shrink-0 items-center justify-center p-0 sm:h-auto sm:w-auto sm:px-3 sm:py-2"
@@ -29,7 +30,7 @@ export const DashboardHeader = () => {
         >
           <Settings className="h-4 w-4 sm:hidden" />
           <span className="hidden sm:inline">Settings</span>
-        </Button>
+        </ButtonLink>
         <NotificationContents />
         <ButtonLink
           round

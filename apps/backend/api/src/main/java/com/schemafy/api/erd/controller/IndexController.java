@@ -27,7 +27,6 @@ import com.schemafy.api.erd.controller.dto.request.CreateIndexRequest;
 import com.schemafy.api.erd.controller.dto.response.AddIndexColumnResponse;
 import com.schemafy.api.erd.controller.dto.response.IndexColumnResponse;
 import com.schemafy.api.erd.controller.dto.response.IndexResponse;
-import com.schemafy.api.erd.service.sync.ErdStateSyncPublisher;
 import com.schemafy.core.erd.index.application.port.in.AddIndexColumnCommand;
 import com.schemafy.core.erd.index.application.port.in.AddIndexColumnUseCase;
 import com.schemafy.core.erd.index.application.port.in.ChangeIndexColumnPositionCommand;
@@ -54,6 +53,7 @@ import com.schemafy.core.erd.index.application.port.in.GetIndexesByTableIdUseCas
 import com.schemafy.core.erd.index.application.port.in.RemoveIndexColumnCommand;
 import com.schemafy.core.erd.index.application.port.in.RemoveIndexColumnUseCase;
 import com.schemafy.core.erd.operation.domain.CommittedErdOperation;
+import com.schemafy.core.erd.sync.ErdStateSyncPublisher;
 
 import lombok.RequiredArgsConstructor;
 import reactor.core.publisher.Mono;

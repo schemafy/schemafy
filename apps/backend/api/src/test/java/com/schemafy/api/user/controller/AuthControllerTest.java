@@ -266,6 +266,8 @@ class AuthControllerTest extends UserHttpTestSupport {
         Arguments.of(new SignUpRequest("test@example.com", "Test User",
             "passwrd", "token")),
         Arguments.of(new SignUpRequest("test@example.com", "Test User",
+            "a".repeat(73), "token")),
+        Arguments.of(new SignUpRequest("test@example.com", "Test User",
             "", "token")),
         Arguments.of(new SignUpRequest("test@example.com", "Test User",
             "password", "")),

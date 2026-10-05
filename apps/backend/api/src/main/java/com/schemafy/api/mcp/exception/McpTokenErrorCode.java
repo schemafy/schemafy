@@ -12,6 +12,7 @@ import lombok.RequiredArgsConstructor;
 public enum McpTokenErrorCode implements DomainErrorCode {
 
   INVALID(HttpStatus.UNAUTHORIZED),
+  INVALID_SCOPE(HttpStatus.BAD_REQUEST),
   OWNER_MISMATCH(HttpStatus.FORBIDDEN),
   REVOCATION_UNAVAILABLE(HttpStatus.SERVICE_UNAVAILABLE),
   REGISTRY_UNAVAILABLE(HttpStatus.SERVICE_UNAVAILABLE);

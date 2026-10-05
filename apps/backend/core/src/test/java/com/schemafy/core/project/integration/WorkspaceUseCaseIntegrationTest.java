@@ -139,7 +139,7 @@ class WorkspaceUseCaseIntegrationTest extends ProjectDomainIntegrationSupport {
     ShareLink deletedShareLink = shareLinkRepository.findById(shareLink.getId()).block();
     assertThat(deletedWorkspaceInvitation.isDeleted()).isTrue();
     assertThat(deletedProjectInvitation.isDeleted()).isTrue();
-    assertThat(deletedShareLink.isDeleted()).isTrue();
+    assertThat(deletedShareLink).isNull();
   }
 
   @Test
