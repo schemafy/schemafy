@@ -6,16 +6,7 @@ import {
 } from '@tanstack/react-router';
 import type { QueryClient } from '@tanstack/react-query';
 import { Layout } from '@/components';
-import {
-  CanvasPage,
-  LandingPage,
-  NotFoundPage,
-  OAuthCallbackPage,
-  SettingsPage,
-  SignInPage,
-  SignUpPage,
-  WorkspacePage,
-} from '@/pages';
+import { NotFoundPage, SettingsPage } from '@/pages';
 import type { AuthStore } from '@/store/auth.store';
 import { ensureAuthInitialized } from '@/features/auth/lib/auth-bootstrap';
 import { lazy } from 'react';

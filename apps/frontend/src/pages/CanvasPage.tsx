@@ -164,7 +164,7 @@ export const CanvasPage = () => {
         dbVendorId={project.dbVendorId}
       >
         <MemoProvider>
-          <CanvasContent />
+          <CanvasContent canEditProject={canEditProject} />
         </MemoProvider>
       </SelectedSchemaProvider>
     </ReactFlowProvider>
