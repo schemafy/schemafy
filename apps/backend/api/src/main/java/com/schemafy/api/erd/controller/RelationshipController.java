@@ -20,6 +20,7 @@ import com.schemafy.api.common.type.MutationResponse;
 import com.schemafy.api.erd.controller.dto.request.AddRelationshipColumnRequest;
 import com.schemafy.api.erd.controller.dto.request.ChangeRelationshipCardinalityRequest;
 import com.schemafy.api.erd.controller.dto.request.ChangeRelationshipColumnPositionRequest;
+import com.schemafy.api.erd.controller.dto.request.ChangeRelationshipControlPointsRequest;
 import com.schemafy.api.erd.controller.dto.request.ChangeRelationshipExtraRequest;
 import com.schemafy.api.erd.controller.dto.request.ChangeRelationshipKindRequest;
 import com.schemafy.api.erd.controller.dto.request.ChangeRelationshipNameRequest;
@@ -28,6 +29,9 @@ import com.schemafy.api.erd.controller.dto.response.AddRelationshipColumnRespons
 import com.schemafy.api.erd.controller.dto.response.RelationshipColumnResponse;
 import com.schemafy.api.erd.controller.dto.response.RelationshipResponse;
 import com.schemafy.api.erd.service.relationship.RelationshipApiResponseMapper;
+import com.schemafy.core.collaboration.lock.CanvasEditLockErrorCode;
+import com.schemafy.core.collaboration.lock.CanvasEditLockService;
+import com.schemafy.core.common.exception.DomainException;
 import com.schemafy.core.erd.operation.domain.CommittedErdOperation;
 import com.schemafy.core.erd.relationship.application.port.in.AddRelationshipColumnCommand;
 import com.schemafy.core.erd.relationship.application.port.in.AddRelationshipColumnUseCase;
@@ -35,6 +39,8 @@ import com.schemafy.core.erd.relationship.application.port.in.ChangeRelationship
 import com.schemafy.core.erd.relationship.application.port.in.ChangeRelationshipCardinalityUseCase;
 import com.schemafy.core.erd.relationship.application.port.in.ChangeRelationshipColumnPositionCommand;
 import com.schemafy.core.erd.relationship.application.port.in.ChangeRelationshipColumnPositionUseCase;
+import com.schemafy.core.erd.relationship.application.port.in.ChangeRelationshipControlPointsCommand;
+import com.schemafy.core.erd.relationship.application.port.in.ChangeRelationshipControlPointsUseCase;
 import com.schemafy.core.erd.relationship.application.port.in.ChangeRelationshipExtraCommand;
 import com.schemafy.core.erd.relationship.application.port.in.ChangeRelationshipExtraUseCase;
 import com.schemafy.core.erd.relationship.application.port.in.ChangeRelationshipKindCommand;
@@ -72,6 +78,8 @@ public class RelationshipController {
   private final ChangeRelationshipKindUseCase changeRelationshipKindUseCase;
   private final ChangeRelationshipCardinalityUseCase changeRelationshipCardinalityUseCase;
   private final ChangeRelationshipExtraUseCase changeRelationshipExtraUseCase;
+  private final ChangeRelationshipControlPointsUseCase changeRelationshipControlPointsUseCase;
+  private final CanvasEditLockService canvasEditLockService;
   private final DeleteRelationshipUseCase deleteRelationshipUseCase;
   private final GetRelationshipColumnsByRelationshipIdUseCase getRelationshipColumnsByRelationshipIdUseCase;
   private final AddRelationshipColumnUseCase addRelationshipColumnUseCase;
@@ -169,6 +177,10 @@ public class RelationshipController {
   public Mono<MutationResponse<Void>> changeRelationshipExtra(
       @PathVariable String relationshipId,
       @Valid @RequestBody ChangeRelationshipExtraRequest request) {
+    if (canvasEditLockService.isEnabled() && request.extra() != null
+        && (request.extra().has("controlPoint1") || request.extra().has("controlPoint2"))) {
+      return Mono.error(new DomainException(CanvasEditLockErrorCode.REQUIRED));
+    }
     ChangeRelationshipExtraCommand command = new ChangeRelationshipExtraCommand(
         relationshipId,
         request.extra());
@@ -178,6 +190,18 @@ public class RelationshipController {
             .thenReturn(result))
         .map(result -> MutationResponse.<Void>of(null,
             result.affectedTableIds(), result.operation()));
+  }
+
+  @PatchMapping("/relationships/{relationshipId}/control-points")
+  public Mono<MutationResponse<Void>> changeRelationshipControlPoints(
+      @PathVariable String relationshipId,
+      @Valid @RequestBody ChangeRelationshipControlPointsRequest request) {
+    return changeRelationshipControlPointsUseCase.changeRelationshipControlPoints(
+        new ChangeRelationshipControlPointsCommand(relationshipId, request.controlPoint1(),
+            request.controlPoint2()))
+        .flatMap(result -> broadcastMutation(result.affectedTableIds(), result.operation())
+            .thenReturn(result))
+        .map(result -> MutationResponse.<Void>of(null, result.affectedTableIds(), result.operation()));
   }
 
   @DeleteMapping("/relationships/{relationshipId}")

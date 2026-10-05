@@ -14,6 +14,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 import com.schemafy.api.erd.service.TableSnapshotOrchestrator;
 import com.schemafy.api.erd.service.table.TableApiResponseMapper;
+import com.schemafy.core.collaboration.lock.CanvasEditLockService;
 import com.schemafy.core.common.MutationResult;
 import com.schemafy.core.erd.broadcast.ErdMutationBroadcaster.ResolvedContext;
 import com.schemafy.core.erd.operation.domain.CommittedErdOperation;
@@ -22,6 +23,7 @@ import com.schemafy.core.erd.sync.ErdStateSyncPublisher;
 import com.schemafy.core.erd.table.application.port.in.ChangeTableExtraUseCase;
 import com.schemafy.core.erd.table.application.port.in.ChangeTableMetaUseCase;
 import com.schemafy.core.erd.table.application.port.in.ChangeTableNameUseCase;
+import com.schemafy.core.erd.table.application.port.in.ChangeTablePositionUseCase;
 import com.schemafy.core.erd.table.application.port.in.CreateTableUseCase;
 import com.schemafy.core.erd.table.application.port.in.DeleteTableCommand;
 import com.schemafy.core.erd.table.application.port.in.DeleteTableUseCase;
@@ -62,6 +64,10 @@ class TableControllerBroadcastTest {
   @Mock
   ChangeTableExtraUseCase changeTableExtraUseCase;
   @Mock
+  ChangeTablePositionUseCase changeTablePositionUseCase;
+  @Mock
+  CanvasEditLockService canvasEditLockService;
+  @Mock
   DeleteTableUseCase deleteTableUseCase;
   @Mock
   TableApiResponseMapper tableResponseMapper;
@@ -79,7 +85,7 @@ class TableControllerBroadcastTest {
     sut = new TableController(createTableUseCase, getTableUseCase,
         getTablesBySchemaIdUseCase, tableSnapshotOrchestrator,
         changeTableNameUseCase, changeTableMetaUseCase, changeTableExtraUseCase,
-        deleteTableUseCase, tableResponseMapper, publisherProvider);
+        changeTablePositionUseCase, canvasEditLockService, deleteTableUseCase, tableResponseMapper, publisherProvider);
   }
 
   @Test
