@@ -7,11 +7,7 @@ import {
   type ReactNode,
 } from 'react';
 import { TriangleAlert, RotateCcw } from 'lucide-react';
-import {
-  QueryErrorResetBoundary,
-  useIsMutating,
-  useQueryClient,
-} from '@tanstack/react-query';
+import { QueryErrorResetBoundary, useQueryClient } from '@tanstack/react-query';
 import { ErrorBoundary, LoadingState } from '@/components';
 import { SelectedSchemaContext } from './useSelectedSchema';
 import { useSchemas } from '../hooks/useSchemas';
@@ -56,9 +52,6 @@ export const SelectedSchemaProvider = ({
 }: SelectedSchemaProviderProps) => {
   const storageKey = getStorageKey(projectId);
   const queryClient = useQueryClient();
-  const pendingSchemaCreations = useIsMutating({
-    mutationKey: erdKeys.schemas(projectId),
-  });
 
   const [selectedSchemaId, setSelectedSchemaIdState] = useState<string | null>(
     () => {
@@ -107,25 +100,13 @@ export const SelectedSchemaProvider = ({
   );
 
   const createInitialSchema = useCallback(() => {
-    // Read the live request state: effect replay can precede the next render.
-    if (queryClient.isMutating({ mutationKey: erdKeys.schemas(projectId) })) {
-      return;
-    }
+    const isAlreadyCreating = queryClient.isMutating({
+      mutationKey: erdKeys.createSchemaMutation(projectId),
+    });
+    if (isAlreadyCreating) return;
 
-    createSchema(
-      {
-        projectId,
-        name: 'schema1',
-      },
-      {
-        onSuccess: (response) => {
-          if (response?.data) {
-            setSelectedSchemaId(response.data.id);
-          }
-        },
-      },
-    );
-  }, [queryClient, createSchema, projectId, setSelectedSchemaId]);
+    createSchema({ projectId, name: 'schema1' });
+  }, [queryClient, createSchema, projectId]);
 
   const activeSchemaId = useMemo(() => {
     if (!schemas || schemas.length === 0) return null;
@@ -138,42 +119,36 @@ export const SelectedSchemaProvider = ({
 
   useEffect(() => {
     if (isSchemasLoading || !schemas) return;
+    if (selectedSchemaId !== activeSchemaId) {
+      setSelectedSchemaId(activeSchemaId);
+    }
+  }, [
+    isSchemasLoading,
+    schemas,
+    selectedSchemaId,
+    activeSchemaId,
+    setSelectedSchemaId,
+  ]);
 
-    if (schemas.length === 0) {
-      if (selectedSchemaId !== null) {
-        setSelectedSchemaId(null);
-      }
-      if (isCreateSchemaIdle && pendingSchemaCreations === 0) {
-        // Cancel queued initialization if this effect is cleaned up first.
-        let cancelled = false;
-        queueMicrotask(() => {
-          if (!cancelled) createInitialSchema();
-        });
-        return () => {
-          cancelled = true;
-        };
+  const needsInitialSchema = !isSchemasLoading && schemas?.length === 0;
+
+  useEffect(() => {
+    if (!needsInitialSchema) {
+      if (!isCreateSchemaIdle && !isCreateSchemaPending) {
+        resetCreateSchema();
       }
       return;
     }
 
-    if (!isCreateSchemaIdle && !isCreateSchemaPending) {
-      resetCreateSchema();
-    }
-
-    if (activeSchemaId && selectedSchemaId !== activeSchemaId) {
-      setSelectedSchemaId(activeSchemaId);
+    if (isCreateSchemaIdle) {
+      createInitialSchema();
     }
   }, [
-    activeSchemaId,
-    selectedSchemaId,
-    schemas,
-    isSchemasLoading,
+    needsInitialSchema,
     isCreateSchemaIdle,
     isCreateSchemaPending,
-    pendingSchemaCreations,
     resetCreateSchema,
     createInitialSchema,
-    setSelectedSchemaId,
   ]);
 
   const contextValue = useMemo(
