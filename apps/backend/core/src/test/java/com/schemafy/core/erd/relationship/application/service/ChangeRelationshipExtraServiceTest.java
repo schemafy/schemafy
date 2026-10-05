@@ -12,6 +12,8 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.NullNode;
 import com.fasterxml.jackson.databind.node.TextNode;
+import com.schemafy.core.collaboration.lock.CanvasExtraMutationPolicy;
+import com.schemafy.core.collaboration.lock.NoOpCanvasEditLockService;
 import com.schemafy.core.common.exception.DomainException;
 import com.schemafy.core.common.json.JsonCodec;
 import com.schemafy.core.common.json.JsonObjectMetadataConverter;
@@ -43,6 +45,10 @@ class ChangeRelationshipExtraServiceTest {
   @Spy
   JsonObjectMetadataConverter jsonObjectMetadataConverter = new JsonObjectMetadataConverter(
       new JsonCodec(new ObjectMapper().findAndRegisterModules()));
+
+  @Spy
+  CanvasExtraMutationPolicy canvasPolicy = new CanvasExtraMutationPolicy(
+      new NoOpCanvasEditLockService(), null, null, null, jsonObjectMetadataConverter);
 
   @InjectMocks
   ChangeRelationshipExtraService sut;

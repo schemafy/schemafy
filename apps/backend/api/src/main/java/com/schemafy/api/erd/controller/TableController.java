@@ -23,15 +23,11 @@ import com.schemafy.api.common.type.MutationResponse;
 import com.schemafy.api.erd.controller.dto.request.ChangeTableExtraRequest;
 import com.schemafy.api.erd.controller.dto.request.ChangeTableMetaRequest;
 import com.schemafy.api.erd.controller.dto.request.ChangeTableNameRequest;
-import com.schemafy.api.erd.controller.dto.request.ChangeTablePositionRequest;
 import com.schemafy.api.erd.controller.dto.request.CreateTableRequest;
 import com.schemafy.api.erd.controller.dto.response.TableResponse;
 import com.schemafy.api.erd.controller.dto.response.TableSnapshotResponse;
 import com.schemafy.api.erd.service.TableSnapshotOrchestrator;
 import com.schemafy.api.erd.service.table.TableApiResponseMapper;
-import com.schemafy.core.collaboration.lock.CanvasEditLockErrorCode;
-import com.schemafy.core.collaboration.lock.CanvasEditLockService;
-import com.schemafy.core.common.exception.DomainException;
 import com.schemafy.core.erd.broadcast.ErdMutationBroadcaster.ResolvedContext;
 import com.schemafy.core.erd.operation.domain.CommittedErdOperation;
 import com.schemafy.core.erd.sync.ErdStateSyncPublisher;
@@ -41,8 +37,6 @@ import com.schemafy.core.erd.table.application.port.in.ChangeTableMetaCommand;
 import com.schemafy.core.erd.table.application.port.in.ChangeTableMetaUseCase;
 import com.schemafy.core.erd.table.application.port.in.ChangeTableNameCommand;
 import com.schemafy.core.erd.table.application.port.in.ChangeTableNameUseCase;
-import com.schemafy.core.erd.table.application.port.in.ChangeTablePositionCommand;
-import com.schemafy.core.erd.table.application.port.in.ChangeTablePositionUseCase;
 import com.schemafy.core.erd.table.application.port.in.CreateTableCommand;
 import com.schemafy.core.erd.table.application.port.in.CreateTableUseCase;
 import com.schemafy.core.erd.table.application.port.in.DeleteTableCommand;
@@ -69,8 +63,6 @@ public class TableController {
   private final ChangeTableNameUseCase changeTableNameUseCase;
   private final ChangeTableMetaUseCase changeTableMetaUseCase;
   private final ChangeTableExtraUseCase changeTableExtraUseCase;
-  private final ChangeTablePositionUseCase changeTablePositionUseCase;
-  private final CanvasEditLockService canvasEditLockService;
   private final DeleteTableUseCase deleteTableUseCase;
   private final TableApiResponseMapper tableResponseMapper;
 
@@ -160,10 +152,6 @@ public class TableController {
   public Mono<MutationResponse<Void>> changeTableExtra(
       @PathVariable String tableId,
       @Valid @RequestBody ChangeTableExtraRequest request) {
-    if (canvasEditLockService.isEnabled() && request.extra() != null
-        && request.extra().has("position")) {
-      return Mono.error(new DomainException(CanvasEditLockErrorCode.REQUIRED));
-    }
     ChangeTableExtraCommand command = new ChangeTableExtraCommand(
         tableId,
         request.extra());
@@ -173,17 +161,6 @@ public class TableController {
             .thenReturn(result))
         .map(result -> MutationResponse.<Void>of(null,
             result.affectedTableIds(), result.operation()));
-  }
-
-  @PatchMapping("/tables/{tableId}/position")
-  public Mono<MutationResponse<Void>> changeTablePosition(
-      @PathVariable String tableId,
-      @Valid @RequestBody ChangeTablePositionRequest request) {
-    return changeTablePositionUseCase.changeTablePosition(
-        new ChangeTablePositionCommand(tableId, request.position()))
-        .flatMap(result -> broadcastMutation(result.affectedTableIds(), result.operation())
-            .thenReturn(result))
-        .map(result -> MutationResponse.<Void>of(null, result.affectedTableIds(), result.operation()));
   }
 
   @DeleteMapping("/tables/{tableId}")
