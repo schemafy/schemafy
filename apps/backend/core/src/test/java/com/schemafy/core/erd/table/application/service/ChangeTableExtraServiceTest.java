@@ -45,7 +45,7 @@ class ChangeTableExtraServiceTest {
 
   @Spy
   CanvasExtraMutationPolicy canvasPolicy = new CanvasExtraMutationPolicy(
-      new NoOpCanvasEditLockService(), null, null, null, jsonObjectMetadataConverter);
+      new NoOpCanvasEditLockService(), null, null, null, jsonObjectMetadataConverter, null);
 
   @InjectMocks
   ChangeTableExtraService sut;

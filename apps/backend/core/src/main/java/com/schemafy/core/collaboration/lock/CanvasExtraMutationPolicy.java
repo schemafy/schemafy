@@ -2,6 +2,7 @@ package com.schemafy.core.collaboration.lock;
 
 import java.util.List;
 
+import org.springframework.dao.DataAccessException;
 import org.springframework.stereotype.Component;
 
 import com.fasterxml.jackson.databind.JsonNode;
@@ -14,6 +15,7 @@ import com.schemafy.core.erd.operation.domain.ErdOperationDerivationKind;
 import com.schemafy.core.erd.relationship.application.port.out.GetRelationshipByIdPort;
 import com.schemafy.core.erd.schema.application.port.out.GetSchemaByIdPort;
 import com.schemafy.core.erd.table.application.port.out.GetTableByIdPort;
+import com.schemafy.core.project.application.port.out.ProjectPresenceReadPort;
 
 import lombok.RequiredArgsConstructor;
 import reactor.core.publisher.Mono;
@@ -27,6 +29,7 @@ public class CanvasExtraMutationPolicy {
   private final GetRelationshipByIdPort relationships;
   private final GetSchemaByIdPort schemas;
   private final JsonObjectMetadataConverter converter;
+  private final ProjectPresenceReadPort presence;
 
   public static boolean isCanvasRequest(CanvasEditLockTarget target, JsonNode requested) {
     return requested != null && fields(target).stream().anyMatch(requested::has);
@@ -53,14 +56,28 @@ public class CanvasExtraMutationPolicy {
       }
       Mono<Void> owner = Mono.empty();
       if (locks.isEnabled()) {
-        String session = ErdOperationContexts.metadata(context).sessionId();
-        owner = projectId(target, resourceId).flatMap(project -> locks.renew(project, target,
-            resourceId, session == null ? "" : session))
-            .flatMap(result -> result.isUnavailable() || result.isOwner() ? Mono.empty()
-                : Mono.error(new DomainException(CanvasEditLockErrorCode.NOT_OWNER)));
+        var metadata = ErdOperationContexts.metadata(context);
+        owner = projectId(target, resourceId).flatMap(project -> verifyOwner(project, target,
+            resourceId, metadata.sessionId(), metadata.actorUserId()));
       }
       return owner.then(Mono.fromSupplier(() -> merge(target, stored, requested)));
     });
+  }
+
+  private Mono<Void> verifyOwner(String projectId, CanvasEditLockTarget target,
+      String resourceId, String sessionId, String userId) {
+    if (sessionId == null || sessionId.isBlank() || userId == null || userId.isBlank()) {
+      return Mono.error(new DomainException(CanvasEditLockErrorCode.NOT_OWNER));
+    }
+    return presence.findSession(projectId, sessionId)
+        .map(session -> userId.equals(session.userId()))
+        .defaultIfEmpty(false)
+        // Preserve the existing fail-open policy when Redis presence is unavailable.
+        .onErrorReturn(DataAccessException.class, true)
+        .flatMap(matches -> matches ? locks.renew(projectId, target, resourceId, sessionId)
+            : Mono.error(new DomainException(CanvasEditLockErrorCode.NOT_OWNER)))
+        .flatMap(result -> result.isUnavailable() || result.isOwner() ? Mono.empty()
+            : Mono.error(new DomainException(CanvasEditLockErrorCode.NOT_OWNER)));
   }
 
   private Mono<String> projectId(CanvasEditLockTarget target, String id) {
