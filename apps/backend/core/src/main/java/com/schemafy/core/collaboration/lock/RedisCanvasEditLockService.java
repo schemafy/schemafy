@@ -24,11 +24,13 @@ public class RedisCanvasEditLockService implements CanvasEditLockService {
       if not owner then
         redis.call('SET', KEYS[1], ARGV[1], 'PX', ARGV[2])
         redis.call('SADD', KEYS[2], KEYS[1])
+        redis.call('PEXPIRE', KEYS[2], ARGV[3])
         return 'ACQUIRED:' .. ARGV[1]
       end
       if owner == ARGV[1] then
         redis.call('PEXPIRE', KEYS[1], ARGV[2])
         redis.call('SADD', KEYS[2], KEYS[1])
+        redis.call('PEXPIRE', KEYS[2], ARGV[3])
         return 'RENEWED:' .. owner
       end
       return 'REJECTED:' .. owner
@@ -37,6 +39,8 @@ public class RedisCanvasEditLockService implements CanvasEditLockService {
       local owner = redis.call('GET', KEYS[1])
       if owner == ARGV[1] then
         redis.call('PEXPIRE', KEYS[1], ARGV[2])
+        redis.call('SADD', KEYS[2], KEYS[1])
+        redis.call('PEXPIRE', KEYS[2], ARGV[3])
         return 'RENEWED:' .. owner
       end
       if owner then return 'REJECTED:' .. owner end
@@ -100,7 +104,8 @@ public class RedisCanvasEditLockService implements CanvasEditLockService {
     String lockKey = lockKey(projectId, target, resourceId);
     List<String> keys = List.of(lockKey, sessionKey(projectId, sessionId));
     return redisTemplate.execute(script, keys,
-        List.of(sessionId, Long.toString(leaseTtl.toMillis())))
+        List.of(sessionId, Long.toString(leaseTtl.toMillis()),
+            Long.toString(leaseTtl.multipliedBy(2).toMillis())))
         .next()
         .map(this::toResult)
         .defaultIfEmpty(unavailable())
