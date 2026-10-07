@@ -6,7 +6,8 @@ import { clearAuthSession } from './auth-session';
 let authBootstrapPromise: Promise<boolean> | null = null;
 
 export const isAuthenticated = () => {
-  return Boolean(authStore.accessToken && authStore.user);
+  const hasAuthSession = Boolean(authStore.accessToken && authStore.user);
+  return hasAuthSession;
 };
 
 export const ensureAuthInitialized = async () => {
