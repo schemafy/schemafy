@@ -17,6 +17,7 @@ import {
 } from '@/features/collaboration/components';
 import { observer } from 'mobx-react-lite';
 import { useNavigate, useParams } from '@tanstack/react-router';
+import { ReactFlowProvider } from '@xyflow/react';
 import { useEffect } from 'react';
 import axios from 'axios';
 import { LoadingState } from '@/components';
@@ -169,16 +170,18 @@ export const CanvasPage = () => {
   if (!hasProject) return <NotFoundPage />;
 
   return (
-    <SelectedSchemaProvider
-      projectId={projectId}
-      dbVendorId={project.dbVendorId}
-    >
-      <MemoProvider>
-        <CanvasContent canEditProject={canEditProject} />
-        <div className="fixed bottom-4 right-4 z-50">
-          <ConnectionStatusIndicator />
-        </div>
-      </MemoProvider>
-    </SelectedSchemaProvider>
+    <ReactFlowProvider>
+      <SelectedSchemaProvider
+        projectId={projectId}
+        dbVendorId={project.dbVendorId}
+      >
+        <MemoProvider>
+          <CanvasContent canEditProject={canEditProject} />
+          <div className="fixed bottom-4 right-4 z-50">
+            <ConnectionStatusIndicator />
+          </div>
+        </MemoProvider>
+      </SelectedSchemaProvider>
+    </ReactFlowProvider>
   );
 };
