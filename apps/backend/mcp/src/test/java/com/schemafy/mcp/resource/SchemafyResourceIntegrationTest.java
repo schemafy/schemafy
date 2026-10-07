@@ -1,11 +1,11 @@
 package com.schemafy.mcp.resource;
 
 import java.nio.charset.StandardCharsets;
-import java.time.Clock;
 import java.time.Instant;
 import java.util.Date;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.atomic.AtomicReference;
 import javax.crypto.SecretKey;
 
@@ -18,15 +18,24 @@ import org.springframework.context.annotation.Primary;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.test.context.ActiveProfiles;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.reactive.server.EntityExchangeResult;
 import org.springframework.test.web.reactive.server.WebTestClient;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.parallel.Execution;
+import org.junit.jupiter.api.parallel.ExecutionMode;
+import org.mockito.ArgumentCaptor;
 
+import com.schemafy.core.common.MutationResult;
 import com.schemafy.core.common.PageResult;
 import com.schemafy.core.common.exception.DomainException;
+import com.schemafy.core.erd.column.application.port.in.ChangeColumnNameUseCase;
+import com.schemafy.core.erd.column.application.port.in.CreateColumnCommand;
+import com.schemafy.core.erd.column.application.port.in.CreateColumnResult;
+import com.schemafy.core.erd.column.application.port.in.CreateColumnUseCase;
 import com.schemafy.core.erd.column.application.port.in.GetColumnsByTableIdQuery;
 import com.schemafy.core.erd.column.application.port.in.GetColumnsByTableIdUseCase;
 import com.schemafy.core.erd.column.domain.Column;
@@ -38,6 +47,8 @@ import com.schemafy.core.erd.index.application.port.in.GetIndexesByTableIdQuery;
 import com.schemafy.core.erd.index.application.port.in.GetIndexesByTableIdUseCase;
 import com.schemafy.core.erd.index.domain.Index;
 import com.schemafy.core.erd.index.domain.type.IndexType;
+import com.schemafy.core.erd.memo.application.port.in.CreateMemoCommentCommand;
+import com.schemafy.core.erd.memo.application.port.in.CreateMemoCommentUseCase;
 import com.schemafy.core.erd.memo.application.port.in.GetMemoCommentsQuery;
 import com.schemafy.core.erd.memo.application.port.in.GetMemoCommentsUseCase;
 import com.schemafy.core.erd.memo.application.port.in.GetMemoQuery;
@@ -47,16 +58,21 @@ import com.schemafy.core.erd.memo.application.port.in.GetMemosBySchemaIdUseCase;
 import com.schemafy.core.erd.memo.domain.Memo;
 import com.schemafy.core.erd.memo.domain.MemoComment;
 import com.schemafy.core.erd.memo.domain.MemoDetail;
+import com.schemafy.core.erd.operation.domain.CommittedErdOperation;
+import com.schemafy.core.erd.operation.domain.ErdOperationDerivationKind;
 import com.schemafy.core.erd.relationship.application.port.in.GetRelationshipsByTableIdQuery;
 import com.schemafy.core.erd.relationship.application.port.in.GetRelationshipsByTableIdUseCase;
 import com.schemafy.core.erd.relationship.domain.Relationship;
 import com.schemafy.core.erd.relationship.domain.type.Cardinality;
 import com.schemafy.core.erd.relationship.domain.type.RelationshipKind;
+import com.schemafy.core.erd.schema.application.port.in.DeleteSchemaUseCase;
 import com.schemafy.core.erd.schema.application.port.in.GetSchemaQuery;
 import com.schemafy.core.erd.schema.application.port.in.GetSchemaUseCase;
 import com.schemafy.core.erd.schema.application.port.in.GetSchemasByProjectIdQuery;
 import com.schemafy.core.erd.schema.application.port.in.GetSchemasByProjectIdUseCase;
 import com.schemafy.core.erd.schema.domain.Schema;
+import com.schemafy.core.erd.sync.ErdStateSyncPublisher;
+import com.schemafy.core.erd.table.application.port.in.DeleteTableUseCase;
 import com.schemafy.core.erd.table.application.port.in.GetTableQuery;
 import com.schemafy.core.erd.table.application.port.in.GetTableUseCase;
 import com.schemafy.core.erd.table.application.port.in.GetTablesBySchemaIdQuery;
@@ -65,13 +81,19 @@ import com.schemafy.core.erd.table.domain.Table;
 import com.schemafy.core.erd.vendor.application.port.in.ListDbVendorsUseCase;
 import com.schemafy.core.erd.vendor.domain.DbVendorSummary;
 import com.schemafy.core.mcp.application.port.in.GetMcpTokenUseCase;
+import com.schemafy.core.mcp.domain.McpScope;
 import com.schemafy.core.mcp.domain.McpToken;
 import com.schemafy.core.mcp.domain.McpTokenClaimSupport;
+import com.schemafy.core.project.application.port.in.CreateProjectUseCase;
+import com.schemafy.core.project.application.port.in.CreateWorkspaceCommand;
+import com.schemafy.core.project.application.port.in.CreateWorkspaceUseCase;
 import com.schemafy.core.project.application.port.in.GetMySharedProjectsQuery;
 import com.schemafy.core.project.application.port.in.GetMySharedProjectsUseCase;
 import com.schemafy.core.project.application.port.in.GetProjectMembersQuery;
 import com.schemafy.core.project.application.port.in.GetProjectMembersUseCase;
 import com.schemafy.core.project.application.port.in.GetProjectQuery;
+import com.schemafy.core.project.application.port.in.GetProjectShareLinkQuery;
+import com.schemafy.core.project.application.port.in.GetProjectShareLinkUseCase;
 import com.schemafy.core.project.application.port.in.GetProjectUseCase;
 import com.schemafy.core.project.application.port.in.GetProjectsQuery;
 import com.schemafy.core.project.application.port.in.GetProjectsUseCase;
@@ -83,15 +105,19 @@ import com.schemafy.core.project.application.port.in.GetWorkspacesQuery;
 import com.schemafy.core.project.application.port.in.GetWorkspacesUseCase;
 import com.schemafy.core.project.application.port.in.ProjectDetail;
 import com.schemafy.core.project.application.port.in.ProjectSummary;
+import com.schemafy.core.project.application.port.in.UpdateProjectShareLinkCommand;
+import com.schemafy.core.project.application.port.in.UpdateProjectShareLinkUseCase;
 import com.schemafy.core.project.application.port.in.WorkspaceDetail;
 import com.schemafy.core.project.domain.Project;
 import com.schemafy.core.project.domain.ProjectMember;
 import com.schemafy.core.project.domain.ProjectRole;
+import com.schemafy.core.project.domain.ShareLink;
 import com.schemafy.core.project.domain.Workspace;
 import com.schemafy.core.project.domain.WorkspaceMember;
 import com.schemafy.core.project.domain.WorkspaceRole;
 import com.schemafy.core.project.domain.exception.ProjectErrorCode;
 import com.schemafy.mcp.common.security.McpRateLimiter;
+import com.schemafy.mcp.common.security.McpSecurityAuditLogger;
 import com.schemafy.mcp.common.security.McpSecurityProperties;
 import com.schemafy.mcp.common.security.McpTokenRevocationCache;
 
@@ -101,12 +127,24 @@ import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.BDDMockito.given;
+import static org.mockito.BDDMockito.then;
+import static org.mockito.Mockito.never;
 
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT, properties = "spring.main.allow-bean-definition-overriding=true")
 @AutoConfigureWebTestClient
 @ActiveProfiles("test")
 @Import(SchemafyResourceIntegrationTest.TestResourceConfiguration.class)
+@Execution(ExecutionMode.SAME_THREAD)
 class SchemafyResourceIntegrationTest {
+
+  @MockitoBean
+  McpSecurityAuditLogger auditLogger;
+
+  @MockitoBean
+  ChangeColumnNameUseCase changeColumnNameUseCase;
 
   @Autowired
   WebTestClient webTestClient;
@@ -117,11 +155,47 @@ class SchemafyResourceIntegrationTest {
   @Autowired
   TestReadUseCases readUseCases;
 
+  @MockitoBean
+  CreateWorkspaceUseCase createWorkspaceUseCase;
+
+  @MockitoBean
+  CreateProjectUseCase createProjectUseCase;
+
+  @MockitoBean
+  CreateColumnUseCase createColumnUseCase;
+
+  @MockitoBean
+  ErdStateSyncPublisher stateSyncPublisher;
+
+  @MockitoBean
+  CreateMemoCommentUseCase createMemoCommentUseCase;
+
+  @MockitoBean
+  UpdateProjectShareLinkUseCase updateProjectShareLinkUseCase;
+
+  @MockitoBean
+  GetMcpTokenUseCase getMcpTokenUseCase;
+
+  @MockitoBean
+  GetProjectShareLinkUseCase getProjectShareLinkUseCase;
+
+  @MockitoBean
+  DeleteSchemaUseCase deleteSchemaUseCase;
+
+  @MockitoBean
+  DeleteTableUseCase deleteTableUseCase;
+
   TestTokenFactory tokenFactory;
 
   @BeforeEach
   void setUp() {
     tokenFactory = new TestTokenFactory(properties);
+    given(getMcpTokenUseCase.getMcpToken(any())).willAnswer(invocation -> {
+      Instant now = Instant.now();
+      return Mono.just(McpToken.issue("token-1", "user-1", tokenFactory.lastScope(),
+          now.minusSeconds(60), now.plusSeconds(3600)));
+    });
+    given(stateSyncPublisher.publishMutation(any(), any())).willReturn(Mono.empty());
     readUseCases.reset();
   }
 
@@ -141,6 +215,11 @@ class SchemafyResourceIntegrationTest {
         .contains("schemafy_list_schemas")
         .contains("Use after schemafy_list_schemas when a schemaId is known to enumerate ERD tables")
         .contains("schemafy_get_schema")
+        .contains("schemafy_create_workspace")
+        .contains("schemafy_create_column")
+        .contains("schemafy_update_memo_comment")
+        .contains("\"maxLength\":255")
+        .contains("\"maxLength\":1000")
         .contains("Zero-based page number. Defaults to 0.")
         .contains("Page size from 1 to 100. Defaults to 100.")
         .contains("readOnlyHint")
@@ -165,6 +244,38 @@ class SchemafyResourceIntegrationTest {
         .contains("schemafy://memos/{memoId}/comments")
         .doesNotContain("schemafy://schemas/{schemaId}/snapshot")
         .doesNotContain("schemafy://tables/{tableId}/snapshot");
+  }
+
+  @Test
+  @DisplayName("tools/list는 기존 값을 덮어쓰는 write tool만 destructive로 표기한다")
+  void marksOverwritingWriteToolsAsDestructive() {
+    String token = tokenFactory.validToken();
+    String sessionId = initialize(token);
+
+    String tools = mcp(sessionId, token, "tools-2", "tools/list", Map.of());
+
+    assertThat(destructiveHint(tools, "schemafy_list_workspaces")).isFalse();
+    assertThat(destructiveHint(tools, "schemafy_create_workspace")).isFalse();
+    assertThat(destructiveHint(tools, "schemafy_create_memo")).isFalse();
+    assertThat(destructiveHint(tools, "schemafy_create_memo_comment")).isFalse();
+    assertThat(destructiveHint(tools, "schemafy_update_workspace")).isTrue();
+    assertThat(destructiveHint(tools, "schemafy_update_project")).isTrue();
+    assertThat(destructiveHint(tools, "schemafy_rename_schema")).isTrue();
+    assertThat(destructiveHint(tools, "schemafy_rename_table")).isTrue();
+    assertThat(destructiveHint(tools, "schemafy_rename_column")).isTrue();
+    assertThat(destructiveHint(tools, "schemafy_move_memo")).isTrue();
+    assertThat(destructiveHint(tools, "schemafy_update_memo_comment")).isTrue();
+    assertThat(tools)
+        .contains("schemafy_delete_schema")
+        .contains("schemafy_create_workspace_invitation")
+        .contains("schemafy_update_project_member_role")
+        .contains("schemafy_update_project_share_link")
+        .contains("schemafy_get_project_share_link")
+        .doesNotContain("schemafy_create_share_link", "schemafy_list_share_links",
+            "schemafy_get_share_link", "schemafy_revoke_share_link", "schemafy_delete_share_link")
+        .contains("schemafy_list_project_presence")
+        .contains("confirmed")
+        .contains("Must be true to confirm this high-risk operation.");
   }
 
   @Test
@@ -224,6 +335,12 @@ class SchemafyResourceIntegrationTest {
     assertThat(readUseCases.lastWorkspacesQuery.get().page()).isEqualTo(1);
     assertThat(readUseCases.lastWorkspacesQuery.get().size()).isEqualTo(30);
 
+    String deniedWrite = callTool(sessionId, token, "schemafy_create_workspace",
+        Map.of("name", "Denied workspace"));
+    assertThat(deniedWrite)
+        .contains("\"isError\":true")
+        .contains("MCP token scope is insufficient");
+
     String projects = callTool(sessionId, token, "schemafy_list_projects",
         Map.of("workspaceId", "workspace-1", "page", 4, "size", 15));
     assertThat(projects)
@@ -248,6 +365,317 @@ class SchemafyResourceIntegrationTest {
         .contains("schema-1")
         .contains("commerce")
         .doesNotContain("\"isError\":true");
+  }
+
+  @Test
+  @DisplayName("고위험 MCP 도구는 confirmed=true 없이는 Core UseCase를 호출하지 않는다")
+  void rejectsHighRiskToolWithoutConfirmation() {
+    String token = tokenFactory.tokenWithScopes(McpScope.WORKSPACE_WRITE.value());
+    String sessionId = initialize(token);
+
+    String response = callTool(sessionId, token, "schemafy_delete_project",
+        Map.of("projectId", "project-1"));
+
+    assertThat(response)
+        .contains("\"isError\":true")
+        .contains("confirmed must be true")
+        .doesNotContain("Schemafy MCP tool call failed");
+  }
+
+  @Test
+  @DisplayName("workspace write scope는 인증된 requester를 command에 전달해 management mutation을 수행한다")
+  void callsWorkspaceWriteToolWithAuthenticatedRequester() {
+    String token = tokenFactory.tokenWithScopes(McpScope.WORKSPACE_WRITE.value());
+    WorkspaceDetail result = new WorkspaceDetail(
+        Workspace.create("workspace-created", "Created workspace", "Created by MCP"), 1L,
+        WorkspaceRole.ADMIN.name());
+    given(createWorkspaceUseCase.createWorkspace(any())).willReturn(Mono.just(result));
+    String sessionId = initialize(token);
+
+    String response = callTool(sessionId, token, "schemafy_create_workspace",
+        Map.of("name", "Created workspace", "description", "Created by MCP"));
+
+    assertThat(response)
+        .contains("workspace-created")
+        .doesNotContain("\"isError\":true");
+    ArgumentCaptor<CreateWorkspaceCommand> command = ArgumentCaptor.forClass(CreateWorkspaceCommand.class);
+    then(createWorkspaceUseCase).should().createWorkspace(command.capture());
+    then(auditLogger).should().writeToolSucceeded(any(), eq("schemafy_create_workspace"), eq("workspace-created"), eq(
+        false));
+    assertThat(command.getValue())
+        .extracting(CreateWorkspaceCommand::name, CreateWorkspaceCommand::description,
+            CreateWorkspaceCommand::requesterId)
+        .containsExactly("Created workspace", "Created by MCP", "user-1");
+  }
+
+  @Test
+  @DisplayName("ERD write scope는 column JSON 입력을 core command로 변환한다")
+  void callsErdWriteToolWithValidatedColumnArguments() {
+    String token = tokenFactory.tokenWithScopes(McpScope.ERD_WRITE.value());
+    CommittedErdOperation operation = new CommittedErdOperation(
+        "operation-created", "client-operation-created", 3L, ErdOperationDerivationKind.ORIGINAL);
+    given(createColumnUseCase.createColumn(any())).willReturn(Mono.just(new MutationResult<>(
+        new CreateColumnResult("column-created", "code", "VARCHAR", null, 1, false,
+            null, null, "MCP column"), Set.of("table-1"), operation, null, false)));
+    given(stateSyncPublisher.publishMutation(any(), any())).willReturn(Mono.empty());
+    String sessionId = initialize(token);
+
+    String response = callTool(sessionId, token, "schemafy_create_column", Map.of(
+        "tableId", "table-1", "name", "code", "dataType", "VARCHAR", "length", 32,
+        "comment", "MCP column", "values", List.of("A", "B")));
+
+    assertThat(response)
+        .contains("column-created")
+        .doesNotContain("\"isError\":true");
+    ArgumentCaptor<CreateColumnCommand> command = ArgumentCaptor.forClass(CreateColumnCommand.class);
+    then(createColumnUseCase).should().createColumn(command.capture());
+    assertThat(command.getValue())
+        .extracting(CreateColumnCommand::tableId, CreateColumnCommand::name,
+            CreateColumnCommand::dataType, CreateColumnCommand::length,
+            CreateColumnCommand::comment, CreateColumnCommand::values)
+        .containsExactly("table-1", "code", "VARCHAR", 32, "MCP column", List.of("A", "B"));
+    then(stateSyncPublisher).should().publishMutation(Set.of("table-1"), operation);
+    then(auditLogger).should().writeToolSucceeded(any(), eq("schemafy_create_column"), eq("table-1"), eq(false));
+  }
+
+  @Test
+  @DisplayName("ERD no-op은 응답과 감사 로그에 유지된다")
+  void auditsErdNoOp() {
+    String token = tokenFactory.tokenWithScopes(McpScope.ERD_WRITE.value());
+    given(changeColumnNameUseCase.changeColumnName(any())).willReturn(Mono.just(MutationResult.<Void>noop(null)));
+    given(stateSyncPublisher.publishMutation(any(), any())).willReturn(Mono.empty());
+
+    String response = callTool(initialize(token), token, "schemafy_rename_column",
+        Map.of("columnId", "column-1", "newName", "code"));
+
+    assertThat(response).contains("noOp").doesNotContain("\"isError\":true");
+    then(auditLogger).should().writeToolSucceeded(any(), eq("schemafy_rename_column"), eq("column-1"), eq(true));
+  }
+
+  @Test
+  @DisplayName("memo write scope는 JSON actor 없이 인증된 사용자를 comment author로 사용한다")
+  void callsMemoWriteToolWithAuthenticatedAuthor() {
+    String token = tokenFactory.tokenWithScopes(McpScope.MEMO_WRITE.value());
+    Instant now = Instant.parse("2026-01-01T00:00:00Z");
+    given(createMemoCommentUseCase.createMemoComment(any())).willReturn(Mono.just(
+        new MemoComment("memo-comment-created", "memo-1", "user-1", "MCP note", now, now, null)));
+    String sessionId = initialize(token);
+
+    String response = callTool(sessionId, token, "schemafy_create_memo_comment",
+        Map.of("memoId", "memo-1", "body", "MCP note"));
+
+    assertThat(response)
+        .contains("memo-comment-created")
+        .doesNotContain("\"isError\":true");
+    ArgumentCaptor<CreateMemoCommentCommand> command = ArgumentCaptor.forClass(
+        CreateMemoCommentCommand.class);
+    then(createMemoCommentUseCase).should().createMemoComment(command.capture());
+    then(auditLogger).should().writeToolSucceeded(any(), eq("schemafy_create_memo_comment"), eq("memo-1"), eq(false));
+    assertThat(command.getValue())
+        .extracting(CreateMemoCommentCommand::memoId, CreateMemoCommentCommand::body,
+            CreateMemoCommentCommand::authorId)
+        .containsExactly("memo-1", "MCP note", "user-1");
+  }
+
+  @Test
+  @DisplayName("share-link 활성화 URL은 API가 사용하는 기본 v1.0 경로를 사용한다")
+  void enablesShareLinkWithDefaultApiVersion() {
+    String token = tokenFactory.tokenWithScopes(McpScope.SHARE_LINK_WRITE.value());
+    given(updateProjectShareLinkUseCase.updateProjectShareLink(any()))
+        .willReturn(Mono.just(ShareLink.create("share-link-1", "project-1", "0123456789abcdef0123456789abcdef")));
+    String sessionId = initialize(token);
+
+    String response = callTool(sessionId, token, "schemafy_update_project_share_link",
+        Map.of("projectId", "project-1", "isActive", true, "confirmed", true));
+
+    assertThat(response)
+        .contains("/public/api/v1.0/share/0123456789abcdef0123456789abcdef")
+        .doesNotContain("/public/api/v1/share/0123456789abcdef0123456789abcdef")
+        .doesNotContain("\"isError\":true");
+  }
+
+  @Test
+  @DisplayName("share-link 조회는 인증된 사용자로 호출하고 code와 URL을 숨긴다")
+  void readsShareLinkWithoutExposingUrl() {
+    String token = tokenFactory.tokenWithScopes(McpScope.SHARE_LINK_READ.value());
+    given(getProjectShareLinkUseCase.getProjectShareLink(any())).willReturn(Mono.just(
+        ShareLink.create("share-link-1", "project-1", "0123456789abcdef0123456789abcdef")));
+
+    String response = callTool(initialize(token), token, "schemafy_get_project_share_link",
+        Map.of("projectId", "project-1", "userId", "forged-user"));
+
+    assertThat(response).contains("isActive", "share-link-1")
+        .doesNotContain("0123456789abcdef0123456789abcdef", "publicUrl", "\"isError\":true");
+    then(getProjectShareLinkUseCase).should().getProjectShareLink(new GetProjectShareLinkQuery("project-1", "user-1"));
+  }
+
+  @Test
+  @DisplayName("share-link 비활성화는 인증된 사용자로 호출하고 URL을 숨긴다")
+  void disablesShareLinkWithoutExposingUrl() {
+    String token = tokenFactory.tokenWithScopes(McpScope.SHARE_LINK_WRITE.value());
+    ShareLink link = ShareLink.create("share-link-1", "project-1", "0123456789abcdef0123456789abcdef");
+    link.deactivate();
+    given(updateProjectShareLinkUseCase.updateProjectShareLink(any())).willReturn(Mono.just(link));
+
+    String response = callTool(initialize(token), token, "schemafy_update_project_share_link",
+        Map.of("projectId", "project-1", "isActive", false, "confirmed", true, "userId", "forged-user"));
+
+    assertThat(response).contains("isActive", "false")
+        .doesNotContain("0123456789abcdef0123456789abcdef", "publicUrl", "\"isError\":true");
+    then(updateProjectShareLinkUseCase).should().updateProjectShareLink(
+        new UpdateProjectShareLinkCommand("project-1", false, "user-1"));
+  }
+
+  @Test
+  @DisplayName("share-link 미생성 상태의 조회와 OFF 요청은 비활성 응답을 반환한다")
+  void returnsInactiveWhenShareLinkDoesNotExist() {
+    String token = tokenFactory.tokenWithScopes(McpScope.SHARE_LINK_READ.value(), McpScope.SHARE_LINK_WRITE.value());
+    given(getProjectShareLinkUseCase.getProjectShareLink(any())).willReturn(Mono.empty());
+    given(updateProjectShareLinkUseCase.updateProjectShareLink(any())).willReturn(Mono.empty());
+    String session = initialize(token);
+
+    String read = callTool(session, token, "schemafy_get_project_share_link", Map.of("projectId", "project-1"));
+    String update = callTool(session, token, "schemafy_update_project_share_link",
+        Map.of("projectId", "project-1", "isActive", false, "confirmed", true));
+
+    for (String response : List.of(read, update)) {
+      assertThat(response).contains("isActive", "false").doesNotContain("publicUrl", "\"isError\":true");
+    }
+  }
+
+  @Test
+  @DisplayName("share-link 변경은 boolean isActive와 명시적인 확인을 요구한다")
+  void rejectsInvalidShareLinkUpdateArguments() {
+    String token = tokenFactory.tokenWithScopes(McpScope.SHARE_LINK_WRITE.value());
+    String session = initialize(token);
+    for (Map<String, Object> arguments : List.<Map<String, Object>>of(
+        Map.of("projectId", "project-1", "confirmed", true),
+        Map.of("projectId", "project-1", "isActive", "false", "confirmed", true),
+        Map.of("projectId", "project-1", "isActive", true),
+        Map.of("projectId", "project-1", "isActive", true, "confirmed", false))) {
+      assertThat(callTool(session, token, "schemafy_update_project_share_link", arguments))
+          .contains("\"isError\":true");
+    }
+    then(updateProjectShareLinkUseCase).shouldHaveNoInteractions();
+  }
+
+  @Test
+  @DisplayName("share-link read scope로는 공개 링크를 활성화할 수 없다")
+  void rejectsShareLinkUpdateWithReadScope() {
+    String token = tokenFactory.tokenWithScopes(McpScope.SHARE_LINK_READ.value());
+    String response = callTool(initialize(token), token, "schemafy_update_project_share_link",
+        Map.of("projectId", "project-1", "isActive", true, "confirmed", true));
+
+    assertThat(response).contains("\"isError\":true");
+    then(updateProjectShareLinkUseCase).shouldHaveNoInteractions();
+  }
+
+  @Test
+  @DisplayName("invalid numeric write argument은 core use case 호출 전에 MCP tool error로 반환한다")
+  void rejectsInvalidWriteArgumentBeforeCallingUseCase() {
+    String token = tokenFactory.tokenWithScopes(McpScope.WORKSPACE_WRITE.value());
+    String sessionId = initialize(token);
+
+    String response = callTool(sessionId, token, "schemafy_create_project", Map.of(
+        "workspaceId", "workspace-1", "dbVendorId", 0, "name", "Invalid project"));
+
+    assertThat(response)
+        .contains("\"isError\":true")
+        .contains("dbVendorId must be a positive integer");
+    then(createProjectUseCase).shouldHaveNoInteractions();
+  }
+
+  @Test
+  @DisplayName("share-link read의 필수 인자 오류는 구조화된 MCP tool error로 반환한다")
+  void returnsStructuredErrorsForMalformedShareLinkReadArguments() {
+    String token = tokenFactory.tokenWithScopes(McpScope.SHARE_LINK_READ.value());
+    String sessionId = initialize(token);
+
+    String missingProjectId = callTool(sessionId, token, "schemafy_get_project_share_link", Map.of());
+    String wrongProjectIdType = callTool(sessionId, token, "schemafy_get_project_share_link", Map.of(
+        "projectId", 123));
+
+    assertThat(missingProjectId)
+        .contains("\"isError\":true")
+        .contains("projectId is required");
+    assertThat(wrongProjectIdType)
+        .contains("\"isError\":true")
+        .contains("projectId is required");
+    then(getProjectShareLinkUseCase).shouldHaveNoInteractions();
+  }
+
+  @Test
+  @DisplayName("ERD context 조회 오류가 발생해도 schema 삭제는 수행하고 이벤트는 생략한다")
+  void deletesSchemaWhenErdContextResolutionFails() {
+    String token = tokenFactory.tokenWithScopes(McpScope.ERD_WRITE.value());
+    String sessionId = initialize(token);
+    given(stateSyncPublisher.resolveFromSchemaId("schema-1"))
+        .willReturn(Mono.error(new IllegalStateException("redis unavailable")));
+    given(deleteSchemaUseCase.deleteSchema(any()))
+        .willReturn(Mono.just(MutationResult.empty(null)));
+
+    String response = callTool(sessionId, token, "schemafy_delete_schema", Map.of(
+        "schemaId", "schema-1", "confirmed", true));
+
+    assertThat(response)
+        .doesNotContain("\"isError\":true");
+    then(deleteSchemaUseCase).should().deleteSchema(any());
+    then(stateSyncPublisher).should().resolveFromSchemaId("schema-1");
+    then(stateSyncPublisher).should(never()).publishDeletedWithContext(any(), any(), any());
+  }
+
+  @Test
+  @DisplayName("schema context가 비어 있으면 schema 삭제를 NOT_FOUND로 거부한다")
+  void rejectsSchemaDeleteWhenErdContextIsMissing() {
+    String token = tokenFactory.tokenWithScopes(McpScope.ERD_WRITE.value());
+    String sessionId = initialize(token);
+    given(stateSyncPublisher.resolveFromSchemaId("schema-1"))
+        .willReturn(Mono.empty());
+
+    String response = callTool(sessionId, token, "schemafy_delete_schema", Map.of(
+        "schemaId", "schema-1", "confirmed", true));
+
+    assertThat(response)
+        .contains("\"isError\":true")
+        .contains("Schema not found: schema-1");
+    then(deleteSchemaUseCase).shouldHaveNoInteractions();
+  }
+
+  @Test
+  @DisplayName("ERD context 조회 오류가 발생해도 table 삭제는 수행하고 이벤트는 생략한다")
+  void deletesTableWhenErdContextResolutionFails() {
+    String token = tokenFactory.tokenWithScopes(McpScope.ERD_WRITE.value());
+    String sessionId = initialize(token);
+    given(stateSyncPublisher.resolveFromTableId("table-1"))
+        .willReturn(Mono.error(new IllegalStateException("redis unavailable")));
+    given(deleteTableUseCase.deleteTable(any()))
+        .willReturn(Mono.just(MutationResult.empty(null)));
+
+    String response = callTool(sessionId, token, "schemafy_delete_table", Map.of(
+        "tableId", "table-1", "confirmed", true));
+
+    assertThat(response)
+        .doesNotContain("\"isError\":true");
+    then(deleteTableUseCase).should().deleteTable(any());
+    then(stateSyncPublisher).should().resolveFromTableId("table-1");
+    then(stateSyncPublisher).should(never()).publishActiveWithContext(any(), any(), any());
+  }
+
+  @Test
+  @DisplayName("table context가 비어 있으면 table 삭제를 NOT_FOUND로 거부한다")
+  void rejectsTableDeleteWhenErdContextIsMissing() {
+    String token = tokenFactory.tokenWithScopes(McpScope.ERD_WRITE.value());
+    String sessionId = initialize(token);
+    given(stateSyncPublisher.resolveFromTableId("table-1"))
+        .willReturn(Mono.empty());
+
+    String response = callTool(sessionId, token, "schemafy_delete_table", Map.of(
+        "tableId", "table-1", "confirmed", true));
+
+    assertThat(response)
+        .contains("\"isError\":true")
+        .contains("Table not found: table-1");
+    then(deleteTableUseCase).shouldHaveNoInteractions();
   }
 
   @Test
@@ -333,7 +761,7 @@ class SchemafyResourceIntegrationTest {
         .returnResult();
 
     assertThat(new String(result.getResponseBody(), StandardCharsets.UTF_8))
-        .contains("Schemafy MCP exposes read-only access")
+        .contains("Schemafy MCP exposes authenticated read access")
         .contains("schemafy_list_workspaces");
 
     return result.getResponseHeaders().getFirst("Mcp-Session-Id");
@@ -353,6 +781,14 @@ class SchemafyResourceIntegrationTest {
         Map.of(
             "name", name,
             "arguments", arguments));
+  }
+
+  private boolean destructiveHint(String toolsResponse, String toolName) {
+    int toolIndex = toolsResponse.indexOf("\"name\":\"" + toolName + "\"");
+    assertThat(toolIndex).as("tool %s is listed", toolName).isNotNegative();
+    int hintIndex = toolsResponse.indexOf("\"destructiveHint\":", toolIndex);
+    assertThat(hintIndex).as("tool %s exposes destructiveHint", toolName).isNotNegative();
+    return toolsResponse.startsWith("\"destructiveHint\":true", hintIndex);
   }
 
   private String mcp(
@@ -385,22 +821,6 @@ class SchemafyResourceIntegrationTest {
     @Primary
     McpTokenRevocationCache tokenRevocationCache() {
       return tokenId -> Mono.just(false);
-    }
-
-    @Bean
-    @Primary
-    GetMcpTokenUseCase getMcpTokenUseCase(
-        McpSecurityProperties properties,
-        Clock clock) {
-      McpToken token = McpToken.issue(
-          "token-1",
-          "user-1",
-          properties.getToken().getRequiredScope(),
-          clock.instant().minusSeconds(60),
-          clock.instant().plusSeconds(3600));
-      return query -> token.getId().equals(query.tokenId())
-          ? Mono.just(token)
-          : Mono.empty();
     }
 
     @Bean
@@ -600,6 +1020,8 @@ class SchemafyResourceIntegrationTest {
 
   static class TestTokenFactory {
 
+    private final AtomicReference<String> lastScope = new AtomicReference<>();
+
     private final McpSecurityProperties properties;
     private final SecretKey secretKey;
 
@@ -613,11 +1035,20 @@ class SchemafyResourceIntegrationTest {
       return token(properties.getToken().getRequiredScope());
     }
 
+    String tokenWithScopes(String... scopes) {
+      return token(properties.getToken().getRequiredScope() + " " + String.join(" ", scopes));
+    }
+
     String tokenWithoutRequiredScope() {
       return token("schema:read");
     }
 
+    String lastScope() {
+      return lastScope.get();
+    }
+
     private String token(String scope) {
+      lastScope.set(scope);
       Instant now = Instant.now();
       return Jwts.builder()
           .id("token-1")
