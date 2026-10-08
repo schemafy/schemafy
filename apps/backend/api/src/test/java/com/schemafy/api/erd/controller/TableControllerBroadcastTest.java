@@ -13,12 +13,12 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import com.schemafy.api.erd.service.TableSnapshotOrchestrator;
-import com.schemafy.api.erd.service.sync.ErdStateSyncPublisher;
 import com.schemafy.api.erd.service.table.TableApiResponseMapper;
 import com.schemafy.core.common.MutationResult;
 import com.schemafy.core.erd.broadcast.ErdMutationBroadcaster.ResolvedContext;
 import com.schemafy.core.erd.operation.domain.CommittedErdOperation;
 import com.schemafy.core.erd.operation.domain.ErdOperationDerivationKind;
+import com.schemafy.core.erd.sync.ErdStateSyncPublisher;
 import com.schemafy.core.erd.table.application.port.in.ChangeTableExtraUseCase;
 import com.schemafy.core.erd.table.application.port.in.ChangeTableMetaUseCase;
 import com.schemafy.core.erd.table.application.port.in.ChangeTableNameUseCase;

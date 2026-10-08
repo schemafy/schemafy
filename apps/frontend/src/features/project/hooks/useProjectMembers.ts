@@ -8,10 +8,11 @@ import {
 } from './useProjectMutations';
 
 export const useProjectMembers = (projectId: string, page = 0, size = 5) => {
+  const hasProjectId = Boolean(projectId);
   const membersQuery = useQuery({
     queryKey: projectKeys.members(projectId, page, size),
     queryFn: () => getMembers(projectId, page, size),
-    enabled: !!projectId,
+    enabled: hasProjectId,
   });
   const removeMemberMutation = useRemoveMemberMutation(projectId);
   const updateMemberRoleMutation = useUpdateMemberRoleMutation(projectId);
