@@ -15,6 +15,7 @@ import com.schemafy.core.project.application.port.in.UpdateProjectShareLinkUseCa
 import com.schemafy.core.project.domain.Project;
 import com.schemafy.core.project.domain.ProjectRole;
 import com.schemafy.core.project.domain.ShareLink;
+import com.schemafy.core.project.domain.Workspace;
 import com.schemafy.core.project.domain.WorkspaceRole;
 import com.schemafy.core.project.domain.exception.ProjectErrorCode;
 import com.schemafy.core.project.domain.exception.ShareLinkErrorCode;
@@ -198,7 +199,7 @@ class ShareLinkUseCaseIntegrationTest extends ProjectDomainIntegrationSupport {
     return new Fixture(admin, workspace, project);
   }
 
-  private record Fixture(User admin, com.schemafy.core.project.domain.Workspace workspace,
+  private record Fixture(User admin, Workspace workspace,
       Project project) {
   }
 

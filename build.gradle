@@ -1,3 +1,7 @@
+plugins {
+    id 'com.diffplug.spotless' version '8.10.2' apply false
+}
+
 allprojects {
     repositories {
         mavenCentral()

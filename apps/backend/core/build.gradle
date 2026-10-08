@@ -2,7 +2,7 @@ plugins {
     id 'java'
     id 'io.spring.dependency-management' version '1.1.7'
     id 'com.github.spotbugs' version '6.0.26'
-    id 'com.diffplug.spotless' version '6.25.0'
+    id 'com.diffplug.spotless'
 }
 
 group = 'com.schemafy'
@@ -59,9 +59,11 @@ tasks.withType(JavaCompile).configureEach {
 def formatterConfig = file("${projectDir}/../../../gradle/format/java-formatter.xml")
 
 spotless {
+    ratchetFrom 'origin/main'
     java {
         target 'src/**/*.java'
         eclipse().configFile(formatterConfig)
+        shortenFullyQualifiedTypes()
         removeUnusedImports()
         importOrder(
                 'java',

@@ -6,6 +6,7 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 
 import org.springframework.stereotype.Component;
 
@@ -145,7 +146,7 @@ class ChangeColumnMetaUndoRedoHandler
             ? directColumn.collation()
             : normalizeMetaValue(inversePayload.oldCollation()));
 
-    java.util.stream.IntStream.range(0, inversePayload.fkRevertList().size())
+    IntStream.range(0, inversePayload.fkRevertList().size())
         .forEach(index -> validateFkTarget(
             datatypePolicy,
             fkColumns.get(index),

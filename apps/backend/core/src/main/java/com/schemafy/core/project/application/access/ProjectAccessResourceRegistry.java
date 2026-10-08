@@ -4,6 +4,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 import org.springframework.stereotype.Component;
 
@@ -23,7 +24,7 @@ class ProjectAccessTargetRegistry {
     }
 
     this.resolvers = resolverMap.entrySet().stream()
-        .collect(java.util.stream.Collectors.toUnmodifiableMap(
+        .collect(Collectors.toUnmodifiableMap(
             Map.Entry::getKey,
             entry -> List.copyOf(entry.getValue())));
   }

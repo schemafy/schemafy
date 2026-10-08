@@ -13,6 +13,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
+import org.mockito.Mockito;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import com.schemafy.core.common.exception.DomainException;
@@ -101,7 +102,7 @@ class CreateConstraintServiceTest {
   void setUpTransaction() {
     given(transactionalOperator.transactional(any(Mono.class)))
         .willAnswer(invocation -> invocation.getArgument(0));
-    org.mockito.Mockito.lenient()
+    Mockito.lenient()
         .when(identifierCapabilityResolver.resolve(any(), anyString()))
         .thenReturn(Mono.just(IdentifierCapabilities.codePoints(64)));
     stubEmptySnapshots(structuralSnapshotService);

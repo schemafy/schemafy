@@ -1,8 +1,10 @@
 package com.schemafy.core.project.application.access;
 
+import org.springframework.context.ApplicationContext;
 import org.springframework.context.annotation.AnnotationConfigApplicationContext;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.context.annotation.Import;
 
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -65,7 +67,7 @@ class AccessAnnotationValidatorTest {
 
     @Bean
     AccessAnnotationValidator accessAnnotationValidator(
-        org.springframework.context.ApplicationContext applicationContext) {
+        ApplicationContext applicationContext) {
       return new AccessAnnotationValidator(
           applicationContext,
           new ProjectAccessTargetInference());
@@ -74,7 +76,7 @@ class AccessAnnotationValidatorTest {
   }
 
   @Configuration
-  @org.springframework.context.annotation.Import(ValidatorBeanConfig.class)
+  @Import(ValidatorBeanConfig.class)
   static class ValidConfig {
 
     @Bean
@@ -85,7 +87,7 @@ class AccessAnnotationValidatorTest {
   }
 
   @Configuration
-  @org.springframework.context.annotation.Import(ValidatorBeanConfig.class)
+  @Import(ValidatorBeanConfig.class)
   static class DualAnnotationConfig {
 
     @Bean
@@ -96,7 +98,7 @@ class AccessAnnotationValidatorTest {
   }
 
   @Configuration
-  @org.springframework.context.annotation.Import(ValidatorBeanConfig.class)
+  @Import(ValidatorBeanConfig.class)
   static class NonReactiveReturnConfig {
 
     @Bean
@@ -107,7 +109,7 @@ class AccessAnnotationValidatorTest {
   }
 
   @Configuration
-  @org.springframework.context.annotation.Import(ValidatorBeanConfig.class)
+  @Import(ValidatorBeanConfig.class)
   static class ProjectMismatchConfig {
 
     @Bean
@@ -118,7 +120,7 @@ class AccessAnnotationValidatorTest {
   }
 
   @Configuration
-  @org.springframework.context.annotation.Import(ValidatorBeanConfig.class)
+  @Import(ValidatorBeanConfig.class)
   static class WorkspaceMismatchConfig {
 
     @Bean

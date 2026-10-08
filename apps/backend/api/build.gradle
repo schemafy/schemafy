@@ -5,7 +5,7 @@ plugins {
 	id 'org.asciidoctor.jvm.convert' version '3.3.2'
 	id 'com.github.spotbugs' version '6.0.26'
 	id 'org.ec4j.editorconfig' version '0.1.0'
-	id 'com.diffplug.spotless' version '6.25.0'
+	id 'com.diffplug.spotless'
 	id 'com.epages.restdocs-api-spec' version '0.19.4'
 }
 
@@ -179,9 +179,11 @@ tasks.named('spotbugsTest') {
 def formatterConfig = file("${projectDir}/../../../gradle/format/java-formatter.xml")
 
 spotless {
+	ratchetFrom 'origin/main'
 	java {
 		target 'src/**/*.java'
 		eclipse().configFile(formatterConfig)
+		shortenFullyQualifiedTypes()
 		removeUnusedImports()
 		importOrder(
 				'java',

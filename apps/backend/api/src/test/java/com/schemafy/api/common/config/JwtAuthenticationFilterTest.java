@@ -15,6 +15,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
+import org.mockito.ArgumentMatchers;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
@@ -155,33 +156,33 @@ class JwtAuthenticationFilterTest {
   }
 
   @Test
-    @DisplayName("Authorization 헤더가 없는 요청을 거부한다")
-    void rejectRequestWithoutAuthHeader() {
-        when(filterChain.filter(org.mockito.ArgumentMatchers.any())).thenReturn(Mono.empty());
+  @DisplayName("Authorization 헤더가 없는 요청을 거부한다")
+  void rejectRequestWithoutAuthHeader() {
+    when(filterChain.filter(ArgumentMatchers.any())).thenReturn(Mono.empty());
 
-        MockServerHttpRequest request = MockServerHttpRequest
-                .get("/api/test")
-                .build();
-        MockServerWebExchange exchange = MockServerWebExchange.from(request);
+    MockServerHttpRequest request = MockServerHttpRequest
+        .get("/api/test")
+        .build();
+    MockServerWebExchange exchange = MockServerWebExchange.from(request);
 
-        StepVerifier.create(jwtAuthenticationFilter.filter(exchange, filterChain))
-                .verifyComplete();
-    }
+    StepVerifier.create(jwtAuthenticationFilter.filter(exchange, filterChain))
+        .verifyComplete();
+  }
 
   @Test
-    @DisplayName("잘못된 형식의 Authorization 헤더를 거부한다")
-    void rejectMalformedAuthHeader() {
-        when(filterChain.filter(org.mockito.ArgumentMatchers.any())).thenReturn(Mono.empty());
+  @DisplayName("잘못된 형식의 Authorization 헤더를 거부한다")
+  void rejectMalformedAuthHeader() {
+    when(filterChain.filter(ArgumentMatchers.any())).thenReturn(Mono.empty());
 
-        MockServerHttpRequest request = MockServerHttpRequest
-                .get("/api/test")
-                .header(HttpHeaders.AUTHORIZATION, "InvalidFormat token")
-                .build();
-        MockServerWebExchange exchange = MockServerWebExchange.from(request);
+    MockServerHttpRequest request = MockServerHttpRequest
+        .get("/api/test")
+        .header(HttpHeaders.AUTHORIZATION, "InvalidFormat token")
+        .build();
+    MockServerWebExchange exchange = MockServerWebExchange.from(request);
 
-        StepVerifier.create(jwtAuthenticationFilter.filter(exchange, filterChain))
-                .verifyComplete();
-    }
+    StepVerifier.create(jwtAuthenticationFilter.filter(exchange, filterChain))
+        .verifyComplete();
+  }
 
   @Test
   @DisplayName("만료된 토큰을 거부한다")
@@ -287,19 +288,19 @@ class JwtAuthenticationFilterTest {
   }
 
   @Test
-    @DisplayName("대소문자가 다른 Bearer 접두사를 처리한다")
-    void handleBearerPrefixCasing() {
-        when(filterChain.filter(org.mockito.ArgumentMatchers.any())).thenReturn(Mono.empty());
+  @DisplayName("대소문자가 다른 Bearer 접두사를 처리한다")
+  void handleBearerPrefixCasing() {
+    when(filterChain.filter(ArgumentMatchers.any())).thenReturn(Mono.empty());
 
-        MockServerHttpRequest request = MockServerHttpRequest
-                .get("/api/test")
-                .header(HttpHeaders.AUTHORIZATION, "bearer token")
-                .build();
-        MockServerWebExchange exchange = MockServerWebExchange.from(request);
+    MockServerHttpRequest request = MockServerHttpRequest
+        .get("/api/test")
+        .header(HttpHeaders.AUTHORIZATION, "bearer token")
+        .build();
+    MockServerWebExchange exchange = MockServerWebExchange.from(request);
 
-        StepVerifier.create(jwtAuthenticationFilter.filter(exchange, filterChain))
-                .verifyComplete();
-    }
+    StepVerifier.create(jwtAuthenticationFilter.filter(exchange, filterChain))
+        .verifyComplete();
+  }
 
   @Test
   @DisplayName("공백만 있는 토큰을 거부한다")

@@ -42,7 +42,7 @@ class GenerateSchemaDdlServiceTest {
   void routesToDdlGeneratorByTargetDbVendor() {
     SchemaExportSnapshot snapshot = new SchemaExportSnapshot(
         new SchemaSnapshot("schema-1", "mysql", "app", null, null),
-        java.util.List.of());
+        List.of());
     DdlGenerator mysqlGenerator = new StubDdlGenerator(
         DdlExportVendor.MYSQL, snapshot, "MYSQL DDL");
     DdlGenerator postgresGenerator = new StubDdlGenerator(
@@ -68,7 +68,7 @@ class GenerateSchemaDdlServiceTest {
   void throwsWhenTargetDbVendorIsUnsupported() {
     SchemaExportSnapshot snapshot = new SchemaExportSnapshot(
         new SchemaSnapshot("schema-1", "mysql", "app", null, null),
-        java.util.List.of());
+        List.of());
     GenerateSchemaDdlService sut = new GenerateSchemaDdlService(
         List.of(new StubDdlGenerator(DdlExportVendor.MYSQL, snapshot,
             "MYSQL DDL")));
