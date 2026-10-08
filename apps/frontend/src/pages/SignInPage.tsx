@@ -1,4 +1,4 @@
-import { useEffect, useRef } from 'react';
+import { useEffect } from 'react';
 import { CheckCircle2, Database, GitBranch, KeyRound } from 'lucide-react';
 import { ButtonLink } from '@/components';
 import { SignInForm } from '@/features/auth';
@@ -8,12 +8,10 @@ import { notifyAuthRequired } from '@/lib/api/error-handler';
 export const SignInPage = () => {
   const navigate = useNavigate();
   const { oauthError, authRequired } = useSearch({ from: '/signin' });
-  const hasHandledAuthRequired = useRef(false);
 
   useEffect(() => {
-    if (!authRequired || hasHandledAuthRequired.current) return;
+    if (!authRequired) return;
 
-    hasHandledAuthRequired.current = true;
     notifyAuthRequired();
     void navigate({
       to: '/signin',
