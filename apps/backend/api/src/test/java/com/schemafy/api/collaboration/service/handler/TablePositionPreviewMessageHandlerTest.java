@@ -15,6 +15,7 @@ import com.schemafy.api.collaboration.service.SessionRegistry;
 import com.schemafy.api.collaboration.service.model.SessionEntry;
 import com.schemafy.core.collaboration.dto.PreviewAction;
 import com.schemafy.core.collaboration.dto.event.TablePositionPreviewEvent;
+import com.schemafy.core.collaboration.lock.CanvasEditLockService;
 import com.schemafy.core.collaboration.service.CollaborationEventPublisher;
 
 import reactor.core.publisher.Mono;
@@ -38,6 +39,9 @@ class TablePositionPreviewMessageHandlerTest {
   private CollaborationEventPublisher eventPublisher;
 
   @Mock
+  private CanvasEditLockService canvasEditLockService;
+
+  @Mock
   private SessionEntry sessionEntry;
 
   private final ObjectMapper objectMapper = new ObjectMapper()
@@ -47,7 +51,7 @@ class TablePositionPreviewMessageHandlerTest {
   @DisplayName("유효한 UPDATE 메시지는 preview 이벤트를 발행한다")
   void handle_updateMessage_publishes_preview_event() {
     TablePositionPreviewMessageHandler handler = new TablePositionPreviewMessageHandler(
-        sessionRegistry, eventPublisher);
+        sessionRegistry, canvasEditLockService, eventPublisher);
     ObjectNode position = objectMapper.createObjectNode()
         .put("x", 120)
         .put("y", 80);
@@ -75,7 +79,7 @@ class TablePositionPreviewMessageHandlerTest {
   @DisplayName("CLEAR 메시지는 position payload를 무시하고 발행한다")
   void handle_clearMessage_ignores_position_payload() {
     TablePositionPreviewMessageHandler handler = new TablePositionPreviewMessageHandler(
-        sessionRegistry, eventPublisher);
+        sessionRegistry, canvasEditLockService, eventPublisher);
     ObjectNode position = objectMapper.createObjectNode().put("x", 1);
     TablePositionPreviewEvent.Inbound message = new TablePositionPreviewEvent.Inbound(
         PreviewAction.CLEAR, "schema-1", "table-1", position);
@@ -99,7 +103,7 @@ class TablePositionPreviewMessageHandlerTest {
   @DisplayName("UPDATE 메시지의 position이 object가 아니면 무시한다")
   void handle_updateMessageWithInvalidPosition_ignores_message() {
     TablePositionPreviewMessageHandler handler = new TablePositionPreviewMessageHandler(
-        sessionRegistry, eventPublisher);
+        sessionRegistry, canvasEditLockService, eventPublisher);
     TablePositionPreviewEvent.Inbound message = new TablePositionPreviewEvent.Inbound(
         PreviewAction.UPDATE, "schema-1", "table-1",
         objectMapper.getNodeFactory().textNode("invalid"));

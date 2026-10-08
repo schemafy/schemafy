@@ -30,4 +30,10 @@ public class ProjectAccessValidator {
             error -> Mono.just(false));
   }
 
+  public Mono<Boolean> canEdit(String projectId, String userId) {
+    return accessVerifier.requireProjectAccess(projectId, userId, ProjectRole.EDITOR)
+        .thenReturn(true)
+        .onErrorResume(DomainException.hasErrorCode(ProjectErrorCode.ACCESS_DENIED), error -> Mono.just(false));
+  }
+
 }

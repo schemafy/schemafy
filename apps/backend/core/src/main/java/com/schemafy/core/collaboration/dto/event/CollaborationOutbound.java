@@ -14,6 +14,7 @@ import com.schemafy.core.collaboration.dto.CollaborationEventType;
   @JsonSubTypes.Type(value = CursorEvent.Outbound.class, name = "CURSOR"),
   @JsonSubTypes.Type(value = TablePositionPreviewEvent.Outbound.class, name = "TABLE_POSITION_PREVIEW"),
   @JsonSubTypes.Type(value = RelationshipExtraPreviewEvent.Outbound.class, name = "RELATIONSHIP_EXTRA_PREVIEW"),
+  @JsonSubTypes.Type(value = CanvasEditLockEvent.Outbound.class, name = "CANVAS_EDIT_LOCK"),
   @JsonSubTypes.Type(value = SchemaFocusEvent.Outbound.class, name = "SCHEMA_FOCUS"),
   @JsonSubTypes.Type(value = ChatEvent.Outbound.class, name = "CHAT"),
   @JsonSubTypes.Type(value = ErdMutatedEvent.Outbound.class, name = "ERD_MUTATED"),
@@ -24,6 +25,7 @@ public sealed interface CollaborationOutbound
     LeaveEvent.Outbound, CursorEvent.Outbound,
     TablePositionPreviewEvent.Outbound,
     RelationshipExtraPreviewEvent.Outbound,
+    CanvasEditLockEvent.Outbound,
     SchemaFocusEvent.Outbound, ChatEvent.Outbound, ErdMutatedEvent.Outbound,
     ErdStateChangedEvent.Outbound {
 

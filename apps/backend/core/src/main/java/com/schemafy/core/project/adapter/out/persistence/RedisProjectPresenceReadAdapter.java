@@ -15,6 +15,7 @@ import com.schemafy.core.project.application.port.out.ProjectPresenceReadPort;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import reactor.core.publisher.Flux;
+import reactor.core.publisher.Mono;
 
 @Slf4j
 @Service
@@ -39,6 +40,17 @@ public class RedisProjectPresenceReadAdapter implements ProjectPresenceReadPort 
         .map(session -> new ProjectPresenceParticipant(
             session.sessionId(), session.userId(), session.userName(), null))
         .sort(Comparator.comparing(ProjectPresenceParticipant::sessionId));
+  }
+
+  @Override
+  public Mono<ProjectPresenceParticipant> findSession(String projectId, String sessionId) {
+    return redisTemplate.<String, String>opsForHash()
+        .get(participantsKey(projectId), sessionId)
+        .flatMap(payload -> deserialize(payload).next())
+        .filter(this::isActive)
+        .filter(session -> sessionId.equals(session.sessionId()))
+        .map(session -> new ProjectPresenceParticipant(
+            session.sessionId(), session.userId(), session.userName(), null));
   }
 
   private Flux<PresenceSession> deserialize(String payload) {

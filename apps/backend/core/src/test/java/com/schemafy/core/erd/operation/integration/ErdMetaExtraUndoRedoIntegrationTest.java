@@ -235,17 +235,19 @@ class ErdMetaExtraUndoRedoIntegrationTest extends ErdProjectIntegrationSupport {
   void relationshipExtraRoundTripPreservesWholeJson() {
     JsonNode oldExtra = json("{\"controlPoint1\":{\"x\":10,\"y\":20},\"fkHandle\":\"left\"}");
     JsonNode newExtra = json("{\"controlPoint1\":{\"x\":100,\"y\":200},\"controlPoint2\":{\"x\":300,\"y\":400}}");
+    JsonNode mergedExtra = json(
+        "{\"controlPoint1\":{\"x\":100,\"y\":200},\"controlPoint2\":{\"x\":300,\"y\":400},\"fkHandle\":\"left\"}");
     RelationshipFixture fixture = createRelationshipFixture("relationship_extra_round_trip", oldExtra);
 
     MutationResult<Void> original = changeRelationshipExtraUseCase.changeRelationshipExtra(
         new ChangeRelationshipExtraCommand(fixture.relationshipId(), newExtra)).block();
-    assertJsonEquals(getRelationship(fixture.relationshipId()).extra(), newExtra);
+    assertJsonEquals(getRelationship(fixture.relationshipId()).extra(), mergedExtra);
 
     MutationResult<Void> undo = undo(original);
     assertJsonEquals(getRelationship(fixture.relationshipId()).extra(), oldExtra);
 
     MutationResult<Void> redo = redo(original);
-    assertJsonEquals(getRelationship(fixture.relationshipId()).extra(), newExtra);
+    assertJsonEquals(getRelationship(fixture.relationshipId()).extra(), mergedExtra);
     assertRoundTripMetadata(original, undo, redo, Set.of(fixture.pkTableId(), fixture.fkTableId()));
   }
 
