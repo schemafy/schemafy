@@ -13,6 +13,8 @@ import { RelationshipController } from './relationship.controller';
 import { RelationshipService } from './relationship.service';
 import { VendorController } from './vendor.controller';
 import { VendorService } from './vendor.service';
+import { OperationController } from './operation.controller';
+import { OperationService } from './operation.service';
 
 @Module({
   controllers: [
@@ -23,6 +25,7 @@ import { VendorService } from './vendor.service';
     ConstraintController,
     RelationshipController,
     VendorController,
+    OperationController,
   ],
   providers: [
     SchemaService,
@@ -32,6 +35,7 @@ import { VendorService } from './vendor.service';
     ConstraintService,
     RelationshipService,
     VendorService,
+    OperationService,
   ],
 })
 export class ErdModule {}
