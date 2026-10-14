@@ -17,7 +17,6 @@ import org.springframework.web.bind.annotation.RestController;
 
 import com.schemafy.api.common.constant.ApiPath;
 import com.schemafy.api.common.type.MutationResponse;
-import com.schemafy.api.erd.broadcast.ErdMutationBroadcaster;
 import com.schemafy.api.erd.controller.dto.request.ChangeColumnMetaRequest;
 import com.schemafy.api.erd.controller.dto.request.ChangeColumnNameRequest;
 import com.schemafy.api.erd.controller.dto.request.ChangeColumnPositionRequest;
@@ -41,6 +40,7 @@ import com.schemafy.core.erd.column.application.port.in.GetColumnUseCase;
 import com.schemafy.core.erd.column.application.port.in.GetColumnsByTableIdQuery;
 import com.schemafy.core.erd.column.application.port.in.GetColumnsByTableIdUseCase;
 import com.schemafy.core.erd.operation.domain.CommittedErdOperation;
+import com.schemafy.core.erd.sync.ErdStateSyncPublisher;
 
 import lombok.RequiredArgsConstructor;
 import reactor.core.publisher.Mono;
@@ -61,7 +61,7 @@ public class ColumnController {
   private final ChangeColumnPositionUseCase changeColumnPositionUseCase;
   private final DeleteColumnUseCase deleteColumnUseCase;
 
-  private final ObjectProvider<ErdMutationBroadcaster> broadcasterProvider;
+  private final ObjectProvider<ErdStateSyncPublisher> publisherProvider;
 
   @PostMapping("/columns")
   public Mono<MutationResponse<ColumnResponse>> createColumn(
@@ -187,11 +187,11 @@ public class ColumnController {
 
   private Mono<Void> broadcastMutation(Set<String> affectedTableIds,
       CommittedErdOperation operation) {
-    ErdMutationBroadcaster broadcaster = broadcasterProvider.getIfAvailable();
-    if (broadcaster == null) {
+    ErdStateSyncPublisher publisher = publisherProvider.getIfAvailable();
+    if (publisher == null) {
       return Mono.empty();
     }
-    return broadcaster.broadcast(affectedTableIds, operation);
+    return publisher.publishMutation(affectedTableIds, operation);
   }
 
 }

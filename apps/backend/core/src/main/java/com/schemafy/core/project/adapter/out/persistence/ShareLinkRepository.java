@@ -1,12 +1,10 @@
 package com.schemafy.core.project.adapter.out.persistence;
 
-import org.springframework.data.r2dbc.repository.Modifying;
 import org.springframework.data.r2dbc.repository.Query;
 import org.springframework.data.repository.reactive.ReactiveCrudRepository;
 
 import com.schemafy.core.project.domain.ShareLink;
 
-import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
 public interface ShareLinkRepository
@@ -15,61 +13,12 @@ public interface ShareLinkRepository
   @Query("SELECT * FROM share_links WHERE code = :code AND deleted_at IS NULL")
   Mono<ShareLink> findByCodeAndNotDeleted(String code);
 
-  @Modifying
-  @Query("""
-      UPDATE share_links
-      SET last_accessed_at = CURRENT_TIMESTAMP,
-          access_count = access_count + 1
-      WHERE id = :id
-        AND deleted_at IS NULL
-        AND is_revoked = FALSE
-        AND (
-          expires_at IS NULL
-          OR expires_at > CURRENT_TIMESTAMP
-        )
-      """)
-  Mono<Void> incrementAccessCount(String id);
-
-  @Modifying
-  @Query("""
-      UPDATE share_links
-      SET deleted_at = CURRENT_TIMESTAMP,
-          updated_at = CURRENT_TIMESTAMP
-      WHERE id = :shareLinkId
-        AND project_id = :projectId
-        AND deleted_at IS NULL
-      """)
-  Mono<Long> softDeleteByIdAndProjectId(String shareLinkId, String projectId);
-
-  @Modifying
-  @Query("""
-      UPDATE share_links
-      SET is_revoked = TRUE,
-          updated_at = CURRENT_TIMESTAMP
-      WHERE id = :shareLinkId
-        AND project_id = :projectId
-        AND deleted_at IS NULL
-        AND is_revoked = FALSE
-      """)
-  Mono<Long> revokeByIdAndProjectId(String shareLinkId, String projectId);
-
-  @Query("SELECT * FROM share_links WHERE project_id = :projectId AND deleted_at IS NULL ORDER BY created_at DESC LIMIT :limit OFFSET :offset")
-  Flux<ShareLink> findByProjectIdAndNotDeleted(String projectId, int limit,
-      int offset);
-
-  @Query("SELECT COUNT(*) FROM share_links WHERE project_id = :projectId AND deleted_at IS NULL")
-  Mono<Long> countByProjectIdAndNotDeleted(String projectId);
-
-  @Query("SELECT * FROM share_links WHERE id = :id AND project_id = :projectId AND deleted_at IS NULL")
-  Mono<ShareLink> findByIdAndProjectIdAndNotDeleted(String id,
-      String projectId);
+  @Query("SELECT * FROM share_links WHERE project_id = :projectId AND deleted_at IS NULL")
+  Mono<ShareLink> findByProjectIdAndNotDeleted(String projectId);
 
   @Query("""
-      UPDATE share_links
-      SET deleted_at = CURRENT_TIMESTAMP, updated_at = CURRENT_TIMESTAMP
-      WHERE project_id = :projectId
-        AND deleted_at IS NULL
+      DELETE FROM share_links WHERE project_id = :projectId
       """)
-  Mono<Long> softDeleteByProjectId(String projectId);
+  Mono<Void> deleteByProjectId(String projectId);
 
 }

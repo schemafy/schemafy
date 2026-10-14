@@ -2,6 +2,12 @@ import { test, expect } from '@playwright/test';
 import { writeFileSync, mkdirSync } from 'fs';
 import { join, dirname } from 'path';
 import { fileURLToPath } from 'url';
+import type {
+  PerformanceAuditLongTask,
+  PerformanceAuditRender,
+  PerformanceAuditWindow,
+  ReactDevToolsGlobalHook,
+} from './perf-audit-types';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 
@@ -14,19 +20,19 @@ async function measureOp(
   action: () => Promise<void>,
 ): Promise<{ renderCount: number; longTaskCount: number; durationMs: number }> {
   const rendersBefore = await page.evaluate(
-    () => ((window as any).__PERF_RENDERS__ || []).length,
+    () => ((window as PerformanceAuditWindow).__PERF_RENDERS__ || []).length,
   );
   const longTasksBefore = await page.evaluate(
-    () => ((window as any).__PERF_LONG_TASKS__ || []).length,
+    () => ((window as PerformanceAuditWindow).__PERF_LONG_TASKS__ || []).length,
   );
   const start = Date.now();
   await action();
   const durationMs = Date.now() - start;
   const rendersAfter = await page.evaluate(
-    () => ((window as any).__PERF_RENDERS__ || []).length,
+    () => ((window as PerformanceAuditWindow).__PERF_RENDERS__ || []).length,
   );
   const longTasksAfter = await page.evaluate(
-    () => ((window as any).__PERF_LONG_TASKS__ || []).length,
+    () => ((window as PerformanceAuditWindow).__PERF_LONG_TASKS__ || []).length,
   );
   return {
     renderCount: rendersAfter - rendersBefore,
@@ -47,13 +53,16 @@ test('perf-canvas-ops: 캔버스 조작 성능 진단', async ({
   await cdp.send('Runtime.enable');
 
   await page.addInitScript(() => {
-    (window as any).__PERF_RENDERS__ = [];
-    (window as any).__PERF_LONG_TASKS__ = [];
+    const perfWindow = window as PerformanceAuditWindow;
+    const renders: PerformanceAuditRender[] = [];
+    const longTasks: PerformanceAuditLongTask[] = [];
+    perfWindow.__PERF_RENDERS__ = renders;
+    perfWindow.__PERF_LONG_TASKS__ = longTasks;
 
     try {
       const ltObserver = new PerformanceObserver((list) => {
         for (const entry of list.getEntries()) {
-          (window as any).__PERF_LONG_TASKS__.push({
+          longTasks.push({
             startTime: Math.round(entry.startTime),
             duration: Math.round(entry.duration),
           });
@@ -70,10 +79,10 @@ test('perf-canvas-ops: 캔버스 조작 성능 진단', async ({
       get: function () {
         return undefined;
       },
-      set: function (hook) {
+      set: function (hook: ReactDevToolsGlobalHook) {
         const origCommit = hook.onCommitFiberRoot;
-        hook.onCommitFiberRoot = function (...args: any[]) {
-          (window as any).__PERF_RENDERS__.push({
+        hook.onCommitFiberRoot = function (this: unknown, ...args: unknown[]) {
+          renders.push({
             timestamp: performance.now(),
           });
           if (origCommit) origCommit.apply(this, args);
@@ -100,8 +109,9 @@ test('perf-canvas-ops: 캔버스 조작 성능 진단', async ({
   await expect(page.locator('.react-flow')).toBeVisible({ timeout: 15000 });
 
   await page.evaluate(() => {
-    (window as any).__PERF_RENDERS__ = [];
-    (window as any).__PERF_LONG_TASKS__ = [];
+    const perfWindow = window as PerformanceAuditWindow;
+    perfWindow.__PERF_RENDERS__ = [];
+    perfWindow.__PERF_LONG_TASKS__ = [];
   });
 
   const reactFlowBox = await page.locator('.react-flow').boundingBox();

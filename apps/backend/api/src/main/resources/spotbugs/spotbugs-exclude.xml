@@ -86,4 +86,10 @@
         <Class name="com.schemafy.api.common.security.jwt.JwtProvider"/>
         <Bug pattern="CT_CONSTRUCTOR_THROW"/>
     </Match>
+
+    <!-- ThreadLocalRandom used for non-security scheduler poll jitter, not a token/credential -->
+    <Match>
+        <Class name="com.schemafy.api.erd.service.sync.ErdStateSnapshotScheduler"/>
+        <Bug pattern="PREDICTABLE_RANDOM"/>
+    </Match>
 </FindBugsFilter>

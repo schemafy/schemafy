@@ -451,7 +451,7 @@ class ProjectInvitationControllerTest extends ProjectHttpTestSupport {
       assertThat(updated.getStatusAsEnum()).isEqualTo(InvitationStatus.ACCEPTED);
 
       boolean memberExists = projectMemberRepository
-          .existsByProjectIdAndUserIdAndNotDeleted(testProject.getId(), workspaceMemberId)
+          .existsByProjectIdAndUserIdAndDeletedAtIsNull(testProject.getId(), workspaceMemberId)
           .block();
       assertThat(memberExists).isTrue();
     }

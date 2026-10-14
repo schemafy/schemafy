@@ -73,7 +73,7 @@ import static org.mockito.BDDMockito.then;
 @AutoConfigureWebTestClient
 @AutoConfigureRestDocs
 @DisplayName("ConstraintController 통합 테스트")
-@WithMockCustomUser(roles = "EDITOR")
+@WithMockCustomUser
 class ConstraintControllerTest {
 
   private static final ObjectMapper objectMapper = new ObjectMapper()
@@ -494,7 +494,6 @@ class ConstraintControllerTest {
   }
 
   @Test
-  @WithMockCustomUser(roles = "ADMIN")
   @DisplayName("제약조건 삭제 API 문서화")
   void deleteConstraint() {
     String constraintId = "06D6W4CAHD51T5NJPK29Q6BCRC";

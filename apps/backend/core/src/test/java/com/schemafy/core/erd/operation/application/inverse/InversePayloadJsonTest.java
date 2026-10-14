@@ -8,6 +8,7 @@ import org.junit.jupiter.api.Test;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.schemafy.core.common.json.JsonCodec;
 import com.schemafy.core.erd.column.domain.ColumnTypeArguments;
+import com.schemafy.core.erd.index.domain.type.SortDirection;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -17,12 +18,72 @@ class InversePayloadJsonTest {
   private final JsonCodec jsonCodec = new JsonCodec(new ObjectMapper().findAndRegisterModules());
 
   @Test
+  @DisplayName("meta/extra 상세 속성 inverse subtype을 손실 없이 복원한다")
+  void serializeMetaExtraInversePayloads() {
+    List<InversePayload> payloads = List.of(
+        new ChangeTableMetaInverse("table-1", "", null),
+        new ChangeTableExtraInverse("table-1", "{\"position\":{\"x\":10,\"y\":20}}"),
+        new ChangeColumnMetaInverse(
+            "column-1",
+            false,
+            "utf8mb4",
+            null,
+            "",
+            List.of(new ChangeColumnMetaInverse.FkColumnMetaRevert(
+                "fk-column-1",
+                "utf8mb4",
+                null))),
+        new ChangeRelationshipExtraInverse(
+            "relationship-1",
+            "{\"controlPoint1\":{\"x\":10,\"y\":20}}"),
+        new ChangeConstraintCheckExprInverse("constraint-1", null),
+        new ChangeConstraintDefaultExprInverse("constraint-2", "0"),
+        new ChangeIndexColumnSortDirectionInverse("index-column-1", SortDirection.ASC));
+
+    for (InversePayload payload : payloads) {
+      String json = jsonCodec.toJson(payload);
+      InversePayload parsed = jsonCodec.fromJson(json, InversePayload.class);
+
+      assertThat(parsed).isEqualTo(payload);
+    }
+  }
+
+  @Test
+  @DisplayName("reorder inverse는 전체 position과 연산 kind를 복원한다")
+  void serializeReorderInverses_restoresPositionsAndKinds() {
+    List<ReorderPosition> positions = List.of(
+        new ReorderPosition("item-1", 0),
+        new ReorderPosition("item-2", 1));
+    List<InversePayload> payloads = List.of(
+        new ChangeColumnPositionInverse("item-1", positions),
+        new ChangeConstraintColumnPositionInverse("item-1", positions),
+        new ChangeIndexColumnPositionInverse("item-1", positions),
+        new ChangeRelationshipColumnPositionInverse("item-1", positions));
+    List<String> kinds = List.of(
+        "CHANGE_COLUMN_POSITION",
+        "CHANGE_CONSTRAINT_COLUMN_POSITION",
+        "CHANGE_INDEX_COLUMN_POSITION",
+        "CHANGE_RELATIONSHIP_COLUMN_POSITION");
+
+    for (int index = 0; index < payloads.size(); index++) {
+      InversePayload payload = payloads.get(index);
+      String json = jsonCodec.toJson(payload);
+      InversePayload parsed = jsonCodec.fromJson(json, InversePayload.class);
+
+      assertThat(json).contains("\"kind\":\"" + kinds.get(index) + "\"");
+      assertThat(parsed).isEqualTo(payload);
+    }
+  }
+
+  @Test
   @DisplayName("column type arguments의 파생 empty 프로퍼티를 직렬화하지 않는다")
   void serializeChangeColumnTypeInverse_excludesDerivedEmptyProperty() {
     ChangeColumnTypeInverse payload = new ChangeColumnTypeInverse(
         "column-1",
         "VARCHAR",
         new ColumnTypeArguments(255, null, null),
+        "utf8mb4",
+        "utf8mb4_general_ci",
         List.of(new ChangeColumnTypeInverse.FkColumnTypeRevert(
             "fk-column-1",
             "VARCHAR",
@@ -133,6 +194,8 @@ class InversePayloadJsonTest {
             "values": null,
             "empty": false
           },
+          "oldCharset": "utf8mb4",
+          "oldCollation": "utf8mb4_general_ci",
           "fkRevertList": []
         }
         """;
@@ -143,6 +206,8 @@ class InversePayloadJsonTest {
         "column-1",
         "VARCHAR",
         new ColumnTypeArguments(255, null, null),
+        "utf8mb4",
+        "utf8mb4_general_ci",
         List.of()));
   }
 

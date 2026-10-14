@@ -1,28 +1,31 @@
 import { queryClient, ThemeProvider } from '@/lib';
 import { QueryClientProvider } from '@tanstack/react-query';
 import { RouterProvider } from '@tanstack/react-router';
-import { ReactFlowProvider } from '@xyflow/react';
-import { Toaster, TooltipProvider } from '@/components';
+import { LoadingState, Toaster, TooltipProvider } from '@/components';
 import { useAuthBootstrap } from '@/features/auth';
 import { authStore } from '@/store/auth.store';
 import { router } from '@/router';
+import { observer } from 'mobx-react-lite';
 import { reaction } from 'mobx';
-import { useEffect } from 'react';
+import { Suspense, useEffect } from 'react';
 
 const isProtectedPath = (pathname: string) => {
   return pathname === '/workspace' || pathname.startsWith('/project/');
 };
 
-function App() {
+const App = observer(() => {
   useAuthBootstrap();
 
   useEffect(() => {
     const dispose = reaction(
-      () => ({
-        isInitialized: authStore.isInitialized,
-        isAuthLoading: authStore.isAuthLoading,
-        isAuthenticated: Boolean(authStore.accessToken && authStore.user),
-      }),
+      () => {
+        const hasAuthSession = Boolean(authStore.accessToken && authStore.user);
+        return {
+          isInitialized: authStore.isInitialized,
+          isAuthLoading: authStore.isAuthLoading,
+          isAuthenticated: hasAuthSession,
+        };
+      },
       async ({ isInitialized, isAuthLoading, isAuthenticated }) => {
         if (!isInitialized || isAuthLoading || isAuthenticated) {
           return;
@@ -44,21 +47,31 @@ function App() {
     return dispose;
   }, []);
 
+  if (!authStore.isInitialized) {
+    return (
+      <QueryClientProvider client={queryClient}>
+        <ThemeProvider defaultTheme="system" storageKey="schemafy-theme">
+          <LoadingState className="h-screen" label="Initializing..." />
+        </ThemeProvider>
+      </QueryClientProvider>
+    );
+  }
+
   return (
     <QueryClientProvider client={queryClient}>
       <ThemeProvider defaultTheme="system" storageKey="schemafy-theme">
         <TooltipProvider>
-          <ReactFlowProvider>
+          <Suspense fallback={<LoadingState label="Loading page..." />}>
             <RouterProvider
               router={router}
               context={{ queryClient, auth: authStore }}
             />
-            <Toaster />
-          </ReactFlowProvider>
+          </Suspense>
+          <Toaster />
         </TooltipProvider>
       </ThemeProvider>
     </QueryClientProvider>
   );
-}
+});
 
 export default App;

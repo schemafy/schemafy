@@ -27,17 +27,14 @@ public record ColumnTypeArguments(
     if (values != null && (precision != null || scale != null)) {
       throw new DomainException(ColumnErrorCode.INVALID_VALUE, "values cannot be combined with precision/scale");
     }
-    if (length != null && length <= 0) {
-      throw new DomainException(ColumnErrorCode.INVALID_VALUE, "length must be positive");
+    if (length != null && length < 0) {
+      throw new DomainException(ColumnErrorCode.INVALID_VALUE, "length must be zero or positive");
     }
-    if (precision != null && precision <= 0) {
-      throw new DomainException(ColumnErrorCode.INVALID_VALUE, "precision must be positive");
+    if (precision != null && precision < 0) {
+      throw new DomainException(ColumnErrorCode.INVALID_VALUE, "precision must be zero or positive");
     }
     if (scale != null && scale < 0) {
       throw new DomainException(ColumnErrorCode.INVALID_VALUE, "scale must be zero or positive");
-    }
-    if (precision != null && scale == null) {
-      throw new DomainException(ColumnErrorCode.INVALID_VALUE, "scale is required when precision is provided");
     }
     if (precision == null && scale != null) {
       throw new DomainException(ColumnErrorCode.INVALID_VALUE, "precision is required when scale is provided");

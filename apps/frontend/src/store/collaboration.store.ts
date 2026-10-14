@@ -11,11 +11,15 @@ import type {
   Participant,
   PostChat,
   PostCursor,
+  PostRelationshipExtraPreview,
+  PostTablePositionPreview,
   ReceiveChat,
   ReceiveCursor,
   ReceiveErdMutated,
   ReceiveJoin,
   ReceiveLeave,
+  ReceiveRelationshipExtraPreview,
+  ReceiveTablePositionPreview,
   WebSocketMessage,
 } from '@/features/collaboration/api';
 import { authStore } from './auth.store';
@@ -34,6 +38,12 @@ const MAX_RECONNECT_DELAY_MS = 60000;
 
 export type RevisionSyncStatus = 'applied' | 'stale';
 
+export type ConnectionStatus =
+  | 'disconnected'
+  | 'connecting'
+  | 'connected'
+  | 'reconnecting';
+
 export class CollaborationStore {
   cursors: Map<string, CursorPosition> = new Map();
   schemaRevisions: Map<string, number> = new Map();
@@ -45,6 +55,7 @@ export class CollaborationStore {
   private reconnectTimeoutId: number | null = null;
   private reconnectAttempts = 0;
   private pendingMessages: WebSocketMessage[] = [];
+  connectionStatus: ConnectionStatus = 'disconnected';
   private _sessionReady = false;
   private chatMessageListeners: Set<(message: ChatMessage) => void> = new Set();
   private erdMutatedListeners: Set<
@@ -59,12 +70,15 @@ export class CollaborationStore {
       participants: observable,
       projectId: observable,
       sessionId: observable,
+      connectionStatus: observable,
       currentUser: computed,
       activeParticipants: computed,
       connect: action,
       disconnect: action,
       sendMessage: action,
       sendCursor: action,
+      sendRelationshipExtraPreview: action,
+      sendTablePositionPreview: action,
       setSchemaRevision: action,
       clearSchemaRevision: action,
       setActiveChatMessage: action,
@@ -146,12 +160,16 @@ export class CollaborationStore {
 
     this._sessionReady = false;
     this.pendingMessages = [];
+    this.connectionStatus = isReconnect ? 'reconnecting' : 'connecting';
 
     const wsUrl = `${WEBSOCKET_URL}?projectId=${projectId}`;
     this.ws = new WebSocket(wsUrl);
 
     this.ws.onopen = () => {
       this.reconnectAttempts = 0;
+      runInAction(() => {
+        this.connectionStatus = 'connected';
+      });
     };
 
     this.ws.onmessage = (event) => {
@@ -197,10 +215,17 @@ export class CollaborationStore {
       if (!this.projectId || this.reconnectTimeoutId) return;
 
       if (this.reconnectAttempts >= MAX_RECONNECT_ATTEMPTS) {
+        runInAction(() => {
+          this.connectionStatus = 'disconnected';
+        });
         toast.error('Network Error, please try again later.');
         this.disconnect();
         return;
       }
+
+      runInAction(() => {
+        this.connectionStatus = 'reconnecting';
+      });
 
       const delay = Math.min(
         BASE_RECONNECT_DELAY_MS * Math.pow(2, this.reconnectAttempts),
@@ -241,6 +266,7 @@ export class CollaborationStore {
     this.reconnectAttempts = 0;
     this._sessionReady = false;
     this.pendingMessages = [];
+    this.connectionStatus = 'disconnected';
     delete apiClient.defaults.headers.common['X-Session-Id'];
     previewStore.clearAll();
     runInAction(() => {
@@ -358,8 +384,44 @@ export class CollaborationStore {
     this.send(message);
   }
 
+  sendTablePositionPreview(
+    schemaId: string,
+    tableId: string,
+    position: { x: number; y: number } | null,
+  ) {
+    const message: PostTablePositionPreview = {
+      type: 'TABLE_POSITION_PREVIEW',
+      action: position ? 'UPDATE' : 'CLEAR',
+      schemaId,
+      tableId,
+      ...(position ? { position } : {}),
+    };
+
+    this.send(message);
+  }
+
+  sendRelationshipExtraPreview(
+    schemaId: string,
+    relationshipId: string,
+    extra: PostRelationshipExtraPreview['extra'] | null,
+  ) {
+    const message: PostRelationshipExtraPreview = {
+      type: 'RELATIONSHIP_EXTRA_PREVIEW',
+      action: extra ? 'UPDATE' : 'CLEAR',
+      schemaId,
+      relationshipId,
+      ...(extra ? { extra } : {}),
+    };
+
+    this.send(message);
+  }
+
   private send(
-    message: PostChat | PostCursor,
+    message:
+      | PostChat
+      | PostCursor
+      | PostTablePositionPreview
+      | PostRelationshipExtraPreview,
     onError?: (error: unknown) => void,
   ) {
     if (!this.ws || this.ws.readyState !== WebSocket.OPEN) {
@@ -389,6 +451,12 @@ export class CollaborationStore {
         break;
       case 'CURSOR':
         this.handleCursorMessage(message);
+        break;
+      case 'TABLE_POSITION_PREVIEW':
+        this.handleTablePositionPreviewMessage(message);
+        break;
+      case 'RELATIONSHIP_EXTRA_PREVIEW':
+        this.handleRelationshipExtraPreviewMessage(message);
         break;
       case 'JOIN':
         this.handleJoinMessage(message);
@@ -459,6 +527,54 @@ export class CollaborationStore {
 
     runInAction(() => {
       this.participants.set(message.sessionId, participant);
+    });
+  }
+
+  private handleTablePositionPreviewMessage(
+    message: ReceiveTablePositionPreview,
+  ) {
+    const previewId = `${message.sessionId}:table-position:${message.tableId}`;
+
+    if (message.action === 'CLEAR') {
+      previewStore.removePreview(previewId);
+      return;
+    }
+
+    if (!message.position) return;
+
+    previewStore.addPreview({
+      previewId,
+      kind: 'TABLE_POSITION',
+      schemaId: message.schemaId,
+      sessionId: message.sessionId,
+      tableId: message.tableId,
+      position: message.position,
+      createdAt: Date.now(),
+      ttlMs: 2_000,
+    });
+  }
+
+  private handleRelationshipExtraPreviewMessage(
+    message: ReceiveRelationshipExtraPreview,
+  ) {
+    const previewId = `${message.sessionId}:relationship-extra:${message.relationshipId}`;
+
+    if (message.action === 'CLEAR') {
+      previewStore.removePreview(previewId);
+      return;
+    }
+
+    if (!message.extra) return;
+
+    previewStore.addPreview({
+      previewId,
+      kind: 'RELATIONSHIP_EXTRA',
+      schemaId: message.schemaId,
+      sessionId: message.sessionId,
+      relationshipId: message.relationshipId,
+      extra: message.extra,
+      createdAt: Date.now(),
+      ttlMs: 2_000,
     });
   }
 

@@ -15,15 +15,19 @@ import com.schemafy.core.erd.column.domain.Column;
 import com.schemafy.core.erd.column.fixture.ColumnFixture;
 import com.schemafy.core.erd.index.domain.Index;
 import com.schemafy.core.erd.index.domain.IndexColumn;
+import com.schemafy.core.erd.index.domain.policy.IndexCapabilities;
 import com.schemafy.core.erd.index.domain.type.IndexType;
 import com.schemafy.core.erd.index.domain.type.SortDirection;
 import com.schemafy.core.erd.index.fixture.IndexFixture;
+import com.schemafy.core.erd.vendor.fixture.DbVendorFixture;
 
 import static org.assertj.core.api.Assertions.assertThatCode;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 @DisplayName("IndexValidator")
 class IndexValidatorTest {
+
+  private static final IndexCapabilities MYSQL_INDEX_CAPABILITIES = DbVendorFixture.defaultCapabilities().indexes();
 
   @Nested
   @DisplayName("validateName 메서드는")
@@ -95,6 +99,25 @@ class IndexValidatorTest {
           .doesNotThrowAnyException();
       assertThatCode(() -> IndexValidator.validateType(IndexType.SPATIAL))
           .doesNotThrowAnyException();
+    }
+
+    @Test
+    @DisplayName("벤더가 지원하는 타입이면 통과한다")
+    void passesWhenVendorSupportsType() {
+      assertThatCode(() -> IndexValidator.validateType(
+          MYSQL_INDEX_CAPABILITIES, IndexType.BTREE))
+          .doesNotThrowAnyException();
+    }
+
+    @Test
+    @DisplayName("벤더가 지원하지 않는 타입이면 예외가 발생한다")
+    void throwsWhenVendorDoesNotSupportType() {
+      assertThatThrownBy(() -> IndexValidator.validateType(
+          MYSQL_INDEX_CAPABILITIES, IndexType.HASH))
+          .isInstanceOf(DomainException.class);
+      assertThatThrownBy(() -> IndexValidator.validateType(
+          MYSQL_INDEX_CAPABILITIES, IndexType.OTHER))
+          .isInstanceOf(DomainException.class);
     }
 
   }
@@ -319,6 +342,7 @@ class IndexValidatorTest {
           IndexFixture.indexColumn("ic2", "idx2", "col1", 0, SortDirection.ASC));
 
       assertThatThrownBy(() -> IndexValidator.validateDefinitionUniqueness(
+          MYSQL_INDEX_CAPABILITIES,
           indexes,
           indexColumns,
           IndexType.BTREE,
@@ -342,6 +366,7 @@ class IndexValidatorTest {
           IndexFixture.indexColumn("ic2", "idx2", "col1", 0, SortDirection.ASC));
 
       assertThatCode(() -> IndexValidator.validateDefinitionUniqueness(
+          MYSQL_INDEX_CAPABILITIES,
           indexes,
           indexColumns,
           IndexType.BTREE,
@@ -365,6 +390,7 @@ class IndexValidatorTest {
           IndexFixture.indexColumn("ic2", "idx2", "col2", 0, SortDirection.ASC));
 
       assertThatCode(() -> IndexValidator.validateDefinitionUniqueness(
+          MYSQL_INDEX_CAPABILITIES,
           indexes,
           indexColumns,
           IndexType.BTREE,
@@ -388,6 +414,7 @@ class IndexValidatorTest {
           IndexFixture.indexColumn("ic2", "idx2", "col1", 0, SortDirection.ASC));
 
       assertThatCode(() -> IndexValidator.validateDefinitionUniqueness(
+          MYSQL_INDEX_CAPABILITIES,
           indexes,
           indexColumns,
           IndexType.HASH,
@@ -411,6 +438,7 @@ class IndexValidatorTest {
           IndexFixture.indexColumn("ic2", "idx2", "col1", 0, SortDirection.DESC));
 
       assertThatCode(() -> IndexValidator.validateDefinitionUniqueness(
+          MYSQL_INDEX_CAPABILITIES,
           indexes,
           indexColumns,
           IndexType.BTREE,
@@ -421,12 +449,37 @@ class IndexValidatorTest {
     }
 
     @Test
+    @DisplayName("sortDirection이 의미 없는 타입은 방향이 달라도 동일한 정의로 판단한다")
+    void ignoresSortDirectionWhenTypeDoesNotSupportIt() {
+      Index existing = IndexFixture.index(
+          "idx1", IndexFixture.DEFAULT_TABLE_ID, "idx_fulltext", IndexType.FULLTEXT);
+      List<Index> indexes = List.of(existing);
+      Map<String, List<IndexColumn>> indexColumns = Map.of(
+          existing.id(),
+          List.of(IndexFixture.indexColumn(
+              "ic1", "idx1", "col1", 0, SortDirection.ASC)));
+      List<IndexColumn> candidateColumns = List.of(
+          IndexFixture.indexColumn("ic2", "idx2", "col1", 0, SortDirection.DESC));
+
+      assertThatThrownBy(() -> IndexValidator.validateDefinitionUniqueness(
+          MYSQL_INDEX_CAPABILITIES,
+          indexes,
+          indexColumns,
+          IndexType.FULLTEXT,
+          candidateColumns,
+          "new_idx",
+          null))
+          .isInstanceOf(DomainException.class);
+    }
+
+    @Test
     @DisplayName("indexes가 null이면 통과한다")
     void passesWhenIndexesNull() {
       List<IndexColumn> candidateColumns = List.of(
           IndexFixture.indexColumn("ic1", "idx1", "col1", 0, SortDirection.ASC));
 
       assertThatCode(() -> IndexValidator.validateDefinitionUniqueness(
+          MYSQL_INDEX_CAPABILITIES,
           null,
           Map.of(),
           IndexType.BTREE,

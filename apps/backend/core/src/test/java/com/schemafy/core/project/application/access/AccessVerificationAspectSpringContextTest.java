@@ -2,6 +2,8 @@ package com.schemafy.core.project.application.access;
 
 import java.util.concurrent.atomic.AtomicInteger;
 
+import jakarta.annotation.Resource;
+
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.EnableAspectJAutoProxy;
@@ -31,10 +33,10 @@ import static org.mockito.Mockito.when;
 @DisplayName("AccessVerificationAspect Spring context")
 class AccessVerificationAspectSpringContextTest {
 
-  @jakarta.annotation.Resource
+  @Resource
   private AnnotatedService annotatedService;
 
-  @jakarta.annotation.Resource
+  @Resource
   private AccessVerifier accessVerifier;
 
   @Test

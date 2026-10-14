@@ -1,6 +1,6 @@
 import { memo, useCallback, useState } from 'react';
 import { toast } from 'sonner';
-import type { TableProps } from '../../types';
+import type { TableProps, IndexCapabilities } from '../../types';
 import { ColumnRow } from '../Column';
 import { TableHeader } from '../TableHeader';
 import { IndexSection } from '../IndexSection';
@@ -13,10 +13,8 @@ import {
   useIndexes,
   useConstraints,
   useChangeColumnPosition,
-  useSchemas,
-  useVendors,
-  useVendor,
 } from '../../hooks';
+import { useVendor } from '@/features/vendor';
 import { useSelectedSchema } from '../../contexts';
 import { ConnectionHandles } from './ConnectionHandles';
 
@@ -38,19 +36,19 @@ const TableNodeComponent = ({ data, id }: TableProps) => {
     [],
   );
 
-  const { projectId } = useSelectedSchema();
-  const { data: schemas } = useSchemas(projectId);
-  const schema = schemas?.find((s) => s.id === data.schemaId);
-
-  const { data: vendorsData } = useVendors();
-  const vendorDisplayName =
-    schema && vendorsData
-      ? (vendorsData.find((v) => v.name === schema.dbVendorName.toLowerCase())
-          ?.displayName ?? '')
-      : '';
-
-  const { data: vendorData } = useVendor(vendorDisplayName);
+  const { dbVendorId } = useSelectedSchema();
+  const {
+    data: vendorData,
+    isPending: isVendorPending,
+    isError: isVendorError,
+  } = useVendor(dbVendorId);
   const vendorTypes = vendorData?.datatypeMappings?.types ?? [];
+  const indexCapabilities: IndexCapabilities = {
+    supportedTypes: vendorData?.capabilities?.indexes.supportedTypes ?? [],
+    sortDirectionTypes:
+      vendorData?.capabilities?.indexes.sortDirectionTypes ?? [],
+    status: isVendorError ? 'error' : isVendorPending ? 'loading' : 'ready',
+  };
 
   const { columns, indexes, constraints } = data;
 
@@ -76,6 +74,7 @@ const TableNodeComponent = ({ data, id }: TableProps) => {
     tableId: id,
     tableName: data.tableName,
     indexes,
+    indexCapabilities,
   });
 
   const constraintActions = useConstraints({
@@ -173,6 +172,7 @@ const TableNodeComponent = ({ data, id }: TableProps) => {
           indexes={indexes}
           tableColumns={columns.map((col) => ({ id: col.id, name: col.name }))}
           isEditMode={isColumnEditMode}
+          indexCapabilities={indexCapabilities}
           onCreateIndex={indexActions.createIndex}
           onDeleteIndex={indexActions.deleteIndex}
           onUpdateIndexName={indexActions.updateIndexName}

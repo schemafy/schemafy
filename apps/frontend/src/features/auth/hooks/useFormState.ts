@@ -10,7 +10,7 @@ export const useFormState = <T extends FormValues>(
   const touchedRef = useRef<Partial<Record<keyof T, boolean>>>({});
 
   const validateField = useCallback(
-    (name: keyof T, value: T[keyof T], currentForm: T) => {
+    (name: keyof T, value: T[keyof T], currentForm: T): string => {
       const validator = validationRules[name];
       if (validator) {
         const error = validator(value, currentForm);
@@ -22,7 +22,9 @@ export const useFormState = <T extends FormValues>(
           }
           return { ...prev, [name]: error };
         });
+        return error;
       }
+      return '';
     },
     [validationRules],
   );
@@ -62,6 +64,27 @@ export const useFormState = <T extends FormValues>(
     [validateField],
   );
 
+  const runAllValidations = useCallback(
+    (currentForm: T): boolean => {
+      let isValid = true;
+
+      (Object.keys(validationRules) as Array<keyof T>).forEach((field) => {
+        const error = validateField(field, currentForm[field], currentForm);
+        if (error) {
+          isValid = false;
+        }
+      });
+
+      touchedRef.current = Object.keys(validationRules).reduce(
+        (acc, key) => ({ ...acc, [key]: true }),
+        {} as Partial<Record<keyof T, boolean>>,
+      );
+
+      return isValid;
+    },
+    [validateField, validationRules],
+  );
+
   const resetForm = useCallback(() => {
     setForm(initialForm);
     setErrors({});
@@ -72,6 +95,7 @@ export const useFormState = <T extends FormValues>(
     errors,
     handleChange,
     handleBlur,
+    runAllValidations,
     resetForm,
   };
 };

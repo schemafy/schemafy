@@ -8,6 +8,7 @@ import java.time.ZoneOffset;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
+import java.util.Set;
 import javax.crypto.SecretKey;
 
 import org.junit.jupiter.api.BeforeEach;
@@ -20,6 +21,7 @@ import com.schemafy.core.mcp.application.port.in.RegisterMcpTokenCommand;
 import com.schemafy.core.mcp.application.port.in.RegisterMcpTokenUseCase;
 import com.schemafy.core.mcp.application.port.in.RevokeMcpTokenCommand;
 import com.schemafy.core.mcp.application.port.in.RevokeMcpTokenUseCase;
+import com.schemafy.core.mcp.domain.McpScope;
 import com.schemafy.core.mcp.domain.McpToken;
 import com.schemafy.core.mcp.domain.McpTokenClaimSupport;
 
@@ -88,6 +90,22 @@ class McpTokenServiceTest {
           assertThat(savedToken.getExpiresAt())
               .isEqualTo(NOW.plus(Duration.ofDays(7)));
         });
+  }
+
+  @Test
+  @DisplayName("선택한 write scope와 기본 MCP scope를 함께 발급한다")
+  void issuesRequestedWriteScopes() {
+    McpTokenIssueResult result = tokenService.issue("user-1", Set.of(
+        McpScope.ERD_WRITE.value(), McpScope.MEMO_WRITE.value())).block();
+
+    Claims claims = parseClaims(result.token());
+    assertThat(result.scopes()).containsExactlyInAnyOrder(
+        McpScope.MCP.value(), McpScope.ERD_WRITE.value(), McpScope.MEMO_WRITE.value());
+    assertThat(McpTokenClaimSupport.extractScopes(claims::get))
+        .containsExactlyInAnyOrderElementsOf(result.scopes());
+    assertThat(mcpTokenUseCase.savedTokens()).singleElement()
+        .extracting(McpToken::getScope)
+        .isEqualTo("mcp mcp:erd:write mcp:memo:write");
   }
 
   @Test

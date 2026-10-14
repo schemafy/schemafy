@@ -17,7 +17,6 @@ import org.springframework.web.bind.annotation.RestController;
 
 import com.schemafy.api.common.constant.ApiPath;
 import com.schemafy.api.common.type.MutationResponse;
-import com.schemafy.api.erd.broadcast.ErdMutationBroadcaster;
 import com.schemafy.api.erd.controller.dto.request.AddConstraintColumnRequest;
 import com.schemafy.api.erd.controller.dto.request.ChangeConstraintCheckExprRequest;
 import com.schemafy.api.erd.controller.dto.request.ChangeConstraintColumnPositionRequest;
@@ -56,6 +55,7 @@ import com.schemafy.core.erd.constraint.application.port.in.RemoveConstraintColu
 import com.schemafy.core.erd.constraint.application.port.in.RemoveConstraintColumnUseCase;
 import com.schemafy.core.erd.constraint.domain.exception.ConstraintErrorCode;
 import com.schemafy.core.erd.operation.domain.CommittedErdOperation;
+import com.schemafy.core.erd.sync.ErdStateSyncPublisher;
 
 import lombok.RequiredArgsConstructor;
 import reactor.core.publisher.Mono;
@@ -78,7 +78,7 @@ public class ConstraintController {
   private final GetConstraintColumnUseCase getConstraintColumnUseCase;
   private final ChangeConstraintColumnPositionUseCase changeConstraintColumnPositionUseCase;
 
-  private final ObjectProvider<ErdMutationBroadcaster> broadcasterProvider;
+  private final ObjectProvider<ErdStateSyncPublisher> publisherProvider;
 
   @PostMapping("/constraints")
   public Mono<MutationResponse<ConstraintResponse>> createConstraint(
@@ -247,11 +247,11 @@ public class ConstraintController {
 
   private Mono<Void> broadcastMutation(Set<String> affectedTableIds,
       CommittedErdOperation operation) {
-    ErdMutationBroadcaster broadcaster = broadcasterProvider.getIfAvailable();
-    if (broadcaster == null) {
+    ErdStateSyncPublisher publisher = publisherProvider.getIfAvailable();
+    if (publisher == null) {
       return Mono.empty();
     }
-    return broadcaster.broadcast(affectedTableIds, operation);
+    return publisher.publishMutation(affectedTableIds, operation);
   }
 
   private static List<CreateConstraintColumnCommand> mapConstraintColumns(

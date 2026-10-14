@@ -1,5 +1,6 @@
 package com.schemafy.core.project.application.service;
 
+import org.assertj.core.groups.Tuple;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -32,6 +33,7 @@ import static org.mockito.Mockito.times;
 class ProjectMembershipPropagationHelperTest {
 
   private static final String WORKSPACE_ID = "workspace-id";
+  private static final Integer DB_VENDOR_ID = 1;
   private static final String USER_ID = "user-id";
 
   @Mock
@@ -49,9 +51,10 @@ class ProjectMembershipPropagationHelperTest {
   @Test
   @DisplayName("워크스페이스 ADMIN 합류 시 기존 활성 프로젝트 멤버십도 ADMIN으로 올리고 누락된 프로젝트 멤버십을 생성한다")
   void syncProjectMembershipsForWorkspaceRole_upgradesExistingActiveMembershipForWorkspaceAdmin() {
-    Project joinedProject = Project.create("project-1", WORKSPACE_ID, "Joined Project",
+    Project joinedProject = Project.create("project-1", WORKSPACE_ID, DB_VENDOR_ID, "Joined Project",
         "Description");
-    Project newProject = Project.create("project-2", WORKSPACE_ID, "New Project", "Description");
+    Project newProject = Project.create("project-2", WORKSPACE_ID, DB_VENDOR_ID, "New Project",
+        "Description");
     ProjectMember existingMember = ProjectMember.create("member-1", joinedProject.getId(), USER_ID,
         ProjectRole.VIEWER);
     ProjectMembershipPropagationHelper sut = new ProjectMembershipPropagationHelper(
@@ -82,16 +85,17 @@ class ProjectMembershipPropagationHelperTest {
     assertThat(savedMemberCaptor.getAllValues())
         .extracting(ProjectMember::getProjectId, ProjectMember::getUserId, ProjectMember::getRole)
         .containsExactlyInAnyOrder(
-            org.assertj.core.groups.Tuple.tuple(joinedProject.getId(), USER_ID,
+            Tuple.tuple(joinedProject.getId(), USER_ID,
                 ProjectRole.ADMIN.name()),
-            org.assertj.core.groups.Tuple.tuple(newProject.getId(), USER_ID,
+            Tuple.tuple(newProject.getId(), USER_ID,
                 ProjectRole.ADMIN.name()));
   }
 
   @Test
   @DisplayName("워크스페이스 MEMBER 합류 시 기존 활성 프로젝트 역할은 유지한다")
   void syncProjectMembershipsForWorkspaceRole_preservesExistingActiveMembershipForWorkspaceMember() {
-    Project project = Project.create("project-1", WORKSPACE_ID, "Project", "Description");
+    Project project = Project.create("project-1", WORKSPACE_ID, DB_VENDOR_ID, "Project",
+        "Description");
     ProjectMember existingMember = ProjectMember.create("member-1", project.getId(), USER_ID,
         ProjectRole.EDITOR);
     ProjectMembershipPropagationHelper sut = new ProjectMembershipPropagationHelper(
@@ -118,7 +122,8 @@ class ProjectMembershipPropagationHelperTest {
   @Test
   @DisplayName("워크스페이스 ADMIN 승격 시 삭제된 프로젝트 멤버십은 복원하고 ADMIN으로 보정한다")
   void syncProjectMembershipsForWorkspaceRole_restoresDeletedMembershipForWorkspaceAdmin() {
-    Project project = Project.create("project-1", WORKSPACE_ID, "Project", "Description");
+    Project project = Project.create("project-1", WORKSPACE_ID, DB_VENDOR_ID, "Project",
+        "Description");
     ProjectMember deletedMember = ProjectMember.create("member-1", project.getId(), USER_ID,
         ProjectRole.VIEWER);
     deletedMember.delete();

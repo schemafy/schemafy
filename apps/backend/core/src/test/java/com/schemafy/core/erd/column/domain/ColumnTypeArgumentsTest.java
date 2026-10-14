@@ -75,27 +75,23 @@ class ColumnTypeArgumentsTest {
     }
 
     @Test
-    @DisplayName("length가 0 이하이면 예외가 발생한다")
-    void throwsWhenLengthIsZeroOrNegative() {
-      assertThatThrownBy(() -> new ColumnTypeArguments(0, null, null))
-          .isInstanceOf(DomainException.class)
-          .hasMessageContaining("length must be positive");
+    @DisplayName("length가 0이면 생성할 수 있고 음수이면 예외가 발생한다")
+    void allowsZeroLengthAndRejectsNegativeLength() {
+      assertThat(new ColumnTypeArguments(0, null, null).length()).isZero();
 
       assertThatThrownBy(() -> new ColumnTypeArguments(-1, null, null))
           .isInstanceOf(DomainException.class)
-          .hasMessageContaining("length must be positive");
+          .hasMessageContaining("length must be zero or positive");
     }
 
     @Test
-    @DisplayName("precision이 0 이하이면 예외가 발생한다")
-    void throwsWhenPrecisionIsZeroOrNegative() {
-      assertThatThrownBy(() -> new ColumnTypeArguments(null, 0, 2))
-          .isInstanceOf(DomainException.class)
-          .hasMessageContaining("precision must be positive");
+    @DisplayName("precision이 0이면 생성할 수 있고 음수이면 예외가 발생한다")
+    void allowsZeroPrecisionAndRejectsNegativePrecision() {
+      assertThat(new ColumnTypeArguments(null, 0, 0).precision()).isZero();
 
       assertThatThrownBy(() -> new ColumnTypeArguments(null, -1, 2))
           .isInstanceOf(DomainException.class)
-          .hasMessageContaining("precision must be positive");
+          .hasMessageContaining("precision must be zero or positive");
     }
 
     @Test
@@ -115,11 +111,12 @@ class ColumnTypeArgumentsTest {
     }
 
     @Test
-    @DisplayName("scale 없이 precision만 설정하면 예외가 발생한다")
-    void throwsWhenPrecisionWithoutScale() {
-      assertThatThrownBy(() -> new ColumnTypeArguments(null, 10, null))
-          .isInstanceOf(DomainException.class)
-          .hasMessageContaining("scale is required when precision is provided");
+    @DisplayName("scale 없이 precision만 설정할 수 있다")
+    void allowsPrecisionWithoutScale() {
+      var arguments = new ColumnTypeArguments(null, 10, null);
+
+      assertThat(arguments.precision()).isEqualTo(10);
+      assertThat(arguments.scale()).isNull();
     }
 
     @Test

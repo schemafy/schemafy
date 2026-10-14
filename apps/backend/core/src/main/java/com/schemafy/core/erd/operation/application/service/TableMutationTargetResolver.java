@@ -2,6 +2,8 @@ package com.schemafy.core.erd.operation.application.service;
 
 import org.springframework.stereotype.Component;
 
+import com.schemafy.core.erd.operation.application.inverse.ChangeTableExtraInverse;
+import com.schemafy.core.erd.operation.application.inverse.ChangeTableMetaInverse;
 import com.schemafy.core.erd.operation.application.inverse.ChangeTableNameInverse;
 import com.schemafy.core.erd.operation.domain.ErdOperationType;
 import com.schemafy.core.erd.table.application.port.in.ChangeTableExtraCommand;
@@ -50,11 +52,17 @@ class TableMutationTargetResolver {
   }
 
   private Mono<ResolvedErdMutationTarget> resolveChangeTableMeta(Object payload) {
+    if (payload instanceof ChangeTableMetaInverse inverse) {
+      return targetLookup.resolveByTableId(inverse.tableId(), inverse.tableId());
+    }
     ChangeTableMetaCommand command = requirePayload(payload, ChangeTableMetaCommand.class);
     return targetLookup.resolveByTableId(command.tableId(), command.tableId());
   }
 
   private Mono<ResolvedErdMutationTarget> resolveChangeTableExtra(Object payload) {
+    if (payload instanceof ChangeTableExtraInverse inverse) {
+      return targetLookup.resolveByTableId(inverse.tableId(), inverse.tableId());
+    }
     ChangeTableExtraCommand command = requirePayload(payload, ChangeTableExtraCommand.class);
     return targetLookup.resolveByTableId(command.tableId(), command.tableId());
   }

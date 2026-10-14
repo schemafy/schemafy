@@ -16,20 +16,24 @@ import lombok.NoArgsConstructor;
 public class Project extends BaseEntity {
 
   private String workspaceId;
+  private Integer dbVendorId;
   private String name;
   private String description;
 
   public static Project create(
       String id,
       String workspaceId,
+      Integer dbVendorId,
       String name,
       String description) {
-    Project project = new Project(workspaceId, name, description);
+    ProjectPolicy.validateText(name, description);
+    Project project = new Project(workspaceId, dbVendorId, name, description);
     project.setId(id);
     return project;
   }
 
   public void update(String name, String description) {
+    ProjectPolicy.validateText(name, description);
     this.name = name;
     this.description = description;
   }

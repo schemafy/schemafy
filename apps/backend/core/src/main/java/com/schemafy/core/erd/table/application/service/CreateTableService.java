@@ -20,6 +20,8 @@ import com.schemafy.core.erd.table.application.port.out.CreateTablePort;
 import com.schemafy.core.erd.table.application.port.out.TableExistsPort;
 import com.schemafy.core.erd.table.domain.Table;
 import com.schemafy.core.erd.table.domain.exception.TableErrorCode;
+import com.schemafy.core.erd.vendor.application.service.IdentifierCapabilityResolver;
+import com.schemafy.core.erd.vendor.domain.validator.IdentifierValidator;
 import com.schemafy.core.project.application.access.AccessTarget;
 import com.schemafy.core.project.application.access.RequireProjectAccess;
 import com.schemafy.core.project.domain.ProjectRole;
@@ -42,6 +44,7 @@ public class CreateTableService implements CreateTableUseCase {
   private final TransactionalOperator transactionalOperator;
   private final StructuralSnapshotService structuralSnapshotService;
   private final JsonObjectMetadataConverter jsonObjectMetadataConverter;
+  private final IdentifierCapabilityResolver identifierCapabilityResolver;
   private ErdMutationCoordinator erdMutationCoordinator = ErdMutationCoordinator.noop();
 
   @Autowired
@@ -55,41 +58,50 @@ public class CreateTableService implements CreateTableUseCase {
       String canonicalExtra = jsonObjectMetadataConverter.toStorageJson(command.extra());
       return erdMutationCoordinator.coordinate(ErdOperationType.CREATE_TABLE, command,
           () -> structuralSnapshotService.captureBySchemaId(command.schemaId())
-              .flatMap(beforeSnapshot -> tableExistsPort.existsBySchemaIdAndName(command.schemaId(), command.name())
-                  .flatMap(exists -> {
-                    if (exists) {
-                      return Mono.error(new DomainException(TableErrorCode.NAME_DUPLICATE,
-                          "Table name '%s' already exists in schema".formatted(command.name())));
-                    }
+              .flatMap(beforeSnapshot -> identifierCapabilityResolver.resolve(SCHEMA, command.schemaId())
+                  .flatMap(identifiers -> {
+                    IdentifierValidator.validateLength(
+                        identifiers,
+                        command.name(),
+                        TableErrorCode.INVALID_VALUE,
+                        "Table name");
+                    return tableExistsPort.existsBySchemaIdAndName(command.schemaId(), command.name())
+                        .flatMap(exists -> {
+                          if (exists) {
+                            return Mono.error(new DomainException(TableErrorCode.NAME_DUPLICATE,
+                                "Table name '%s' already exists in schema".formatted(command.name())));
+                          }
 
-                    return getSchemaByIdPort.findSchemaById(command.schemaId())
-                        .switchIfEmpty(Mono.error(new DomainException(SchemaErrorCode.NOT_FOUND, "Schema not found")))
-                        .flatMap(schema -> Mono.fromCallable(ulidGeneratorPort::generate)
-                            .flatMap(id -> {
-                              String resolvedCharset = hasText(command.charset())
-                                  ? command.charset().trim()
-                                  : schema.charset();
-                              String resolvedCollation = hasText(command.collation())
-                                  ? command.collation().trim()
-                                  : schema.collation();
+                          return getSchemaByIdPort.findSchemaById(command.schemaId())
+                              .switchIfEmpty(
+                                  Mono.error(new DomainException(SchemaErrorCode.NOT_FOUND, "Schema not found")))
+                              .flatMap(schema -> Mono.fromCallable(ulidGeneratorPort::generate)
+                                  .flatMap(id -> {
+                                    String resolvedCharset = hasText(command.charset())
+                                        ? command.charset().trim()
+                                        : schema.charset();
+                                    String resolvedCollation = hasText(command.collation())
+                                        ? command.collation().trim()
+                                        : schema.collation();
 
-                              Table table = new Table(
-                                  id,
-                                  command.schemaId(),
-                                  command.name(),
-                                  resolvedCharset,
-                                  resolvedCollation,
-                                  canonicalExtra);
+                                    Table table = new Table(
+                                        id,
+                                        command.schemaId(),
+                                        command.name(),
+                                        resolvedCharset,
+                                        resolvedCollation,
+                                        canonicalExtra);
 
-                              return createTablePort.createTable(table)
-                                  .map(savedTable -> new CreateTableResult(
-                                      savedTable.id(),
-                                      savedTable.name(),
-                                      savedTable.charset(),
-                                      savedTable.collation(),
-                                      savedTable.extra()))
-                                  .map(result -> MutationResult.of(result, id));
-                            }));
+                                    return createTablePort.createTable(table)
+                                        .map(savedTable -> new CreateTableResult(
+                                            savedTable.id(),
+                                            savedTable.name(),
+                                            savedTable.charset(),
+                                            savedTable.collation(),
+                                            savedTable.extra()))
+                                        .map(result -> MutationResult.of(result, id));
+                                  }));
+                        });
                   })
                   .flatMap(result -> structuralSnapshotService.captureBySchemaId(beforeSnapshot.schemaId())
                       .map(afterSnapshot -> result.withInverse(new CreateTableInverse(

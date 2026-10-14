@@ -22,6 +22,8 @@ import com.schemafy.core.erd.constraint.domain.ConstraintColumn;
 import com.schemafy.core.erd.constraint.domain.exception.ConstraintErrorCode;
 import com.schemafy.core.erd.constraint.domain.type.ConstraintKind;
 import com.schemafy.core.erd.constraint.domain.validator.ConstraintValidator;
+import com.schemafy.core.erd.operation.application.inverse.ChangeConstraintCheckExprInverse;
+import com.schemafy.core.erd.operation.application.inverse.ChangeConstraintDefaultExprInverse;
 import com.schemafy.core.erd.operation.application.service.ErdMutationCoordinator;
 import com.schemafy.core.erd.operation.domain.ErdOperationType;
 import com.schemafy.core.project.application.access.AccessTarget;
@@ -109,7 +111,10 @@ public class ChangeConstraintExpressionService implements
                           lockedConstraint.id(),
                           checkExpr,
                           lockedConstraint.defaultExpr())))
-                  .thenReturn(MutationResult.<Void>of(null, lockedConstraint.tableId()));
+                  .thenReturn(MutationResult.<Void>of(null, lockedConstraint.tableId())
+                      .withInverse(new ChangeConstraintCheckExprInverse(
+                          lockedConstraint.id(),
+                          lockedConstraint.checkExpr())));
             }));
   }
 
@@ -138,7 +143,10 @@ public class ChangeConstraintExpressionService implements
                           lockedConstraint.id(),
                           lockedConstraint.checkExpr(),
                           defaultExpr)))
-                  .thenReturn(MutationResult.<Void>of(null, lockedConstraint.tableId()));
+                  .thenReturn(MutationResult.<Void>of(null, lockedConstraint.tableId())
+                      .withInverse(new ChangeConstraintDefaultExprInverse(
+                          lockedConstraint.id(),
+                          lockedConstraint.defaultExpr())));
             }));
   }
 

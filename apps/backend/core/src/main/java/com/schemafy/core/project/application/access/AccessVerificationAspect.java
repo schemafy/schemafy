@@ -19,10 +19,12 @@ import org.aspectj.lang.reflect.MethodSignature;
 import com.schemafy.core.erd.operation.ErdOperationContexts;
 
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 import reactor.util.context.ContextView;
 
+@Slf4j
 @Aspect
 @Component
 @Order(Ordered.HIGHEST_PRECEDENCE)
@@ -57,28 +59,45 @@ public class AccessVerificationAspect {
 
     Class<?> returnType = method.getReturnType();
     if (Mono.class.isAssignableFrom(returnType)) {
-      return Mono.defer(() -> resolveAccessRequest(
-          method,
-          joinPoint.getArgs(),
-          projectAccess,
-          workspaceAccess)
-          .flatMap(accessRequest -> Mono.defer(() -> proceedMono(joinPoint, method))
-              .contextWrite(ProjectAccessRequesterContext.withRequesterId(
-                  accessRequest.requesterId()))));
+      return Mono.deferContextual(contextView -> {
+        if (SystemActorContext.isSystemActor(contextView)) {
+          logSystemActorBypass(method);
+          return proceedMono(joinPoint, method);
+        }
+        return resolveAccessRequest(
+            method,
+            joinPoint.getArgs(),
+            projectAccess,
+            workspaceAccess)
+            .flatMap(accessRequest -> Mono.defer(() -> proceedMono(joinPoint, method))
+                .contextWrite(ProjectAccessRequesterContext.withRequesterId(
+                    accessRequest.requesterId())));
+      });
     }
     if (Flux.class.isAssignableFrom(returnType)) {
-      return Flux.defer(() -> resolveAccessRequest(
-          method,
-          joinPoint.getArgs(),
-          projectAccess,
-          workspaceAccess)
-          .flatMapMany(accessRequest -> Flux.defer(() -> proceedFlux(joinPoint, method))
-              .contextWrite(ProjectAccessRequesterContext.withRequesterId(
-                  accessRequest.requesterId()))));
+      return Flux.deferContextual(contextView -> {
+        if (SystemActorContext.isSystemActor(contextView)) {
+          logSystemActorBypass(method);
+          return proceedFlux(joinPoint, method);
+        }
+        return resolveAccessRequest(
+            method,
+            joinPoint.getArgs(),
+            projectAccess,
+            workspaceAccess)
+            .flatMapMany(accessRequest -> Flux.defer(() -> proceedFlux(joinPoint, method))
+                .contextWrite(ProjectAccessRequesterContext.withRequesterId(
+                    accessRequest.requesterId())));
+      });
     }
     throw new IllegalStateException(
         "Access annotations are only supported on Mono/Flux methods: "
             + method.getDeclaringClass().getSimpleName() + "#" + method.getName());
+  }
+
+  private void logSystemActorBypass(Method method) {
+    log.debug("[AccessVerificationAspect] bypassed as system actor: {}#{}",
+        method.getDeclaringClass().getSimpleName(), method.getName());
   }
 
   private RequireProjectAccess resolveProjectAccess(Method method, Class<?> targetClass) {

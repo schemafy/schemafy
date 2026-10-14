@@ -90,7 +90,8 @@ class DefaultErdMutationCoordinator implements ErdMutationCoordinator {
       ResolvedErdMutationTarget resolvedTarget,
       SchemaCollaborationState preloadedState,
       ErdOperationMetadata metadata) {
-    return mutationSupplier.get()
+    return validateDerivedMutationRevision(preloadedState, metadata)
+        .then(Mono.defer(mutationSupplier))
         .flatMap(mutationResult -> commitOperation(
             operationType,
             payload,
@@ -98,6 +99,23 @@ class DefaultErdMutationCoordinator implements ErdMutationCoordinator {
             resolvedTarget,
             preloadedState,
             metadata));
+  }
+
+  private Mono<Void> validateDerivedMutationRevision(
+      SchemaCollaborationState preloadedState,
+      ErdOperationMetadata metadata) {
+    if (preloadedState == null || !isDerivedMutation(metadata)) {
+      return Mono.empty();
+    }
+
+    Long expectedRevision = metadata.baseSchemaRevision();
+    if (expectedRevision == null) {
+      return Mono.error(new IllegalStateException("Derived operation requires base schema revision"));
+    }
+    if (preloadedState.currentRevision() != expectedRevision) {
+      return Mono.error(staleDerivedOperation(preloadedState.schemaId(), metadata));
+    }
+    return Mono.empty();
   }
 
   private Mono<SchemaCollaborationState> loadOrCreateSchemaState(String schemaId, String projectId) {
@@ -157,9 +175,7 @@ class DefaultErdMutationCoordinator implements ErdMutationCoordinator {
       }
       return incrementSchemaCollaborationRevisionPort
           .incrementIfCurrentRevision(schemaId, expectedRevision)
-          .switchIfEmpty(Mono.error(new DomainException(
-              staleDerivedOperationErrorCode(metadata),
-              "Schema revision changed before undo/redo commit: schemaId=" + schemaId)));
+          .switchIfEmpty(Mono.error(staleDerivedOperation(schemaId, metadata)));
     }
     return incrementSchemaCollaborationRevisionPort.increment(schemaId);
   }
@@ -175,6 +191,14 @@ class DefaultErdMutationCoordinator implements ErdMutationCoordinator {
       return OperationErrorCode.REDO_NOT_ELIGIBLE;
     }
     return OperationErrorCode.SUPERSEDED;
+  }
+
+  private DomainException staleDerivedOperation(
+      String schemaId,
+      ErdOperationMetadata metadata) {
+    return new DomainException(
+        staleDerivedOperationErrorCode(metadata),
+        "Schema revision changed during undo/redo: schemaId=" + schemaId);
   }
 
   private Mono<SchemaCollaborationState> resolveSchemaState(

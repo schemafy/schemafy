@@ -25,6 +25,7 @@ class ErdProjectIdByAccessResourceAdapterTest {
 
   private static final String WORKSPACE_ID = "01ARZ3NDEKTSV4RRFFQ69G5WSP";
   private static final String PROJECT_ID = "01ARZ3NDEKTSV4RRFFQ69G5PRJ";
+  private static final Integer DB_VENDOR_ID = 1;
   private static final String SCHEMA_ID = "01ARZ3NDEKTSV4RRFFQ69G5SCH";
   private static final String PK_TABLE_ID = "01ARZ3NDEKTSV4RRFFQ69G5TPK";
   private static final String FK_TABLE_ID = "01ARZ3NDEKTSV4RRFFQ69G5TFK";
@@ -126,19 +127,20 @@ class ErdProjectIdByAccessResourceAdapterTest {
         .then()
         .block();
     databaseClient.sql("""
-        INSERT INTO projects (id, workspace_id, name, description)
-        VALUES (:id, :workspaceId, 'project', 'description')
+        INSERT INTO projects (id, workspace_id, db_vendor_id, name, description)
+        VALUES (:id, :workspaceId, :dbVendorId, 'project', 'description')
         """)
         .bind("id", PROJECT_ID)
         .bind("workspaceId", WORKSPACE_ID)
+        .bind("dbVendorId", DB_VENDOR_ID)
         .then()
         .block();
   }
 
   private void insertErdResources() {
     databaseClient.sql("""
-        INSERT INTO db_schemas (id, project_id, db_vendor_name, name, charset, collation)
-        VALUES (:id, :projectId, 'MySQL', 'schema', 'utf8mb4', 'utf8mb4_general_ci')
+        INSERT INTO db_schemas (id, project_id, name, charset, collation)
+        VALUES (:id, :projectId, 'schema', 'utf8mb4', 'utf8mb4_general_ci')
         """)
         .bind("id", SCHEMA_ID)
         .bind("projectId", PROJECT_ID)

@@ -5,8 +5,8 @@ import java.time.Duration;
 import org.springframework.web.reactive.socket.WebSocketMessage;
 import org.springframework.web.reactive.socket.WebSocketSession;
 
-import com.schemafy.api.collaboration.dto.CursorPosition;
 import com.schemafy.api.collaboration.security.WebSocketAuthInfo;
+import com.schemafy.core.collaboration.dto.CursorPosition;
 
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Sinks;

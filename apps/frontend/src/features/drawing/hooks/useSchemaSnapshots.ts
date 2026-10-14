@@ -11,7 +11,9 @@ const applyPreviewOverlay = (
   base: SchemaSnapshotsResponse,
 ): SchemaSnapshotsResponse => {
   const entries = [...previewStore.previews.values()].filter(
-    (e) => e.schemaId === schemaId,
+    (e) =>
+      e.schemaId === schemaId &&
+      (e.kind === 'TABLE' || e.kind === 'RELATIONSHIP'),
   );
 
   if (entries.length === 0) return base;

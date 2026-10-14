@@ -18,7 +18,6 @@ import com.schemafy.core.project.domain.Invitation;
 import com.schemafy.core.project.domain.Project;
 import com.schemafy.core.project.domain.ProjectMember;
 import com.schemafy.core.project.domain.ProjectRole;
-import com.schemafy.core.project.domain.ShareLink;
 import com.schemafy.core.project.domain.Workspace;
 import com.schemafy.core.project.domain.WorkspaceMember;
 import com.schemafy.core.project.domain.WorkspaceRole;
@@ -29,6 +28,8 @@ import reactor.core.publisher.Mono;
 import static org.assertj.core.api.Assertions.assertThat;
 
 public abstract class ProjectHttpTestSupport extends UserHttpTestSupport {
+
+  protected static final Integer DB_VENDOR_ID = 1;
 
   @Autowired
   protected DatabaseClient databaseClient;
@@ -94,7 +95,7 @@ public abstract class ProjectHttpTestSupport extends UserHttpTestSupport {
       String workspaceId,
       String name,
       String description) {
-    return projectRepository.save(Project.create(nextId(), workspaceId, name,
+    return projectRepository.save(Project.create(nextId(), workspaceId, DB_VENDOR_ID, name,
         description)).block();
   }
 
@@ -190,24 +191,6 @@ public abstract class ProjectHttpTestSupport extends UserHttpTestSupport {
         .fetch()
         .rowsUpdated()
         .block();
-  }
-
-  protected ShareLink saveShareLink(String projectId, String code) {
-    return saveShareLink(projectId, code, null);
-  }
-
-  protected ShareLink saveShareLink(
-      String projectId,
-      String code,
-      Instant expiresAt) {
-    ShareLink shareLink = expiresAt == null
-        ? ShareLink.create(nextId(), projectId, code)
-        : ShareLink.create(nextId(), projectId, code, expiresAt);
-    return shareLinkRepository.save(shareLink).block();
-  }
-
-  protected ShareLink saveShareLink(ShareLink shareLink) {
-    return shareLinkRepository.save(shareLink).block();
   }
 
   protected void assertInvalidPagination(

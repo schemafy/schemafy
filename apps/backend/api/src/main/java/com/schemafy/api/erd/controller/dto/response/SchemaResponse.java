@@ -7,7 +7,6 @@ import com.schemafy.core.erd.schema.domain.Schema;
 public record SchemaResponse(
     String id,
     String projectId,
-    String dbVendorName,
     String name,
     String charset,
     String collation,
@@ -17,7 +16,6 @@ public record SchemaResponse(
     return new SchemaResponse(
         result.id(),
         result.projectId(),
-        result.dbVendorName(),
         result.name(),
         result.charset(),
         result.collation(),
@@ -28,7 +26,6 @@ public record SchemaResponse(
     return new SchemaResponse(
         schema.id(),
         schema.projectId(),
-        schema.dbVendorName(),
         schema.name(),
         schema.charset(),
         schema.collation(),
@@ -39,7 +36,6 @@ public record SchemaResponse(
     return new SchemaResponse(
         schema.id(),
         schema.projectId(),
-        schema.dbVendorName(),
         schema.name(),
         schema.charset(),
         schema.collation(),

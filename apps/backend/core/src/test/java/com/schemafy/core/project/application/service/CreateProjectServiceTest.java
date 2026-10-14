@@ -1,16 +1,19 @@
 package com.schemafy.core.project.application.service;
 
-import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.function.Supplier;
+import org.springframework.transaction.reactive.TransactionalOperator;
 
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import com.schemafy.core.common.exception.DomainException;
+import com.schemafy.core.erd.vendor.application.port.out.GetDbVendorByIdPort;
+import com.schemafy.core.erd.vendor.domain.exception.VendorErrorCode;
+import com.schemafy.core.erd.vendor.fixture.DbVendorFixture;
 import com.schemafy.core.project.application.port.in.CreateProjectCommand;
 import com.schemafy.core.project.application.port.in.ProjectDetail;
 import com.schemafy.core.project.application.port.out.ProjectMemberPort;
@@ -18,9 +21,6 @@ import com.schemafy.core.project.application.port.out.ProjectPort;
 import com.schemafy.core.project.domain.Project;
 import com.schemafy.core.project.domain.ProjectMember;
 import com.schemafy.core.project.domain.ProjectRole;
-import com.schemafy.core.project.domain.WorkspaceMember;
-import com.schemafy.core.project.domain.WorkspaceRole;
-import com.schemafy.core.project.domain.exception.WorkspaceErrorCode;
 import com.schemafy.core.ulid.application.port.out.UlidGeneratorPort;
 
 import reactor.core.publisher.Mono;
@@ -33,17 +33,21 @@ import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.then;
 
 @ExtendWith(MockitoExtension.class)
-@DisplayName("프로젝트 생성 서비스")
+@DisplayName("CreateProjectService")
 class CreateProjectServiceTest {
 
+  private static final Integer REQUESTED_DB_VENDOR_ID = 999;
   private static final String WORKSPACE_ID = "workspace-id";
   private static final String REQUESTER_ID = "requester-id";
 
   @Mock
-  WorkspaceMutationGuard workspaceMutationGuard;
+  TransactionalOperator transactionalOperator;
 
   @Mock
   UlidGeneratorPort ulidGeneratorPort;
+
+  @Mock
+  GetDbVendorByIdPort getDbVendorByIdPort;
 
   @Mock
   ProjectPort projectPort;
@@ -57,81 +61,71 @@ class CreateProjectServiceTest {
   @Mock
   ProjectMembershipPropagationHelper projectMembershipPropagationHelper;
 
-  @Mock
-  WorkspaceAccessHelper workspaceAccessHelper;
-
   @InjectMocks
   CreateProjectService sut;
 
   @Test
-  @DisplayName("워크스페이스 공유 락을 획득한 트랜잭션에서 프로젝트 생성과 멤버 전파를 수행한다")
-  void createsProjectAndPropagatesMembersAfterAcquiringSharedWorkspaceLock() {
+  @DisplayName("조회된 벤더의 canonical ID를 프로젝트에 저장한다")
+  void storesCanonicalDbVendorIdReturnedByLookup() {
     var command = new CreateProjectCommand(
-        WORKSPACE_ID, "Project", "Description", REQUESTER_ID);
-    var enteredGuard = new AtomicBoolean();
+        WORKSPACE_ID,
+        REQUESTED_DB_VENDOR_ID,
+        "Project",
+        "Description",
+        REQUESTER_ID);
+    var dbVendor = DbVendorFixture.defaultDbVendor();
 
-    given(workspaceMutationGuard.protectShared(eq(WORKSPACE_ID), any()))
-        .willAnswer(invocation -> {
-          enteredGuard.set(true);
-          Supplier<Mono<ProjectDetail>> action = invocation.getArgument(1);
-          return action.get();
-        });
-    given(workspaceAccessHelper.findWorkspaceAdminMember(REQUESTER_ID, WORKSPACE_ID))
-        .willReturn(Mono.just(WorkspaceMember.create(
-            "requester-member-id", WORKSPACE_ID, REQUESTER_ID, WorkspaceRole.ADMIN)));
-    given(ulidGeneratorPort.generate()).willReturn("project-id", "member-id");
-    given(projectPort.save(any(Project.class))).willAnswer(invocation -> {
-      assertThat(enteredGuard).isTrue();
-      return Mono.just(invocation.getArgument(0));
-    });
+    given(getDbVendorByIdPort.findActiveById(REQUESTED_DB_VENDOR_ID))
+        .willReturn(Mono.just(dbVendor));
+    given(ulidGeneratorPort.generate())
+        .willReturn("project-id", "member-id");
+    given(projectPort.save(any(Project.class)))
+        .willAnswer(invocation -> Mono.just(invocation.getArgument(0)));
     given(projectMemberPort.save(any(ProjectMember.class)))
         .willAnswer(invocation -> Mono.just(invocation.getArgument(0)));
     given(projectMembershipPropagationHelper.propagateWorkspaceMembersToProject(
-        "project-id", WORKSPACE_ID, REQUESTER_ID)).willAnswer(invocation -> {
-          assertThat(enteredGuard).isTrue();
-          return Mono.empty();
-        });
+        "project-id", WORKSPACE_ID, REQUESTER_ID))
+        .willReturn(Mono.empty());
     given(projectAccessHelper.buildProjectDetail(any(Project.class), eq(REQUESTER_ID)))
         .willAnswer(invocation -> Mono.just(new ProjectDetail(
             invocation.getArgument(0), ProjectRole.ADMIN.name())));
+    given(transactionalOperator.transactional(any(Mono.class)))
+        .willAnswer(invocation -> invocation.getArgument(0));
 
     StepVerifier.create(sut.createProject(command))
-        .expectNextCount(1)
+        .assertNext(detail -> assertThat(detail.project().getDbVendorId())
+            .isEqualTo(DbVendorFixture.DEFAULT_ID))
         .verifyComplete();
 
-    then(workspaceMutationGuard).should().protectShared(eq(WORKSPACE_ID), any());
+    then(getDbVendorByIdPort).should().findActiveById(REQUESTED_DB_VENDOR_ID);
+
+    ArgumentCaptor<Project> projectCaptor = ArgumentCaptor.forClass(Project.class);
+    then(projectPort).should().save(projectCaptor.capture());
+    assertThat(projectCaptor.getValue().getDbVendorId()).isEqualTo(DbVendorFixture.DEFAULT_ID);
   }
 
   @Test
-  @DisplayName("락 획득 뒤 요청자가 워크스페이스에서 제거되면 프로젝트를 생성하지 않는다")
-  void rejectsRemovedRequesterAfterAcquiringSharedWorkspaceLock() {
+  @DisplayName("활성 벤더가 없으면 프로젝트를 저장하지 않는다")
+  void rejectsMissingActiveDbVendor() {
     var command = new CreateProjectCommand(
-        WORKSPACE_ID, "Project", "Description", REQUESTER_ID);
-    var requesterWasRemoved = new AtomicBoolean();
+        WORKSPACE_ID,
+        REQUESTED_DB_VENDOR_ID,
+        "Project",
+        "Description",
+        REQUESTER_ID);
 
-    given(workspaceMutationGuard.protectShared(eq(WORKSPACE_ID), any()))
-        .willAnswer(invocation -> {
-          Supplier<Mono<ProjectDetail>> action = invocation.getArgument(1);
-          return Mono.defer(() -> {
-            requesterWasRemoved.set(true);
-            return action.get();
-          });
-        });
-    given(workspaceAccessHelper.findWorkspaceAdminMember(REQUESTER_ID, WORKSPACE_ID))
-        .willAnswer(invocation -> requesterWasRemoved.get()
-            ? Mono.error(new DomainException(WorkspaceErrorCode.ACCESS_DENIED))
-            : Mono.just(WorkspaceMember.create(
-                "requester-member-id", WORKSPACE_ID, REQUESTER_ID, WorkspaceRole.ADMIN)));
+    given(getDbVendorByIdPort.findActiveById(REQUESTED_DB_VENDOR_ID))
+        .willReturn(Mono.empty());
+    given(transactionalOperator.transactional(any(Mono.class)))
+        .willAnswer(invocation -> invocation.getArgument(0));
 
     StepVerifier.create(sut.createProject(command))
-        .expectErrorMatches(DomainException.hasErrorCode(WorkspaceErrorCode.ACCESS_DENIED))
+        .expectErrorMatches(DomainException.hasErrorCode(VendorErrorCode.NOT_FOUND))
         .verify();
 
     then(ulidGeneratorPort).shouldHaveNoInteractions();
     then(projectPort).shouldHaveNoInteractions();
     then(projectMemberPort).shouldHaveNoInteractions();
-    then(projectMembershipPropagationHelper).shouldHaveNoInteractions();
-    then(projectAccessHelper).shouldHaveNoInteractions();
   }
 
 }

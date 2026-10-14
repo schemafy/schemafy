@@ -4,6 +4,7 @@ import java.util.UUID;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.r2dbc.core.DatabaseClient;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
 
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -23,6 +24,8 @@ import com.schemafy.core.project.domain.Workspace;
 import com.schemafy.core.project.domain.WorkspaceMember;
 import com.schemafy.core.project.domain.WorkspaceRole;
 import com.schemafy.core.ulid.application.service.UlidGenerator;
+import com.schemafy.core.user.application.port.out.SendEmailVerificationPort;
+import com.schemafy.core.user.application.port.out.SendPasswordResetEmailPort;
 
 import reactor.core.CoreSubscriber;
 import reactor.core.publisher.Hooks;
@@ -33,6 +36,7 @@ import reactor.util.context.Context;
 public abstract class ErdProjectIntegrationSupport {
 
   protected static final String TEST_REQUESTER_ID = "test-erd-requester";
+  private static final Integer DB_VENDOR_ID = 1;
   private static final String PROJECT_ACCESS_REQUESTER_HOOK = ErdProjectIntegrationSupport.class.getName();
 
   @Autowired
@@ -49,6 +53,12 @@ public abstract class ErdProjectIntegrationSupport {
 
   @Autowired
   protected DatabaseClient databaseClient;
+
+  @MockitoBean
+  protected SendEmailVerificationPort sendEmailVerificationPort;
+
+  @MockitoBean
+  protected SendPasswordResetEmailPort sendPasswordResetEmailPort;
 
   @BeforeEach
   void setUpProjectAccessRequesterContext() {
@@ -73,6 +83,7 @@ public abstract class ErdProjectIntegrationSupport {
     Project project = projectRepository.save(Project.create(
         UlidGenerator.generate(),
         workspace.getId(),
+        DB_VENDOR_ID,
         prefix + "_project_" + uniqueSuffix,
         "description")).block();
 

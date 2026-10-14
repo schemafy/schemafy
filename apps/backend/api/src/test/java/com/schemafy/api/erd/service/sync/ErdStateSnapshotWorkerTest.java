@@ -1,0 +1,316 @@
+package com.schemafy.api.erd.service.sync;
+
+import java.time.Duration;
+import java.util.Map;
+import java.util.concurrent.atomic.AtomicInteger;
+
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.ArgumentCaptor;
+import org.mockito.Mock;
+import org.mockito.junit.jupiter.MockitoExtension;
+
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.schemafy.api.erd.controller.dto.response.SchemaResponse;
+import com.schemafy.api.erd.service.SchemaSnapshotOrchestrator;
+import com.schemafy.api.erd.service.SchemaStateSnapshot;
+import com.schemafy.core.collaboration.dto.event.ErdStateChangedEvent;
+import com.schemafy.core.common.json.JsonCodec;
+import com.schemafy.core.project.application.access.SystemActorContext;
+
+import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
+import reactor.core.publisher.Mono;
+import reactor.core.scheduler.Scheduler;
+import reactor.core.scheduler.Schedulers;
+
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyLong;
+import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.BDDMockito.given;
+import static org.mockito.Mockito.atLeast;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
+
+@ExtendWith(MockitoExtension.class)
+@DisplayName("ErdStateSnapshotWorker")
+class ErdStateSnapshotWorkerTest {
+
+  @Mock
+  private ErdStateSnapshotJobStore jobStore;
+  @Mock
+  private SchemaSnapshotOrchestrator snapshotOrchestrator;
+
+  private final ErdStateSnapshotProperties properties = properties();
+  private final SimpleMeterRegistry meterRegistry = new SimpleMeterRegistry();
+  private final Scheduler scheduler = Schedulers.newSingle("snapshot-worker-test");
+  private final JsonCodec jsonCodec = new JsonCodec(
+      new ObjectMapper().findAndRegisterModules());
+
+  private ErdStateSnapshotWorker worker;
+
+  @BeforeEach
+  void setUp() {
+    worker = new ErdStateSnapshotWorker(jobStore, snapshotOrchestrator,
+        jsonCodec, meterRegistry, properties, scheduler,
+        () -> 2_000L, () -> "lease-token");
+  }
+
+  @AfterEach
+  void tearDown() {
+    scheduler.dispose();
+  }
+
+  @Test
+  @DisplayName("ACTIVE snapshot을 생성하고 검증한 뒤 발행한다")
+  void buildsValidatesAndPublishesAnActiveSnapshot() {
+    ErdStateSnapshotJob job = activeJob(10L, 0);
+    SchemaStateSnapshot snapshot = snapshot(12L);
+    given(jobStore.claim("job-1", "lease-token", 2_000L,
+        properties.getLeaseTtl())).willReturn(Mono.just(job));
+    given(snapshotOrchestrator.getSchemaState("schema-1"))
+        .willReturn(Mono.just(snapshot));
+    given(jobStore.publishIfCurrent(eq(job), eq(12L), anyString()))
+        .willReturn(Mono.just(true));
+    given(jobStore.complete(job, 12L, 2_000L)).willReturn(Mono.empty());
+
+    worker.process("job-1").block();
+
+    ArgumentCaptor<String> payloadCaptor = ArgumentCaptor.forClass(String.class);
+    verify(jobStore).publishIfCurrent(eq(job), eq(12L), payloadCaptor.capture());
+    ErdStateChangedEvent.Outbound event = jsonCodec.fromJson(
+        payloadCaptor.getValue(), ErdStateChangedEvent.Outbound.class);
+    assertThat(event.state()).isEqualTo(ErdStateChangedEvent.State.ACTIVE);
+    assertThat(event.revision()).isEqualTo(12L);
+    assertThat(event.schema().get("id").asText()).isEqualTo("schema-1");
+    verify(jobStore).complete(job, 12L, 2_000L);
+  }
+
+  @Test
+  @DisplayName("trusted system actor로 ACTIVE snapshot을 생성한다")
+  void buildsAnActiveSnapshotAsATrustedSystemActor() {
+    ErdStateSnapshotJob job = activeJob(10L, 0);
+    AtomicInteger observedAsSystemActor = new AtomicInteger();
+    given(jobStore.claim("job-1", "lease-token", 2_000L,
+        properties.getLeaseTtl())).willReturn(Mono.just(job));
+    given(snapshotOrchestrator.getSchemaState("schema-1"))
+        .willReturn(Mono.deferContextual(contextView -> {
+          if (SystemActorContext.isSystemActor(contextView)) {
+            observedAsSystemActor.incrementAndGet();
+          }
+          return Mono.just(snapshot(10L));
+        }));
+    given(jobStore.publishIfCurrent(eq(job), eq(10L), anyString()))
+        .willReturn(Mono.just(true));
+    given(jobStore.complete(job, 10L, 2_000L)).willReturn(Mono.empty());
+
+    worker.process("job-1").block();
+
+    assertThat(observedAsSystemActor).hasValue(1);
+  }
+
+  @Test
+  @DisplayName("snapshot을 생성하지 않고 삭제 상태를 발행한다")
+  void publishesADeletionWithoutBuildingASnapshot() {
+    ErdStateSnapshotJob job = deletedJob(11L);
+    given(jobStore.claim("job-1", "lease-token", 2_000L,
+        properties.getLeaseTtl())).willReturn(Mono.just(job));
+    given(jobStore.publishIfCurrent(eq(job), eq(11L), anyString()))
+        .willReturn(Mono.just(true));
+    given(jobStore.complete(job, 11L, 2_000L)).willReturn(Mono.empty());
+
+    worker.process("job-1").block();
+
+    verify(snapshotOrchestrator, never()).getSchemaState(any());
+    ArgumentCaptor<String> payloadCaptor = ArgumentCaptor.forClass(String.class);
+    verify(jobStore).publishIfCurrent(eq(job), eq(11L), payloadCaptor.capture());
+    ErdStateChangedEvent.Outbound event = jsonCodec.fromJson(
+        payloadCaptor.getValue(), ErdStateChangedEvent.Outbound.class);
+    assertThat(event.state()).isEqualTo(ErdStateChangedEvent.State.DELETED);
+    assertThat(event.schema()).isNull();
+    verify(jobStore).complete(job, 11L, 2_000L);
+  }
+
+  @Test
+  @DisplayName("candidate가 superseded되면 발행하지 않고 requeue한다")
+  void requeuesWithoutPublishingWhenTheCandidateWasSuperseded() {
+    ErdStateSnapshotJob job = activeJob(10L, 0);
+    given(jobStore.claim("job-1", "lease-token", 2_000L,
+        properties.getLeaseTtl())).willReturn(Mono.just(job));
+    given(snapshotOrchestrator.getSchemaState("schema-1"))
+        .willReturn(Mono.just(snapshot(10L)));
+    given(jobStore.publishIfCurrent(eq(job), eq(10L), anyString()))
+        .willReturn(Mono.just(false));
+    given(jobStore.requeue(job, 2_000L, Duration.ZERO, ErdStateSnapshotRequeueReason.SUPERSEDED)).willReturn(Mono
+        .empty());
+
+    worker.process("job-1").block();
+
+    verify(jobStore, never()).complete(any(), eq(10L), eq(2_000L));
+    verify(jobStore).requeue(job, 2_000L, Duration.ZERO, ErdStateSnapshotRequeueReason.SUPERSEDED);
+  }
+
+  @Test
+  @DisplayName("snapshot 생성 재시도를 소진하면 분산 backoff로 requeue한다")
+  void retriesAnExhaustedBuildThenRequeuesWithDistributedBackoff() {
+    ErdStateSnapshotJob job = activeJob(10L, 2);
+    AtomicInteger attempts = new AtomicInteger();
+    given(jobStore.claim("job-1", "lease-token", 2_000L,
+        properties.getLeaseTtl())).willReturn(Mono.just(job));
+    given(snapshotOrchestrator.getSchemaState("schema-1"))
+        .willReturn(Mono.defer(() -> {
+          attempts.incrementAndGet();
+          return Mono.error(new IllegalStateException("database unavailable"));
+        }));
+    given(jobStore.requeue(job, 2_000L, Duration.ofSeconds(4), ErdStateSnapshotRequeueReason.FAILURE))
+        .willReturn(Mono.empty());
+
+    worker.process("job-1").block();
+
+    assertThat(attempts).hasValue(4);
+    verify(jobStore).requeue(job, 2_000L, Duration.ofSeconds(4), ErdStateSnapshotRequeueReason.FAILURE);
+    assertThat(meterRegistry.counter(
+        "schemafy.erd.state_snapshot.retry_exhausted", "phase", "build").count())
+        .isEqualTo(1D);
+  }
+
+  @Test
+  @DisplayName("snapshot 생성이 진행되는 동안 lease를 갱신한다")
+  void renewsTheLeaseWhileABuildIsStillRunning() {
+    ErdStateSnapshotJob job = activeJob(10L, 0);
+    given(jobStore.claim("job-1", "lease-token", 2_000L,
+        properties.getLeaseTtl())).willReturn(Mono.just(job));
+    given(snapshotOrchestrator.getSchemaState("schema-1"))
+        .willReturn(Mono.delay(Duration.ofMillis(35), scheduler)
+            .thenReturn(snapshot(10L)));
+    given(jobStore.renewLease(job, 2_000L, properties.getLeaseTtl()))
+        .willReturn(Mono.just(true));
+    given(jobStore.publishIfCurrent(eq(job), eq(10L), anyString()))
+        .willReturn(Mono.just(true));
+    given(jobStore.complete(job, 10L, 2_000L)).willReturn(Mono.empty());
+
+    worker.process("job-1").block();
+
+    verify(jobStore, atLeast(2)).renewLease(job, 2_000L,
+        properties.getLeaseTtl());
+  }
+
+  @Test
+  @DisplayName("lease를 잃으면 invalidator가 이미 reschedule했으므로 requeue하지 않는다")
+  void swallowsLeaseLossWithoutRequeueingSinceTheInvalidatorAlreadyRescheduled() {
+    ErdStateSnapshotJob job = activeJob(10L, 0);
+    given(jobStore.claim("job-1", "lease-token", 2_000L,
+        properties.getLeaseTtl())).willReturn(Mono.just(job));
+    given(snapshotOrchestrator.getSchemaState("schema-1"))
+        .willReturn(Mono.delay(Duration.ofMillis(35), scheduler)
+            .thenReturn(snapshot(10L)));
+    given(jobStore.renewLease(job, 2_000L, properties.getLeaseTtl()))
+        .willReturn(Mono.just(false));
+
+    worker.process("job-1").block();
+
+    verify(jobStore, never()).requeue(any(), anyLong(), any(), any());
+    verify(jobStore, never()).complete(any(), anyLong(), anyLong());
+  }
+
+  @Test
+  @DisplayName("completion이 거절되면 invalidator가 이미 reschedule했으므로 requeue하지 않는다")
+  void swallowsARejectedCompletionWithoutRequeueingSinceTheInvalidatorAlreadyRescheduled() {
+    ErdStateSnapshotJob job = activeJob(10L, 0);
+    given(jobStore.claim("job-1", "lease-token", 2_000L,
+        properties.getLeaseTtl())).willReturn(Mono.just(job));
+    given(snapshotOrchestrator.getSchemaState("schema-1"))
+        .willReturn(Mono.just(snapshot(10L)));
+    given(jobStore.publishIfCurrent(eq(job), eq(10L), anyString()))
+        .willReturn(Mono.just(true));
+    given(jobStore.complete(job, 10L, 2_000L)).willReturn(
+        Mono.error(new JobTransitionRejectedException("stale generation")));
+
+    worker.process("job-1").block();
+
+    verify(jobStore, never()).requeue(any(), anyLong(), any(), any());
+  }
+
+  @Test
+  @DisplayName("snapshot을 다시 생성하지 않고 발행만 재시도한다")
+  void retriesPublishWithoutRebuildingTheSnapshot() {
+    ErdStateSnapshotJob job = activeJob(10L, 0);
+    AtomicInteger publishAttempts = new AtomicInteger();
+    given(jobStore.claim("job-1", "lease-token", 2_000L,
+        properties.getLeaseTtl())).willReturn(Mono.just(job));
+    given(snapshotOrchestrator.getSchemaState("schema-1"))
+        .willReturn(Mono.just(snapshot(10L)));
+    given(jobStore.publishIfCurrent(eq(job), eq(10L), anyString()))
+        .willAnswer(ignored -> publishAttempts.incrementAndGet() < 3
+            ? Mono.error(new IllegalStateException("Redis publish failed"))
+            : Mono.just(true));
+    given(jobStore.complete(job, 10L, 2_000L)).willReturn(Mono.empty());
+
+    worker.process("job-1").block();
+
+    assertThat(publishAttempts).hasValue(3);
+    verify(snapshotOrchestrator, times(1)).getSchemaState("schema-1");
+    verify(jobStore).complete(job, 10L, 2_000L);
+  }
+
+  @Test
+  @DisplayName("원자적 check와 publish를 위해 재시도마다 publishability를 다시 평가한다")
+  void reEvaluatesPublishabilityOnEveryRetryBecauseCheckAndPublishAreAtomic() {
+    ErdStateSnapshotJob job = activeJob(10L, 0);
+    AtomicInteger publishAttempts = new AtomicInteger();
+    given(jobStore.claim("job-1", "lease-token", 2_000L,
+        properties.getLeaseTtl())).willReturn(Mono.just(job));
+    given(snapshotOrchestrator.getSchemaState("schema-1"))
+        .willReturn(Mono.just(snapshot(10L)));
+    // Attempt 1 fails with a transient infra error after the check already
+    // passed inside the same Lua script; attempt 2 finds it superseded,
+    // proving each retry re-runs the atomic check+publish, not just publish.
+    given(jobStore.publishIfCurrent(eq(job), eq(10L), anyString()))
+        .willAnswer(ignored -> publishAttempts.incrementAndGet() == 1
+            ? Mono.error(new IllegalStateException("Redis publish failed"))
+            : Mono.just(false));
+    given(jobStore.requeue(job, 2_000L, Duration.ZERO, ErdStateSnapshotRequeueReason.SUPERSEDED)).willReturn(Mono
+        .empty());
+
+    worker.process("job-1").block();
+
+    assertThat(publishAttempts).hasValue(2);
+    verify(jobStore, never()).complete(any(), anyLong(), anyLong());
+    verify(jobStore).requeue(job, 2_000L, Duration.ZERO, ErdStateSnapshotRequeueReason.SUPERSEDED);
+  }
+
+  private ErdStateSnapshotJob activeJob(long revision, int failureCount) {
+    return new ErdStateSnapshotJob("job-1", "project-1", "schema-1",
+        ErdStateSnapshotJobKind.ACTIVE, revision, 0L, "lease-token",
+        failureCount);
+  }
+
+  private ErdStateSnapshotJob deletedJob(long revision) {
+    return new ErdStateSnapshotJob("job-1", "project-1", "schema-1",
+        ErdStateSnapshotJobKind.DELETED, revision, 1L, "lease-token", 0);
+  }
+
+  private SchemaStateSnapshot snapshot(long revision) {
+    return new SchemaStateSnapshot(
+        new SchemaResponse("schema-1", "project-1", "schema", "utf8mb4",
+            "utf8mb4_general_ci", null),
+        revision, Map.of());
+  }
+
+  private static ErdStateSnapshotProperties properties() {
+    ErdStateSnapshotProperties properties = new ErdStateSnapshotProperties();
+    properties.setLeaseTtl(Duration.ofSeconds(30));
+    properties.setLeaseRenewInterval(Duration.ofMillis(10));
+    properties.setRetryBackoff(Duration.ofMillis(1));
+    properties.setMaxRetryBackoff(Duration.ofMillis(4));
+    properties.setRequeueBackoff(Duration.ofSeconds(1));
+    properties.setMaxRequeueBackoff(Duration.ofSeconds(30));
+    return properties;
+  }
+
+}

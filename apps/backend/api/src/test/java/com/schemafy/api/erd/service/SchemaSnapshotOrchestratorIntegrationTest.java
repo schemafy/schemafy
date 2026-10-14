@@ -65,7 +65,6 @@ class SchemaSnapshotOrchestratorIntegrationTest extends ProjectHttpTestSupport {
 
     String schemaId = blockAsRequester(createSchemaUseCase.createSchema(new CreateSchemaCommand(
         projectId,
-        "MySQL",
         "snapshot_schema",
         "utf8mb4",
         "utf8mb4_general_ci"))).result().id();

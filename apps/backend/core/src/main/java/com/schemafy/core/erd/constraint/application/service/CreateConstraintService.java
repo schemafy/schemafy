@@ -37,6 +37,9 @@ import com.schemafy.core.erd.operation.domain.ErdOperationType;
 import com.schemafy.core.erd.table.application.port.out.GetTableByIdPort;
 import com.schemafy.core.erd.table.domain.Table;
 import com.schemafy.core.erd.table.domain.exception.TableErrorCode;
+import com.schemafy.core.erd.vendor.application.service.IdentifierCapabilityResolver;
+import com.schemafy.core.erd.vendor.domain.IdentifierCapabilities;
+import com.schemafy.core.erd.vendor.domain.validator.IdentifierValidator;
 import com.schemafy.core.project.application.access.AccessTarget;
 import com.schemafy.core.project.application.access.RequireProjectAccess;
 import com.schemafy.core.project.domain.ProjectRole;
@@ -64,6 +67,7 @@ public class CreateConstraintService implements CreateConstraintUseCase {
   private final GetConstraintsByTableIdPort getConstraintsByTableIdPort;
   private final GetConstraintColumnsByConstraintIdPort getConstraintColumnsByConstraintIdPort;
   private final PkCascadeHelper pkCascadeHelper;
+  private final IdentifierCapabilityResolver identifierCapabilityResolver;
   private final StructuralSnapshotService structuralSnapshotService;
   private ErdMutationCoordinator erdMutationCoordinator = ErdMutationCoordinator.noop();
 
@@ -89,14 +93,22 @@ public class CreateConstraintService implements CreateConstraintUseCase {
 
           return getTableByIdPort.findTableById(command.tableId())
               .switchIfEmpty(Mono.error(new DomainException(TableErrorCode.NOT_FOUND, "Table not found")))
-              .flatMap(table -> {
+              .zipWith(identifierCapabilityResolver.resolve(TABLE, command.tableId()))
+              .flatMap(tuple -> {
+                Table table = tuple.getT1();
+                IdentifierCapabilities identifierCapabilities = tuple.getT2();
                 Set<String> affectedTableIds = ConcurrentHashMap.newKeySet();
                 affectedTableIds.add(table.id());
 
                 Mono<String> nameMono;
                 if (autoName) {
-                  nameMono = resolveAutoConstraintName(table, command.kind());
+                  nameMono = resolveAutoConstraintName(table, command.kind(), identifierCapabilities);
                 } else {
+                  IdentifierValidator.validateLength(
+                      identifierCapabilities,
+                      normalizedName,
+                      ConstraintErrorCode.NAME_INVALID,
+                      "Constraint name");
                   nameMono = constraintExistsPort.existsBySchemaIdAndName(table.schemaId(), normalizedName)
                       .flatMap(exists -> {
                         if (exists) {
@@ -237,17 +249,25 @@ public class CreateConstraintService implements CreateConstraintUseCase {
         .then();
   }
 
-  private Mono<String> resolveAutoConstraintName(Table table, ConstraintKind kind) {
+  private Mono<String> resolveAutoConstraintName(
+      Table table,
+      ConstraintKind kind,
+      IdentifierCapabilities identifierCapabilities) {
     String baseName = constraintKindPrefix(kind) + table.name();
-    return resolveUniqueConstraintName(table.schemaId(), baseName, 0);
+    return resolveUniqueConstraintName(table.schemaId(), baseName, 0, identifierCapabilities);
   }
 
-  private Mono<String> resolveUniqueConstraintName(String schemaId, String baseName, int suffix) {
-    String candidate = suffix == 0 ? baseName : baseName + "_" + suffix;
+  private Mono<String> resolveUniqueConstraintName(
+      String schemaId,
+      String baseName,
+      int suffix,
+      IdentifierCapabilities identifierCapabilities) {
+    String nameSuffix = suffix == 0 ? "" : "_" + suffix;
+    String candidate = identifierCapabilities.fitGeneratedName(baseName, nameSuffix);
     return constraintExistsPort.existsBySchemaIdAndName(schemaId, candidate)
         .flatMap(exists -> {
           if (exists) {
-            return resolveUniqueConstraintName(schemaId, baseName, suffix + 1);
+            return resolveUniqueConstraintName(schemaId, baseName, suffix + 1, identifierCapabilities);
           }
           return Mono.just(candidate);
         });

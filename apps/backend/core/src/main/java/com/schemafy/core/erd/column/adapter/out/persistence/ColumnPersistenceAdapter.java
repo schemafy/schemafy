@@ -68,7 +68,7 @@ class ColumnPersistenceAdapter implements
     return findColumnOrError(columnId)
         .flatMap((@NonNull ColumnEntity columnEntity) -> {
           columnEntity.setName(newName);
-          return columnRepository.save(columnEntity);
+          return columnRepository.save(normalizeTypeArguments(columnEntity));
         })
         .then();
   }
@@ -108,7 +108,7 @@ class ColumnPersistenceAdapter implements
           if (comment != null) {
             columnEntity.setComment(hasText(comment) ? comment : null);
           }
-          return columnRepository.save(columnEntity);
+          return columnRepository.save(normalizeTypeArguments(columnEntity));
         })
         .then();
   }
@@ -128,7 +128,7 @@ class ColumnPersistenceAdapter implements
           if (seqNo != null) {
             entity.setSeqNo(seqNo);
           }
-          return entity;
+          return normalizeTypeArguments(entity);
         })
         .collectList()
         .flatMap(entities -> columnRepository.saveAll(entities).then());
@@ -165,6 +165,11 @@ class ColumnPersistenceAdapter implements
   private Mono<ColumnEntity> findColumnOrError(String columnId) {
     return columnRepository.findById(columnId)
         .switchIfEmpty(Mono.error(new DomainException(ColumnErrorCode.NOT_FOUND, "Column not found: " + columnId)));
+  }
+
+  private ColumnEntity normalizeTypeArguments(ColumnEntity entity) {
+    entity.setTypeArguments(columnMapper.normalizeTypeArgumentsJson(entity.getTypeArguments()));
+    return entity;
   }
 
   private static boolean hasText(String value) {

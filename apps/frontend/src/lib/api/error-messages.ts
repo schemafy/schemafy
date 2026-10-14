@@ -101,7 +101,35 @@ export const ERROR_MESSAGES: Record<string, ErrorMessageInfo> = {
     message: 'Invalid email or password. Please try again.',
     category: ErrorCategory.USER_FEEDBACK,
   },
-
+  USER_EMAIL_NOT_VERIFIED: {
+    message: 'Please verify your email to continue.',
+    category: ErrorCategory.USER_FEEDBACK,
+  },
+  USER_VERIFICATION_CODE_EXPIRED: {
+    message: 'The verification code has expired. Please request a new one.',
+    category: ErrorCategory.USER_FEEDBACK,
+  },
+  USER_VERIFICATION_CODE_INVALID: {
+    message: 'Invalid verification code. Please try again.',
+    category: ErrorCategory.USER_FEEDBACK,
+  },
+  USER_VERIFICATION_ATTEMPTS_EXCEEDED: {
+    message: 'Too many failed attempts. Please request a new code.',
+    category: ErrorCategory.USER_FEEDBACK,
+  },
+  USER_EMAIL_DELIVERY_FAILED: {
+    message: 'Failed to send verification email. Please try again later.',
+    category: ErrorCategory.USER_FEEDBACK,
+  },
+  USER_SIGNUP_VERIFICATION_INVALID: {
+    message:
+      'Your email verification is no longer valid. Please verify your email again.',
+    category: ErrorCategory.USER_FEEDBACK,
+  },
+  USER_AUTH_MAIL_DISABLED: {
+    message: 'Email verification is currently disabled.',
+    category: ErrorCategory.USER_FEEDBACK,
+  },
   VALIDATION_FAILED: CHECK_INPUT,
   VALIDATION_SERVICE_UNAVAILABLE: {
     message: 'Service is temporarily unavailable. Please try again later.',

@@ -21,10 +21,13 @@ import com.schemafy.core.erd.constraint.application.port.out.GetConstraintColumn
 import com.schemafy.core.erd.constraint.domain.exception.ConstraintErrorCode;
 import com.schemafy.core.erd.constraint.domain.type.ConstraintKind;
 import com.schemafy.core.erd.constraint.fixture.ConstraintFixture;
+import com.schemafy.core.erd.operation.application.inverse.ChangeConstraintColumnPositionInverse;
+import com.schemafy.core.erd.operation.application.inverse.ReorderPosition;
 
 import reactor.core.publisher.Mono;
 import reactor.test.StepVerifier;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyList;
 import static org.mockito.ArgumentMatchers.eq;
@@ -90,7 +93,13 @@ class ChangeConstraintColumnPositionServiceTest {
           .willReturn(Mono.empty());
 
       StepVerifier.create(sut.changeConstraintColumnPosition(command))
-          .expectNextCount(1)
+          .assertNext(result -> assertThat(result.inversePayload()).isEqualTo(
+              new ChangeConstraintColumnPositionInverse(
+                  constraintColumn.id(),
+                  List.of(
+                      new ReorderPosition("cc1", 0),
+                      new ReorderPosition("cc2", 1),
+                      new ReorderPosition("cc3", 2)))))
           .verifyComplete();
 
       then(changeConstraintColumnPositionPort).should()
@@ -122,7 +131,9 @@ class ChangeConstraintColumnPositionServiceTest {
               Mono.just(List.of(otherColumn, lockedConstraintColumn)));
 
       StepVerifier.create(sut.changeConstraintColumnPosition(command))
-          .expectNextMatches(result -> result.operation() == null && result.noOp())
+          .expectNextMatches(result -> result.operation() == null
+              && result.inversePayload() == null
+              && result.noOp())
           .verifyComplete();
 
       then(changeConstraintColumnPositionPort).shouldHaveNoInteractions();

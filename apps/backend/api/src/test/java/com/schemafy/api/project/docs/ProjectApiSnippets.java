@@ -25,6 +25,9 @@ public class ProjectApiSnippets extends RestDocsSnippets {
       fieldWithPath("workspaceId")
           .type(JsonFieldType.STRING)
           .description("소속 워크스페이스 ID"),
+      fieldWithPath("dbVendorId")
+          .type(JsonFieldType.NUMBER)
+          .description("DB 벤더 프로필 ID"),
       fieldWithPath("name").type(JsonFieldType.STRING)
           .description("프로젝트 이름"),
       fieldWithPath("description")
@@ -46,6 +49,8 @@ public class ProjectApiSnippets extends RestDocsSnippets {
           .description("프로젝트 고유 ID"),
       fieldWithPath(prefix + "workspaceId").type(JsonFieldType.STRING)
           .description("소속 워크스페이스 ID"),
+      fieldWithPath(prefix + "dbVendorId").type(JsonFieldType.NUMBER)
+          .description("DB 벤더 프로필 ID"),
       fieldWithPath(prefix + "name").type(JsonFieldType.STRING)
           .description("프로젝트 이름"),
       fieldWithPath(prefix + "description").type(JsonFieldType.STRING)
@@ -80,7 +85,9 @@ public class ProjectApiSnippets extends RestDocsSnippets {
         fieldWithPath("name").type(JsonFieldType.STRING)
             .description("프로젝트 이름 (필수)"),
         fieldWithPath("description").type(JsonFieldType.STRING)
-            .description("프로젝트 설명").optional());
+            .description("프로젝트 설명").optional(),
+        fieldWithPath("dbVendorId").type(JsonFieldType.NUMBER)
+            .description("DB 벤더 프로필 ID (필수)"));
   }
 
   /** 프로젝트 생성 응답 헤더 */
@@ -400,6 +407,36 @@ public class ProjectApiSnippets extends RestDocsSnippets {
   /** 프로젝트 탈퇴 요청 헤더 */
   public static Snippet leaveProjectRequestHeaders() {
     return createRequestHeadersSnippet(authorizationHeader());
+  }
+
+  // ========== GET/PATCH /api/projects/{projectId}/share-link - 공유 링크 상태 ===========
+
+  public static Snippet projectShareLinkPathParameters() {
+    return pathParameters(parameterWithName("projectId").description("프로젝트 ID"));
+  }
+
+  public static Snippet projectShareLinkRequestHeaders() {
+    return createRequestHeadersSnippet(authorizationHeader());
+  }
+
+  public static Snippet updateProjectShareLinkRequest() {
+    return requestFields(
+        fieldWithPath("isActive").type(JsonFieldType.BOOLEAN)
+            .description("공유 링크 활성 상태"));
+  }
+
+  public static Snippet projectShareLinkResponseHeaders() {
+    return createResponseHeadersSnippet(commonResponseHeaders());
+  }
+
+  public static Snippet projectShareLinkResponse() {
+    return createResponseFieldsSnippet(successResponseFields(
+        fieldWithPath("code").type(JsonFieldType.STRING)
+            .description("공개 공유 링크 식별자").optional(),
+        fieldWithPath("url").type(JsonFieldType.STRING)
+            .description("공개 접근 URL").optional(),
+        fieldWithPath("isActive").type(JsonFieldType.BOOLEAN)
+            .description("공유 링크 활성 상태")));
   }
 
 }

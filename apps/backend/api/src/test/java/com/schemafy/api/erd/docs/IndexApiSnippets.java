@@ -59,7 +59,7 @@ public class IndexApiSnippets extends RestDocsSnippets {
         fieldWithPath("name").type(JsonFieldType.STRING)
             .description("인덱스 이름 (미입력 시 자동 생성)").optional(),
         fieldWithPath("type").type(JsonFieldType.STRING)
-            .description("인덱스 타입 (BTREE, HASH, FULLTEXT, SPATIAL)"),
+            .description("인덱스 타입 (프로젝트 DB Vendor capability에 따라 지원 범위 결정)"),
         fieldWithPath("columns").type(JsonFieldType.ARRAY)
             .description("인덱스 컬럼 목록").optional(),
         fieldWithPath("columns[].columnId").type(JsonFieldType.STRING)
@@ -153,7 +153,7 @@ public class IndexApiSnippets extends RestDocsSnippets {
   public static Snippet changeIndexTypeRequest() {
     return requestFields(
         fieldWithPath("type").type(JsonFieldType.STRING)
-            .description("변경할 인덱스 타입 (BTREE, HASH, FULLTEXT, SPATIAL)"));
+            .description("변경할 인덱스 타입 (프로젝트 DB Vendor capability에 따라 지원 범위 결정)"));
   }
 
   public static Snippet changeIndexTypeResponseHeaders() {

@@ -2,6 +2,14 @@ import { test, expect } from '@playwright/test';
 import { writeFileSync, mkdirSync } from 'fs';
 import { join, dirname } from 'path';
 import { fileURLToPath } from 'url';
+import type {
+  LayoutShiftPerformanceEntry,
+  PerformanceAuditLongTask,
+  PerformanceAuditRender,
+  PerformanceAuditVitals,
+  PerformanceAuditWindow,
+  ReactDevToolsGlobalHook,
+} from './perf-audit-types';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 
@@ -25,14 +33,18 @@ test('perf-audit: 로컬 성능 진단 (회귀 차단 아님)', async ({
   await cdp.send('Runtime.enable');
 
   await page.addInitScript(() => {
-    (window as any).__PERF_VITALS__ = { cls: 0 };
-    (window as any).__PERF_RENDERS__ = [];
-    (window as any).__PERF_LONG_TASKS__ = [];
+    const perfWindow = window as PerformanceAuditWindow;
+    const vitals: PerformanceAuditVitals = { cls: 0 };
+    const renders: PerformanceAuditRender[] = [];
+    const longTasks: PerformanceAuditLongTask[] = [];
+    perfWindow.__PERF_VITALS__ = vitals;
+    perfWindow.__PERF_RENDERS__ = renders;
+    perfWindow.__PERF_LONG_TASKS__ = longTasks;
 
     try {
       const ltObserver = new PerformanceObserver((list) => {
         for (const entry of list.getEntries()) {
-          (window as any).__PERF_LONG_TASKS__.push({
+          longTasks.push({
             startTime: Math.round(entry.startTime),
             duration: Math.round(entry.duration),
           });
@@ -46,16 +58,18 @@ test('perf-audit: 로컬 성능 진단 (회귀 차단 아님)', async ({
     const observer = new PerformanceObserver((list) => {
       for (const entry of list.getEntries()) {
         if (entry.entryType === 'largest-contentful-paint') {
-          (window as any).__PERF_VITALS__.lcp = entry.startTime;
+          vitals.lcp = entry.startTime;
         }
         if (entry.name === 'first-contentful-paint') {
-          (window as any).__PERF_VITALS__.fcp = entry.startTime;
+          vitals.fcp = entry.startTime;
         }
         if (
           entry.entryType === 'layout-shift' &&
-          !(entry as any).hadRecentInput
+          !(entry as LayoutShiftPerformanceEntry).hadRecentInput
         ) {
-          (window as any).__PERF_VITALS__.cls += (entry as any).value;
+          vitals.cls += (
+            entry as LayoutShiftPerformanceEntry
+          ).value;
         }
       }
     });
@@ -73,10 +87,10 @@ test('perf-audit: 로컬 성능 진단 (회귀 차단 아님)', async ({
       get: function () {
         return undefined;
       },
-      set: function (hook) {
+      set: function (hook: ReactDevToolsGlobalHook) {
         const origCommit = hook.onCommitFiberRoot;
-        hook.onCommitFiberRoot = function (...args: any[]) {
-          (window as any).__PERF_RENDERS__.push({
+        hook.onCommitFiberRoot = function (this: unknown, ...args: unknown[]) {
+          renders.push({
             timestamp: performance.now(),
           });
           if (origCommit) origCommit.apply(this, args);
@@ -104,8 +118,9 @@ test('perf-audit: 로컬 성능 진단 (회귀 차단 아님)', async ({
   }
 
   await page.evaluate(() => {
-    (window as any).__PERF_VITALS__ = { cls: 0 };
-    (window as any).__PERF_RENDERS__ = [];
+    const perfWindow = window as PerformanceAuditWindow;
+    perfWindow.__PERF_VITALS__ = { cls: 0 };
+    perfWindow.__PERF_RENDERS__ = [];
   });
 
   const navStart = Date.now();
@@ -122,7 +137,9 @@ test('perf-audit: 로컬 성능 진단 (회귀 차단 아님)', async ({
 
   await Promise.race([
     page
-      .waitForFunction(() => (window as any).__PERF_VITALS__?.lcp != null)
+      .waitForFunction(
+        () => (window as PerformanceAuditWindow).__PERF_VITALS__?.lcp != null,
+      )
       .catch(() => {}),
     page.waitForTimeout(3000),
   ]);
@@ -150,17 +167,21 @@ test('perf-audit: 로컬 성능 진단 (회귀 차단 아님)', async ({
 
       const measurePhase = async (action: () => Promise<void>) => {
         const rendersBefore = await page.evaluate(
-          () => ((window as any).__PERF_RENDERS__ || []).length,
+          () =>
+            ((window as PerformanceAuditWindow).__PERF_RENDERS__ || []).length,
         );
         const longTasksBefore = await page.evaluate(
-          () => ((window as any).__PERF_LONG_TASKS__ || []).length,
+          () =>
+            ((window as PerformanceAuditWindow).__PERF_LONG_TASKS__ || []).length,
         );
         await action();
         const rendersAfter = await page.evaluate(
-          () => ((window as any).__PERF_RENDERS__ || []).length,
+          () =>
+            ((window as PerformanceAuditWindow).__PERF_RENDERS__ || []).length,
         );
         const longTasksAfter = await page.evaluate(
-          () => ((window as any).__PERF_LONG_TASKS__ || []).length,
+          () =>
+            ((window as PerformanceAuditWindow).__PERF_LONG_TASKS__ || []).length,
         );
         return {
           renderCount: rendersAfter - rendersBefore,
@@ -236,16 +257,16 @@ test('perf-audit: 로컬 성능 진단 (회귀 차단 아님)', async ({
   });
 
   const vitals = await page.evaluate(() => {
-    const v = (window as any).__PERF_VITALS__ || {};
+    const v = (window as PerformanceAuditWindow).__PERF_VITALS__;
     return {
-      lcp: v.lcp ? Math.round(v.lcp) : null,
-      fcp: v.fcp ? Math.round(v.fcp) : null,
-      cls: v.cls != null ? Math.round(v.cls * 1000) / 1000 : null,
+      lcp: v?.lcp ? Math.round(v.lcp) : null,
+      fcp: v?.fcp ? Math.round(v.fcp) : null,
+      cls: v?.cls != null ? Math.round(v.cls * 1000) / 1000 : null,
     };
   });
 
   const renderCount = await page.evaluate(
-    () => ((window as any).__PERF_RENDERS__ || []).length,
+    () => ((window as PerformanceAuditWindow).__PERF_RENDERS__ || []).length,
   );
 
   const cdpMetrics = Object.fromEntries(

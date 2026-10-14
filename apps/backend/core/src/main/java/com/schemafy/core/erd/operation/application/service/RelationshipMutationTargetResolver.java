@@ -4,6 +4,8 @@ import org.springframework.stereotype.Component;
 
 import com.schemafy.core.common.exception.DomainException;
 import com.schemafy.core.erd.operation.application.inverse.ChangeRelationshipCardinalityInverse;
+import com.schemafy.core.erd.operation.application.inverse.ChangeRelationshipColumnPositionInverse;
+import com.schemafy.core.erd.operation.application.inverse.ChangeRelationshipExtraInverse;
 import com.schemafy.core.erd.operation.application.inverse.ChangeRelationshipNameInverse;
 import com.schemafy.core.erd.operation.domain.ErdOperationType;
 import com.schemafy.core.erd.relationship.application.port.in.AddRelationshipColumnCommand;
@@ -81,6 +83,9 @@ class RelationshipMutationTargetResolver {
   }
 
   private Mono<ResolvedErdMutationTarget> resolveChangeRelationshipExtra(Object payload) {
+    if (payload instanceof ChangeRelationshipExtraInverse inverse) {
+      return targetLookup.resolveByRelationshipId(inverse.relationshipId(), inverse.relationshipId());
+    }
     ChangeRelationshipExtraCommand command = requirePayload(payload, ChangeRelationshipExtraCommand.class);
     return targetLookup.resolveByRelationshipId(command.relationshipId(), command.relationshipId());
   }
@@ -108,6 +113,10 @@ class RelationshipMutationTargetResolver {
   }
 
   private Mono<ResolvedErdMutationTarget> resolveChangeRelationshipColumnPosition(Object payload) {
+    if (payload instanceof ChangeRelationshipColumnPositionInverse inverse) {
+      return targetLookup.resolveByRelationshipColumnId(
+          inverse.relationshipColumnId(), inverse.relationshipColumnId());
+    }
     ChangeRelationshipColumnPositionCommand command = requirePayload(
         payload, ChangeRelationshipColumnPositionCommand.class);
     return targetLookup.resolveByRelationshipColumnId(

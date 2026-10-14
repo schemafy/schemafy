@@ -1,16 +1,11 @@
 package com.schemafy.api.common.security;
 
-import java.util.Arrays;
-import java.util.Set;
-import java.util.stream.Collectors;
-
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.context.SecurityContext;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.test.context.support.WithSecurityContextFactory;
 
 import com.schemafy.api.common.security.principal.AuthenticatedUser;
-import com.schemafy.core.project.domain.ProjectRole;
 
 public class WithMockCustomUserSecurityContextFactory
     implements WithSecurityContextFactory<WithMockCustomUser> {
@@ -20,12 +15,8 @@ public class WithMockCustomUserSecurityContextFactory
       WithMockCustomUser customUser) {
     SecurityContext context = SecurityContextHolder.createEmptyContext();
 
-    Set<ProjectRole> roles = Arrays.stream(customUser.roles())
-        .map(ProjectRole::valueOf)
-        .collect(Collectors.toSet());
-
     AuthenticatedUser principal = AuthenticatedUser
-        .withRoles(customUser.userId(), roles);
+        .of(customUser.userId());
 
     UsernamePasswordAuthenticationToken authentication = new UsernamePasswordAuthenticationToken(
         principal, null, principal.getAuthorities());

@@ -7,6 +7,7 @@ import org.springframework.stereotype.Service;
 
 import com.schemafy.core.common.MutationResult;
 import com.schemafy.core.common.exception.DomainException;
+import com.schemafy.core.erd.operation.application.inverse.ChangeTableMetaInverse;
 import com.schemafy.core.erd.operation.application.service.ErdMutationCoordinator;
 import com.schemafy.core.erd.operation.domain.ErdOperationType;
 import com.schemafy.core.erd.table.application.port.in.ChangeTableMetaCommand;
@@ -64,7 +65,15 @@ public class ChangeTableMetaService implements ChangeTableMetaUseCase {
                         command.tableId(),
                         portCharset,
                         portCollation)
-                        .thenReturn(MutationResult.<Void>of(null, lockedTable.id()));
+                        .thenReturn(MutationResult.<Void>of(null, lockedTable.id())
+                            .withInverse(new ChangeTableMetaInverse(
+                                lockedTable.id(),
+                                command.charset().isPresent()
+                                    ? Objects.toString(lockedTable.charset(), "")
+                                    : null,
+                                command.collation().isPresent()
+                                    ? Objects.toString(lockedTable.collation(), "")
+                                    : null)));
                   }));
         });
   }
