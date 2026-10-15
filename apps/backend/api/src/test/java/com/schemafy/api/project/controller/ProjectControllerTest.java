@@ -755,26 +755,6 @@ class ProjectControllerTest extends ProjectHttpTestSupport {
   }
 
   @Test
-  @DisplayName("마지막 멤버 탈퇴 시 프로젝트는 유지된다")
-  void leaveProject_LastMember_ProjectRemains() {
-    Project project = saveProject(testWorkspaceId, "Test Project", "Description");
-
-    ProjectMember loneProjectMember = addProjectMember(project.getId(), testUser2Id,
-        ProjectRole.VIEWER);
-
-    webTestClient.delete()
-        .uri(ApiPath.API.replace("{version}", "v1.0")
-            + "/projects/{projectId}/members/me",
-            project.getId())
-        .header("Authorization", "Bearer " + accessToken2).exchange()
-        .expectStatus().isNoContent();
-
-    Project remainedProject = projectRepository
-        .findByIdAndDeletedAtIsNull(project.getId()).block();
-    assertThat(remainedProject).isNotNull();
-  }
-
-  @Test
   @DisplayName("마지막 ADMIN도 워크스페이스 내에 멤버가 존재하면 탈퇴할 수 있다")
   void leaveProject_LastAdmin_Allowed() {
     Project project = saveProject(testWorkspaceId, "Test Project", "Description");

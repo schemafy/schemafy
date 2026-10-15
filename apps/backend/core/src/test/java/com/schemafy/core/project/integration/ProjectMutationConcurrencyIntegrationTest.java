@@ -8,21 +8,24 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.test.context.bean.override.mockito.MockitoSpyBean;
 
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
 import com.schemafy.core.common.exception.DomainException;
-import com.schemafy.core.project.application.port.in.AccessShareLinkQuery;
-import com.schemafy.core.project.application.port.in.AccessShareLinkUseCase;
 import com.schemafy.core.project.application.port.in.CreateProjectInvitationCommand;
 import com.schemafy.core.project.application.port.in.CreateProjectInvitationUseCase;
 import com.schemafy.core.project.application.port.in.DeleteProjectCommand;
 import com.schemafy.core.project.application.port.in.DeleteProjectUseCase;
 import com.schemafy.core.project.application.port.in.UpdateProjectCommand;
+import com.schemafy.core.project.application.port.in.UpdateProjectShareLinkCommand;
+import com.schemafy.core.project.application.port.in.UpdateProjectShareLinkUseCase;
 import com.schemafy.core.project.application.port.in.UpdateProjectUseCase;
+import com.schemafy.core.project.application.port.out.ShareLinkPort;
 import com.schemafy.core.project.application.service.ProjectMutationGuard;
 import com.schemafy.core.project.domain.InvitationType;
 import com.schemafy.core.project.domain.Project;
@@ -31,13 +34,15 @@ import com.schemafy.core.project.domain.ShareLink;
 import com.schemafy.core.project.domain.Workspace;
 import com.schemafy.core.project.domain.WorkspaceRole;
 import com.schemafy.core.project.domain.exception.ProjectErrorCode;
-import com.schemafy.core.project.domain.exception.ShareLinkErrorCode;
 import com.schemafy.core.user.domain.User;
 
 import reactor.core.publisher.Mono;
+import reactor.core.publisher.Sinks;
 import reactor.test.StepVerifier;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.doAnswer;
 
 @DisplayName("프로젝트 변경 동시성 통합 테스트")
 class ProjectMutationConcurrencyIntegrationTest
@@ -55,7 +60,10 @@ class ProjectMutationConcurrencyIntegrationTest
   private CreateProjectInvitationUseCase createProjectInvitationUseCase;
 
   @Autowired
-  private AccessShareLinkUseCase accessShareLinkUseCase;
+  private UpdateProjectShareLinkUseCase updateProjectShareLinkUseCase;
+
+  @MockitoSpyBean
+  private ShareLinkPort shareLinkPort;
 
   @Autowired
   private UpdateProjectUseCase updateProjectUseCase;
@@ -94,35 +102,78 @@ class ProjectMutationConcurrencyIntegrationTest
   }
 
   @Test
-  @DisplayName("공유 링크 접근과 프로젝트 삭제가 동시에 실행되어도 삭제 뒤 링크에 접근할 수 없다")
-  void concurrentShareLinkAccessAndProjectDelete_preventsAccessAfterDelete()
-      throws InterruptedException {
-    User admin = signUpUser("admin-share-link-race@test.com", "Admin");
-    Workspace workspace = saveWorkspace("Share Link Race", "Description");
+  @DisplayName("최초 공유 링크 생성이 끝날 때까지 프로젝트 삭제가 대기하고 생성된 링크도 정리한다")
+  @SuppressWarnings("unchecked")
+  void firstShareLinkActivationAndProjectDeletion_leaveNoOrphanLink() throws Exception {
+    User admin = signUpUser("admin-share-link-create-delete@test.com", "Admin");
+    Workspace workspace = saveWorkspace("Share Link Creation Race", "Description");
     saveWorkspaceMember(workspace, admin, WorkspaceRole.ADMIN);
-    List<ShareLink> links = new ArrayList<>();
-    List<CheckedTask> tasks = new ArrayList<>();
+    Project project = saveProject(workspace, "Share Link Creation Race Project");
+    saveProjectMember(project, admin, ProjectRole.ADMIN);
+    CountDownLatch creationStarted = new CountDownLatch(1);
+    Sinks.Empty<Void> releaseCreation = Sinks.empty();
+    CountDownLatch deletionStarted = new CountDownLatch(1);
 
-    for (int i = 0; i < CONCURRENT_CHANGE_COUNT; i++) {
-      Project project = saveProject(workspace, "Share Link Race Project " + i);
-      saveProjectMember(project, admin, ProjectRole.ADMIN);
-      ShareLink link = saveShareLink(project);
-      links.add(link);
-      tasks.add(() -> accessShareLinkIgnoringDeletion(link));
-      tasks.add(() -> deleteProjectUseCase.deleteProject(
-          new DeleteProjectCommand(project.getId(), admin.id())).block());
+    doAnswer(invocation -> {
+      Mono<ShareLink> save = (Mono<ShareLink>) invocation.callRealMethod();
+      return Mono.defer(() -> {
+        creationStarted.countDown();
+        return releaseCreation.asMono().then(save);
+      });
+    }).when(shareLinkPort).save(any(ShareLink.class));
+
+    ExecutorService executor = Executors.newFixedThreadPool(2);
+    try {
+      Future<ShareLink> activation = executor.submit(() -> updateProjectShareLinkUseCase
+          .updateProjectShareLink(new UpdateProjectShareLinkCommand(
+              project.getId(), true, admin.id())).block());
+      assertThat(creationStarted.await(3, TimeUnit.SECONDS)).isTrue();
+
+      Future<?> deletion = executor.submit(() -> {
+        deletionStarted.countDown();
+        deleteProjectUseCase.deleteProject(
+            new DeleteProjectCommand(project.getId(), admin.id())).block();
+      });
+      assertThat(deletionStarted.await(3, TimeUnit.SECONDS)).isTrue();
+      boolean deletionWaited;
+      try {
+        deletion.get(200, TimeUnit.MILLISECONDS);
+        deletionWaited = false;
+      } catch (TimeoutException expected) {
+        deletionWaited = true;
+      }
+
+      releaseCreation.tryEmitEmpty();
+      ShareLink createdLink = activation.get(5, TimeUnit.SECONDS);
+      deletion.get(5, TimeUnit.SECONDS);
+
+      assertThat(projectRepository.findByIdAndDeletedAtIsNull(project.getId()).block()).isNull();
+      assertThat(shareLinkRepository.findById(createdLink.getId()).block()).isNull();
+      assertThat(shareLinkRepository.findByProjectIdAndNotDeleted(project.getId()).block()).isNull();
+      assertThat(deletionWaited).isTrue();
+    } finally {
+      releaseCreation.tryEmitEmpty();
+      executor.shutdownNow();
+      assertThat(executor.awaitTermination(3, TimeUnit.SECONDS)).isTrue();
     }
+  }
 
-    ConcurrentLinkedQueue<Throwable> errors = runConcurrently(tasks);
+  @Test
+  @DisplayName("프로젝트 삭제가 먼저 완료되면 최초 공유 링크를 생성하지 않는다")
+  void firstShareLinkActivationAfterProjectDeletion_isRejected() {
+    User admin = signUpUser("admin-share-link-after-delete@test.com", "Admin");
+    Workspace workspace = saveWorkspace("Share Link After Delete", "Description");
+    saveWorkspaceMember(workspace, admin, WorkspaceRole.ADMIN);
+    Project project = saveProject(workspace, "Share Link After Delete Project");
+    saveProjectMember(project, admin, ProjectRole.ADMIN);
+    deleteProjectUseCase.deleteProject(new DeleteProjectCommand(project.getId(), admin.id())).block();
 
-    assertThat(errors).isEmpty();
-    for (ShareLink link : links) {
-      assertThat(shareLinkRepository.findById(link.getId()).block()).isNull();
-      StepVerifier.create(accessShareLinkUseCase.accessShareLink(new AccessShareLinkQuery(
-          link.getCode(), null, "127.0.0.1", "동시성 테스트")))
-          .expectErrorMatches(DomainException.hasErrorCode(ShareLinkErrorCode.NOT_FOUND))
-          .verify();
-    }
+    StepVerifier.create(updateProjectShareLinkUseCase.updateProjectShareLink(
+        new UpdateProjectShareLinkCommand(project.getId(), true, admin.id())))
+        .expectErrorMatches(DomainException.hasErrorCode(ProjectErrorCode.ACCESS_DENIED))
+        .verify();
+
+    assertThat(shareLinkRepository.findByProjectIdAndNotDeleted(project.getId()).block()).isNull();
   }
 
   @Test
@@ -174,19 +225,6 @@ class ProjectMutationConcurrencyIntegrationTest
     assertThat(projectRepository.findByIdAndDeletedAtIsNull(project.getId()).block()).isNull();
     assertThat(invitationRepository.countByTarget(InvitationType.PROJECT.name(), project.getId())
         .block()).isZero();
-  }
-
-  private void accessShareLinkIgnoringDeletion(ShareLink link) {
-    try {
-      accessShareLinkUseCase.accessShareLink(new AccessShareLinkQuery(
-          link.getCode(), null, "127.0.0.1", "동시성 테스트")).block();
-    } catch (DomainException error) {
-      if (error.getErrorCode() != ShareLinkErrorCode.NOT_FOUND
-          && error.getErrorCode() != ShareLinkErrorCode.INVALID_LINK
-          && error.getErrorCode() != ProjectErrorCode.NOT_FOUND) {
-        throw error;
-      }
-    }
   }
 
   private void updateProjectIgnoringDeletion(Project project, User admin) {
