@@ -57,7 +57,7 @@ class ProjectMutationGuardTest {
   @Test
   @DisplayName("공유 잠금 획득 실패 시 잠금부터 전체 작업을 재시도한다")
   void protectChildCreation_retriesFromLockWhenLockCannotBeAcquired() {
-    Project project = Project.create("project-id", "workspace-id", "Project", "Description");
+    Project project = Project.create("project-id", "workspace-id", 1, "Project", "Description");
     Workspace workspace = Workspace.create("workspace-id", "Workspace", "Description");
     when(projectPort.findByIdAndNotDeleted("project-id")).thenReturn(Mono.just(project));
     when(workspacePort.findByIdAndNotDeletedInShareMode("workspace-id"))
@@ -80,7 +80,7 @@ class ProjectMutationGuardTest {
   @DisplayName("작업 중 잠금 실패 시 잠금부터 전체 작업을 재시도한다")
   void protectChildCreation_retriesActionFromLock() {
     AtomicInteger actionAttempts = new AtomicInteger();
-    Project project = Project.create("project-id", "workspace-id", "Project", "Description");
+    Project project = Project.create("project-id", "workspace-id", 1, "Project", "Description");
     Workspace workspace = Workspace.create("workspace-id", "Workspace", "Description");
     when(projectPort.findByIdAndNotDeleted("project-id")).thenReturn(Mono.just(project));
     when(workspacePort.findByIdAndNotDeletedInShareMode("workspace-id"))
@@ -106,7 +106,7 @@ class ProjectMutationGuardTest {
   void protectChildCreation_propagatesLastLockFailureWhenRetriesExhausted() {
     CannotAcquireLockException failure = new CannotAcquireLockException(
         "lock timeout");
-    Project project = Project.create("project-id", "workspace-id", "Project", "Description");
+    Project project = Project.create("project-id", "workspace-id", 1, "Project", "Description");
     Workspace workspace = Workspace.create("workspace-id", "Workspace", "Description");
     when(projectPort.findByIdAndNotDeleted("project-id")).thenReturn(Mono.just(project));
     when(workspacePort.findByIdAndNotDeletedInShareMode("workspace-id"))
@@ -126,8 +126,7 @@ class ProjectMutationGuardTest {
   @Test
   @DisplayName("프로젝트 삭제는 워크스페이스 공유 잠금 후 프로젝트 배타 잠금을 획득한다")
   void protectProjectDeletion_locksWorkspaceSharedThenProjectExclusive() {
-    Project project = Project.create("project-id", "workspace-id", "Project",
-        "Description");
+    Project project = Project.create("project-id", "workspace-id", 1, "Project", "Description");
     Workspace workspace = Workspace.create("workspace-id", "Workspace",
         "Description");
 
@@ -168,7 +167,7 @@ class ProjectMutationGuardTest {
   @Test
   @DisplayName("하위 생성은 워크스페이스 공유 잠금 후 프로젝트 공유 잠금을 획득한다")
   void protectChildCreation_locksWorkspaceSharedThenProjectShared() {
-    Project project = Project.create("project-id", "workspace-id", "Project", "Description");
+    Project project = Project.create("project-id", "workspace-id", 1, "Project", "Description");
     Workspace workspace = Workspace.create("workspace-id", "Workspace", "Description");
     when(projectPort.findByIdAndNotDeleted("project-id")).thenReturn(Mono.just(project));
     when(workspacePort.findByIdAndNotDeletedInShareMode("workspace-id"))
@@ -191,7 +190,7 @@ class ProjectMutationGuardTest {
   @Test
   @DisplayName("일반 프로젝트 변경은 워크스페이스 공유 잠금 후 프로젝트 배타 잠금을 획득한다")
   void protectProjectMutation_locksWorkspaceSharedThenProjectExclusive() {
-    Project project = Project.create("project-id", "workspace-id", "Project", "Description");
+    Project project = Project.create("project-id", "workspace-id", 1, "Project", "Description");
     Workspace workspace = Workspace.create("workspace-id", "Workspace", "Description");
     when(projectPort.findByIdAndNotDeleted("project-id")).thenReturn(Mono.just(project));
     when(workspacePort.findByIdAndNotDeletedInShareMode("workspace-id"))

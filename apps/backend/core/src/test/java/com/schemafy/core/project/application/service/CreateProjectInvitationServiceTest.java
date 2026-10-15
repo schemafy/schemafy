@@ -76,7 +76,7 @@ class CreateProjectInvitationServiceTest {
     given(projectInvitationHelper.findProjectOrThrow(PROJECT_ID))
         .willAnswer(invocation -> {
           assertThat(enteredGuard).isTrue();
-          return Mono.just(Project.create(PROJECT_ID, WORKSPACE_ID, "Project", "Description"));
+          return Mono.just(Project.create(PROJECT_ID, WORKSPACE_ID, 1, "Project", "Description"));
         });
     given(projectInvitationHelper.checkNotAlreadyProjectMemberByEmail(eq(PROJECT_ID), any()))
         .willAnswer(invocation -> {

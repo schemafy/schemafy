@@ -142,7 +142,7 @@ class ProjectPersistenceAdapterTest {
   void findActiveProjectWithMutationLocks() {
     Workspace workspace = saveWorkspace("Mutation Lock Workspace");
     Project project = sut.save(Project.create(UlidGenerator.generate(),
-        workspace.getId(), "Mutation Lock Project", "Description")).block();
+        workspace.getId(), DB_VENDOR_ID, "Mutation Lock Project", "Description")).block();
 
     StepVerifier.create(sut.lockByIdAndNotDeletedInShareMode(project.getId()))
         .expectNext(project.getId())
@@ -157,7 +157,7 @@ class ProjectPersistenceAdapterTest {
   void updateRoleIfActiveDoesNotRestoreDeletedMembership() {
     Workspace workspace = saveWorkspace("Member Update Workspace");
     Project project = sut.save(Project.create(UlidGenerator.generate(),
-        workspace.getId(), "Member Update Project", "Description")).block();
+        workspace.getId(), DB_VENDOR_ID, "Member Update Project", "Description")).block();
     ProjectMember member = projectMemberRepository.save(ProjectMember.create(
         UlidGenerator.generate(), project.getId(), "user-id", ProjectRole.VIEWER)).block();
     sut.softDeleteByProjectIdAndUserId(project.getId(), member.getUserId()).block();

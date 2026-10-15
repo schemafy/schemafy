@@ -69,7 +69,7 @@ class DeleteWorkspaceServiceTest {
   void deletesWorkspaceAndProjectsAfterAcquiringExclusiveWorkspaceLock() {
     var command = new DeleteWorkspaceCommand(WORKSPACE_ID, "requester-id");
     var workspace = Workspace.create(WORKSPACE_ID, "Workspace", "Description");
-    var project = Project.create("project-id", WORKSPACE_ID, "Project", "Description");
+    var project = Project.create("project-id", WORKSPACE_ID, 1, "Project", "Description");
     var enteredGuard = new AtomicBoolean();
 
     given(workspaceMutationGuard.protectExclusive(eq(WORKSPACE_ID), any()))

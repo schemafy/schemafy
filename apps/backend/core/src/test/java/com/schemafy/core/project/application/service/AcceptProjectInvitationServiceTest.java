@@ -84,7 +84,7 @@ class AcceptProjectInvitationServiceTest {
     given(projectInvitationHelper.findProjectOrThrow(PROJECT_ID))
         .willAnswer(invocation -> {
           assertThat(enteredGuard).isTrue();
-          return Mono.just(Project.create(PROJECT_ID, WORKSPACE_ID, "Project", "Description"));
+          return Mono.just(Project.create(PROJECT_ID, WORKSPACE_ID, 1, "Project", "Description"));
         });
     given(projectInvitationHelper.checkNotAlreadyProjectMember(PROJECT_ID, USER_ID))
         .willAnswer(invocation -> {
@@ -155,7 +155,8 @@ class AcceptProjectInvitationServiceTest {
     given(projectMutationGuard.protectChildCreation(eq(PROJECT_ID), any()))
         .willAnswer(invokeGuardAction());
     given(projectInvitationHelper.findProjectOrThrow(PROJECT_ID))
-        .willReturn(Mono.just(Project.create(PROJECT_ID, WORKSPACE_ID, "Project", "Description")));
+        .willReturn(Mono.just(Project.create(PROJECT_ID, WORKSPACE_ID, 1,
+            "Project", "Description")));
     given(projectInvitationHelper.checkNotAlreadyProjectMember(PROJECT_ID, USER_ID))
         .willReturn(Mono.empty());
     given(invitationPort.save(any(Invitation.class))).willAnswer(invocation -> {
@@ -186,7 +187,8 @@ class AcceptProjectInvitationServiceTest {
     given(projectMutationGuard.protectChildCreation(eq(PROJECT_ID), any()))
         .willAnswer(invokeGuardAction());
     given(projectInvitationHelper.findProjectOrThrow(PROJECT_ID))
-        .willReturn(Mono.just(Project.create(PROJECT_ID, WORKSPACE_ID, "Project", "Description")));
+        .willReturn(Mono.just(Project.create(PROJECT_ID, WORKSPACE_ID, 1,
+            "Project", "Description")));
     given(projectInvitationHelper.checkNotAlreadyProjectMember(PROJECT_ID, USER_ID))
         .willReturn(Mono.empty());
     given(invitationPort.save(any(Invitation.class)))

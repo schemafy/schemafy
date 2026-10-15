@@ -113,7 +113,7 @@ class LeaveWorkspaceServiceTest {
     var member = WorkspaceMember.create("member-id", WORKSPACE_ID, USER_ID,
         WorkspaceRole.MEMBER);
     var workspace = Workspace.create(WORKSPACE_ID, "Workspace", "Description");
-    var project = Project.create("project-id", WORKSPACE_ID, "Project", "Description");
+    var project = Project.create("project-id", WORKSPACE_ID, 1, "Project", "Description");
 
     given(workspaceMutationGuard.protectExclusive(eq(WORKSPACE_ID), any()))
         .willAnswer(invokeGuardAction());

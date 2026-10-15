@@ -38,7 +38,7 @@ class UpdateProjectServiceTest {
   @Test
   @DisplayName("활성 프로젝트 행만 수정한다")
   void updateProjectUpdatesOnlyActiveProject() {
-    Project project = Project.create("project-id", "workspace-id", "기존 이름",
+    Project project = Project.create("project-id", "workspace-id", 1, "기존 이름",
         "기존 설명");
     ProjectDetail detail = new ProjectDetail(project, "ADMIN");
     UpdateProjectCommand command = new UpdateProjectCommand(
@@ -62,7 +62,7 @@ class UpdateProjectServiceTest {
   @Test
   @DisplayName("수정 후 삭제 경합으로 멤버십이 사라지면 프로젝트 없음으로 응답한다")
   void updateProjectMapsDeletedMembershipToProjectNotFound() {
-    Project project = Project.create("project-id", "workspace-id", "기존 이름",
+    Project project = Project.create("project-id", "workspace-id", 1, "기존 이름",
         "기존 설명");
     UpdateProjectCommand command = new UpdateProjectCommand(
         project.getId(), "변경 이름", "변경 설명", "requester-id");

@@ -93,7 +93,7 @@ class WorkspaceTopologyConcurrencyIntegrationTest
         .extracting(DomainException::getErrorCode)
         .isIn(WorkspaceErrorCode.LAST_ADMIN_CANNOT_LEAVE,
             WorkspaceErrorCode.ADMIN_REQUIRED);
-    assertThat(workspaceMemberRepository.countByWorkspaceIdAndRoleAndNotDeleted(
+    assertThat(workspaceMemberRepository.countByWorkspaceIdAndRoleAndDeletedAtIsNull(
         workspace.getId(), WorkspaceRole.ADMIN.name()).block()).isEqualTo(1L);
   }
 
@@ -110,7 +110,7 @@ class WorkspaceTopologyConcurrencyIntegrationTest
     ConcurrentLinkedQueue<Throwable> errors = runConcurrently(List.of(
         () -> createdProject.set(createProjectUseCase.createProject(
             new CreateProjectCommand(
-                workspace.getId(), "Concurrent Project", "Description", admin.id()))
+                workspace.getId(), DB_VENDOR_ID, "Concurrent Project", "Description", admin.id()))
             .contextWrite(ProjectAccessRequesterContext.withRequesterId(admin.id()))
             .block()),
         () -> addWorkspaceMemberUseCase.addWorkspaceMember(
@@ -122,7 +122,7 @@ class WorkspaceTopologyConcurrencyIntegrationTest
     assertThat(errors).isEmpty();
     assertThat(createdProject).hasValueSatisfying(project -> {
       ProjectMember membership = projectMemberRepository
-          .findByProjectIdAndUserIdAndNotDeleted(project.project().getId(), newMember.id())
+          .findByProjectIdAndUserIdAndDeletedAtIsNull(project.project().getId(), newMember.id())
           .block();
       assertThat(membership).isNotNull();
       assertThat(membership.getRoleAsEnum()).isEqualTo(ProjectRole.VIEWER);
@@ -143,14 +143,14 @@ class WorkspaceTopologyConcurrencyIntegrationTest
             .contextWrite(ProjectAccessRequesterContext.withRequesterId(admin.id()))
             .block(),
         () -> createProjectUseCase.createProject(new CreateProjectCommand(
-            workspace.getId(), "Concurrent Project", "Description", admin.id()))
+            workspace.getId(), DB_VENDOR_ID, "Concurrent Project", "Description", admin.id()))
             .contextWrite(ProjectAccessRequesterContext.withRequesterId(admin.id()))
             .block()));
 
     assertThat(errors).allMatch(DomainException.class::isInstance);
     assertThat(workspaceRepository.findByIdAndDeletedAtIsNull(workspace.getId()).block())
         .isNull();
-    assertThat(projectRepository.countByWorkspaceIdAndNotDeleted(workspace.getId()).block())
+    assertThat(projectRepository.countByWorkspaceIdAndDeletedAtIsNull(workspace.getId()).block())
         .isZero();
   }
 

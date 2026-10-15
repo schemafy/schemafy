@@ -120,7 +120,7 @@ class WorkspaceUseCaseIntegrationTest extends ProjectDomainIntegrationSupport {
         workspace.getId(),
         admin.id())).block();
 
-    assertThat(workspaceRepository.findByIdAndNotDeleted(workspace.getId()).block()).isNull();
+    assertThat(workspaceRepository.findByIdAndDeletedAtIsNull(workspace.getId()).block()).isNull();
     assertThat(projectRepository.findByIdAndDeletedAtIsNull(project.getId()).block()).isNull();
     assertThat(projectRepository.findByIdAndDeletedAtIsNull(secondProject.getId()).block()).isNull();
     assertThat(findSchemasByProjectId(project.getId())).isEmpty();
@@ -562,7 +562,7 @@ class WorkspaceUseCaseIntegrationTest extends ProjectDomainIntegrationSupport {
         workspace.getId(),
         admin.id())).block();
 
-    assertThat(workspaceRepository.findByIdAndNotDeleted(workspace.getId()).block()).isNull();
+    assertThat(workspaceRepository.findByIdAndDeletedAtIsNull(workspace.getId()).block()).isNull();
     assertThat(projectRepository.findByIdAndDeletedAtIsNull(project.getId()).block()).isNull();
     assertThat(projectMemberRepository
         .findByProjectIdAndUserIdAndDeletedAtIsNull(project.getId(), outsider.id())
