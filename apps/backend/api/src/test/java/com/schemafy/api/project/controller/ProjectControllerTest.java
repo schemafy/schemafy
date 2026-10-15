@@ -755,8 +755,8 @@ class ProjectControllerTest extends ProjectHttpTestSupport {
   }
 
   @Test
-  @DisplayName("마지막 멤버 탈퇴시 프로젝트도 삭제된다")
-  void leaveProject_LastMember_ProjectDeleted() {
+  @DisplayName("마지막 멤버 탈퇴 시 프로젝트는 유지된다")
+  void leaveProject_LastMember_ProjectRemains() {
     Project project = saveProject(testWorkspaceId, "Test Project", "Description");
 
     ProjectMember loneProjectMember = addProjectMember(project.getId(), testUser2Id,
@@ -769,9 +769,9 @@ class ProjectControllerTest extends ProjectHttpTestSupport {
         .header("Authorization", "Bearer " + accessToken2).exchange()
         .expectStatus().isNoContent();
 
-    Project deletedProject = projectRepository
+    Project remainedProject = projectRepository
         .findByIdAndDeletedAtIsNull(project.getId()).block();
-    assertThat(deletedProject).isNull();
+    assertThat(remainedProject).isNotNull();
   }
 
   @Test
