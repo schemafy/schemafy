@@ -1,5 +1,6 @@
 package com.schemafy.core.project.integration;
 
+import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.ConcurrentLinkedQueue;
@@ -8,9 +9,9 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.TimeoutException;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.r2dbc.core.DatabaseClient;
 import org.springframework.test.context.bean.override.mockito.MockitoSpyBean;
 
 import org.junit.jupiter.api.DisplayName;
@@ -25,7 +26,9 @@ import com.schemafy.core.project.application.port.in.UpdateProjectCommand;
 import com.schemafy.core.project.application.port.in.UpdateProjectShareLinkCommand;
 import com.schemafy.core.project.application.port.in.UpdateProjectShareLinkUseCase;
 import com.schemafy.core.project.application.port.in.UpdateProjectUseCase;
+import com.schemafy.core.project.application.port.out.ProjectPort;
 import com.schemafy.core.project.application.port.out.ShareLinkPort;
+import com.schemafy.core.project.application.port.out.WorkspacePort;
 import com.schemafy.core.project.application.service.ProjectMutationGuard;
 import com.schemafy.core.project.domain.InvitationType;
 import com.schemafy.core.project.domain.Project;
@@ -36,6 +39,8 @@ import com.schemafy.core.project.domain.WorkspaceRole;
 import com.schemafy.core.project.domain.exception.ProjectErrorCode;
 import com.schemafy.core.user.domain.User;
 
+import io.r2dbc.spi.ConnectionFactory;
+import io.r2dbc.spi.Wrapped;
 import reactor.core.publisher.Mono;
 import reactor.core.publisher.Sinks;
 import reactor.test.StepVerifier;
@@ -64,6 +69,12 @@ class ProjectMutationConcurrencyIntegrationTest
 
   @MockitoSpyBean
   private ShareLinkPort shareLinkPort;
+
+  @MockitoSpyBean
+  private ProjectPort projectPort;
+
+  @MockitoSpyBean
+  private WorkspacePort workspacePort;
 
   @Autowired
   private UpdateProjectUseCase updateProjectUseCase;
@@ -110,38 +121,48 @@ class ProjectMutationConcurrencyIntegrationTest
     saveWorkspaceMember(workspace, admin, WorkspaceRole.ADMIN);
     Project project = saveProject(workspace, "Share Link Creation Race Project");
     saveProjectMember(project, admin, ProjectRole.ADMIN);
-    CountDownLatch creationStarted = new CountDownLatch(1);
+    Sinks.One<Integer> creationSession = Sinks.one();
     Sinks.Empty<Void> releaseCreation = Sinks.empty();
-    CountDownLatch deletionStarted = new CountDownLatch(1);
+    Sinks.One<Integer> deletionSession = Sinks.one();
+    // A blocking H2 query can stall pooled acquisitions, so observe outside the pool.
+    DatabaseClient lockObserver = DatabaseClient.create(
+        ((Wrapped<ConnectionFactory>) databaseClient.getConnectionFactory()).unwrap());
 
+    // H2 renders shared locks as FOR UPDATE. Keep the workspace lookup, but avoid
+    // its parent lock masking a missing project lock in this test.
+    doAnswer(invocation -> workspacePort.findByIdAndNotDeleted(workspace.getId()))
+        .when(workspacePort).findByIdAndNotDeletedInShareMode(workspace.getId());
     doAnswer(invocation -> {
       Mono<ShareLink> save = (Mono<ShareLink>) invocation.callRealMethod();
-      return Mono.defer(() -> {
-        creationStarted.countDown();
+      return currentDatabaseSessionId().flatMap(sessionId -> {
+        creationSession.tryEmitValue(sessionId);
         return releaseCreation.asMono().then(save);
       });
     }).when(shareLinkPort).save(any(ShareLink.class));
+    doAnswer(invocation -> {
+      Mono<String> lock = (Mono<String>) invocation.callRealMethod();
+      return currentDatabaseSessionId()
+          .doOnNext(deletionSession::tryEmitValue)
+          .then(lock);
+    }).when(projectPort).lockByIdAndNotDeletedForUpdate(project.getId());
 
     ExecutorService executor = Executors.newFixedThreadPool(2);
     try {
       Future<ShareLink> activation = executor.submit(() -> updateProjectShareLinkUseCase
           .updateProjectShareLink(new UpdateProjectShareLinkCommand(
               project.getId(), true, admin.id())).block());
-      assertThat(creationStarted.await(3, TimeUnit.SECONDS)).isTrue();
+      Integer creationSessionId = creationSession.asMono().block(Duration.ofSeconds(3));
+      assertThat(creationSessionId).isNotNull();
 
-      Future<?> deletion = executor.submit(() -> {
-        deletionStarted.countDown();
-        deleteProjectUseCase.deleteProject(
-            new DeleteProjectCommand(project.getId(), admin.id())).block();
-      });
-      assertThat(deletionStarted.await(3, TimeUnit.SECONDS)).isTrue();
-      boolean deletionWaited;
-      try {
-        deletion.get(200, TimeUnit.MILLISECONDS);
-        deletionWaited = false;
-      } catch (TimeoutException expected) {
-        deletionWaited = true;
-      }
+      Future<?> deletion = executor.submit(() -> deleteProjectUseCase.deleteProject(
+          new DeleteProjectCommand(project.getId(), admin.id())).block());
+      Integer deletionSessionId = deletionSession.asMono().block(Duration.ofSeconds(3));
+      assertThat(deletionSessionId).isNotNull().isNotEqualTo(creationSessionId);
+      assertThat(awaitSessionBlockedBy(lockObserver, deletionSessionId, creationSessionId))
+          .as("DB reports project deletion blocked on this project's row")
+          .containsIgnoringCase("projects")
+          .containsIgnoringCase("for update")
+          .contains(project.getId());
 
       releaseCreation.tryEmitEmpty();
       ShareLink createdLink = activation.get(5, TimeUnit.SECONDS);
@@ -150,7 +171,6 @@ class ProjectMutationConcurrencyIntegrationTest
       assertThat(projectRepository.findByIdAndDeletedAtIsNull(project.getId()).block()).isNull();
       assertThat(shareLinkRepository.findById(createdLink.getId()).block()).isNull();
       assertThat(shareLinkRepository.findByProjectIdAndNotDeleted(project.getId()).block()).isNull();
-      assertThat(deletionWaited).isTrue();
     } finally {
       releaseCreation.tryEmitEmpty();
       executor.shutdownNow();
@@ -225,6 +245,32 @@ class ProjectMutationConcurrencyIntegrationTest
     assertThat(projectRepository.findByIdAndDeletedAtIsNull(project.getId()).block()).isNull();
     assertThat(invitationRepository.countByTarget(InvitationType.PROJECT.name(), project.getId())
         .block()).isZero();
+  }
+
+  private Mono<Integer> currentDatabaseSessionId() {
+    return databaseClient.sql("SELECT SESSION_ID() AS id")
+        .map((row, metadata) -> row.get("id", Integer.class))
+        .one();
+  }
+
+  private String awaitSessionBlockedBy(DatabaseClient lockObserver,
+      int waitingSessionId, int blockingSessionId) {
+    return Mono.defer(() -> lockObserver.sql("""
+        SELECT EXECUTING_STATEMENT
+        FROM INFORMATION_SCHEMA.SESSIONS
+        WHERE SESSION_ID = :waitingSessionId
+          AND BLOCKER_ID = :blockingSessionId
+          AND SESSION_STATE = 'BLOCKED'
+        """)
+        .bind("waitingSessionId", waitingSessionId)
+        .bind("blockingSessionId", blockingSessionId)
+        .map((row, metadata) -> row.get("EXECUTING_STATEMENT", String.class))
+        .one())
+        .repeatWhenEmpty(repeat -> repeat.delayElements(Duration.ofMillis(10)))
+        .timeout(Duration.ofSeconds(3), Mono.error(new AssertionError(
+            "DB did not report session " + waitingSessionId
+                + " waiting for share-link creation session " + blockingSessionId)))
+        .block();
   }
 
   private void updateProjectIgnoringDeletion(Project project, User admin) {
