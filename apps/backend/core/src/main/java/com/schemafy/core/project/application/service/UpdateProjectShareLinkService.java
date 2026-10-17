@@ -23,14 +23,21 @@ class UpdateProjectShareLinkService implements UpdateProjectShareLinkUseCase {
   private final UlidGeneratorPort ulidGeneratorPort;
   private final ShareLinkHelper shareLinkHelper;
   private final ShareLinkPort shareLinkPort;
+  private final ProjectMutationGuard projectMutationGuard;
 
   @Override
   @RequireProjectAccess(role = ProjectRole.ADMIN)
   public Mono<ShareLink> updateProjectShareLink(UpdateProjectShareLinkCommand command) {
-    return shareLinkHelper.findProjectById(command.projectId())
-        .then(shareLinkPort.findByProjectIdAndNotDeleted(command.projectId())
-            .flatMap(link -> saveWithActiveState(link, command.isActive()))
-            .switchIfEmpty(command.isActive() ? create(command.projectId()) : Mono.empty()));
+    return projectMutationGuard.protectChildCreation(command.projectId(),
+        () -> shareLinkHelper.findProjectById(command.projectId())
+            .then(shareLinkPort.findByProjectIdAndNotDeleted(command.projectId())
+                .flatMap(link -> saveWithActiveState(link, command.isActive()))
+                .switchIfEmpty(command.isActive() ? create(command.projectId()) : Mono.empty())))
+        // A duplicate insert must roll back before reading the winner with a fresh snapshot.
+        .onErrorResume(ShareLinkCreationConflictException.class,
+            error -> projectMutationGuard.protectChildCreation(command.projectId(),
+                () -> shareLinkPort.findByProjectIdAndNotDeleted(command.projectId())
+                    .switchIfEmpty(Mono.error(error.getCause()))));
   }
 
   private Mono<ShareLink> create(String projectId) {
@@ -38,9 +45,7 @@ class UpdateProjectShareLinkService implements UpdateProjectShareLinkUseCase {
         .map(id -> ShareLink.create(
             id, projectId, UUID.randomUUID().toString().replace("-", "")))
         .flatMap(shareLinkPort::save)
-        .onErrorResume(DataIntegrityViolationException.class, error -> shareLinkPort.findByProjectIdAndNotDeleted(
-            projectId)
-            .switchIfEmpty(Mono.error(error)));
+        .onErrorMap(DataIntegrityViolationException.class, ShareLinkCreationConflictException::new);
   }
 
   private Mono<ShareLink> saveWithActiveState(ShareLink link, boolean isActive) {
@@ -53,6 +58,16 @@ class UpdateProjectShareLinkService implements UpdateProjectShareLinkUseCase {
       link.deactivate();
     }
     return shareLinkPort.save(link);
+  }
+
+  private static final class ShareLinkCreationConflictException extends RuntimeException {
+
+    private static final long serialVersionUID = 1L;
+
+    private ShareLinkCreationConflictException(DataIntegrityViolationException cause) {
+      super(cause);
+    }
+
   }
 
 }

@@ -1,7 +1,6 @@
 package com.schemafy.core.project.application.service;
 
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.reactive.TransactionalOperator;
 
 import com.schemafy.core.project.application.access.RequireWorkspaceAccess;
 import com.schemafy.core.project.application.port.in.UpdateWorkspaceMemberRoleCommand;
@@ -17,26 +16,28 @@ import reactor.core.publisher.Mono;
 class UpdateWorkspaceMemberRoleService
     implements UpdateWorkspaceMemberRoleUseCase {
 
-  private final TransactionalOperator transactionalOperator;
   private final WorkspaceAccessHelper workspaceAccessHelper;
   private final ProjectMembershipPropagationHelper projectMembershipPropagationHelper;
+  private final WorkspaceMutationGuard workspaceMutationGuard;
 
   @Override
   @RequireWorkspaceAccess(role = WorkspaceRole.ADMIN)
   public Mono<WorkspaceMember> updateWorkspaceMemberRole(
       UpdateWorkspaceMemberRoleCommand command) {
-    return workspaceAccessHelper.findWorkspaceMember(command.targetUserId(),
-        command.workspaceId())
-        .flatMap(targetMember -> workspaceAccessHelper.modifyMemberWithAdminGuard(
-            command.workspaceId(),
-            targetMember,
-            member -> member.updateRole(command.role())))
-        .flatMap(savedMember -> applyWorkspaceRoleToProjectMemberships(
-            command.workspaceId(),
-            command.targetUserId(),
-            command.role())
-            .thenReturn(savedMember))
-        .as(transactionalOperator::transactional);
+    return workspaceMutationGuard.protectExclusive(command.workspaceId(),
+        () -> workspaceAccessHelper
+            .findWorkspaceAdminMember(command.requesterId(), command.workspaceId())
+            .then(Mono.defer(() -> workspaceAccessHelper.findWorkspaceMember(command.targetUserId(),
+                command.workspaceId()))
+                .flatMap(targetMember -> workspaceAccessHelper.modifyMemberWithAdminGuard(
+                    command.workspaceId(),
+                    targetMember,
+                    member -> member.updateRole(command.role())))
+                .flatMap(savedMember -> applyWorkspaceRoleToProjectMemberships(
+                    command.workspaceId(),
+                    command.targetUserId(),
+                    command.role())
+                    .thenReturn(savedMember))));
   }
 
   private Mono<Void> applyWorkspaceRoleToProjectMemberships(
