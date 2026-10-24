@@ -50,6 +50,8 @@ public interface ProjectMemberPort {
   Mono<Long> softDeleteByWorkspaceIdAndUserId(String workspaceId,
       String userId);
 
+  Mono<Long> softDeleteByUserId(String userId);
+
   Flux<ProjectMember> findByWorkspaceIdAndUserId(String workspaceId,
       String userId);
 

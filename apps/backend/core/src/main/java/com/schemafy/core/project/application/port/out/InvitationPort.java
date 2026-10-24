@@ -51,6 +51,10 @@ public interface InvitationPort {
       String currentStatus,
       String excludeId);
 
+  Mono<Long> cancelPendingByInvitedBy(String userId);
+
+  Mono<Long> cancelPendingByInvitedEmail(String email);
+
   Mono<Long> softDeleteByTarget(String targetType, String targetId);
 
 }

@@ -40,6 +40,11 @@ public class ProjectPersistenceAdapter
   }
 
   @Override
+  public Mono<Project> findByIdAndNotDeletedForUpdate(String projectId) {
+    return projectRepository.findByIdAndDeletedAtIsNullForUpdate(projectId);
+  }
+
+  @Override
   public Mono<Boolean> existsActiveProjectById(String projectId) {
     return projectRepository.findByIdAndDeletedAtIsNull(projectId)
         .hasElement();
@@ -54,6 +59,14 @@ public class ProjectPersistenceAdapter
   @Override
   public Flux<Project> findByWorkspaceIdAndNotDeleted(String workspaceId) {
     return projectRepository.findByWorkspaceIdAndDeletedAtIsNull(workspaceId);
+  }
+
+  @Override
+  public Flux<Project> findByUserIdAndWorkspaceMembershipOrProjectMembershipAndNotDeleted(
+      String userId) {
+    return projectRepository
+        .findByUserIdAndWorkspaceMembershipOrProjectMembershipAndNotDeleted(
+            userId);
   }
 
   @Override
@@ -161,6 +174,11 @@ public class ProjectPersistenceAdapter
       String userId) {
     return projectMemberRepository.softDeleteByWorkspaceIdAndUserId(workspaceId,
         userId);
+  }
+
+  @Override
+  public Mono<Long> softDeleteByUserId(String userId) {
+    return projectMemberRepository.softDeleteByUserId(userId);
   }
 
   @Override
