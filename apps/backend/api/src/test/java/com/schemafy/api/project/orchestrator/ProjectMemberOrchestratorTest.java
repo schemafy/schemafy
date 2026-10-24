@@ -24,6 +24,7 @@ import com.schemafy.core.user.application.port.in.GetUserByIdUseCase;
 import com.schemafy.core.user.application.port.in.GetUsersByIdsQuery;
 import com.schemafy.core.user.application.port.in.GetUsersByIdsUseCase;
 import com.schemafy.core.user.domain.User;
+import com.schemafy.core.user.domain.UserStatus;
 import com.schemafy.core.user.domain.exception.UserErrorCode;
 
 import reactor.core.publisher.Flux;
@@ -57,8 +58,8 @@ class ProjectMemberOrchestratorTest {
   private ProjectMemberOrchestrator orchestrator;
 
   @Test
-  @DisplayName("getMembers masks inactive users")
-  void getMembers_masksInactiveUsers() {
+  @DisplayName("getMembers hydrates active and inactive users")
+  void getMembers_hydratesUsers() {
     ProjectMember member1 = ProjectMember.create(UlidGenerator.generate(),
         "project-1", "user-1", ProjectRole.ADMIN);
     ProjectMember member2 = ProjectMember.create(UlidGenerator.generate(),
@@ -78,10 +79,9 @@ class ProjectMemberOrchestratorTest {
         "project-1", "requester-1", 0, 10)))
         .assertNext(result -> {
           assertThat(result.content()).hasSize(2);
-          assertThat(result.content().get(0).userName()).isEqualTo(user1.name());
-          assertThat(result.content().get(0).userEmail()).isEqualTo(user1.email());
-          assertThat(result.content().get(1).userName()).isEqualTo("탈퇴한 사용자");
-          assertThat(result.content().get(1).userEmail()).isEmpty();
+          assertThat(result.content().get(0).user().id()).isEqualTo(user1.id());
+          assertThat(result.content().get(1).user().status())
+              .isEqualTo(UserStatus.INACTIVE);
         })
         .verifyComplete();
   }
@@ -125,8 +125,8 @@ class ProjectMemberOrchestratorTest {
     StepVerifier.create(orchestrator.acceptInvitation(
         new AcceptProjectInvitationCommand("invitation-1", "user-1")))
         .assertNext(view -> {
-          assertThat(view.userId()).isEqualTo(member.getUserId());
-          assertThat(view.userEmail()).isEqualTo(user.email());
+          assertThat(view.member().getUserId()).isEqualTo(member.getUserId());
+          assertThat(view.user().email()).isEqualTo(user.email());
         })
         .verifyComplete();
   }

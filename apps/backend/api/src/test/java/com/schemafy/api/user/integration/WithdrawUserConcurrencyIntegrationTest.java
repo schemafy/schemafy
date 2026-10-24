@@ -18,6 +18,8 @@ import org.springframework.test.context.bean.override.mockito.MockitoSpyBean;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
+import org.mockito.ArgumentMatchers;
+import org.mockito.invocation.InvocationOnMock;
 import org.testcontainers.containers.GenericContainer;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
@@ -30,13 +32,13 @@ import com.schemafy.core.erd.schema.application.port.in.CreateSchemaUseCase;
 import com.schemafy.core.erd.table.application.port.in.CreateTableCommand;
 import com.schemafy.core.erd.table.application.port.in.CreateTableUseCase;
 import com.schemafy.core.mcp.application.port.out.RevokeMcpTokenPort;
+import com.schemafy.core.project.application.access.ProjectAccessRequesterContext;
 import com.schemafy.core.project.application.port.in.AcceptProjectInvitationCommand;
 import com.schemafy.core.project.application.port.in.AcceptProjectInvitationUseCase;
 import com.schemafy.core.project.application.port.in.AddWorkspaceMemberCommand;
 import com.schemafy.core.project.application.port.in.AddWorkspaceMemberUseCase;
 import com.schemafy.core.project.application.port.in.CreateProjectInvitationCommand;
 import com.schemafy.core.project.application.port.in.CreateProjectInvitationUseCase;
-import com.schemafy.core.project.application.port.in.UpdateProjectMemberRoleCommand;
 import com.schemafy.core.project.application.port.in.UpdateProjectMemberRoleUseCase;
 import com.schemafy.core.project.application.port.out.InvitationPort;
 import com.schemafy.core.project.application.port.out.ProjectPort;
@@ -197,7 +199,7 @@ class WithdrawUserConcurrencyIntegrationTest extends ProjectHttpTestSupport {
     doAnswer(invocationCall -> Mono.error(
         new IllegalStateException("injected MCP revoke failure")))
         .when(revokeMcpTokenPort)
-        .revokeAllMcpTokensByUserId(eq(user.id()), org.mockito.ArgumentMatchers.any());
+        .revokeAllMcpTokensByUserId(eq(user.id()), ArgumentMatchers.any());
 
     StepVerifier.create(withdrawUserUseCase.withdrawUser(
         new WithdrawUserCommand(user.id())))
@@ -274,7 +276,7 @@ class WithdrawUserConcurrencyIntegrationTest extends ProjectHttpTestSupport {
             "late_schema",
             "utf8mb4",
             "utf8mb4_general_ci"))
-        .contextWrite(com.schemafy.core.project.application.access.ProjectAccessRequesterContext
+        .contextWrite(ProjectAccessRequesterContext
             .withRequesterId(user.id()))
         .block(Duration.ofSeconds(15))
         .result()
@@ -316,7 +318,7 @@ class WithdrawUserConcurrencyIntegrationTest extends ProjectHttpTestSupport {
         "late_schema",
         "utf8mb4",
         "utf8mb4_general_ci"))
-        .contextWrite(com.schemafy.core.project.application.access.ProjectAccessRequesterContext
+        .contextWrite(ProjectAccessRequesterContext
             .withRequesterId(user.id()))
         .block()
         .result()
@@ -329,7 +331,7 @@ class WithdrawUserConcurrencyIntegrationTest extends ProjectHttpTestSupport {
     doAnswer(invocation -> {
       int call = projectLockCalls.incrementAndGet();
       @SuppressWarnings("unchecked")
-      Mono<com.schemafy.core.project.domain.Project> realCall = (Mono<com.schemafy.core.project.domain.Project>) invocation
+      Mono<Project> realCall = (Mono<Project>) invocation
           .callRealMethod();
       if (call == 1) {
         return realCall.flatMap(lockedProject -> Mono.fromCallable(() -> {
@@ -351,7 +353,7 @@ class WithdrawUserConcurrencyIntegrationTest extends ProjectHttpTestSupport {
             "utf8mb4",
             "utf8mb4_general_ci",
             null))
-        .contextWrite(com.schemafy.core.project.application.access.ProjectAccessRequesterContext
+        .contextWrite(ProjectAccessRequesterContext
             .withRequesterId(user.id()))
         .block(Duration.ofSeconds(15)));
 
@@ -501,7 +503,7 @@ class WithdrawUserConcurrencyIntegrationTest extends ProjectHttpTestSupport {
 
   @SuppressWarnings("unchecked")
   private Flux<Workspace> delayedFirstWorkspaceScope(
-      org.mockito.invocation.InvocationOnMock invocation,
+      InvocationOnMock invocation,
       String userId,
       CountDownLatch scopeReady,
       CompletableFuture<Void> releaseScope) {
@@ -517,7 +519,7 @@ class WithdrawUserConcurrencyIntegrationTest extends ProjectHttpTestSupport {
 
   @SuppressWarnings("unchecked")
   private Flux<Project> delayedFirstProjectScope(
-      org.mockito.invocation.InvocationOnMock invocation,
+      InvocationOnMock invocation,
       String userId,
       CountDownLatch scopeReady,
       CompletableFuture<Void> releaseScope) {
@@ -533,7 +535,7 @@ class WithdrawUserConcurrencyIntegrationTest extends ProjectHttpTestSupport {
 
   @SuppressWarnings("unchecked")
   private <T> Flux<T> callRealMethod(
-      org.mockito.invocation.InvocationOnMock invocation) {
+      InvocationOnMock invocation) {
     try {
       return (Flux<T>) invocation.callRealMethod();
     } catch (Throwable error) {

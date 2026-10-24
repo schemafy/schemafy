@@ -19,6 +19,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
 import org.mockito.InOrder;
 import org.mockito.Mock;
+import org.mockito.Mockito;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.reactivestreams.Publisher;
 
@@ -488,7 +489,7 @@ class CollaborationWebSocketHandlerTest {
       closeSignal.tryEmitValue(invocation.getArgument(0));
       return Mono.empty();
     });
-    org.mockito.Mockito.lenient().when(session.pingMessage(any()))
+    Mockito.lenient().when(session.pingMessage(any()))
         .thenReturn(message(WebSocketMessage.Type.PING));
     given(entry.outboundFlux()).willReturn(Flux.never());
     given(session.send(any())).willAnswer(invocation -> Flux
