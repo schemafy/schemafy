@@ -58,7 +58,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.doAnswer;
 
-@Testcontainers(disabledWithoutDocker = true)
+@Testcontainers
 @ActiveProfiles("test")
 @SpringBootTest
 @DisplayName("MariaDB 계정 탈퇴 동시성 통합 테스트")
