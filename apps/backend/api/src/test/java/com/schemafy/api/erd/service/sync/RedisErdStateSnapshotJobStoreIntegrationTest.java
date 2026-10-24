@@ -27,7 +27,7 @@ import reactor.test.StepVerifier;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
-@Testcontainers(disabledWithoutDocker = true)
+@Testcontainers
 @DisplayName("RedisErdStateSnapshotJobStore 통합 테스트")
 class RedisErdStateSnapshotJobStoreIntegrationTest {
 
