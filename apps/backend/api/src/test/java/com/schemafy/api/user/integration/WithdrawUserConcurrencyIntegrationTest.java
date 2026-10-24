@@ -5,6 +5,7 @@ import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Stream;
 
 import org.springframework.beans.factory.annotation.Autowired;
@@ -26,7 +27,12 @@ import org.testcontainers.utility.DockerImageName;
 
 import com.schemafy.api.testsupport.project.ProjectHttpTestSupport;
 import com.schemafy.core.common.exception.DomainException;
+import com.schemafy.core.erd.schema.application.port.in.CreateSchemaCommand;
+import com.schemafy.core.erd.schema.application.port.in.CreateSchemaUseCase;
+import com.schemafy.core.erd.table.application.port.in.CreateTableCommand;
+import com.schemafy.core.erd.table.application.port.in.CreateTableUseCase;
 import com.schemafy.core.mcp.application.port.out.RevokeMcpTokenPort;
+import com.schemafy.core.project.application.access.ProjectAccessRequesterContext;
 import com.schemafy.core.project.application.port.in.AcceptProjectInvitationCommand;
 import com.schemafy.core.project.application.port.in.AcceptProjectInvitationUseCase;
 import com.schemafy.core.project.application.port.in.AddWorkspaceMemberCommand;
@@ -58,7 +64,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.doAnswer;
 
-@Testcontainers
+@Testcontainers(disabledWithoutDocker = true)
 @ActiveProfiles("test")
 @SpringBootTest
 @DisplayName("MariaDB 계정 탈퇴 동시성 통합 테스트")
@@ -79,6 +85,12 @@ class WithdrawUserConcurrencyIntegrationTest extends ProjectHttpTestSupport {
 
   @Autowired
   private WithdrawUserUseCase withdrawUserUseCase;
+
+  @Autowired
+  private CreateSchemaUseCase createSchemaUseCase;
+
+  @Autowired
+  private CreateTableUseCase createTableUseCase;
 
   @Autowired
   private AddWorkspaceMemberUseCase addWorkspaceMemberUseCase;
@@ -226,6 +238,146 @@ class WithdrawUserConcurrencyIntegrationTest extends ProjectHttpTestSupport {
         .getStatusAsEnum()).isEqualTo(InvitationStatus.PENDING);
     assertThat(findUserByIdPort.findUserById(user.id()).block().status())
         .isEqualTo(UserStatus.ACTIVE);
+  }
+
+  @Test
+  @DisplayName("프로젝트 잠금 대기 중 commit된 schema도 단독 workspace cascade에 포함한다")
+  void includesSchemaCommittedWhileWithdrawalWaitsForProjectLock() throws Exception {
+    User user = createUser("withdraw-schema-race@test.com", "Schema race");
+    Workspace workspace = saveWorkspace("Schema race workspace", "description");
+    addWorkspaceMember(workspace.getId(), user.id(), WorkspaceRole.ADMIN);
+    var project = saveProject(workspace.getId(), "Schema race project", "description");
+    addProjectMember(project.getId(), user.id(), ProjectRole.ADMIN);
+
+    AtomicInteger projectLockCalls = new AtomicInteger();
+    CountDownLatch schemaProjectLockHeld = new CountDownLatch(1);
+    CountDownLatch withdrawalProjectLockWaiting = new CountDownLatch(1);
+    CompletableFuture<Void> releaseSchemaProjectLock = new CompletableFuture<>();
+    doAnswer(invocation -> {
+      int call = projectLockCalls.incrementAndGet();
+      @SuppressWarnings("unchecked")
+      Mono<Project> realCall = (Mono<Project>) invocation.callRealMethod();
+      if (call == 1) {
+        return realCall.flatMap(lockedProject -> Mono.fromCallable(() -> {
+          schemaProjectLockHeld.countDown();
+          return lockedProject;
+        }).flatMap(projectValue -> Mono.fromFuture(releaseSchemaProjectLock)
+            .thenReturn(projectValue)));
+      }
+      if (call == 2) {
+        withdrawalProjectLockWaiting.countDown();
+      }
+      return realCall;
+    }).when(projectPort).findByIdAndNotDeletedForUpdate(eq(project.getId()));
+
+    CompletableFuture<String> schemaCreation = CompletableFuture.supplyAsync(() -> createSchemaUseCase.createSchema(
+        new CreateSchemaCommand(
+            project.getId(),
+            "late_schema",
+            "utf8mb4",
+            "utf8mb4_general_ci"))
+        .contextWrite(ProjectAccessRequesterContext
+            .withRequesterId(user.id()))
+        .block(Duration.ofSeconds(15))
+        .result()
+        .id());
+
+    awaitLatch(schemaProjectLockHeld);
+    CompletableFuture<Throwable> withdrawal = CompletableFuture.supplyAsync(
+        () -> withdraw(user.id()));
+    awaitLatch(withdrawalProjectLockWaiting);
+
+    try {
+      releaseSchemaProjectLock.complete(null);
+      String schemaId = schemaCreation.get(20, TimeUnit.SECONDS);
+      assertThat(withdrawal.get(20, TimeUnit.SECONDS)).isNull();
+
+      assertThat(countRows("db_schemas", "id", schemaId)).isZero();
+      assertThat(workspaceRepository.findByIdAndNotDeleted(workspace.getId()).block())
+          .isNull();
+      assertThat(projectRepository.findByIdAndDeletedAtIsNull(project.getId()).block())
+          .isNull();
+      assertThat(findUserByIdPort.findUserById(user.id()).block().status())
+          .isEqualTo(UserStatus.INACTIVE);
+    } finally {
+      releaseSchemaProjectLock.complete(null);
+    }
+  }
+
+  @Test
+  @DisplayName("프로젝트 잠금 대기 중 commit된 table도 단독 workspace cascade에 포함한다")
+  void includesTableCommittedWhileWithdrawalWaitsForProjectLock() throws Exception {
+    User user = createUser("withdraw-table-race@test.com", "Table race");
+    Workspace workspace = saveWorkspace("Table race workspace", "description");
+    addWorkspaceMember(workspace.getId(), user.id(), WorkspaceRole.ADMIN);
+    var project = saveProject(workspace.getId(), "Table race project", "description");
+    addProjectMember(project.getId(), user.id(), ProjectRole.ADMIN);
+
+    String schemaId = createSchemaUseCase.createSchema(new CreateSchemaCommand(
+        project.getId(),
+        "late_schema",
+        "utf8mb4",
+        "utf8mb4_general_ci"))
+        .contextWrite(ProjectAccessRequesterContext
+            .withRequesterId(user.id()))
+        .block()
+        .result()
+        .id();
+
+    AtomicInteger projectLockCalls = new AtomicInteger();
+    CountDownLatch tableProjectLockHeld = new CountDownLatch(1);
+    CountDownLatch withdrawalProjectLockWaiting = new CountDownLatch(1);
+    CompletableFuture<Void> releaseTableProjectLock = new CompletableFuture<>();
+    doAnswer(invocation -> {
+      int call = projectLockCalls.incrementAndGet();
+      @SuppressWarnings("unchecked")
+      Mono<Project> realCall = (Mono<Project>) invocation
+          .callRealMethod();
+      if (call == 1) {
+        return realCall.flatMap(lockedProject -> Mono.fromCallable(() -> {
+          tableProjectLockHeld.countDown();
+          return lockedProject;
+        }).flatMap(projectValue -> Mono.fromFuture(releaseTableProjectLock)
+            .thenReturn(projectValue)));
+      }
+      if (call == 2) {
+        withdrawalProjectLockWaiting.countDown();
+      }
+      return realCall;
+    }).when(projectPort).findByIdAndNotDeletedForUpdate(eq(project.getId()));
+
+    CompletableFuture<Void> tableCreation = CompletableFuture.runAsync(() -> createTableUseCase.createTable(
+        new CreateTableCommand(
+            schemaId,
+            "late_table",
+            "utf8mb4",
+            "utf8mb4_general_ci",
+            null))
+        .contextWrite(ProjectAccessRequesterContext
+            .withRequesterId(user.id()))
+        .block(Duration.ofSeconds(15)));
+
+    awaitLatch(tableProjectLockHeld);
+    CompletableFuture<Throwable> withdrawal = CompletableFuture.supplyAsync(
+        () -> withdraw(user.id()));
+    awaitLatch(withdrawalProjectLockWaiting);
+
+    try {
+      releaseTableProjectLock.complete(null);
+      tableCreation.get(20, TimeUnit.SECONDS);
+      assertThat(withdrawal.get(20, TimeUnit.SECONDS)).isNull();
+
+      assertThat(countRows("db_schemas", "id", schemaId)).isZero();
+      assertThat(countRows("db_tables", "schema_id", schemaId)).isZero();
+      assertThat(workspaceRepository.findByIdAndNotDeleted(workspace.getId()).block())
+          .isNull();
+      assertThat(projectRepository.findByIdAndDeletedAtIsNull(project.getId()).block())
+          .isNull();
+      assertThat(findUserByIdPort.findUserById(user.id()).block().status())
+          .isEqualTo(UserStatus.INACTIVE);
+    } finally {
+      releaseTableProjectLock.complete(null);
+    }
   }
 
   @Test
