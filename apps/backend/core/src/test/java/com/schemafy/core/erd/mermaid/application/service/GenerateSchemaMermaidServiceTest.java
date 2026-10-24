@@ -1,6 +1,7 @@
 package com.schemafy.core.erd.mermaid.application.service;
 
 import java.util.List;
+import java.util.stream.IntStream;
 
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -333,7 +334,7 @@ class GenerateSchemaMermaidServiceTest {
       String tableId,
       ConstraintKind kind,
       String... columnIds) {
-    List<ConstraintColumn> columns = java.util.stream.IntStream
+    List<ConstraintColumn> columns = IntStream
         .range(0, columnIds.length)
         .mapToObj(index -> new ConstraintColumn(
             id + "-column-" + index,

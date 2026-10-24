@@ -8,6 +8,7 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.function.Function;
@@ -639,10 +640,10 @@ public class MySqlDdlGenerator implements DdlGenerator {
 
   private static boolean samePrecisionScale(ColumnTypeArguments left,
       ColumnTypeArguments right) {
-    return java.util.Objects.equals(
+    return Objects.equals(
         left == null ? null : left.precision(),
         right == null ? null : right.precision())
-        && java.util.Objects.equals(
+        && Objects.equals(
             left == null ? null : left.scale(),
             right == null ? null : right.scale());
   }

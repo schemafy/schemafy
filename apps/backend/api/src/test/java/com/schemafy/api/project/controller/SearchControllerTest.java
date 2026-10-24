@@ -1,6 +1,7 @@
 package com.schemafy.api.project.controller;
 
 import java.net.URI;
+import java.util.List;
 import java.util.stream.Stream;
 
 import org.springframework.beans.factory.annotation.Autowired;
@@ -172,16 +173,16 @@ class SearchControllerTest extends ProjectHttpTestSupport {
             SearchApiSnippets.searchResponseHeaders(),
             SearchApiSnippets.memberResponse()))
         .jsonPath("$.content[?(@.userId == '" + aliceId + "')].userId")
-        .value(value -> assertThat(value).isEqualTo(java.util.List.of(aliceId)))
+        .value(value -> assertThat(value).isEqualTo(List.of(aliceId)))
         .jsonPath("$.content[?(@.userId == '" + aliceId + "')].userName")
-        .value(value -> assertThat(value).isEqualTo(java.util.List.of("Alice Lee")))
+        .value(value -> assertThat(value).isEqualTo(List.of("Alice Lee")))
         .jsonPath("$.content[?(@.userId == '" + aliceId + "')].userEmail")
-        .value(value -> assertThat(value).isEqualTo(java.util.List.of("alice@example.com")))
+        .value(value -> assertThat(value).isEqualTo(List.of("alice@example.com")))
         .jsonPath("$.content[?(@.userId == '" + aliceId + "')].role")
         .value(value -> assertThat(value).isEqualTo(
-            java.util.List.of(WorkspaceRole.ADMIN.name())))
+            List.of(WorkspaceRole.ADMIN.name())))
         .jsonPath("$.content[?(@.userId == '" + bobId + "')].userId")
-        .value(value -> assertThat(value).isEqualTo(java.util.List.of(bobId)))
+        .value(value -> assertThat(value).isEqualTo(List.of(bobId)))
         .jsonPath("$.content[0].joinedAt").isNotEmpty()
         .jsonPath("$.content[0].workspaceId").doesNotExist()
         .jsonPath("$.content[0].projectId").doesNotExist()
@@ -205,16 +206,16 @@ class SearchControllerTest extends ProjectHttpTestSupport {
             SearchApiSnippets.searchResponseHeaders(),
             SearchApiSnippets.memberResponse()))
         .jsonPath("$.content[?(@.userId == '" + aliceId + "')].userId")
-        .value(value -> assertThat(value).isEqualTo(java.util.List.of(aliceId)))
+        .value(value -> assertThat(value).isEqualTo(List.of(aliceId)))
         .jsonPath("$.content[?(@.userId == '" + bobId + "')].userId")
-        .value(value -> assertThat(value).isEqualTo(java.util.List.of(bobId)))
+        .value(value -> assertThat(value).isEqualTo(List.of(bobId)))
         .jsonPath("$.content[?(@.userId == '" + bobId + "')].userName")
-        .value(value -> assertThat(value).isEqualTo(java.util.List.of("Bob Lee")))
+        .value(value -> assertThat(value).isEqualTo(List.of("Bob Lee")))
         .jsonPath("$.content[?(@.userId == '" + bobId + "')].userEmail")
-        .value(value -> assertThat(value).isEqualTo(java.util.List.of("bob@example.com")))
+        .value(value -> assertThat(value).isEqualTo(List.of("bob@example.com")))
         .jsonPath("$.content[?(@.userId == '" + bobId + "')].role")
         .value(value -> assertThat(value).isEqualTo(
-            java.util.List.of(ProjectRole.VIEWER.name())))
+            List.of(ProjectRole.VIEWER.name())))
         .jsonPath("$.content[0].joinedAt").isNotEmpty()
         .jsonPath("$.content[0].workspaceId").doesNotExist()
         .jsonPath("$.content[0].projectId").doesNotExist()

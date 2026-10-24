@@ -51,6 +51,7 @@ import com.schemafy.core.erd.relationship.application.port.in.CreateRelationship
 import com.schemafy.core.erd.relationship.application.port.in.CreateRelationshipUseCase;
 import com.schemafy.core.erd.relationship.application.port.out.GetRelationshipByIdPort;
 import com.schemafy.core.erd.relationship.application.port.out.GetRelationshipColumnsByRelationshipIdPort;
+import com.schemafy.core.erd.relationship.domain.Relationship;
 import com.schemafy.core.erd.relationship.domain.RelationshipColumn;
 import com.schemafy.core.erd.relationship.domain.type.Cardinality;
 import com.schemafy.core.erd.relationship.domain.type.RelationshipKind;
@@ -64,6 +65,7 @@ import com.schemafy.core.erd.table.application.port.in.ChangeTableMetaUseCase;
 import com.schemafy.core.erd.table.application.port.in.CreateTableCommand;
 import com.schemafy.core.erd.table.application.port.in.CreateTableUseCase;
 import com.schemafy.core.erd.table.application.port.out.GetTableByIdPort;
+import com.schemafy.core.erd.table.domain.Table;
 
 import reactor.test.StepVerifier;
 
@@ -439,7 +441,7 @@ class ErdMetaExtraUndoRedoIntegrationTest extends ErdProjectIntegrationSupport {
         .block();
   }
 
-  private com.schemafy.core.erd.table.domain.Table getTable(String tableId) {
+  private Table getTable(String tableId) {
     return getTableByIdPort.findTableById(tableId).block();
   }
 
@@ -447,7 +449,7 @@ class ErdMetaExtraUndoRedoIntegrationTest extends ErdProjectIntegrationSupport {
     return getColumnByIdPort.findColumnById(columnId).block();
   }
 
-  private com.schemafy.core.erd.relationship.domain.Relationship getRelationship(String relationshipId) {
+  private Relationship getRelationship(String relationshipId) {
     return getRelationshipByIdPort.findRelationshipById(relationshipId).block();
   }
 

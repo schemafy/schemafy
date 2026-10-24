@@ -37,7 +37,7 @@ test.describe('Sign-up Flow', () => {
     await page.getByLabel('Confirm Password *').fill('password');
     await page.getByRole('button', { name: 'Create Account' }).click();
 
-    await expect(page).toHaveURL('http://localhost:3001/');
+    await expect(page).toHaveURL('http://localhost:3000/');
     expect(signUpBody).toEqual({
       email: 'test@example.com',
       name: 'Tester',
@@ -212,7 +212,7 @@ test.describe('Sign-up Flow', () => {
     await page.getByLabel('Confirm Password *').fill('password');
     await page.getByRole('button', { name: 'Create Account' }).click();
 
-    await expect(page).toHaveURL('http://localhost:3001/');
+    await expect(page).toHaveURL('http://localhost:3000/');
     expect(signUpBody).toEqual({
       email: 'test@example.com',
       name: 'Tester',

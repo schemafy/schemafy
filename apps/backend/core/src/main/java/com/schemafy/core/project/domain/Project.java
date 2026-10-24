@@ -26,12 +26,14 @@ public class Project extends BaseEntity {
       Integer dbVendorId,
       String name,
       String description) {
+    ProjectPolicy.validateText(name, description);
     Project project = new Project(workspaceId, dbVendorId, name, description);
     project.setId(id);
     return project;
   }
 
   public void update(String name, String description) {
+    ProjectPolicy.validateText(name, description);
     this.name = name;
     this.description = description;
   }

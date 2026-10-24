@@ -1,4 +1,5 @@
 import type { ErdOperation } from '@/features/drawing/api/types';
+import type { RelationshipExtra } from '@/features/drawing/types';
 
 export type PostCursor = {
   type: 'CURSOR';
@@ -16,6 +17,24 @@ export type PostSchemaFocus = {
 export type PostChat = {
   type: 'CHAT';
   content: string;
+};
+
+export type PreviewAction = 'UPDATE' | 'CLEAR';
+
+export type PostTablePositionPreview = {
+  type: 'TABLE_POSITION_PREVIEW';
+  action: PreviewAction;
+  schemaId: string;
+  tableId: string;
+  position?: { x: number; y: number };
+};
+
+export type PostRelationshipExtraPreview = {
+  type: 'RELATIONSHIP_EXTRA_PREVIEW';
+  action: PreviewAction;
+  schemaId: string;
+  relationshipId: string;
+  extra?: RelationshipExtra;
 };
 
 export type ReceiveJoin = {
@@ -84,6 +103,26 @@ export type Participant = {
   profileImageUrl?: string | null;
 };
 
+export type ReceiveTablePositionPreview = {
+  type: 'TABLE_POSITION_PREVIEW';
+  sessionId: string;
+  action: PreviewAction;
+  schemaId: string;
+  tableId: string;
+  position?: { x: number; y: number };
+  timestamp: number;
+};
+
+export type ReceiveRelationshipExtraPreview = {
+  type: 'RELATIONSHIP_EXTRA_PREVIEW';
+  sessionId: string;
+  action: PreviewAction;
+  schemaId: string;
+  relationshipId: string;
+  extra?: RelationshipExtra;
+  timestamp: number;
+};
+
 export type ReceiveSessionReady = {
   type: 'SESSION_READY';
   sessionId: string;
@@ -98,6 +137,8 @@ export type WebSocketMessage =
   | ReceiveCursor
   | ReceiveSchemaFocus
   | ReceiveChat
+  | ReceiveTablePositionPreview
+  | ReceiveRelationshipExtraPreview
   | ReceiveErdMutated;
 
 export type ChatMessage = {

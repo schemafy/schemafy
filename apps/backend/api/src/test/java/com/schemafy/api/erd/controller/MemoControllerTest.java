@@ -1,5 +1,7 @@
 package com.schemafy.api.erd.controller;
 
+import java.util.List;
+
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.restdocs.AutoConfigureRestDocs;
 import org.springframework.boot.test.autoconfigure.web.reactive.AutoConfigureWebTestClient;
@@ -395,7 +397,7 @@ class MemoControllerTest {
             .id("06D6W1GAHD51T5NJPK29Q6BCR8")
             .schemaId("06D6VZBWHSDJBBG0H7D156YZ98")
             .positions(objectMapper.readTree("{\"x\":10,\"y\":20}"))
-            .comments(java.util.List.of())
+            .comments(List.of())
             .build()));
 
     webTestClient.post()

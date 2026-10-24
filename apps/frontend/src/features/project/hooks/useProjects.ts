@@ -10,10 +10,11 @@ import {
 } from './useProjectMutations';
 
 export const useProjects = (workspaceId: string, page = 0, size = 5) => {
+  const hasWorkspaceId = Boolean(workspaceId);
   const projectsQuery = useQuery({
     queryKey: projectKeys.list(workspaceId, page, size),
     queryFn: () => getProjects(workspaceId, page, size),
-    enabled: !!workspaceId,
+    enabled: hasWorkspaceId,
   });
   const createProjectMutation = useCreateProjectMutation(workspaceId);
   const updateProjectMutation = useUpdateProjectMutation(workspaceId);

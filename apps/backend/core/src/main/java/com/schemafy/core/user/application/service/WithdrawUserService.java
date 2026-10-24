@@ -172,7 +172,7 @@ class WithdrawUserService implements WithdrawUserUseCase {
             workspaceMemberPort.countByWorkspaceIdAndRoleAndNotDeleted(
                 workspace.getId(), WorkspaceRole.ADMIN.name())))
         .doOnNext(tuple -> validateWorkspaceDeparture(
-            tuple.getT1(), tuple.getT2(), tuple.getT3())))
+            tuple.getT1(), tuple.getT2(), tuple.getT3()))
         .then();
   }
 

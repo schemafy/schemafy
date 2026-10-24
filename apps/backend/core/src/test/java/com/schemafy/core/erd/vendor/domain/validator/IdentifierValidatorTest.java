@@ -1,5 +1,6 @@
 package com.schemafy.core.erd.vendor.domain.validator;
 
+import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
@@ -23,9 +24,9 @@ class IdentifierValidatorTest {
         SchemaErrorCode.INVALID_VALUE,
         "Schema name"))
         .isInstanceOfSatisfying(DomainException.class, exception -> {
-          org.assertj.core.api.Assertions.assertThat(exception.getErrorCode())
+          Assertions.assertThat(exception.getErrorCode())
               .isEqualTo(SchemaErrorCode.INVALID_VALUE);
-          org.assertj.core.api.Assertions.assertThat(exception.getMessage())
+          Assertions.assertThat(exception.getMessage())
               .contains("Schema name", "64", "project's DB vendor");
         });
   }

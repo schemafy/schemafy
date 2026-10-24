@@ -19,12 +19,14 @@ public class Workspace extends BaseEntity {
   private String description;
 
   public static Workspace create(String id, String name, String description) {
+    WorkspacePolicy.validateText(name, description);
     Workspace workspace = new Workspace(name, description);
     workspace.setId(id);
     return workspace;
   }
 
   public void update(String name, String description) {
+    WorkspacePolicy.validateText(name, description);
     this.name = name;
     this.description = description;
   }

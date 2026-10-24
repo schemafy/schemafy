@@ -10,6 +10,7 @@ import com.schemafy.core.project.application.port.in.AccessShareLinkQuery;
 import com.schemafy.core.project.application.port.in.AccessShareLinkUseCase;
 import com.schemafy.core.project.application.port.out.ShareLinkPort;
 import com.schemafy.core.project.domain.Project;
+import com.schemafy.core.project.domain.ShareLink;
 import com.schemafy.core.project.domain.exception.ProjectErrorCode;
 import com.schemafy.core.project.domain.exception.ShareLinkErrorCode;
 
@@ -28,38 +29,18 @@ class AccessShareLinkService implements AccessShareLinkUseCase {
 
   @Override
   public Mono<Project> accessShareLink(AccessShareLinkQuery query) {
-    String user = query.userId() != null ? query.userId() : "anonymous";
-
+    if (!ShareLink.isValidCode(query.code())) {
+      return Mono.error(new DomainException(ShareLinkErrorCode.NOT_FOUND));
+    }
     return shareLinkPort.findByCodeAndNotDeleted(query.code())
         .switchIfEmpty(Mono.error(
             new DomainException(ShareLinkErrorCode.NOT_FOUND)))
         .flatMap(shareLinkHelper::validateShareLinkAccessible)
-        .doOnNext(shareLink -> log.info(
-            "ShareLink access success - code: {}, projectId: {}, userId: {}, ip: {}, userAgent: {}",
-            maskCode(query.code()), shareLink.getProjectId(), user,
-            query.ipAddress(), query.userAgent()))
-        .flatMap(shareLink -> shareLinkPort.incrementAccessCount(
-            shareLink.getId())
-            .onErrorResume(error -> {
-              log.error(
-                  "Failed to increment access count for ShareLink InvitationId: {}",
-                  shareLink.getId(), error);
-              return Mono.empty();
-            })
-            .then(shareLinkHelper.findProjectById(shareLink.getProjectId()))
+        .flatMap(shareLink -> shareLinkHelper.findProjectById(shareLink.getProjectId())
             .switchIfEmpty(Mono.error(
-                new DomainException(ProjectErrorCode.NOT_FOUND))))
-        .doOnError(error -> log.info(
-            "ShareLink access failed - code: {}, userId: {}, ip: {}, userAgent: {}, reason: {}",
-            maskCode(query.code()), user, query.ipAddress(),
-            query.userAgent(), error.getMessage()));
-  }
-
-  private String maskCode(String code) {
-    if (code == null || code.length() <= 4) {
-      return "***";
-    }
-    return code.substring(0, Math.min(8, code.length())) + "***";
+                new DomainException(ProjectErrorCode.NOT_FOUND)))
+            .doOnNext(project -> log.info("event=share_link_access projectId={} shareLinkId={} ip={} userAgent={}",
+                shareLink.getProjectId(), shareLink.getId(), query.ipAddress(), query.userAgent())));
   }
 
 }

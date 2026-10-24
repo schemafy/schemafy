@@ -60,6 +60,8 @@ public class SchemafyReadResourceSurfaceConfiguration {
                 "schemafy://projects/{projectId}/members?page={page}&size={size}")),
         template("schemafy://projects/{projectId}/schemas", "project-schemas", "Project schemas",
             request -> reader.projectSchemas(request, "schemafy://projects/{projectId}/schemas")),
+        template("schemafy://projects/{projectId}/presence", "project-presence", "Active project presence",
+            request -> reader.projectPresence(request, "schemafy://projects/{projectId}/presence")),
         template("schemafy://schemas/{schemaId}", "schema", "Schema detail",
             request -> reader.schema(request, "schemafy://schemas/{schemaId}")),
         template("schemafy://schemas/{schemaId}/tables", "schema-tables", "Schema tables",

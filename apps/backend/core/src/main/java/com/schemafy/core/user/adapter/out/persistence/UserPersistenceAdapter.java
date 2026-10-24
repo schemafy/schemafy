@@ -9,6 +9,7 @@ import com.schemafy.core.user.application.port.out.FindUserByEmailPort;
 import com.schemafy.core.user.application.port.out.FindUserByIdPort;
 import com.schemafy.core.user.application.port.out.FindUsersByIdsPort;
 import com.schemafy.core.user.application.port.out.UpdateUserPort;
+import com.schemafy.core.user.application.port.out.UpdateUserPasswordPort;
 import com.schemafy.core.user.domain.User;
 
 import lombok.RequiredArgsConstructor;
@@ -23,7 +24,8 @@ class UserPersistenceAdapter implements
     FindUserByEmailPort,
     FindUserByIdPort,
     FindUsersByIdsPort,
-    UpdateUserPort {
+    UpdateUserPort,
+    UpdateUserPasswordPort {
 
   private final UserRepository userRepository;
   private final UserMapper userMapper;
@@ -67,6 +69,16 @@ class UserPersistenceAdapter implements
   public Mono<User> updateUser(User user) {
     return userRepository.save(userMapper.toEntity(user))
         .map(userMapper::toDomain);
+  }
+
+  @Override
+  public Mono<Void> updateUserPassword(String userId, String encodedPassword) {
+    return userRepository.findById(userId)
+        .flatMap(entity -> {
+          entity.setPassword(encodedPassword);
+          return userRepository.save(entity);
+        })
+        .then();
   }
 
 }

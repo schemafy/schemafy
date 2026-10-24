@@ -4,9 +4,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
-import org.springframework.transaction.ReactiveTransaction;
-import org.springframework.transaction.ReactiveTransactionManager;
-
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -18,138 +15,102 @@ import com.schemafy.api.erd.controller.dto.response.ColumnResponse;
 import com.schemafy.api.erd.controller.dto.response.TableResponse;
 import com.schemafy.api.erd.controller.dto.response.TableSnapshotResponse;
 import com.schemafy.api.erd.fixture.DbVendorApiFixture;
-import com.schemafy.api.erd.service.TableSnapshotOrchestrator;
+import com.schemafy.api.erd.service.SchemaSnapshotReadResult;
+import com.schemafy.api.erd.service.SchemaSnapshotReader;
 import com.schemafy.core.erd.index.domain.policy.IndexCapabilities;
 import com.schemafy.core.erd.index.domain.type.IndexType;
-import com.schemafy.core.erd.schema.application.port.in.GetSchemaQuery;
-import com.schemafy.core.erd.schema.application.port.in.GetSchemaWithRevisionResult;
-import com.schemafy.core.erd.schema.application.port.in.GetSchemaWithRevisionUseCase;
 import com.schemafy.core.erd.schema.domain.Schema;
-import com.schemafy.core.erd.table.application.port.in.GetTablesBySchemaIdQuery;
-import com.schemafy.core.erd.table.application.port.in.GetTablesBySchemaIdUseCase;
-import com.schemafy.core.erd.table.domain.Table;
 import com.schemafy.core.erd.vendor.application.port.in.GetProjectDbVendorQuery;
 import com.schemafy.core.erd.vendor.application.port.in.GetProjectDbVendorUseCase;
 import com.schemafy.core.erd.vendor.domain.DbVendor;
 import com.schemafy.core.erd.vendor.domain.IdentifierCapabilities;
 import com.schemafy.core.erd.vendor.domain.VendorCapabilities;
 
-import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 import reactor.test.StepVerifier;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyList;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.then;
-import static org.mockito.Mockito.lenient;
 
 @ExtendWith(MockitoExtension.class)
 @DisplayName("SchemaExportSnapshotReader")
 class SchemaExportSnapshotReaderTest {
 
   @Mock
-  GetSchemaWithRevisionUseCase getSchemaWithRevisionUseCase;
+  SchemaSnapshotReader schemaSnapshotReader;
 
   @Mock
   GetProjectDbVendorUseCase getProjectDbVendorUseCase;
-
-  @Mock
-  GetTablesBySchemaIdUseCase getTablesBySchemaIdUseCase;
-
-  @Mock
-  TableSnapshotOrchestrator tableSnapshotOrchestrator;
-
-  @Mock
-  ReactiveTransactionManager transactionManager;
-
-  @Mock
-  ReactiveTransaction transaction;
 
   SchemaExportSnapshotReader sut;
 
   @BeforeEach
   void setUp() {
-    given(transactionManager.getReactiveTransaction(any()))
-        .willReturn(Mono.just(transaction));
-    lenient().when(transactionManager.commit(transaction))
-        .thenReturn(Mono.empty());
-    lenient().when(transactionManager.rollback(transaction))
-        .thenReturn(Mono.empty());
-
     sut = new SchemaExportSnapshotReader(
-        getSchemaWithRevisionUseCase,
+        schemaSnapshotReader,
         getProjectDbVendorUseCase,
-        getTablesBySchemaIdUseCase,
-        tableSnapshotOrchestrator,
-        new SchemaExportSnapshotMapper(),
-        transactionManager);
+        new SchemaExportSnapshotMapper());
   }
 
   @Test
-  @DisplayName("schema revision과 strict table snapshot을 공통 export snapshot으로 읽는다")
+  @DisplayName("공통 read 결과에 vendor capability를 결합해 export snapshot으로 변환한다")
   void readsSchemaExportSnapshot() {
     String schemaId = "schema-1";
     Schema schema = new Schema(schemaId, "project-1", "main_schema",
         "utf8mb4", "utf8mb4_general_ci");
-    Table table = new Table("table-1", schemaId, "users", "utf8mb4",
-        "utf8mb4_general_ci");
     TableSnapshotResponse tableSnapshot = new TableSnapshotResponse(
-        new TableResponse(table.id(), schemaId, table.name(), table.charset(),
-            table.collation(), null),
+        new TableResponse("table-1", schemaId, "users", "utf8mb4",
+            "utf8mb4_general_ci", null),
         List.of(new ColumnResponse(
-            "column-1", table.id(), "id", "BIGINT", null, 0, true,
+            "column-1", "table-1", "id", "BIGINT", null, 0, true,
             null, null, null)),
         List.of(),
         List.of(),
         List.of());
 
-    given(getSchemaWithRevisionUseCase.getSchemaWithRevision(any(GetSchemaQuery.class)))
-        .willReturn(Mono.just(new GetSchemaWithRevisionResult(schema, 42L)));
+    given(schemaSnapshotReader.readSchemaSnapshot(schemaId))
+        .willReturn(Mono.just(new SchemaSnapshotReadResult(schema, 42L,
+            Map.of("table-1", tableSnapshot))));
     given(getProjectDbVendorUseCase.getProjectDbVendor(
         new GetProjectDbVendorQuery(schema.projectId())))
         .willReturn(Mono.just(sourceDbVendor()));
-    given(getTablesBySchemaIdUseCase.getTablesBySchemaId(any(GetTablesBySchemaIdQuery.class)))
-        .willReturn(Flux.just(table));
-    given(tableSnapshotOrchestrator.getTableSnapshotsStrict(anyList()))
-        .willReturn(Mono.just(Map.of(table.id(), tableSnapshot)));
 
     StepVerifier.create(sut.readSchemaExportSnapshot(schemaId))
         .assertNext(result -> {
           assertThat(result.currentRevision()).isEqualTo(42L);
           assertThat(result.snapshot().schema().id()).isEqualTo(schemaId);
-          assertThat(result.snapshot().schema().dbVendorName()).isEqualTo("mysql");
-          assertThat(result.indexCapabilities()).isEqualTo(mysqlIndexCapabilities());
+          assertThat(result.snapshot().schema().dbVendorName())
+              .isEqualTo("mysql");
+          assertThat(result.datatypePolicy())
+              .isEqualTo(DbVendorApiFixture.mysqlDatatypePolicy());
+          assertThat(result.indexCapabilities())
+              .isEqualTo(mysqlIndexCapabilities());
           assertThat(result.identifierCapabilities())
               .isEqualTo(IdentifierCapabilities.codePoints(64));
           assertThat(result.snapshot().tables()).hasSize(1);
-          assertThat(result.snapshot().tables().getFirst().columns()).hasSize(1);
+          assertThat(result.snapshot().tables().getFirst().columns())
+              .hasSize(1);
         })
         .verifyComplete();
 
-    then(getSchemaWithRevisionUseCase).should()
-        .getSchemaWithRevision(new GetSchemaQuery(schemaId));
     then(getProjectDbVendorUseCase).should()
         .getProjectDbVendor(new GetProjectDbVendorQuery(schema.projectId()));
-    then(getTablesBySchemaIdUseCase).should()
-        .getTablesBySchemaId(new GetTablesBySchemaIdQuery(schemaId));
   }
 
   @Test
-  @DisplayName("테이블이 없으면 strict snapshot 조회 없이 빈 export snapshot을 반환한다")
+  @DisplayName("테이블이 없으면 빈 export snapshot을 반환한다")
   void readsEmptySchemaExportSnapshot() {
     String schemaId = "schema-1";
     Schema schema = new Schema(schemaId, "project-1", "empty_schema",
         "utf8mb4", "utf8mb4_general_ci");
 
-    given(getSchemaWithRevisionUseCase.getSchemaWithRevision(any(GetSchemaQuery.class)))
-        .willReturn(Mono.just(new GetSchemaWithRevisionResult(schema, 7L)));
+    given(schemaSnapshotReader.readSchemaSnapshot(schemaId))
+        .willReturn(Mono.just(
+            new SchemaSnapshotReadResult(schema, 7L, Map.of())));
     given(getProjectDbVendorUseCase.getProjectDbVendor(
         new GetProjectDbVendorQuery(schema.projectId())))
         .willReturn(Mono.just(sourceDbVendor()));
-    given(getTablesBySchemaIdUseCase.getTablesBySchemaId(any(GetTablesBySchemaIdQuery.class)))
-        .willReturn(Flux.empty());
 
     StepVerifier.create(sut.readSchemaExportSnapshot(schemaId))
         .assertNext(result -> {
@@ -159,35 +120,22 @@ class SchemaExportSnapshotReaderTest {
           assertThat(result.snapshot().tables()).isEmpty();
         })
         .verifyComplete();
-
-    then(tableSnapshotOrchestrator).shouldHaveNoInteractions();
   }
 
   @Test
-  @DisplayName("strict table snapshot 조회 실패를 전파하고 read transaction을 rollback한다")
-  void propagatesStrictSnapshotFailure() {
+  @DisplayName("공통 read 실패를 전파하고 vendor는 조회하지 않는다")
+  void propagatesReadFailureWithoutVendorLookup() {
     String schemaId = "schema-1";
-    Schema schema = new Schema(schemaId, "project-1", "main_schema",
-        "utf8mb4", "utf8mb4_general_ci");
-    Table table = new Table("table-1", schemaId, "users", "utf8mb4",
-        "utf8mb4_general_ci");
     RuntimeException failure = new RuntimeException("snapshot failure");
 
-    given(getSchemaWithRevisionUseCase.getSchemaWithRevision(any(GetSchemaQuery.class)))
-        .willReturn(Mono.just(new GetSchemaWithRevisionResult(schema, 42L)));
-    given(getProjectDbVendorUseCase.getProjectDbVendor(
-        new GetProjectDbVendorQuery(schema.projectId())))
-        .willReturn(Mono.just(sourceDbVendor()));
-    given(getTablesBySchemaIdUseCase.getTablesBySchemaId(any(GetTablesBySchemaIdQuery.class)))
-        .willReturn(Flux.just(table));
-    given(tableSnapshotOrchestrator.getTableSnapshotsStrict(anyList()))
+    given(schemaSnapshotReader.readSchemaSnapshot(schemaId))
         .willReturn(Mono.error(failure));
 
     StepVerifier.create(sut.readSchemaExportSnapshot(schemaId))
         .expectErrorMatches(error -> error == failure)
         .verify();
 
-    then(transactionManager).should().rollback(transaction);
+    then(getProjectDbVendorUseCase).shouldHaveNoInteractions();
   }
 
   private static DbVendor sourceDbVendor() {

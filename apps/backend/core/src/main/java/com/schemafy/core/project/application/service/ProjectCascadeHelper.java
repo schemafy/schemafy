@@ -45,7 +45,7 @@ class ProjectCascadeHelper {
         .then(invitationPort.softDeleteByTarget(
             InvitationType.PROJECT.name(),
             projectId))
-        .then(shareLinkPort.softDeleteByProjectId(projectId))
+        .then(shareLinkPort.deleteByProjectId(projectId))
         .then();
   }
 
