@@ -105,8 +105,8 @@ class WithdrawUserService implements WithdrawUserUseCase {
       WithdrawalScope candidateScope) {
     return lockWorkspaces(candidateScope.workspaceIds())
         .then(lockProjects(candidateScope.projectIds()))
-        .then(findUserByIdPort
-            .findUserByIdForUpdate(userId)
+        .then(Mono.defer(() -> findUserByIdPort
+            .findUserByIdForUpdate(userId))
             .filter(user -> user.status() == UserStatus.ACTIVE)
             .switchIfEmpty(Mono.error(new DomainException(UserErrorCode.NOT_FOUND)))
             .flatMap(user -> rereadScope(user.id(), candidateScope)
