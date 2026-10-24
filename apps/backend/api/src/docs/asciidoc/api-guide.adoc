@@ -4009,6 +4009,32 @@ include::{snippets}/user-logout/http-response.adoc[]
 
 ---
 
+=== 계정 탈퇴
+
+현재 사용자의 계정을 탈퇴 처리합니다. access JWT만 사용하며, 탈퇴 상태 전환과 workspace·project 관계 정리를 하나의 transaction으로 처리합니다. 다른 멤버가 있는 workspace의 유일 ADMIN이면 변경 없이 `409 Conflict`를 반환합니다.
+
+[source]
+----
+DELETE /api/v1.0/users/me
+----
+
+[discrete]
+==== 요청
+
+include::{snippets}/user-withdraw/http-request.adoc[]
+include::{snippets}/user-withdraw/request-headers.adoc[]
+include::{snippets}/user-withdraw/curl-request.adoc[]
+
+[discrete]
+==== 응답
+
+성공 시 accessToken·refreshToken 쿠키를 만료시키고 `204 No Content`를 반환합니다.
+
+include::{snippets}/user-withdraw/response-headers.adoc[]
+include::{snippets}/user-withdraw/http-response.adoc[]
+
+---
+
 === GitHub OAuth 로그인
 
 GitHub OAuth를 통해 로그인하거나 계정을 생성합니다.

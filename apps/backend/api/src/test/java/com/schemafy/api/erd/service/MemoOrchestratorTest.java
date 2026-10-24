@@ -94,8 +94,8 @@ class MemoOrchestratorTest {
   }
 
   @Test
-  @DisplayName("getMemo: 작성자 정보가 없으면 Unknown으로 fallback 한다")
-  void getMemo_unknownUserFallback() {
+  @DisplayName("getMemo: 탈퇴·누락 작성자를 가리고 활성 작성자는 유지한다")
+  void getMemo_masksInactiveAndMissingAuthors() {
     Memo memo = new Memo(
         "memo-1",
         "schema-1",
@@ -112,31 +112,50 @@ class MemoOrchestratorTest {
         Instant.parse("2026-01-01T00:00:00Z"),
         Instant.parse("2026-01-01T00:00:00Z"),
         null);
+    MemoComment activeComment = new MemoComment(
+        "comment-2",
+        "memo-1",
+        "author-3",
+        "active author",
+        Instant.parse("2026-01-01T00:00:00Z"),
+        Instant.parse("2026-01-01T00:00:00Z"),
+        null);
 
     when(getMemoUseCase.getMemo(any()))
-        .thenReturn(Mono.just(new MemoDetail(memo, List.of(comment))));
+        .thenReturn(Mono.just(new MemoDetail(memo, List.of(comment, activeComment))));
 
-    User user = new User(
+    User withdrawnUser = new User(
         "author-1",
         "author-1@example.com",
         "작성자",
+        null,
+        UserStatus.INACTIVE,
+        null,
+        null,
+        Instant.parse("2026-01-02T00:00:00Z"));
+    User activeUser = new User(
+        "author-3",
+        "author-3@example.com",
+        "활성 작성자",
         null,
         UserStatus.ACTIVE,
         null,
         null,
         null);
     when(getUsersByIdsUseCase.getUsersByIds(any()))
-        .thenReturn(Flux.just(user));
+        .thenReturn(Flux.just(withdrawnUser, activeUser));
 
     StepVerifier.create(sut.getMemo("memo-1"))
         .assertNext(response -> {
           assertThat(response.getAuthor().id()).isEqualTo("author-1");
-          assertThat(response.getAuthor().name()).isEqualTo("작성자");
-          assertThat(response.getComments()).hasSize(1);
+          assertThat(response.getAuthor().name()).isEqualTo("탈퇴한 사용자");
+          assertThat(response.getComments()).hasSize(2);
           assertThat(response.getComments().get(0).author().id())
               .isEqualTo("author-2");
           assertThat(response.getComments().get(0).author().name())
-              .isEqualTo("Unknown");
+              .isEqualTo("탈퇴한 사용자");
+          assertThat(response.getComments().get(1).author().name())
+              .isEqualTo("활성 작성자");
         })
         .verifyComplete();
   }
@@ -184,7 +203,7 @@ class MemoOrchestratorTest {
   }
 
   @Test
-  @DisplayName("updateMemo: 작성자 정보가 없으면 Unknown으로 fallback 한다")
+  @DisplayName("updateMemo: 작성자 행이 없으면 탈퇴한 사용자로 표시한다")
   void updateMemo_unknownUserFallback() throws Exception {
     Memo updated = new Memo(
         "memo-1",
@@ -206,7 +225,7 @@ class MemoOrchestratorTest {
         AuthenticatedUser.of("author-1")))
         .assertNext(response -> {
           assertThat(response.author().id()).isEqualTo("author-1");
-          assertThat(response.author().name()).isEqualTo("Unknown");
+          assertThat(response.author().name()).isEqualTo("탈퇴한 사용자");
         })
         .verifyComplete();
   }

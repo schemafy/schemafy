@@ -25,6 +25,8 @@ import com.schemafy.core.user.application.port.in.SendSignUpEmailCodeUseCase;
 import com.schemafy.core.user.application.port.in.SignUpUserUseCase;
 import com.schemafy.core.user.application.port.in.VerifySignUpEmailUseCase;
 import com.schemafy.core.user.domain.User;
+import com.schemafy.core.user.domain.UserStatus;
+import com.schemafy.core.user.domain.exception.UserErrorCode;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -117,9 +119,16 @@ public class AuthController {
 
       return userId;
     })
-        .flatMap(userId -> getUserByIdUseCase.getUserById(new GetUserByIdQuery(userId)))
-        .onErrorMap(error -> !(error instanceof DomainException),
-            error -> new DomainException(AuthErrorCode.INVALID_REFRESH_TOKEN));
+        .onErrorMap(error -> !(error instanceof DomainException domainException
+            && domainException.getErrorCode() instanceof AuthErrorCode),
+            error -> new DomainException(AuthErrorCode.INVALID_REFRESH_TOKEN))
+        .flatMap(userId -> getUserByIdUseCase.getUserById(
+            new GetUserByIdQuery(userId))
+            .filter(user -> user.status() == UserStatus.ACTIVE)
+            .switchIfEmpty(Mono.error(new DomainException(
+                UserErrorCode.NOT_FOUND)))
+            .onErrorMap(DomainException.hasErrorCode(UserErrorCode.NOT_FOUND),
+                error -> new DomainException(AuthErrorCode.INVALID_REFRESH_TOKEN)));
   }
 
 }
