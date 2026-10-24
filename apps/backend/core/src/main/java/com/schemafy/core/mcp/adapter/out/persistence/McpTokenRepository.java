@@ -1,5 +1,7 @@
 package com.schemafy.core.mcp.adapter.out.persistence;
 
+import java.time.Instant;
+
 import org.springframework.data.r2dbc.repository.Modifying;
 import org.springframework.data.r2dbc.repository.Query;
 import org.springframework.data.repository.reactive.ReactiveCrudRepository;
@@ -22,6 +24,6 @@ interface McpTokenRepository extends ReactiveCrudRepository<McpToken, String> {
       WHERE user_id = :userId
         AND deleted_at IS NULL
       """)
-  Mono<Long> revokeAllByUserId(String userId, java.time.Instant revokedAt);
+  Mono<Long> revokeAllByUserId(String userId, Instant revokedAt);
 
 }

@@ -7,6 +7,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
+import com.schemafy.core.common.exception.DomainException;
 import com.schemafy.core.erd.schema.application.port.in.CreateSchemaCommand;
 import com.schemafy.core.project.application.access.ProjectAccessRequesterContext;
 import com.schemafy.core.project.domain.Invitation;
@@ -17,6 +18,7 @@ import com.schemafy.core.project.domain.ProjectRole;
 import com.schemafy.core.project.domain.Workspace;
 import com.schemafy.core.project.domain.WorkspaceMember;
 import com.schemafy.core.project.domain.WorkspaceRole;
+import com.schemafy.core.project.domain.exception.WorkspaceErrorCode;
 import com.schemafy.core.ulid.application.service.UlidGenerator;
 import com.schemafy.core.user.application.port.in.WithdrawUserCommand;
 import com.schemafy.core.user.application.port.in.WithdrawUserUseCase;
@@ -133,8 +135,8 @@ class WithdrawUserUseCaseIntegrationTest extends ProjectDomainIntegrationSupport
 
     StepVerifier.create(withdrawUserUseCase.withdrawUser(
         new WithdrawUserCommand(user.id())))
-        .expectErrorMatches(com.schemafy.core.common.exception.DomainException
-            .hasErrorCode(com.schemafy.core.project.domain.exception.WorkspaceErrorCode.LAST_ADMIN_CANNOT_LEAVE))
+        .expectErrorMatches(DomainException
+            .hasErrorCode(WorkspaceErrorCode.LAST_ADMIN_CANNOT_LEAVE))
         .verify();
 
     User unchanged = findUserByIdPort.findUserById(user.id()).block();
@@ -171,8 +173,8 @@ class WithdrawUserUseCaseIntegrationTest extends ProjectDomainIntegrationSupport
 
     StepVerifier.create(withdrawUserUseCase.withdrawUser(
         new WithdrawUserCommand(user.id())))
-        .expectErrorMatches(com.schemafy.core.common.exception.DomainException
-            .hasErrorCode(com.schemafy.core.project.domain.exception.WorkspaceErrorCode.LAST_ADMIN_CANNOT_LEAVE))
+        .expectErrorMatches(DomainException
+            .hasErrorCode(WorkspaceErrorCode.LAST_ADMIN_CANNOT_LEAVE))
         .verify();
 
     User unchanged = findUserByIdPort.findUserById(user.id()).block();

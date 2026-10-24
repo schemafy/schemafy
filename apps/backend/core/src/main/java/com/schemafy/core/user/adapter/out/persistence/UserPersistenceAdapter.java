@@ -8,8 +8,8 @@ import com.schemafy.core.user.application.port.out.ExistsUserByEmailPort;
 import com.schemafy.core.user.application.port.out.FindUserByEmailPort;
 import com.schemafy.core.user.application.port.out.FindUserByIdPort;
 import com.schemafy.core.user.application.port.out.FindUsersByIdsPort;
-import com.schemafy.core.user.application.port.out.UpdateUserPort;
 import com.schemafy.core.user.application.port.out.UpdateUserPasswordPort;
+import com.schemafy.core.user.application.port.out.UpdateUserPort;
 import com.schemafy.core.user.domain.User;
 
 import lombok.RequiredArgsConstructor;

@@ -62,8 +62,8 @@ class WithdrawUserService implements WithdrawUserUseCase {
   @Override
   public Mono<Void> withdrawUser(WithdrawUserCommand command) {
     Mono<String> withdrawal = Mono.defer(() -> discoverScope(command.userId())
-            .flatMap(scope -> withdrawInTransaction(command.userId(), scope)
-                .as(transactionalOperator::transactional)))
+        .flatMap(scope -> withdrawInTransaction(command.userId(), scope)
+            .as(transactionalOperator::transactional)))
         .retryWhen(Retry.max(MAX_SCOPE_RETRIES)
             .filter(DomainException.hasErrorCode(
                 UserErrorCode.WITHDRAWAL_CONCURRENTLY_CHANGED))

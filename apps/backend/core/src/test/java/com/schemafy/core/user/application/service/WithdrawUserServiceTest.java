@@ -11,6 +11,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InOrder;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
+import org.mockito.Mockito;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import com.schemafy.core.common.exception.DomainException;
@@ -184,7 +185,7 @@ class WithdrawUserServiceTest {
     verify(invitationPort).cancelPendingByInvitedEmail(user.email());
     verify(revokeMcpTokenPort).revokeAllMcpTokensByUserId(eq(user.id()), any());
     verify(updateUserPort).updateUser(any(User.class));
-    verify(authTokenPort, org.mockito.Mockito.times(2)).delete(any(), eq(user.email()));
+    verify(authTokenPort, Mockito.times(2)).delete(any(), eq(user.email()));
   }
 
   @Test
@@ -247,7 +248,7 @@ class WithdrawUserServiceTest {
             UserErrorCode.WITHDRAWAL_CONCURRENTLY_CHANGED))
         .verify();
 
-    verify(workspacePort, org.mockito.Mockito.times(4))
+    verify(workspacePort, Mockito.times(4))
         .findByIdAndNotDeletedForUpdate(workspace.getId());
     verify(findUserByIdPort, never()).findUserByIdForUpdate(any());
     verify(updateUserPort, never()).updateUser(any());
@@ -274,7 +275,7 @@ class WithdrawUserServiceTest {
         .verifyComplete();
 
     verify(projectPort).findByIdAndNotDeletedForUpdate(project.getId());
-    verify(findUserByIdPort, org.mockito.Mockito.times(2))
+    verify(findUserByIdPort, Mockito.times(2))
         .findUserByIdForUpdate(user.id());
     verify(updateUserPort).updateUser(any(User.class));
     verify(invitationPort).cancelPendingByInvitedBy(user.id());
