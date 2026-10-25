@@ -127,7 +127,7 @@ class WithdrawUserService implements WithdrawUserUseCase {
 
   private Mono<Void> lockProjects(List<String> projectIds) {
     return Flux.fromIterable(projectIds)
-        .concatMap(projectId -> projectPort.findByIdAndNotDeletedForUpdate(
+        .concatMap(projectId -> projectPort.lockByIdAndNotDeletedForUpdate(
             projectId)
             .switchIfEmpty(Mono.error(new DomainException(
                 UserErrorCode.WITHDRAWAL_CONCURRENTLY_CHANGED))))

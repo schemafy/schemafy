@@ -40,11 +40,6 @@ public class ProjectPersistenceAdapter
   }
 
   @Override
-  public Mono<Project> findByIdAndNotDeletedForUpdate(String projectId) {
-    return projectRepository.findWithExclusiveLockByIdAndDeletedAtIsNull(projectId);
-  }
-
-  @Override
   public Mono<Long> updateIfActive(String projectId, String name,
       String description) {
     return projectRepository.updateIfActive(projectId, name, description);

@@ -157,8 +157,8 @@ class WithdrawUserServiceTest {
     given(projectPort
         .findByUserIdAndWorkspaceMembershipOrProjectMembershipAndNotDeleted(user.id()))
         .willReturn(Flux.just(project));
-    given(projectPort.findByIdAndNotDeletedForUpdate(project.getId()))
-        .willReturn(Mono.just(project));
+    given(projectPort.lockByIdAndNotDeletedForUpdate(project.getId()))
+        .willReturn(Mono.just(project.getId()));
     given(workspaceMemberPort.findByWorkspaceIdAndUserIdAndNotDeleted(
         workspace.getId(), user.id())).willReturn(Mono.just(member));
     given(workspaceMemberPort.countByWorkspaceIdAndNotDeleted(workspace.getId()))
@@ -172,12 +172,12 @@ class WithdrawUserServiceTest {
 
     verify(leaveWorkspaceUseCase).leaveWorkspace(any());
     verify(projectMemberPort).softDeleteByUserId(user.id());
-    verify(projectPort).findByIdAndNotDeletedForUpdate(project.getId());
+    verify(projectPort).lockByIdAndNotDeletedForUpdate(project.getId());
     InOrder lockOrder = inOrder(workspacePort, projectPort,
         findUserByIdPort);
     lockOrder.verify(workspacePort).findByIdAndNotDeletedForUpdate(
         workspace.getId());
-    lockOrder.verify(projectPort).findByIdAndNotDeletedForUpdate(
+    lockOrder.verify(projectPort).lockByIdAndNotDeletedForUpdate(
         project.getId());
     lockOrder.verify(findUserByIdPort)
         .findUserByIdForUpdate(user.id());
@@ -266,15 +266,15 @@ class WithdrawUserServiceTest {
             user.id()))
         .willReturn(Flux.just(project), Flux.empty(), Flux.empty(),
             Flux.empty());
-    given(projectPort.findByIdAndNotDeletedForUpdate(project.getId()))
-        .willReturn(Mono.just(project));
+    given(projectPort.lockByIdAndNotDeletedForUpdate(project.getId()))
+        .willReturn(Mono.just(project.getId()));
     given(findUserByIdPort.findUserByIdForUpdate(user.id()))
         .willReturn(Mono.just(user));
 
     StepVerifier.create(sut.withdrawUser(new WithdrawUserCommand(user.id())))
         .verifyComplete();
 
-    verify(projectPort).findByIdAndNotDeletedForUpdate(project.getId());
+    verify(projectPort).lockByIdAndNotDeletedForUpdate(project.getId());
     verify(findUserByIdPort, Mockito.times(2))
         .findUserByIdForUpdate(user.id());
     verify(updateUserPort).updateUser(any(User.class));
