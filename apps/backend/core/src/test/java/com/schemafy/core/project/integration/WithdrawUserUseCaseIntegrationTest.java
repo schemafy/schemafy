@@ -72,7 +72,8 @@ class WithdrawUserUseCaseIntegrationTest extends ProjectDomainIntegrationSupport
 
     withdrawUserUseCase.withdrawUser(new WithdrawUserCommand(user.id())).block();
 
-    assertThat(workspaceRepository.findByIdAndNotDeleted(sharedWorkspace.getId()).block())
+    assertThat(workspaceRepository
+        .findByIdAndDeletedAtIsNull(sharedWorkspace.getId()).block())
         .isNotNull();
     assertThat(projectRepository.findByIdAndDeletedAtIsNull(sharedProject.getId()).block())
         .isNotNull();
@@ -112,7 +113,8 @@ class WithdrawUserUseCaseIntegrationTest extends ProjectDomainIntegrationSupport
 
     withdrawUserUseCase.withdrawUser(new WithdrawUserCommand(user.id())).block();
 
-    assertThat(workspaceRepository.findByIdAndNotDeleted(workspace.getId()).block())
+    assertThat(workspaceRepository
+        .findByIdAndDeletedAtIsNull(workspace.getId()).block())
         .isNull();
     assertThat(projectRepository.findByIdAndDeletedAtIsNull(project.getId()).block())
         .isNull();
@@ -180,9 +182,11 @@ class WithdrawUserUseCaseIntegrationTest extends ProjectDomainIntegrationSupport
     User unchanged = findUserByIdPort.findUserById(user.id()).block();
     assertThat(unchanged.status()).isEqualTo(UserStatus.ACTIVE);
     assertThat(unchanged.deletedAt()).isNull();
-    assertThat(workspaceRepository.findByIdAndNotDeleted(soleAdminWorkspace.getId()).block())
+    assertThat(workspaceRepository
+        .findByIdAndDeletedAtIsNull(soleAdminWorkspace.getId()).block())
         .isNotNull();
-    assertThat(workspaceRepository.findByIdAndNotDeleted(sharedWorkspace.getId()).block())
+    assertThat(workspaceRepository
+        .findByIdAndDeletedAtIsNull(sharedWorkspace.getId()).block())
         .isNotNull();
     assertThat(workspaceMemberRepository.findById(soleAdminMembership.getId()).block()
         .isDeleted()).isFalse();

@@ -15,6 +15,12 @@ public interface ProjectPort {
 
   Mono<Project> findByIdAndNotDeletedForUpdate(String projectId);
 
+  Mono<Long> updateIfActive(String projectId, String name, String description);
+
+  Mono<String> lockByIdAndNotDeletedInShareMode(String projectId);
+
+  Mono<String> lockByIdAndNotDeletedForUpdate(String projectId);
+
   Flux<Project> findByWorkspaceIdAndNotDeleted(String workspaceId);
 
   Flux<Project> findByUserIdAndWorkspaceMembershipOrProjectMembershipAndNotDeleted(

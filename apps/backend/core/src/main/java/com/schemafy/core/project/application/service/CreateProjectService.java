@@ -1,7 +1,6 @@
 package com.schemafy.core.project.application.service;
 
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.reactive.TransactionalOperator;
 
 import com.schemafy.core.common.exception.DomainException;
 import com.schemafy.core.erd.vendor.application.port.out.GetDbVendorByIdPort;
@@ -25,13 +24,14 @@ import reactor.core.publisher.Mono;
 @RequiredArgsConstructor
 class CreateProjectService implements CreateProjectUseCase {
 
-  private final TransactionalOperator transactionalOperator;
   private final UlidGeneratorPort ulidGeneratorPort;
   private final GetDbVendorByIdPort getDbVendorByIdPort;
   private final ProjectPort projectPort;
   private final ProjectMemberPort projectMemberPort;
   private final ProjectAccessHelper projectAccessHelper;
   private final ProjectMembershipPropagationHelper projectMembershipPropagationHelper;
+  private final WorkspaceAccessHelper workspaceAccessHelper;
+  private final WorkspaceMutationGuard workspaceMutationGuard;
 
   @Override
   @RequireWorkspaceAccess(role = WorkspaceRole.ADMIN)
@@ -40,31 +40,35 @@ class CreateProjectService implements CreateProjectUseCase {
         .switchIfEmpty(Mono.error(
             new DomainException(VendorErrorCode.NOT_FOUND,
                 "DB Vendor not found: " + command.dbVendorId())))
-        .flatMap(dbVendor -> Mono.zip(
-            Mono.fromCallable(ulidGeneratorPort::generate),
-            Mono.fromCallable(ulidGeneratorPort::generate))
-            .flatMap(tuple -> {
-              Project project = Project.create(tuple.getT1(),
-                  command.workspaceId(), dbVendor.id(), command.name(), command.description());
-              ProjectMember adminMember = ProjectMember.create(
-                  tuple.getT2(),
-                  project.getId(),
-                  command.requesterId(),
-                  ProjectRole.ADMIN);
+        .flatMap(dbVendor -> workspaceMutationGuard.protectShared(
+            command.workspaceId(), () -> workspaceAccessHelper
+                .findWorkspaceAdminMember(command.requesterId(), command.workspaceId())
+                .then(Mono.defer(() -> Mono.zip(
+                    Mono.fromCallable(ulidGeneratorPort::generate),
+                    Mono.fromCallable(ulidGeneratorPort::generate))
+                    .flatMap(tuple -> {
+                      Project project = Project.create(tuple.getT1(),
+                          command.workspaceId(), dbVendor.id(), command.name(),
+                          command.description());
+                      ProjectMember adminMember = ProjectMember.create(
+                          tuple.getT2(),
+                          project.getId(),
+                          command.requesterId(),
+                          ProjectRole.ADMIN);
 
-              return projectPort.save(project)
-                  .flatMap(savedProject -> projectMemberPort.save(adminMember)
-                      .thenReturn(savedProject))
-                  .flatMap(savedProject -> projectMembershipPropagationHelper
-                      .propagateWorkspaceMembersToProject(
-                          savedProject.getId(),
-                          command.workspaceId(),
-                          command.requesterId())
-                      .thenReturn(savedProject))
-                  .flatMap(savedProject -> projectAccessHelper
-                      .buildProjectDetail(savedProject, command.requesterId()));
-            }))
-        .as(transactionalOperator::transactional);
+                      return projectPort.save(project)
+                          .flatMap(savedProject -> projectMemberPort.save(adminMember)
+                              .thenReturn(savedProject))
+                          .flatMap(savedProject -> projectMembershipPropagationHelper
+                              .propagateWorkspaceMembersToProject(
+                                  savedProject.getId(),
+                                  command.workspaceId(),
+                                  command.requesterId())
+                              .thenReturn(savedProject))
+                          .flatMap(savedProject -> projectAccessHelper
+                              .buildProjectDetail(savedProject,
+                                  command.requesterId()));
+                    })))));
   }
 
 }

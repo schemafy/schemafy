@@ -77,4 +77,49 @@ class WorkspacePersistenceAdapterTest {
         .verifyComplete();
   }
 
+  @Test
+  @DisplayName("updateIfActive: 활성 워크스페이스의 이름과 설명만 수정한다")
+  void updateIfActive_updatesActiveWorkspace() {
+    Workspace workspace = sut.save(Workspace.create(UlidGenerator.generate(),
+        "Before", "Description")).block();
+
+    StepVerifier.create(sut.updateIfActive(workspace.getId(), "After", "Updated"))
+        .expectNext(1L)
+        .verifyComplete();
+
+    StepVerifier.create(sut.findByIdAndNotDeleted(workspace.getId()))
+        .assertNext(updated -> {
+          assertThat(updated.getName()).isEqualTo("After");
+          assertThat(updated.getDescription()).isEqualTo("Updated");
+        })
+        .verifyComplete();
+  }
+
+  @Test
+  @DisplayName("updateIfActive: 삭제된 워크스페이스는 수정하지 않는다")
+  void updateIfActive_doesNotUpdateDeletedWorkspace() {
+    Workspace workspace = sut.save(Workspace.create(UlidGenerator.generate(),
+        "Before", "Description")).block();
+    workspace.delete();
+
+    StepVerifier.create(sut.save(workspace))
+        .expectNextCount(1)
+        .verifyComplete();
+
+    StepVerifier.create(sut.updateIfActive(workspace.getId(), "After", "Updated"))
+        .expectNext(0L)
+        .verifyComplete();
+
+    StepVerifier.create(sut.findByIdAndNotDeleted(workspace.getId()))
+        .verifyComplete();
+
+    StepVerifier.create(workspaceRepository.findById(workspace.getId()))
+        .assertNext(stored -> {
+          assertThat(stored.getName()).isEqualTo("Before");
+          assertThat(stored.getDescription()).isEqualTo("Description");
+          assertThat(stored.getDeletedAt()).isNotNull();
+        })
+        .verifyComplete();
+  }
+
 }

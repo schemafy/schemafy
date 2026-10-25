@@ -198,7 +198,8 @@ class WithdrawUserConcurrencyIntegrationTest extends ProjectHttpTestSupport {
         .getStatusAsEnum()).isEqualTo(InvitationStatus.PENDING);
     assertThat(findUserByIdPort.findUserById(user.id()).block().status())
         .isEqualTo(UserStatus.ACTIVE);
-    assertThat(workspaceRepository.findByIdAndNotDeleted(workspace.getId()).block())
+    assertThat(workspaceRepository
+        .findByIdAndDeletedAtIsNull(workspace.getId()).block())
         .isNotNull();
   }
 

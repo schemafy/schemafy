@@ -25,12 +25,25 @@ public class WorkspacePersistenceAdapter
 
   @Override
   public Mono<Workspace> findByIdAndNotDeleted(String workspaceId) {
-    return workspaceRepository.findByIdAndNotDeleted(workspaceId);
+    return workspaceRepository.findByIdAndDeletedAtIsNull(workspaceId);
+  }
+
+  @Override
+  public Mono<Workspace> findByIdAndNotDeletedInShareMode(String workspaceId) {
+    return workspaceRepository
+        .findWithSharedLockByIdAndDeletedAtIsNull(workspaceId);
   }
 
   @Override
   public Mono<Workspace> findByIdAndNotDeletedForUpdate(String workspaceId) {
-    return workspaceRepository.findByIdAndNotDeletedForUpdate(workspaceId);
+    return workspaceRepository
+        .findWithExclusiveLockByIdAndDeletedAtIsNull(workspaceId);
+  }
+
+  @Override
+  public Mono<Long> updateIfActive(String workspaceId, String name,
+      String description) {
+    return workspaceRepository.updateIfActive(workspaceId, name, description);
   }
 
   @Override

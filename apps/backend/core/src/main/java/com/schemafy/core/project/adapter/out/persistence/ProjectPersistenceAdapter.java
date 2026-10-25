@@ -41,7 +41,27 @@ public class ProjectPersistenceAdapter
 
   @Override
   public Mono<Project> findByIdAndNotDeletedForUpdate(String projectId) {
-    return projectRepository.findByIdAndDeletedAtIsNullForUpdate(projectId);
+    return projectRepository.findWithExclusiveLockByIdAndDeletedAtIsNull(projectId);
+  }
+
+  @Override
+  public Mono<Long> updateIfActive(String projectId, String name,
+      String description) {
+    return projectRepository.updateIfActive(projectId, name, description);
+  }
+
+  @Override
+  public Mono<String> lockByIdAndNotDeletedInShareMode(String projectId) {
+    return projectRepository
+        .findWithSharedLockByIdAndDeletedAtIsNull(projectId)
+        .map(Project::getId);
+  }
+
+  @Override
+  public Mono<String> lockByIdAndNotDeletedForUpdate(String projectId) {
+    return projectRepository
+        .findWithExclusiveLockByIdAndDeletedAtIsNull(projectId)
+        .map(Project::getId);
   }
 
   @Override
@@ -129,6 +149,19 @@ public class ProjectPersistenceAdapter
   @Override
   public Mono<Void> softDeleteByProjectId(String projectId) {
     return projectMemberRepository.softDeleteByProjectId(projectId);
+  }
+
+  @Override
+  public Mono<Long> softDeleteByProjectIdAndUserId(String projectId,
+      String userId) {
+    return projectMemberRepository.softDeleteByProjectIdAndUserId(projectId,
+        userId);
+  }
+
+  @Override
+  public Mono<Long> updateRoleIfActive(String projectId, String userId,
+      String role) {
+    return projectMemberRepository.updateRoleIfActive(projectId, userId, role);
   }
 
   @Override
