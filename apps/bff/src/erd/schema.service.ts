@@ -7,9 +7,13 @@ import type {
   ChangeSchemaNameRequest,
   CreateSchemaRequest,
   MutationResponse,
+  SchemaDdlExportResponse,
+  SchemaMermaidExportResponse,
   SchemaResponse,
   SchemaSnapshotsResponse,
 } from './erd.types';
+
+const SCHEMA_EXPORT_TIMEOUT_MS = 30_000;
 
 @Injectable()
 export class SchemaService {
@@ -60,6 +64,38 @@ export class SchemaService {
       await this.backendClient.client.get<SchemaSnapshotsResponse>(
         `/api/v1.0/schemas/${schemaId}/snapshots`,
         this.backendClient.getAuthConfig(authHeader),
+      );
+    return response.data;
+  }
+
+  async exportSchemaDdl(
+    schemaId: string,
+    targetDbVendor: string,
+    authHeader: string,
+  ): Promise<SchemaDdlExportResponse> {
+    const response =
+      await this.backendClient.client.get<SchemaDdlExportResponse>(
+        `/api/v1.0/schemas/${schemaId}/exports/ddl`,
+        {
+          ...this.backendClient.getAuthConfig(authHeader),
+          params: { targetDbVendor },
+          timeout: SCHEMA_EXPORT_TIMEOUT_MS,
+        },
+      );
+    return response.data;
+  }
+
+  async exportSchemaMermaid(
+    schemaId: string,
+    authHeader: string,
+  ): Promise<SchemaMermaidExportResponse> {
+    const response =
+      await this.backendClient.client.get<SchemaMermaidExportResponse>(
+        `/api/v1.0/schemas/${schemaId}/exports/mermaid`,
+        {
+          ...this.backendClient.getAuthConfig(authHeader),
+          timeout: SCHEMA_EXPORT_TIMEOUT_MS,
+        },
       );
     return response.data;
   }

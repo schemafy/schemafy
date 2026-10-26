@@ -6,6 +6,7 @@ import {
   Param,
   Patch,
   Post,
+  Query,
 } from '@nestjs/common';
 import { SchemaService } from './schema.service';
 import { AuthHeader } from '../common/decorators/auth-header.decorator';
@@ -14,6 +15,8 @@ import type { CollaborationRequestHeaders } from '../common/backend-client/backe
 import type {
   ChangeSchemaNameRequest,
   CreateSchemaRequest,
+  SchemaDdlExportResponse,
+  SchemaMermaidExportResponse,
   SchemaSnapshotsResponse,
 } from './erd.types';
 
@@ -87,5 +90,26 @@ export class SchemaController {
     @AuthHeader() authHeader: string,
   ): Promise<SchemaSnapshotsResponse> {
     return this.schemaService.getSchemaWithSnapshots(schemaId, authHeader);
+  }
+
+  @Get('schemas/:schemaId/exports/ddl')
+  async exportSchemaDdl(
+    @Param('schemaId') schemaId: string,
+    @Query('targetDbVendor') targetDbVendor: string,
+    @AuthHeader() authHeader: string,
+  ): Promise<SchemaDdlExportResponse> {
+    return this.schemaService.exportSchemaDdl(
+      schemaId,
+      targetDbVendor,
+      authHeader,
+    );
+  }
+
+  @Get('schemas/:schemaId/exports/mermaid')
+  async exportSchemaMermaid(
+    @Param('schemaId') schemaId: string,
+    @AuthHeader() authHeader: string,
+  ): Promise<SchemaMermaidExportResponse> {
+    return this.schemaService.exportSchemaMermaid(schemaId, authHeader);
   }
 }
