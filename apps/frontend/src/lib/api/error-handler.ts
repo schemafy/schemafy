@@ -20,6 +20,19 @@ const extractCode = (data: ErrorResponseData): string | undefined => {
   return data.reason;
 };
 
+export const getApiErrorMessage = (error: unknown): string => {
+  if (!isAxiosError<ErrorResponseData>(error)) {
+    return getErrorMessage('').message;
+  }
+
+  const errorData = error.response?.data;
+  if (!errorData) {
+    return getErrorMessage('NETWORK_ERROR').message;
+  }
+
+  return getErrorMessage(extractCode(errorData) ?? '').message;
+};
+
 const AUTH_REQUIRED_CODES = new Set([
   'AUTH_AUTHENTICATION_REQUIRED',
   'UNAUTHORIZED',

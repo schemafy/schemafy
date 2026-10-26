@@ -15,6 +15,7 @@ import {
   type SchemaExportResult,
   useSchemaExport,
 } from '@/features/export';
+import { getApiErrorMessage } from '@/lib/api';
 
 interface ExportContentsProps {
   schemaId: string;
@@ -31,6 +32,7 @@ export const ExportContents = ({
   const [request, setRequest] = useState<SchemaExportRequest | null>(null);
   const [result, setResult] = useState<SchemaExportResult | null>(null);
   const [status, setStatus] = useState<ExportStatus>('idle');
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const controllerRef = useRef<AbortController | null>(null);
   const exportMutation = useSchemaExport();
 
@@ -54,34 +56,41 @@ export const ExportContents = ({
       });
 
       if (controllerRef.current !== controller) return;
+      controllerRef.current = null;
       setResult(exportResult);
       setStatus('success');
-    } catch {
+    } catch (error) {
       if (controllerRef.current !== controller || controller.signal.aborted) {
         return;
       }
+      controllerRef.current = null;
+      setErrorMessage(getApiErrorMessage(error));
       setStatus('error');
     }
   };
 
-  const handleExport = () => {
+  const startExport = (exportRequest: SchemaExportRequest) => {
     if (status === 'loading') return;
 
-    const exportRequest: SchemaExportRequest = {
-      schemaId,
-      schemaName,
-      format: exportFormat,
-    };
     const controller = new AbortController();
 
     controllerRef.current?.abort();
     controllerRef.current = controller;
     setRequest(exportRequest);
     setResult(null);
+    setErrorMessage(null);
     setStatus('loading');
-    setIsDropdownOpen(false);
     setIsModalOpen(true);
     void executeExport(exportRequest, controller);
+  };
+
+  const handleExport = () => {
+    setIsDropdownOpen(false);
+    startExport({ schemaId, schemaName, format: exportFormat });
+  };
+
+  const handleRetry = () => {
+    if (request) startExport(request);
   };
 
   const closeModal = () => {
@@ -91,6 +100,7 @@ export const ExportContents = ({
     setIsModalOpen(false);
     setRequest(null);
     setResult(null);
+    setErrorMessage(null);
     setStatus('idle');
   };
 
@@ -146,6 +156,8 @@ export const ExportContents = ({
         request={request}
         result={result}
         status={status}
+        errorMessage={errorMessage}
+        onRetry={handleRetry}
       />
     </>
   );
