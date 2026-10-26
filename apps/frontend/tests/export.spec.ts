@@ -1,0 +1,372 @@
+import { expect, test, type Page, type Route } from '@playwright/test';
+import { readFile } from 'node:fs/promises';
+
+const PROJECT_ID = 'project-export-test';
+const SCHEMA_ID = 'schema-export-test';
+const SCHEMA_NAME = 'orders:/2026*?';
+const DDL_CODE = 'CREATE TABLE `orders` (\n  `id` BIGINT NOT NULL\n);';
+const MERMAID_CODE = 'erDiagram\n  ORDERS {\n    BIGINT id PK\n  }';
+
+const corsHeaders = {
+  'access-control-allow-origin': 'http://localhost:3000',
+  'access-control-allow-credentials': 'true',
+  'access-control-allow-headers': 'authorization, content-type',
+  'access-control-allow-methods': 'GET, POST, PUT, PATCH, DELETE, OPTIONS',
+  'access-control-expose-headers': 'authorization',
+};
+
+const fulfillJson = async (
+  route: Route,
+  body: unknown,
+  status = 200,
+  headers: Record<string, string> = {},
+) => {
+  await route.fulfill({
+    status,
+    contentType: 'application/json',
+    headers: { ...corsHeaders, ...headers },
+    body: JSON.stringify(body),
+  });
+};
+
+type ExportHandler = (route: Route) => Promise<void> | void;
+
+interface CanvasMockOptions {
+  schemaName?: string;
+}
+
+const openCanvas = async (
+  page: Page,
+  handleExport: ExportHandler,
+  { schemaName = SCHEMA_NAME }: CanvasMockOptions = {},
+) => {
+  await page.routeWebSocket('**/ws/collaboration**', () => {});
+
+  await page.route('**/api/v1.0/**', async (route) => {
+    const request = route.request();
+    const { pathname } = new URL(request.url());
+
+    if (request.method() === 'OPTIONS') {
+      await route.fulfill({ status: 204, headers: corsHeaders });
+      return;
+    }
+
+    if (pathname.endsWith('/users/refresh')) {
+      await fulfillJson(route, {}, 200, {
+        authorization: 'Bearer export-test-token',
+      });
+      return;
+    }
+
+    if (pathname.endsWith('/users')) {
+      await fulfillJson(route, {
+        id: 'viewer-user',
+        email: 'viewer@example.com',
+        name: 'Export Viewer',
+      });
+      return;
+    }
+
+    if (pathname.endsWith(`/projects/${PROJECT_ID}`)) {
+      await fulfillJson(route, {
+        id: PROJECT_ID,
+        workspaceId: 'workspace-export-test',
+        dbVendorId: 1,
+        name: 'Export Project',
+        createdAt: '2026-01-01T00:00:00Z',
+        updatedAt: '2026-01-01T00:00:00Z',
+        currentUserRole: 'VIEWER',
+      });
+      return;
+    }
+
+    if (pathname.endsWith(`/projects/${PROJECT_ID}/schemas`)) {
+      await fulfillJson(route, [
+        {
+          id: SCHEMA_ID,
+          projectId: PROJECT_ID,
+          name: schemaName,
+          charset: 'utf8mb4',
+          collation: 'utf8mb4_0900_ai_ci',
+          currentRevision: 73,
+        },
+      ]);
+      return;
+    }
+
+    if (pathname.endsWith(`/schemas/${SCHEMA_ID}/snapshots`)) {
+      await fulfillJson(route, { currentRevision: 73, snapshots: {} });
+      return;
+    }
+
+    if (pathname.endsWith(`/schemas/${SCHEMA_ID}/memos-with-comments`)) {
+      await fulfillJson(route, []);
+      return;
+    }
+
+    if (pathname.includes(`/schemas/${SCHEMA_ID}/exports/`)) {
+      await handleExport(route);
+      return;
+    }
+
+    await route.abort('failed');
+  });
+
+  await page.goto(`/project/${PROJECT_ID}`);
+  await expect(
+    page.getByRole('button', { name: 'Export', exact: true }),
+  ).toBeVisible();
+};
+
+const openExportMenu = async (page: Page) => {
+  await page.getByRole('button', { name: 'Export', exact: true }).click();
+  return page.getByRole('button', { name: 'Export', exact: true }).last();
+};
+
+test('DDL과 Mermaid를 요청하고 원문을 복사·다운로드한다', async ({ page }) => {
+  const requestedUrls: string[] = [];
+  let releaseDdl!: () => void;
+  const ddlGate = new Promise<void>((resolve) => {
+    releaseDdl = resolve;
+  });
+
+  await page.addInitScript(() => {
+    Object.defineProperty(navigator, 'clipboard', {
+      configurable: true,
+      value: {
+        writeText: async (text: string) => {
+          (window as Window & { __copiedExport?: string }).__copiedExport =
+            text;
+        },
+      },
+    });
+  });
+
+  await openCanvas(page, async (route) => {
+    const url = route.request().url();
+    requestedUrls.push(url);
+
+    if (new URL(url).pathname.endsWith('/exports/ddl')) {
+      await ddlGate;
+      await fulfillJson(route, {
+        schemaId: SCHEMA_ID,
+        currentRevision: 73,
+        targetDbVendor: 'mysql',
+        ddl: DDL_CODE,
+      });
+      return;
+    }
+
+    await fulfillJson(route, {
+      schemaId: SCHEMA_ID,
+      currentRevision: 73,
+      mermaid: MERMAID_CODE,
+    });
+  });
+
+  let exportAction = await openExportMenu(page);
+  await expect(page.getByRole('radio', { name: 'MySQL DDL' })).toBeChecked();
+  await expect(page.getByRole('radio', { name: 'Mermaid' })).toBeVisible();
+  await expect(page.getByRole('radio', { name: 'PNG' })).toHaveCount(0);
+  await expect(page.getByRole('radio', { name: 'SVG' })).toHaveCount(0);
+
+  await exportAction.dblclick();
+  const dialog = page.getByRole('dialog');
+  await expect(dialog).toContainText('Generating export...');
+  await expect.poll(() => requestedUrls.length).toBe(1);
+  expect(new URL(requestedUrls[0]).pathname).toBe(
+    `/api/v1.0/schemas/${SCHEMA_ID}/exports/ddl`,
+  );
+  expect(new URL(requestedUrls[0]).searchParams.get('targetDbVendor')).toBe(
+    'mysql',
+  );
+
+  releaseDdl();
+  await expect(dialog).toContainText(DDL_CODE);
+  expect(requestedUrls).toHaveLength(1);
+  await expect(dialog).toContainText(SCHEMA_NAME);
+  await expect(dialog).not.toContainText('73');
+
+  await dialog.getByRole('button', { name: 'Copy' }).click();
+  await expect(dialog.getByRole('button', { name: 'Copied' })).toBeVisible();
+  await expect
+    .poll(() =>
+      page.evaluate(
+        () => (window as Window & { __copiedExport?: string }).__copiedExport,
+      ),
+    )
+    .toBe(DDL_CODE);
+
+  const ddlDownloadPromise = page.waitForEvent('download');
+  await dialog.getByRole('button', { name: 'Download' }).click();
+  const ddlDownload = await ddlDownloadPromise;
+  expect(ddlDownload.suggestedFilename()).toBe('orders--2026--.sql');
+  expect(await readFile(await ddlDownload.path(), 'utf8')).toBe(DDL_CODE);
+  await expect(dialog).toBeVisible();
+
+  await dialog.getByRole('button', { name: 'Close' }).click();
+  exportAction = await openExportMenu(page);
+  await page.getByRole('radio', { name: 'Mermaid' }).click();
+  await exportAction.click();
+
+  await expect(dialog).toContainText(MERMAID_CODE);
+  await expect.poll(() => requestedUrls.length).toBe(2);
+  expect(new URL(requestedUrls[1]).pathname).toBe(
+    `/api/v1.0/schemas/${SCHEMA_ID}/exports/mermaid`,
+  );
+  expect(new URL(requestedUrls[1]).search).toBe('');
+
+  const mermaidDownloadPromise = page.waitForEvent('download');
+  await dialog.getByRole('button', { name: 'Download' }).click();
+  const mermaidDownload = await mermaidDownloadPromise;
+  expect(mermaidDownload.suggestedFilename()).toBe('orders--2026--.mmd');
+  expect(await readFile(await mermaidDownload.path(), 'utf8')).toBe(
+    MERMAID_CODE,
+  );
+});
+
+test('로딩 중 닫으면 요청과 모달 상태를 초기화하고 형식은 유지한다', async ({
+  page,
+}) => {
+  const pendingRoutes: Route[] = [];
+  let exportCount = 0;
+
+  await openCanvas(page, async (route) => {
+    exportCount += 1;
+    if (exportCount === 1) {
+      await fulfillJson(route, {
+        schemaId: SCHEMA_ID,
+        currentRevision: 73,
+        mermaid: 'previous export result',
+      });
+      return;
+    }
+
+    pendingRoutes.push(route);
+  });
+
+  let exportAction = await openExportMenu(page);
+  await page.getByRole('radio', { name: 'Mermaid' }).click();
+  await exportAction.click();
+
+  const dialog = page.getByRole('dialog');
+  await expect(dialog).toContainText('previous export result');
+
+  await dialog.getByRole('button', { name: 'Close' }).click();
+  exportAction = await openExportMenu(page);
+  await expect(page.getByRole('radio', { name: 'Mermaid' })).toBeChecked();
+  await exportAction.click();
+
+  await expect(dialog).toContainText('Generating export...');
+  await expect(dialog).not.toContainText('previous export result');
+  await expect.poll(() => pendingRoutes.length).toBe(1);
+
+  const abortedRequest = page.waitForEvent('requestfailed', {
+    predicate: (request) =>
+      new URL(request.url()).pathname.endsWith('/exports/mermaid'),
+  });
+  await page.keyboard.press('Escape');
+  await expect(dialog).not.toBeVisible();
+  expect((await abortedRequest).failure()?.errorText).toBeTruthy();
+
+  exportAction = await openExportMenu(page);
+  await exportAction.click();
+  await expect(dialog).toContainText('Generating export...');
+  await expect.poll(() => pendingRoutes.length).toBe(2);
+
+  await fulfillJson(pendingRoutes[1], {
+    schemaId: SCHEMA_ID,
+    currentRevision: 74,
+    mermaid: MERMAID_CODE,
+  });
+  await expect(dialog).toContainText(MERMAID_CODE);
+});
+
+test('빈 스키마 이름은 기본 파일명으로 다운로드한다', async ({ page }) => {
+  await openCanvas(
+    page,
+    (route) =>
+      fulfillJson(route, {
+        schemaId: SCHEMA_ID,
+        currentRevision: 73,
+        targetDbVendor: 'mysql',
+        ddl: DDL_CODE,
+      }),
+    { schemaName: '' },
+  );
+
+  const exportAction = await openExportMenu(page);
+  await exportAction.click();
+
+  const dialog = page.getByRole('dialog');
+  await expect(dialog).toContainText(DDL_CODE);
+  const downloadPromise = page.waitForEvent('download');
+  await dialog.getByRole('button', { name: 'Download' }).click();
+  expect((await downloadPromise).suggestedFilename()).toBe('schema.sql');
+});
+
+test('공통 오류를 표시하고 같은 요청을 Retry한다', async ({ page }) => {
+  const requestedUrls: string[] = [];
+  const errors = [
+    {
+      code: 'DDL_INVALID_VALUE',
+      message:
+        'This schema cannot be exported. Check the table and column settings.',
+    },
+    {
+      code: 'DDL_UNSUPPORTED_VENDOR',
+      message: 'DDL export is not supported for this database.',
+    },
+    {
+      code: 'DDL_TABLE_NOT_FOUND',
+      message:
+        'A table required for export could not be found. Refresh and try again.',
+    },
+    {
+      code: 'DDL_COLUMN_NOT_FOUND',
+      message:
+        'A column required for export could not be found. Refresh and try again.',
+    },
+  ];
+
+  await openCanvas(page, async (route) => {
+    requestedUrls.push(route.request().url());
+    const error = errors[requestedUrls.length - 1];
+
+    if (error) {
+      await fulfillJson(
+        route,
+        {
+          code: error.code,
+          category: 'USER_FEEDBACK',
+        },
+        400,
+      );
+      return;
+    }
+
+    await fulfillJson(route, {
+      schemaId: SCHEMA_ID,
+      currentRevision: 73,
+      targetDbVendor: 'mysql',
+      ddl: DDL_CODE,
+    });
+  });
+
+  const dialog = page.getByRole('dialog');
+  for (const [index, error] of errors.entries()) {
+    const exportAction = await openExportMenu(page);
+    await exportAction.click();
+    await expect(dialog).toContainText(error.message);
+
+    if (index < errors.length - 1) {
+      await dialog.getByRole('button', { name: 'Close' }).click();
+    }
+  }
+
+  await dialog.getByRole('button', { name: 'Retry' }).click();
+  await expect(dialog).toContainText(DDL_CODE);
+
+  expect(requestedUrls).toHaveLength(errors.length + 1);
+  expect(requestedUrls.at(-1)).toBe(requestedUrls.at(-2));
+});
