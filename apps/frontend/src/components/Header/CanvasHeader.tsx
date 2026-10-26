@@ -5,20 +5,17 @@ import { ExportContents } from './contents/ExportContents';
 import { ShareContents } from './contents/ShareContents';
 import { SettingsContents } from './contents/SettingsContents';
 import { useLogout } from '@/features/auth';
-import { useParams } from '@tanstack/react-router';
 import { LogOut } from 'lucide-react';
 import { observer } from 'mobx-react-lite';
 import { collaborationStore } from '@/store/collaboration.store';
+import { useSelectedSchema } from '@/features/drawing/contexts';
 
 const MAX_VISIBLE_AVATARS = 4;
 
 export const CanvasHeader = observer(() => {
-  const params = useParams({
-    strict: false,
-    shouldThrow: false,
-  });
-  const projectId = params?.projectId ?? '';
   const handleLogout = useLogout();
+  const { projectId, selectedSchemaId, selectedSchemaName } =
+    useSelectedSchema();
 
   const participants = collaborationStore.activeParticipants;
   const visibleParticipants = participants.slice(0, MAX_VISIBLE_AVATARS);
@@ -26,7 +23,10 @@ export const CanvasHeader = observer(() => {
 
   return (
     <div className="flex min-w-0 items-center gap-1 sm:gap-4">
-      <ExportContents />
+      <ExportContents
+        schemaId={selectedSchemaId}
+        schemaName={selectedSchemaName}
+      />
       <ShareContents projectId={projectId} />
       <SettingsContents />
       <Button

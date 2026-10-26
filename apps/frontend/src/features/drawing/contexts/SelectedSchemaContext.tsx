@@ -119,6 +119,11 @@ export const SelectedSchemaProvider = ({
     return selectedSchema?.id ?? schemas[0].id;
   }, [schemas, selectedSchemaId]);
 
+  const activeSchema = useMemo(
+    () => schemas?.find((schema) => schema.id === activeSchemaId) ?? null,
+    [activeSchemaId, schemas],
+  );
+
   useEffect(() => {
     if (isSchemasLoading || !schemas) return;
 
@@ -152,9 +157,10 @@ export const SelectedSchemaProvider = ({
       projectId,
       dbVendorId,
       selectedSchemaId: activeSchemaId as string,
+      selectedSchemaName: activeSchema?.name ?? '',
       setSelectedSchemaId,
     }),
-    [projectId, dbVendorId, activeSchemaId, setSelectedSchemaId],
+    [projectId, dbVendorId, activeSchemaId, activeSchema, setSelectedSchemaId],
   );
 
   if (!activeSchemaId && (isSchemasError || isCreateSchemaError)) {

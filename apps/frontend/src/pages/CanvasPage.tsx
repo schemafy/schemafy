@@ -20,7 +20,7 @@ import { useNavigate, useParams } from '@tanstack/react-router';
 import { ReactFlowProvider } from '@xyflow/react';
 import { useEffect } from 'react';
 import axios from 'axios';
-import { LoadingState } from '@/components';
+import { AppLayout, LoadingState } from '@/components';
 import { NotFoundPage } from './NotFoundPage';
 import { useProject } from '@/features/project/hooks/useProject';
 import { getRoleLevel } from '@/features/project/utils/role';
@@ -175,12 +175,14 @@ export const CanvasPage = () => {
         projectId={projectId}
         dbVendorId={project.dbVendorId}
       >
-        <MemoProvider>
-          <CanvasContent canEditProject={canEditProject} />
-          <div className="fixed bottom-4 right-4 z-50">
-            <ConnectionStatusIndicator />
-          </div>
-        </MemoProvider>
+        <AppLayout isCanvasPage>
+          <MemoProvider>
+            <CanvasContent canEditProject={canEditProject} />
+            <div className="fixed bottom-4 right-4 z-50">
+              <ConnectionStatusIndicator />
+            </div>
+          </MemoProvider>
+        </AppLayout>
       </SelectedSchemaProvider>
     </ReactFlowProvider>
   );
