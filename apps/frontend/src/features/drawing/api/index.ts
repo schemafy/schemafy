@@ -5,3 +5,4 @@ export * from './column.api';
 export * from './index-entity.api';
 export * from './constraint.api';
 export * from './relationship.api';
+export * from './operation.api';
