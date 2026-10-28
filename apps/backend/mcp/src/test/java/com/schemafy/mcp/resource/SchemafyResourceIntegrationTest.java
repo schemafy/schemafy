@@ -116,6 +116,8 @@ import com.schemafy.core.project.domain.Workspace;
 import com.schemafy.core.project.domain.WorkspaceMember;
 import com.schemafy.core.project.domain.WorkspaceRole;
 import com.schemafy.core.project.domain.exception.ProjectErrorCode;
+import com.schemafy.core.user.application.port.in.GetUserByIdUseCase;
+import com.schemafy.core.user.domain.User;
 import com.schemafy.mcp.common.security.McpRateLimiter;
 import com.schemafy.mcp.common.security.McpSecurityAuditLogger;
 import com.schemafy.mcp.common.security.McpSecurityProperties;
@@ -821,6 +823,14 @@ class SchemafyResourceIntegrationTest {
     @Primary
     McpTokenRevocationCache tokenRevocationCache() {
       return tokenId -> Mono.just(false);
+    }
+
+    @Bean
+    @Primary
+    GetUserByIdUseCase getUserByIdUseCase() {
+      return query -> "user-1".equals(query.userId())
+          ? Mono.just(User.signUp("user-1", "user-1@example.com", "Test User", "encoded"))
+          : Mono.empty();
     }
 
     @Bean

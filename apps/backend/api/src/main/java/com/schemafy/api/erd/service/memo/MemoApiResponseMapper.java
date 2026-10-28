@@ -2,12 +2,15 @@ package com.schemafy.api.erd.service.memo;
 
 import org.springframework.stereotype.Component;
 
+import com.schemafy.api.common.constant.UserDisplayConstants;
 import com.schemafy.api.erd.controller.dto.response.MemoCommentResponse;
 import com.schemafy.api.erd.controller.dto.response.MemoResponse;
 import com.schemafy.api.user.controller.dto.response.UserSummaryResponse;
 import com.schemafy.core.common.json.JsonObjectMetadataConverter;
 import com.schemafy.core.erd.memo.domain.Memo;
 import com.schemafy.core.erd.memo.domain.MemoComment;
+import com.schemafy.core.user.domain.User;
+import com.schemafy.core.user.domain.UserStatus;
 
 import lombok.RequiredArgsConstructor;
 
@@ -16,6 +19,13 @@ import lombok.RequiredArgsConstructor;
 public class MemoApiResponseMapper {
 
   private final JsonObjectMetadataConverter jsonObjectMetadataConverter;
+
+  public UserSummaryResponse toUserSummaryResponse(User user) {
+    String name = user.status() == UserStatus.INACTIVE
+        ? UserDisplayConstants.WITHDRAWN_USER_LABEL
+        : user.name();
+    return new UserSummaryResponse(user.id(), name);
+  }
 
   public MemoResponse toMemoResponse(Memo memo, UserSummaryResponse author) {
     return new MemoResponse(

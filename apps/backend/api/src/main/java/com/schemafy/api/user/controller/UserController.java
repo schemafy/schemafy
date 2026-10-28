@@ -1,19 +1,25 @@
 package com.schemafy.api.user.controller;
 
+import java.time.Duration;
+
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import com.schemafy.api.collaboration.service.SessionRegistry;
 import com.schemafy.api.common.constant.ApiPath;
 import com.schemafy.api.common.security.jwt.JwtTokenIssuer;
 import com.schemafy.api.common.security.principal.AuthenticatedUser;
 import com.schemafy.api.user.controller.dto.response.UserInfoResponse;
 import com.schemafy.core.user.application.port.in.GetUserByIdQuery;
 import com.schemafy.core.user.application.port.in.GetUserByIdUseCase;
+import com.schemafy.core.user.application.port.in.WithdrawUserCommand;
+import com.schemafy.core.user.application.port.in.WithdrawUserUseCase;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -26,7 +32,9 @@ import reactor.core.publisher.Mono;
 public class UserController {
 
   private final GetUserByIdUseCase getUserByIdUseCase;
+  private final WithdrawUserUseCase withdrawUserUseCase;
   private final JwtTokenIssuer jwtTokenIssuer;
+  private final SessionRegistry sessionRegistry;
 
   @GetMapping("/users")
   public Mono<ResponseEntity<UserInfoResponse>> getMyInfo(
@@ -53,6 +61,23 @@ public class UserController {
     return Mono.just(ResponseEntity.ok()
         .headers(jwtTokenIssuer.expireTokens())
         .build());
+  }
+
+  @DeleteMapping("/users/me")
+  public Mono<ResponseEntity<Void>> withdraw(
+      @AuthenticationPrincipal AuthenticatedUser user) {
+    log.info("User withdrawal requested: userId={}", user.userId());
+    return withdrawUserUseCase.withdrawUser(new WithdrawUserCommand(user.userId()))
+        .then(sessionRegistry.closeSessionsByUserId(user.userId())
+            .timeout(Duration.ofSeconds(5))
+            .onErrorResume(error -> {
+              log.warn("Failed to close withdrawn user's sessions: userId={}",
+                  user.userId(), error);
+              return Mono.empty();
+            }))
+        .then(Mono.fromSupplier(() -> ResponseEntity.noContent()
+            .headers(jwtTokenIssuer.expireTokens())
+            .build()));
   }
 
 }

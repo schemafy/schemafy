@@ -19,6 +19,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
 import org.mockito.InOrder;
 import org.mockito.Mock;
+import org.mockito.Mockito;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.reactivestreams.Publisher;
 
@@ -29,6 +30,11 @@ import com.schemafy.api.collaboration.service.SessionRegistry;
 import com.schemafy.api.collaboration.service.model.SessionEntry;
 import com.schemafy.api.collaboration.service.presence.CollaborationPresenceProperties;
 import com.schemafy.api.common.security.principal.AuthenticatedUser;
+import com.schemafy.core.common.exception.DomainException;
+import com.schemafy.core.user.application.port.in.GetUserByIdQuery;
+import com.schemafy.core.user.application.port.in.GetUserByIdUseCase;
+import com.schemafy.core.user.domain.User;
+import com.schemafy.core.user.domain.exception.UserErrorCode;
 
 import reactor.core.Disposable;
 import reactor.core.publisher.Flux;
@@ -63,17 +69,29 @@ class CollaborationWebSocketHandlerTest {
   private ProjectAccessValidator projectAccessValidator;
 
   @Mock
+  private GetUserByIdUseCase getUserByIdUseCase;
+
+  @Mock
   private WebSocketSession session;
 
   @Mock
   private SessionEntry entry;
+
+  private void givenActiveUser() {
+    given(getUserByIdUseCase.getUserById(
+        any(GetUserByIdQuery.class)))
+        .willReturn(Mono.just(User.signUp("user-1", "test@example.com",
+            "tester", "encoded")));
+  }
 
   @Test
   @DisplayName("인증된 연결은 SESSION_READY를 JOIN보다 먼저 전송한다")
   void handle_sends_session_ready_before_join() {
     CollaborationWebSocketHandler handler = new CollaborationWebSocketHandler(
         directMessageSender, collaborationService, sessionRegistry,
-        projectAccessValidator, new CollaborationPresenceProperties());
+        projectAccessValidator, new CollaborationPresenceProperties(),
+        getUserByIdUseCase);
+    givenActiveUser();
     Authentication authentication = new UsernamePasswordAuthenticationToken(
         AuthenticatedUser.of("user-1", "tester"), null);
     HandshakeInfo handshakeInfo = new HandshakeInfo(
@@ -125,7 +143,9 @@ class CollaborationWebSocketHandlerTest {
   void handle_refreshes_presence_when_pong_received() {
     CollaborationWebSocketHandler handler = new CollaborationWebSocketHandler(
         directMessageSender, collaborationService, sessionRegistry,
-        projectAccessValidator, new CollaborationPresenceProperties());
+        projectAccessValidator, new CollaborationPresenceProperties(),
+        getUserByIdUseCase);
+    givenActiveUser();
     Authentication authentication = new UsernamePasswordAuthenticationToken(
         AuthenticatedUser.of("user-1", "tester"), null);
     HandshakeInfo handshakeInfo = new HandshakeInfo(
@@ -176,7 +196,8 @@ class CollaborationWebSocketHandlerTest {
     properties.setHeartbeatInterval(Duration.ofMillis(10));
     CollaborationWebSocketHandler handler = new CollaborationWebSocketHandler(
         directMessageSender, collaborationService, sessionRegistry,
-        projectAccessValidator, properties);
+        projectAccessValidator, properties, getUserByIdUseCase);
+    givenActiveUser();
     Authentication authentication = new UsernamePasswordAuthenticationToken(
         AuthenticatedUser.of("user-1", "tester"), null);
     HandshakeInfo handshakeInfo = new HandshakeInfo(
@@ -236,7 +257,9 @@ class CollaborationWebSocketHandlerTest {
   void handle_deniesAccessWithoutSessionSideEffects() {
     CollaborationWebSocketHandler handler = new CollaborationWebSocketHandler(
         directMessageSender, collaborationService, sessionRegistry,
-        projectAccessValidator, new CollaborationPresenceProperties());
+        projectAccessValidator, new CollaborationPresenceProperties(),
+        getUserByIdUseCase);
+    givenActiveUser();
     Authentication authentication = new UsernamePasswordAuthenticationToken(
         AuthenticatedUser.of("user-1", "tester"), null);
     HandshakeInfo handshakeInfo = new HandshakeInfo(
@@ -272,11 +295,226 @@ class CollaborationWebSocketHandlerTest {
   }
 
   @Test
+  @DisplayName("탈퇴한 사용자의 WebSocket handshake를 1008로 종료한다")
+  void handle_deniesInactiveUserWithoutSessionSideEffects() {
+    CollaborationWebSocketHandler handler = new CollaborationWebSocketHandler(
+        directMessageSender, collaborationService, sessionRegistry,
+        projectAccessValidator, new CollaborationPresenceProperties(),
+        getUserByIdUseCase);
+    given(getUserByIdUseCase.getUserById(
+        any(GetUserByIdQuery.class))).willReturn(Mono.error(
+            new DomainException(UserErrorCode.NOT_FOUND)));
+    Authentication authentication = new UsernamePasswordAuthenticationToken(
+        AuthenticatedUser.of("user-1", "tester"), null);
+    HandshakeInfo handshakeInfo = new HandshakeInfo(
+        URI.create("ws://localhost/ws/collaboration?projectId=project-1"),
+        HttpHeaders.EMPTY, Mono.just(authentication), null);
+
+    given(session.getHandshakeInfo()).willReturn(handshakeInfo);
+    given(session.getId()).willReturn("session-1");
+    given(session.close(any())).willReturn(Mono.empty());
+
+    StepVerifier.create(handler.handle(session))
+        .verifyComplete();
+
+    ArgumentCaptor<CloseStatus> closeStatus = ArgumentCaptor.forClass(
+        CloseStatus.class);
+    verify(session).close(closeStatus.capture());
+    assertThat(closeStatus.getValue().getCode()).isEqualTo(1008);
+    verifyNoInteractions(sessionRegistry, collaborationService,
+        directMessageSender, projectAccessValidator);
+  }
+
+  @Test
+  @DisplayName("상태 조회 DB 오류는 handshake에서 1011로 종료하고 세션 등록을 하지 않는다")
+  void handle_closesOnUserStateLookupFailureBeforeSessionRegistration() {
+    given(getUserByIdUseCase.getUserById(
+        any(GetUserByIdQuery.class)))
+        .willReturn(Mono.error(new IllegalStateException("database unavailable")));
+    Sinks.One<CloseStatus> closeSignal = Sinks.one();
+    CollaborationWebSocketHandler handler = new CollaborationWebSocketHandler(
+        directMessageSender, collaborationService, sessionRegistry,
+        projectAccessValidator, new CollaborationPresenceProperties(),
+        getUserByIdUseCase);
+    Authentication authentication = new UsernamePasswordAuthenticationToken(
+        AuthenticatedUser.of("user-1", "tester"), null);
+    given(session.getHandshakeInfo()).willReturn(new HandshakeInfo(
+        URI.create("ws://localhost/ws/collaboration?projectId=project-1"),
+        HttpHeaders.EMPTY, Mono.just(authentication), null));
+    given(session.close(any())).willAnswer(invocation -> {
+      closeSignal.tryEmitValue(invocation.getArgument(0));
+      return Mono.empty();
+    });
+
+    StepVerifier.create(handler.handle(session)).verifyComplete();
+
+    assertCloseCode(closeSignal, 1011);
+    verifyNoInteractions(sessionRegistry, collaborationService,
+        directMessageSender, projectAccessValidator);
+  }
+
+  @Test
+  @DisplayName("상태 조회 DB 오류는 inbound 처리 전에 1011로 종료한다")
+  void handle_closesOnUserStateLookupFailureBeforeInboundWork() {
+    given(getUserByIdUseCase.getUserById(
+        any(GetUserByIdQuery.class)))
+        .willReturn(Mono.just(User.signUp("user-1", "test@example.com",
+            "tester", "encoded")),
+            Mono.error(new IllegalStateException("database unavailable")));
+    Sinks.One<CloseStatus> closeSignal = Sinks.one();
+    CollaborationWebSocketHandler handler = givenConnectedSession(
+        Duration.ofSeconds(1), Flux.just(message(WebSocketMessage.Type.TEXT)),
+        closeSignal);
+
+    StepVerifier.create(handler.handle(session)).verifyComplete();
+
+    ArgumentCaptor<CloseStatus> closeStatus = ArgumentCaptor.forClass(
+        CloseStatus.class);
+    verify(session).close(closeStatus.capture());
+    assertThat(closeStatus.getValue().getCode()).isEqualTo(1011);
+    verify(collaborationService, never()).handleMessage(any(), any(), any());
+    verify(collaborationService, timeout(1000)).removeSession("project-1",
+        "session-1");
+  }
+
+  @Test
+  @DisplayName("유휴 세션의 상태 조회 DB 오류도 1011로 종료한다")
+  void handle_closesOnUserStateLookupFailureFromIdleMonitor() {
+    given(getUserByIdUseCase.getUserById(
+        any(GetUserByIdQuery.class)))
+        .willReturn(Mono.just(User.signUp("user-1", "test@example.com",
+            "tester", "encoded")),
+            Mono.error(new IllegalStateException("database unavailable")));
+    Sinks.One<CloseStatus> closeSignal = Sinks.one();
+    CollaborationWebSocketHandler handler = givenConnectedSession(
+        Duration.ofMillis(10), Flux.never(), closeSignal);
+
+    StepVerifier.create(handler.handle(session)).verifyComplete();
+
+    ArgumentCaptor<CloseStatus> closeStatus = ArgumentCaptor.forClass(
+        CloseStatus.class);
+    verify(session, timeout(1000)).close(closeStatus.capture());
+    assertThat(closeStatus.getValue().getCode()).isEqualTo(1011);
+    verify(collaborationService, timeout(1000)).removeSession("project-1",
+        "session-1");
+  }
+
+  @Test
+  @DisplayName("inbound 처리 중 탈퇴가 확인되면 1008로 종료하고 세션을 정리한다")
+  void handle_closesAndRemovesSessionWhenInboundDetectsInactiveUser() {
+    given(getUserByIdUseCase.getUserById(
+        any(GetUserByIdQuery.class)))
+        .willReturn(Mono.just(User.signUp("user-1", "test@example.com",
+            "tester", "encoded")),
+            Mono.error(new DomainException(UserErrorCode.NOT_FOUND)));
+    Sinks.One<CloseStatus> closeSignal = Sinks.one();
+    CollaborationWebSocketHandler handler = givenConnectedSession(
+        Duration.ofSeconds(1), Flux.just(message(WebSocketMessage.Type.TEXT)),
+        closeSignal);
+
+    StepVerifier.create(handler.handle(session)).verifyComplete();
+
+    assertCloseCode(closeSignal, 1008);
+    verify(collaborationService, never()).handleMessage(any(), any(), any());
+    verify(collaborationService, timeout(1000)).removeSession("project-1",
+        "session-1");
+  }
+
+  @Test
+  @DisplayName("유휴 상태 확인에서 탈퇴가 확인되면 1008로 종료하고 세션을 정리한다")
+  void handle_closesAndRemovesSessionWhenIdleMonitorDetectsInactiveUser() {
+    given(getUserByIdUseCase.getUserById(
+        any(GetUserByIdQuery.class)))
+        .willReturn(Mono.just(User.signUp("user-1", "test@example.com",
+            "tester", "encoded")),
+            Mono.error(new DomainException(UserErrorCode.NOT_FOUND)));
+    Sinks.One<CloseStatus> closeSignal = Sinks.one();
+    CollaborationWebSocketHandler handler = givenConnectedSession(
+        Duration.ofMillis(10), Flux.never(), closeSignal);
+
+    StepVerifier.create(handler.handle(session)).verifyComplete();
+
+    assertCloseCode(closeSignal, 1008);
+    verify(collaborationService, timeout(1000)).removeSession("project-1",
+        "session-1");
+  }
+
+  @Test
+  @DisplayName("사용자 상태 확인은 설정된 heartbeat 간격을 그대로 사용한다")
+  void handle_usesConfiguredHeartbeatIntervalForUserStateCheck() {
+    given(getUserByIdUseCase.getUserById(any(GetUserByIdQuery.class)))
+        .willReturn(Mono.just(User.signUp("user-1", "test@example.com", "tester", "encoded")),
+            Mono.error(new DomainException(UserErrorCode.NOT_FOUND)));
+    Sinks.One<CloseStatus> closeSignal = Sinks.one();
+    StepVerifier.withVirtualTime(() -> givenConnectedSession(
+        Duration.ofMinutes(5), Flux.never(), closeSignal).handle(session))
+        .expectSubscription()
+        .thenAwait(Duration.ofMinutes(5).minusMillis(1))
+        .then(() -> verify(session, never()).close(any()))
+        .thenAwait(Duration.ofMillis(1))
+        .verifyComplete();
+    assertCloseCode(closeSignal, 1008);
+    verify(collaborationService).removeSession("project-1", "session-1");
+  }
+
+  private CollaborationWebSocketHandler givenConnectedSession(
+      Duration heartbeatInterval, Flux<WebSocketMessage> inbound,
+      Sinks.One<CloseStatus> closeSignal) {
+    CollaborationPresenceProperties properties = new CollaborationPresenceProperties();
+    properties.setHeartbeatInterval(heartbeatInterval);
+    CollaborationWebSocketHandler handler = new CollaborationWebSocketHandler(directMessageSender,
+        collaborationService, sessionRegistry, projectAccessValidator,
+        properties, getUserByIdUseCase);
+    Authentication authentication = new UsernamePasswordAuthenticationToken(
+        AuthenticatedUser.of("user-1", "tester"), null);
+    HandshakeInfo handshakeInfo = new HandshakeInfo(
+        URI.create("ws://localhost/ws/collaboration?projectId=project-1"),
+        HttpHeaders.EMPTY, Mono.just(authentication), null);
+
+    given(session.getHandshakeInfo()).willReturn(handshakeInfo);
+    given(session.getId()).willReturn("session-1");
+    given(projectAccessValidator.canAccess("project-1", "user-1"))
+        .willReturn(Mono.just(true));
+    given(sessionRegistry.addSession(eq("project-1"), eq("session-1"),
+        eq(session), any())).willReturn(entry);
+    given(collaborationService.registerSession("project-1", "session-1",
+        "user-1", "tester")).willReturn(Mono.just(List.of()));
+    given(directMessageSender.sendSessionReady(entry, "session-1", List.of()))
+        .willReturn(Mono.empty());
+    given(collaborationService.notifyJoin("project-1", "session-1", "user-1",
+        "tester")).willReturn(Mono.empty());
+    given(session.receive()).willReturn(inbound.takeUntilOther(closeSignal.asMono()));
+    given(session.closeStatus()).willReturn(closeSignal.asMono());
+    given(session.close(any())).willAnswer(invocation -> {
+      closeSignal.tryEmitValue(invocation.getArgument(0));
+      return Mono.empty();
+    });
+    Mockito.lenient().when(session.pingMessage(any()))
+        .thenReturn(message(WebSocketMessage.Type.PING));
+    given(entry.outboundFlux()).willReturn(Flux.never());
+    given(session.send(any())).willAnswer(invocation -> Flux
+        .from(invocation.<Publisher<WebSocketMessage>>getArgument(0))
+        .takeUntilOther(closeSignal.asMono())
+        .then());
+    given(entry.sampledCursorFlux()).willReturn(Flux.never());
+    given(collaborationService.removeSession("project-1", "session-1"))
+        .willReturn(Mono.empty());
+    return handler;
+  }
+
+  private void assertCloseCode(Sinks.One<CloseStatus> closeSignal, int code) {
+    assertThat(closeSignal.asMono().block(Duration.ofSeconds(1)).getCode())
+        .isEqualTo(code);
+  }
+
+  @Test
   @DisplayName("접근 검증 오류는 세션 부수 효과 없이 1011로 종료한다")
   void handle_closesOnAccessValidationErrorWithoutSessionSideEffects() {
     CollaborationWebSocketHandler handler = new CollaborationWebSocketHandler(
         directMessageSender, collaborationService, sessionRegistry,
-        projectAccessValidator, new CollaborationPresenceProperties());
+        projectAccessValidator, new CollaborationPresenceProperties(),
+        getUserByIdUseCase);
+    givenActiveUser();
     Authentication authentication = new UsernamePasswordAuthenticationToken(
         AuthenticatedUser.of("user-1", "tester"), null);
     HandshakeInfo handshakeInfo = new HandshakeInfo(

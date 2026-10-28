@@ -11,11 +11,16 @@ import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Component;
 import org.springframework.util.StringUtils;
 
+import com.schemafy.core.common.exception.DomainException;
 import com.schemafy.core.mcp.application.port.in.GetMcpTokenQuery;
 import com.schemafy.core.mcp.application.port.in.GetMcpTokenUseCase;
 import com.schemafy.core.mcp.domain.McpScope;
 import com.schemafy.core.mcp.domain.McpToken;
 import com.schemafy.core.mcp.domain.McpTokenClaimSupport;
+import com.schemafy.core.user.application.port.in.GetUserByIdQuery;
+import com.schemafy.core.user.application.port.in.GetUserByIdUseCase;
+import com.schemafy.core.user.domain.UserStatus;
+import com.schemafy.core.user.domain.exception.UserErrorCode;
 
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.ExpiredJwtException;
@@ -29,6 +34,7 @@ public class McpTokenValidator {
   private final McpSecurityProperties properties;
   private final McpTokenRevocationCache revocationCache;
   private final GetMcpTokenUseCase getMcpTokenUseCase;
+  private final GetUserByIdUseCase getUserByIdUseCase;
   private final Clock clock;
   private final SecretKey secretKey;
 
@@ -36,11 +42,13 @@ public class McpTokenValidator {
       McpSecurityProperties properties,
       McpTokenRevocationCache revocationCache,
       GetMcpTokenUseCase getMcpTokenUseCase,
+      GetUserByIdUseCase getUserByIdUseCase,
       Clock clock,
       @Qualifier("mcpTokenSecretKey") SecretKey secretKey) {
     this.properties = properties;
     this.revocationCache = revocationCache;
     this.getMcpTokenUseCase = getMcpTokenUseCase;
+    this.getUserByIdUseCase = getUserByIdUseCase;
     this.clock = clock;
     this.secretKey = secretKey;
   }
@@ -105,8 +113,16 @@ public class McpTokenValidator {
   private Mono<McpTokenValidationResult> validateRegisteredToken(
       McpTokenClaims tokenClaims) {
     return getMcpTokenUseCase.getMcpToken(new GetMcpTokenQuery(tokenClaims.tokenId()))
-        .map(token -> validateRegisteredToken(tokenClaims, token))
+        .flatMap(token -> getUserByIdUseCase.getUserById(
+            new GetUserByIdQuery(tokenClaims.userId()))
+            .filter(user -> user.status() == UserStatus.ACTIVE)
+            .map(user -> validateRegisteredToken(tokenClaims, token))
+            .defaultIfEmpty(McpTokenValidationResult.failure(
+                McpSecurityError.TOKEN_INVALID)))
         .defaultIfEmpty(McpTokenValidationResult.failure(McpSecurityError.TOKEN_INVALID))
+        .onErrorResume(DomainException.hasErrorCode(UserErrorCode.NOT_FOUND),
+            error -> Mono.just(McpTokenValidationResult.failure(
+                McpSecurityError.TOKEN_INVALID)))
         .onErrorResume(error -> Mono.just(McpTokenValidationResult.failure(
             McpSecurityError.TOKEN_REGISTRY_UNAVAILABLE)));
   }

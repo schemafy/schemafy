@@ -16,6 +16,7 @@ import com.schemafy.core.user.application.port.out.FindUserByEmailPort;
 import com.schemafy.core.user.application.port.out.FindUserByIdPort;
 import com.schemafy.core.user.domain.User;
 import com.schemafy.core.user.domain.UserAuthProvider;
+import com.schemafy.core.user.domain.UserStatus;
 import com.schemafy.core.user.domain.exception.UserErrorCode;
 
 import lombok.RequiredArgsConstructor;
@@ -38,8 +39,13 @@ class LoginOrSignUpOAuthService implements LoginOrSignUpOAuthUseCase {
       LoginOrSignUpOAuthCommand command) {
     return findUserAuthProviderPort.findUserAuthProvider(
         command.provider(), command.providerUserId())
-        .flatMap(authProvider -> findUserByIdPort.findUserById(authProvider.userId()))
-        .map(user -> new LoginOrSignUpOAuthResult(user, false))
+        .flatMap(authProvider -> findUserByIdPort
+            .findUserById(authProvider.userId())
+            .switchIfEmpty(Mono.error(new DomainException(
+                UserErrorCode.LOGIN_FAILED)))
+            .flatMap(user -> user.status() == UserStatus.ACTIVE
+                ? Mono.just(new LoginOrSignUpOAuthResult(user, false))
+                : Mono.error(new DomainException(UserErrorCode.LOGIN_FAILED))))
         .switchIfEmpty(Mono.defer(() -> linkOrCreateOAuthUser(command)))
         .as(transactionalOperator::transactional);
   }
@@ -47,7 +53,9 @@ class LoginOrSignUpOAuthService implements LoginOrSignUpOAuthUseCase {
   private Mono<LoginOrSignUpOAuthResult> linkOrCreateOAuthUser(
       LoginOrSignUpOAuthCommand command) {
     return findUserByEmailPort.findUserByEmail(command.email())
-        .flatMap(existingUser -> linkExistingUserToOAuthIdempotent(existingUser, command)
+        .flatMap(existingUser -> (existingUser.status() == UserStatus.ACTIVE
+            ? linkExistingUserToOAuthIdempotent(existingUser, command)
+            : Mono.<User>error(new DomainException(UserErrorCode.LOGIN_FAILED)))
             .map(linked -> new LoginOrSignUpOAuthResult(linked, false)))
         .switchIfEmpty(Mono.defer(() -> createOAuthUser(command)));
   }
@@ -70,7 +78,10 @@ class LoginOrSignUpOAuthService implements LoginOrSignUpOAuthUseCase {
             UserErrorCode.OAUTH_LINK_INCONSISTENT)))
         .flatMap(authProvider -> findUserByIdPort.findUserById(authProvider.userId()))
         .switchIfEmpty(Mono.error(new DomainException(
-            UserErrorCode.OAUTH_LINK_INCONSISTENT)));
+            UserErrorCode.LOGIN_FAILED)))
+        .flatMap(user -> user.status() == UserStatus.ACTIVE
+            ? Mono.just(user)
+            : Mono.error(new DomainException(UserErrorCode.LOGIN_FAILED)));
   }
 
   private Mono<LoginOrSignUpOAuthResult> createOAuthUser(
@@ -85,7 +96,9 @@ class LoginOrSignUpOAuthService implements LoginOrSignUpOAuthUseCase {
             e -> new DomainException(UserErrorCode.ALREADY_EXISTS))
         .flatMap(savedUser -> createUserAuthProviderPort
             .createUserAuthProvider(newUserAuthProvider(savedUser.id(), command))
-            .thenReturn(new LoginOrSignUpOAuthResult(savedUser, true)));
+            .thenReturn(new LoginOrSignUpOAuthResult(savedUser, true)))
+        .onErrorMap(DuplicateKeyException.class,
+            e -> new DomainException(UserErrorCode.OAUTH_LINK_INCONSISTENT));
   }
 
   private UserAuthProvider newUserAuthProvider(

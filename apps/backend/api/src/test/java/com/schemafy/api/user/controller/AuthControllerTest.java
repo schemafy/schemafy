@@ -1,5 +1,6 @@
 package com.schemafy.api.user.controller;
 
+import java.time.Instant;
 import java.util.stream.Stream;
 
 import org.springframework.beans.factory.annotation.Autowired;
@@ -8,6 +9,7 @@ import org.springframework.boot.test.autoconfigure.web.reactive.AutoConfigureWeb
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.http.MediaType;
 import org.springframework.test.context.ActiveProfiles;
+import org.springframework.test.context.bean.override.mockito.MockitoSpyBean;
 import org.springframework.test.web.reactive.server.WebTestClient;
 
 import org.junit.jupiter.api.BeforeEach;
@@ -29,12 +31,18 @@ import com.schemafy.api.user.controller.dto.request.SendSignUpEmailCodeRequest;
 import com.schemafy.api.user.controller.dto.request.SignUpRequest;
 import com.schemafy.api.user.controller.dto.request.VerifySignUpEmailRequest;
 import com.schemafy.core.ulid.application.service.UlidGenerator;
+import com.schemafy.core.user.application.port.in.GetUserByIdQuery;
+import com.schemafy.core.user.application.port.in.GetUserByIdUseCase;
+import com.schemafy.core.user.domain.User;
 import com.schemafy.core.user.domain.UserStatus;
 import com.schemafy.core.user.domain.exception.UserErrorCode;
+
+import reactor.core.publisher.Mono;
 
 import static com.epages.restdocs.apispec.WebTestClientRestDocumentationWrapper.document;
 import static com.schemafy.api.user.docs.UserApiSnippets.*;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.Mockito.doReturn;
 
 @ActiveProfiles("test")
 @SpringBootTest
@@ -56,6 +64,9 @@ class AuthControllerTest extends UserHttpTestSupport {
 
   @Autowired
   private InMemoryAuthTokenTestAdapter authTokenTestAdapter;
+
+  @MockitoSpyBean
+  private GetUserByIdUseCase getUserByIdUseCase;
 
   @BeforeEach
   void setUp() {
@@ -443,11 +454,47 @@ class AuthControllerTest extends UserHttpTestSupport {
     webTestClient.post().uri(API_BASE_PATH + "/users/refresh")
         .cookie("refreshToken", refreshToken)
         .exchange()
-        .expectStatus().isNotFound()
+        .expectStatus().isUnauthorized()
         .expectBody()
-        .jsonPath("$.status").isEqualTo(404)
+        .jsonPath("$.status").isEqualTo(401)
         .jsonPath("$.reason")
-        .isEqualTo(UserErrorCode.NOT_FOUND.code());
+        .isEqualTo(AuthErrorCode.INVALID_REFRESH_TOKEN.code());
+  }
+
+  @DisplayName("refresh 사용자 상태 조회의 DB 장애는 500이며 토큰을 발급하지 않는다")
+  @Test
+  void refreshUserLookupFailureRemainsSystemError() {
+    String userId = createUser("refresh-db@example.com", "User", "password").id();
+    doReturn(Mono.error(new IllegalStateException("private database failure")))
+        .when(getUserByIdUseCase).getUserById(new GetUserByIdQuery(userId));
+
+    webTestClient.post().uri(API_BASE_PATH + "/users/refresh")
+        .cookie("refreshToken", generateRefreshToken(userId))
+        .exchange()
+        .expectStatus().isEqualTo(500)
+        .expectHeader().doesNotExist("Authorization")
+        .expectHeader().doesNotExist("Set-Cookie")
+        .expectBody().jsonPath("$.reason").isEqualTo(CommonErrorCode.SYSTEM_ERROR.code())
+        .jsonPath("$.detail").value(detail -> assertThat(detail.toString())
+            .doesNotContain("private database"));
+  }
+
+  @Test
+  @DisplayName("refresh 비활성 사용자 조회 결과는 401이며 토큰을 발급하지 않는다")
+  void refreshInactiveUserRemainsUnauthorized() {
+    String userId = createUser("refresh-inactive@example.com", "User", "password").id();
+    doReturn(Mono.just(User.signUp(
+        userId, "refresh-inactive@example.com", "User", "encoded")
+        .withdraw(Instant.now())))
+        .when(getUserByIdUseCase).getUserById(new GetUserByIdQuery(userId));
+
+    webTestClient.post().uri(API_BASE_PATH + "/users/refresh")
+        .cookie("refreshToken", generateRefreshToken(userId))
+        .exchange()
+        .expectStatus().isUnauthorized()
+        .expectHeader().doesNotExist("Authorization")
+        .expectHeader().doesNotExist("Set-Cookie")
+        .expectBody().jsonPath("$.reason").isEqualTo(AuthErrorCode.INVALID_REFRESH_TOKEN.code());
   }
 
 }

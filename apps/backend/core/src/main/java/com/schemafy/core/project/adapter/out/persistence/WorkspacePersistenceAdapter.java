@@ -53,6 +53,11 @@ public class WorkspacePersistenceAdapter
   }
 
   @Override
+  public Flux<Workspace> findByUserId(String userId) {
+    return workspaceRepository.findByUserId(userId);
+  }
+
+  @Override
   public Mono<Long> countByUserId(String userId) {
     return workspaceRepository.countByUserId(userId);
   }

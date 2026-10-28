@@ -20,7 +20,7 @@ public enum WorkspaceErrorCode implements DomainErrorCode {
   MEMBER_ALREADY_EXISTS(HttpStatus.CONFLICT),
   MEMBER_NOT_FOUND(HttpStatus.NOT_FOUND),
   MEMBER_LIMIT_EXCEEDED(HttpStatus.BAD_REQUEST),
-  LAST_ADMIN_CANNOT_LEAVE(HttpStatus.BAD_REQUEST),
+  LAST_ADMIN_CANNOT_LEAVE(HttpStatus.CONFLICT),
   LAST_ADMIN_CANNOT_CHANGE_ROLE(HttpStatus.BAD_REQUEST);
 
   private final HttpStatus status;
