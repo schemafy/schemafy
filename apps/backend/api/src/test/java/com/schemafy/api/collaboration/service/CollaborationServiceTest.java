@@ -28,6 +28,7 @@ import com.schemafy.core.collaboration.dto.event.CursorEvent;
 import com.schemafy.core.collaboration.dto.event.ErdMutatedEvent;
 import com.schemafy.core.collaboration.dto.event.ErdStateChangedEvent;
 import com.schemafy.core.collaboration.dto.event.LeaveEvent;
+import com.schemafy.core.collaboration.lock.CanvasEditLockService;
 import com.schemafy.core.collaboration.service.CollaborationEventPublisher;
 import com.schemafy.core.common.json.JsonCodec;
 import com.schemafy.core.erd.operation.domain.CommittedErdOperation;
@@ -44,6 +45,7 @@ import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.inOrder;
+import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
@@ -68,6 +70,9 @@ class CollaborationServiceTest {
   @Mock
   private ProjectPresenceStore presenceStore;
 
+  @Mock
+  private CanvasEditLockService canvasEditLockService;
+
   private ObjectMapper objectMapper;
   private CollaborationService collaborationService;
 
@@ -77,8 +82,9 @@ class CollaborationServiceTest {
     JsonCodec jsonCodec = new JsonCodec(objectMapper);
     CollaborationPayloadSerializer serializer = new CollaborationPayloadSerializer(
         jsonCodec);
+    lenient().when(canvasEditLockService.releaseAll(any(), any())).thenReturn(Mono.empty());
     collaborationService = new CollaborationService(sessionRegistry,
-        eventPublisher, serializer, presenceStore, jsonCodec,
+        eventPublisher, serializer, presenceStore, canvasEditLockService, jsonCodec,
         List.of());
   }
 

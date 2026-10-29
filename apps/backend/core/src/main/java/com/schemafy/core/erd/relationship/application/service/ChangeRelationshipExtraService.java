@@ -7,6 +7,8 @@ import java.util.Set;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
+import com.schemafy.core.collaboration.lock.CanvasEditLockTarget;
+import com.schemafy.core.collaboration.lock.CanvasExtraMutationPolicy;
 import com.schemafy.core.common.MutationResult;
 import com.schemafy.core.common.exception.DomainException;
 import com.schemafy.core.common.json.JsonObjectMetadataConverter;
@@ -35,6 +37,8 @@ public class ChangeRelationshipExtraService implements ChangeRelationshipExtraUs
   private final ChangeRelationshipExtraPort changeRelationshipExtraPort;
   private final GetRelationshipByIdPort getRelationshipByIdPort;
   private final JsonObjectMetadataConverter jsonObjectMetadataConverter;
+  private final CanvasExtraMutationPolicy canvasPolicy;
+
   private ErdMutationCoordinator erdMutationCoordinator = ErdMutationCoordinator.noop();
 
   @Autowired
@@ -52,7 +56,9 @@ public class ChangeRelationshipExtraService implements ChangeRelationshipExtraUs
             Set<String> affectedTableIds = new HashSet<>();
             affectedTableIds.add(relationship.fkTableId());
             affectedTableIds.add(relationship.pkTableId());
-            if (Objects.equals(relationship.extra(), canonicalExtra)) {
+            if (!CanvasExtraMutationPolicy.isCanvasRequest(CanvasEditLockTarget.RELATIONSHIP_CONTROL_POINTS, command
+                .extra())
+                && Objects.equals(relationship.extra(), canonicalExtra)) {
               return Mono.just(MutationResult.<Void>noop(null, affectedTableIds));
             }
             return erdMutationCoordinator.coordinate(ErdOperationType.CHANGE_RELATIONSHIP_EXTRA, command,
@@ -63,15 +69,22 @@ public class ChangeRelationshipExtraService implements ChangeRelationshipExtraUs
                     .flatMap(lockedRelationship -> {
                       Set<String> lockedAffectedTableIds = affectedTableIds(lockedRelationship.fkTableId(),
                           lockedRelationship.pkTableId());
-                      if (Objects.equals(lockedRelationship.extra(), canonicalExtra)) {
-                        return Mono.just(MutationResult.<Void>noop(null, lockedAffectedTableIds));
-                      }
-                      return changeRelationshipExtraPort
-                          .changeRelationshipExtra(lockedRelationship.id(), canonicalExtra)
-                          .thenReturn(MutationResult.<Void>of(null, lockedAffectedTableIds)
-                              .withInverse(new ChangeRelationshipExtraInverse(
-                                  lockedRelationship.id(),
-                                  lockedRelationship.extra())));
+                      Mono<String> prepared = canvasPolicy.prepare(CanvasEditLockTarget.RELATIONSHIP_CONTROL_POINTS,
+                          lockedRelationship
+                              .id(),
+                          lockedRelationship.extra(), command.extra());
+                      return prepared.defaultIfEmpty("").flatMap(value -> {
+                        String nextExtra = value.isEmpty() ? null : value;
+                        if (Objects.equals(lockedRelationship.extra(), nextExtra)) {
+                          return Mono.just(MutationResult.<Void>noop(null, lockedAffectedTableIds));
+                        }
+                        return changeRelationshipExtraPort
+                            .changeRelationshipExtra(lockedRelationship.id(), nextExtra)
+                            .thenReturn(MutationResult.<Void>of(null, lockedAffectedTableIds)
+                                .withInverse(new ChangeRelationshipExtraInverse(
+                                    lockedRelationship.id(),
+                                    lockedRelationship.extra())));
+                      });
                     }));
           });
     });

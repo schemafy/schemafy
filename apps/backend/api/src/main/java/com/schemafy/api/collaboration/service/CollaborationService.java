@@ -22,6 +22,7 @@ import com.schemafy.core.collaboration.dto.event.CollaborationInbound;
 import com.schemafy.core.collaboration.dto.event.CollaborationOutbound;
 import com.schemafy.core.collaboration.dto.event.CollaborationOutboundFactory;
 import com.schemafy.core.collaboration.dto.event.CursorEvent;
+import com.schemafy.core.collaboration.lock.CanvasEditLockService;
 import com.schemafy.core.collaboration.service.CollaborationEventPublisher;
 import com.schemafy.core.common.config.ConditionalOnRedisEnabled;
 import com.schemafy.core.common.json.JsonCodec;
@@ -40,6 +41,7 @@ public class CollaborationService {
   private final CollaborationEventPublisher eventPublisher;
   private final CollaborationPayloadSerializer payloadSerializer;
   private final ProjectPresenceStore presenceStore;
+  private final CanvasEditLockService canvasEditLockService;
   private final JsonCodec jsonCodec;
   private final Map<CollaborationEventType, InboundMessageHandler> handlers;
   private final Map<String, CursorPosition> cursorDedupeCache = new ConcurrentHashMap<>();
@@ -49,12 +51,14 @@ public class CollaborationService {
       CollaborationEventPublisher eventPublisher,
       CollaborationPayloadSerializer payloadSerializer,
       ProjectPresenceStore presenceStore,
+      CanvasEditLockService canvasEditLockService,
       JsonCodec jsonCodec,
       List<InboundMessageHandler> handlerList) {
     this.sessionRegistry = sessionRegistry;
     this.eventPublisher = eventPublisher;
     this.payloadSerializer = payloadSerializer;
     this.presenceStore = presenceStore;
+    this.canvasEditLockService = canvasEditLockService;
     this.jsonCodec = jsonCodec;
     this.handlers = handlerList.stream()
         .collect(Collectors.toMap(
@@ -135,35 +139,36 @@ public class CollaborationService {
   }
 
   public Mono<Void> removeSession(String projectId, String sessionId) {
-    return Mono.defer(() -> {
-      cursorDedupeCache.remove(sessionId);
+    return canvasEditLockService.releaseAll(projectId, sessionId)
+        .then(Mono.defer(() -> {
+          cursorDedupeCache.remove(sessionId);
 
-      Optional<SessionEntry> localEntry = sessionRegistry
-          .getSessionEntry(projectId, sessionId);
-      if (localEntry.isEmpty()) {
-        log.warn(
-            "[CollaborationService] Session not found for local removal: sessionId={}",
-            sessionId);
-      }
-      sessionRegistry.removeSession(projectId, sessionId);
+          Optional<SessionEntry> localEntry = sessionRegistry
+              .getSessionEntry(projectId, sessionId);
+          if (localEntry.isEmpty()) {
+            log.warn(
+                "[CollaborationService] Session not found for local removal: sessionId={}",
+                sessionId);
+          }
+          sessionRegistry.removeSession(projectId, sessionId);
 
-      Mono<ProjectPresenceSession> participant = presenceStore
-          .remove(projectId, sessionId)
-          .switchIfEmpty(Mono.defer(() -> Mono.justOrEmpty(localEntry)
-              .map(entry -> new ProjectPresenceSession(sessionId,
-                  entry.authInfo().getUserId(), entry.authInfo().getUserName(),
-                  System.currentTimeMillis(), System.currentTimeMillis()))));
+          Mono<ProjectPresenceSession> participant = presenceStore
+              .remove(projectId, sessionId)
+              .switchIfEmpty(Mono.defer(() -> Mono.justOrEmpty(localEntry)
+                  .map(entry -> new ProjectPresenceSession(sessionId,
+                      entry.authInfo().getUserId(), entry.authInfo().getUserName(),
+                      System.currentTimeMillis(), System.currentTimeMillis()))));
 
-      return participant
-          .flatMap(presence -> eventPublisher.publish(projectId,
-              CollaborationOutboundFactory.leave(presence.sessionId(),
-                  presence.userId(), presence.userName())))
-          .doOnError(e -> log.warn(
-              "[CollaborationService] Failed to remove presence: projectId={}, sessionId={}, error={}",
-              projectId, sessionId, e.getMessage()))
-          .onErrorResume(e -> Mono.empty())
-          .then();
-    });
+          return participant
+              .flatMap(presence -> eventPublisher.publish(projectId,
+                  CollaborationOutboundFactory.leave(presence.sessionId(),
+                      presence.userId(), presence.userName())))
+              .doOnError(e -> log.warn(
+                  "[CollaborationService] Failed to remove presence: projectId={}, sessionId={}, error={}",
+                  projectId, sessionId, e.getMessage()))
+              .onErrorResume(e -> Mono.empty())
+              .then();
+        }));
   }
 
   public Mono<Void> notifyJoin(String projectId, String sessionId,

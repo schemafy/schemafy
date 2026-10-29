@@ -9,6 +9,8 @@ import com.schemafy.core.collaboration.dto.PreviewAction;
 import com.schemafy.core.collaboration.dto.event.CollaborationInbound;
 import com.schemafy.core.collaboration.dto.event.CollaborationOutboundFactory;
 import com.schemafy.core.collaboration.dto.event.TablePositionPreviewEvent;
+import com.schemafy.core.collaboration.lock.CanvasEditLockService;
+import com.schemafy.core.collaboration.lock.CanvasEditLockTarget;
 import com.schemafy.core.collaboration.service.CollaborationEventPublisher;
 import com.schemafy.core.common.config.ConditionalOnRedisEnabled;
 
@@ -23,6 +25,7 @@ import reactor.core.publisher.Mono;
 public class TablePositionPreviewMessageHandler implements InboundMessageHandler {
 
   private final SessionRegistry sessionRegistry;
+  private final CanvasEditLockService canvasEditLockService;
   private final CollaborationEventPublisher eventPublisher;
 
   @Override
@@ -83,13 +86,19 @@ public class TablePositionPreviewMessageHandler implements InboundMessageHandler
       }
     }
 
-    return eventPublisher.publish(context.projectId(),
-        CollaborationOutboundFactory.tablePositionPreview(
-            context.sessionId(),
-            action,
-            schemaId,
-            tableId,
-            position));
+    if (!canvasEditLockService.isEnabled()) {
+      return eventPublisher.publish(context.projectId(),
+          CollaborationOutboundFactory.tablePositionPreview(context.sessionId(), action, schemaId,
+              tableId, position));
+    }
+    JsonNode payload = position;
+    return canvasEditLockService.renew(context.projectId(), CanvasEditLockTarget.TABLE_POSITION,
+        tableId, context.sessionId())
+        .filter(result -> result.isOwner())
+        .flatMap(ignored -> eventPublisher.publish(context.projectId(),
+            CollaborationOutboundFactory.tablePositionPreview(context.sessionId(), action, schemaId,
+                tableId, payload)))
+        .then();
   }
 
 }
