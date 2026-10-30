@@ -24,9 +24,12 @@ const AUTH_REQUIRED_CODES = new Set([
   'AUTH_AUTHENTICATION_REQUIRED',
   'UNAUTHORIZED',
 ]);
+const AUTH_REQUIRED_TOAST_ID = 'auth-required';
 
 export const notifyAuthRequired = () => {
-  toast.info('Please sign in to continue.');
+  toast.info('Please sign in to continue.', {
+    id: AUTH_REQUIRED_TOAST_ID,
+  });
 };
 
 const notifyAutoHandledError = (code: string | undefined, message: string) => {

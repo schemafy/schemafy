@@ -14,6 +14,7 @@ export const useCreateSchema = (projectId: string) => {
   const queryClient = useQueryClient();
 
   return useMutation({
+    mutationKey: erdKeys.createSchemaMutation(projectId),
     mutationFn: (data: CreateSchemaRequest) => createSchema(data),
     onSuccess: (result) => {
       const syncStatus = syncCommittedRevision(result.data.id, result);
