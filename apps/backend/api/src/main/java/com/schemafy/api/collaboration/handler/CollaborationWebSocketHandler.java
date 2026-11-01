@@ -69,13 +69,11 @@ public class CollaborationWebSocketHandler implements WebSocketHandler {
   private Mono<Void> handleAuthentication(WebSocketSession session,
       Authentication authentication, String projectId) {
     Object principal = authentication.getPrincipal();
-    if (!(principal instanceof AuthenticatedUser(
-            String userId, String userName
-    ))) {
+    if (!(principal instanceof AuthenticatedUser(String userId, String userName))) {
       return handleUnauthenticated(session);
     }
 
-      if (userId == null || userId.isBlank()) {
+    if (userId == null || userId.isBlank()) {
       return handleUnauthenticated(session);
     }
     if (userName == null || userName.isBlank()) {
