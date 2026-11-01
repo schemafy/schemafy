@@ -8,4 +8,6 @@ public interface FindUserByIdPort {
 
   Mono<User> findUserById(String userId);
 
+  Mono<User> findUserByIdForUpdate(String userId);
+
 }

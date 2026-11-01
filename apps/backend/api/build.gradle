@@ -33,6 +33,7 @@ repositories {
 
 ext {
 	set('snippetsDir', file("build/generated-snippets"))
+	set('testcontainers.version', '1.21.4')
 }
 
 dependencies {

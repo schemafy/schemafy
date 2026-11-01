@@ -22,6 +22,11 @@ import com.schemafy.api.collaboration.service.model.SessionEntry;
 import com.schemafy.api.collaboration.service.presence.CollaborationPresenceProperties;
 import com.schemafy.api.common.security.principal.AuthenticatedUser;
 import com.schemafy.core.common.config.ConditionalOnRedisEnabled;
+import com.schemafy.core.common.exception.DomainException;
+import com.schemafy.core.user.application.port.in.GetUserByIdQuery;
+import com.schemafy.core.user.application.port.in.GetUserByIdUseCase;
+import com.schemafy.core.user.domain.UserStatus;
+import com.schemafy.core.user.domain.exception.UserErrorCode;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -39,6 +44,7 @@ public class CollaborationWebSocketHandler implements WebSocketHandler {
   private final SessionRegistry sessionRegistry;
   private final ProjectAccessValidator projectAccessValidator;
   private final CollaborationPresenceProperties presenceProperties;
+  private final GetUserByIdUseCase getUserByIdUseCase;
 
   @Override
   public Mono<Void> handle(WebSocketSession session) {
@@ -63,12 +69,10 @@ public class CollaborationWebSocketHandler implements WebSocketHandler {
   private Mono<Void> handleAuthentication(WebSocketSession session,
       Authentication authentication, String projectId) {
     Object principal = authentication.getPrincipal();
-    if (!(principal instanceof AuthenticatedUser user)) {
+    if (!(principal instanceof AuthenticatedUser(String userId, String userName))) {
       return handleUnauthenticated(session);
     }
 
-    String userId = user.userId();
-    String userName = user.userName();
     if (userId == null || userId.isBlank()) {
       return handleUnauthenticated(session);
     }
@@ -77,7 +81,13 @@ public class CollaborationWebSocketHandler implements WebSocketHandler {
     }
 
     WebSocketAuthInfo authInfo = WebSocketAuthInfo.of(userId, userName);
-    return validateProjectAccess(session, authInfo, projectId);
+    return getUserState(userId)
+        .flatMap(state -> {
+          if (state == UserState.ACTIVE) {
+            return validateProjectAccess(session, authInfo, projectId);
+          }
+          return closeForUserState(session, state);
+        });
   }
 
   private Optional<String> extractProjectId(URI uri) {
@@ -139,8 +149,8 @@ public class CollaborationWebSocketHandler implements WebSocketHandler {
     Mono<Void> closeSignal = session.closeStatus().then();
 
     Mono<Void> inbound = session.receive()
-        .flatMap(message -> handleInboundMessage(projectId, sessionId,
-            message))
+        .flatMap(message -> handleInboundMessage(session, projectId, sessionId,
+            userId, message))
         .doOnError(error -> log.error(
             "[CollaborationWebSocketHandler] Inbound error: sessionId={}",
             sessionId, error))
@@ -169,6 +179,15 @@ public class CollaborationWebSocketHandler implements WebSocketHandler {
             sessionId, error))
         .then();
 
+    Mono<Void> userStateMonitor = Flux
+        .interval(presenceProperties.getHeartbeatInterval())
+        .takeUntilOther(closeSignal)
+        .flatMap(tick -> getUserState(userId))
+        .takeUntil(state -> state != UserState.ACTIVE)
+        .filter(state -> state != UserState.ACTIVE)
+        .flatMap(state -> closeForUserState(session, state))
+        .then();
+
     return collaborationService
         .registerSession(projectId, sessionId, userId, userName)
         .flatMap(participants -> directMessageSender
@@ -177,7 +196,7 @@ public class CollaborationWebSocketHandler implements WebSocketHandler {
                 "[CollaborationWebSocketHandler] Failed to send session ready: sessionId={}, error={}",
                 sessionId, e.getMessage()))
             .then(notifyJoin))
-        .then(Mono.when(inbound, outbound, cursorPipeline))
+        .then(Mono.when(inbound, outbound, cursorPipeline, userStateMonitor))
         .doFinally(signalType -> {
           log.info(
               "[CollaborationWebSocketHandler] WebSocket disconnected: sessionId={}, signal={}",
@@ -192,26 +211,72 @@ public class CollaborationWebSocketHandler implements WebSocketHandler {
         });
   }
 
-  private Mono<Void> handleInboundMessage(String projectId,
-      String sessionId, WebSocketMessage message) {
-    if (message.getType() == WebSocketMessage.Type.PONG) {
-      return collaborationService.refreshPresence(projectId, sessionId)
-          .doOnError(e -> log.warn(
-              "[CollaborationWebSocketHandler] Failed to refresh presence from pong: sessionId={}, error={}",
-              sessionId, e.getMessage()))
-          .onErrorResume(e -> Mono.empty());
-    }
+  private Mono<Void> handleInboundMessage(WebSocketSession session,
+      String projectId, String sessionId, String userId,
+      WebSocketMessage message) {
+    WebSocketMessage.Type messageType = message.getType();
+    // Snapshot pooled Netty payloads before the asynchronous user-state lookup.
+    String textPayload = messageType == WebSocketMessage.Type.TEXT
+        ? message.getPayloadAsText()
+        : null;
 
-    if (message.getType() != WebSocketMessage.Type.TEXT) {
-      return Mono.empty();
-    }
+    return getUserState(userId)
+        .flatMap(state -> {
+          if (state == UserState.INACTIVE) {
+            return handleUnauthenticated(session);
+          }
+          if (state == UserState.UNAVAILABLE) {
+            return handleUserStateUnavailable(session);
+          }
+          if (messageType == WebSocketMessage.Type.PONG) {
+            return collaborationService.refreshPresence(projectId, sessionId)
+                .doOnError(e -> log.warn(
+                    "[CollaborationWebSocketHandler] Failed to refresh presence from pong: sessionId={}, error={}",
+                    sessionId, e.getMessage()))
+                .onErrorResume(e -> Mono.empty());
+          }
 
-    return collaborationService
-        .handleMessage(projectId, sessionId, message.getPayloadAsText())
-        .doOnError(e -> log.warn(
-            "[CollaborationWebSocketHandler] Failed to handle message: sessionId={}, error={}",
-            sessionId, e.getMessage()))
-        .onErrorResume(e -> Mono.empty());
+          if (messageType != WebSocketMessage.Type.TEXT) {
+            return Mono.empty();
+          }
+
+          return collaborationService
+              .handleMessage(projectId, sessionId, textPayload)
+              .doOnError(e -> log.warn(
+                  "[CollaborationWebSocketHandler] Failed to handle message: sessionId={}, error={}",
+                  sessionId, e.getMessage()))
+              .onErrorResume(e -> Mono.empty());
+        });
+  }
+
+  private Mono<UserState> getUserState(String userId) {
+    return getUserByIdUseCase.getUserById(
+        new GetUserByIdQuery(userId))
+        .filter(user -> user.status() == UserStatus.ACTIVE)
+        .map(user -> UserState.ACTIVE)
+        .defaultIfEmpty(UserState.INACTIVE)
+        .onErrorResume(error -> {
+          if (DomainException.hasErrorCode(UserErrorCode.NOT_FOUND)
+              .test(error)) {
+            return Mono.just(UserState.INACTIVE);
+          }
+          log.error(
+              "[CollaborationWebSocketHandler] User status lookup failed: userId={}",
+              userId, error);
+          return Mono.just(UserState.UNAVAILABLE);
+        });
+  }
+
+  private Mono<Void> closeForUserState(WebSocketSession session,
+      UserState state) {
+    return state == UserState.UNAVAILABLE
+        ? handleUserStateUnavailable(session)
+        : handleUnauthenticated(session);
+  }
+
+  private Mono<Void> handleUserStateUnavailable(WebSocketSession session) {
+    return session.close(CloseStatus.SERVER_ERROR
+        .withReason("User status validation failed"));
   }
 
   private Mono<Void> handleUnauthenticated(WebSocketSession session) {
@@ -246,6 +311,12 @@ public class CollaborationWebSocketHandler implements WebSocketHandler {
         session.getId());
     return session.close(CloseStatus.BAD_DATA
         .withReason("projectId is required"));
+  }
+
+  private enum UserState {
+    ACTIVE,
+    INACTIVE,
+    UNAVAILABLE
   }
 
 }

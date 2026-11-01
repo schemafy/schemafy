@@ -155,6 +155,18 @@ public class UserApiSnippets extends RestDocsSnippets {
         successResponseFieldsWithNullResult());
   }
 
+  // ========== 계정 탈퇴 API ==========
+
+  public static Snippet withdrawRequestHeaders() {
+    return createRequestHeadersSnippet(authorizationHeader());
+  }
+
+  public static Snippet withdrawResponseHeaders() {
+    return createResponseHeadersSnippet(
+        headerWithName("Set-Cookie")
+            .description("만료된 accessToken 및 refreshToken 쿠키 (Max-Age=0)"));
+  }
+
   // ========== GitHub OAuth API ==========
 
   public static Snippet oauthAuthorizeResponseHeaders() {

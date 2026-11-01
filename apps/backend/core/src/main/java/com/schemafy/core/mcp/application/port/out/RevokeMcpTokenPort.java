@@ -8,4 +8,6 @@ public interface RevokeMcpTokenPort {
 
   Mono<Boolean> revokeMcpToken(String tokenId, String userId, Instant revokedAt);
 
+  Mono<Long> revokeAllMcpTokensByUserId(String userId, Instant revokedAt);
+
 }

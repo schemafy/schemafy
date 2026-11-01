@@ -40,4 +40,16 @@ public record User(String id, String email, String name, String password, UserSt
         null);
   }
 
+  public User withdraw(Instant withdrawnAt) {
+    return new User(
+        id,
+        email,
+        name,
+        password,
+        UserStatus.INACTIVE,
+        createdAt,
+        withdrawnAt,
+        withdrawnAt);
+  }
+
 }

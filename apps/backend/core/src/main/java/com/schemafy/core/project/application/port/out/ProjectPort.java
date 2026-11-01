@@ -21,6 +21,9 @@ public interface ProjectPort {
 
   Flux<Project> findByWorkspaceIdAndNotDeleted(String workspaceId);
 
+  Flux<Project> findByUserIdAndWorkspaceMembershipOrProjectMembershipAndNotDeleted(
+      String userId);
+
   Flux<Project> findByWorkspaceId(String workspaceId);
 
   Mono<Long> countByWorkspaceIdAndNotDeleted(String workspaceId);

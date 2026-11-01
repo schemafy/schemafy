@@ -1,5 +1,7 @@
 package com.schemafy.core.user.application.service;
 
+import java.time.Instant;
+
 import org.springframework.dao.DuplicateKeyException;
 import org.springframework.transaction.reactive.TransactionalOperator;
 
@@ -31,6 +33,7 @@ import reactor.test.StepVerifier;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
+import static org.mockito.BDDMockito.then;
 
 @ExtendWith(MockitoExtension.class)
 @DisplayName("OAuth 로그인 또는 회원가입 서비스")
@@ -248,6 +251,67 @@ class LoginOrSignUpOAuthServiceTest {
               .isEqualTo(UserErrorCode.ALREADY_EXISTS);
         })
         .verify();
+  }
+
+  @Test
+  @DisplayName("탈퇴한 OAuth provider 소유자는 이메일 변경으로 신규 계정을 만들지 않는다")
+  void loginOrSignUpOAuth_inactiveProviderOwner_doesNotFallbackToCreate() {
+    LoginOrSignUpOAuthCommand command = new LoginOrSignUpOAuthCommand(
+        "changed@example.com",
+        "Changed Email",
+        AuthProvider.GITHUB,
+        "github-withdrawn");
+    User withdrawn = User.signUpOAuth(
+        "withdrawn-user", "old@example.com", "Withdrawn")
+        .withdraw(Instant.parse("2026-09-12T00:00:00Z"));
+    UserAuthProvider provider = new UserAuthProvider(
+        "provider-withdrawn",
+        withdrawn.id(),
+        AuthProvider.GITHUB,
+        "github-withdrawn",
+        null,
+        null,
+        null);
+
+    given(findUserAuthProviderPort.findUserAuthProvider(
+        AuthProvider.GITHUB, "github-withdrawn"))
+        .willReturn(Mono.just(provider));
+    given(findUserByIdPort.findUserById(withdrawn.id()))
+        .willReturn(Mono.just(withdrawn));
+
+    StepVerifier.create(sut.loginOrSignUpOAuth(command))
+        .expectErrorMatches(DomainException.hasErrorCode(UserErrorCode.LOGIN_FAILED))
+        .verify();
+
+    then(findUserByEmailPort).shouldHaveNoInteractions();
+    then(createUserPort).shouldHaveNoInteractions();
+    then(createUserAuthProviderPort).shouldHaveNoInteractions();
+  }
+
+  @Test
+  @DisplayName("탈퇴한 이메일 사용자는 OAuth 자동 연동과 신규 생성을 모두 거부한다")
+  void loginOrSignUpOAuth_inactiveEmail_doesNotLinkOrCreate() {
+    LoginOrSignUpOAuthCommand command = new LoginOrSignUpOAuthCommand(
+        "withdrawn@example.com",
+        "Withdrawn",
+        AuthProvider.GITHUB,
+        "github-new");
+    User withdrawn = User.signUpOAuth(
+        "withdrawn-user", "withdrawn@example.com", "Withdrawn")
+        .withdraw(Instant.parse("2026-09-12T00:00:00Z"));
+
+    given(findUserAuthProviderPort.findUserAuthProvider(
+        AuthProvider.GITHUB, "github-new"))
+        .willReturn(Mono.empty());
+    given(findUserByEmailPort.findUserByEmail("withdrawn@example.com"))
+        .willReturn(Mono.just(withdrawn));
+
+    StepVerifier.create(sut.loginOrSignUpOAuth(command))
+        .expectErrorMatches(DomainException.hasErrorCode(UserErrorCode.LOGIN_FAILED))
+        .verify();
+
+    then(createUserPort).shouldHaveNoInteractions();
+    then(createUserAuthProviderPort).shouldHaveNoInteractions();
   }
 
 }
