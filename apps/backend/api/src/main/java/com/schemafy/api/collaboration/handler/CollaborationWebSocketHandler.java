@@ -69,13 +69,13 @@ public class CollaborationWebSocketHandler implements WebSocketHandler {
   private Mono<Void> handleAuthentication(WebSocketSession session,
       Authentication authentication, String projectId) {
     Object principal = authentication.getPrincipal();
-    if (!(principal instanceof AuthenticatedUser user)) {
+    if (!(principal instanceof AuthenticatedUser(
+            String userId, String userName
+    ))) {
       return handleUnauthenticated(session);
     }
 
-    String userId = user.userId();
-    String userName = user.userName();
-    if (userId == null || userId.isBlank()) {
+      if (userId == null || userId.isBlank()) {
       return handleUnauthenticated(session);
     }
     if (userName == null || userName.isBlank()) {
@@ -216,6 +216,12 @@ public class CollaborationWebSocketHandler implements WebSocketHandler {
   private Mono<Void> handleInboundMessage(WebSocketSession session,
       String projectId, String sessionId, String userId,
       WebSocketMessage message) {
+    WebSocketMessage.Type messageType = message.getType();
+    // Snapshot pooled Netty payloads before the asynchronous user-state lookup.
+    String textPayload = messageType == WebSocketMessage.Type.TEXT
+        ? message.getPayloadAsText()
+        : null;
+
     return getUserState(userId)
         .flatMap(state -> {
           if (state == UserState.INACTIVE) {
@@ -224,7 +230,7 @@ public class CollaborationWebSocketHandler implements WebSocketHandler {
           if (state == UserState.UNAVAILABLE) {
             return handleUserStateUnavailable(session);
           }
-          if (message.getType() == WebSocketMessage.Type.PONG) {
+          if (messageType == WebSocketMessage.Type.PONG) {
             return collaborationService.refreshPresence(projectId, sessionId)
                 .doOnError(e -> log.warn(
                     "[CollaborationWebSocketHandler] Failed to refresh presence from pong: sessionId={}, error={}",
@@ -232,12 +238,12 @@ public class CollaborationWebSocketHandler implements WebSocketHandler {
                 .onErrorResume(e -> Mono.empty());
           }
 
-          if (message.getType() != WebSocketMessage.Type.TEXT) {
+          if (messageType != WebSocketMessage.Type.TEXT) {
             return Mono.empty();
           }
 
           return collaborationService
-              .handleMessage(projectId, sessionId, message.getPayloadAsText())
+              .handleMessage(projectId, sessionId, textPayload)
               .doOnError(e -> log.warn(
                   "[CollaborationWebSocketHandler] Failed to handle message: sessionId={}, error={}",
                   sessionId, e.getMessage()))
