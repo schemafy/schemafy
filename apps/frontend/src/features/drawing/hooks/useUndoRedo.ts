@@ -3,15 +3,13 @@ import { useIsMutating } from '@tanstack/react-query';
 import { toast } from 'sonner';
 import { useSelectedSchema } from '../contexts';
 import { useUndo, useRedo } from './useOperationMutations';
-import { useErdCache } from './useErdCache';
 import { operationHistoryStore } from '@/store/operation-history.store';
 import { isKnownUndoRedoError } from '../constants/operationError';
 
 export const useUndoRedo = () => {
   const { selectedSchemaId } = useSelectedSchema();
-  const { mutate: undo } = useUndo();
-  const { mutate: redo } = useRedo();
-  const { syncAffectedTables } = useErdCache(selectedSchemaId);
+  const { mutate: undo } = useUndo(selectedSchemaId);
+  const { mutate: redo } = useRedo(selectedSchemaId);
 
   const isMutating = useIsMutating() > 0;
   const canUndo =
@@ -31,10 +29,9 @@ export const useUndoRedo = () => {
     const opId = latest.opId;
 
     undo(opId, {
-      onSuccess: async (result) => {
+      onSuccess: () => {
         operationHistoryStore.removeUndoableOpId(selectedSchemaId, opId);
         operationHistoryStore.pushRedoOpId(selectedSchemaId, opId);
-        await syncAffectedTables(result);
       },
       onError: (error) => {
         if (isKnownUndoRedoError(error)) {
@@ -42,7 +39,7 @@ export const useUndoRedo = () => {
         }
       },
     });
-  }, [selectedSchemaId, undo, syncAffectedTables, isMutating]);
+  }, [selectedSchemaId, undo, isMutating]);
 
   const handleRedo = useCallback(() => {
     if (isMutating) return;
@@ -51,9 +48,8 @@ export const useUndoRedo = () => {
     if (!opId) return;
 
     redo(opId, {
-      onSuccess: async (result) => {
+      onSuccess: () => {
         operationHistoryStore.addUndoableOpId(selectedSchemaId, opId);
-        await syncAffectedTables(result);
       },
       onError: (error) => {
         toast.error('Undo or redo failed. Please try again.');
@@ -64,7 +60,7 @@ export const useUndoRedo = () => {
         }
       },
     });
-  }, [selectedSchemaId, redo, syncAffectedTables, isMutating]);
+  }, [selectedSchemaId, redo, isMutating]);
 
   return { handleUndo, handleRedo, canUndo, canRedo };
 };
