@@ -1,4 +1,4 @@
-import { isAxiosError } from 'axios';
+import { isAxiosError, isCancel } from 'axios';
 import { toast } from 'sonner';
 import { ErrorCategory, type ApiError, type ErrorResponseData } from './types';
 import { getErrorMessage } from './error-messages';
@@ -56,7 +56,7 @@ export const handleApiError = (
 ): Promise<never> => {
   const { suppressToast = false } = options;
 
-  if (!isAxiosError<ErrorResponseData>(error)) {
+  if (isCancel(error) || !isAxiosError<ErrorResponseData>(error)) {
     return Promise.reject(error);
   }
 

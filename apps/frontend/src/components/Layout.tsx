@@ -40,7 +40,13 @@ export const Layout = () => {
   const pathname = useRouterState({
     select: (state) => state.location.pathname,
   });
-  const isCanvasPage = pathname.startsWith('/project/');
+  const isCanvasPage = useRouterState({
+    select: (state) =>
+      state.matches.some((match) => match.routeId === '/project/$projectId') &&
+      !state.matches.some(
+        (match) => match.globalNotFound || match.status === 'notFound',
+      ),
+  });
   const isWorkspacePage = pathname.startsWith('/workspace');
 
   if (isCanvasPage) return <Outlet />;

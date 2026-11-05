@@ -8,6 +8,12 @@ const { NestFactory } = require('@nestjs/core');
 const { SchemaController } = require('../dist/erd/schema.controller');
 const { SchemaService } = require('../dist/erd/schema.service');
 const {
+  HttpExceptionFilter,
+} = require('../dist/common/filters/http-exception.filter');
+const {
+  LoggingInterceptor,
+} = require('../dist/common/interceptors/logging.interceptor');
+const {
   BackendClientService,
 } = require('../dist/common/backend-client/backend-client.service');
 
@@ -20,15 +26,19 @@ test('export proxies responses and closes the backend request when the client di
     if (req.url.includes('success')) {
       res.setHeader('content-type', 'application/json');
       res.end(JSON.stringify({ schemaId: 'success', mermaid: 'erDiagram' }));
+    } else if (req.url.includes('failure')) {
+      res.writeHead(503);
+      res.end();
     }
   });
   backend.listen(0, '127.0.0.1');
   await once(backend, 'listening');
   t.after(() => new Promise((resolve) => backend.close(resolve)));
   const backendUrl = `http://127.0.0.1:${backend.address().port}`;
-  const client = new BackendClientService({
+  const config = {
     get: (key, fallback) => (key === 'BACKEND_URL' ? backendUrl : fallback),
-  });
+  };
+  const client = new BackendClientService(config);
   class TestModule {}
   Module({
     controllers: [SchemaController],
@@ -37,7 +47,18 @@ test('export proxies responses and closes the backend request when the client di
       { provide: BackendClientService, useValue: client },
     ],
   })(TestModule);
-  const app = await NestFactory.create(TestModule, { logger: false });
+  const logs = [];
+  const logger = {
+    log() {},
+    debug() {},
+    verbose() {},
+    fatal() {},
+    warn: (message) => logs.push(String(message)),
+    error: (message) => logs.push(String(message)),
+  };
+  const app = await NestFactory.create(TestModule, { logger });
+  app.useGlobalFilters(new HttpExceptionFilter(config));
+  app.useGlobalInterceptors(new LoggingInterceptor());
   await app.listen(0, '127.0.0.1');
   t.after(() => app.close());
   const base = await app.getUrl();
@@ -52,6 +73,12 @@ test('export proxies responses and closes the backend request when the client di
     schemaId: 'success',
     mermaid: 'erDiagram',
   });
+  const failure = await fetch(
+    `${base}/api/v1.0/schemas/failure/exports/mermaid`,
+    { headers },
+  );
+  assert.equal(failure.status, 503);
+  assert.ok(logs.some((message) => message.includes('Backend error: 503')));
 
   for (const format of ['ddl?targetDbVendor=mysql', 'mermaid']) {
     const received = new Promise((resolve) => {
@@ -77,5 +104,10 @@ test('export proxies responses and closes the backend request when the client di
       ),
     ]);
     assert.equal(backendRequest.res.writableFinished, false);
+    await new Promise((resolve) => setImmediate(resolve));
+    assert.equal(
+      logs.some((message) => message.includes('/schemas/pending/')),
+      false,
+    );
   }
 });

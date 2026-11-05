@@ -300,6 +300,11 @@ for (const failure of ['project', 'schema'] as const) {
 test('로딩 중 닫으면 요청과 모달 상태를 초기화하고 형식은 유지한다', async ({
   page,
 }) => {
+  await page.addInitScript(() => {
+    const reportedErrors: string[] = [];
+    Object.assign(window, { __reportedErrors: reportedErrors });
+    window.reportError = (error) => reportedErrors.push(String(error));
+  });
   const pendingRoutes: Route[] = [];
   let exportCount = 0;
 
@@ -357,6 +362,36 @@ test('로딩 중 닫으면 요청과 모달 상태를 초기화하고 형식은 
     mermaid: MERMAID_CODE,
   });
   await expect(dialog).toContainText(MERMAID_CODE);
+  const reportedErrors = await page.evaluate(
+    () =>
+      (window as Window & { __reportedErrors?: string[] }).__reportedErrors ??
+      [],
+  );
+  expect(reportedErrors.filter((error) => error.includes('canceled'))).toEqual(
+    [],
+  );
+});
+
+test('존재하지 않는 프로젝트 하위 경로도 404 레이아웃을 표시한다', async ({
+  page,
+}) => {
+  await page.route('**/api/v1.0/**', async (route) => {
+    const path = new URL(route.request().url()).pathname;
+    if (route.request().method() === 'OPTIONS')
+      return route.fulfill({ status: 204, headers: corsHeaders });
+    if (path.endsWith('/users/refresh'))
+      return fulfillJson(route, {}, 200, { authorization: 'Bearer test' });
+    if (path.endsWith('/users'))
+      return fulfillJson(route, {
+        id: 'u',
+        name: 'User',
+        email: 'u@example.com',
+      });
+    return route.abort();
+  });
+  await page.goto(`/project/${PROJECT_ID}/unknown`);
+  await expect(page.getByRole('banner')).toBeVisible();
+  await expect(page.getByRole('main')).toContainText('Page not found');
 });
 
 test('키보드로 Mermaid를 선택하고 내보낸다', async ({ page }) => {
