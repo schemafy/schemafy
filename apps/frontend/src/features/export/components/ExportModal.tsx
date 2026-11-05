@@ -10,17 +10,12 @@ import {
   LoadingSpinner,
 } from '@/components';
 import type { SchemaExportRequest, SchemaExportResult } from '../api';
+import type { SchemaExportState } from '../hooks/useSchemaExport';
 import { downloadExportFile } from '../lib';
 
-export type ExportStatus = 'idle' | 'loading' | 'success' | 'error';
-
 interface ExportModalProps {
-  open: boolean;
-  onOpenChange: (open: boolean) => void;
-  request: SchemaExportRequest | null;
-  result: SchemaExportResult | null;
-  status: ExportStatus;
-  errorMessage: string | null;
+  state: SchemaExportState | null;
+  onClose: () => void;
   onRetry: () => void;
   onCloseAutoFocus: (event: Event) => void;
 }
@@ -99,19 +94,21 @@ const ExportResult = ({ request, result }: ExportResultProps) => {
 };
 
 export const ExportModal = ({
-  open,
-  onOpenChange,
-  request,
-  result,
-  status,
-  errorMessage,
+  state,
+  onClose,
   onRetry,
   onCloseAutoFocus,
 }: ExportModalProps) => {
-  const title = request?.format === 'mermaid' ? 'Export Mermaid' : 'Export DDL';
+  const title =
+    state?.request.format === 'mermaid' ? 'Export Mermaid' : 'Export DDL';
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
+    <Dialog
+      open={state !== null}
+      onOpenChange={(open) => {
+        if (!open) onClose();
+      }}
+    >
       <DialogContent
         className="flex max-h-[80vh] max-w-3xl flex-col data-[state=closed]:animate-none"
         onCloseAutoFocus={onCloseAutoFocus}
@@ -120,7 +117,7 @@ export const ExportModal = ({
           <DialogTitle>{title}</DialogTitle>
         </DialogHeader>
 
-        {status === 'loading' && (
+        {state?.status === 'loading' && (
           <div
             className="flex min-h-48 flex-col items-center justify-center gap-3"
             role="status"
@@ -133,12 +130,12 @@ export const ExportModal = ({
           </div>
         )}
 
-        {status === 'error' && (
+        {state?.status === 'error' && (
           <div
             className="flex min-h-48 flex-col items-center justify-center gap-4 text-center font-body-sm text-schemafy-dark-gray"
             role="alert"
           >
-            <span>{errorMessage}</span>
+            <span>{state.errorMessage}</span>
             <Button variant="outline" size="sm" onClick={onRetry}>
               <RotateCcw className="h-4 w-4" />
               Retry
@@ -146,8 +143,8 @@ export const ExportModal = ({
           </div>
         )}
 
-        {status === 'success' && request && result && (
-          <ExportResult request={request} result={result} />
+        {state?.status === 'success' && (
+          <ExportResult request={state.request} result={state.result} />
         )}
       </DialogContent>
     </Dialog>

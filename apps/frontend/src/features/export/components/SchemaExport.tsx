@@ -1,77 +1,32 @@
-import { useEffect, useRef, useState } from 'react';
+import { useRef, useState } from 'react';
 import { Download } from 'lucide-react';
 import * as DropdownMenuPrimitive from '@radix-ui/react-dropdown-menu';
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuTrigger,
-} from '../../DropDown';
-import { Button } from '../../Button';
-import {
-  ExportModal,
-  type ExportFormat,
-  type SchemaExportRequest,
-  useSchemaExport,
-} from '@/features/export';
-import { getApiErrorMessage } from '@/lib/api';
+} from '@/components/DropDown';
+import { Button } from '@/components/Button';
+import { type ExportFormat, type SchemaExportRequest } from '../api';
+import { useSchemaExport } from '../hooks/useSchemaExport';
+import { ExportModal } from './ExportModal';
 
-interface ExportContentsProps {
+interface SchemaExportProps {
   schemaId: string;
   schemaName: string;
 }
 
-export const ExportContents = ({
-  schemaId,
-  schemaName,
-}: ExportContentsProps) => {
+export const SchemaExport = ({ schemaId, schemaName }: SchemaExportProps) => {
   const [exportFormat, setExportFormat] = useState<ExportFormat>('ddl');
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
-  const [isModalOpen, setIsModalOpen] = useState(false);
-  const [request, setRequest] = useState<SchemaExportRequest | null>(null);
-  const controllerRef = useRef<AbortController | null>(null);
   const pendingRequestRef = useRef<SchemaExportRequest | null>(null);
   const triggerRef = useRef<HTMLButtonElement>(null);
-  const exportMutation = useSchemaExport();
-
-  useEffect(
-    () => () => {
-      controllerRef.current?.abort();
-      controllerRef.current = null;
-    },
-    [],
-  );
-
-  const startExport = (exportRequest: SchemaExportRequest) => {
-    if (exportMutation.isPending) return;
-
-    const controller = new AbortController();
-
-    controllerRef.current?.abort();
-    controllerRef.current = controller;
-    setRequest(exportRequest);
-    setIsModalOpen(true);
-    exportMutation.mutate({
-      schemaId: exportRequest.schemaId,
-      format: exportRequest.format,
-      signal: controller.signal,
-    });
-  };
+  const { state, isPending, startExport, retryExport, closeExport } =
+    useSchemaExport();
 
   const handleExport = () => {
     pendingRequestRef.current = { schemaId, schemaName, format: exportFormat };
     setIsDropdownOpen(false);
-  };
-
-  const handleRetry = () => {
-    if (request) startExport(request);
-  };
-
-  const closeModal = () => {
-    controllerRef.current?.abort();
-    controllerRef.current = null;
-    exportMutation.reset();
-    setIsModalOpen(false);
-    setRequest(null);
   };
 
   return (
@@ -130,11 +85,7 @@ export const ExportContents = ({
             ))}
           </DropdownMenuPrimitive.RadioGroup>
           <DropdownMenuPrimitive.Item asChild onSelect={handleExport}>
-            <Button
-              fullWidth
-              size="dropdown"
-              disabled={exportMutation.isPending}
-            >
+            <Button fullWidth size="dropdown" disabled={isPending}>
               Export
             </Button>
           </DropdownMenuPrimitive.Item>
@@ -142,17 +93,9 @@ export const ExportContents = ({
       </DropdownMenu>
 
       <ExportModal
-        open={isModalOpen}
-        onOpenChange={(open) => {
-          if (!open) closeModal();
-        }}
-        request={request}
-        result={exportMutation.data ?? null}
-        status={exportMutation.isPending ? 'loading' : exportMutation.status}
-        errorMessage={
-          exportMutation.error ? getApiErrorMessage(exportMutation.error) : null
-        }
-        onRetry={handleRetry}
+        state={state}
+        onClose={closeExport}
+        onRetry={retryExport}
         onCloseAutoFocus={(event) => {
           event.preventDefault();
           if (!isDropdownOpen) triggerRef.current?.focus();

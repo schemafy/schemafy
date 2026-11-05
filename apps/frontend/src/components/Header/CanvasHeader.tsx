@@ -1,7 +1,7 @@
 import { Button } from '../Button';
 import { Avatar } from '../Avatar';
 import { getRandomColor } from '@/features/collaboration/utils';
-import { ExportContents } from './contents/ExportContents';
+import { SchemaExport } from '@/features/export';
 import { ShareContents } from './contents/ShareContents';
 import { SettingsContents } from './contents/SettingsContents';
 import { useLogout } from '@/features/auth';
@@ -26,7 +26,7 @@ export const CanvasHeader = observer(() => {
   return (
     <div className="flex min-w-0 items-center gap-1 sm:gap-4">
       {schema && (
-        <ExportContents
+        <SchemaExport
           schemaId={schema.selectedSchemaId}
           schemaName={schema.selectedSchemaName}
         />

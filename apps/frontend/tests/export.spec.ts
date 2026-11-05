@@ -576,6 +576,11 @@ test('키보드로 Mermaid를 선택하고 내보낸다', async ({ page }) => {
   expect(new URL(requestedUrl).pathname.endsWith('/exports/mermaid')).toBe(
     true,
   );
+  await page.keyboard.press('Escape');
+  await expect(page.getByRole('dialog')).toBeHidden();
+  await expect(
+    page.getByRole('button', { name: 'Export', exact: true }),
+  ).toBeFocused();
 });
 
 test('빈 스키마 이름은 기본 파일명으로 다운로드한다', async ({ page }) => {

@@ -1,1 +1,1 @@
-export { ExportModal, type ExportStatus } from './ExportModal';
+export { SchemaExport } from './SchemaExport';
