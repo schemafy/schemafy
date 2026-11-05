@@ -72,6 +72,7 @@ export class SchemaService {
     schemaId: string,
     targetDbVendor: string,
     authHeader: string,
+    signal: AbortSignal,
   ): Promise<SchemaDdlExportResponse> {
     const response =
       await this.backendClient.client.get<SchemaDdlExportResponse>(
@@ -80,6 +81,7 @@ export class SchemaService {
           ...this.backendClient.getAuthConfig(authHeader),
           params: { targetDbVendor },
           timeout: SCHEMA_EXPORT_TIMEOUT_MS,
+          signal,
         },
       );
     return response.data;
@@ -88,6 +90,7 @@ export class SchemaService {
   async exportSchemaMermaid(
     schemaId: string,
     authHeader: string,
+    signal: AbortSignal,
   ): Promise<SchemaMermaidExportResponse> {
     const response =
       await this.backendClient.client.get<SchemaMermaidExportResponse>(
@@ -95,6 +98,7 @@ export class SchemaService {
         {
           ...this.backendClient.getAuthConfig(authHeader),
           timeout: SCHEMA_EXPORT_TIMEOUT_MS,
+          signal,
         },
       );
     return response.data;

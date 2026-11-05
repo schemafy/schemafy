@@ -160,20 +160,43 @@ export const CanvasPage = () => {
     void navigate({ to: '/workspace', replace: true });
   }, [isProjectError, isForbidden, navigate]);
 
-  if (isProjectError && !isForbidden) return <NotFoundPage />;
+  if (isProjectError && !isForbidden)
+    return (
+      <AppLayout isCanvasPage>
+        <NotFoundPage />
+      </AppLayout>
+    );
   if (isLoadingProject) {
-    return <LoadingState className="min-h-screen" label="Loading project..." />;
+    return (
+      <AppLayout isCanvasPage>
+        <LoadingState label="Loading project..." />
+      </AppLayout>
+    );
   }
   if (isForbidden) {
-    return <LoadingState className="min-h-screen" label="Redirecting..." />;
+    return (
+      <AppLayout isCanvasPage>
+        <LoadingState label="Redirecting..." />
+      </AppLayout>
+    );
   }
-  if (!hasProject) return <NotFoundPage />;
+  if (!hasProject)
+    return (
+      <AppLayout isCanvasPage>
+        <NotFoundPage />
+      </AppLayout>
+    );
 
   return (
     <ReactFlowProvider>
       <SelectedSchemaProvider
         projectId={projectId}
         dbVendorId={project.dbVendorId}
+        renderFallback={(fallback) => (
+          <AppLayout isCanvasPage showExport={false}>
+            {fallback}
+          </AppLayout>
+        )}
       >
         <AppLayout isCanvasPage>
           <MemoProvider>

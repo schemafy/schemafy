@@ -10,16 +10,29 @@ import { DashboardHeader } from './DashboardHeader';
 import { LandingHeader } from './LandingHeader';
 
 export const Header = observer(
-  ({ isCanvasPage }: { isCanvasPage: boolean }) => {
+  ({
+    isCanvasPage,
+    showExport = true,
+  }: {
+    isCanvasPage: boolean;
+    showExport?: boolean;
+  }) => {
     const { isAuthLoading, accessToken, user, isInitialized } = authStore;
 
     const contents = useMemo(() => {
-      if (isCanvasPage) return <CanvasHeader />;
+      if (isCanvasPage) return <CanvasHeader showExport={showExport} />;
       if (isAuthLoading || !isInitialized)
         return <LoadingSpinner className="h-5 w-5" />;
       if (accessToken && user) return <DashboardHeader />;
       return <LandingHeader />;
-    }, [isCanvasPage, isAuthLoading, accessToken, user, isInitialized]);
+    }, [
+      isCanvasPage,
+      showExport,
+      isAuthLoading,
+      accessToken,
+      user,
+      isInitialized,
+    ]);
 
     return (
       <header className="sticky top-0 z-50 flex w-full justify-center border-b border-schemafy-glass-border bg-schemafy-panel/90 backdrop-blur-xl">

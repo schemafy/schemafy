@@ -43,12 +43,14 @@ interface SelectedSchemaProviderProps {
   children: ReactNode;
   projectId: string;
   dbVendorId: number;
+  renderFallback?: (fallback: ReactNode) => ReactNode;
 }
 
 export const SelectedSchemaProvider = ({
   children,
   projectId,
   dbVendorId,
+  renderFallback = (fallback) => fallback,
 }: SelectedSchemaProviderProps) => {
   const storageKey = getStorageKey(projectId);
   const initializationAttempted = useRef(false);
@@ -164,15 +166,15 @@ export const SelectedSchemaProvider = ({
   );
 
   if (!activeSchemaId && (isSchemasError || isCreateSchemaError)) {
-    return (
+    return renderFallback(
       <SchemaError
         onRetry={isSchemasError ? () => refetchSchemas() : createInitialSchema}
-      />
+      />,
     );
   }
 
   if (isSchemasLoading || !activeSchemaId) {
-    return <SchemaLoading />;
+    return renderFallback(<SchemaLoading />);
   }
 
   return (
@@ -181,11 +183,13 @@ export const SelectedSchemaProvider = ({
         {({ reset }) => (
           <ErrorBoundary
             onReset={reset}
-            fallback={({ resetErrorBoundary }) => (
-              <SchemaError onRetry={resetErrorBoundary} />
-            )}
+            fallback={({ resetErrorBoundary }) =>
+              renderFallback(<SchemaError onRetry={resetErrorBoundary} />)
+            }
           >
-            <Suspense fallback={<SchemaLoading />}>{children}</Suspense>
+            <Suspense fallback={renderFallback(<SchemaLoading />)}>
+              {children}
+            </Suspense>
           </ErrorBoundary>
         )}
       </QueryErrorResetBoundary>

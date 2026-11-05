@@ -120,7 +120,7 @@ const openCanvas = async (
 
 const openExportMenu = async (page: Page) => {
   await page.getByRole('button', { name: 'Export', exact: true }).click();
-  return page.getByRole('button', { name: 'Export', exact: true }).last();
+  return page.getByRole('menuitem', { name: 'Export', exact: true });
 };
 
 test('DDL과 Mermaid를 요청하고 원문을 복사·다운로드한다', async ({ page }) => {
@@ -165,12 +165,14 @@ test('DDL과 Mermaid를 요청하고 원문을 복사·다운로드한다', asyn
   });
 
   let exportAction = await openExportMenu(page);
-  await expect(page.getByRole('radio', { name: 'MySQL DDL' })).toBeChecked();
-  await expect(page.getByRole('radio', { name: 'Mermaid' })).toBeVisible();
-  await expect(page.getByRole('radio', { name: 'PNG' })).toHaveCount(0);
-  await expect(page.getByRole('radio', { name: 'SVG' })).toHaveCount(0);
+  await expect(
+    page.getByRole('menuitemradio', { name: 'MySQL DDL' }),
+  ).toBeChecked();
+  await expect(
+    page.getByRole('menuitemradio', { name: 'Mermaid' }),
+  ).toBeVisible();
 
-  await exportAction.dblclick();
+  await exportAction.click();
   const dialog = page.getByRole('dialog');
   await expect(dialog).toContainText('Generating export...');
   await expect.poll(() => requestedUrls.length).toBe(1);
@@ -206,7 +208,7 @@ test('DDL과 Mermaid를 요청하고 원문을 복사·다운로드한다', asyn
 
   await dialog.getByRole('button', { name: 'Close' }).click();
   exportAction = await openExportMenu(page);
-  await page.getByRole('radio', { name: 'Mermaid' }).click();
+  await page.getByRole('menuitemradio', { name: 'Mermaid' }).click();
   await exportAction.click();
 
   await expect(dialog).toContainText(MERMAID_CODE);
@@ -224,6 +226,76 @@ test('DDL과 Mermaid를 요청하고 원문을 복사·다운로드한다', asyn
     MERMAID_CODE,
   );
 });
+
+for (const failure of ['project', 'schema'] as const) {
+  test(`${failure} 로딩과 오류 화면에도 캔버스 레이아웃을 유지한다`, async ({
+    page,
+  }) => {
+    let release!: () => void;
+    const gate = new Promise<void>((resolve) => {
+      release = resolve;
+    });
+    let reached!: () => void;
+    const requestReached = new Promise<void>((resolve) => {
+      reached = resolve;
+    });
+    await page.route('**/api/v1.0/**', async (route) => {
+      const req = route.request();
+      const path = new URL(req.url()).pathname;
+      if (req.method() === 'OPTIONS')
+        return route.fulfill({ status: 204, headers: corsHeaders });
+      if (path.endsWith('/users/refresh'))
+        return fulfillJson(route, {}, 200, { authorization: 'Bearer test' });
+      if (path.endsWith('/users'))
+        return fulfillJson(route, {
+          id: 'u',
+          name: 'User',
+          email: 'u@example.com',
+        });
+      if (path.endsWith(`/projects/${PROJECT_ID}`)) {
+        if (failure === 'project') {
+          reached();
+          await gate;
+          return fulfillJson(
+            route,
+            { code: 'NOT_FOUND', category: 'USER_FEEDBACK' },
+            404,
+          );
+        }
+        return fulfillJson(route, {
+          id: PROJECT_ID,
+          workspaceId: 'w',
+          dbVendorId: 1,
+          name: 'Project',
+          currentUserRole: 'VIEWER',
+        });
+      }
+      if (path.endsWith(`/projects/${PROJECT_ID}/schemas`)) {
+        reached();
+        await gate;
+        return fulfillJson(
+          route,
+          { code: 'INTERNAL_SERVER_ERROR', category: 'USER_FEEDBACK' },
+          500,
+        );
+      }
+      return route.abort();
+    });
+    await page.goto(`/project/${PROJECT_ID}`);
+    await requestReached;
+    await expect(page.getByRole('banner')).toBeVisible();
+    await expect(page.getByRole('main').getByRole('status')).toBeVisible();
+    await expect(
+      page.getByRole('button', { name: 'Export', exact: true }),
+    ).toHaveCount(0);
+    release();
+    await expect(page.getByRole('main')).toContainText(
+      failure === 'project' ? 'Page not found' : 'Failed to load schema data.',
+      { timeout: 15000 },
+    );
+    await expect(page.getByRole('banner')).toBeVisible();
+  });
+}
 
 test('로딩 중 닫으면 요청과 모달 상태를 초기화하고 형식은 유지한다', async ({
   page,
@@ -246,7 +318,7 @@ test('로딩 중 닫으면 요청과 모달 상태를 초기화하고 형식은 
   });
 
   let exportAction = await openExportMenu(page);
-  await page.getByRole('radio', { name: 'Mermaid' }).click();
+  await page.getByRole('menuitemradio', { name: 'Mermaid' }).click();
   await exportAction.click();
 
   const dialog = page.getByRole('dialog');
@@ -254,7 +326,9 @@ test('로딩 중 닫으면 요청과 모달 상태를 초기화하고 형식은 
 
   await dialog.getByRole('button', { name: 'Close' }).click();
   exportAction = await openExportMenu(page);
-  await expect(page.getByRole('radio', { name: 'Mermaid' })).toBeChecked();
+  await expect(
+    page.getByRole('menuitemradio', { name: 'Mermaid' }),
+  ).toBeChecked();
   await exportAction.click();
 
   await expect(dialog).toContainText('Generating export...');
@@ -270,6 +344,9 @@ test('로딩 중 닫으면 요청과 모달 상태를 초기화하고 형식은 
   expect((await abortedRequest).failure()?.errorText).toBeTruthy();
 
   exportAction = await openExportMenu(page);
+  await expect(
+    page.getByRole('menuitemradio', { name: 'Mermaid' }),
+  ).toBeChecked();
   await exportAction.click();
   await expect(dialog).toContainText('Generating export...');
   await expect.poll(() => pendingRoutes.length).toBe(2);
@@ -280,6 +357,37 @@ test('로딩 중 닫으면 요청과 모달 상태를 초기화하고 형식은 
     mermaid: MERMAID_CODE,
   });
   await expect(dialog).toContainText(MERMAID_CODE);
+});
+
+test('키보드로 Mermaid를 선택하고 내보낸다', async ({ page }) => {
+  let requestedUrl = '';
+  await openCanvas(page, async (route) => {
+    requestedUrl = route.request().url();
+    await fulfillJson(route, {
+      schemaId: SCHEMA_ID,
+      currentRevision: 73,
+      mermaid: MERMAID_CODE,
+    });
+  });
+  await page.getByRole('button', { name: 'Export', exact: true }).focus();
+  await page.keyboard.press('Enter');
+  await expect(
+    page.getByRole('menuitemradio', { name: 'MySQL DDL' }),
+  ).toBeFocused();
+  await page.keyboard.press('ArrowDown');
+  await expect(
+    page.getByRole('menuitemradio', { name: 'Mermaid' }),
+  ).toBeFocused();
+  await page.keyboard.press('Enter');
+  await expect(
+    page.getByRole('menuitemradio', { name: 'Mermaid' }),
+  ).toBeChecked();
+  await page.keyboard.press('ArrowDown');
+  await page.keyboard.press('Enter');
+  await expect(page.getByRole('dialog')).toContainText(MERMAID_CODE);
+  expect(new URL(requestedUrl).pathname.endsWith('/exports/mermaid')).toBe(
+    true,
+  );
 });
 
 test('빈 스키마 이름은 기본 파일명으로 다운로드한다', async ({ page }) => {

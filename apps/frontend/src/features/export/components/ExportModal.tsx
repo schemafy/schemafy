@@ -22,6 +22,7 @@ interface ExportModalProps {
   status: ExportStatus;
   errorMessage: string | null;
   onRetry: () => void;
+  onCloseAutoFocus: (event: Event) => void;
 }
 
 const getExportCode = (result: SchemaExportResult) =>
@@ -105,12 +106,16 @@ export const ExportModal = ({
   status,
   errorMessage,
   onRetry,
+  onCloseAutoFocus,
 }: ExportModalProps) => {
   const title = request?.format === 'mermaid' ? 'Export Mermaid' : 'Export DDL';
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="flex max-h-[80vh] max-w-3xl flex-col">
+      <DialogContent
+        className="flex max-h-[80vh] max-w-3xl flex-col data-[state=closed]:animate-none"
+        onCloseAutoFocus={onCloseAutoFocus}
+      >
         <DialogHeader>
           <DialogTitle>{title}</DialogTitle>
         </DialogHeader>

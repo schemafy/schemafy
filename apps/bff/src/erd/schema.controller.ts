@@ -7,7 +7,9 @@ import {
   Patch,
   Post,
   Query,
+  Res,
 } from '@nestjs/common';
+import type { Response } from 'express';
 import { SchemaService } from './schema.service';
 import { AuthHeader } from '../common/decorators/auth-header.decorator';
 import { CollaborationHeaders } from '../common/decorators/collaboration-headers.decorator';
@@ -97,11 +99,15 @@ export class SchemaController {
     @Param('schemaId') schemaId: string,
     @Query('targetDbVendor') targetDbVendor: string,
     @AuthHeader() authHeader: string,
+    @Res({ passthrough: true }) response: Response,
   ): Promise<SchemaDdlExportResponse> {
-    return this.schemaService.exportSchemaDdl(
-      schemaId,
-      targetDbVendor,
-      authHeader,
+    return this.withDisconnectSignal(response, (signal) =>
+      this.schemaService.exportSchemaDdl(
+        schemaId,
+        targetDbVendor,
+        authHeader,
+        signal,
+      ),
     );
   }
 
@@ -109,7 +115,27 @@ export class SchemaController {
   async exportSchemaMermaid(
     @Param('schemaId') schemaId: string,
     @AuthHeader() authHeader: string,
+    @Res({ passthrough: true }) response: Response,
   ): Promise<SchemaMermaidExportResponse> {
-    return this.schemaService.exportSchemaMermaid(schemaId, authHeader);
+    return this.withDisconnectSignal(response, (signal) =>
+      this.schemaService.exportSchemaMermaid(schemaId, authHeader, signal),
+    );
+  }
+
+  private async withDisconnectSignal<T>(
+    response: Response,
+    run: (signal: AbortSignal) => Promise<T>,
+  ): Promise<T> {
+    const controller = new AbortController();
+    const onClose = () => {
+      if (!response.writableFinished) controller.abort();
+    };
+    response.once('close', onClose);
+    if (response.destroyed) onClose();
+    try {
+      return await run(controller.signal);
+    } finally {
+      response.off('close', onClose);
+    }
   }
 }
