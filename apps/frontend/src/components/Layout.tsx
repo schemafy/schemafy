@@ -8,14 +8,12 @@ interface AppLayoutProps {
   children: ReactNode;
   isCanvasPage?: boolean;
   isWorkspacePage?: boolean;
-  showExport?: boolean;
 }
 
 export const AppLayout = ({
   children,
   isCanvasPage = false,
   isWorkspacePage = false,
-  showExport = true,
 }: AppLayoutProps) => (
   <div
     className={cn(
@@ -23,7 +21,7 @@ export const AppLayout = ({
       !isCanvasPage && 'schemafy-page-gradient',
     )}
   >
-    <Header isCanvasPage={isCanvasPage} showExport={showExport} />
+    <Header isCanvasPage={isCanvasPage} />
     <main
       className={cn(
         'flex-grow min-h-0 w-full flex',

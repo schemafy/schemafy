@@ -33,12 +33,13 @@ type ExportHandler = (route: Route) => Promise<void> | void;
 
 interface CanvasMockOptions {
   schemaName?: string;
+  handleSnapshot?: (route: Route) => Promise<void>;
 }
 
 const openCanvas = async (
   page: Page,
   handleExport: ExportHandler,
-  { schemaName = SCHEMA_NAME }: CanvasMockOptions = {},
+  { schemaName = SCHEMA_NAME, handleSnapshot }: CanvasMockOptions = {},
 ) => {
   await page.routeWebSocket('**/ws/collaboration**', () => {});
 
@@ -95,6 +96,7 @@ const openCanvas = async (
     }
 
     if (pathname.endsWith(`/schemas/${SCHEMA_ID}/snapshots`)) {
+      if (handleSnapshot) return handleSnapshot(route);
       await fulfillJson(route, { currentRevision: 73, snapshots: {} });
       return;
     }
@@ -227,6 +229,40 @@ test('DDL과 Mermaid를 요청하고 원문을 복사·다운로드한다', asyn
   );
 });
 
+test('스냅샷 오류를 재시도할 때도 헤더를 유지한다', async ({ page }) => {
+  let failing = true;
+  await openCanvas(page, (route) => fulfillJson(route, {}), {
+    handleSnapshot: (route) =>
+      failing
+        ? fulfillJson(
+            route,
+            { code: 'INTERNAL_SERVER_ERROR', category: 'USER_FEEDBACK' },
+            500,
+          )
+        : fulfillJson(route, { currentRevision: 73, snapshots: {} }),
+  });
+  await page
+    .getByRole('banner')
+    .evaluate((element) =>
+      element.setAttribute('data-test-persistent', 'true'),
+    );
+  await expect(page.getByRole('main')).toContainText(
+    'Failed to load schema data.',
+    { timeout: 15000 },
+  );
+  await expect(
+    page.locator('header[data-test-persistent="true"]'),
+  ).toBeVisible();
+  failing = false;
+  await page.getByRole('button', { name: 'Retry' }).click();
+  await expect(
+    page.getByRole('button', { name: 'Expand schemas' }),
+  ).toBeVisible();
+  await expect(
+    page.locator('header[data-test-persistent="true"]'),
+  ).toBeVisible();
+});
+
 for (const failure of ['project', 'schema'] as const) {
   test(`${failure} 로딩과 오류 화면에도 캔버스 레이아웃을 유지한다`, async ({
     page,
@@ -284,6 +320,11 @@ for (const failure of ['project', 'schema'] as const) {
     await page.goto(`/project/${PROJECT_ID}`);
     await requestReached;
     await expect(page.getByRole('banner')).toBeVisible();
+    await page
+      .getByRole('banner')
+      .evaluate((element) =>
+        element.setAttribute('data-test-persistent', 'true'),
+      );
     await expect(page.getByRole('main').getByRole('status')).toBeVisible();
     await expect(
       page.getByRole('button', { name: 'Export', exact: true }),
@@ -294,8 +335,117 @@ for (const failure of ['project', 'schema'] as const) {
       { timeout: 15000 },
     );
     await expect(page.getByRole('banner')).toBeVisible();
+    await expect(
+      page.locator('header[data-test-persistent="true"]'),
+    ).toBeVisible();
   });
 }
+
+test('프로젝트와 스키마 로딩 및 스키마 전환 중에도 같은 헤더를 유지한다', async ({
+  page,
+}) => {
+  const schema2 = 'schema-second';
+  let releaseProject!: () => void;
+  let releaseSchemas!: () => void;
+  let releaseSnapshot!: () => void;
+  const projectGate = new Promise<void>((resolve) => {
+    releaseProject = resolve;
+  });
+  const schemasGate = new Promise<void>((resolve) => {
+    releaseSchemas = resolve;
+  });
+  const snapshotGate = new Promise<void>((resolve) => {
+    releaseSnapshot = resolve;
+  });
+  await page.routeWebSocket('**/ws/collaboration**', () => {});
+  await page.route('**/api/v1.0/**', async (route) => {
+    const req = route.request();
+    const path = new URL(req.url()).pathname;
+    if (req.method() === 'OPTIONS')
+      return route.fulfill({ status: 204, headers: corsHeaders });
+    if (path.endsWith('/users/refresh'))
+      return fulfillJson(route, {}, 200, { authorization: 'Bearer test' });
+    if (path.endsWith('/users'))
+      return fulfillJson(route, {
+        id: 'u',
+        name: 'User',
+        email: 'u@example.com',
+      });
+    if (path.endsWith(`/projects/${PROJECT_ID}`)) {
+      await projectGate;
+      return fulfillJson(route, {
+        id: PROJECT_ID,
+        workspaceId: 'w',
+        dbVendorId: 1,
+        name: 'Project',
+        currentUserRole: 'VIEWER',
+      });
+    }
+    if (path.endsWith(`/projects/${PROJECT_ID}/schemas`)) {
+      await schemasGate;
+      return fulfillJson(route, [
+        {
+          id: SCHEMA_ID,
+          projectId: PROJECT_ID,
+          name: 'First',
+          charset: 'utf8mb4',
+          collation: 'utf8mb4_0900_ai_ci',
+        },
+        {
+          id: schema2,
+          projectId: PROJECT_ID,
+          name: 'Second',
+          charset: 'utf8mb4',
+          collation: 'utf8mb4_0900_ai_ci',
+        },
+      ]);
+    }
+    if (path.endsWith(`/schemas/${schema2}/snapshots`)) {
+      await snapshotGate;
+      return fulfillJson(route, { currentRevision: 1, snapshots: {} });
+    }
+    if (path.endsWith('/snapshots'))
+      return fulfillJson(route, { currentRevision: 1, snapshots: {} });
+    if (path.endsWith('/memos-with-comments')) return fulfillJson(route, []);
+    if (path.endsWith(`/schemas/${schema2}/exports/ddl`))
+      return fulfillJson(route, {
+        schemaId: schema2,
+        currentRevision: 1,
+        targetDbVendor: 'mysql',
+        ddl: DDL_CODE,
+      });
+    return route.abort();
+  });
+  await page.goto(`/project/${PROJECT_ID}`);
+  const header = page.getByRole('banner');
+  await expect(page.getByRole('status')).toContainText('Loading project...');
+  await header.evaluate((element) =>
+    element.setAttribute('data-test-persistent', 'true'),
+  );
+  releaseProject();
+  await expect(page.getByRole('status')).toContainText('Loading schema...');
+  await expect(
+    page.locator('header[data-test-persistent="true"]'),
+  ).toBeVisible();
+  await expect(
+    page.getByRole('button', { name: 'Export', exact: true }),
+  ).toHaveCount(0);
+  releaseSchemas();
+  await page.getByRole('button', { name: 'Expand schemas' }).click();
+  await page.getByText('Second', { exact: true }).click();
+  await expect(page.getByRole('status')).toContainText('Loading schema...');
+  await expect(
+    page.locator('header[data-test-persistent="true"]'),
+  ).toBeVisible();
+  releaseSnapshot();
+  await expect(
+    page.getByRole('button', { name: 'Expand schemas' }),
+  ).toContainText('Second');
+  const action = await openExportMenu(page);
+  await action.click();
+  await expect(page.getByRole('dialog')).toContainText(DDL_CODE);
+  await expect(page.getByRole('dialog')).toContainText('Second');
+});
 
 test('로딩 중 닫으면 요청과 모달 상태를 초기화하고 형식은 유지한다', async ({
   page,
@@ -418,6 +568,9 @@ test('키보드로 Mermaid를 선택하고 내보낸다', async ({ page }) => {
     page.getByRole('menuitemradio', { name: 'Mermaid' }),
   ).toBeChecked();
   await page.keyboard.press('ArrowDown');
+  await expect(
+    page.getByRole('menuitem', { name: 'Export', exact: true }),
+  ).toBeFocused();
   await page.keyboard.press('Enter');
   await expect(page.getByRole('dialog')).toContainText(MERMAID_CODE);
   expect(new URL(requestedUrl).pathname.endsWith('/exports/mermaid')).toBe(

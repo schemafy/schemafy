@@ -4,6 +4,8 @@ import {
   useRef,
   useCallback,
   useMemo,
+  createContext,
+  useContext,
   Suspense,
   type ReactNode,
 } from 'react';
@@ -42,15 +44,23 @@ const SchemaError = ({ onRetry }: { onRetry: () => void }) => (
 interface SelectedSchemaProviderProps {
   children: ReactNode;
   projectId: string;
-  dbVendorId: number;
-  renderFallback?: (fallback: ReactNode) => ReactNode;
+  dbVendorId: number | undefined;
 }
+
+interface SchemaReadiness {
+  isReady: boolean;
+  hasError: boolean;
+  onRetry: () => void;
+}
+
+const SchemaReadinessContext = createContext<SchemaReadiness | undefined>(
+  undefined,
+);
 
 export const SelectedSchemaProvider = ({
   children,
   projectId,
   dbVendorId,
-  renderFallback = (fallback) => fallback,
 }: SelectedSchemaProviderProps) => {
   const storageKey = getStorageKey(projectId);
   const initializationAttempted = useRef(false);
@@ -74,7 +84,7 @@ export const SelectedSchemaProvider = ({
     isLoading: isSchemasLoading,
     isError: isSchemasError,
     refetch: refetchSchemas,
-  } = useSchemas(projectId);
+  } = useSchemas(projectId, dbVendorId !== undefined);
   const { mutate: createSchema, isError: isCreateSchemaError } =
     useCreateSchema(projectId);
 
@@ -127,7 +137,7 @@ export const SelectedSchemaProvider = ({
   );
 
   useEffect(() => {
-    if (isSchemasLoading || !schemas) return;
+    if (dbVendorId === undefined || isSchemasLoading || !schemas) return;
 
     if (schemas.length === 0) {
       if (selectedSchemaId !== null) {
@@ -152,47 +162,66 @@ export const SelectedSchemaProvider = ({
     isSchemasLoading,
     createInitialSchema,
     setSelectedSchemaId,
+    dbVendorId,
   ]);
 
   const contextValue = useMemo(
-    () => ({
-      projectId,
-      dbVendorId,
-      selectedSchemaId: activeSchemaId as string,
-      selectedSchemaName: activeSchema?.name ?? '',
-      setSelectedSchemaId,
-    }),
+    () =>
+      activeSchemaId && dbVendorId !== undefined
+        ? {
+            projectId,
+            dbVendorId,
+            selectedSchemaId: activeSchemaId,
+            selectedSchemaName: activeSchema?.name ?? '',
+            setSelectedSchemaId,
+          }
+        : undefined,
     [projectId, dbVendorId, activeSchemaId, activeSchema, setSelectedSchemaId],
   );
 
-  if (!activeSchemaId && (isSchemasError || isCreateSchemaError)) {
-    return renderFallback(
-      <SchemaError
-        onRetry={isSchemasError ? () => refetchSchemas() : createInitialSchema}
-      />,
-    );
-  }
-
-  if (isSchemasLoading || !activeSchemaId) {
-    return renderFallback(<SchemaLoading />);
-  }
-
   return (
-    <SelectedSchemaContext.Provider value={contextValue}>
-      <QueryErrorResetBoundary>
-        {({ reset }) => (
-          <ErrorBoundary
-            onReset={reset}
-            fallback={({ resetErrorBoundary }) =>
-              renderFallback(<SchemaError onRetry={resetErrorBoundary} />)
+    <SchemaReadinessContext.Provider
+      value={{
+        isReady: Boolean(contextValue) && !isSchemasLoading,
+        hasError: !activeSchemaId && (isSchemasError || isCreateSchemaError),
+        onRetry: isSchemasError
+          ? () => {
+              void refetchSchemas();
             }
-          >
-            <Suspense fallback={renderFallback(<SchemaLoading />)}>
-              {children}
-            </Suspense>
-          </ErrorBoundary>
-        )}
-      </QueryErrorResetBoundary>
-    </SelectedSchemaContext.Provider>
+          : createInitialSchema,
+      }}
+    >
+      <SelectedSchemaContext.Provider value={contextValue}>
+        {children}
+      </SelectedSchemaContext.Provider>
+    </SchemaReadinessContext.Provider>
+  );
+};
+
+export const SelectedSchemaBoundary = ({
+  children,
+}: {
+  children: ReactNode;
+}) => {
+  const readiness = useContext(SchemaReadinessContext);
+  if (!readiness)
+    throw new Error(
+      'SelectedSchemaBoundary must be used within a SelectedSchemaProvider',
+    );
+  if (readiness.hasError) return <SchemaError onRetry={readiness.onRetry} />;
+  if (!readiness.isReady) return <SchemaLoading />;
+  return (
+    <QueryErrorResetBoundary>
+      {({ reset }) => (
+        <ErrorBoundary
+          onReset={reset}
+          fallback={({ resetErrorBoundary }) => (
+            <SchemaError onRetry={resetErrorBoundary} />
+          )}
+        >
+          <Suspense fallback={<SchemaLoading />}>{children}</Suspense>
+        </ErrorBoundary>
+      )}
+    </QueryErrorResetBoundary>
   );
 };

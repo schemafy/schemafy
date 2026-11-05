@@ -3,6 +3,7 @@ import {
   ReactFlowCanvas,
   RelationshipEditor,
   SchemaSelector,
+  SelectedSchemaBoundary,
   SelectedSchemaProvider,
   ShortcutPanel,
   TempMemoPreview,
@@ -160,53 +161,34 @@ export const CanvasPage = () => {
     void navigate({ to: '/workspace', replace: true });
   }, [isProjectError, isForbidden, navigate]);
 
-  if (isProjectError && !isForbidden)
-    return (
-      <AppLayout isCanvasPage>
-        <NotFoundPage />
-      </AppLayout>
-    );
-  if (isLoadingProject) {
-    return (
-      <AppLayout isCanvasPage>
-        <LoadingState label="Loading project..." />
-      </AppLayout>
-    );
-  }
-  if (isForbidden) {
-    return (
-      <AppLayout isCanvasPage>
-        <LoadingState label="Redirecting..." />
-      </AppLayout>
-    );
-  }
-  if (!hasProject)
-    return (
-      <AppLayout isCanvasPage>
-        <NotFoundPage />
-      </AppLayout>
-    );
-
   return (
-    <ReactFlowProvider>
-      <SelectedSchemaProvider
-        projectId={projectId}
-        dbVendorId={project.dbVendorId}
-        renderFallback={(fallback) => (
-          <AppLayout isCanvasPage showExport={false}>
-            {fallback}
-          </AppLayout>
+    <SelectedSchemaProvider
+      key={projectId}
+      projectId={projectId}
+      dbVendorId={!isProjectError ? project?.dbVendorId : undefined}
+    >
+      <AppLayout isCanvasPage>
+        {isProjectError && !isForbidden ? (
+          <NotFoundPage />
+        ) : isLoadingProject ? (
+          <LoadingState label="Loading project..." />
+        ) : isForbidden ? (
+          <LoadingState label="Redirecting..." />
+        ) : !hasProject ? (
+          <NotFoundPage />
+        ) : (
+          <SelectedSchemaBoundary>
+            <ReactFlowProvider>
+              <MemoProvider>
+                <CanvasContent canEditProject={canEditProject} />
+                <div className="fixed bottom-4 right-4 z-50">
+                  <ConnectionStatusIndicator />
+                </div>
+              </MemoProvider>
+            </ReactFlowProvider>
+          </SelectedSchemaBoundary>
         )}
-      >
-        <AppLayout isCanvasPage>
-          <MemoProvider>
-            <CanvasContent canEditProject={canEditProject} />
-            <div className="fixed bottom-4 right-4 z-50">
-              <ConnectionStatusIndicator />
-            </div>
-          </MemoProvider>
-        </AppLayout>
-      </SelectedSchemaProvider>
-    </ReactFlowProvider>
+      </AppLayout>
+    </SelectedSchemaProvider>
   );
 };
