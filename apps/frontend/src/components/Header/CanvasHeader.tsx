@@ -1,24 +1,23 @@
 import { Button } from '../Button';
 import { Avatar } from '../Avatar';
 import { getRandomColor } from '@/features/collaboration/utils';
-import { ExportContents } from './contents/ExportContents';
+import { SchemaExport } from '@/features/export';
 import { ShareContents } from './contents/ShareContents';
 import { SettingsContents } from './contents/SettingsContents';
 import { useLogout } from '@/features/auth';
-import { useParams } from '@tanstack/react-router';
 import { LogOut } from 'lucide-react';
 import { observer } from 'mobx-react-lite';
 import { collaborationStore } from '@/store/collaboration.store';
+import { SelectedSchemaContext } from '@/features/drawing/contexts';
+import { useContext } from 'react';
+import { useParams } from '@tanstack/react-router';
 
 const MAX_VISIBLE_AVATARS = 4;
 
 export const CanvasHeader = observer(() => {
-  const params = useParams({
-    strict: false,
-    shouldThrow: false,
-  });
-  const projectId = params?.projectId ?? '';
   const handleLogout = useLogout();
+  const schema = useContext(SelectedSchemaContext);
+  const { projectId = '' } = useParams({ strict: false });
 
   const participants = collaborationStore.activeParticipants;
   const visibleParticipants = participants.slice(0, MAX_VISIBLE_AVATARS);
@@ -26,7 +25,12 @@ export const CanvasHeader = observer(() => {
 
   return (
     <div className="flex min-w-0 items-center gap-1 sm:gap-4">
-      <ExportContents />
+      {schema && (
+        <SchemaExport
+          schemaId={schema.selectedSchemaId}
+          schemaName={schema.selectedSchemaName}
+        />
+      )}
       <ShareContents projectId={projectId} />
       <SettingsContents />
       <Button
