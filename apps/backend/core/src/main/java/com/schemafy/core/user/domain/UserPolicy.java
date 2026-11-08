@@ -40,6 +40,10 @@ public final class UserPolicy {
         && password.getBytes(StandardCharsets.UTF_8).length <= MAX_PASSWORD_BYTES;
   }
 
+  public static boolean isProfileDetailsVisible(final User user) {
+    return user.status() == UserStatus.ACTIVE && user.deletedAt() == null;
+  }
+
   public static String truncateName(final String name) {
     if (name == null || name.length() <= MAX_NAME_LENGTH) {
       return name;

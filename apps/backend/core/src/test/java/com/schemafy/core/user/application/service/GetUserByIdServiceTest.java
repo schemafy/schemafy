@@ -9,6 +9,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 import com.schemafy.core.common.exception.DomainException;
 import com.schemafy.core.user.application.port.in.GetUserByIdQuery;
+import com.schemafy.core.user.application.port.in.UserProfileResult;
 import com.schemafy.core.user.application.port.out.FindUserByIdPort;
 import com.schemafy.core.user.domain.User;
 import com.schemafy.core.user.domain.UserStatus;
@@ -64,6 +65,49 @@ class GetUserByIdServiceTest {
               .isEqualTo(UserErrorCode.NOT_FOUND);
         })
         .verify();
+  }
+
+  @Test
+  @DisplayName("getProfileById: 활성 사용자의 프로필을 공개 결과로 반환한다")
+  void getProfileById_disclosable() {
+    User user = new User(
+        "user-1",
+        "test@example.com",
+        "Tester",
+        "encoded",
+        UserStatus.ACTIVE,
+        null,
+        null,
+        null);
+
+    given(findUserByIdPort.findUserById("user-1"))
+        .willReturn(Mono.just(user));
+
+    StepVerifier.create(sut.getProfileById(new GetUserByIdQuery("user-1")))
+        .expectNext(new UserProfileResult("user-1", "test@example.com", "Tester"))
+        .verifyComplete();
+  }
+
+  @Test
+  @DisplayName("getProfileById: 비활성 사용자의 프로필은 정책상 마스킹된 값으로 반환한다")
+  void getProfileById_withheld() {
+    User user = new User(
+        "user-1",
+        "private@example.com",
+        "Private User",
+        "encoded",
+        UserStatus.INACTIVE,
+        null,
+        null,
+        null);
+
+    given(findUserByIdPort.findUserById("user-1"))
+        .willReturn(Mono.just(user));
+
+    StepVerifier.create(sut.getProfileById(new GetUserByIdQuery("user-1")))
+        .expectNext(new UserProfileResult(
+            "user-1", "", UserProfileResult.WITHDRAWN_USER_LABEL))
+        .verifyComplete();
   }
 
 }

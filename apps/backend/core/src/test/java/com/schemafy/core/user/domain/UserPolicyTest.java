@@ -1,5 +1,7 @@
 package com.schemafy.core.user.domain;
 
+import java.time.Instant;
+
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
@@ -49,6 +51,40 @@ class UserPolicyTest {
     assertThat(UserPolicy.truncateName("Tester")).isEqualTo("Tester");
     assertThat(UserPolicy.truncateName("a".repeat(UserPolicy.MAX_NAME_LENGTH + 1)))
         .hasSize(UserPolicy.MAX_NAME_LENGTH);
+  }
+
+  @Test
+  @DisplayName("프로필 상세 정보는 활성이고 삭제되지 않은 사용자에게만 공개한다")
+  void profileDetailsVisibility() {
+    User active = User.signUp(
+        "active-user",
+        "active@example.com",
+        "Active User",
+        "encoded-password");
+    User inactive = active.withdraw(Instant.now());
+    User softDeleted = new User(
+        active.id(),
+        active.email(),
+        active.name(),
+        active.password(),
+        UserStatus.ACTIVE,
+        active.createdAt(),
+        active.updatedAt(),
+        Instant.now());
+    User suspended = new User(
+        active.id(),
+        active.email(),
+        active.name(),
+        active.password(),
+        UserStatus.SUSPENDED,
+        active.createdAt(),
+        active.updatedAt(),
+        null);
+
+    assertThat(UserPolicy.isProfileDetailsVisible(active)).isTrue();
+    assertThat(UserPolicy.isProfileDetailsVisible(inactive)).isFalse();
+    assertThat(UserPolicy.isProfileDetailsVisible(softDeleted)).isFalse();
+    assertThat(UserPolicy.isProfileDetailsVisible(suspended)).isFalse();
   }
 
 }
