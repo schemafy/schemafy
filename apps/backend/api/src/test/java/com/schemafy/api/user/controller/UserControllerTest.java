@@ -66,7 +66,7 @@ class UserControllerTest extends UserHttpTestSupport {
             getUserPathParameters(),
             getUserRequestHeaders(),
             getUserResponseHeaders(),
-            getUserResponse()))
+            getProfileLookupResponse()))
         .jsonPath("$.id").isEqualTo(userId)
         .jsonPath("$.email").isEqualTo("test@example.com");
   }
@@ -109,6 +109,107 @@ class UserControllerTest extends UserHttpTestSupport {
         .expectBody()
         .jsonPath("$.id").isEqualTo(userBId)
         .jsonPath("$.email").isEqualTo("userb@example.com");
+  }
+
+  @Test
+  @DisplayName("다른 사용자가 탈퇴한 회원을 조회하면 프로필 개인정보를 마스킹한다")
+  void getWithdrawnUserMasksProfileForOtherUser() {
+    User requester = createUser("requester@example.com", "Requester");
+    User withdrawn = createUser("withdrawn@example.com", "Withdrawn User");
+
+    webTestClient.delete()
+        .uri(API_BASE_PATH + "/users/me")
+        .header("Authorization", "Bearer " + generateAccessToken(withdrawn.id()))
+        .exchange()
+        .expectStatus().isNoContent();
+
+    webTestClient
+        .mutateWith(mockUser(requester.id()))
+        .get()
+        .uri(API_BASE_PATH + "/users/{userId}", withdrawn.id())
+        .header("Authorization", "Bearer " + generateAccessToken(requester.id()))
+        .exchange()
+        .expectStatus().isOk()
+        .expectBody()
+        .jsonPath("$.id").isEqualTo(withdrawn.id())
+        .jsonPath("$.email").isEqualTo("")
+        .jsonPath("$.name").isEqualTo("탈퇴한 사용자");
+  }
+
+  @Test
+  @DisplayName("탈퇴한 회원이 만료 전 access token으로 자신을 조회해도 프로필 개인정보를 마스킹한다")
+  void getWithdrawnUserMasksProfileForWithdrawnUser() {
+    User withdrawn = createUser("withdrawn-self@example.com", "Withdrawn Self");
+    String accessToken = generateAccessToken(withdrawn.id());
+
+    webTestClient.delete()
+        .uri(API_BASE_PATH + "/users/me")
+        .header("Authorization", "Bearer " + accessToken)
+        .exchange()
+        .expectStatus().isNoContent();
+
+    webTestClient
+        .mutateWith(mockUser(withdrawn.id()))
+        .get()
+        .uri(API_BASE_PATH + "/users/{userId}", withdrawn.id())
+        .header("Authorization", "Bearer " + accessToken)
+        .exchange()
+        .expectStatus().isOk()
+        .expectBody()
+        .jsonPath("$.id").isEqualTo(withdrawn.id())
+        .jsonPath("$.email").isEqualTo("")
+        .jsonPath("$.name").isEqualTo("탈퇴한 사용자");
+  }
+
+  @Test
+  @DisplayName("deletedAt만 설정된 회원도 프로필 개인정보를 마스킹한다")
+  void getSoftDeletedUserMasksProfile() {
+    User requester = createUser("requester-soft-delete@example.com", "Requester");
+    User softDeleted = createUser("soft-deleted@example.com", "Soft Deleted User");
+    softDeleteUser(softDeleted.id());
+
+    webTestClient
+        .mutateWith(mockUser(requester.id()))
+        .get()
+        .uri(API_BASE_PATH + "/users/{userId}", softDeleted.id())
+        .header("Authorization", "Bearer " + generateAccessToken(requester.id()))
+        .exchange()
+        .expectStatus().isOk()
+        .expectBody()
+        .jsonPath("$.id").isEqualTo(softDeleted.id())
+        .jsonPath("$.email").isEqualTo("")
+        .jsonPath("$.name").isEqualTo("탈퇴한 사용자");
+  }
+
+  @Test
+  @DisplayName("status만 비활성이어도 프로필 개인정보를 마스킹한다")
+  void getInactiveUserMasksProfile() {
+    User requester = createUser("requester-inactive@example.com", "Requester");
+    User inactive = createUser("inactive@example.com", "Inactive User");
+
+    Long rowsUpdated = databaseClient.sql(
+        "UPDATE users SET status = 'INACTIVE' WHERE id = :id")
+        .bind("id", inactive.id())
+        .fetch()
+        .rowsUpdated()
+        .block();
+    Assertions.assertEquals(1L, rowsUpdated);
+
+    User inactiveFromDatabase = getUser(inactive.id());
+    Assertions.assertEquals(UserStatus.INACTIVE, inactiveFromDatabase.status());
+    Assertions.assertNull(inactiveFromDatabase.deletedAt());
+
+    webTestClient
+        .mutateWith(mockUser(requester.id()))
+        .get()
+        .uri(API_BASE_PATH + "/users/{userId}", inactive.id())
+        .header("Authorization", "Bearer " + generateAccessToken(requester.id()))
+        .exchange()
+        .expectStatus().isOk()
+        .expectBody()
+        .jsonPath("$.id").isEqualTo(inactive.id())
+        .jsonPath("$.email").isEqualTo("")
+        .jsonPath("$.name").isEqualTo("탈퇴한 사용자");
   }
 
   @Test

@@ -48,8 +48,8 @@ public class UserController {
   @GetMapping("/users/{userId}")
   public Mono<ResponseEntity<UserInfoResponse>> getUser(
       @PathVariable String userId) {
-    return getUserByIdUseCase.getUserById(new GetUserByIdQuery(userId))
-        .map(UserInfoResponse::from)
+    return getUserByIdUseCase.getProfileById(new GetUserByIdQuery(userId))
+        .map(profile -> new UserInfoResponse(profile.id(), profile.email(), profile.name()))
         .map(ResponseEntity::ok);
   }
 

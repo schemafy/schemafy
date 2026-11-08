@@ -8,4 +8,6 @@ public interface GetUserByIdUseCase {
 
   Mono<User> getUserById(GetUserByIdQuery query);
 
+  Mono<UserProfileResult> getProfileById(GetUserByIdQuery query);
+
 }

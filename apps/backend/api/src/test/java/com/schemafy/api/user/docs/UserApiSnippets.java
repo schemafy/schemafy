@@ -31,6 +31,17 @@ public class UserApiSnippets extends RestDocsSnippets {
     };
   }
 
+  private static FieldDescriptor[] profileLookupFields() {
+    return new FieldDescriptor[] {
+      fieldWithPath("id").type(JsonFieldType.STRING)
+          .description("사용자 고유 ID (ULID, 탈퇴 사용자도 유지)"),
+      fieldWithPath("email").type(JsonFieldType.STRING)
+          .description("사용자 이메일 (탈퇴 사용자는 빈 문자열)"),
+      fieldWithPath("name").type(JsonFieldType.STRING)
+          .description("사용자 이름 (탈퇴 사용자는 '탈퇴한 사용자')")
+    };
+  }
+
   // ========== 회원가입 API ==========
 
   public static Snippet sendSignUpEmailCodeRequest() {
@@ -117,6 +128,11 @@ public class UserApiSnippets extends RestDocsSnippets {
   public static Snippet getUserResponse() {
     return createResponseFieldsSnippet(
         successResponseFields(userInfoFields()));
+  }
+
+  public static Snippet getProfileLookupResponse() {
+    return createResponseFieldsSnippet(
+        successResponseFields(profileLookupFields()));
   }
 
   // ========== 토큰 갱신 API ==========
