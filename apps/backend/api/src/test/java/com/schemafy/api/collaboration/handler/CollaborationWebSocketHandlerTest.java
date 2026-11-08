@@ -1,7 +1,9 @@
 package com.schemafy.api.collaboration.handler;
 
 import java.net.URI;
+import java.nio.charset.StandardCharsets;
 import java.time.Duration;
+import java.util.ArrayList;
 import java.util.List;
 
 import org.springframework.core.io.buffer.DefaultDataBufferFactory;
@@ -49,6 +51,7 @@ import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.inOrder;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.timeout;
+import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 
@@ -187,6 +190,104 @@ class CollaborationWebSocketHandlerTest {
     subscription.dispose();
 
     verify(session, never()).close(any());
+  }
+
+  @Test
+  @DisplayName("inbound 메시지는 payload를 먼저 캡처하고 수신 순서대로 처리한다")
+  void handle_processesInboundMessagesInReceiveOrder() {
+    User activeUser = User.signUp("user-1", "test@example.com",
+        "tester", "encoded");
+    Sinks.One<User> firstLookup = Sinks.one();
+    Sinks.One<Void> firstDispatch = Sinks.one();
+    List<String> events = new ArrayList<>();
+    int[] lookupCount = { 0 };
+
+    given(getUserByIdUseCase.getUserById(any(GetUserByIdQuery.class)))
+        .willAnswer(invocation -> {
+          int currentLookup = ++lookupCount[0];
+          events.add("lookup-" + currentLookup);
+          return switch (currentLookup) {
+          case 1, 3 -> Mono.just(activeUser);
+          case 2 -> firstLookup.asMono();
+          default -> Mono.error(new IllegalStateException(
+              "Unexpected user state lookup"));
+          };
+        });
+
+    WebSocketMessage firstMessage = Mockito.mock(WebSocketMessage.class);
+    given(firstMessage.getType()).willReturn(WebSocketMessage.Type.TEXT);
+    given(firstMessage.getPayloadAsText()).willReturn("preview-update");
+    given(collaborationService.handleMessage("project-1", "session-1",
+        "preview-update")).willAnswer(invocation -> {
+          events.add("dispatch-preview-update");
+          return firstDispatch.asMono();
+        });
+    given(collaborationService.handleMessage("project-1", "session-1",
+        "preview-clear")).willAnswer(invocation -> {
+          events.add("dispatch-preview-clear");
+          return Mono.empty();
+        });
+
+    Sinks.One<CloseStatus> closeSignal = Sinks.one();
+    CollaborationWebSocketHandler handler = givenConnectedSession(
+        Duration.ofDays(1), Flux.just(firstMessage,
+            textMessage("preview-clear")), closeSignal);
+
+    Disposable subscription = handler.handle(session).subscribe();
+
+    InOrder inOrder = inOrder(getUserByIdUseCase, firstMessage);
+    inOrder.verify(getUserByIdUseCase).getUserById(any(GetUserByIdQuery.class));
+    inOrder.verify(firstMessage).getType();
+    inOrder.verify(firstMessage).getPayloadAsText();
+    inOrder.verify(getUserByIdUseCase).getUserById(any(GetUserByIdQuery.class));
+    verify(getUserByIdUseCase, times(2))
+        .getUserById(any(GetUserByIdQuery.class));
+    assertThat(events).containsExactly("lookup-1", "lookup-2");
+
+    firstLookup.tryEmitValue(activeUser);
+
+    verify(collaborationService, timeout(1000)).handleMessage("project-1",
+        "session-1", "preview-update");
+    assertThat(events).containsExactly("lookup-1", "lookup-2",
+        "dispatch-preview-update");
+    verify(getUserByIdUseCase, times(2))
+        .getUserById(any(GetUserByIdQuery.class));
+
+    firstDispatch.tryEmitEmpty();
+
+    verify(collaborationService, timeout(1000)).handleMessage("project-1",
+        "session-1", "preview-clear");
+    verify(getUserByIdUseCase, timeout(1000).times(3))
+        .getUserById(any(GetUserByIdQuery.class));
+    assertThat(events).containsExactly("lookup-1", "lookup-2",
+        "dispatch-preview-update", "lookup-3", "dispatch-preview-clear");
+
+    subscription.dispose();
+  }
+
+  @Test
+  @DisplayName("메시지 handler 오류는 해당 프레임만 끝내고 다음 프레임을 처리한다")
+  void handle_continuesAfterInboundMessageHandlerError() {
+    givenActiveUser();
+    given(collaborationService.handleMessage("project-1", "session-1",
+        "preview-update"))
+        .willReturn(Mono.error(new IllegalStateException("dispatch failed")));
+    given(collaborationService.handleMessage("project-1", "session-1",
+        "preview-clear")).willReturn(Mono.empty());
+
+    Sinks.One<CloseStatus> closeSignal = Sinks.one();
+    CollaborationWebSocketHandler handler = givenConnectedSession(
+        Duration.ofDays(1), Flux.just(textMessage("preview-update"),
+            textMessage("preview-clear")), closeSignal);
+
+    Disposable subscription = handler.handle(session).subscribe();
+
+    verify(collaborationService, timeout(1000)).handleMessage("project-1",
+        "session-1", "preview-update");
+    verify(collaborationService, timeout(1000)).handleMessage("project-1",
+        "session-1", "preview-clear");
+
+    subscription.dispose();
   }
 
   @Test
@@ -363,11 +464,13 @@ class CollaborationWebSocketHandlerTest {
             Mono.error(new IllegalStateException("database unavailable")));
     Sinks.One<CloseStatus> closeSignal = Sinks.one();
     CollaborationWebSocketHandler handler = givenConnectedSession(
-        Duration.ofSeconds(1), Flux.just(message(WebSocketMessage.Type.TEXT)),
-        closeSignal);
+        Duration.ofSeconds(1), Flux.just(message(WebSocketMessage.Type.TEXT),
+            message(WebSocketMessage.Type.TEXT)), closeSignal);
 
     StepVerifier.create(handler.handle(session)).verifyComplete();
 
+    verify(getUserByIdUseCase, times(2))
+        .getUserById(any(GetUserByIdQuery.class));
     ArgumentCaptor<CloseStatus> closeStatus = ArgumentCaptor.forClass(
         CloseStatus.class);
     verify(session).close(closeStatus.capture());
@@ -409,11 +512,13 @@ class CollaborationWebSocketHandlerTest {
             Mono.error(new DomainException(UserErrorCode.NOT_FOUND)));
     Sinks.One<CloseStatus> closeSignal = Sinks.one();
     CollaborationWebSocketHandler handler = givenConnectedSession(
-        Duration.ofSeconds(1), Flux.just(message(WebSocketMessage.Type.TEXT)),
-        closeSignal);
+        Duration.ofSeconds(1), Flux.just(message(WebSocketMessage.Type.TEXT),
+            message(WebSocketMessage.Type.TEXT)), closeSignal);
 
     StepVerifier.create(handler.handle(session)).verifyComplete();
 
+    verify(getUserByIdUseCase, times(2))
+        .getUserById(any(GetUserByIdQuery.class));
     assertCloseCode(closeSignal, 1008);
     verify(collaborationService, never()).handleMessage(any(), any(), any());
     verify(collaborationService, timeout(1000)).removeSession("project-1",
@@ -483,9 +588,9 @@ class CollaborationWebSocketHandlerTest {
         .willReturn(Mono.empty());
     given(collaborationService.notifyJoin("project-1", "session-1", "user-1",
         "tester")).willReturn(Mono.empty());
-    given(session.receive()).willReturn(inbound.takeUntilOther(closeSignal.asMono()));
+    given(session.receive()).willReturn(inbound);
     given(session.closeStatus()).willReturn(closeSignal.asMono());
-    given(session.close(any())).willAnswer(invocation -> {
+    Mockito.lenient().when(session.close(any())).thenAnswer(invocation -> {
       closeSignal.tryEmitValue(invocation.getArgument(0));
       return Mono.empty();
     });
@@ -543,6 +648,12 @@ class CollaborationWebSocketHandlerTest {
   private WebSocketMessage message(WebSocketMessage.Type type) {
     return new WebSocketMessage(type,
         new DefaultDataBufferFactory().wrap(new byte[0]));
+  }
+
+  private WebSocketMessage textMessage(String payload) {
+    return new WebSocketMessage(WebSocketMessage.Type.TEXT,
+        new DefaultDataBufferFactory().wrap(
+            payload.getBytes(StandardCharsets.UTF_8)));
   }
 
 }

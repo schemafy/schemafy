@@ -149,8 +149,10 @@ public class CollaborationWebSocketHandler implements WebSocketHandler {
     Mono<Void> closeSignal = session.closeStatus().then();
 
     Mono<Void> inbound = session.receive()
-        .flatMap(message -> handleInboundMessage(session, projectId, sessionId,
+        .map(this::snapshotInboundMessage)
+        .concatMap(message -> handleInboundMessage(session, projectId, sessionId,
             userId, message))
+        .takeUntilOther(closeSignal)
         .doOnError(error -> log.error(
             "[CollaborationWebSocketHandler] Inbound error: sessionId={}",
             sessionId, error))
@@ -211,15 +213,18 @@ public class CollaborationWebSocketHandler implements WebSocketHandler {
         });
   }
 
-  private Mono<Void> handleInboundMessage(WebSocketSession session,
-      String projectId, String sessionId, String userId,
-      WebSocketMessage message) {
+  private InboundMessage snapshotInboundMessage(WebSocketMessage message) {
     WebSocketMessage.Type messageType = message.getType();
     // Snapshot pooled Netty payloads before the asynchronous user-state lookup.
     String textPayload = messageType == WebSocketMessage.Type.TEXT
         ? message.getPayloadAsText()
         : null;
+    return new InboundMessage(messageType, textPayload);
+  }
 
+  private Mono<Void> handleInboundMessage(WebSocketSession session,
+      String projectId, String sessionId, String userId,
+      InboundMessage message) {
     return getUserState(userId)
         .flatMap(state -> {
           if (state == UserState.INACTIVE) {
@@ -228,7 +233,7 @@ public class CollaborationWebSocketHandler implements WebSocketHandler {
           if (state == UserState.UNAVAILABLE) {
             return handleUserStateUnavailable(session);
           }
-          if (messageType == WebSocketMessage.Type.PONG) {
+          if (message.type() == WebSocketMessage.Type.PONG) {
             return collaborationService.refreshPresence(projectId, sessionId)
                 .doOnError(e -> log.warn(
                     "[CollaborationWebSocketHandler] Failed to refresh presence from pong: sessionId={}, error={}",
@@ -236,12 +241,12 @@ public class CollaborationWebSocketHandler implements WebSocketHandler {
                 .onErrorResume(e -> Mono.empty());
           }
 
-          if (messageType != WebSocketMessage.Type.TEXT) {
+          if (message.type() != WebSocketMessage.Type.TEXT) {
             return Mono.empty();
           }
 
           return collaborationService
-              .handleMessage(projectId, sessionId, textPayload)
+              .handleMessage(projectId, sessionId, message.textPayload())
               .doOnError(e -> log.warn(
                   "[CollaborationWebSocketHandler] Failed to handle message: sessionId={}, error={}",
                   sessionId, e.getMessage()))
@@ -311,6 +316,10 @@ public class CollaborationWebSocketHandler implements WebSocketHandler {
         session.getId());
     return session.close(CloseStatus.BAD_DATA
         .withReason("projectId is required"));
+  }
+
+  private record InboundMessage(WebSocketMessage.Type type,
+      String textPayload) {
   }
 
   private enum UserState {
