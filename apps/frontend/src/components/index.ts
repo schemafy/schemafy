@@ -1,7 +1,7 @@
 export { Button, ButtonLink } from './Button';
 export { Pagination } from './Pagination';
 export { ErrorBoundary } from './ErrorBoundary';
-export { Layout } from './Layout';
+export { AppLayout, Layout } from './Layout';
 export { LoadingSpinner, LoadingState } from './Loading';
 export { QueryStateBoundary } from './QueryStateBoundary';
 export { InputField } from './InputField';

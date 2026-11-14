@@ -3,6 +3,7 @@ import {
   ReactFlowCanvas,
   RelationshipEditor,
   SchemaSelector,
+  SelectedSchemaBoundary,
   SelectedSchemaProvider,
   ShortcutPanel,
   TempMemoPreview,
@@ -20,7 +21,7 @@ import { useNavigate, useParams } from '@tanstack/react-router';
 import { ReactFlowProvider } from '@xyflow/react';
 import { useEffect } from 'react';
 import axios from 'axios';
-import { LoadingState } from '@/components';
+import { AppLayout, LoadingState } from '@/components';
 import { NotFoundPage } from './NotFoundPage';
 import { useProject } from '@/features/project/hooks/useProject';
 import { getRoleLevel } from '@/features/project/utils/role';
@@ -160,28 +161,34 @@ export const CanvasPage = () => {
     void navigate({ to: '/workspace', replace: true });
   }, [isProjectError, isForbidden, navigate]);
 
-  if (isProjectError && !isForbidden) return <NotFoundPage />;
-  if (isLoadingProject) {
-    return <LoadingState className="min-h-screen" label="Loading project..." />;
-  }
-  if (isForbidden) {
-    return <LoadingState className="min-h-screen" label="Redirecting..." />;
-  }
-  if (!hasProject) return <NotFoundPage />;
-
   return (
-    <ReactFlowProvider>
-      <SelectedSchemaProvider
-        projectId={projectId}
-        dbVendorId={project.dbVendorId}
-      >
-        <MemoProvider>
-          <CanvasContent canEditProject={canEditProject} />
-          <div className="fixed bottom-4 right-4 z-50">
-            <ConnectionStatusIndicator />
-          </div>
-        </MemoProvider>
-      </SelectedSchemaProvider>
-    </ReactFlowProvider>
+    <SelectedSchemaProvider
+      key={projectId}
+      projectId={projectId}
+      dbVendorId={!isProjectError ? project?.dbVendorId : undefined}
+    >
+      <AppLayout isCanvasPage>
+        {isProjectError && !isForbidden ? (
+          <NotFoundPage />
+        ) : isLoadingProject ? (
+          <LoadingState label="Loading project..." />
+        ) : isForbidden ? (
+          <LoadingState label="Redirecting..." />
+        ) : !hasProject ? (
+          <NotFoundPage />
+        ) : (
+          <SelectedSchemaBoundary>
+            <ReactFlowProvider>
+              <MemoProvider>
+                <CanvasContent canEditProject={canEditProject} />
+                <div className="fixed bottom-4 right-4 z-50">
+                  <ConnectionStatusIndicator />
+                </div>
+              </MemoProvider>
+            </ReactFlowProvider>
+          </SelectedSchemaBoundary>
+        )}
+      </AppLayout>
+    </SelectedSchemaProvider>
   );
 };
