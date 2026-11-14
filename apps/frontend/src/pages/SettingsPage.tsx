@@ -1,6 +1,4 @@
-import { useContext, useState } from 'react';
 import { observer } from 'mobx-react-lite';
-import { ThemeProviderContext, type Theme } from '@/lib/config';
 import {
   Avatar,
   Button,
@@ -8,18 +6,26 @@ import {
   RadioGroup,
   RadioGroupItem,
 } from '@/components';
-import { authStore } from '@/store/auth.store';
 import { ConfirmDialog } from '@/features/workspace/components/ConfirmDialog';
+import { useSettingsForm } from '@/features/setting/hooks';
 
 export const SettingsPage = observer(() => {
-  const { theme, setTheme } = useContext(ThemeProviderContext);
-  const user = authStore.user;
-
-  const [name, setName] = useState(user?.name ?? '');
-  const [email, setEmail] = useState(user?.email ?? '');
-  const [password, setPassword] = useState('');
-  const [confirmPassword, setConfirmPassword] = useState('');
-  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
+  const {
+    theme,
+    handleThemeChange,
+    name,
+    setName,
+    email,
+    setEmail,
+    password,
+    setPassword,
+    confirmPassword,
+    setConfirmPassword,
+    isDeleteDialogOpen,
+    setIsDeleteDialogOpen,
+    openDeleteDialog,
+    confirmDeleteAccount,
+  } = useSettingsForm();
 
   return (
     <div className="flex w-full justify-center py-12 px-8">
@@ -68,7 +74,7 @@ export const SettingsPage = observer(() => {
             <span className="font-overline-md text-schemafy-text">Theme</span>
             <RadioGroup
               value={theme}
-              onValueChange={(value) => setTheme(value as Theme)}
+              onValueChange={handleThemeChange}
               className="flex-row"
             >
               <RadioGroupItem value="light">Light</RadioGroupItem>
@@ -85,7 +91,7 @@ export const SettingsPage = observer(() => {
               variant="outline"
               fullWidth
               round
-              onClick={() => setIsDeleteDialogOpen(true)}
+              onClick={openDeleteDialog}
             >
               Delete Account
             </Button>
@@ -98,7 +104,7 @@ export const SettingsPage = observer(() => {
           title="Delete Account"
           description="Are you sure you want to delete your account? This action cannot be undone."
           confirmLabel="Delete"
-          onConfirm={() => {}}
+          onConfirm={confirmDeleteAccount}
         />
       </div>
     </div>
