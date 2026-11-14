@@ -40,7 +40,7 @@ class PasswordResetMailAdapterTest {
     AuthMailProperties authMailProperties = new AuthMailProperties();
     authMailProperties.setFrom("no-reply@schemafy.com");
     AppProperties appProperties = new AppProperties();
-    appProperties.setFrontendUrl("http://localhost:3001");
+    appProperties.setFrontendUrl("http://localhost:3000");
     PasswordResetMailAdapter sut = new PasswordResetMailAdapter(
         mailSender, authMailProperties, appProperties);
 
@@ -57,7 +57,7 @@ class PasswordResetMailAdapterTest {
     assertThat(sentMessage.getFrom()[0].toString()).isEqualTo("no-reply@schemafy.com");
     assertThat(sentMessage.getContent()).isInstanceOf(Multipart.class);
     assertThat(messageText(sentMessage))
-        .contains("http://localhost:3001/reset-password#resetToken=user-id.raw-token");
+        .contains("http://localhost:3000/reset-password#resetToken=user-id.raw-token");
   }
 
   private String messageText(MimeMessage message) throws Exception {

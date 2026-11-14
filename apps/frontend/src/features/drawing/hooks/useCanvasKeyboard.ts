@@ -8,6 +8,8 @@ interface UseCanvasKeyboardParams {
   activeTool: string;
   openChatInput: (position: Point) => void;
   setActiveTool: (tool: string) => void;
+  onUndo?: () => void;
+  onRedo?: () => void;
 }
 
 const TOOL_SHORTCUTS: Record<string, string> = {
@@ -24,6 +26,8 @@ export const useCanvasKeyboard = ({
   activeTool,
   openChatInput,
   setActiveTool,
+  onUndo,
+  onRedo,
 }: UseCanvasKeyboardParams) => {
   useEffect(() => {
     const handleKeyPress = (e: KeyboardEvent) => {
@@ -35,6 +39,27 @@ export const useCanvasKeyboard = ({
         target.isContentEditable
       )
         return;
+
+      if (
+        (e.ctrlKey || e.metaKey) &&
+        e.code === 'KeyZ' &&
+        !e.shiftKey &&
+        onUndo
+      ) {
+        e.preventDefault();
+        onUndo();
+        return;
+      }
+
+      if (
+        (e.ctrlKey || e.metaKey) &&
+        ((e.code === 'KeyZ' && e.shiftKey) || e.code === 'KeyY') &&
+        onRedo
+      ) {
+        e.preventDefault();
+        onRedo();
+        return;
+      }
 
       if (
         TOOL_SHORTCUTS[e.code] &&
@@ -51,7 +76,7 @@ export const useCanvasKeyboard = ({
       }
 
       if (
-        e.key === '/' &&
+        (e.key === '/' || e.code === 'Slash') &&
         !isChatOpen &&
         (activeTool === 'pointer' || activeTool === 'hand')
       ) {
@@ -75,5 +100,7 @@ export const useCanvasKeyboard = ({
     mousePositionRef,
     openChatInput,
     setActiveTool,
+    onUndo,
+    onRedo,
   ]);
 };
