@@ -18,12 +18,18 @@ import com.schemafy.core.mcp.application.port.in.GetMcpTokenUseCase;
 import com.schemafy.core.mcp.domain.McpScope;
 import com.schemafy.core.mcp.domain.McpToken;
 import com.schemafy.core.mcp.domain.McpTokenClaimSupport;
+import com.schemafy.core.user.application.port.in.GetUserByIdQuery;
+import com.schemafy.core.user.application.port.in.GetUserByIdUseCase;
+import com.schemafy.core.user.domain.User;
 
 import io.jsonwebtoken.security.Keys;
 import reactor.core.publisher.Mono;
 import reactor.test.StepVerifier;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
 class McpTokenValidatorTest {
 
@@ -35,6 +41,7 @@ class McpTokenValidatorTest {
   McpTokenValidator validator;
   TestMcpTokenRevocationCache revocationCache;
   TestGetMcpTokenUseCase getMcpTokenUseCase;
+  GetUserByIdUseCase getUserByIdUseCase;
 
   @BeforeEach
   void setUp() {
@@ -47,8 +54,11 @@ class McpTokenValidatorTest {
     SecretKey secretKey = Keys.hmacShaKeyFor(
         properties.getToken().getSecret().getBytes(StandardCharsets.UTF_8));
     getMcpTokenUseCase = new TestGetMcpTokenUseCase(properties, clock);
+    getUserByIdUseCase = mock(GetUserByIdUseCase.class);
+    when(getUserByIdUseCase.getUserById(new GetUserByIdQuery("user-1")))
+        .thenReturn(Mono.just(User.signUp("user-1", "test@example.com", "Tester", "encoded")));
     validator = new McpTokenValidator(properties, revocationCache,
-        getMcpTokenUseCase, clock, secretKey);
+        getMcpTokenUseCase, getUserByIdUseCase, clock, secretKey);
     tokenFactory = new McpTokenTestFactory(properties, clock);
   }
 
@@ -163,6 +173,19 @@ class McpTokenValidatorTest {
 
     expectFailure(validator.validate(tokenFactory.validToken()),
         McpSecurityError.TOKEN_REVOKED);
+  }
+
+  @Test
+  @DisplayName("탈퇴한 사용자에 연결된 MCP 토큰을 거부한다")
+  void rejectsTokenForInactiveUser() {
+    when(getUserByIdUseCase.getUserById(
+        any(GetUserByIdQuery.class)))
+        .thenReturn(Mono.just(User.signUp(
+            "user-1", "test@example.com", "Tester", "encoded")
+            .withdraw(NOW)));
+
+    expectFailure(validator.validate(tokenFactory.validToken()),
+        McpSecurityError.TOKEN_INVALID);
   }
 
   @Test

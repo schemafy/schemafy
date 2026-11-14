@@ -18,9 +18,11 @@ import com.schemafy.api.common.security.jwt.JwtProperties;
 import com.schemafy.api.common.security.jwt.JwtTokenIssuer;
 import com.schemafy.api.user.oauth.GitHubOAuthProperties;
 import com.schemafy.api.user.oauth.GitHubOAuthService;
+import com.schemafy.core.common.exception.DomainException;
 import com.schemafy.core.user.application.port.in.LoginOrSignUpOAuthCommand;
 import com.schemafy.core.user.application.port.in.LoginOrSignUpOAuthUseCase;
 import com.schemafy.core.user.domain.AuthProvider;
+import com.schemafy.core.user.domain.exception.UserErrorCode;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -105,6 +107,12 @@ public class OAuthController {
                   expireStateCookie().toString())
               .location(buildFrontendCallbackUri(null, null))
               .<Void>build();
+        })
+        .onErrorResume(DomainException.class, domainError -> {
+          if (domainError.getErrorCode() == UserErrorCode.LOGIN_FAILED) {
+            return Mono.just(redirectToFrontendWithError("login_failed", null));
+          }
+          return Mono.just(redirectToFrontendWithError("server_error", null));
         })
         .onErrorResume(e -> {
           return Mono.just(

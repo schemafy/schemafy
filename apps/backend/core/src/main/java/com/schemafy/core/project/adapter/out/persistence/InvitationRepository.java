@@ -394,6 +394,26 @@ public interface InvitationRepository
   @Modifying
   @Query("""
       UPDATE invitations
+      SET status = 'CANCELLED', resolved_at = NOW(), updated_at = NOW(), version = version + 1
+      WHERE invited_by = :userId
+        AND status = 'PENDING'
+        AND deleted_at IS NULL
+      """)
+  Mono<Long> cancelPendingByInvitedBy(String userId);
+
+  @Modifying
+  @Query("""
+      UPDATE invitations
+      SET status = 'CANCELLED', resolved_at = NOW(), updated_at = NOW(), version = version + 1
+      WHERE invited_email = :email
+        AND status = 'PENDING'
+        AND deleted_at IS NULL
+      """)
+  Mono<Long> cancelPendingByInvitedEmail(String email);
+
+  @Modifying
+  @Query("""
+      UPDATE invitations
       SET deleted_at = NOW(), updated_at = NOW(), version = version + 1
       WHERE target_type = :targetType
         AND target_id = :targetId

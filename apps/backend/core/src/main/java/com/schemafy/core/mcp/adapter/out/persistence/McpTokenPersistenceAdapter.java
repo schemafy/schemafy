@@ -46,4 +46,9 @@ class McpTokenPersistenceAdapter implements
         .defaultIfEmpty(false);
   }
 
+  @Override
+  public Mono<Long> revokeAllMcpTokensByUserId(String userId, Instant revokedAt) {
+    return mcpTokenRepository.revokeAllByUserId(userId, revokedAt);
+  }
+
 }

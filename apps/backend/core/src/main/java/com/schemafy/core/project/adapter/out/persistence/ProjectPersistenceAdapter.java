@@ -77,6 +77,14 @@ public class ProjectPersistenceAdapter
   }
 
   @Override
+  public Flux<Project> findByUserIdAndWorkspaceMembershipOrProjectMembershipAndNotDeleted(
+      String userId) {
+    return projectRepository
+        .findByUserIdAndWorkspaceMembershipOrProjectMembershipAndNotDeleted(
+            userId);
+  }
+
+  @Override
   public Flux<Project> findByWorkspaceId(String workspaceId) {
     return projectRepository.findByWorkspaceId(workspaceId);
   }
@@ -194,6 +202,11 @@ public class ProjectPersistenceAdapter
       String userId) {
     return projectMemberRepository.softDeleteByWorkspaceIdAndUserId(workspaceId,
         userId);
+  }
+
+  @Override
+  public Mono<Long> softDeleteByUserId(String userId) {
+    return projectMemberRepository.softDeleteByUserId(userId);
   }
 
   @Override

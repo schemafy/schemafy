@@ -1,5 +1,6 @@
 package com.schemafy.api.project.orchestrator;
 
+import java.time.Instant;
 import java.util.List;
 
 import org.junit.jupiter.api.DisplayName;
@@ -23,6 +24,7 @@ import com.schemafy.core.user.application.port.in.GetUserByIdUseCase;
 import com.schemafy.core.user.application.port.in.GetUsersByIdsQuery;
 import com.schemafy.core.user.application.port.in.GetUsersByIdsUseCase;
 import com.schemafy.core.user.domain.User;
+import com.schemafy.core.user.domain.UserStatus;
 import com.schemafy.core.user.domain.exception.UserErrorCode;
 
 import reactor.core.publisher.Flux;
@@ -56,20 +58,49 @@ class ProjectMemberOrchestratorTest {
   private ProjectMemberOrchestrator orchestrator;
 
   @Test
-  @DisplayName("getMembers fails fast when bulk user lookup is incomplete")
-  void getMembers_failsWhenAnyUserMissing() {
+  @DisplayName("getMembers hydrates active and inactive users")
+  void getMembers_hydratesUsers() {
     ProjectMember member1 = ProjectMember.create(UlidGenerator.generate(),
         "project-1", "user-1", ProjectRole.ADMIN);
     ProjectMember member2 = ProjectMember.create(UlidGenerator.generate(),
-        "project-1", "user-2", ProjectRole.VIEWER);
+        "project-1", "user-2", ProjectRole.EDITOR);
     User user1 = User.signUp("user-1", "user-1@test.com", "User 1",
         "encoded");
+    User user2 = User.signUp("user-2", "user-2@test.com", "User 2",
+        "encoded").withdraw(Instant.parse("2026-09-12T00:00:00Z"));
 
     when(getProjectMembersUseCase.getProjectMembers(any()))
         .thenReturn(Mono.just(PageResult.of(
             List.of(member1, member2), 0, 10, 2)));
     when(getUsersByIdsUseCase.getUsersByIds(any(GetUsersByIdsQuery.class)))
-        .thenReturn(Flux.just(user1));
+        .thenReturn(Flux.just(user1, user2));
+
+    StepVerifier.create(orchestrator.getMembers(new GetProjectMembersQuery(
+        "project-1", "requester-1", 0, 10)))
+        .assertNext(result -> {
+          assertThat(result.content()).hasSize(2);
+          assertThat(result.content().get(0).user().id()).isEqualTo(user1.id());
+          assertThat(result.content().get(1).user().status())
+              .isEqualTo(UserStatus.INACTIVE);
+        })
+        .verifyComplete();
+  }
+
+  @Test
+  @DisplayName("getMembers fails when a membership has no user row")
+  void getMembers_failsWhenUserIsMissing() {
+    ProjectMember existingMember = ProjectMember.create(UlidGenerator.generate(),
+        "project-1", "user-1", ProjectRole.ADMIN);
+    ProjectMember missingMember = ProjectMember.create(UlidGenerator.generate(),
+        "project-1", "user-2", ProjectRole.VIEWER);
+    User existingUser = User.signUp("user-1", "user-1@test.com", "User 1",
+        "encoded");
+
+    when(getProjectMembersUseCase.getProjectMembers(any()))
+        .thenReturn(Mono.just(PageResult.of(
+            List.of(existingMember, missingMember), 0, 10, 2)));
+    when(getUsersByIdsUseCase.getUsersByIds(any(GetUsersByIdsQuery.class)))
+        .thenReturn(Flux.just(existingUser));
 
     StepVerifier.create(orchestrator.getMembers(new GetProjectMembersQuery(
         "project-1", "requester-1", 0, 10)))
@@ -94,7 +125,7 @@ class ProjectMemberOrchestratorTest {
     StepVerifier.create(orchestrator.acceptInvitation(
         new AcceptProjectInvitationCommand("invitation-1", "user-1")))
         .assertNext(view -> {
-          assertThat(view.member().getId()).isEqualTo(member.getId());
+          assertThat(view.member().getUserId()).isEqualTo(member.getUserId());
           assertThat(view.user().email()).isEqualTo(user.email());
         })
         .verifyComplete();
