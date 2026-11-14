@@ -9,6 +9,7 @@ import {
   RadioGroupItem,
 } from '@/components';
 import { authStore } from '@/store/auth.store';
+import { ConfirmDialog } from '@/features/workspace/components/ConfirmDialog';
 
 export const SettingsPage = observer(() => {
   const { theme, setTheme } = useContext(ThemeProviderContext);
@@ -18,6 +19,7 @@ export const SettingsPage = observer(() => {
   const [email, setEmail] = useState(user?.email ?? '');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
+  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
 
   return (
     <div className="flex w-full justify-center py-12 px-8">
@@ -78,11 +80,26 @@ export const SettingsPage = observer(() => {
             <Button type="submit" fullWidth round>
               Save
             </Button>
-            <Button type="button" variant="outline" fullWidth round>
+            <Button
+              type="button"
+              variant="outline"
+              fullWidth
+              round
+              onClick={() => setIsDeleteDialogOpen(true)}
+            >
               Delete Account
             </Button>
           </div>
         </form>
+
+        <ConfirmDialog
+          open={isDeleteDialogOpen}
+          onOpenChange={setIsDeleteDialogOpen}
+          title="Delete Account"
+          description="Are you sure you want to delete your account? This action cannot be undone."
+          confirmLabel="Delete"
+          onConfirm={() => {}}
+        />
       </div>
     </div>
   );
