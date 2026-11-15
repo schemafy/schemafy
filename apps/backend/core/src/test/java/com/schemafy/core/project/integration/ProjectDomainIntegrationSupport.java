@@ -91,6 +91,7 @@ abstract class ProjectDomainIntegrationSupport {
   void cleanProjectDomainTables() {
     Mono.when(
         deleteAll("db_schemas"),
+        deleteAll("mcp_tokens"),
         deleteAll("share_links"),
         deleteAll("invitations"),
         deleteAll("project_members"),

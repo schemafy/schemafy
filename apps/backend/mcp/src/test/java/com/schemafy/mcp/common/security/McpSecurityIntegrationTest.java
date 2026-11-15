@@ -28,6 +28,8 @@ import com.schemafy.core.mcp.application.port.in.GetMcpTokenQuery;
 import com.schemafy.core.mcp.application.port.in.GetMcpTokenUseCase;
 import com.schemafy.core.mcp.domain.McpToken;
 import com.schemafy.core.project.application.access.ProjectAccessRequesterContext;
+import com.schemafy.core.user.application.port.in.GetUserByIdUseCase;
+import com.schemafy.core.user.domain.User;
 
 import reactor.core.publisher.Mono;
 
@@ -239,6 +241,14 @@ class McpSecurityIntegrationTest {
         McpSecurityProperties properties,
         Clock clock) {
       return new TestGetMcpTokenUseCase(properties, clock);
+    }
+
+    @Bean
+    @Primary
+    GetUserByIdUseCase getUserByIdUseCase() {
+      return query -> "user-1".equals(query.userId())
+          ? Mono.just(User.signUp("user-1", "user-1@example.com", "Test User", "encoded"))
+          : Mono.empty();
     }
 
     @Bean

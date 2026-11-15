@@ -9,6 +9,7 @@ import java.util.stream.Collectors;
 import org.springframework.stereotype.Service;
 
 import com.fasterxml.jackson.databind.JsonNode;
+import com.schemafy.api.common.constant.UserDisplayConstants;
 import com.schemafy.api.common.security.principal.AuthenticatedUser;
 import com.schemafy.api.erd.controller.dto.request.CreateMemoCommentRequest;
 import com.schemafy.api.erd.controller.dto.request.CreateMemoRequest;
@@ -174,7 +175,7 @@ public class MemoOrchestrator {
     }
     return getUsersByIdsUseCase.getUsersByIds(new GetUsersByIdsQuery(userIds))
         .collectMap(User::id,
-            user -> new UserSummaryResponse(user.id(), user.name()));
+            responseMapper::toUserSummaryResponse);
   }
 
   private Mono<UserSummaryResponse> getUserSummary(String userId) {
@@ -185,7 +186,8 @@ public class MemoOrchestrator {
   private UserSummaryResponse getUserFromMap(
       Map<String, UserSummaryResponse> userMap, String userId) {
     return userMap.getOrDefault(userId,
-        new UserSummaryResponse(userId, "Unknown"));
+        new UserSummaryResponse(userId,
+            UserDisplayConstants.WITHDRAWN_USER_LABEL));
   }
 
 }

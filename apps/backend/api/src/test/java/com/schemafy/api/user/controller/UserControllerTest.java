@@ -4,6 +4,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.restdocs.AutoConfigureRestDocs;
 import org.springframework.boot.test.autoconfigure.web.reactive.AutoConfigureWebTestClient;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.http.MediaType;
 import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.reactive.server.WebTestClient;
@@ -15,8 +16,10 @@ import org.junit.jupiter.api.Test;
 
 import com.schemafy.api.common.constant.ApiPath;
 import com.schemafy.api.testsupport.user.UserHttpTestSupport;
+import com.schemafy.api.user.controller.dto.request.LoginRequest;
 import com.schemafy.core.ulid.application.service.UlidGenerator;
 import com.schemafy.core.user.domain.User;
+import com.schemafy.core.user.domain.UserStatus;
 import com.schemafy.core.user.domain.exception.UserErrorCode;
 
 import static com.epages.restdocs.apispec.WebTestClientRestDocumentationWrapper.document;
@@ -220,6 +223,110 @@ class UserControllerTest extends UserHttpTestSupport {
         .expectStatus().isOk()
         .expectBody()
         .jsonPath("$.id").isEqualTo(userBId);
+  }
+
+  @Test
+  @DisplayName("계정 탈퇴에 성공하고 access/refresh 쿠키를 만료시킨다")
+  void withdrawSuccess() {
+    User user = createUser("withdraw-test@example.com", "Withdraw User");
+    String accessToken = generateAccessToken(user.id());
+    String refreshToken = generateRefreshToken(user.id());
+
+    webTestClient.delete()
+        .uri(API_BASE_PATH + "/users/me")
+        .header("Authorization", "Bearer " + accessToken)
+        .exchange()
+        .expectStatus().isNoContent()
+        .expectHeader().values("Set-Cookie", cookies -> {
+          Assertions.assertTrue(cookies.stream()
+              .anyMatch(cookie -> cookie.contains("accessToken=;")));
+          Assertions.assertTrue(cookies.stream()
+              .anyMatch(cookie -> cookie.contains("refreshToken=;")));
+        })
+        .expectBody()
+        .consumeWith(document("user-withdraw",
+            withdrawRequestHeaders(),
+            withdrawResponseHeaders()));
+
+    User withdrawn = getUser(user.id());
+    Assertions.assertEquals(UserStatus.INACTIVE, withdrawn.status());
+    Assertions.assertNotNull(withdrawn.deletedAt());
+
+    webTestClient.post()
+        .uri(ApiPath.PUBLIC_API.replace("{version}", "v1.0") + "/users/refresh")
+        .cookie("refreshToken", refreshToken)
+        .exchange()
+        .expectStatus().isUnauthorized()
+        .expectBody()
+        .jsonPath("$.reason").isEqualTo("AUTH_INVALID_REFRESH_TOKEN");
+
+    webTestClient.post()
+        .uri(ApiPath.PUBLIC_API.replace("{version}", "v1.0") + "/users/login")
+        .contentType(MediaType.APPLICATION_JSON)
+        .bodyValue(new LoginRequest(user.email(), "password"))
+        .exchange()
+        .expectStatus().isBadRequest()
+        .expectBody()
+        .jsonPath("$.reason").isEqualTo(UserErrorCode.LOGIN_FAILED.code());
+  }
+
+  @Test
+  @DisplayName("다른 멤버가 있는 workspace의 유일 ADMIN이면 계정 탈퇴를 원자적으로 차단한다")
+  void withdrawBlocksSoleAdminWorkspace() {
+    User admin = createUser("withdraw-admin@example.com", "Withdraw Admin");
+    User member = createUser("withdraw-member@example.com", "Withdraw Member");
+    String workspaceId = nextId();
+
+    databaseClient.sql("""
+        INSERT INTO workspaces (id, name, description, created_at, updated_at)
+        VALUES (:id, 'Shared workspace', 'description', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
+        """)
+        .bind("id", workspaceId)
+        .fetch()
+        .rowsUpdated()
+        .block();
+    insertWorkspaceMember(workspaceId, admin.id(), "ADMIN");
+    insertWorkspaceMember(workspaceId, member.id(), "MEMBER");
+
+    webTestClient.delete()
+        .uri(API_BASE_PATH + "/users/me")
+        .header("Authorization", "Bearer " + generateAccessToken(admin.id()))
+        .exchange()
+        .expectStatus().isEqualTo(409)
+        .expectBody()
+        .jsonPath("$.reason")
+        .isEqualTo("WORKSPACE_LAST_ADMIN_CANNOT_LEAVE")
+        .jsonPath("$.workspaceIds")
+        .doesNotExist();
+
+    User unchanged = getUser(admin.id());
+    Assertions.assertEquals(UserStatus.ACTIVE, unchanged.status());
+    Assertions.assertNull(unchanged.deletedAt());
+    Long activeMemberships = databaseClient.sql("""
+        SELECT COUNT(*) FROM workspace_members
+        WHERE workspace_id = :workspaceId AND user_id = :userId AND deleted_at IS NULL
+        """)
+        .bind("workspaceId", workspaceId)
+        .bind("userId", admin.id())
+        .map((row, metadata) -> row.get(0, Long.class))
+        .one()
+        .block();
+    Assertions.assertEquals(1L, activeMemberships);
+  }
+
+  private void insertWorkspaceMember(String workspaceId, String userId, String role) {
+    databaseClient.sql("""
+        INSERT INTO workspace_members
+            (id, workspace_id, user_id, role, created_at, updated_at)
+        VALUES (:id, :workspaceId, :userId, :role, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
+        """)
+        .bind("id", nextId())
+        .bind("workspaceId", workspaceId)
+        .bind("userId", userId)
+        .bind("role", role)
+        .fetch()
+        .rowsUpdated()
+        .block();
   }
 
 }

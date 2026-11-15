@@ -5,6 +5,7 @@ import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
 
 import org.springframework.stereotype.Service;
+import org.springframework.web.reactive.socket.CloseStatus;
 import org.springframework.web.reactive.socket.WebSocketSession;
 
 import com.schemafy.api.collaboration.dto.BroadcastMessage;
@@ -12,6 +13,8 @@ import com.schemafy.api.collaboration.security.WebSocketAuthInfo;
 import com.schemafy.api.collaboration.service.model.SessionEntry;
 
 import lombok.extern.slf4j.Slf4j;
+import reactor.core.publisher.Flux;
+import reactor.core.publisher.Mono;
 import reactor.core.publisher.Sinks;
 
 @Slf4j
@@ -86,6 +89,20 @@ public class SessionRegistry {
       return Optional.empty();
     }
     return Optional.ofNullable(sessions.get(sessionId));
+  }
+
+  public Mono<Void> closeSessionsByUserId(String userId) {
+    return Flux.fromIterable(projectSessions.values())
+        .flatMap(sessions -> Flux.fromIterable(sessions.values()))
+        .filter(entry -> userId.equals(entry.authInfo().getUserId()))
+        .flatMap(entry -> entry.session()
+            .close(CloseStatus.POLICY_VIOLATION.withReason("Account withdrawn"))
+            .onErrorResume(error -> {
+              log.warn("Failed to close withdrawn user's WebSocket session: userId={}",
+                  userId, error);
+              return Mono.empty();
+            }))
+        .then();
   }
 
 }

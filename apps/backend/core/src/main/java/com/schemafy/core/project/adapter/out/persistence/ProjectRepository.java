@@ -35,6 +35,28 @@ public interface ProjectRepository extends ReactiveCrudRepository<Project, Strin
 
   Flux<Project> findByWorkspaceIdAndDeletedAtIsNull(String workspaceId);
 
+  @Query("""
+      SELECT p.* FROM projects p
+      WHERE p.deleted_at IS NULL
+        AND (
+          EXISTS (
+            SELECT 1 FROM workspace_members wm
+            WHERE wm.workspace_id = p.workspace_id
+              AND wm.user_id = :userId
+              AND wm.deleted_at IS NULL
+          )
+          OR EXISTS (
+            SELECT 1 FROM project_members pm
+            WHERE pm.project_id = p.id
+              AND pm.user_id = :userId
+              AND pm.deleted_at IS NULL
+          )
+        )
+      ORDER BY p.id
+      """)
+  Flux<Project> findByUserIdAndWorkspaceMembershipOrProjectMembershipAndNotDeleted(
+      String userId);
+
   Flux<Project> findByWorkspaceId(String workspaceId);
 
   Mono<Long> countByWorkspaceIdAndDeletedAtIsNull(String workspaceId);

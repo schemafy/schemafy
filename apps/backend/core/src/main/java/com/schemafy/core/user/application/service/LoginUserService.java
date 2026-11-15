@@ -9,6 +9,7 @@ import com.schemafy.core.user.application.port.out.FindUserByEmailPort;
 import com.schemafy.core.user.application.port.out.PasswordHashPort;
 import com.schemafy.core.user.domain.Email;
 import com.schemafy.core.user.domain.User;
+import com.schemafy.core.user.domain.UserStatus;
 import com.schemafy.core.user.domain.exception.UserErrorCode;
 
 import lombok.RequiredArgsConstructor;
@@ -27,6 +28,9 @@ class LoginUserService implements LoginUserUseCase {
         .flatMap(email -> findUserByEmailPort.findUserByEmail(email.address())
             .switchIfEmpty(Mono.error(new DomainException(UserErrorCode.NOT_FOUND)))
             .flatMap(user -> {
+              if (user.status() != UserStatus.ACTIVE) {
+                return Mono.error(new DomainException(UserErrorCode.LOGIN_FAILED));
+              }
               if (user.password() == null) {
                 return Mono.error(new DomainException(UserErrorCode.LOGIN_FAILED));
               }

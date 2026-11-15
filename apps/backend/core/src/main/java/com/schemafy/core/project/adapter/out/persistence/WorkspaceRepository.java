@@ -46,6 +46,16 @@ public interface WorkspaceRepository
       int offset);
 
   @Query("""
+      SELECT w.* FROM workspaces w
+      INNER JOIN workspace_members wm ON w.id = wm.workspace_id
+      WHERE wm.user_id = :userId
+        AND wm.deleted_at IS NULL
+        AND w.deleted_at IS NULL
+      ORDER BY w.created_at DESC, w.id DESC
+      """)
+  Flux<Workspace> findByUserId(String userId);
+
+  @Query("""
       SELECT COUNT(*) FROM workspaces w
       INNER JOIN workspace_members wm ON w.id = wm.workspace_id
       WHERE wm.user_id = :userId

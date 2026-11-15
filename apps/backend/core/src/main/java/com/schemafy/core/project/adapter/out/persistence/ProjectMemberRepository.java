@@ -144,6 +144,14 @@ public interface ProjectMemberRepository
   Mono<Long> softDeleteByWorkspaceIdAndUserId(String workspaceId, String userId);
 
   @Query("""
+      UPDATE project_members
+      SET deleted_at = CURRENT_TIMESTAMP, updated_at = CURRENT_TIMESTAMP
+      WHERE user_id = :userId
+        AND deleted_at IS NULL
+      """)
+  Mono<Long> softDeleteByUserId(String userId);
+
+  @Query("""
       SELECT pm.* FROM project_members pm
       INNER JOIN projects p ON pm.project_id = p.id
       WHERE p.workspace_id = :workspaceId

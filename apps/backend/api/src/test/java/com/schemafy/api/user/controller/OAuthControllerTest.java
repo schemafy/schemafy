@@ -23,9 +23,11 @@ import com.schemafy.api.common.security.jwt.WebExchangeErrorWriter;
 import com.schemafy.api.user.oauth.GitHubOAuthProperties;
 import com.schemafy.api.user.oauth.GitHubOAuthService;
 import com.schemafy.api.user.oauth.GitHubUserInfo;
+import com.schemafy.core.common.exception.DomainException;
 import com.schemafy.core.user.application.port.in.LoginOrSignUpOAuthResult;
 import com.schemafy.core.user.application.port.in.LoginOrSignUpOAuthUseCase;
 import com.schemafy.core.user.domain.User;
+import com.schemafy.core.user.domain.exception.UserErrorCode;
 
 import reactor.core.publisher.Mono;
 
@@ -267,6 +269,35 @@ class OAuthControllerTest {
               ".*error=server_error.*")
           .expectHeader().valueMatches("Set-Cookie",
               ".*oauth_state=.*Max-Age=0.*");
+    }
+
+    @Test
+    @DisplayName("탈퇴 계정 OAuth 콜백은 안정적인 로그인 실패 에러로 리다이렉트한다")
+    void callback_withdrawnAccountRedirectsWithLoginFailed() {
+      String state = "valid-state";
+      GitHubUserInfo userInfo = new GitHubUserInfo(
+          12345L, "testuser", "withdrawn@example.com", "Withdrawn User");
+
+      given(gitHubOAuthService.exchangeCodeForToken("test-code"))
+          .willReturn(Mono.just("gho_test_token"));
+      given(gitHubOAuthService.fetchGitHubUser("gho_test_token"))
+          .willReturn(Mono.just(userInfo));
+      given(loginOrSignUpOAuthUseCase.loginOrSignUpOAuth(any()))
+          .willReturn(Mono.error(new DomainException(UserErrorCode.LOGIN_FAILED)));
+
+      webTestClient.get()
+          .uri(API_BASE_PATH
+              + "/oauth/github/callback?code=test-code&state="
+              + state)
+          .cookie("oauth_state", state)
+          .exchange()
+          .expectStatus().isFound()
+          .expectHeader().valueMatches("Location",
+              ".*error=login_failed.*")
+          .expectHeader().valueMatches("Set-Cookie",
+              ".*oauth_state=.*Max-Age=0.*");
+
+      verify(jwtTokenIssuer, never()).issueTokens(anyString(), anyString());
     }
 
     @Test
