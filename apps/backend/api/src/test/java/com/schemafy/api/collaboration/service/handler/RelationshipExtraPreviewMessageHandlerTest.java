@@ -15,6 +15,7 @@ import com.schemafy.api.collaboration.service.SessionRegistry;
 import com.schemafy.api.collaboration.service.model.SessionEntry;
 import com.schemafy.core.collaboration.dto.PreviewAction;
 import com.schemafy.core.collaboration.dto.event.RelationshipExtraPreviewEvent;
+import com.schemafy.core.collaboration.lock.CanvasEditLockService;
 import com.schemafy.core.collaboration.service.CollaborationEventPublisher;
 
 import reactor.core.publisher.Mono;
@@ -38,6 +39,9 @@ class RelationshipExtraPreviewMessageHandlerTest {
   private CollaborationEventPublisher eventPublisher;
 
   @Mock
+  private CanvasEditLockService canvasEditLockService;
+
+  @Mock
   private SessionEntry sessionEntry;
 
   private final ObjectMapper objectMapper = new ObjectMapper()
@@ -47,7 +51,7 @@ class RelationshipExtraPreviewMessageHandlerTest {
   @DisplayName("유효한 UPDATE 메시지는 preview 이벤트를 발행한다")
   void handle_updateMessage_publishes_preview_event() {
     RelationshipExtraPreviewMessageHandler handler = new RelationshipExtraPreviewMessageHandler(
-        sessionRegistry, eventPublisher);
+        sessionRegistry, canvasEditLockService, eventPublisher);
     ObjectNode extra = objectMapper.createObjectNode()
         .put("fkHandle", "right")
         .put("pkHandle", "left");
@@ -75,7 +79,7 @@ class RelationshipExtraPreviewMessageHandlerTest {
   @DisplayName("CLEAR 메시지는 extra payload를 무시하고 발행한다")
   void handle_clearMessage_ignores_extra_payload() {
     RelationshipExtraPreviewMessageHandler handler = new RelationshipExtraPreviewMessageHandler(
-        sessionRegistry, eventPublisher);
+        sessionRegistry, canvasEditLockService, eventPublisher);
     ObjectNode extra = objectMapper.createObjectNode().put("fkHandle", "right");
     RelationshipExtraPreviewEvent.Inbound message = new RelationshipExtraPreviewEvent.Inbound(
         PreviewAction.CLEAR, "schema-1", "rel-1", extra);
@@ -99,7 +103,7 @@ class RelationshipExtraPreviewMessageHandlerTest {
   @DisplayName("세션이 없으면 메시지를 무시한다")
   void handle_withoutSession_ignores_message() {
     RelationshipExtraPreviewMessageHandler handler = new RelationshipExtraPreviewMessageHandler(
-        sessionRegistry, eventPublisher);
+        sessionRegistry, canvasEditLockService, eventPublisher);
     RelationshipExtraPreviewEvent.Inbound message = new RelationshipExtraPreviewEvent.Inbound(
         PreviewAction.UPDATE, "schema-1", "rel-1",
         objectMapper.createObjectNode());

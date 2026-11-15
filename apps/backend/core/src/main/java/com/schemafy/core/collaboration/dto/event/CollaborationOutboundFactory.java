@@ -7,6 +7,8 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.schemafy.core.collaboration.dto.CursorPosition;
 import com.schemafy.core.collaboration.dto.PreviewAction;
 import com.schemafy.core.collaboration.dto.ProjectPresenceParticipant;
+import com.schemafy.core.collaboration.lock.CanvasEditLockState;
+import com.schemafy.core.collaboration.lock.CanvasEditLockTarget;
 import com.schemafy.core.erd.operation.domain.CommittedErdOperation;
 
 public final class CollaborationOutboundFactory {
@@ -46,6 +48,13 @@ public final class CollaborationOutboundFactory {
       String relationshipId, JsonNode extra) {
     return RelationshipExtraPreviewEvent.Outbound.of(sessionId, action,
         schemaId, relationshipId, extra);
+  }
+
+  public static CanvasEditLockEvent.Outbound canvasEditLock(String sessionId,
+      CanvasEditLockState state, CanvasEditLockTarget target, String schemaId,
+      String resourceId, String ownerSessionId) {
+    return CanvasEditLockEvent.Outbound.of(sessionId, state, target, schemaId,
+        resourceId, ownerSessionId);
   }
 
   public static SchemaFocusEvent.Outbound schemaFocus(String sessionId,

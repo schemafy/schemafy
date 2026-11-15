@@ -5,6 +5,8 @@ import java.util.Objects;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
+import com.schemafy.core.collaboration.lock.CanvasEditLockTarget;
+import com.schemafy.core.collaboration.lock.CanvasExtraMutationPolicy;
 import com.schemafy.core.common.MutationResult;
 import com.schemafy.core.common.exception.DomainException;
 import com.schemafy.core.common.json.JsonObjectMetadataConverter;
@@ -33,6 +35,8 @@ public class ChangeTableExtraService implements ChangeTableExtraUseCase {
   private final ChangeTableExtraPort changeTableExtraPort;
   private final GetTableByIdPort getTableByIdPort;
   private final JsonObjectMetadataConverter jsonObjectMetadataConverter;
+  private final CanvasExtraMutationPolicy canvasPolicy;
+
   private ErdMutationCoordinator erdMutationCoordinator = ErdMutationCoordinator.noop();
 
   @Autowired
@@ -47,22 +51,29 @@ public class ChangeTableExtraService implements ChangeTableExtraUseCase {
       return getTableByIdPort.findTableById(command.tableId())
           .switchIfEmpty(Mono.error(new DomainException(TableErrorCode.NOT_FOUND, "Table not found")))
           .flatMap(table -> {
-            if (Objects.equals(table.extra(), canonicalExtra)) {
+            if (!CanvasExtraMutationPolicy.isCanvasRequest(CanvasEditLockTarget.TABLE_POSITION, command.extra())
+                && Objects.equals(table.extra(), canonicalExtra)) {
               return Mono.just(MutationResult.<Void>noop(null, table.id()));
             }
             return erdMutationCoordinator.coordinate(ErdOperationType.CHANGE_TABLE_EXTRA, command,
                 () -> getTableByIdPort.findTableById(command.tableId())
                     .switchIfEmpty(Mono.error(new DomainException(TableErrorCode.NOT_FOUND, "Table not found")))
                     .flatMap(lockedTable -> {
-                      if (Objects.equals(lockedTable.extra(), canonicalExtra)) {
-                        return Mono.just(MutationResult.<Void>noop(null, lockedTable.id()));
-                      }
-                      return changeTableExtraPort
-                          .changeTableExtra(command.tableId(), canonicalExtra)
-                          .thenReturn(MutationResult.<Void>of(null, lockedTable.id())
-                              .withInverse(new ChangeTableExtraInverse(
-                                  lockedTable.id(),
-                                  lockedTable.extra())));
+                      Mono<String> prepared = canvasPolicy.prepare(CanvasEditLockTarget.TABLE_POSITION, lockedTable
+                          .id(),
+                          lockedTable.extra(), command.extra());
+                      return prepared.defaultIfEmpty("").flatMap(value -> {
+                        String nextExtra = value.isEmpty() ? null : value;
+                        if (Objects.equals(lockedTable.extra(), nextExtra)) {
+                          return Mono.just(MutationResult.<Void>noop(null, lockedTable.id()));
+                        }
+                        return changeTableExtraPort
+                            .changeTableExtra(command.tableId(), nextExtra)
+                            .thenReturn(MutationResult.<Void>of(null, lockedTable.id())
+                                .withInverse(new ChangeTableExtraInverse(
+                                    lockedTable.id(),
+                                    lockedTable.extra())));
+                      });
                     }));
           });
     });
