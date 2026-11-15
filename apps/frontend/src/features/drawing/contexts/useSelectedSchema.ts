@@ -4,6 +4,7 @@ interface SelectedSchemaContextType {
   projectId: string;
   dbVendorId: number;
   selectedSchemaId: string;
+  selectedSchemaName: string;
   setSelectedSchemaId: (schemaId: string | null) => void;
 }
 

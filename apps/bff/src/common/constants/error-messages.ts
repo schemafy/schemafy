@@ -95,6 +95,10 @@ const ErrorMessages: Record<string, ErrorInfo> = {
   VALIDATION_ERROR: SOMETHING_WENT_WRONG,
 
   SCHEMA_NOT_FOUND: notFound(),
+  DDL_INVALID_VALUE: CHECK_INPUT,
+  DDL_UNSUPPORTED_VENDOR: CHECK_INPUT,
+  DDL_TABLE_NOT_FOUND: notFound(),
+  DDL_COLUMN_NOT_FOUND: notFound(),
   TABLE_NOT_FOUND: notFound(),
   COLUMN_NOT_FOUND: notFound(),
   CONSTRAINT_NOT_FOUND: notFound(),

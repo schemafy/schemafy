@@ -154,6 +154,25 @@ export const ERROR_MESSAGES: Record<string, ErrorMessageInfo> = {
     message: 'Unsupported database type.',
     category: ErrorCategory.USER_FEEDBACK,
   },
+  DDL_INVALID_VALUE: {
+    message:
+      'This schema cannot be exported. Check the table and column settings.',
+    category: ErrorCategory.USER_FEEDBACK,
+  },
+  DDL_UNSUPPORTED_VENDOR: {
+    message: 'DDL export is not supported for this database.',
+    category: ErrorCategory.USER_FEEDBACK,
+  },
+  DDL_TABLE_NOT_FOUND: {
+    message:
+      'A table required for export could not be found. Refresh and try again.',
+    category: ErrorCategory.USER_FEEDBACK,
+  },
+  DDL_COLUMN_NOT_FOUND: {
+    message:
+      'A column required for export could not be found. Refresh and try again.',
+    category: ErrorCategory.USER_FEEDBACK,
+  },
   MEMO_NOT_FOUND: notFound('Memo'),
   MEMO_COMMENT_NOT_FOUND: notFound('Comment'),
 

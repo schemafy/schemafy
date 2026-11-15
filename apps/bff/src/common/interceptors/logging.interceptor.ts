@@ -10,6 +10,7 @@ import {
 import { Observable } from 'rxjs';
 import { tap } from 'rxjs/operators';
 import { Request, Response } from 'express';
+import { isCancel } from 'axios';
 
 @Injectable()
 export class LoggingInterceptor implements NestInterceptor {
@@ -54,6 +55,7 @@ export class LoggingInterceptor implements NestInterceptor {
           );
         },
         error: (error: Error) => {
+          if (response.destroyed && isCancel(error)) return;
           const duration = Date.now() - startTime;
           const statusCode = this.getErrorStatus(error);
 

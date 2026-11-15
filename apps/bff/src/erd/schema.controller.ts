@@ -6,7 +6,10 @@ import {
   Param,
   Patch,
   Post,
+  Query,
+  Res,
 } from '@nestjs/common';
+import type { Response } from 'express';
 import { SchemaService } from './schema.service';
 import { AuthHeader } from '../common/decorators/auth-header.decorator';
 import { CollaborationHeaders } from '../common/decorators/collaboration-headers.decorator';
@@ -14,6 +17,8 @@ import type { CollaborationRequestHeaders } from '../common/backend-client/backe
 import type {
   ChangeSchemaNameRequest,
   CreateSchemaRequest,
+  SchemaDdlExportResponse,
+  SchemaMermaidExportResponse,
   SchemaSnapshotsResponse,
 } from './erd.types';
 
@@ -87,5 +92,50 @@ export class SchemaController {
     @AuthHeader() authHeader: string,
   ): Promise<SchemaSnapshotsResponse> {
     return this.schemaService.getSchemaWithSnapshots(schemaId, authHeader);
+  }
+
+  @Get('schemas/:schemaId/exports/ddl')
+  async exportSchemaDdl(
+    @Param('schemaId') schemaId: string,
+    @Query('targetDbVendor') targetDbVendor: string,
+    @AuthHeader() authHeader: string,
+    @Res({ passthrough: true }) response: Response,
+  ): Promise<SchemaDdlExportResponse> {
+    return this.withDisconnectSignal(response, (signal) =>
+      this.schemaService.exportSchemaDdl(
+        schemaId,
+        targetDbVendor,
+        authHeader,
+        signal,
+      ),
+    );
+  }
+
+  @Get('schemas/:schemaId/exports/mermaid')
+  async exportSchemaMermaid(
+    @Param('schemaId') schemaId: string,
+    @AuthHeader() authHeader: string,
+    @Res({ passthrough: true }) response: Response,
+  ): Promise<SchemaMermaidExportResponse> {
+    return this.withDisconnectSignal(response, (signal) =>
+      this.schemaService.exportSchemaMermaid(schemaId, authHeader, signal),
+    );
+  }
+
+  private async withDisconnectSignal<T>(
+    response: Response,
+    run: (signal: AbortSignal) => Promise<T>,
+  ): Promise<T> {
+    const controller = new AbortController();
+    const onClose = () => {
+      if (!response.writableFinished) controller.abort();
+    };
+    response.once('close', onClose);
+    if (response.destroyed) onClose();
+    try {
+      return await run(controller.signal);
+    } finally {
+      response.off('close', onClose);
+    }
   }
 }

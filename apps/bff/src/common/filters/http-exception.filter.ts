@@ -44,6 +44,7 @@ export class HttpExceptionFilter implements ExceptionFilter {
     const ctx = host.switchToHttp();
     const request = ctx.getRequest<Request>();
     const response = ctx.getResponse<Response>();
+    if (response.destroyed && axios.isCancel(exception)) return;
     const context = `[${request.method}] ${request.url}`;
 
     const { status, errorResponse } = this.handleException(exception, context);

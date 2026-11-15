@@ -28,6 +28,19 @@ export type SchemaResponse = {
   currentRevision?: number;
 };
 
+export type SchemaDdlExportResponse = {
+  schemaId: string;
+  currentRevision: number;
+  targetDbVendor: 'mysql';
+  ddl: string;
+};
+
+export type SchemaMermaidExportResponse = {
+  schemaId: string;
+  currentRevision: number;
+  mermaid: string;
+};
+
 export type CreateSchemaRequest = {
   projectId: string;
   name: string;

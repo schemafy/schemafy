@@ -1,4 +1,4 @@
-import { isAxiosError } from 'axios';
+import { isAxiosError, isCancel } from 'axios';
 import { toast } from 'sonner';
 import { ErrorCategory, type ApiError, type ErrorResponseData } from './types';
 import { getErrorMessage } from './error-messages';
@@ -18,6 +18,19 @@ const isApiError = (data: ErrorResponseData): data is ApiError =>
 const extractCode = (data: ErrorResponseData): string | undefined => {
   if (isApiError(data)) return data.code;
   return data.reason;
+};
+
+export const getApiErrorMessage = (error: unknown): string => {
+  if (!isAxiosError<ErrorResponseData>(error)) {
+    return getErrorMessage('').message;
+  }
+
+  const errorData = error.response?.data;
+  if (!errorData) {
+    return getErrorMessage('NETWORK_ERROR').message;
+  }
+
+  return getErrorMessage(extractCode(errorData) ?? '').message;
 };
 
 const AUTH_REQUIRED_CODES = new Set([
@@ -43,7 +56,7 @@ export const handleApiError = (
 ): Promise<never> => {
   const { suppressToast = false } = options;
 
-  if (!isAxiosError<ErrorResponseData>(error)) {
+  if (isCancel(error) || !isAxiosError<ErrorResponseData>(error)) {
     return Promise.reject(error);
   }
 
